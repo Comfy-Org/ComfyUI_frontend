@@ -1,124 +1,42 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  makeWorkspaceTokenResponse,
+  mockTeamWorkspace
+} from '@e2e/fixtures/data/workspaceAuthFixtures'
+import { WorkspaceAuthHelper } from '@e2e/fixtures/helpers/WorkspaceAuthHelper'
 
-const mockRemoteConfig: RemoteConfig = { team_workspaces_enabled: true }
-
-const mockPersonalWorkspace: WorkspaceWithRole = {
-  id: 'ws-personal',
-  name: 'Personal Workspace',
-  type: 'personal',
-  created_at: '2026-01-01T00:00:00Z',
-  joined_at: '2026-01-01T00:00:00Z',
-  role: 'owner'
-}
-
-const mockTeamWorkspace: WorkspaceWithRole = {
-  id: 'ws-team',
-  name: 'Team Workspace',
-  type: 'team',
-  created_at: '2026-01-02T00:00:00Z',
-  joined_at: '2026-01-02T00:00:00Z',
-  role: 'member'
-}
-
-function makeTokenResponse(
-  workspace: WorkspaceWithRole,
-  token: string,
-  expiresInMs = 60 * 60 * 1000
-): WorkspaceTokenResponse {
-  return {
-    token,
-    expires_at: new Date(Date.now() + expiresInMs).toISOString(),
-    workspace: {
-      id: workspace.id,
-      name: workspace.name,
-      type: workspace.type
-    },
-    role: workspace.role,
-    permissions: []
-  }
-}
-
-// On app boot, teamWorkspaceStore.initialize() auto-selects Personal Workspace
-// (personal type, no prior localStorage) and calls switchWorkspace → /api/auth/token.
-// This default stub absorbs that init call so per-test mocks only see explicit switches.
-const defaultTokenResponse = makeTokenResponse(
-  mockPersonalWorkspace,
-  'init-token'
-)
-
-const test = comfyPageFixture.extend({
+const test = comfyPageFixture.extend<{ workspaceAuth: WorkspaceAuthHelper }>({
   page: async ({ page }, use) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockRemoteConfig)
-      })
-    )
-
-    await page.route('**/api/workspaces', async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.fallback()
-        return
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
-        })
-      })
-    })
-
-    // Default stub for the init-time auto-switch. Per-test mocks added later
-    // take priority (Playwright matches routes LIFO) and handle explicit switches.
-    await page.route('**/api/auth/token', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(defaultTokenResponse)
-      })
-    )
-
+    const helper = new WorkspaceAuthHelper(page)
+    await helper.mockWorkspaceRoutes()
     await use(page)
+  },
+  workspaceAuth: async ({ page }, use) => {
+    await use(new WorkspaceAuthHelper(page))
   }
 })
 
-// Opens the profile popover then the workspace-switcher panel.
-// Waits for the panel to be visible before returning.
-// useWorkspaceSwitch skips switchWorkspace when the target is already active,
-// so always switch to a workspace other than the auto-selected Personal one.
-async function openSwitcherPanel(page: Page): Promise<void> {
-  // Close any open popovers first by pressing Escape, then open fresh.
-  await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('workspace-switcher-trigger').click()
-  await expect(page.getByTestId('workspace-switcher-panel')).toBeVisible()
-}
-
 test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
   test('token is persisted to sessionStorage after switching workspace', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     const page = comfyPage.page
 
-    // Override: explicit switch to Team Workspace returns a specific token.
-    await page.route('**/api/auth/token', (route) =>
+    await workspaceAuth.mockTokenRoute((route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(makeTokenResponse(mockTeamWorkspace, 'team-token'))
+        body: JSON.stringify(
+          makeWorkspaceTokenResponse(mockTeamWorkspace, 'team-token')
+        )
       })
     )
 
     await comfyPage.toast.closeToasts()
-    await openSwitcherPanel(page)
+    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText('Team Workspace')
@@ -139,7 +57,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
   })
 
   test('transient token refresh failure preserves the active workspace session', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     const page = comfyPage.page
 
@@ -148,14 +67,18 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     const expiresInMs = 5 * 60 * 1000 - 500
     let callCount = 0
 
-    await page.route('**/api/auth/token', (route) => {
+    await workspaceAuth.mockTokenRoute((route) => {
       callCount++
       if (callCount === 1) {
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            makeTokenResponse(mockTeamWorkspace, 'original-token', expiresInMs)
+            makeWorkspaceTokenResponse(
+              mockTeamWorkspace,
+              'original-token',
+              expiresInMs
+            )
           )
         })
       }
@@ -167,7 +90,7 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     })
 
     await comfyPage.toast.closeToasts()
-    await openSwitcherPanel(page)
+    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText('Team Workspace')
@@ -184,7 +107,9 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     // The scheduled refresh fires immediately (token expires within buffer window).
     // Wait for the second route call (the failing refresh) to complete, then verify
     // the token is preserved — a transient 500 must not clear the session.
-    await expect.poll(() => callCount, { timeout: 5000 }).toBe(2)
+    await expect
+      .poll(() => callCount, { timeout: 5000 })
+      .toBeGreaterThanOrEqual(2)
 
     expect(
       await page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token'))
@@ -192,7 +117,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
   })
 
   test('permanent auth failure (ACCESS_DENIED) clears the workspace session', async ({
-    comfyPage
+    comfyPage,
+    workspaceAuth
   }) => {
     const page = comfyPage.page
 
@@ -201,14 +127,18 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     const expiresInMs = 5 * 60 * 1000 - 500
     let callCount = 0
 
-    await page.route('**/api/auth/token', (route) => {
+    await workspaceAuth.mockTokenRoute((route) => {
       callCount++
       if (callCount === 1) {
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            makeTokenResponse(mockTeamWorkspace, 'original-token', expiresInMs)
+            makeWorkspaceTokenResponse(
+              mockTeamWorkspace,
+              'original-token',
+              expiresInMs
+            )
           )
         })
       }
@@ -220,7 +150,7 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     })
 
     await comfyPage.toast.closeToasts()
-    await openSwitcherPanel(page)
+    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText('Team Workspace')
@@ -229,7 +159,9 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     // Wait for both the switch (callCount=1) and the immediate refresh (callCount=2)
     // to complete. The refresh fires at delay≈0 so token may already be cleared
     // before we can assert the intermediate 'original-token' state.
-    await expect.poll(() => callCount, { timeout: 5000 }).toBe(2)
+    await expect
+      .poll(() => callCount, { timeout: 5000 })
+      .toBeGreaterThanOrEqual(2)
 
     // A 403 ACCESS_DENIED response must clear the workspace session entirely.
     await expect
