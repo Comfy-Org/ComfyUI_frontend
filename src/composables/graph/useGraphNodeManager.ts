@@ -30,6 +30,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 import { getWidgetIdForNode } from '@/utils/litegraphUtil'
+import type { NodeId as WorkflowNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 
 import type {
@@ -94,7 +96,7 @@ export interface SafeWidgetData {
    * host subgraph node. Used for missing-model lookups that key by
    * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
    */
-  sourceExecutionId?: string
+  sourceExecutionId?: NodeExecutionId
   /**
    * Interior source widget name. Only set for promoted widgets, where `name`
    * is the host input slot name; missing-model lookups key by the interior
@@ -137,7 +139,7 @@ export interface GraphNodeManager {
   vueNodeData: ReadonlyMap<string, VueNodeData>
 
   // Access to original LiteGraph nodes (non-reactive)
-  getNode(id: string): LGraphNode | undefined
+  getNode(id: WorkflowNodeId): LGraphNode | undefined
 
   // Lifecycle methods
   cleanup(): void
@@ -225,7 +227,7 @@ function isDOMBackedWidget(widget: IBaseWidget): boolean {
 interface PromotedWidgetMetadata {
   controlWidget?: SafeControlWidget
   isDOMWidget: boolean
-  sourceExecutionId?: string
+  sourceExecutionId?: NodeExecutionId
   sourceWidgetName?: string
 }
 
@@ -516,8 +518,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   // Get access to original LiteGraph node (non-reactive)
-  const getNode = (id: string): LGraphNode | undefined => {
-    return nodeRefs.get(id)
+  const getNode = (id: WorkflowNodeId): LGraphNode | undefined => {
+    return nodeRefs.get(String(id))
   }
 
   const syncWithGraph = () => {

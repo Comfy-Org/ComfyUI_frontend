@@ -65,17 +65,18 @@ function useNodeDragIndividual() {
     lastPointerY = event.clientY
 
     const selectedNodes = toValue(selectedNodeIds)
+    const nodeIdKey = String(nodeId)
 
     // capture the starting positions of all other selected nodes
     // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
+    const isDraggedNodeInSelection = selectedNodes?.has(nodeIdKey)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
 
       for (const id of selectedNodes) {
         // Skip the current node being dragged
-        if (id === nodeId) continue
+        if (id === nodeIdKey) continue
 
         const nodeLayout = layoutStore.getNodeLayoutRef(id).value
         if (nodeLayout) {

@@ -1,4 +1,4 @@
-type NodeId = number | string
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 type UUID = string
 
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
