@@ -31,19 +31,17 @@ export function usePricingTableUrlLoader() {
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
   async function loadPricingTableFromUrl() {
     hydratePreservedQuery(NAMESPACE)
-    const mergedQuery = mergePreservedQueryIntoQuery(NAMESPACE, route.query)
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
-
-    const query = mergedQuery ?? route.query
+    const query =
+      mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
     const param = query.pricing
     if (!param || typeof param !== 'string') return
 
-    // Strip the param even for ineligible users, so they land on a clean URL.
-    const newQuery = { ...route.query }
-    delete newQuery.pricing
-    router.replace({ query: newQuery }).catch((error) => {
+    // Strip the param (even for ineligible users) and write the clean URL in a
+    // single replace before any await, so a clean URL is guaranteed even if the
+    // replace rejects or the gate later denies the user.
+    const cleanQuery = { ...query }
+    delete cleanQuery.pricing
+    router.replace({ query: cleanQuery }).catch((error) => {
       console.warn(
         '[usePricingTableUrlLoader] Failed to clean URL params:',
         error
