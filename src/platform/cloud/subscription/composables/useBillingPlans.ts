@@ -1,10 +1,14 @@
 import { computed, ref } from 'vue'
 
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  Plan,
+  TeamCreditStops
+} from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)
+const teamCreditStops = ref<TeamCreditStops | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
@@ -19,6 +23,7 @@ export function useBillingPlans() {
       const response = await workspaceApi.getBillingPlans()
       plans.value = response.plans
       currentPlanSlug.value = response.current_plan_slug ?? null
+      teamCreditStops.value = response.team_credit_stops ?? null
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch plans'
       console.error('[useBillingPlans] Failed to fetch plans:', err)
@@ -48,6 +53,7 @@ export function useBillingPlans() {
   return {
     plans,
     currentPlanSlug,
+    teamCreditStops,
     isLoading,
     error,
     monthlyPlans,
