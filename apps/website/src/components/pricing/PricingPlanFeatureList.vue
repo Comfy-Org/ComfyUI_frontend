@@ -5,9 +5,9 @@ import { Check, Clock, X } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
 
-export type PlanFeatureType = 'checked' | 'coming'
+type PlanFeatureType = 'checked' | 'coming'
 
-export interface PlanFeature {
+interface PlanFeature {
   text: TranslationKey
   type?: PlanFeatureType
   included?: boolean
