@@ -37,21 +37,20 @@
         :value="formatNumberWithSuffix(nodeFrequency, { roundToInt: true })"
         severity="secondary"
       />
-      <Chip
+      <ChipTag
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
+        :label="nodeDef.nodeSource.displayText"
         class="text-sm font-light"
-      >
-        {{ nodeDef.nodeSource.displayText }}
-      </Chip>
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Chip from 'primevue/chip'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
+import ChipTag from '@/components/chip/Tag.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
