@@ -364,7 +364,7 @@ class NodeWithDynamicCombo(IO.ComfyNode):
         )
 
     @classmethod
-    async def execute(cls, price):
+    async def execute(cls):
         return IO.NodeOutput()
 
 
