@@ -43,8 +43,6 @@ function getBasePath(): string {
 const basePath = getBasePath()
 
 function trackPageView(): void {
-  if (!isCloud || typeof window === 'undefined') return
-
   useTelemetry()?.trackPageView(document.title, {
     path: window.location.href
   })

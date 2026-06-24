@@ -1,7 +1,7 @@
 import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { isCloud } from '@/platform/distribution/types'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -11,9 +11,10 @@ import { useCommandStore } from '@/stores/commandStore'
  */
 export function useSubscriptionActions() {
   const dialogService = useDialogService()
+  const authActions = useAuthActions()
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
-  const { fetchBalance, fetchStatus } = useBillingContext()
+  const { fetchStatus } = useBillingContext()
 
   const isLoadingSupport = ref(false)
 
@@ -28,13 +29,11 @@ export function useSubscriptionActions() {
   const handleMessageSupport = async () => {
     try {
       isLoadingSupport.value = true
-      if (isCloud) {
-        telemetry?.trackHelpResourceClicked({
-          resource_type: 'help_feedback',
-          is_external: true,
-          source: 'subscription'
-        })
-      }
+      telemetry?.trackHelpResourceClicked({
+        resource_type: 'help_feedback',
+        is_external: true,
+        source: 'subscription'
+      })
       await commandStore.execute('Comfy.ContactSupport')
     } catch (error) {
       console.error('[useSubscriptionActions] Error contacting support:', error)
@@ -45,7 +44,7 @@ export function useSubscriptionActions() {
 
   const handleRefresh = async () => {
     try {
-      await Promise.all([fetchBalance(), fetchStatus()])
+      await Promise.all([authActions.fetchBalance(), fetchStatus()])
     } catch (error) {
       console.error('[useSubscriptionActions] Error refreshing data:', error)
     }

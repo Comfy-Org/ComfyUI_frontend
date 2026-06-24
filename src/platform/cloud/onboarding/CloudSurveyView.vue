@@ -18,7 +18,6 @@ import {
   getSurveyCompletedStatus,
   submitSurvey
 } from '@/platform/cloud/onboarding/auth'
-import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -46,9 +45,7 @@ onMounted(async () => {
       await router.replace({ name: 'cloud-user-check' })
       return
     }
-    if (isCloud) {
-      useTelemetry()?.trackSurvey('opened')
-    }
+    useTelemetry()?.trackSurvey('opened')
   } catch (error) {
     console.error('Failed to check survey status:', error)
   }
@@ -62,9 +59,7 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
   isSubmitting.value = true
   try {
     await submitSurvey(payload)
-    if (isCloud) {
-      useTelemetry()?.trackSurvey('submitted', payload)
-    }
+    useTelemetry()?.trackSurvey('submitted', payload)
     await router.push({ name: 'cloud-user-check' })
   } finally {
     isSubmitting.value = false

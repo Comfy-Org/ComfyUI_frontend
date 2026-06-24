@@ -361,15 +361,13 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      useTelemetry()?.trackAuth({
-        method: 'email',
-        is_new_user: false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    useTelemetry()?.trackAuth({
+      method: 'email',
+      is_new_user: false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -384,15 +382,13 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      useTelemetry()?.trackAuth({
-        method: 'email',
-        is_new_user: true,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    useTelemetry()?.trackAuth({
+      method: 'email',
+      is_new_user: true,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -405,17 +401,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      const additionalUserInfo = getAdditionalUserInfo(result)
-      useTelemetry()?.trackAuth({
-        method: 'google',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    const additionalUserInfo = getAdditionalUserInfo(result)
+    useTelemetry()?.trackAuth({
+      method: 'google',
+      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -428,17 +421,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      const additionalUserInfo = getAdditionalUserInfo(result)
-      useTelemetry()?.trackAuth({
-        method: 'github',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    const additionalUserInfo = getAdditionalUserInfo(result)
+    useTelemetry()?.trackAuth({
+      method: 'github',
+      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }

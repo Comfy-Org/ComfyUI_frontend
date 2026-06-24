@@ -33,6 +33,19 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
+// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
+const { mockIsCloud, mockTrackHelpResourceClicked } = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockTrackHelpResourceClicked: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () =>
+    mockIsCloud.value
+      ? { trackHelpResourceClicked: mockTrackHelpResourceClicked }
+      : null
+}))
+
 // Mock window.open
 const mockOpen = vi.fn()
 Object.defineProperty(window, 'open', {
@@ -43,6 +56,7 @@ Object.defineProperty(window, 'open', {
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockIsCloud.value = true
   })
 
   describe('handleAddApiCredits', () => {
@@ -66,6 +80,27 @@ describe('useSubscriptionActions', () => {
       await promise
       expect(mockExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
       expect(isLoadingSupport.value).toBe(false)
+    })
+
+    it('tracks help-resource telemetry when messaging support in cloud', async () => {
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith({
+        resource_type: 'help_feedback',
+        is_external: true,
+        source: 'subscription'
+      })
+    })
+
+    it('does not fire telemetry when messaging support in OSS builds', async () => {
+      mockIsCloud.value = false
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
     it('should handle errors gracefully', async () => {
