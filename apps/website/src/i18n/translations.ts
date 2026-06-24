@@ -1825,6 +1825,268 @@ const translations = {
       '我们尽力为经历面试流程的候选人提供有意义的反馈。由于申请量较大，在简历筛选阶段可能无法提供详细反馈。'
   },
 
+  // MCP – HeroSection
+  'mcp.hero.heading': {
+    en: 'Drive ComfyUI from\nany AI agent.',
+    'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
+  },
+  'mcp.hero.subtitle': {
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can attend the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'mcp.hero.viewDocs': {
+    en: 'VIEW DOCS',
+    'zh-CN': '查看文档'
+  },
+  'mcp.hero.runWorkflow': {
+    en: 'RUN A WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+
+  // MCP – SetupStepsSection
+  'mcp.setup.label': {
+    en: 'GET STARTED',
+    'zh-CN': '快速开始'
+  },
+  'mcp.setup.heading': {
+    en: 'Set up Comfy MCP in three steps',
+    'zh-CN': '三步完成 Comfy MCP 配置'
+  },
+  'mcp.setup.subtitle': {
+    en: 'Add Comfy Cloud as a built-in connector in Claude, and the full ComfyUI toolset is available right in your chat.',
+    'zh-CN':
+      '将 Comfy Cloud 添加为 Claude 的内置连接器，ComfyUI 全套工具即可直接在对话中使用。'
+  },
+  'mcp.setup.step1.label': { en: 'STEP 1', 'zh-CN': '第 1 步' },
+  'mcp.setup.step1.title': {
+    en: 'Open Claude settings',
+    'zh-CN': '打开 Claude 设置'
+  },
+  'mcp.setup.step1.description': {
+    en: 'Launch the app or open claude.ai and go to Settings > Connections',
+    'zh-CN': '启动应用或打开 claude.ai，前往"设置 > 连接"'
+  },
+  'mcp.setup.step1.cta': {
+    en: 'SETTINGS > CONNECTIONS',
+    'zh-CN': '设置 > 连接'
+  },
+  'mcp.setup.step2.label': { en: 'STEP 2', 'zh-CN': '第 2 步' },
+  'mcp.setup.step2.title': {
+    en: 'Add the Comfy Cloud custom connector',
+    'zh-CN': '添加 Comfy Cloud 自定义连接器'
+  },
+  'mcp.setup.step2.description': {
+    en: 'Name it Comfy Cloud and paste the URL',
+    'zh-CN': '将其命名为 Comfy Cloud 并粘贴 URL'
+  },
+  'mcp.setup.step2.urlPlaceholder': {
+    en: 'https://cloud.comfy.org/mcp',
+    'zh-CN': 'https://cloud.comfy.org/mcp'
+  },
+  'mcp.setup.step3.label': { en: 'STEP 3', 'zh-CN': '第 3 步' },
+  'mcp.setup.step3.title': {
+    en: 'Connect and sign in',
+    'zh-CN': '连接并登录'
+  },
+  'mcp.setup.step3.description': {
+    en: "Click Add > Connect, sign in with your Comfy account. You're all set. Now just ask Claude to generate an image.",
+    'zh-CN':
+      '点击"添加 > 连接"，使用 Comfy 账户登录。配置完成。现在直接让 Claude 生成图像即可。'
+  },
+
+  // MCP – WhyBuildSection
+  'mcp.why.heading': {
+    en: 'Why build on\n',
+    'zh-CN': '为什么选择\n'
+  },
+  'mcp.why.headingHighlight': {
+    en: 'Comfy MCP?',
+    'zh-CN': 'Comfy MCP？'
+  },
+  'mcp.why.subtitle': {
+    en: 'A trusted infrastructure that lets engineers and professionals ship faster.',
+    'zh-CN': '一套值得信赖的基础设施，让工程师和专业人士交付更快。'
+  },
+  'mcp.why.1.title': {
+    en: 'Open protocol,\nany client.',
+    'zh-CN': '开放协议，\n任意客户端。'
+  },
+  'mcp.why.1.description': {
+    en: 'MCP is an open standard. Comfy works with Claude Code, Claude Desktop, and Cline — and any other MCP-compatible client available.',
+    'zh-CN':
+      'MCP 是开放标准。Comfy 可与 Claude Code、Claude Desktop 和 Cline 配合使用——以及任何其他兼容 MCP 的客户端。'
+  },
+  'mcp.why.2.title': {
+    en: 'The full engine,\nnot a sandbox.',
+    'zh-CN': '完整引擎，\n非沙箱环境。'
+  },
+  'mcp.why.2.description': {
+    en: 'Same tool your team uses. Fully connected multi-step, multi-GPU workflows. Everything available now and in the future.',
+    'zh-CN':
+      '与你团队使用的相同工具。完整连接的多步骤、多 GPU 工作流。当前及未来的所有功能均可使用。'
+  },
+  'mcp.why.3.title': {
+    en: 'Outputs you keep.',
+    'zh-CN': '输出归你所有。'
+  },
+  'mcp.why.3.description': {
+    en: 'Downloads go to your Comfy library — store, reuse, remix, and share without leaving the ecosystem.',
+    'zh-CN':
+      '下载内容保存到你的 Comfy 库——在生态系统内存储、复用、二次创作和分享。'
+  },
+  'mcp.why.4.title': {
+    en: 'Powered by\nComfy Cloud.',
+    'zh-CN': '由 Comfy Cloud\n提供支持。'
+  },
+  'mcp.why.4.description': {
+    en: 'Run without a local GPU through the same infrastructure your team already trusts.',
+    'zh-CN': '无需本地 GPU，通过你团队信赖的相同基础设施运行。'
+  },
+
+  // MCP – ToolsSection
+  'mcp.tools.heading': {
+    en: 'Everything ComfyUI can do,\nnow available as tools.',
+    'zh-CN': 'ComfyUI 能做的一切，\n现在都可作为工具调用。'
+  },
+  'mcp.tools.1.title': {
+    en: 'Generate anything',
+    'zh-CN': '生成任意内容'
+  },
+  'mcp.tools.1.description': {
+    en: 'Generate images, video, audio, 3D, upscale, or remove backgrounds. Add or remove elements in images, create or modify any visual, audio, or 3D asset at any scale.',
+    'zh-CN':
+      '生成图像、视频、音频、3D 内容，放大分辨率或移除背景。添加或删除图像元素，以任意规模创建或修改任何视觉、音频或 3D 资产。'
+  },
+  'mcp.tools.2.title': {
+    en: 'Search the ecosystem',
+    'zh-CN': '搜索生态系统'
+  },
+  'mcp.tools.2.description': {
+    en: 'Query thousands of models, browse rankings, and choose workflow templates straight from your response.',
+    'zh-CN': '查询数千个模型，浏览排名，直接在对话中选择工作流模板。'
+  },
+  'mcp.tools.3.title': {
+    en: 'Run real workflows',
+    'zh-CN': '运行真实工作流'
+  },
+  'mcp.tools.3.description': {
+    en: 'Turn any ComfyUI workflow into a callable tool. The full power of the engine, driven by your agent.',
+    'zh-CN':
+      '将任何 ComfyUI 工作流转换为可调用的工具。由你的智能体驱动完整的引擎能力。'
+  },
+
+  // MCP – HowItWorksSection
+  'mcp.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '工作原理'
+  },
+  'mcp.howItWorks.step1.number': { en: '01', 'zh-CN': '01' },
+  'mcp.howItWorks.step1.title': {
+    en: 'CONNECT',
+    'zh-CN': '连接'
+  },
+  'mcp.howItWorks.step1.description': {
+    en: 'Add the Comfy Cloud MCP server to Claude Code or Claude Desktop and sign in once with OAuth. No API keys to manage.',
+    'zh-CN':
+      '将 Comfy Cloud MCP 服务器添加到 Claude Code 或 Claude Desktop，通过 OAuth 一次性登录。无需管理 API 密钥。'
+  },
+  'mcp.howItWorks.step2.number': { en: '02', 'zh-CN': '02' },
+  'mcp.howItWorks.step2.title': {
+    en: 'DISCOVER',
+    'zh-CN': '发现'
+  },
+  'mcp.howItWorks.step2.description': {
+    en: "Your agent gets Comfy's tools: search, generate, submit, and retrieve — everything it needs to create.",
+    'zh-CN':
+      '你的智能体获得 Comfy 的工具：搜索、生成、提交和获取——一切所需，应有尽有。'
+  },
+  'mcp.howItWorks.step3.number': { en: '03', 'zh-CN': '03' },
+  'mcp.howItWorks.step3.title': {
+    en: 'CREATE',
+    'zh-CN': '创作'
+  },
+  'mcp.howItWorks.step3.description': {
+    en: 'Request what you want, the agent queues and runs the workflow, and returns the finished result.',
+    'zh-CN': '描述你的需求，智能体排队执行工作流，并返回最终结果。'
+  },
+
+  // MCP – FAQSection
+  'mcp.faq.heading': {
+    en: 'Q&As',
+    'zh-CN': '常见问答'
+  },
+  'mcp.faq.1.q': {
+    en: 'Which clients are supported?',
+    'zh-CN': '支持哪些客户端？'
+  },
+  'mcp.faq.1.a': {
+    en: 'Claude Code and Claude Desktop today, both supporting sign-in with your Comfy account. Support for more MCP-compatible clients is coming.',
+    'zh-CN':
+      '目前支持 Claude Code 和 Claude Desktop，均支持使用 Comfy 账户登录。更多 MCP 兼容客户端的支持即将推出。'
+  },
+  'mcp.faq.2.q': {
+    en: 'Do I need an API key?',
+    'zh-CN': '我需要 API 密钥吗？'
+  },
+  'mcp.faq.2.a': {
+    en: 'No. You authenticate with your Comfy account via OAuth. No API keys to copy or manage.',
+    'zh-CN':
+      '不需要。你通过 OAuth 使用 Comfy 账户进行身份验证。无需复制或管理 API 密钥。'
+  },
+  'mcp.faq.3.q': {
+    en: 'Do the slash commands work in Claude Desktop?',
+    'zh-CN': '斜杠命令在 Claude Desktop 中可以使用吗？'
+  },
+  'mcp.faq.3.a': {
+    en: "Yes. Once connected, Comfy's tools are available as slash commands directly in Claude Desktop.",
+    'zh-CN':
+      '可以。连接后，Comfy 的工具可在 Claude Desktop 中作为斜杠命令直接使用。'
+  },
+  'mcp.faq.4.q': {
+    en: "The sign-in didn't open a browser.",
+    'zh-CN': '登录时没有打开浏览器。'
+  },
+  'mcp.faq.4.a': {
+    en: 'Copy the authorization URL from the terminal output and paste it into your browser manually to complete the OAuth flow.',
+    'zh-CN': '从终端输出中复制授权 URL，手动粘贴到浏览器中以完成 OAuth 流程。'
+  },
+  'mcp.faq.5.q': {
+    en: 'How do I connect in Claude Code?',
+    'zh-CN': '如何在 Claude Code 中连接？'
+  },
+  'mcp.faq.5.a': {
+    en: 'Run `claude mcp add https://cloud.comfy.org/mcp` in your terminal. Claude Code will prompt you to authorize with your Comfy account.',
+    'zh-CN':
+      '在终端中运行 `claude mcp add https://cloud.comfy.org/mcp`。Claude Code 将提示你使用 Comfy 账户进行授权。'
+  },
+  'mcp.faq.6.q': {
+    en: "What's the server URL for Claude Desktop?",
+    'zh-CN': 'Claude Desktop 的服务器 URL 是什么？'
+  },
+  'mcp.faq.6.a': {
+    en: 'The MCP server URL is https://cloud.comfy.org/mcp. Add it as a custom connector in Claude Desktop under Settings > Connections.',
+    'zh-CN':
+      'MCP 服务器 URL 为 https://cloud.comfy.org/mcp。在 Claude Desktop 的"设置 > 连接"中将其添加为自定义连接器。'
+  },
+  'mcp.faq.7.q': {
+    en: 'What can my agent do once connected?',
+    'zh-CN': '连接后我的智能体能做什么？'
+  },
+  'mcp.faq.7.a': {
+    en: 'Generate images, video, audio, and 3D assets. Search models and workflow templates. Run any ComfyUI workflow as a callable tool and retrieve the output.',
+    'zh-CN':
+      '生成图像、视频、音频和 3D 资产。搜索模型和工作流模板。将任何 ComfyUI 工作流作为可调用工具运行并获取输出。'
+  },
+  'mcp.faq.8.q': {
+    en: 'Is it generally available?',
+    'zh-CN': '现已正式发布了吗？'
+  },
+  'mcp.faq.8.a': {
+    en: 'Yes. Comfy MCP is available to all Comfy Cloud users today.',
+    'zh-CN': '是的。Comfy MCP 现已向所有 Comfy Cloud 用户开放。'
+  },
+
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
   'nav.pricing': { en: 'Pricing', 'zh-CN': '价格' },
@@ -1866,6 +2128,7 @@ const translations = {
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
   // Column headers used in HeaderMainDesktop dropdowns
+  'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },

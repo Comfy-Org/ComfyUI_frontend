@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ProductCardsSection from '../components/product/mcp/ProductCardsSection.vue'
+import HeroSection from '../components/product/mcp/HeroSection.vue'
+import SetupStepsSection from '../components/product/mcp/SetupStepsSection.vue'
+import WhyBuildSection from '../components/product/mcp/WhyBuildSection.vue'
+import ToolsSection from '../components/product/mcp/ToolsSection.vue'
+import HowItWorksSection from '../components/product/mcp/HowItWorksSection.vue'
+import FAQSection from '../components/product/mcp/FAQSection.vue'
+---
+
+<BaseLayout
+  title="Comfy MCP — Drive ComfyUI from any AI agent"
+  description="Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client."
+  keywords={[
+    'comfy mcp',
+    'comfyui mcp server',
+    'model context protocol comfyui',
+    'ai agent comfyui',
+    'claude comfyui',
+    'comfy claude integration',
+    'mcp image generation',
+  ]}
+>
+  <HeroSection client:load />
+  <SetupStepsSection />
+  <WhyBuildSection />
+  <ToolsSection />
+  <HowItWorksSection />
+  <ProductCardsSection />
+  <FAQSection />
+</BaseLayout>

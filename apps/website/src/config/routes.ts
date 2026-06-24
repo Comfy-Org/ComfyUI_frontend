@@ -18,7 +18,8 @@ const baseRoutes = {
   affiliates: '/affiliates',
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
-  models: '/p/supported-models'
+  models: '/p/supported-models',
+  mcp: '/mcp'
 } as const
 
 type Routes = typeof baseRoutes
@@ -59,6 +60,8 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/api-reference/cloud',
+  docsMcp: 'https://docs.comfy.org/mcp',
+  mcpServer: 'https://cloud.comfy.org/mcp',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
