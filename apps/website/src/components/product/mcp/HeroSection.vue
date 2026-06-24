@@ -5,6 +5,7 @@ import { externalLinks, getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
+import ComfyMcpDemo from './ComfyMcpDemo.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -16,9 +17,7 @@ const routes = getRoutes(locale)
     class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row lg:items-center lg:overflow-x-visible lg:pb-[min(8vw,10rem)]"
   >
     <!-- Text -->
-    <div
-      class="relative z-10 w-full px-4 py-12 lg:min-w-140 lg:flex-1 lg:p-20"
-    >
+    <div class="relative z-10 w-full px-4 py-12 lg:min-w-140 lg:flex-1 lg:p-20">
       <ProductHeroBadge text="MCP" />
 
       <h1
@@ -54,13 +53,9 @@ const routes = getRoutes(locale)
 
     <!-- Illustration -->
     <div
-      class="w-full self-center lg:pointer-events-none lg:z-1 lg:flex-1 lg:self-center"
+      class="w-full self-center px-4 py-8 lg:pointer-events-none lg:z-1 lg:flex-1 lg:self-center lg:px-10 lg:py-0"
     >
-      <img
-        src="https://media.comfy.org/website/mcp/hero-ui-mockup.webp"
-        alt="Comfy MCP interface showing AI-generated image tasks"
-        class="w-full rounded-3xl object-cover lg:rounded-l-none lg:rounded-r-none"
-      />
+      <ComfyMcpDemo />
     </div>
   </section>
 </template>
