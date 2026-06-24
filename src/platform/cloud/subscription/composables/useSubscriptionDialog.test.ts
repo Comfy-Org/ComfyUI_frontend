@@ -9,6 +9,8 @@ const mockIsInPersonalWorkspace = vi.hoisted(() => ({ value: true }))
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
+const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
 
 vi.mock('vue', async (importOriginal) => {
   const actual = await importOriginal()
@@ -61,6 +63,22 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    isLegacyTeamPlan: mockIsLegacyTeamPlan
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: {
+      get value() {
+        return { canManageSubscription: mockCanManageSubscription.value }
+      }
+    }
+  })
+}))
+
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -68,6 +86,8 @@ describe('useSubscriptionDialog', () => {
     mockIsInPersonalWorkspace.value = true
     mockIsFreeTier.value = false
     mockTeamWorkspacesEnabled.value = false
+    mockIsLegacyTeamPlan.value = false
+    mockCanManageSubscription.value = true
 
     try {
       sessionStorage.clear()
@@ -139,6 +159,36 @@ describe('useSubscriptionDialog', () => {
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props).toHaveProperty('onChooseTeam')
+    })
+
+    it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockIsLegacyTeamPlan.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      // The legacy team dialog takes onClose + reason and none of the unified
+      // props. `reason` separates it from the read-only member dialog (onClose
+      // only); the absent initialPlanMode separates it from the unified table.
+      expect(props).toHaveProperty('reason')
+      expect(props).not.toHaveProperty('initialPlanMode')
+      expect(props).not.toHaveProperty('onChooseTeam')
+    })
+
+    it('keeps a non-legacy (credit-slider) team subscriber on the unified table', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockIsLegacyTeamPlan.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialPlanMode).toBe('team')
     })
   })
 

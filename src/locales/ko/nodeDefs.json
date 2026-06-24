@@ -2471,6 +2471,10 @@
         "name": "fuse_method",
         "tooltip": "컨텍스트 윈도우를 융합하는 데 사용할 방법입니다."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "각 윈도우마다 노이즈 latent 자체에서 유지할 latent 인덱스 목록입니다. 참조 콘텐츠(예: 시작 이미지)가 별도의 컨디셔닝 채널이 아닌 노이즈 latent에 직접 존재하는 워크플로우(예: inplace 스타일 I2V, LTXV, AnimateDiff 등)에 사용합니다. cond_retain_index_list와는 독립적입니다."
+      },
       "model": {
         "name": "model",
         "tooltip": "샘플링 중 컨텍스트 윈도우를 적용할 모델입니다."
@@ -8324,6 +8328,57 @@
       }
     }
   },
+  "LTXVContextWindows": {
+    "description": "LTXV 계열 모델을 위한 컨텍스트 윈도우를 설정합니다.",
+    "display_name": "LTXV 컨텍스트 윈도우",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "컨텍스트 윈도우 루프를 닫을지 여부입니다. 루프 스케줄에만 적용됩니다."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "실제 프레임 단위의 컨텍스트 윈도우 길이입니다. 8*n + 1이어야 합니다."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "실제 프레임 단위의 컨텍스트 윈도우 오버랩입니다."
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "컨텍스트 윈도우를 위한 스텝 기반 스케줄링 알고리즘입니다."
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "컨텍스트 윈도우의 스트라이드입니다. 균일 스케줄에만 적용됩니다."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoise 노이즈 셔플을 적용할지 여부입니다. 윈도우 블렌딩을 개선합니다."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "컨텍스트 윈도우를 합치는 데 사용할 방법입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "샘플링 중 컨텍스트 윈도우를 적용할 모델입니다."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "모든 컨텍스트 윈도우에서 첫 번째 latent 프레임을 유지합니다 (초기 참조 유지에 도움이 될 수 있음)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "ConditionCombine으로 생성된 여러 컨디셔닝을 영역 인덱스에 따라 각 윈도우로 분할할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "샘플링 중 컨텍스트 윈도우가 적용된 모델입니다."
+      }
+    }
+  },
   "LTXVCropGuides": {
     "display_name": "LTXV 가이드 자르기",
     "inputs": {
@@ -9084,6 +9139,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "3D 불러오기 (고급)",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "오디오 로드",
     "inputs": {
@@ -9743,6 +9837,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "이전 Ray 3.2 생성 결과를 앞으로(이후 계속) 또는 뒤로(이전 앞부분 추가) 확장합니다. 이전 Luma Ray 3.2 노드의 generation_id 출력을 연결하세요. 확장 길이는 항상 5초입니다.",
+    "display_name": "Luma Ray 3.2 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Forward는 이전 clip 이후로 계속 진행하며, backward는 그 앞에 추가됩니다."
+      },
+      "direction_loop": {
+        "name": "loop"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "새로운 콘텐츠를 위한 텍스트 프롬프트입니다."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "확장할 이전 Ray 3.2 비디오의 generation_id입니다. 다른 Luma Ray 3.2 노드의 generation_id 출력을 연결하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "Luma의 Ray 3.2 모델을 사용하여 시작 및/또는 종료 프레임에서 비디오를 생성합니다. 이미지 기반 생성은 항상 5초입니다.",
+    "display_name": "Luma Ray 3.2 이미지 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "생성된 비디오의 마지막 프레임입니다."
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "비디오가 자연스럽게 반복되도록 만듭니다. end_frame이 설정된 경우에는 사용할 수 없습니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 텍스트 프롬프트입니다."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "생성된 비디오의 첫 프레임입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "Ray 3.2 출력 비디오 타임라인의 위치에 가이드 이미지를 고정합니다. 이 노드를 Luma Ray 3.2 Keyframes to Video 노드의 'keyframes' 입력에 연결하세요. 아래의 선택적 'keyframes' 입력을 통해 여러 개를 연쇄할 수 있습니다.",
+    "display_name": "Luma Ray 3.2 키프레임",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "출력 비디오의 원하는 시점에 배치할 가이드 이미지입니다."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "이전 키프레임을 이 키프레임과 연쇄할 때 선택적으로 사용합니다."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "이 이미지를 출력 비디오 타임라인에 어떻게 배치할지 설정합니다."
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "Luma Ray 3.2를 사용하여 타임라인의 위치에 고정된 가이드 이미지 시퀀스를 보간하여 비디오를 생성합니다. Luma Ray 3.2 Keyframe 노드(최소 2개)로 시퀀스를 구성하세요.",
+    "display_name": "Luma Ray 3.2 키프레임에서 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "keyframes": {
+        "name": "키프레임",
+        "tooltip": "Luma Ray 3.2 Keyframe 노드(최소 2개)에서 가져온 키프레임 시퀀스입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 텍스트 프롬프트입니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "Luma의 Ray 3.2 모델을 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Luma Ray 3.2 텍스트에서 비디오로",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "화면비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "loop": {
+        "name": "루프",
+        "tooltip": "비디오가 자연스럽게 반복되도록 만듭니다. 5초 길이에서만 사용 가능합니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 텍스트 프롬프트입니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "Luma Ray 3.2를 사용하여 기존 비디오를 새로운 프롬프트로 다시 렌더링합니다(스타일 변경, 조명 변경, 요소 추가/제거 등). 원본 모션은 유지됩니다. 소스 비디오는 최대 18초까지 지원하며, 편집된 비디오는 원본과 동일한 길이를 가집니다.",
+    "display_name": "Luma Ray 3.2 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 편집 내용을 설명합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "원본을 얼마나 강하게 유지할지 또는 새롭게 재구성할지 설정합니다. 'auto'는 Ray 3.2가 자동으로 선택합니다. adhere_*는 가장 많이 보존, flex_*는 균형, reimagine_*는 가장 많이 변경합니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "편집할 소스 비디오입니다. 최대 18초."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "기존 비디오의 종횡비를 변경하고, Luma Ray 3.2를 사용하여 새로 노출된 캔버스 영역을 채웁니다. 소스 비디오는 최대 30초까지 지원됩니다. 출력 초당 과금됩니다.",
+    "display_name": "Luma Ray 3.2 비디오 리프레임",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "새로 노출된 캔버스 영역을 어떻게 채울지 설명합니다."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "리프레임할 소스 비디오입니다. 최대 30초."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
         "tooltip": null
       }
     }
@@ -14075,6 +14425,12 @@
       "audioUI": {
         "name": "오디오UI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14129,6 +14485,11 @@
     "inputs": {
       "images": {
         "name": "이미지"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
       }
     }
   },
@@ -16925,6 +17286,12 @@
       "images": {
         "name": "이미지"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16948,6 +17315,12 @@
       "quality": {
         "name": "품질"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16961,6 +17334,12 @@
       },
       "filename_prefix": {
         "name": "파일명 접두사"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16983,6 +17362,12 @@
         "name": "format",
         "tooltip": "오디오를 저장할 파일 형식입니다."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -17000,6 +17385,12 @@
       "quality": {
         "name": "품질"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -17016,6 +17407,12 @@
       },
       "quality": {
         "name": "품질"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -17046,6 +17443,11 @@
         "name": "이미지",
         "tooltip": "저장할 이미지입니다."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -17069,6 +17471,12 @@
       "images": {
         "name": "images",
         "tooltip": "저장할 이미지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17137,6 +17545,11 @@
       "samples": {
         "name": "잠재 데이터"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
+      }
     }
   },
   "SaveLoRA": {
@@ -17166,6 +17579,12 @@
       },
       "svg": {
         "name": "SVG"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -17211,6 +17630,12 @@
         "name": "비디오",
         "tooltip": "저장할 비디오입니다."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17232,6 +17657,12 @@
       "images": {
         "name": "이미지",
         "tooltip": "RGBA 이미지는 알파 채널이 투명도로 저장됩니다(vp9 코덱만 지원)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -21935,6 +22366,14 @@
       "model": {
         "name": "모델",
         "tooltip": "샘플링 중 컨텍스트 창을 적용할 모델입니다."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "모든 컨텍스트 윈도우에서 첫 번째 I2V 프레임을 유지합니다(초기 참조를 유지하는 데 도움이 될 수 있습니다)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "여러 조건(ConditionCombine에서 생성됨)을 영역 인덱스에 따라 각 윈도우로 분할할지 여부입니다."
       }
     },
     "outputs": {

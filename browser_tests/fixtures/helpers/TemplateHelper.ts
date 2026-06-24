@@ -69,6 +69,24 @@ export class TemplateHelper {
   }
 
   async mockIndex(): Promise<void> {
+    const customTemplatesHandler = async (route: Route) => {
+      const customTemplates: Record<string, string[]> = {}
+      await route.fulfill({
+        status: 200,
+        body: JSON.stringify(customTemplates),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    }
+    const customTemplatesPattern = '**/api/workflow_templates'
+    this.routeHandlers.push({
+      pattern: customTemplatesPattern,
+      handler: customTemplatesHandler
+    })
+    await this.page.route(customTemplatesPattern, customTemplatesHandler)
+
     const indexHandler = async (route: Route) => {
       const payload = this.index ?? mockTemplateIndex(this.templates)
       await route.fulfill({

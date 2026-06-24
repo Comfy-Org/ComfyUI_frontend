@@ -309,6 +309,7 @@ export interface SearchQueryMetadata {
  */
 export type NodeAddSource =
   | 'sidebar_drag'
+  | 'asset_browser'
   | 'search_modal'
   | 'paste'
   | 'programmatic'
@@ -589,6 +590,7 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
+  BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',

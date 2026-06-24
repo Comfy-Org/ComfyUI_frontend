@@ -63,10 +63,9 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
-import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
@@ -156,15 +155,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         if (this.leaf && model) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            const graphNode = withNodeAddSource('sidebar_drag', () =>
-              useLitegraphService().addNodeOnGraph(provider.nodeDef)
-            )
-            const widget = graphNode?.widgets?.find(
-              (widget) => widget.name === provider.key
-            )
-            if (widget) {
-              widget.value = model.file_name
-            }
+            startModelLoaderDrag(provider, model.file_name)
           }
         } else {
           toggleNodeOnEvent(e, node)

@@ -29,6 +29,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
+import { TelemetryEvents } from '../../types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -152,7 +153,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
-    this.pushEvent('begin_checkout', metadata)
+    this.pushEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackSubscription(

@@ -18,6 +18,7 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
 const cloudOnboardingRoutes = isCloud
   ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
@@ -173,6 +174,7 @@ if (isCloud) {
     // Pass authenticated users
     const authHeader = await authStore.getAuthHeader()
     const isLoggedIn = !!authHeader
+    preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes
     if (isPublicRoute(to)) {
