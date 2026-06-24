@@ -72,6 +72,7 @@ export function usePromotedPreviews(
   const promotedPreviews = computed((): PromotedPreview[] => {
     const node = toValue(lgraphNode)
     if (!(node instanceof SubgraphNode)) return []
+    if (node.isDetached) return []
 
     const rootGraphId = node.rootGraph.id
     const hostLocator = String(node.id)

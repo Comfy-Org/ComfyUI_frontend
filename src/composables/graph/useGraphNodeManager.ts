@@ -610,27 +610,20 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
   }
 
-  /**
-   * Handles node removal from the graph - cleans up all references
-   */
+  const dropNodeReferences = (node: LGraphNode) => {
+    const id = String(node.id)
+    nodeRefs.delete(id)
+    vueNodeData.delete(id)
+  }
+
   const handleNodeRemoved = (
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
     const id = String(node.id)
-
-    // Remove node from layout store
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
-
-    // Clean up all tracking references
-    nodeRefs.delete(id)
-    vueNodeData.delete(id)
-
-    // Call original callback if provided
-    if (originalCallback) {
-      originalCallback(node)
-    }
+    originalCallback?.(node)
   }
 
   /**
@@ -639,7 +632,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const createCleanupFunction = (
     originalOnNodeAdded: ((node: LGraphNode) => void) | undefined,
     originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined,
-    originalOnTrigger: ((event: LGraphTriggerEvent) => void) | undefined
+    originalOnTrigger: ((event: LGraphTriggerEvent) => void) | undefined,
+    beforeNodeRemovedListener: (e: CustomEvent<{ node: LGraphNode }>) => void
   ) => {
     return () => {
       // Restore original callbacks
@@ -647,15 +641,17 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       graph.onNodeRemoved = originalOnNodeRemoved || undefined
       graph.onTrigger = originalOnTrigger || undefined
 
+      graph.events.removeEventListener(
+        'node:before-removed',
+        beforeNodeRemovedListener
+      )
+
       // Clear all state maps
       nodeRefs.clear()
       vueNodeData.clear()
     }
   }
 
-  /**
-   * Sets up event listeners - now simplified with extracted handlers
-   */
   const setupEventListeners = (): (() => void) => {
     // Store original callbacks
     const originalOnNodeAdded = graph.onNodeAdded
@@ -670,6 +666,16 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     graph.onNodeRemoved = (node: LGraphNode) => {
       handleNodeRemoved(node, originalOnNodeRemoved)
     }
+
+    const beforeNodeRemovedListener = (
+      e: CustomEvent<{ node: LGraphNode }>
+    ) => {
+      dropNodeReferences(e.detail.node)
+    }
+    graph.events.addEventListener(
+      'node:before-removed',
+      beforeNodeRemovedListener
+    )
 
     const triggerHandlers: {
       [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
@@ -819,11 +825,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Initialize state
     syncWithGraph()
 
-    // Return cleanup function
     return createCleanupFunction(
       originalOnNodeAdded || undefined,
       originalOnNodeRemoved || undefined,
-      originalOnTrigger || undefined
+      originalOnTrigger || undefined,
+      beforeNodeRemovedListener
     )
   }
 
