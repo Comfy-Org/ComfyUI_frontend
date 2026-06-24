@@ -135,7 +135,7 @@ const ctaHref = computed(() =>
                 "
               />
               <span
-                class="text-[10px]"
+                class="text-sm max-sm:text-[10px]"
                 :class="
                   i === teamCreditTierIndex[0]
                     ? 'text-primary-warm-white'
