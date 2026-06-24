@@ -6,6 +6,8 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import {
   appendNodeExecutionId,
   createNodeLocatorId
@@ -13,7 +15,7 @@ import {
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
-  sourceNodeId: string
+  sourceNodeId: NodeId
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
@@ -41,7 +43,7 @@ export function usePromotedPreviews(
   /** Touches reactive sources for Vue tracking; `getNodeImageUrls` reads non-reactive app state. */
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
-    leafSourceNodeId: string,
+    leafSourceNodeId: NodeId,
     leafExecutionId: NodeExecutionId,
     interiorNode: LGraphNode
   ): string[] | undefined {
@@ -89,7 +91,7 @@ export function usePromotedPreviews(
     function resolveNestedHost(
       rootGraphId: UUID,
       currentHostLocator: string,
-      sourceNodeId: string
+      sourceNodeId: NodeId
     ) {
       const currentHost = hostNodesByLocator.get(currentHostLocator)
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
@@ -114,7 +116,7 @@ export function usePromotedPreviews(
         resolveNestedHost
       )
       const leaf = resolved?.leaf ?? {
-        sourceNodeId: exposure.sourceNodeId,
+        sourceNodeId: toNodeId(exposure.sourceNodeId),
         sourcePreviewName: exposure.sourcePreviewName
       }
       const leafHostLocator =
