@@ -137,6 +137,9 @@ vi.mock('@/stores/queueStore', () => ({
 vi.mock('@/stores/serverConfigStore', () => ({
   useServerConfigStore: () => ({})
 }))
+vi.mock('@/stores/workspaceStore', () => ({
+  useWorkspaceStore: () => ({ focusMode: false })
+}))
 vi.mock('@/stores/workspace/bottomPanelStore', () => ({
   useBottomPanelStore: () => ({
     registerCoreBottomPanelTabs: vi.fn().mockResolvedValue(undefined)
@@ -163,6 +166,7 @@ vi.mock('@/utils/envUtil', () => ({
 // Module-mock heavy child components so we don't pay their import cost.
 const stubModule = { default: { template: '<div />' } }
 vi.mock('@/components/graph/GraphCanvas.vue', () => stubModule)
+vi.mock('@/components/sidebar/SideToolbar.vue', () => stubModule)
 vi.mock('@/views/LinearView.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderToolbar.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderMenu.vue', () => stubModule)

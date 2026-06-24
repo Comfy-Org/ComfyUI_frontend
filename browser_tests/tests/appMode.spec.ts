@@ -137,6 +137,80 @@ test.describe('App mode usage', () => {
     await expect.poll(() => fileComboWidget.getValue()).toBe(targetImage)
   })
 
+  test('Shares the graph side toolbar, filtered to assets + apps', async ({
+    comfyPage
+  }) => {
+    const sideToolbar = comfyPage.page.getByTestId(TestIds.sidebar.toolbar)
+
+    await test.step('Graph mode shows the full toolbar', async () => {
+      await expect(sideToolbar).toBeVisible()
+      await expect(
+        sideToolbar.locator('.node-library-tab-button')
+      ).toBeVisible()
+    })
+
+    await test.step('App mode reuses it with only assets + apps', async () => {
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await expect(comfyPage.appMode.centerPanel).toBeVisible()
+
+      await expect(sideToolbar).toBeVisible()
+      await expect(sideToolbar.locator('.assets-tab-button')).toBeVisible()
+      await expect(sideToolbar.locator('.apps-tab-button')).toBeVisible()
+      await expect(sideToolbar.locator('.node-library-tab-button')).toBeHidden()
+    })
+  })
+
+  test('Workflow actions menu keeps the same position across graph/app mode', async ({
+    comfyPage
+  }) => {
+    // Toggling graph<->app mode happens from this control, so it must not move
+    // out from under the cursor as the mode flips.
+    const graphActions = comfyPage.page
+      .getByTestId(TestIds.breadcrumb.subgraph)
+      .getByRole('button', { name: 'Workflow actions' })
+    await expect(graphActions).toBeVisible()
+    const graphBox = await graphActions.boundingBox()
+
+    expect(graphBox).not.toBeNull()
+
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+
+    const appActions = comfyPage.page
+      .getByTestId(TestIds.linear.centerPanel)
+      .getByRole('button', { name: 'Workflow actions' })
+    await expect(appActions).toBeVisible()
+
+    // The toggle segments reorder (morph) as the mode flips, so poll until the
+    // active control settles at the same x it occupied in graph mode.
+    await expect
+      .poll(async () => {
+        const box = await appActions.boundingBox()
+        return box ? Math.abs(box.x - graphBox!.x) : Infinity
+      })
+      .toBeLessThanOrEqual(1)
+  })
+
+  test('Toggle segment flips mode without opening the menu, reusing one instance', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.page.getByTestId('view-mode-toggle')
+    await expect(toggle).toBeVisible()
+
+    // Tag the single instance so we can prove the same DOM node is teleported
+    // across the switch rather than destroyed and recreated.
+    await toggle.evaluate((el) => el.setAttribute('data-identity', 'persist'))
+
+    await comfyPage.page.getByRole('button', { name: 'Enter app mode' }).click()
+
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    // The inactive segment switches mode; it must not also open the actions menu.
+    await expect(comfyPage.page.getByRole('menu')).toBeHidden()
+    await expect(
+      comfyPage.page.getByTestId('view-mode-toggle')
+    ).toHaveAttribute('data-identity', 'persist')
+  })
+
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
       const { mobile } = comfyPage.appMode

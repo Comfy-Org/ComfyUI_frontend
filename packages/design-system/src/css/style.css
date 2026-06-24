@@ -237,6 +237,7 @@
   --secondary-background-hover: var(--color-smoke-400);
   --secondary-background-selected: var(--color-smoke-600);
   --base-background: var(--color-white);
+  --app-mode-background: var(--color-white);
   --primary-background: var(--color-azure-400);
   --primary-background-hover: var(--color-cobalt-800);
   --destructive-background: var(--color-coral-500);
@@ -385,6 +386,7 @@
   --secondary-background-hover: var(--color-charcoal-400);
   --secondary-background-selected: var(--color-charcoal-200);
   --base-background: var(--color-charcoal-800);
+  --app-mode-background: var(--color-black);
   --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
   --destructive-background: var(--color-coral-700);
@@ -551,6 +553,7 @@
   --color-base-foreground: var(--base-foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-base-background: var(--base-background);
+  --color-app-mode-background: var(--app-mode-background);
   --color-secondary-background: var(--secondary-background);
   --color-secondary-background-hover: var(--secondary-background-hover);
   --color-secondary-background-selected: var(--secondary-background-selected);
