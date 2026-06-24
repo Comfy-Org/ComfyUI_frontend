@@ -380,9 +380,17 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
         .poll(() => comfyPage.nodeOps.getGraphNodesCount())
         .toBeGreaterThan(0)
       await comfyPage.appMode.enterAppModeWithInputs([])
-      for (const id of ['app-run-button', 'inputs-list', 'outputs']) {
+      for (const id of [
+        'app-run-button',
+        'inputs-list',
+        'outputs',
+        'assets-button'
+      ]) {
         await expect(coach.coachAnchor(id)).toBeVisible()
       }
+      // The assets panel mounts when the app-mode assets button is clicked.
+      await coach.coachAnchor('assets-button').click()
+      await expect(coach.coachAnchor('assets-panel')).toBeVisible()
     })
   })
 })

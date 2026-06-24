@@ -55,7 +55,13 @@ vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
 }))
 
-const APP_MODE_TARGETS: CoachId[] = ['inputs-list', 'app-run-button', 'outputs']
+const APP_MODE_TARGETS: CoachId[] = [
+  'inputs-list',
+  'app-run-button',
+  'outputs',
+  'assets-button',
+  'assets-panel'
+]
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
@@ -124,8 +130,8 @@ describe('useCoachmarkTour', () => {
   })
 
   it('advances through every step to completion and marks the tour seen', async () => {
-    // The app-mode tour's spotlight steps all defer their targets; register
-    // them so each resolves immediately as the user advances.
+    // Register every app-mode target so each step resolves immediately as the
+    // user advances (spotlight steps defer their targets).
     const targets = APP_MODE_TARGETS.map((id) => {
       const el = document.createElement('div')
       registerCoachmark(id, el)
@@ -135,9 +141,12 @@ describe('useCoachmarkTour', () => {
     void useCoachmarkController().requestTour('appMode')
     await flush()
 
-    // Landing + 3 spotlight steps: four primary presses reach completion.
-    for (let i = 0; i < 4; i++) await api.onPrimary()
-    await flush()
+    // Advance until the tour completes (count-agnostic; extra presses after the
+    // final step are no-ops), capped so a stuck tour fails instead of hangs.
+    for (let i = 0; i < 12 && !settings.seen.includes('appMode'); i++) {
+      await api.onPrimary()
+      await flush()
+    }
 
     expect(settings.seen).toContain('appMode')
     const completed = telemetry.track.mock.calls.some(

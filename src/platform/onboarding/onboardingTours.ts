@@ -25,7 +25,9 @@ const COACH_IDS = {
   templatesButton: 'templates-button',
   templatesDialog: 'templates-dialog',
   inputsList: 'inputs-list',
-  outputs: 'outputs'
+  outputs: 'outputs',
+  assetsButton: 'assets-button',
+  assetsPanel: 'assets-panel'
 } as const
 
 export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS]
@@ -202,6 +204,22 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       titleKey: 'onboardingCoachmarks.appMode.outputs.title',
       bodyKey: 'onboardingCoachmarks.appMode.outputs.body',
       placement: 'leftCenter',
+      deferTarget: true
+    },
+    {
+      coachId: COACH_IDS.assetsButton,
+      titleKey: 'onboardingCoachmarks.appMode.assetsButton.title',
+      bodyKey: 'onboardingCoachmarks.appMode.assetsButton.body',
+      placement: 'right',
+      deferTarget: true,
+      advanceOnTargetClick: true
+    },
+    {
+      // The panel mounts when the button above is clicked.
+      coachId: COACH_IDS.assetsPanel,
+      titleKey: 'onboardingCoachmarks.appMode.assets.title',
+      bodyKey: 'onboardingCoachmarks.appMode.assets.body',
+      placement: 'right',
       deferTarget: true
     }
   ]

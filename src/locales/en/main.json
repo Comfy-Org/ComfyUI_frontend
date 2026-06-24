@@ -4537,6 +4537,14 @@
       "outputs": {
         "title": "Get your results",
         "body": "Your finished results show up here in the center. Download them, or tweak an input and run again."
+      },
+      "assetsButton": {
+        "title": "Open your assets",
+        "body": "Click the Assets button in the left toolbar to open your media library."
+      },
+      "assets": {
+        "title": "Find all your assets",
+        "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
       }
     }
   }
