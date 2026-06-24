@@ -103,7 +103,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
-import { completeDesktopLoginForExistingSession } from '@/platform/cloud/onboarding/composables/useDesktopLoginCompletion'
+import { useDesktopLoginCompletion } from '@/platform/cloud/onboarding/composables/useDesktopLoginCompletion'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
 import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
@@ -121,6 +121,7 @@ const { onAuthSuccess } = usePostAuthRedirect({
   successSummary: 'Login Completed',
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
+const { completeDesktopLoginForExistingSession } = useDesktopLoginCompletion()
 
 void completeDesktopLoginForExistingSession(route.query, onAuthSuccess).catch(
   (error) => {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { completeDesktopLoginForExistingSession } from './useDesktopLoginCompletion'
+import { useDesktopLoginCompletion } from './useDesktopLoginCompletion'
 
 const hoisted = vi.hoisted(() => ({
   authStore: {
@@ -21,6 +21,8 @@ describe('completeDesktopLoginForExistingSession', () => {
 
   it('does nothing without a desktop login request', async () => {
     const onAuthSuccess = vi.fn()
+    const { completeDesktopLoginForExistingSession } =
+      useDesktopLoginCompletion()
 
     await completeDesktopLoginForExistingSession({}, onAuthSuccess)
 
@@ -29,6 +31,8 @@ describe('completeDesktopLoginForExistingSession', () => {
 
   it('does nothing when the desktop login request has no existing user', async () => {
     const onAuthSuccess = vi.fn()
+    const { completeDesktopLoginForExistingSession } =
+      useDesktopLoginCompletion()
 
     await completeDesktopLoginForExistingSession(
       {
@@ -44,6 +48,8 @@ describe('completeDesktopLoginForExistingSession', () => {
   it('completes the desktop login request for an existing user', async () => {
     hoisted.authStore.currentUser = { uid: 'user-123' }
     const onAuthSuccess = vi.fn().mockResolvedValue(undefined)
+    const { completeDesktopLoginForExistingSession } =
+      useDesktopLoginCompletion()
 
     await completeDesktopLoginForExistingSession(
       {
@@ -54,5 +60,25 @@ describe('completeDesktopLoginForExistingSession', () => {
     )
 
     expect(onAuthSuccess).toHaveBeenCalledOnce()
+  })
+
+  it('dedupes concurrent completions for the same desktop login request', async () => {
+    hoisted.authStore.currentUser = { uid: 'user-123' }
+    const firstOnAuthSuccess = vi.fn().mockResolvedValue(undefined)
+    const latestOnAuthSuccess = vi.fn().mockResolvedValue(undefined)
+    const { completeDesktopLoginForExistingSession } =
+      useDesktopLoginCompletion()
+    const query = {
+      desktop_login_callback: 'http://localhost:9876/callback',
+      desktop_login_state: 'state-123'
+    }
+
+    await Promise.all([
+      completeDesktopLoginForExistingSession(query, firstOnAuthSuccess),
+      completeDesktopLoginForExistingSession(query, latestOnAuthSuccess)
+    ])
+
+    expect(firstOnAuthSuccess).not.toHaveBeenCalled()
+    expect(latestOnAuthSuccess).toHaveBeenCalledOnce()
   })
 })
