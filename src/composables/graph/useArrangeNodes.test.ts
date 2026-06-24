@@ -74,8 +74,8 @@ describe('computeArrangement', () => {
       // 2: pos.y = 112.
       const result = computeArrangement(nodes, 'vertical')
       expect(result).toEqual([
-        { nodeId: 1, position: { x: 0, y: 0 } },
-        { nodeId: 2, position: { x: 0, y: 100 + GAP } }
+        { nodeId: '1', position: { x: 0, y: 0 } },
+        { nodeId: '2', position: { x: 0, y: 100 + GAP } }
       ])
     })
 
@@ -88,8 +88,8 @@ describe('computeArrangement', () => {
       // 2: pos.y = 212+30 = 242.
       const result = computeArrangement(nodes, 'vertical')
       expect(result).toEqual([
-        { nodeId: 1, position: { x: 0, y: 0 } },
-        { nodeId: 2, position: { x: 0, y: 200 + TITLE + GAP } }
+        { nodeId: '1', position: { x: 0, y: 0 } },
+        { nodeId: '2', position: { x: 0, y: 200 + TITLE + GAP } }
       ])
     })
   })
@@ -131,10 +131,10 @@ describe('computeArrangement', () => {
       // pos.y = rowVisualTop + 30 (titleHeight).
       const result = computeArrangement(nodes, 'grid')
       expect(result).toEqual([
-        { nodeId: 1, position: { x: 0, y: 0 } },
-        { nodeId: 2, position: { x: 132, y: 0 } },
-        { nodeId: 3, position: { x: 0, y: 102 } },
-        { nodeId: 4, position: { x: 132, y: 102 } }
+        { nodeId: '1', position: { x: 0, y: 0 } },
+        { nodeId: '2', position: { x: 132, y: 0 } },
+        { nodeId: '3', position: { x: 0, y: 102 } },
+        { nodeId: '4', position: { x: 132, y: 102 } }
       ])
     })
 

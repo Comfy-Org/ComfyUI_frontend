@@ -790,7 +790,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     store.syncLegacyNodeImgs('123', mockImg, 0)
 
-    expect(mockResolveNode).toHaveBeenCalledWith(123)
+    expect(mockResolveNode).toHaveBeenCalledWith('123')
     expect(mockNode.imgs).toEqual([mockImg])
   })
 
