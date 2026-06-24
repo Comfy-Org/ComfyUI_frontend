@@ -27,6 +27,7 @@ import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
+import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import {
@@ -8719,42 +8720,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      // Check for reroutes
-      if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-        // Try layout store first, fallback to old method
-        const rerouteLayout = layoutStore.queryRerouteAtPoint({
-          x: event.canvasX,
-          y: event.canvasY
-        })
+      const { reroute, group } = getCanvasContextMenuTarget(
+        this,
+        event.canvasX,
+        event.canvasY
+      )
+      if (reroute) {
+        menu_info.unshift(
+          {
+            content: 'Delete Reroute',
+            callback: () => {
+              if (!this.graph) throw new NullGraphError()
 
-        let reroute: Reroute | undefined
-        if (rerouteLayout) {
-          reroute = this.graph.getReroute(rerouteLayout.id)
-        } else {
-          reroute = this.graph.getRerouteOnPos(
-            event.canvasX,
-            event.canvasY,
-            this._visibleReroutes
-          )
-        }
-        if (reroute) {
-          menu_info.unshift(
-            {
-              content: 'Delete Reroute',
-              callback: () => {
-                if (!this.graph) throw new NullGraphError()
-
-                this.graph.removeReroute(reroute.id)
-              }
-            },
-            null
-          )
-        }
+              this.graph.removeReroute(reroute.id)
+            }
+          },
+          null
+        )
       }
-
-      const group = this.graph.getGroupOnPos(event.canvasX, event.canvasY)
       if (group) {
-        // on group
         menu_info.push(null, {
           content: 'Edit Group',
           has_submenu: true,
