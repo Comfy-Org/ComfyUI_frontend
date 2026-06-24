@@ -108,6 +108,13 @@ describe('OAuthConsentView', () => {
     submitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
   })
 
+  it('shows the generic app icon regardless of client_display_name', () => {
+    renderConsent({ client_display_name: 'Anthropic Verified ✓' })
+    expect(screen.getByTestId('client-icon')).toHaveClass(
+      'icon-[lucide--app-window]'
+    )
+  })
+
   it('renders title, subtitle, and scope checklist', () => {
     renderConsent()
 

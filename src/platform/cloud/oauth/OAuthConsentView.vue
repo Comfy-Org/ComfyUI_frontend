@@ -11,6 +11,7 @@
             <i
               :class="cn('size-8', clientGlyph.icon, clientGlyph.color)"
               aria-hidden="true"
+              data-testid="client-icon"
             />
           </div>
           <i
@@ -226,22 +227,7 @@ const resourceName = computed(
     t('oauth.consent.resourceFallback')
 )
 
-// Stopgap until the consent challenge carries a client logo_uri.
-const clientGlyph = computed(() => {
-  const name = challenge.value?.client_display_name?.toLowerCase() ?? ''
-  if (name.includes('claude') || name.includes('anthropic'))
-    return {
-      icon: 'icon-[comfy--anthropic]',
-      color: 'text-[var(--oauth-client-coral)]'
-    }
-  if (name.includes('openai') || name.includes('chatgpt'))
-    return { icon: 'icon-[comfy--openai]', color: 'text-black' }
-  if (name.includes('gemini'))
-    return { icon: 'icon-[comfy--gemini]', color: 'text-black' }
-  if (name.includes('grok'))
-    return { icon: 'icon-[comfy--grok]', color: 'text-black' }
-  return { icon: 'icon-[lucide--app-window]', color: 'text-black' }
-})
+const clientGlyph = { icon: 'icon-[lucide--app-window]', color: 'text-black' }
 
 const selectedWorkspaceIsValid = computed(() =>
   Boolean(
