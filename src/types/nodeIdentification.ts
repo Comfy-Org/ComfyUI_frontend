@@ -1,4 +1,5 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { nodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
 
@@ -29,7 +30,7 @@ export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
 export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
 
 function parseNodeIdSegment(part: string): NodeId {
-  return isNaN(Number(part)) ? part : Number(part)
+  return nodeId(part)
 }
 
 function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
@@ -105,7 +106,7 @@ export function parseNodeLocatorId(
  */
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: NodeId
+  localNodeId: SerializedNodeId
 ): NodeLocatorId {
   return (
     subgraphUuid ? `${subgraphUuid}:${localNodeId}` : String(localNodeId)
@@ -129,9 +130,9 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @param nodeIds Array of node IDs from root to target
  * @returns A properly formatted NodeExecutionId
  */
-export function createNodeExecutionId<const T extends readonly NodeId[]>(
-  nodeIds: T & (T extends readonly [] ? never : unknown)
-): NodeExecutionId {
+export function createNodeExecutionId<
+  const T extends readonly SerializedNodeId[]
+>(nodeIds: T & (T extends readonly [] ? never : unknown)): NodeExecutionId {
   if (nodeIds.length === 0) {
     throw new Error('NodeExecutionId requires at least one node ID')
   }
@@ -146,7 +147,7 @@ export function tryNormalizeNodeExecutionId(
 
 export function appendNodeExecutionId(
   parentExecutionId: string,
-  childNodeId: NodeId
+  childNodeId: SerializedNodeId
 ): NodeExecutionId {
   return createNodeExecutionId([...parentExecutionId.split(':'), childNodeId])
 }

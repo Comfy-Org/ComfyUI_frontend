@@ -25,6 +25,8 @@ import type {
   ToastMessageOptions
 } from './extensionTypes'
 
+export type { NodeId, SerializedNodeId } from './nodeId'
+export { isNodeId, nodeId, parseNodeId } from './nodeId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'

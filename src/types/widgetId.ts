@@ -1,4 +1,5 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { nodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 type UUID = string
 
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
@@ -8,12 +9,12 @@ const WIDGET_ID_PATTERN = /^(?<graphId>[^:]+):(?<nodeId>[^:]+):(?<name>[^:]+)$/u
 
 export function widgetId(
   graphId: UUID,
-  nodeId: NodeId,
+  localNodeId: SerializedNodeId,
   name: string
 ): WidgetId {
   return [
     graphId,
-    encodeURIComponent(String(nodeId)),
+    encodeURIComponent(String(localNodeId)),
     encodeURIComponent(name)
   ].join(SEPARATOR) as WidgetId
 }
@@ -37,7 +38,7 @@ export function parseWidgetId(id: WidgetId): {
 
   return {
     graphId: groups.graphId,
-    nodeId: decodeWidgetIdSegment(groups.nodeId),
+    nodeId: nodeId(decodeWidgetIdSegment(groups.nodeId)),
     name: decodeWidgetIdSegment(groups.name)
   }
 }

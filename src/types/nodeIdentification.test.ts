@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { nodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import {
   compareExecutionId,
   createNodeExecutionId,
@@ -73,7 +74,7 @@ describe('nodeIdentification', () => {
         const result = parseNodeLocatorId(validNodeLocatorId)
         expect(result).toEqual({
           subgraphUuid: validUuid,
-          localNodeId: 123
+          localNodeId: '123'
         })
       })
 
@@ -90,7 +91,7 @@ describe('nodeIdentification', () => {
         const result = parseNodeLocatorId('123')
         expect(result).toEqual({
           subgraphUuid: null,
-          localNodeId: 123
+          localNodeId: '123'
         })
 
         const stringResult = parseNodeLocatorId('node_1')
@@ -158,18 +159,22 @@ describe('nodeIdentification', () => {
 
     describe('parseNodeExecutionId', () => {
       it('should parse execution IDs correctly', () => {
-        expect(parseNodeExecutionId('123:456')).toEqual([123, 456])
-        expect(parseNodeExecutionId('123:456:789')).toEqual([123, 456, 789])
+        expect(parseNodeExecutionId('123:456')).toEqual(['123', '456'])
+        expect(parseNodeExecutionId('123:456:789')).toEqual([
+          '123',
+          '456',
+          '789'
+        ])
         expect(parseNodeExecutionId('node_1:node_2')).toEqual([
           'node_1',
           'node_2'
         ])
         expect(parseNodeExecutionId('123:node_2:456')).toEqual([
-          123,
+          '123',
           'node_2',
-          456
+          '456'
         ])
-        expect(parseNodeExecutionId('123')).toEqual([123])
+        expect(parseNodeExecutionId('123')).toEqual(['123'])
         expect(parseNodeExecutionId('node_1')).toEqual(['node_1'])
       })
 
@@ -216,18 +221,18 @@ describe('nodeIdentification', () => {
   describe('Integration tests', () => {
     it('should round-trip NodeLocatorId correctly', () => {
       const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-      const nodeId: NodeId = 123
+      const localNodeId: NodeId = nodeId(123)
 
-      const locatorId = createNodeLocatorId(uuid, nodeId)
+      const locatorId = createNodeLocatorId(uuid, localNodeId)
       const parsed = parseNodeLocatorId(locatorId)
 
       expect(parsed).toBeTruthy()
       expect(parsed!.subgraphUuid).toBe(uuid)
-      expect(parsed!.localNodeId).toBe(nodeId)
+      expect(parsed!.localNodeId).toBe(localNodeId)
     })
 
     it('should round-trip NodeExecutionId correctly', () => {
-      const nodeIds: NodeId[] = [123, 'node_2', 456]
+      const nodeIds: NodeId[] = [nodeId(123), nodeId('node_2'), nodeId(456)]
 
       const executionId = createNodeExecutionId(nodeIds)
       const parsed = parseNodeExecutionId(executionId)
