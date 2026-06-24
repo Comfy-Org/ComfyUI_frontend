@@ -630,13 +630,19 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const createCleanupFunction = (
     originalOnNodeAdded: ((node: LGraphNode) => void) | undefined,
     originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined,
-    originalOnTrigger: ((event: LGraphTriggerEvent) => void) | undefined
+    originalOnTrigger: ((event: LGraphTriggerEvent) => void) | undefined,
+    beforeNodeRemovedListener: (e: CustomEvent<{ node: LGraphNode }>) => void
   ) => {
     return () => {
       // Restore original callbacks
       graph.onNodeAdded = originalOnNodeAdded || undefined
       graph.onNodeRemoved = originalOnNodeRemoved || undefined
       graph.onTrigger = originalOnTrigger || undefined
+
+      graph.events.removeEventListener(
+        'node:before-removed',
+        beforeNodeRemovedListener
+      )
 
       // Clear all state maps
       nodeRefs.clear()
@@ -817,19 +823,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Initialize state
     syncWithGraph()
 
-    const cleanup = createCleanupFunction(
+    return createCleanupFunction(
       originalOnNodeAdded || undefined,
       originalOnNodeRemoved || undefined,
-      originalOnTrigger || undefined
+      originalOnTrigger || undefined,
+      beforeNodeRemovedListener
     )
-
-    return () => {
-      graph.events.removeEventListener(
-        'node:before-removed',
-        beforeNodeRemovedListener
-      )
-      cleanup()
-    }
   }
 
   // Set up event listeners immediately
