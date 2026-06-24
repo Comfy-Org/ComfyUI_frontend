@@ -1,12 +1,14 @@
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 export type ArrangeLayout = 'vertical' | 'horizontal' | 'grid'
 
@@ -39,7 +41,7 @@ const titleHeightOf = (node: LGraphNode): number => {
 const toBox = (node: LGraphNode): NodeBox => {
   const titleHeight = titleHeightOf(node)
   return {
-    id: node.id,
+    id: toNodeId(node.id),
     posX: node.pos[0],
     posY: node.pos[1],
     visualWidth: node.size[0],

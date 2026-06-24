@@ -1,4 +1,5 @@
 import { useExecutionStore } from '@/stores/executionStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 import type { MinimapNodeData } from '../types'
 import { AbstractMinimapDataSource } from './AbstractMinimapDataSource'
@@ -14,7 +15,7 @@ export class LiteGraphDataSource extends AbstractMinimapDataSource {
     const nodeProgressStates = executionStore.nodeProgressStates
 
     return this.graph._nodes.map((node) => {
-      const nodeId = String(node.id)
+      const nodeId = toNodeId(node.id)
       const executionState = nodeProgressStates[nodeId]?.state ?? null
 
       return {

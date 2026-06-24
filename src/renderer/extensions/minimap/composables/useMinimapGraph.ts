@@ -7,9 +7,10 @@ import type {
   LGraphNode,
   LGraphTriggerEvent
 } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
 import type { UpdateFlags } from '../types'
@@ -70,7 +71,7 @@ export function useMinimapGraph(
 
     g.onNodeRemoved = function (node: LGraphNode) {
       originalCallbacks.onNodeRemoved?.call(this, node)
-      nodeStatesCache.delete(node.id)
+      nodeStatesCache.delete(toNodeId(node.id))
       void handleGraphChangedThrottled()
     }
 
@@ -90,7 +91,7 @@ export function useMinimapGraph(
           event.property === 'color')
       ) {
         // Invalidate cache for this node to force redraw
-        nodeStatesCache.delete(String(event.nodeId))
+        nodeStatesCache.delete(toNodeId(event.nodeId))
         void handleGraphChangedThrottled()
       }
     }

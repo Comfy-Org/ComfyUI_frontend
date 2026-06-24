@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
@@ -14,7 +15,7 @@ const testState = vi.hoisted(() => {
   // (runtime no-op cast) until the test is rewritten to use real stores.
   const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: placeholder<Ref<Set<string>>>(null),
+    selectedNodeIds: placeholder<Ref<Set<NodeId>>>(null),
     selectedItems: placeholder<Ref<unknown[]>>(null),
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
@@ -131,7 +132,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 
 describe('useNodeDrag', () => {
   beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set<string>())
+    testState.selectedNodeIds = ref(new Set<NodeId>())
     testState.selectedItems = ref<unknown[]>([])
     testState.nodeLayouts.clear()
     testState.mutationFns.setSource.mockReset()
@@ -159,7 +160,7 @@ describe('useNodeDrag', () => {
   })
 
   it('batches multi-node drag updates into one mutation call per frame', () => {
-    testState.selectedNodeIds.value = new Set(['1', '2'])
+    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
@@ -184,7 +185,7 @@ describe('useNodeDrag', () => {
   })
 
   it('uses the same batched mutation path for single-node drags', () => {
-    testState.selectedNodeIds.value = new Set(['1'])
+    testState.selectedNodeIds.value = new Set([node1])
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
@@ -204,7 +205,7 @@ describe('useNodeDrag', () => {
   })
 
   it('cancels pending RAF and applies snap updates on endDrag', () => {
-    testState.selectedNodeIds.value = new Set(['1'])
+    testState.selectedNodeIds.value = new Set([node1])
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
@@ -240,7 +241,7 @@ describe('useNodeDrag', () => {
 
 describe('useNodeDrag auto-pan', () => {
   beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set(['1']))
+    testState.selectedNodeIds = ref(new Set([node1]))
     testState.selectedItems = ref<unknown[]>([])
     testState.nodeLayouts.clear()
     testState.nodeLayouts.set('1', {
@@ -297,7 +298,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('moves all selected nodes when auto-pan fires', () => {
-    testState.selectedNodeIds.value = new Set(['1', '2'])
+    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
     const drag = useNodeDrag()
 
     drag.startDrag(pointerEvent(750, 300), node1)

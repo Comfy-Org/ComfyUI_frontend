@@ -1,6 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
 import type { PositionedNode } from '@/renderer/core/spatial/boundsCalculator'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 import type {
   IMinimapDataSource,
@@ -70,7 +71,7 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
     for (const node of graph._nodes) {
       if (!node.outputs) continue
 
-      const sourceNodeData = nodeMap.get(String(node.id))
+      const sourceNodeData = nodeMap.get(toNodeId(node.id))
       if (!sourceNodeData) continue
 
       for (const output of node.outputs) {
@@ -80,7 +81,7 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
           const link = graph.links[linkId]
           if (!link) continue
 
-          const targetNodeData = nodeMap.get(String(link.target_id))
+          const targetNodeData = nodeMap.get(toNodeId(link.target_id))
           if (!targetNodeData) continue
 
           links.push({

@@ -224,7 +224,7 @@ describe('LGraphNode', () => {
   it('should apply selected styling when selected prop is true', async () => {
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add('test-node-123')
+    canvasStore.selectedNodeIds.add(mockNodeData.id)
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)

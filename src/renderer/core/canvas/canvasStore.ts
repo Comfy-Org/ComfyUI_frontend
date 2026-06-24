@@ -6,7 +6,6 @@ import type { Raw } from 'vue'
 import { useAppMode } from '@/composables/useAppMode'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   LGraph,
   LGraphCanvas,
@@ -17,6 +16,8 @@ import type {
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { app } from '@/scripts/app'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
@@ -124,7 +125,7 @@ export const useCanvasStore = defineStore('canvas', () => {
       new Set(
         selectedItems.value
           .filter((item) => item.id !== undefined && isLGraphNode(item))
-          .map((item) => String(item.id))
+          .map((item) => toNodeId(item.id))
       )
   )
 
@@ -171,7 +172,7 @@ export const useCanvasStore = defineStore('canvas', () => {
           isGhostPlacing.value = e.detail.active
           if (e.detail.active) {
             const mutations = useLayoutMutations()
-            mutations.bringNodeToFront(String(e.detail.nodeId))
+            mutations.bringNodeToFront(e.detail.nodeId)
           }
         }
       )

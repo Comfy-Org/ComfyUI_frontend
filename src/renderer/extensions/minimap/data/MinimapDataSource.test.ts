@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
@@ -81,7 +80,7 @@ describe('MinimapDataSource', () => {
         LGraphNode,
         'id' | 'pos' | 'size' | 'bgcolor' | 'mode' | 'has_errors' | 'outputs'
       > = {
-        id: 'node1' as NodeId,
+        id: layoutNodeId('node1'),
         pos: [0, 0],
         size: [100, 50],
         bgcolor: '#fff',
@@ -149,14 +148,14 @@ describe('MinimapDataSource', () => {
       vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
 
       const mockNode1: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: 'node1' as NodeId,
+        id: layoutNodeId('node1'),
         pos: [0, 0],
         size: [100, 50],
         outputs: []
       }
 
       const mockNode2: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: 'node2' as NodeId,
+        id: layoutNodeId('node2'),
         pos: [200, 100],
         size: [150, 75],
         outputs: []
