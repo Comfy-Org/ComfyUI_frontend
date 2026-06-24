@@ -18,7 +18,6 @@ import type {
 } from '@/schemas/apiSchema'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import { nodeId } from '@/types/nodeId'
 import {
   executionIdToNodeLocatorId,
   getExecutionIdByNode,
@@ -216,7 +215,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const locator = lastExecutionErrorNodeLocatorId.value
     if (!locator) return null
     const localId = workflowStore.nodeLocatorIdToNodeId(locator)
-    return localId != null ? nodeId(localId) : null
+    return localId
   })
 
   const hasExecutionError = computed(() => !!lastExecutionError.value)

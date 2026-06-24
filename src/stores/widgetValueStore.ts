@@ -60,13 +60,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
-  function getNodeWidgets(
-    graphId: UUID,
-    localNodeId: SerializedNodeId
-  ): WidgetState[] {
-    const id = nodeId(localNodeId)
+  function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
     return [...getGraphWidgetStates(graphId).values()].filter(
-      (state) => state.nodeId === id
+      (state) => state.nodeId === localNodeId
     )
   }
 

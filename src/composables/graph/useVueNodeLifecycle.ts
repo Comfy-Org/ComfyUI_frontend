@@ -10,7 +10,6 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
-import { nodeId as toNodeId } from '@/types/nodeId'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -30,7 +29,7 @@ function useVueNodeLifecycleIndividual() {
 
     // Initialize layout system with existing nodes from active graph
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
-      id: node.id.toString(),
+      id: node.id,
       pos: [node.pos[0], node.pos[1]] as [number, number],
       size: [node.size[0], node.size[1]] as [number, number]
     }))
@@ -46,11 +45,12 @@ function useVueNodeLifecycleIndividual() {
 
     // Seed existing links into the Layout Store (topology only)
     for (const link of activeGraph._links.values()) {
+      if (link.origin_id === -1 || link.target_id === -1) continue
       layoutMutations.createLink(
         link.id,
-        toNodeId(link.origin_id),
+        link.origin_id,
         link.origin_slot,
-        toNodeId(link.target_id),
+        link.target_id,
         link.target_slot
       )
     }

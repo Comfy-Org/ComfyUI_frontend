@@ -39,7 +39,7 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
 // unmodified — the node accessors filter selectedItems with the real predicate.
 const makeNode = (mode: LGraphEventMode, id = 1): LGraphNode => {
   const node = new LGraphNode('Test')
-  node.id = id
+  node.id = nodeId(id)
   node.mode = mode
   return node
 }

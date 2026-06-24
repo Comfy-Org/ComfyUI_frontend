@@ -1,3 +1,5 @@
+import { nodeId } from '@/types/nodeId'
+
 /**
  * Subgraph constants
  *
@@ -5,7 +7,7 @@
  */
 
 /** ID of the virtual input node of a subgraph. */
-export const SUBGRAPH_INPUT_ID = -10
+export const SUBGRAPH_INPUT_ID = nodeId(-10)
 
 /** ID of the virtual output node of a subgraph. */
-export const SUBGRAPH_OUTPUT_ID = -20
+export const SUBGRAPH_OUTPUT_ID = nodeId(-20)

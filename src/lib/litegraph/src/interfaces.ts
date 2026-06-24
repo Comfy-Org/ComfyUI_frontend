@@ -5,8 +5,8 @@ import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeProperty } from './LGraphNode'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { LLink, LinkId } from './LLink'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { LinkEndpointNodeId, LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -87,7 +87,7 @@ interface Parent<TChild> {
  * May contain other {@link Positionable} objects.
  */
 export interface Positionable extends Parent<Positionable>, HasBoundingRect {
-  readonly id: SerializedNodeId | RerouteId | number
+  readonly id: NodeId | RerouteId | number
   /**
    * Position in graph coordinates. This may be the top-left corner,
    * the centre, or another point depending on concrete type.
@@ -218,7 +218,7 @@ export interface LinkSegment {
   _dragging?: boolean
 
   /** Output node ID */
-  readonly origin_id: SerializedNodeId | undefined
+  readonly origin_id: LinkEndpointNodeId | undefined
   /** Output slot index */
   readonly origin_slot: SlotIndex | undefined
 }

@@ -17,6 +17,7 @@ import {
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { nodeId } from '@/types/nodeId'
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot
@@ -74,7 +75,7 @@ const test = baseTest.extend<TestContext>({
   createTestNode: async ({ network }, use) => {
     await use((id: number): LGraphNode => {
       const node = new LGraphNode('test')
-      node.id = id
+      node.id = nodeId(id)
       network.add(node)
       return node
     })

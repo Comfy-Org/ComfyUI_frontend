@@ -11,7 +11,6 @@ import * as Y from 'yjs'
 
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { nodeId as toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -979,7 +978,7 @@ class LayoutStoreImpl implements LayoutStore {
    */
   initializeFromLiteGraph(
     nodes: Array<{
-      id: SerializedNodeId
+      id: NodeId
       pos: [number, number]
       size: [number, number]
     }>
@@ -1003,7 +1002,7 @@ class LayoutStoreImpl implements LayoutStore {
       this.isGlobalDispatchQueued = false
 
       nodes.forEach((node, index) => {
-        const nodeId = toNodeId(node.id)
+        const nodeId = node.id
         const nodeKey = String(nodeId)
         const layout: NodeLayout = {
           id: nodeId,

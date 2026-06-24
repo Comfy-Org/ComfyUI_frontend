@@ -23,8 +23,7 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { nodeId as toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -80,10 +79,7 @@ interface WorkflowStore {
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
   executionIdToCurrentId: (id: string) => string | undefined
-  nodeIdToNodeLocatorId: (
-    nodeId: SerializedNodeId,
-    subgraph?: Subgraph
-  ) => NodeLocatorId
+  nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
   nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
   nodeLocatorIdToNodeId: (locatorId: NodeLocatorId) => NodeId
   nodeLocatorIdToNodeExecutionId: (
@@ -624,7 +620,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
    */
   const nodeIdToNodeLocatorId = (
-    nodeId: SerializedNodeId,
+    nodeId: NodeId,
     subgraph?: Subgraph
   ): NodeLocatorId => {
     const targetSubgraph = subgraph ?? activeSubgraph.value
@@ -690,7 +686,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         if (node.isSubgraphNode() && node.subgraph) {
           const result = findSubgraphPath(node.subgraph, targetUuid, [
             ...path,
-            toNodeId(node.id)
+            node.id
           ])
           if (result) return result
         }

@@ -6,7 +6,7 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -328,7 +328,7 @@ export interface LayoutStore {
   // Initialization
   initializeFromLiteGraph(
     nodes: Array<{
-      id: SerializedNodeId
+      id: NodeId
       pos: [number, number]
       size: [number, number]
     }>

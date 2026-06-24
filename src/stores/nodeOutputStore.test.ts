@@ -9,6 +9,7 @@ import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { nodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 const mockResolveNode = vi.fn()
@@ -32,12 +33,16 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
-  fromAny<LGraphNode, unknown>({
-    id: 1,
+const createMockNode = (
+  overrides: Record<string, unknown> = {}
+): LGraphNode => {
+  const { id = 1, ...rest } = overrides
+  return fromAny<LGraphNode, unknown>({
+    id: nodeId(id as string | number),
     type: 'TestNode',
-    ...overrides
+    ...rest
   })
+}
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -746,7 +751,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg, 0)
+    store.syncLegacyNodeImgs(nodeId(1), mockImg, 0)
 
     expect(mockNode.imgs).toBeUndefined()
     expect(mockNode.imageIndex).toBeUndefined()
@@ -760,7 +765,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg, 0)
+    store.syncLegacyNodeImgs(nodeId(1), mockImg, 0)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)
@@ -774,7 +779,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(42, mockImg, 3)
+    store.syncLegacyNodeImgs(nodeId(42), mockImg, 3)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(3)
@@ -788,7 +793,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs('123', mockImg, 0)
+    store.syncLegacyNodeImgs(nodeId('123'), mockImg, 0)
 
     expect(mockResolveNode).toHaveBeenCalledWith('123')
     expect(mockNode.imgs).toEqual([mockImg])
@@ -801,7 +806,9 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(undefined)
 
-    expect(() => store.syncLegacyNodeImgs(999, mockImg, 0)).not.toThrow()
+    expect(() =>
+      store.syncLegacyNodeImgs(nodeId(999), mockImg, 0)
+    ).not.toThrow()
   })
 
   it('should default activeIndex to 0', () => {
@@ -812,7 +819,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg)
+    store.syncLegacyNodeImgs(nodeId(1), mockImg)
 
     expect(mockNode.imageIndex).toBe(0)
   })
@@ -828,7 +835,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     // But found by resolveNode (in a subgraph)
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(5, mockImg, 0)
+    store.syncLegacyNodeImgs(nodeId(5), mockImg, 0)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)

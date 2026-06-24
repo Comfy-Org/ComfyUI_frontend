@@ -11,6 +11,7 @@ import {
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { nodeId } from '@/types/nodeId'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'
@@ -58,7 +59,7 @@ function addInteriorNode(
   } = { id: 10 }
 ): LGraphNode {
   const node = new LGraphNode('test')
-  node.id = options.id
+  node.id = nodeId(options.id)
   if (options.previewMediaType) {
     node.previewMediaType = options.previewMediaType
   }

@@ -3,9 +3,8 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode } from './LGraphNode'
-import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
-import type { LinkId } from './LLink'
+import type { LinkEndpointNodeId, LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -183,7 +182,7 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  get origin_id(): SerializedNodeId | undefined {
+  get origin_id(): LinkEndpointNodeId | undefined {
     return this.firstLink?.origin_id
   }
 

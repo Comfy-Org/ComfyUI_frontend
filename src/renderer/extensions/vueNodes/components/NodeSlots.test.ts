@@ -297,7 +297,7 @@ describe('NodeSlots.vue', () => {
   it('maps one-level subgraph execution ids to input slot errors', async () => {
     const subgraph = createTestSubgraph()
     const interiorNode = new LGraphNode('InteriorNode')
-    interiorNode.id = 70
+    interiorNode.id = toNodeId(70)
     interiorNode.addInput('model', 'MODEL')
     interiorNode.addInput('steps', 'INT')
     subgraph.add(interiorNode)
@@ -327,7 +327,7 @@ describe('NodeSlots.vue', () => {
   it('maps nested subgraph execution ids to input slot errors', async () => {
     const innerSubgraph = createTestSubgraph()
     const innerNode = new LGraphNode('InnerNode')
-    innerNode.id = 63
+    innerNode.id = toNodeId(63)
     innerNode.addInput('image', 'IMAGE')
     innerNode.addInput('mask', 'MASK')
     innerSubgraph.add(innerNode)

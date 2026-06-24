@@ -12,7 +12,6 @@ import type {
   ComfyApiWorkflow,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
@@ -50,7 +49,7 @@ interface QueuedJob {
    * The nodes that are queued to be executed. The key is the node id and the
    * value is a boolean indicating if the node has been executed.
    */
-  nodes: Record<SerializedNodeId, boolean>
+  nodes: Record<string, boolean>
   /**
    * The workflow that is queued to be executed
    */
@@ -113,7 +112,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
-  const queuedJobs = ref<Record<SerializedNodeId, QueuedJob>>({})
+  const queuedJobs = ref<Record<JobId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
@@ -284,14 +283,14 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   // Easily access all currently executing node IDs
-  const executingNodeIds = computed<SerializedNodeId[]>(() => {
+  const executingNodeIds = computed<string[]>(() => {
     return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
       .map(([nodeId, _]) => nodeId)
   })
 
   // @deprecated For backward compatibility - stores the primary executing node ID
-  const executingNodeId = computed<SerializedNodeId | null>(() => {
+  const executingNodeId = computed<string | null>(() => {
     return executingNodeIds.value[0] ?? null
   })
 
@@ -432,7 +431,7 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<SerializedNodeId | null>): void {
+  function handleExecuting(e: CustomEvent<string | number | null>): void {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 

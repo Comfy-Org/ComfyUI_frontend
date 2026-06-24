@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
+import { nodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 
@@ -155,7 +156,7 @@ describe('useWidgetValueStore', () => {
         state('number', 7)
       )
 
-      const widgets = store.getNodeWidgets(graphA, 'node-1')
+      const widgets = store.getNodeWidgets(graphA, nodeId('node-1'))
       expect(widgets).toHaveLength(2)
       expect(widgets.map((w) => w.name).sort()).toEqual(['seed', 'steps'])
     })

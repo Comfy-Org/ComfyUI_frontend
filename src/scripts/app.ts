@@ -39,6 +39,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
@@ -2061,7 +2062,7 @@ export class ComfyApp {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
       if (!node) continue
-      node.id = isNaN(+id) ? id : +id
+      node.id = toNodeId(isNaN(+id) ? id : +id)
       node.title = data._meta?.title ?? node.title
       app.rootGraph.add(node)
     }

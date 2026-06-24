@@ -19,6 +19,19 @@ type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
 >
 
+type PreviewExposureInput = Omit<PreviewExposure, 'sourceNodeId'> & {
+  sourceNodeId: SerializedNodeId
+}
+
+function normalizePreviewExposure(
+  exposure: PreviewExposureInput
+): PreviewExposure {
+  return {
+    ...exposure,
+    sourceNodeId: toNodeId(exposure.sourceNodeId)
+  }
+}
+
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
 
@@ -50,7 +63,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   function setExposures(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    next: readonly PreviewExposure[]
+    next: readonly PreviewExposureInput[]
   ): void {
     const hosts = _getHostsForGraph(rootGraphId)
     if (next.length === 0) {
@@ -58,7 +71,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
       if (hosts.size === 0) exposures.value.delete(rootGraphId)
       return
     }
-    hosts.set(hostNodeLocator, [...next])
+    hosts.set(hostNodeLocator, next.map(normalizePreviewExposure))
   }
 
   function addExposure(
@@ -100,7 +113,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     hostNodeLocator: string
   ): PromotedWidgetSource[] {
     return getExposures(rootGraphId, hostNodeLocator).map((exposure) => ({
-      sourceNodeId: toNodeId(exposure.sourceNodeId),
+      sourceNodeId: exposure.sourceNodeId,
       sourceWidgetName: exposure.sourcePreviewName
     }))
   }

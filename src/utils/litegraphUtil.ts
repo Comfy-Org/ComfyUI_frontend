@@ -27,8 +27,8 @@ import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, nodeId as toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
-import { nodeId as toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
@@ -368,7 +368,7 @@ export function getWidgetIdForNode(
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
-  if (!graphId || node.id === -1) return undefined
+  if (!graphId || node.id === UNASSIGNED_NODE_ID) return undefined
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
   return widgetId(graphId, node.id, name)

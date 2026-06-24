@@ -12,8 +12,8 @@ const NEW_NODE = toNodeId('99')
 
 beforeEach(() => {
   layoutStore.initializeFromLiteGraph([
-    { id: '1', pos: [10, 20], size: [200, 100] },
-    { id: '2', pos: [300, 400], size: [150, 80] }
+    { id: NODE_1, pos: [10, 20], size: [200, 100] },
+    { id: NODE_2, pos: [300, 400], size: [150, 80] }
   ])
 })
 

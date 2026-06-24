@@ -16,6 +16,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   GraphOrSubgraph,
@@ -734,7 +735,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     const newLink = LLink.create(innerLink)
-    newLink.origin_id = `${this.id}:${innerLink.origin_id}`
+    newLink.origin_id = toNodeId(`${this.id}:${innerLink.origin_id}`)
     newLink.origin_slot = innerLink.origin_slot
 
     return newLink

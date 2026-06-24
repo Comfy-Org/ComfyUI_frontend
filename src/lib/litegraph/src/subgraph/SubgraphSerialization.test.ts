@@ -492,16 +492,19 @@ describe('SubgraphSerialization - Data Integrity', () => {
     graph.configure(structuredClone(duplicateSubgraphNodeIds))
 
     const rootIds = graph.nodes
-      .map((node) => node.id)
-      .filter((id): id is number => typeof id === 'number')
+      .map((node) => Number(node.id))
       .sort((a, b) => a - b)
     expect(rootIds).toEqual([102, 103])
 
     const subgraphAIds = new Set(
-      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_A)!.nodes.map((node) => node.id)
+      graph.subgraphs
+        .get(DUPLICATE_ID_SUBGRAPH_A)!
+        .nodes.map((node) => Number(node.id))
     )
     const subgraphBIds = new Set(
-      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!.nodes.map((node) => node.id)
+      graph.subgraphs
+        .get(DUPLICATE_ID_SUBGRAPH_B)!
+        .nodes.map((node) => Number(node.id))
     )
 
     expect(subgraphAIds).toEqual(new Set([3, 8, 37]))

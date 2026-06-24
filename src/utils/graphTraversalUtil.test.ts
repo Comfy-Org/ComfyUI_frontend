@@ -34,6 +34,7 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { nodeId } from '@/types/nodeId'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
@@ -48,7 +49,7 @@ function createMockNode(
   } = {}
 ): LGraphNode {
   const node = createMockLGraphNode({
-    id,
+    id: nodeId(id),
     isSubgraphNode: options.isSubgraph ? () => true : undefined,
     subgraph: options.subgraph,
     onExecutionStart: options.callback,
@@ -147,7 +148,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph(nodes)
 
         visitGraphNodes(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(Number(node.id))
         })
 
         expect(visited).toEqual([1, 2, 3])
@@ -158,7 +159,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph([])
 
         visitGraphNodes(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(Number(node.id))
         })
 
         expect(visited).toEqual([])
@@ -287,7 +288,7 @@ describe('graphTraversalUtil', () => {
         const collected = collectAllNodes(graph)
 
         expect(collected).toHaveLength(3)
-        expect(collected.map((n) => n.id)).toEqual([1, 2, 3])
+        expect(collected.map((n) => Number(n.id))).toEqual([1, 2, 3])
       })
 
       it('should collect nodes from subgraphs', () => {
@@ -303,7 +304,7 @@ describe('graphTraversalUtil', () => {
         const collected = collectAllNodes(graph)
 
         expect(collected).toHaveLength(3)
-        expect(collected.map((n) => n.id)).toContain(100)
+        expect(collected.map((n) => Number(n.id))).toContain(100)
       })
 
       it('should filter nodes when filter function provided', () => {
@@ -313,7 +314,7 @@ describe('graphTraversalUtil', () => {
         const collected = collectAllNodes(graph, (node) => Number(node.id) > 1)
 
         expect(collected).toHaveLength(2)
-        expect(collected.map((n) => n.id)).toEqual([2, 3])
+        expect(collected.map((n) => Number(n.id))).toEqual([2, 3])
       })
     })
 
@@ -322,7 +323,7 @@ describe('graphTraversalUtil', () => {
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
         const graph = createMockGraph(nodes)
 
-        const results = mapAllNodes(graph, (node) => node.id)
+        const results = mapAllNodes(graph, (node) => Number(node.id))
 
         expect(results).toEqual([1, 2, 3])
       })
@@ -337,7 +338,7 @@ describe('graphTraversalUtil', () => {
         ]
 
         const graph = createMockGraph(nodes)
-        const results = mapAllNodes(graph, (node) => node.id)
+        const results = mapAllNodes(graph, (node) => Number(node.id))
 
         expect(results).toHaveLength(3)
         expect(results).toContain(100)
@@ -348,7 +349,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph(nodes)
 
         const results = mapAllNodes(graph, (node) => {
-          return Number(node.id) > 1 ? node.id : undefined
+          return Number(node.id) > 1 ? Number(node.id) : undefined
         })
 
         expect(results).toEqual([2, 3])
@@ -388,7 +389,7 @@ describe('graphTraversalUtil', () => {
 
         const visited: number[] = []
         forEachNode(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(Number(node.id))
         })
 
         expect(visited).toHaveLength(3)
@@ -410,7 +411,7 @@ describe('graphTraversalUtil', () => {
 
         const visited: number[] = []
         forEachNode(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(Number(node.id))
         })
 
         expect(visited).toHaveLength(3)
@@ -444,7 +445,7 @@ describe('graphTraversalUtil', () => {
         const matchingNodes: number[] = []
         forEachNode(graph, (node) => {
           if (node.type === subgraphId) {
-            matchingNodes.push(node.id as number)
+            matchingNodes.push(Number(node.id))
           }
         })
 
@@ -460,7 +461,7 @@ describe('graphTraversalUtil', () => {
         const found = findNodeInHierarchy(graph, 2)
 
         expect(found).toBeTruthy()
-        expect(found?.id).toBe(2)
+        expect(Number(found?.id)).toBe(2)
       })
 
       it('should find node in subgraph', () => {
@@ -476,7 +477,7 @@ describe('graphTraversalUtil', () => {
         const found = findNodeInHierarchy(graph, 100)
 
         expect(found).toBeTruthy()
-        expect(found?.id).toBe(100)
+        expect(Number(found?.id)).toBe(100)
       })
 
       it('should return null for non-existent node', () => {
@@ -990,7 +991,7 @@ describe('graphTraversalUtil', () => {
 
         const matchingIds: number[] = []
         forEachSubgraphNode(graph, subgraphId, (node) => {
-          matchingIds.push(node.id as number)
+          matchingIds.push(Number(node.id))
         })
 
         expect(matchingIds).toEqual([2, 4])
@@ -1007,7 +1008,7 @@ describe('graphTraversalUtil', () => {
 
         const matchingIds: number[] = []
         forEachSubgraphNode(rootGraph, subgraphId, (node) => {
-          matchingIds.push(node.id as number)
+          matchingIds.push(Number(node.id))
         })
 
         expect(matchingIds).toEqual([1, 3])
@@ -1053,7 +1054,9 @@ describe('graphTraversalUtil', () => {
         ]
         const graph = createMockGraph(nodes)
 
-        const results = mapSubgraphNodes(graph, subgraphId, (node) => node.id)
+        const results = mapSubgraphNodes(graph, subgraphId, (node) =>
+          Number(node.id)
+        )
 
         expect(results).toEqual([2, 4])
       })
@@ -1075,7 +1078,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph(nodes)
 
         const results = mapSubgraphNodes(graph, subgraphId, (node) => ({
-          id: node.id,
+          id: Number(node.id),
           isTarget: true
         }))
 

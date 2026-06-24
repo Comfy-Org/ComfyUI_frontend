@@ -1,5 +1,4 @@
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import { nodeId as toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
@@ -33,7 +32,7 @@ export interface PreviewExposureChainContext {
 const MAX_CHAIN_DEPTH = 32
 
 function exposureSourceNodeId(exposure: PreviewExposure): NodeId {
-  return toNodeId(exposure.sourceNodeId)
+  return exposure.sourceNodeId
 }
 
 export function resolvePreviewExposureChain(

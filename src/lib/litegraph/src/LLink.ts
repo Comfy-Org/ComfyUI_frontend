@@ -6,9 +6,10 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { nodeId as toNodeId, serializeNodeId } from '@/types/nodeId'
 
 import type { LGraphNode } from './LGraphNode'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
@@ -25,6 +26,7 @@ import type { Serialisable, SerialisableLLink } from './types/serialisation'
 const layoutMutations = useLayoutMutations()
 
 export type LinkId = number
+export type LinkEndpointNodeId = NodeId | -1
 
 export type SerialisedLLinkArray = [
   id: LinkId,
@@ -34,6 +36,10 @@ export type SerialisedLLinkArray = [
   target_slot: number,
   type: ISlotType
 ]
+
+function toLinkEndpointNodeId(id: SerializedNodeId): LinkEndpointNodeId {
+  return id === -1 ? -1 : toNodeId(id)
+}
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
 export type ResolvedConnection = BaseResolvedConnection &
@@ -98,11 +104,11 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   parentId?: RerouteId
   type: ISlotType
   /** Output node ID */
-  origin_id: SerializedNodeId
+  origin_id: LinkEndpointNodeId
   /** Output slot index */
   origin_slot: number
   /** Input node ID */
-  target_id: SerializedNodeId
+  target_id: LinkEndpointNodeId
   /** Input slot index */
   target_slot: number
 
@@ -163,9 +169,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   ) {
     this.id = id
     this.type = type
-    this.origin_id = origin_id
+    this.origin_id = toLinkEndpointNodeId(origin_id)
     this.origin_slot = origin_slot
-    this.target_id = target_id
+    this.target_id = toLinkEndpointNodeId(target_id)
     this.target_slot = target_slot
     this.parentId = parentId
 
@@ -352,17 +358,17 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   configure(o: LLink | SerialisedLLinkArray) {
     if (Array.isArray(o)) {
       this.id = o[0]
-      this.origin_id = o[1]
+      this.origin_id = toLinkEndpointNodeId(o[1])
       this.origin_slot = o[2]
-      this.target_id = o[3]
+      this.target_id = toLinkEndpointNodeId(o[3])
       this.target_slot = o[4]
       this.type = o[5]
     } else {
       this.id = o.id
       this.type = o.type
-      this.origin_id = o.origin_id
+      this.origin_id = toLinkEndpointNodeId(o.origin_id)
       this.origin_slot = o.origin_slot
-      this.target_id = o.target_id
+      this.target_id = toLinkEndpointNodeId(o.target_id)
       this.target_slot = o.target_slot
       this.parentId = o.parentId
     }
@@ -374,7 +380,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param outputIndex The array index of the node output
    * @returns `true` if the origin matches, otherwise `false`.
    */
-  hasOrigin(nodeId: SerializedNodeId, outputIndex: number): boolean {
+  hasOrigin(nodeId: LinkEndpointNodeId, outputIndex: number): boolean {
     return this.origin_id === nodeId && this.origin_slot === outputIndex
   }
 
@@ -469,9 +475,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   serialize(): SerialisedLLinkArray {
     return [
       this.id,
-      this.origin_id,
+      serializeNodeId(this.origin_id),
       this.origin_slot,
-      this.target_id,
+      serializeNodeId(this.target_id),
       this.target_slot,
       this.type
     ]
@@ -480,9 +486,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   asSerialisable(): SerialisableLLink {
     const copy: SerialisableLLink = {
       id: this.id,
-      origin_id: this.origin_id,
+      origin_id: serializeNodeId(this.origin_id),
       origin_slot: this.origin_slot,
-      target_id: this.target_id,
+      target_id: serializeNodeId(this.target_id),
       target_slot: this.target_slot,
       type: this.type
     }

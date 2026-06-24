@@ -16,7 +16,6 @@ import type {
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { app } from '@/scripts/app'
-import { nodeId as toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
@@ -120,13 +119,9 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isGhostPlacing = ref(false)
 
   // Provide selection state to all Vue nodes
-  const selectedNodeIds = computed(
+  const selectedNodeIds = computed<Set<NodeId>>(
     () =>
-      new Set(
-        selectedItems.value
-          .filter((item) => item.id !== undefined && isLGraphNode(item))
-          .map((item) => toNodeId(item.id))
-      )
+      new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
   )
 
   whenever(

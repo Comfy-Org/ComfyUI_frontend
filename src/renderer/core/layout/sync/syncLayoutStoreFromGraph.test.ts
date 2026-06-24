@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { nodeId } from '@/types/nodeId'
 
 import { syncLayoutStoreNodeBoundsFromGraph } from './syncLayoutStoreFromGraph'
 
@@ -18,10 +19,10 @@ function createNode(
   size: [number, number]
 ): LGraphNode {
   return {
-    id,
+    id: nodeId(id),
     pos,
     size
-  } as LGraphNode
+  } as unknown as LGraphNode
 }
 
 describe('syncLayoutStoreNodeBoundsFromGraph', () => {

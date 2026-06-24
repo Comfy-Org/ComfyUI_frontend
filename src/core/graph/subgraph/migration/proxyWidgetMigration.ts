@@ -152,6 +152,7 @@ type Plan =
   | { kind: 'quarantine'; reason: ProxyWidgetQuarantineReason }
 
 interface PendingEntry {
+  originalEntry: SerializedProxyWidgetTuple
   normalized: LegacyProxyEntrySource
   hostValue: TWidgetValue | undefined
   isHole: boolean
@@ -169,23 +170,27 @@ export function flushProxyWidgetMigration(args: FlushArgs): void {
   const tuples = parseProxyWidgets(hostNode.properties.proxyWidgets)
   if (tuples.length === 0) return
 
-  const cohort: LegacyProxyEntrySource[] = tuples.map(
-    ([sourceNodeId, sourceWidgetName, disambiguator]) =>
-      normalizeLegacyProxyWidgetEntry(
+  const normalizedEntries = tuples.map((originalEntry) => {
+    const [sourceNodeId, sourceWidgetName, disambiguator] = originalEntry
+    return {
+      originalEntry,
+      normalized: normalizeLegacyProxyWidgetEntry(
         hostNode,
         sourceNodeId,
         sourceWidgetName,
         disambiguator
       )
-  )
+    }
+  })
+  const cohort = normalizedEntries.map((entry) => entry.normalized)
 
-  const pending: PendingEntry[] = cohort.map((normalized, index) => {
+  const pending: PendingEntry[] = normalizedEntries.map((entry, index) => {
     const { value, isHole } = pickHostValue(hostWidgetValues, index)
     return {
-      normalized,
+      ...entry,
       hostValue: value,
       isHole,
-      plan: classify(hostNode, normalized, cohort)
+      plan: classify(hostNode, entry.normalized, cohort)
     }
   })
 
@@ -271,8 +276,9 @@ function collectTargetsStrict(
   for (const linkId of linkIds) {
     const link = subgraph.links.get(linkId)
     if (!link) return undefined
+    if (link.target_id === -1) return undefined
     targets.push({
-      targetNodeId: toNodeId(link.target_id),
+      targetNodeId: link.target_id,
       targetSlot: link.target_slot
     })
   }
@@ -287,10 +293,10 @@ function collectTargetsSkippingDangling(
   const linkIds = primitiveNode.outputs?.[0]?.links ?? []
   return linkIds.flatMap((linkId) => {
     const link = subgraph.links.get(linkId)
-    return link
+    return link && link.target_id !== -1
       ? [
           {
-            targetNodeId: toNodeId(link.target_id),
+            targetNodeId: link.target_id,
             targetSlot: link.target_slot
           }
         ]
@@ -345,7 +351,7 @@ function classify(
     if (targets.length >= 1 || cohortDuplicated) {
       return {
         kind: 'primitiveBypass',
-        primitiveNodeId: toNodeId(sourceNode.id),
+        primitiveNodeId: sourceNode.id,
         sourceWidgetName: normalized.sourceWidgetName,
         targets
       }
@@ -615,10 +621,16 @@ function repairPrimitive(
   const baseName = userRenamedTitle(primitiveNode) ?? validated.sourceWidgetName
   const snapshot: SnapshotLink[] = (primitiveOutput.links ?? [])
     .map((id) => subgraph.links.get(id))
-    .filter((l): l is NonNullable<typeof l> => l !== undefined)
+    .filter(
+      (
+        l
+      ): l is NonNullable<typeof l> & {
+        target_id: NodeId
+      } => l !== undefined && l.target_id !== -1
+    )
     .map((l) => ({
       primitiveSlot: l.origin_slot,
-      targetNodeId: toNodeId(l.target_id),
+      targetNodeId: l.target_id,
       targetSlot: l.target_slot
     }))
 
@@ -737,13 +749,8 @@ function quarantineFor(
   entry: PendingEntry,
   reason: ProxyWidgetQuarantineReason
 ): ProxyWidgetErrorQuarantineEntry {
-  const { sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId } =
-    entry.normalized
-  const originalEntry: SerializedProxyWidgetTuple = disambiguatingSourceNodeId
-    ? [sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId]
-    : [sourceNodeId, sourceWidgetName]
   return makeQuarantineEntry({
-    originalEntry,
+    originalEntry: entry.originalEntry,
     reason,
     hostValue: entry.isHole ? undefined : entry.hostValue
   })

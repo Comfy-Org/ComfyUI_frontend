@@ -140,7 +140,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: -1, onDragDrop }
+  app.dragOverNode = { id: toNodeId(-1), onDragDrop }
 }
 
 defineExpose({ handleDragDrop })

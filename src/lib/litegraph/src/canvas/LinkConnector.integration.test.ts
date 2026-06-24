@@ -12,6 +12,7 @@ import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { nodeId } from '@/types/nodeId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
@@ -59,7 +60,7 @@ const test = baseTest.extend<TestContext>({
   createTestNode: async ({ graph }, use) => {
     await use((id): LGraphNode => {
       const node = new LGraphNode('test')
-      node.id = id
+      node.id = nodeId(id)
       graph.add(node)
       return node
     })

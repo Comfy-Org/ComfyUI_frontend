@@ -144,7 +144,7 @@ describe('maskEditorDataStore', () => {
         nodeId: RESET_NODE_ID
       }
       store.outputData = createOutputData()
-      store.sourceNode = { id: 42 } as LGraphNode
+      store.sourceNode = { id: RESET_NODE_ID } as LGraphNode
       store.isLoading = true
       store.loadError = 'something broke'
 

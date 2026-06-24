@@ -34,8 +34,7 @@ import {
  * Generic update item for element bounds tracking
  */
 interface ElementBoundsUpdate {
-  /** Element identifier (could be nodeId, widgetId, slotId, etc.) */
-  id: string
+  id: NodeId
   /** Updated bounds */
   bounds: Bounds
 }
@@ -65,7 +64,7 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
         const nodeUpdates = updates.map(({ id, bounds }) => ({
-          nodeId: toNodeId(id),
+          nodeId: id,
           bounds
         }))
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
@@ -237,12 +236,11 @@ const resizeObserver = new ResizeObserver((entries) => {
       updates = []
       updatesByType.set(elementType, updates)
     }
-    updates.push({ id: elementId, bounds })
+    if (!nodeId) continue
+    updates.push({ id: nodeId, bounds })
 
     // If this entry is a node, mark it for slot layout resync
-    if (nodeId) {
-      nodesNeedingSlotResync.add(nodeId)
-    }
+    nodesNeedingSlotResync.add(nodeId)
   }
 
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return

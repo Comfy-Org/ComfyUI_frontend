@@ -17,6 +17,7 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { nodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
@@ -621,7 +622,7 @@ describe('ensureGlobalIdUniqueness', () => {
 
     expect(subNode.id).not.toBe(rootNode.id)
     expect(subgraph._nodes_by_id[subNode.id]).toBe(subNode)
-    expect(subgraph._nodes_by_id[rootNode.id as number]).toBeUndefined()
+    expect(subgraph._nodes_by_id[rootNode.id]).toBeUndefined()
   })
 
   it('preserves root graph node IDs as canonical', () => {
@@ -657,7 +658,7 @@ describe('ensureGlobalIdUniqueness', () => {
     rootGraph.ensureGlobalIdUniqueness()
 
     expect(rootGraph.state.lastNodeId).toBeGreaterThanOrEqual(
-      subNode.id as number
+      Number(subNode.id)
     )
   })
 
@@ -674,7 +675,7 @@ describe('ensureGlobalIdUniqueness', () => {
     subgraph._nodes_by_id[subNodeA.id] = subNodeA
 
     const subNodeB = new DummyNode()
-    subNodeB.id = 999
+    subNodeB.id = nodeId(999)
     subgraph._nodes.push(subNodeB)
     subgraph._nodes_by_id[subNodeB.id] = subNodeB
 
@@ -693,7 +694,7 @@ describe('ensureGlobalIdUniqueness', () => {
     const subgraph = createSubgraphOnGraph(rootGraph)
 
     const subNode = new DummyNode()
-    subNode.id = 42
+    subNode.id = nodeId(42)
     subgraph._nodes.push(subNode)
     subgraph._nodes_by_id[subNode.id] = subNode
 
@@ -1005,7 +1006,7 @@ describe('Subgraph Unpacking', () => {
 
     const firstInstance = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     const secondInstance = createTestSubgraphNode(subgraph, { pos: [300, 100] })
-    secondInstance.id = 2
+    secondInstance.id = nodeId(2)
     rootGraph.add(firstInstance)
     rootGraph.add(secondInstance)
 
@@ -1053,7 +1054,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const id of SHARED_NODE_IDS) {
-      expect(idsA.has(id)).toBe(true)
+      expect(idsA.has(nodeId(id))).toBe(true)
     }
     for (const id of idsA) {
       expect(idsB.has(id)).toBe(false)
@@ -1065,8 +1066,8 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const link of graph.subgraphs.get(SUBGRAPH_B)!.links.values()) {
-      expect(idsB.has(link.origin_id)).toBe(true)
-      expect(idsB.has(link.target_id)).toBe(true)
+      if (link.origin_id !== -1) expect(idsB.has(link.origin_id)).toBe(true)
+      if (link.target_id !== -1) expect(idsB.has(link.target_id)).toBe(true)
     }
   })
 
@@ -1075,7 +1076,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const widget of graph.subgraphs.get(SUBGRAPH_B)!.widgets) {
-      expect(idsB.has(widget.id)).toBe(true)
+      expect(idsB.has(nodeId(widget.id))).toBe(true)
     }
   })
 
@@ -1114,7 +1115,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     const innerNode = graph.subgraphs
       .get(SUBGRAPH_A)!
-      .nodes.find((n) => n.id === 50)
+      .nodes.find((n) => n.id === nodeId(50))
     const pw = innerNode?.properties?.proxyWidgets
     expect(Array.isArray(pw)).toBe(true)
     for (const entry of pw as unknown[][]) {
@@ -1154,7 +1155,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       expect(migrationCall).toBeDefined()
       expect(migrationCall![1]).toEqual(
         expect.objectContaining({
-          hostNodeId: expect.any(Number),
+          hostNodeId: expect.any(String),
           proxyWidgets: expect.anything()
         })
       )
@@ -1176,8 +1177,12 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const graph = new LGraph()
     graph.configure(structuredClone(uniqueSubgraphNodeIds))
 
-    expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
-    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
+    expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(
+      new Set([nodeId(10), nodeId(11), nodeId(12)])
+    )
+    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
+      new Set([nodeId(20), nodeId(21), nodeId(22)])
+    )
   })
 })
 

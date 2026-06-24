@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { nodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import {
   LGraphNode as LGraphNodeClass,
@@ -161,7 +162,7 @@ describe('appModeStore', () => {
     ChangeTracker.isLoadingGraph = false
     mockResolveNode.mockReturnValue(undefined)
     mockSettings.reset()
-    vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
+    vi.mocked(app.rootGraph).nodes = [{ id: nodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
     vi.clearAllMocks()
@@ -266,7 +267,7 @@ describe('appModeStore', () => {
     })
 
     it('onEnterBuilder enters builder when nodes exist', () => {
-      const options = getDialogOptions([{ id: 1 } as LGraphNode])
+      const options = getDialogOptions([{ id: nodeId(1) } as LGraphNode])
 
       options.onEnterBuilder()
 

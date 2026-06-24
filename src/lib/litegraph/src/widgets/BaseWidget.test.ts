@@ -7,6 +7,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { nodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 function createTestWidget(
@@ -36,7 +37,7 @@ describe('BaseWidget store integration', () => {
     store = useWidgetValueStore()
     graph = new LGraph()
     node = new LGraphNode('TestNode')
-    node.id = 1
+    node.id = nodeId(1)
     graph.add(node)
   })
 

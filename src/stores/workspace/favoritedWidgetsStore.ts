@@ -8,6 +8,7 @@ import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -114,7 +115,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     if ('nodeId' in id && id.nodeId !== undefined) {
       if (!isSerializedNodeId(id.nodeId)) return null
       return {
-        nodeLocatorId: workflowStore.nodeIdToNodeLocatorId(id.nodeId),
+        nodeLocatorId: workflowStore.nodeIdToNodeLocatorId(toNodeId(id.nodeId)),
         widgetName: String(id.widgetName)
       }
     }

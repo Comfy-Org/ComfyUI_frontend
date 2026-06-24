@@ -866,13 +866,13 @@ describe('useWorkflowStore', () => {
 
     describe('nodeIdToNodeLocatorId', () => {
       it('should convert node ID to NodeLocatorId for subgraph nodes', () => {
-        const result = store.nodeIdToNodeLocatorId(456)
+        const result = store.nodeIdToNodeLocatorId(toNodeId(456))
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
       it('should return simple node ID for root graph nodes', () => {
         store.activeSubgraph = undefined
-        const result = store.nodeIdToNodeLocatorId(123)
+        const result = store.nodeIdToNodeLocatorId(toNodeId(123))
         expect(result).toBe('123')
       })
 
@@ -884,7 +884,10 @@ describe('useWorkflowStore', () => {
           nodes: [],
           clear: vi.fn()
         } as Partial<Subgraph> as Subgraph
-        const result = store.nodeIdToNodeLocatorId(789, customSubgraph)
+        const result = store.nodeIdToNodeLocatorId(
+          toNodeId(789),
+          customSubgraph
+        )
         expect(result).toBe('custom-uuid-1234-5678-90ab-cdef12345678:789')
       })
     })
