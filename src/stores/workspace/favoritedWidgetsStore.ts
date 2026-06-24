@@ -3,11 +3,12 @@ import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -111,8 +112,9 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     }
 
     if ('nodeId' in id && id.nodeId !== undefined) {
+      if (!isSerializedNodeId(id.nodeId)) return null
       return {
-        nodeLocatorId: workflowStore.nodeIdToNodeLocatorId(id.nodeId as NodeId),
+        nodeLocatorId: workflowStore.nodeIdToNodeLocatorId(id.nodeId),
         widgetName: String(id.widgetName)
       }
     }
@@ -365,3 +367,6 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     reorderFavorites
   }
 })
+function isSerializedNodeId(value: unknown): value is SerializedNodeId {
+  return typeof value === 'string' || typeof value === 'number'
+}

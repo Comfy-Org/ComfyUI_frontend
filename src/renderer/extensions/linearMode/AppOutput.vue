@@ -2,18 +2,18 @@
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { id } = defineProps<{ id: string }>()
+const { id } = defineProps<{ id: SerializedNodeId }>()
 
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() =>
   appModeStore.selectedOutputs.some(matchesThis)
 )
 
-function matchesThis(nodeId: NodeId) {
+function matchesThis(nodeId: SerializedNodeId) {
   return id == nodeId
 }
 function togglePromotion() {

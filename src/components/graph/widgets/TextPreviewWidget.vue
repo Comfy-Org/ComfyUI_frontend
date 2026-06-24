@@ -16,8 +16,9 @@ import { default as DOMPurify } from 'dompurify'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, watch } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
@@ -76,7 +77,7 @@ onMounted(() => {
 watch(
   () => executionStore.executingNodeIds,
   (ids) => {
-    if (!parentNodeId && ids.length > 0) parentNodeId = ids[0]
+    if (!parentNodeId && ids.length > 0) parentNodeId = toNodeId(ids[0])
   }
 )
 </script>

@@ -213,7 +213,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
-      :node-id="String(node.id)"
+      :node-id="toNodeId(node.id)"
       :node-type="node.type"
       :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
     />

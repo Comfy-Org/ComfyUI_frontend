@@ -16,7 +16,8 @@ import type {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { Object3D } from 'three'
 
 // Type for the useLoad3dViewer composable function
@@ -180,12 +181,13 @@ class Load3dService {
    * Use this for initial viewer creation.
    */
   async getOrCreateViewer(node: LGraphNode) {
-    if (!viewerInstances.has(node.id)) {
+    const nodeId = toNodeId(node.id)
+    if (!viewerInstances.has(nodeId)) {
       const useLoad3dViewer = await loadUseLoad3dViewer()
-      viewerInstances.set(node.id, useLoad3dViewer(node))
+      viewerInstances.set(nodeId, useLoad3dViewer(node))
     }
 
-    return viewerInstances.get(node.id)
+    return viewerInstances.get(nodeId)
   }
 
   /**
@@ -197,21 +199,23 @@ class Load3dService {
     node: LGraphNode,
     useLoad3dViewer: T
   ): ReturnType<T> {
-    if (!viewerInstances.has(node.id)) {
-      viewerInstances.set(node.id, useLoad3dViewer(node))
+    const nodeId = toNodeId(node.id)
+    if (!viewerInstances.has(nodeId)) {
+      viewerInstances.set(nodeId, useLoad3dViewer(node))
     }
 
-    return viewerInstances.get(node.id) as ReturnType<T>
+    return viewerInstances.get(nodeId) as ReturnType<T>
   }
 
   removeViewer(node: LGraphNode) {
-    const viewer = viewerInstances.get(node.id)
+    const nodeId = toNodeId(node.id)
+    const viewer = viewerInstances.get(nodeId)
 
     if (viewer) {
       viewer.cleanup()
     }
 
-    viewerInstances.delete(node.id)
+    viewerInstances.delete(nodeId)
   }
 
   async copyLoad3dState(source: Load3d, target: Load3d) {

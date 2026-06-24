@@ -4,12 +4,12 @@ import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
   LinearData,
-  LinearInput
+  LinearInput,
+  LinearOutputNodeId
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -55,7 +55,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   const showVueNodeSwitchPopup = ref(false)
 
   const selectedInputs = ref<LinearInput[]>([])
-  const selectedOutputs = ref<NodeId[]>([])
+  const selectedOutputs = ref<LinearOutputNodeId[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
     // Nodes are not reactive, so trigger recomputation when workflow changes

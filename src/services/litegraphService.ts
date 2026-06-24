@@ -39,7 +39,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
@@ -62,6 +61,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -235,8 +235,7 @@ export const useLitegraphService = () => {
    */
   function setupStrokeStyles(node: LGraphNode) {
     node.strokeStyles['running'] = function (this: LGraphNode) {
-      const nodeId = String(this.id)
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(this.id)
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
@@ -947,7 +946,7 @@ export const useLitegraphService = () => {
     return [x + w / dpi / 2, y + h / dpi / 2]
   }
 
-  function goToNode(nodeId: NodeId) {
+  function goToNode(nodeId: SerializedNodeId) {
     const graphNode = app.canvas.graph?.getNodeById(nodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)

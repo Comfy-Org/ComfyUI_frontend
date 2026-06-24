@@ -125,7 +125,7 @@ export function hasWidgetError(
 
 export function getWidgetIdentity(
   widget: SafeWidgetData,
-  nodeId: string | number | undefined,
+  nodeId: NodeId | undefined,
   index: number
 ): {
   dedupeIdentity?: string

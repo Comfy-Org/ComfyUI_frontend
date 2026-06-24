@@ -57,7 +57,11 @@ describe('getWidgetIdentity', () => {
       name: 'text',
       type: 'text'
     })
-    const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '1', 0)
+    const { dedupeIdentity, renderKey } = getWidgetIdentity(
+      widget,
+      toNodeId('1'),
+      0
+    )
     expect(dedupeIdentity).toBe(`${id}:text`)
     expect(renderKey).toBe(dedupeIdentity)
   })
@@ -67,7 +71,11 @@ describe('getWidgetIdentity', () => {
       nodeId: undefined,
       sourceExecutionId: undefined
     })
-    const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '5', 3)
+    const { dedupeIdentity, renderKey } = getWidgetIdentity(
+      widget,
+      toNodeId('5'),
+      3
+    )
     expect(dedupeIdentity).toBe('node:5:test_widget:combo')
     expect(renderKey).toBe(dedupeIdentity)
   })
@@ -91,7 +99,7 @@ describe('getWidgetIdentity', () => {
       nodeId: undefined,
       sourceExecutionId: createNodeExecutionId([65, 18])
     })
-    const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
+    const { dedupeIdentity } = getWidgetIdentity(widget, toNodeId('1'), 0)
     expect(dedupeIdentity).toBe('exec:65:18:test_widget:combo')
   })
 })
