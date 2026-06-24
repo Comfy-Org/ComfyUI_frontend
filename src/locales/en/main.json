@@ -377,6 +377,35 @@
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
   },
+  "hdrViewer": {
+    "title": "HDR Viewer",
+    "openInHdrViewer": "Open in HDR Viewer",
+    "hdrImage": "HDR image",
+    "failedToLoad": "Failed to load HDR image",
+    "exposure": "Exposure",
+    "normalizeExposure": "Auto exposure",
+    "channel": "Channel",
+    "channels": {
+      "rgb": "RGB",
+      "r": "R",
+      "g": "G",
+      "b": "B",
+      "a": "Alpha",
+      "luminance": "Luminance"
+    },
+    "sourceGamut": "Source gamut",
+    "dither": "Dither",
+    "clipWarnings": "Clip warnings",
+    "fitView": "Fit",
+    "histogram": "Histogram",
+    "resolution": "Resolution",
+    "min": "Min",
+    "max": "Max",
+    "mean": "Mean",
+    "stdDev": "Std dev",
+    "nan": "NaN",
+    "inf": "Inf"
+  },
   "manager": {
     "title": "Nodes Manager",
     "nodePackInfo": "Node Pack Info",
