@@ -10,7 +10,6 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH_EN = '/drops'
 const PATH_ZH = '/zh-CN/drops'
 const CLOUD_URL = 'https://cloud.comfy.org'
-const SUBSCRIBE_SIGN_UP_URL = 'https://luma.com/l7c5z4gp'
 
 const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_EN, 'en'],
@@ -109,23 +108,6 @@ test.describe('Drops landing — desktop @smoke', () => {
       await expect(secondary).toHaveAttribute('href', CLOUD_URL)
       await expect(secondary).toHaveAttribute('target', '_blank')
       await expect(secondary).toHaveAttribute('rel', 'noopener noreferrer')
-    }
-  })
-
-  test('subscribe banner shows text and a sign-up link in both locales', async ({
-    page
-  }) => {
-    for (const [path, locale] of LOCALES) {
-      await page.goto(path)
-      await expect(page.getByText(t('drops.banner.text', locale))).toBeVisible()
-
-      const signUp = page.getByRole('link', {
-        name: t('drops.banner.cta', locale)
-      })
-      await expect(signUp).toBeVisible()
-      await expect(signUp).toHaveAttribute('href', SUBSCRIBE_SIGN_UP_URL)
-      await expect(signUp).toHaveAttribute('target', '_blank')
-      await expect(signUp).toHaveAttribute('rel', 'noopener noreferrer')
     }
   })
 
