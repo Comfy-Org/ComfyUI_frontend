@@ -174,10 +174,20 @@ describe('OAuthConsentView', () => {
     )
   })
 
-  it('disables both buttons when no workspaces are available', () => {
+  it('disables Allow but keeps Deny enabled when no workspaces are available', () => {
     renderConsent({ workspaces: [] })
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled()
+  })
+
+  it('shows an error when Deny is clicked with no eligible workspaces', async () => {
+    const user = userEvent.setup()
+    renderConsent({ workspaces: [] })
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.getByRole('alert')).toBeVisible()
+    expect(submitOAuthConsentDecision).not.toHaveBeenCalled()
   })
 
   it('maps OAuthApiError(400) to the expired-request message', async () => {

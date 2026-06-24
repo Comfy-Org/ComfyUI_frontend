@@ -155,7 +155,7 @@
           size="lg"
           class="w-full bg-(--oauth-button-cancel) hover:bg-(--oauth-box)"
           :loading="submitting === 'deny'"
-          :disabled="isSubmitting || challenge.workspaces.length === 0"
+          :disabled="isSubmitting"
           @click="submit('deny')"
         >
           {{ t('oauth.consent.deny') }}
@@ -299,11 +299,12 @@ function messageForError(error: unknown): string {
 async function submit(decision: 'allow' | 'deny') {
   if (!challenge.value) return
   if (decision === 'allow' && !selectedWorkspaceIsValid.value) return
-  // Cloud requires workspace_id on both allow and deny. A deny with no
-  // workspaces is disabled in the template, so a workspace is guaranteed.
   const workspaceId =
     selectedWorkspaceId.value ?? challenge.value.workspaces[0]?.id
-  if (!workspaceId) return
+  if (!workspaceId) {
+    errorMessage.value = t('oauth.consent.genericError')
+    return
+  }
 
   errorMessage.value = ''
   submitting.value = decision
