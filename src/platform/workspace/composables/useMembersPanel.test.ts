@@ -114,6 +114,43 @@ describe('sortMembers', () => {
     sortMembers(members, null, 'desc')
     expect(members).toEqual(original)
   })
+
+  it('pins the original owner first regardless of sort direction', () => {
+    const creator = createMember({
+      id: 'creator',
+      role: 'owner',
+      email: 'creator@test.com',
+      joinDate: new Date('2025-01-01')
+    })
+    const promoted = createMember({
+      id: 'promoted',
+      role: 'owner',
+      email: 'me@test.com',
+      joinDate: new Date('2025-02-01')
+    })
+    const member = createMember({
+      id: 'm',
+      role: 'member',
+      email: 'other@test.com',
+      joinDate: new Date('2025-03-01')
+    })
+
+    const desc = sortMembers(
+      [member, promoted, creator],
+      'me@test.com',
+      'desc',
+      'creator'
+    )
+    expect(desc.map((m) => m.id)).toEqual(['creator', 'promoted', 'm'])
+
+    const asc = sortMembers(
+      [member, promoted, creator],
+      'me@test.com',
+      'asc',
+      'creator'
+    )
+    expect(asc[0].id).toBe('creator')
+  })
 })
 
 describe('filterBySearch', () => {
@@ -213,6 +250,7 @@ const mockToastAdd = vi.fn()
 const mockResendInvite = vi.fn()
 const mockShowRemoveMemberDialog = vi.fn()
 const mockShowRevokeInviteDialog = vi.fn()
+const mockShowChangeMemberRoleDialog = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
@@ -220,6 +258,7 @@ const mockShowInviteMemberUpsellDialog = vi.fn()
 const {
   mockMembers,
   mockPendingInvites,
+  mockOriginalOwnerId,
   mockIsInPersonalWorkspace,
   mockIsWorkspaceSubscribed,
   mockTotalMemberSlots,
@@ -235,6 +274,7 @@ const {
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
+    mockOriginalOwnerId: ref<string | null>(null),
     mockIsInPersonalWorkspace: ref(false),
     mockIsWorkspaceSubscribed: ref(true),
     mockTotalMemberSlots: ref(0),
@@ -244,7 +284,7 @@ const {
       canViewPendingInvites: true,
       canInviteMembers: true,
       canManageInvites: true,
-      canRemoveMembers: true,
+      canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
@@ -291,6 +331,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     members: mockMembers,
     pendingInvites: mockPendingInvites,
+    originalOwnerId: mockOriginalOwnerId,
     totalMemberSlots: mockTotalMemberSlots,
     isInviteLimitReached: mockIsInviteLimitReached,
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
@@ -342,6 +383,7 @@ vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,
     showRevokeInviteDialog: mockShowRevokeInviteDialog,
+    showChangeMemberRoleDialog: mockShowChangeMemberRoleDialog,
     showInviteMemberDialog: mockShowInviteMemberDialog,
     showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog
   })
@@ -352,6 +394,7 @@ describe('useMembersPanel', () => {
     vi.clearAllMocks()
     mockMembers.value = []
     mockPendingInvites.value = []
+    mockOriginalOwnerId.value = null
     mockIsInPersonalWorkspace.value = false
     mockIsWorkspaceSubscribed.value = true
     mockTotalMemberSlots.value = 0
@@ -495,6 +538,105 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       panel.handleRemoveMember(createMember({ id: 'mem-7' }))
       expect(mockShowRemoveMemberDialog).toHaveBeenCalledWith('mem-7')
+    })
+  })
+
+  describe('handleChangeRole', () => {
+    it('opens the change-role dialog when promoting a member', async () => {
+      const panel = await setup()
+      panel.handleChangeRole(
+        createMember({ id: 'mem-7', name: 'Jane', role: 'member' }),
+        'owner'
+      )
+      expect(mockShowChangeMemberRoleDialog).toHaveBeenCalledWith({
+        memberId: 'mem-7',
+        memberName: 'Jane',
+        targetRole: 'owner'
+      })
+    })
+
+    it('opens the change-role dialog when demoting an owner', async () => {
+      const panel = await setup()
+      panel.handleChangeRole(
+        createMember({ id: 'own-2', name: 'Jane', role: 'owner' }),
+        'member'
+      )
+      expect(mockShowChangeMemberRoleDialog).toHaveBeenCalledWith({
+        memberId: 'own-2',
+        memberName: 'Jane',
+        targetRole: 'member'
+      })
+    })
+
+    it('is a no-op when the member already has the target role', async () => {
+      const panel = await setup()
+      panel.handleChangeRole(createMember({ role: 'member' }), 'member')
+      expect(mockShowChangeMemberRoleDialog).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('memberMenuItems', () => {
+    it('builds a Change role submenu with the current role checked', async () => {
+      const panel = await setup()
+      const items = panel.memberMenuItems(createMember({ role: 'member' }))
+
+      expect(items.map((i) => i.label)).toEqual([
+        'workspacePanel.members.actions.changeRole',
+        'workspacePanel.members.actions.removeMember'
+      ])
+
+      const roleItems = items[0].items ?? []
+      expect(roleItems.map((i) => i.label)).toEqual([
+        'workspaceSwitcher.roleOwner',
+        'workspaceSwitcher.roleMember'
+      ])
+      expect(roleItems.map((i) => i.checked)).toEqual([false, true])
+    })
+
+    it('checks Owner for owner rows', async () => {
+      const panel = await setup()
+      const items = panel.memberMenuItems(createMember({ role: 'owner' }))
+      const roleItems = items[0].items ?? []
+      expect(roleItems.map((i) => i.checked)).toEqual([true, false])
+    })
+
+    it('routes submenu selection to the change-role dialog', async () => {
+      const panel = await setup()
+      const member = createMember({ id: 'mem-9', role: 'member' })
+      const ownerItem = (panel.memberMenuItems(member)[0].items ?? [])[0]
+
+      ownerItem.command?.({
+        originalEvent: new Event('click'),
+        item: ownerItem
+      })
+
+      expect(mockShowChangeMemberRoleDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: 'mem-9', targetRole: 'owner' })
+      )
+    })
+
+    it('routes Remove member to the remove dialog', async () => {
+      const panel = await setup()
+      const member = createMember({ id: 'mem-9' })
+      const removeItem = panel.memberMenuItems(member)[1]
+
+      removeItem.command?.({
+        originalEvent: new Event('click'),
+        item: removeItem
+      })
+
+      expect(mockShowRemoveMemberDialog).toHaveBeenCalledWith('mem-9')
+    })
+  })
+
+  describe('isOriginalOwner', () => {
+    it('matches against the store originalOwnerId', async () => {
+      mockOriginalOwnerId.value = 'creator-1'
+      const panel = await setup()
+      expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
+        true
+      )
+      expect(panel.isOriginalOwner(createMember({ id: 'other' }))).toBe(false)
     })
   })
 
