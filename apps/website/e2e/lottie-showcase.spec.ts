@@ -46,26 +46,29 @@ test.describe('ProductShowcase - accordion @interaction', () => {
   test('clicking third item activates it', async ({ page }) => {
     await scrollToShowcase(page)
     const thirdBtn = page
-      .getByRole('button', { name: /AI-Native Video/i })
+      .getByRole('button', { name: /Community Workflows/i })
       .first()
     await thirdBtn.click()
     await expect(thirdBtn).toHaveClass(/bg-primary-comfy-yellow/)
   })
 
-  test('active item description is visible; inactive item description is hidden', async ({
+  test('active item description is expanded; inactive item description is collapsed', async ({
     page
   }) => {
     await scrollToShowcase(page)
     const secondBtn = page.getByRole('button', { name: /App mode/i }).first()
     await secondBtn.click()
 
-    await expect(
-      page.getByText(/If you are new to ComfyUI/i).first()
-    ).toBeVisible()
-    // First item description collapses via grid-rows-[0fr]
-    await expect(
-      page.getByText(/Build powerful AI pipelines by connecting nodes/i).first()
-    ).toBeHidden()
+    // Active button's description grid expands to grid-rows-[1fr]
+    const activeGrid = secondBtn.locator('div[class*="grid-rows-\\[1fr\\]"]')
+    await expect(activeGrid).toBeAttached()
+
+    // First (inactive) button's description grid stays collapsed at grid-rows-[0fr]
+    const firstBtn = page
+      .getByRole('button', { name: /Full Control with Nodes/i })
+      .first()
+    const inactiveGrid = firstBtn.locator('div[class*="grid-rows-\\[0fr\\]"]')
+    await expect(inactiveGrid).toBeAttached()
   })
 })
 
