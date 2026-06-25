@@ -26,11 +26,20 @@ export interface SettingOption {
   value?: string | number
 }
 
+interface SettingTelemetryOptions {
+  // Emit a `setting_changed` event when this setting changes.
+  trackChanges?: boolean
+  // Ship previous_value/new_value with the event. Leave unset for settings
+  // whose values must not leave the client (hidden/server/secret values).
+  includeValues?: boolean
+}
+
 export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings
   defaultValue: TValue | (() => TValue)
   defaultsByInstallVersion?: Record<`${number}.${number}.${number}`, TValue>
   onChange?(newValue: TValue, oldValue?: TValue): void
+  telemetry?: SettingTelemetryOptions
   // By default category is id.split('.'). However, changing id to assign
   // new category has poor backward compatibility. Use this field to overwrite
   // default category from id.

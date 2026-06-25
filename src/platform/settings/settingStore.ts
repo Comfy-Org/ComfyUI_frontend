@@ -52,18 +52,21 @@ function onChange(
   }
 }
 
-function createSettingChangedMetadata<K extends keyof Settings>(
+function settingChangedEvent<K extends keyof Settings>(
+  setting: SettingParams | undefined,
   key: K,
   applied: AppliedSetting<Settings[K]>
-): SettingChangedMetadata {
-  const metadata: SettingChangedMetadata = { setting_id: key }
+): SettingChangedMetadata | undefined {
+  const telemetry = setting?.telemetry
+  if (!telemetry?.trackChanges) return undefined
 
-  if (key === 'Comfy.ColorPalette') {
-    metadata.previous_value = applied.previousValue
-    metadata.new_value = applied.newValue
-  }
-
-  return metadata
+  return telemetry.includeValues
+    ? {
+        setting_id: key,
+        previous_value: applied.previousValue,
+        new_value: applied.newValue
+      }
+    : { setting_id: key }
 }
 
 export const useSettingStore = defineStore('setting', () => {
@@ -147,9 +150,9 @@ export const useSettingStore = defineStore('setting', () => {
     const applied = applySettingLocally(key, value)
     if (applied === undefined) return
     await api.storeSetting(key, applied.newValue)
-    useTelemetry()?.trackSettingChanged(
-      createSettingChangedMetadata(key, applied)
-    )
+
+    const event = settingChangedEvent(settingsById.value[key], key, applied)
+    if (event) useTelemetry()?.trackSettingChanged(event)
   }
 
   /**
@@ -167,7 +170,8 @@ export const useSettingStore = defineStore('setting', () => {
       )
       if (applied !== undefined) {
         updatedSettings[key] = applied.newValue
-        telemetryEvents.push(createSettingChangedMetadata(key, applied))
+        const event = settingChangedEvent(settingsById.value[key], key, applied)
+        if (event) telemetryEvents.push(event)
       }
     }
 
