@@ -18,7 +18,7 @@ export function groupNodesByPack(
   const byPackId = new Map<string, NodePack>()
 
   for (const [className, def] of Object.entries(defs)) {
-    const source = getNodeSource(def.python_module, def.essentials_category)
+    const source = getNodeSource(def.python_module)
     if (source.type !== NodeSourceType.CustomNodes) {
       continue
     }

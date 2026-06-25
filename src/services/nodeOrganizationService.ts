@@ -22,7 +22,7 @@ import { sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 const DEFAULT_ICON = 'pi pi-sort'
 const UNKNOWN_RANK = Number.MAX_SAFE_INTEGER
 
-function resolveEssentialsCategory(
+export function resolveEssentialsCategory(
   nodeDef: ComfyNodeDefImpl
 ): EssentialsCategory | undefined {
   if (!nodeDef.isCoreNode) return undefined
@@ -317,10 +317,7 @@ class NodeOrganizationService {
         else myBlueprints.push(node)
       } else if (node.api_node || node.category?.startsWith('api node')) {
         partnerNodes.push(node)
-      } else if (
-        node.nodeSource.type === NodeSourceType.Core ||
-        node.nodeSource.type === NodeSourceType.Essentials
-      ) {
+      } else if (node.nodeSource.type === NodeSourceType.Core) {
         comfyNodes.push(node)
       } else {
         extensions.push(node)
