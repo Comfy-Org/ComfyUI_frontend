@@ -16,6 +16,7 @@ export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
+  | 'deep_link'
 
 export interface SubscriptionDialogOptions {
   reason?: SubscriptionDialogReason
