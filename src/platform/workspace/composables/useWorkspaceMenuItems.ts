@@ -37,7 +37,7 @@ export function useWorkspaceMenuItems() {
   }
 
   function cancelSubscription() {
-    showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+    void showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
   }
 
   function deleteWorkspace() {
