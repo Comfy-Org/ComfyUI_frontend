@@ -9,8 +9,10 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -55,6 +57,7 @@ function useSubscriptionInternal() {
 
   const authStore = useAuthStore()
   const { getAuthHeader } = authStore
+  const { flags } = useFeatureFlags()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -238,19 +241,17 @@ function useSubscriptionInternal() {
   const showSubscriptionDialog = (options?: {
     reason?: SubscriptionDialogReason
   }) => {
-    if (isCloud) {
-      useTelemetry()?.trackSubscription('modal_opened', {
-        current_tier: subscriptionTier.value?.toLowerCase(),
-        reason: options?.reason
-      })
-    }
+    useTelemetry()?.trackSubscription('modal_opened', {
+      current_tier: subscriptionTier.value?.toLowerCase(),
+      reason: options?.reason
+    })
 
     void showSubscriptionRequiredDialog(options)
   }
 
   /**
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
-   * Use to determine which UI to show (SubscriptionPanel vs LegacyCreditsPanel).
+   * Use to determine which UI to show (SubscriptionPanel vs CreditsPanel).
    */
   const isSubscriptionEnabled = (): boolean =>
     Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -327,11 +328,12 @@ function useSubscriptionInternal() {
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
     const headers = await buildAuthHeaders()
 
-    const response = await fetch(
+    const response = await fetchWithUnifiedRemint(
       buildApiUrl('/customers/cloud-subscription-status'),
       {
         headers
-      }
+      },
+      isCloud && flags.unifiedCloudAuthEnabled
     )
 
     if (!response.ok) {
@@ -417,13 +419,14 @@ function useSubscriptionInternal() {
       const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetch(
+      const response = await fetchWithUnifiedRemint(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
           headers,
           body: JSON.stringify(checkoutAttribution)
-        }
+        },
+        isCloud && flags.unifiedCloudAuthEnabled
       )
 
       if (!response.ok) {

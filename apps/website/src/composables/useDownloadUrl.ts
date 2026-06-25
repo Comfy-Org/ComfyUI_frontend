@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { externalLinks } from '@/config/routes'
 
 export const downloadUrls = {
-  windows: 'https://download.comfy.org/windows/nsis/x64',
+  windows: 'https://comfy.org/download/windows/nsis/x64',
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
 

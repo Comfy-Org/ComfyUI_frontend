@@ -85,6 +85,16 @@ jobs:
             fi
           done
 
+      - name: Strip non-source entries from coverage
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        run: |
+          # Drop served bundle scripts (localhost-8188/assets/*.js) that V8 records but have no source file on disk, which would abort genhtml.
+          lcov --remove coverage/playwright/coverage.lcov \
+            '*localhost-8188*' \
+            -o coverage/playwright/coverage.lcov \
+            --ignore-errors unused
+          wc -l coverage/playwright/coverage.lcov
+
       - name: Upload merged coverage data
         if: steps.coverage-shards.outputs.has-coverage == 'true'
         uses: actions/upload-artifact@v6
