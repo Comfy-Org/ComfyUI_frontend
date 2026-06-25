@@ -2931,6 +2931,8 @@
       },
       "inviteResent": "Invite resent",
       "inviteResendFailed": "Failed to resend invite",
+      "inviteResendCooldown": "Please wait before resending",
+      "inviteResendCooldownDetail": "You can resend this invite again in {seconds}s.",
       "failedToUpdateWorkspace": "Failed to update workspace",
       "failedToCreateWorkspace": "Failed to create workspace",
       "failedToDeleteWorkspace": "Failed to delete workspace",

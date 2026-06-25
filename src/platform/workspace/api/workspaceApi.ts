@@ -324,11 +324,13 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-class WorkspaceApiError extends Error {
+export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
-    public readonly code?: string
+    public readonly code?: string,
+    /** Seconds to wait before retrying, parsed from a 429 `Retry-After` header. */
+    public readonly retryAfter?: number
   ) {
     super(message)
     this.name = 'WorkspaceApiError'
@@ -348,11 +350,19 @@ async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
 
+function parseRetryAfterSeconds(value: unknown): number | undefined {
+  const seconds = Number(value)
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined
+}
+
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const message = err.response?.data?.message ?? err.message
-    throw new WorkspaceApiError(message, status)
+    const retryAfter = parseRetryAfterSeconds(
+      err.response?.headers?.['retry-after']
+    )
+    throw new WorkspaceApiError(message, status, undefined, retryAfter)
   }
   throw err
 }
@@ -544,6 +554,24 @@ export const workspaceApi = {
         api.apiURL(`/workspace/invites/${inviteId}`),
         { headers }
       )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Resend a pending invite (refreshes expiry, re-sends the email).
+   * POST /api/workspace/invites/:inviteId/resend
+   */
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${inviteId}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }
