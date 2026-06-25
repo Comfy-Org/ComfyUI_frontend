@@ -28,12 +28,11 @@ function onOpenChange(open: boolean) {
   else emit('menuClosed')
 }
 
-defineExpose({
-  hide: () => {
-    isOpen.value = false
-  },
-  isOpen
-})
+function close() {
+  isOpen.value = false
+}
+
+defineExpose({ hide: close, isOpen })
 </script>
 
 <template>
@@ -61,7 +60,7 @@ defineExpose({
       :side-offset="4"
       data-testid="more-menu-content"
     >
-      <slot />
+      <slot :close="close" />
     </DropdownMenuContent>
   </DropdownMenu>
 </template>
