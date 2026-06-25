@@ -16,6 +16,8 @@ import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composabl
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
+import { useBoundingBoxesWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget'
+import { useColorsWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorsWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
@@ -234,6 +236,8 @@ export const ComfyWidgets = {
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
   RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),
+  BOUNDING_BOXES: transformWidgetConstructorV2ToV1(useBoundingBoxesWidget()),
+  COLORS: transformWidgetConstructorV2ToV1(useColorsWidget()),
   ...dynamicWidgets
 } as const
 

@@ -829,6 +829,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (this._lowQualityZoomThreshold > 0) {
         this._isLowQuality = scale < this._lowQualityZoomThreshold
       }
+      this.setDirty(true, true)
     }
 
     // Initialize link renderer if graph is available

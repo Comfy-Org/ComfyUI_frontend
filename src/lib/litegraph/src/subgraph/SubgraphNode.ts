@@ -68,6 +68,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return this.graph.rootGraph
   }
 
+  get isDetached(): boolean {
+    return !this.graph
+  }
+
   override get displayType(): string {
     return 'Subgraph node'
   }
