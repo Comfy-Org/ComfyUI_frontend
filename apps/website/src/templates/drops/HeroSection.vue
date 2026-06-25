@@ -2,6 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 
 import HeroLivestream01 from '../../components/blocks/HeroLivestream01.vue'
+import LaunchesHeroLogo from '../../components/launches/LaunchesHeroLogo.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import { livestream } from './livestream'
@@ -13,13 +14,6 @@ const routes = getRoutes(locale)
 
 <template>
   <HeroLivestream01
-    :visual="{
-      type: 'video',
-      src: 'https://media.comfy.org/website/drops/Drops_hero_rotatinglogo.webm',
-      alt: t('launches.hero.visualAlt', locale),
-      width: 1760,
-      height: 528
-    }"
     :title="t('launches.hero.title', locale)"
     :primary-cta="{
       label: t('launches.hero.primary', locale),
@@ -33,5 +27,9 @@ const routes = getRoutes(locale)
     :youtube-video-id="livestream.youtubeVideoId"
     :start-date-time="livestream.startDateTime"
     :end-date-time="livestream.endDateTime"
-  />
+  >
+    <template #visual>
+      <LaunchesHeroLogo :label="t('launches.hero.visualAlt', locale)" />
+    </template>
+  </HeroLivestream01>
 </template>

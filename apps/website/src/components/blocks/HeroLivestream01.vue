@@ -93,30 +93,32 @@ const isLive = computed(
         allowfullscreen
       />
     </div>
-    <img
-      v-else-if="visual?.type === 'image'"
-      :src="visual.src"
-      :alt="visual.alt"
-      :width="visual.width"
-      :height="visual.height"
-      fetchpriority="high"
-      decoding="async"
-      class="mb-10 h-auto w-full max-w-md lg:mb-12 lg:max-w-lg"
-    />
-    <video
-      v-else-if="visual?.type === 'video'"
-      :src="visual.src"
-      :poster="visual.poster"
-      :aria-label="visual.alt"
-      :width="visual.width"
-      :height="visual.height"
-      autoplay
-      loop
-      muted
-      playsinline
-      preload="metadata"
-      class="mb-10 h-auto w-full max-w-md lg:mb-12 lg:max-w-2xl"
-    />
+    <slot v-else name="visual">
+      <img
+        v-if="visual?.type === 'image'"
+        :src="visual.src"
+        :alt="visual.alt"
+        :width="visual.width"
+        :height="visual.height"
+        fetchpriority="high"
+        decoding="async"
+        class="mb-10 h-auto w-full max-w-md lg:mb-12 lg:max-w-lg"
+      />
+      <video
+        v-else-if="visual?.type === 'video'"
+        :src="visual.src"
+        :poster="visual.poster"
+        :aria-label="visual.alt"
+        :width="visual.width"
+        :height="visual.height"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="metadata"
+        class="mb-10 h-auto w-full max-w-md lg:mb-12 lg:max-w-2xl"
+      />
+    </slot>
 
     <p
       v-if="eyebrow"
