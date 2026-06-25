@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -55,8 +56,12 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({ isSettingUp: false })
 }))
 
+const launchCancellationFlowMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ launchCancellationFlow: vi.fn() })
+  useDialogService: () => ({
+    launchCancellationFlow: launchCancellationFlowMock
+  })
 }))
 
 vi.mock(
@@ -110,6 +115,7 @@ const i18n = createI18n({
         },
         usdPerMonth: '/ month',
         usdPerMonthPerMember: '/ member / month',
+        creditsIncluded: 'Included',
         creditsRemainingThisMonth: 'Included (Refills {date})',
         creditsRemainingThisYear: 'Included (Refills {date})',
         creditsYouveAdded: "Credits you've added",
@@ -178,7 +184,20 @@ function renderPanel() {
       stubs: {
         StatusBadge: true,
         Skeleton: true,
-        Menu: true,
+        Menu: {
+          props: ['model'],
+          template: `
+            <div>
+              <button
+                v-for="item in model"
+                :key="item.label"
+                @click="item.command"
+              >
+                {{ item.label }}
+              </button>
+            </div>
+          `
+        },
         Button: { template: '<button><slot/></button>' }
       }
     }
@@ -191,6 +210,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     isWorkspaceSubscribedRef.value = true
     isActiveSubscriptionRef.value = true
     subscriptionRef.value = activeSubscription()
+    launchCancellationFlowMock.mockReset()
   })
 
   describe('cancel state', () => {
@@ -268,10 +288,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   describe('refills date', () => {
-    beforeEach(() => {
-      vi.stubEnv('TZ', 'UTC')
-    })
-
     it('renders refills date from renewalDate when present', () => {
       subscriptionRef.value = activeSubscription()
 
@@ -280,24 +296,38 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(container.textContent).toMatch(/Refills 06\/19\/26/)
     })
 
-    it('falls back to endDate for refills when renewalDate is null (canceled)', () => {
+    it('hides the refills date when renewalDate is null (canceled)', () => {
       subscriptionRef.value = canceledSubscription()
 
       const { container } = renderPanel()
 
-      expect(container.textContent).toMatch(/Refills 06\/19\/26/)
+      expect(container.textContent).toContain('Included')
+      expect(container.textContent).not.toContain('Refills')
     })
+  })
 
-    it('renders an empty refills date when neither renewalDate nor endDate is set', () => {
+  describe('cancel subscription menu item', () => {
+    it('launches the cancellation flow with the subscription end date', async () => {
       subscriptionRef.value = {
         ...activeSubscription(),
-        renewalDate: null,
-        endDate: null
+        endDate: 'Jun 19, 2026'
       }
+      renderPanel()
 
-      const { container } = renderPanel()
+      const user = userEvent.setup()
+      await user.click(screen.getByText('Cancel subscription'))
 
-      expect(container.textContent).toMatch(/Refills \)/)
+      expect(launchCancellationFlowMock).toHaveBeenCalledWith('Jun 19, 2026')
+    })
+
+    it('passes undefined when the subscription has no end date', async () => {
+      subscriptionRef.value = activeSubscription()
+      renderPanel()
+
+      const user = userEvent.setup()
+      await user.click(screen.getByText('Cancel subscription'))
+
+      expect(launchCancellationFlowMock).toHaveBeenCalledWith(undefined)
     })
   })
 })

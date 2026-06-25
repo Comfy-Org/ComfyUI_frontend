@@ -1,39 +1,42 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const fetchStatus = vi.fn()
-const cancelSubscription = vi.fn()
-const trackCancellationFlowOpened = vi.fn()
-const trackCancellationFlowClosed = vi.fn()
-const trackCancellationReconsidered = vi.fn()
-const trackMonthlySubscriptionCancelled = vi.fn()
-const toastAdd = vi.fn()
-const churnkeyShow = vi.fn()
-const isConfiguredRef = { value: true }
-const billingTypeRef: { value: 'legacy' | 'workspace' } = { value: 'workspace' }
-const subscriptionRef: {
-  value: {
-    tier: string | null
-    duration: string | null
-    planSlug: string | null
-  } | null
-} = { value: null }
+import { ChurnkeyAuthUnavailableError, ChurnkeyEmbedLoadError } from './errors'
+
+const mocks = vi.hoisted(() => ({
+  fetchStatus: vi.fn(),
+  cancelSubscription: vi.fn(),
+  trackCancellationFlowOpened: vi.fn(),
+  trackCancellationFlowClosed: vi.fn(),
+  trackMonthlySubscriptionCancelled: vi.fn(),
+  toastAdd: vi.fn(),
+  prepareChurnkey: vi.fn(),
+  show: vi.fn(),
+  billingType: { value: 'workspace' as 'legacy' | 'workspace' },
+  subscription: {
+    value: null as {
+      tier: string | null
+      duration: string | null
+      planSlug: string | null
+    } | null
+  }
+}))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: toastAdd })
+  useToastStore: () => ({ add: mocks.toastAdd })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     type: {
       get value() {
-        return billingTypeRef.value
+        return mocks.billingType.value
       }
     },
-    fetchStatus,
-    cancelSubscription,
+    fetchStatus: mocks.fetchStatus,
+    cancelSubscription: mocks.cancelSubscription,
     subscription: {
       get value() {
-        return subscriptionRef.value
+        return mocks.subscription.value
       }
     }
   })
@@ -45,181 +48,253 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackCancellationFlowOpened,
-    trackCancellationFlowClosed,
-    trackCancellationReconsidered,
-    trackMonthlySubscriptionCancelled
+    trackCancellationFlowOpened: mocks.trackCancellationFlowOpened,
+    trackCancellationFlowClosed: mocks.trackCancellationFlowClosed,
+    trackMonthlySubscriptionCancelled: mocks.trackMonthlySubscriptionCancelled
   })
 }))
 
-class FakeAuthUnavailableError extends Error {
-  constructor() {
-    super('Churnkey auth endpoint not available')
-    this.name = 'ChurnkeyAuthUnavailableError'
-  }
-}
-
-vi.mock('./useChurnkey', () => ({
-  useChurnkey: () => ({
-    get isConfigured() {
-      return isConfiguredRef.value
-    },
-    show: churnkeyShow
-  }),
-  ChurnkeyAuthUnavailableError: FakeAuthUnavailableError
+vi.mock('./churnkeyClient', () => ({
+  prepareChurnkey: mocks.prepareChurnkey
 }))
 
 const { launchChurnkeyCancellation } =
   await import('./launchChurnkeyCancellation')
 
-interface CapturedHandlers {
+interface CapturedShowOptions {
   customerAttributes?: Record<string, string>
   handleCancel?: () => Promise<{ message?: string }>
   onCancel: (surveyResponse: string) => void
-  onClose: (results: Record<string, unknown>) => void
 }
 
-function captureHandlers(): CapturedHandlers {
-  const opts = churnkeyShow.mock.calls.at(-1)?.[0]
-  if (!opts) throw new Error('churnkey.show was not called')
-  return opts as CapturedHandlers
+type SessionResults = Record<string, unknown>
+
+/**
+ * Mirrors the real client contract: show() captures the session callbacks
+ * and resolves with the session results when the modal closes.
+ */
+function openDeferredSession() {
+  let resolveShow!: (results: SessionResults) => void
+  let rejectShow!: (err: unknown) => void
+  let options: CapturedShowOptions | undefined
+  mocks.show.mockImplementation((opts: CapturedShowOptions) => {
+    options = opts
+    return new Promise<SessionResults>((resolve, reject) => {
+      resolveShow = resolve
+      rejectShow = reject
+    })
+  })
+  return {
+    options: () => {
+      if (!options) throw new Error('churnkey session.show was not called')
+      return options
+    },
+    close: (results: SessionResults) => resolveShow(results),
+    fail: (err: unknown) => rejectShow(err)
+  }
+}
+
+async function waitForShow() {
+  await vi.waitFor(() => expect(mocks.show).toHaveBeenCalled())
 }
 
 describe('launchChurnkeyCancellation', () => {
   beforeEach(() => {
-    isConfiguredRef.value = true
-    billingTypeRef.value = 'workspace'
-    subscriptionRef.value = null
-    churnkeyShow.mockReset()
-    churnkeyShow.mockResolvedValue(undefined)
-    fetchStatus.mockReset()
-    fetchStatus.mockResolvedValue(undefined)
-    cancelSubscription.mockReset()
-    cancelSubscription.mockResolvedValue(undefined)
-    trackCancellationFlowOpened.mockReset()
-    trackCancellationFlowClosed.mockReset()
-    trackCancellationReconsidered.mockReset()
-    trackMonthlySubscriptionCancelled.mockReset()
-    toastAdd.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+    mocks.billingType.value = 'workspace'
+    mocks.subscription.value = null
+    mocks.prepareChurnkey.mockReset()
+    mocks.prepareChurnkey.mockResolvedValue({ show: mocks.show })
+    mocks.show.mockReset()
+    mocks.show.mockResolvedValue({ status: 'closed' })
+    mocks.fetchStatus.mockReset()
+    mocks.fetchStatus.mockResolvedValue(undefined)
+    mocks.cancelSubscription.mockReset()
+    mocks.cancelSubscription.mockResolvedValue(undefined)
+    mocks.trackCancellationFlowOpened.mockReset()
+    mocks.trackCancellationFlowClosed.mockReset()
+    mocks.trackMonthlySubscriptionCancelled.mockReset()
+    mocks.toastAdd.mockReset()
   })
 
   it('emits exactly one cancellation_flow_closed when the user cancels', async () => {
-    await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
 
-    handlers.onCancel('too_expensive')
-    handlers.onClose({ status: 'canceled' })
+    session.options().onCancel('too_expensive')
+    session.close({ status: 'canceled' })
+    await launch
 
-    expect(trackCancellationFlowClosed).toHaveBeenCalledTimes(1)
-    expect(trackCancellationFlowClosed).toHaveBeenCalledWith({
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledTimes(1)
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
       outcome: 'canceled',
       survey_response: 'too_expensive'
     })
-    expect(trackMonthlySubscriptionCancelled).toHaveBeenCalledTimes(1)
-    expect(trackCancellationReconsidered).not.toHaveBeenCalled()
+    expect(mocks.trackMonthlySubscriptionCancelled).toHaveBeenCalledTimes(1)
+  })
+
+  it('tracks opened once per session, after preparation succeeds', async () => {
+    await launchChurnkeyCancellation()
+
+    expect(mocks.trackCancellationFlowOpened).toHaveBeenCalledTimes(1)
+    const prepareOrder = mocks.prepareChurnkey.mock.invocationCallOrder[0]
+    const openedOrder =
+      mocks.trackCancellationFlowOpened.mock.invocationCallOrder[0]
+    const showOrder = mocks.show.mock.invocationCallOrder[0]
+    expect(prepareOrder).toBeLessThan(openedOrder)
+    expect(openedOrder).toBeLessThan(showOrder)
   })
 
   it('passes handleCancel and calls billing.cancelSubscription for workspace billing', async () => {
-    billingTypeRef.value = 'workspace'
-    await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
+    mocks.billingType.value = 'workspace'
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
 
-    expect(handlers.handleCancel).toBeTypeOf('function')
-    await handlers.handleCancel?.()
-    expect(cancelSubscription).toHaveBeenCalledTimes(1)
+    const handleCancel = session.options().handleCancel
+    expect(handleCancel).toBeTypeOf('function')
+    await expect(handleCancel?.()).resolves.toEqual({
+      message: 'subscription.cancelSuccess'
+    })
+    expect(mocks.cancelSubscription).toHaveBeenCalledTimes(1)
+
+    session.close({ status: 'canceled' })
+    await launch
   })
 
   it('omits handleCancel for legacy billing so Churnkey cancels via Stripe', async () => {
-    billingTypeRef.value = 'legacy'
-    await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
+    mocks.billingType.value = 'legacy'
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
 
-    expect(handlers.handleCancel).toBeUndefined()
-    expect(cancelSubscription).not.toHaveBeenCalled()
+    expect(session.options().handleCancel).toBeUndefined()
+    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+
+    session.close({ status: 'closed' })
+    await launch
   })
 
-  it('refreshes local billing state in onClose after a cancel', async () => {
-    await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
+  it('rejects handleCancel with the API error message and records cancel_api_failed on close', async () => {
+    const apiError = new Error('card declined')
+    mocks.cancelSubscription.mockRejectedValue(apiError)
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
 
-    handlers.onCancel('too_expensive')
-    handlers.onClose({ status: 'canceled' })
-    await vi.waitFor(() => expect(fetchStatus).toHaveBeenCalledTimes(1))
+    // Churnkey shows this rejection message in its own UI.
+    await expect(session.options().handleCancel?.()).rejects.toMatchObject({
+      message: 'card declined',
+      cause: apiError
+    })
+
+    session.close({ status: 'closed' })
+    await launch
+
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
+      outcome: 'unknown',
+      failure_reason: 'cancel_api_failed'
+    })
+  })
+
+  it('clears the cancel_api_failed flag when a retry succeeds', async () => {
+    mocks.cancelSubscription
+      .mockRejectedValueOnce(new Error('card declined'))
+      .mockResolvedValueOnce(undefined)
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
+
+    const handleCancel = session.options().handleCancel
+    await expect(handleCancel?.()).rejects.toThrow('card declined')
+    await expect(handleCancel?.()).resolves.toEqual({
+      message: 'subscription.cancelSuccess'
+    })
+
+    session.options().onCancel('too_expensive')
+    session.close({ status: 'canceled' })
+    await launch
+
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
+      outcome: 'canceled',
+      survey_response: 'too_expensive'
+    })
+  })
+
+  it('refreshes local billing state after a cancel', async () => {
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
+
+    session.options().onCancel('too_expensive')
+    session.close({ status: 'canceled' })
+    await launch
+
+    await vi.waitFor(() => expect(mocks.fetchStatus).toHaveBeenCalledTimes(1))
   })
 
   it('does not refresh local state when the user closes without canceling', async () => {
     await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
 
-    handlers.onClose({ status: 'closed' })
-    expect(fetchStatus).not.toHaveBeenCalled()
+    expect(mocks.fetchStatus).not.toHaveBeenCalled()
   })
 
   it('records reconsidered when the user closes without canceling', async () => {
     await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
 
-    handlers.onClose({ status: 'closed' })
-
-    expect(trackCancellationFlowClosed).toHaveBeenCalledTimes(1)
-    expect(trackCancellationFlowClosed).toHaveBeenCalledWith({
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledTimes(1)
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
       outcome: 'reconsidered'
     })
-    expect(trackCancellationReconsidered).toHaveBeenCalledTimes(1)
   })
 
   it('maps Churnkey discounted status to discounted outcome', async () => {
+    mocks.show.mockResolvedValue({ status: 'discounted' })
+
     await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
 
-    handlers.onClose({ status: 'discounted' })
-
-    expect(trackCancellationFlowClosed).toHaveBeenCalledWith({
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
       outcome: 'discounted'
     })
-    expect(trackCancellationReconsidered).not.toHaveBeenCalled()
   })
 
   it('maps Churnkey paused status to paused outcome', async () => {
+    mocks.show.mockResolvedValue({ status: 'paused' })
+
     await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
 
-    handlers.onClose({ status: 'paused' })
-
-    expect(trackCancellationFlowClosed).toHaveBeenCalledWith({
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
       outcome: 'paused'
     })
-    expect(trackCancellationReconsidered).not.toHaveBeenCalled()
   })
 
   it('swallows fetchStatus failures after the cancel', async () => {
-    fetchStatus.mockRejectedValue(new Error('network'))
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mocks.fetchStatus.mockRejectedValue(new Error('network'))
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
 
-    await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
+    session.options().onCancel('too_expensive')
+    session.close({ status: 'canceled' })
 
-    handlers.onCancel('too_expensive')
-    handlers.onClose({ status: 'canceled' })
-
-    await vi.waitFor(() => expect(warn).toHaveBeenCalled())
+    await expect(launch).resolves.toBeUndefined()
+    await vi.waitFor(() => expect(mocks.fetchStatus).toHaveBeenCalledTimes(1))
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
+      outcome: 'canceled',
+      survey_response: 'too_expensive'
+    })
   })
 
   it('forwards customerAttributes from billing subscription', async () => {
-    subscriptionRef.value = {
+    mocks.subscription.value = {
       tier: 'PRO',
       duration: 'MONTHLY',
       planSlug: 'pro-monthly'
     }
 
     await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
 
-    expect(handlers.customerAttributes).toEqual({
+    expect(mocks.show.mock.calls[0][0].customerAttributes).toEqual({
       tier: 'PRO',
       cycle: 'MONTHLY',
       plan_slug: 'pro-monthly'
@@ -228,96 +303,92 @@ describe('launchChurnkeyCancellation', () => {
 
   it('omits customerAttributes when subscription is null', async () => {
     await launchChurnkeyCancellation()
-    const handlers = captureHandlers()
 
-    expect(handlers.customerAttributes).toBeUndefined()
+    expect(mocks.show.mock.calls[0][0].customerAttributes).toBeUndefined()
   })
 
-  it('throws when churnkey is not configured', async () => {
-    isConfiguredRef.value = false
-    await expect(launchChurnkeyCancellation()).rejects.toThrow(
-      'Churnkey is not configured'
-    )
-    expect(churnkeyShow).not.toHaveBeenCalled()
-  })
-
-  it('re-throws ChurnkeyAuthUnavailableError and skips toast/close', async () => {
-    churnkeyShow.mockRejectedValue(new FakeAuthUnavailableError())
+  it('re-throws ChurnkeyAuthUnavailableError without toast or telemetry', async () => {
+    mocks.prepareChurnkey.mockRejectedValue(new ChurnkeyAuthUnavailableError())
 
     await expect(launchChurnkeyCancellation()).rejects.toBeInstanceOf(
-      FakeAuthUnavailableError
+      ChurnkeyAuthUnavailableError
     )
-    expect(toastAdd).not.toHaveBeenCalled()
-    expect(trackCancellationFlowClosed).not.toHaveBeenCalled()
+    expect(mocks.toastAdd).not.toHaveBeenCalled()
+    expect(mocks.trackCancellationFlowOpened).not.toHaveBeenCalled()
+    expect(mocks.trackCancellationFlowClosed).not.toHaveBeenCalled()
   })
 
-  it('shows a toast and emits a balancing closed event when show() rejects', async () => {
-    churnkeyShow.mockRejectedValue(new Error('embed failed'))
+  it('re-throws ChurnkeyEmbedLoadError without toast or telemetry', async () => {
+    mocks.prepareChurnkey.mockRejectedValue(new ChurnkeyEmbedLoadError())
+
+    await expect(launchChurnkeyCancellation()).rejects.toBeInstanceOf(
+      ChurnkeyEmbedLoadError
+    )
+    expect(mocks.toastAdd).not.toHaveBeenCalled()
+    expect(mocks.trackCancellationFlowOpened).not.toHaveBeenCalled()
+    expect(mocks.trackCancellationFlowClosed).not.toHaveBeenCalled()
+  })
+
+  it('shows a toast without telemetry when preparation fails unexpectedly', async () => {
+    mocks.prepareChurnkey.mockRejectedValue(new Error('auth endpoint 500'))
 
     await expect(launchChurnkeyCancellation()).resolves.toBeUndefined()
 
-    expect(toastAdd).toHaveBeenCalledWith(
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        detail: 'embed failed'
+        detail: 'auth endpoint 500'
       })
     )
-    expect(trackCancellationFlowOpened).toHaveBeenCalledTimes(1)
-    expect(trackCancellationFlowClosed).toHaveBeenCalledTimes(1)
-    expect(trackCancellationFlowClosed).toHaveBeenCalledWith({
+    expect(mocks.trackCancellationFlowOpened).not.toHaveBeenCalled()
+    expect(mocks.trackCancellationFlowClosed).not.toHaveBeenCalled()
+  })
+
+  it('shows a toast and a balancing closed event when the session fails after opening', async () => {
+    const session = openDeferredSession()
+    const launch = launchChurnkeyCancellation()
+    await waitForShow()
+
+    session.fail(new Error('init exploded'))
+    await launch
+
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'init exploded'
+      })
+    )
+    expect(mocks.trackCancellationFlowOpened).toHaveBeenCalledTimes(1)
+    expect(mocks.trackCancellationFlowClosed).toHaveBeenCalledWith({
       outcome: 'unknown',
       failure_reason: 'unexpected'
     })
   })
 
-  it('tags embed-load failures with the embed_not_loaded failure_reason', async () => {
-    churnkeyShow.mockRejectedValue(
-      new Error('Churnkey embed script has not loaded')
-    )
-
-    await launchChurnkeyCancellation()
-
-    expect(trackCancellationFlowClosed).toHaveBeenCalledWith({
-      outcome: 'unknown',
-      failure_reason: 'embed_not_loaded'
-    })
-  })
-
-  it('releases the in-flight guard via try/finally when show() rejects', async () => {
-    churnkeyShow.mockRejectedValueOnce(new Error('embed failed'))
-    await launchChurnkeyCancellation()
-
-    // A fresh call after the failure should proceed (guard cleared).
-    churnkeyShow.mockReset()
-    churnkeyShow.mockResolvedValue(undefined)
-    await launchChurnkeyCancellation()
-    expect(churnkeyShow).toHaveBeenCalledTimes(1)
-  })
-
-  it('ignores concurrent calls while a session is in flight', async () => {
-    let resolveShow: (() => void) | undefined
-    churnkeyShow.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveShow = resolve
-        })
-    )
-
+  it('ignores concurrent calls while the session is open', async () => {
+    const session = openDeferredSession()
     const first = launchChurnkeyCancellation()
-    await Promise.resolve()
-    const second = launchChurnkeyCancellation()
+    await waitForShow()
 
-    expect(churnkeyShow).toHaveBeenCalledTimes(1)
-    expect(trackCancellationFlowOpened).toHaveBeenCalledTimes(1)
-
-    resolveShow?.()
-    await first
-    await second
-
-    // try/finally cleared the guard when show() resolved; a fresh call proceeds.
-    churnkeyShow.mockReset()
-    churnkeyShow.mockResolvedValue(undefined)
     await launchChurnkeyCancellation()
-    expect(churnkeyShow).toHaveBeenCalledTimes(1)
+    expect(mocks.prepareChurnkey).toHaveBeenCalledTimes(1)
+    expect(mocks.trackCancellationFlowOpened).toHaveBeenCalledTimes(1)
+
+    session.close({ status: 'closed' })
+    await first
+
+    // Guard released on close; a fresh launch proceeds.
+    mocks.show.mockReset()
+    mocks.show.mockResolvedValue({ status: 'closed' })
+    await launchChurnkeyCancellation()
+    expect(mocks.prepareChurnkey).toHaveBeenCalledTimes(2)
+  })
+
+  it('releases the in-flight guard when preparation fails', async () => {
+    mocks.prepareChurnkey.mockRejectedValueOnce(new Error('boom'))
+    await launchChurnkeyCancellation()
+
+    await launchChurnkeyCancellation()
+    expect(mocks.prepareChurnkey).toHaveBeenCalledTimes(2)
   })
 })

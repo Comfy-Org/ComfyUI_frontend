@@ -277,8 +277,4 @@ export class TelemetryRegistry implements TelemetryDispatcher {
       provider.trackCancellationFlowClosed?.(metadata)
     )
   }
-
-  trackCancellationReconsidered(): void {
-    this.dispatch((provider) => provider.trackCancellationReconsidered?.())
-  }
 }

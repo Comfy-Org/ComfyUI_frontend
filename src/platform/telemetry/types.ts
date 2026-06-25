@@ -455,14 +455,12 @@ export interface CancellationFlowClosedMetadata {
   outcome: 'canceled' | 'reconsidered' | 'discounted' | 'paused' | 'unknown'
   survey_response?: string
   /**
-   * Categorized reason when `outcome === 'unknown'` so PostHog dashboards can
-   * separate "embed failed to load" from "cancel API failed" etc.
+   * Categorized reason when `outcome === 'unknown'` so PostHog dashboards
+   * can separate a failed cancel API call from an embed failure. Fallbacks
+   * to the legacy dialog (auth endpoint missing, embed script blocked)
+   * happen before the flow opens and emit no events at all.
    */
-  failure_reason?:
-    | 'auth_unavailable'
-    | 'embed_not_loaded'
-    | 'cancel_api_failed'
-    | 'unexpected'
+  failure_reason?: 'cancel_api_failed' | 'unexpected'
 }
 
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
@@ -578,7 +576,6 @@ export interface TelemetryProvider {
   // Cancellation flow events
   trackCancellationFlowOpened?(): void
   trackCancellationFlowClosed?(metadata: CancellationFlowClosedMetadata): void
-  trackCancellationReconsidered?(): void
 }
 
 /**
@@ -677,8 +674,7 @@ export const TelemetryEvents = {
 
   // Cancellation Flow
   CANCELLATION_FLOW_OPENED: 'app:cancellation_flow_opened',
-  CANCELLATION_FLOW_CLOSED: 'app:cancellation_flow_closed',
-  CANCELLATION_RECONSIDERED: 'app:cancellation_reconsidered'
+  CANCELLATION_FLOW_CLOSED: 'app:cancellation_flow_closed'
 } as const
 
 export type TelemetryEventName =

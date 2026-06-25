@@ -12,8 +12,13 @@
   background: rgb(0 0 0 / 0.7) !important;
 }
 
+/* Churnkey uses var(--color-brand-black) for primary text (titles, etc.).
+   Remap it to our light foreground so that text is readable on the dark
+   modal. Background utilities that also use it (bg-brand-black) are guarded
+   below so they don't turn light. */
+#ck-app,
 .ck-style {
-  --color-brand-black: var(--base-foreground);
+  --color-brand-black: var(--base-foreground) !important;
 }
 
 .ck-modal,
@@ -83,38 +88,48 @@
   color: var(--base-foreground) !important;
 }
 
-.ck-style .text-gray-900,
-.ck-style .text-gray-800 {
+/* Churnkey injects its compiled utility CSS at runtime, AFTER this bundled
+   sheet, so `.ck-style`-scoped overrides tie on specificity and lose on
+   source order — leaving dark brand/gray text on the dark modal. The
+   `#ck-app` id prefix raises specificity above Churnkey's `.ck-style`
+   utilities so these win regardless of injection order. */
+#ck-app .text-gray-900,
+#ck-app .text-gray-800,
+#ck-app .text-brand-black {
   color: var(--base-foreground) !important;
 }
-.ck-style .text-gray-700,
-.ck-style .text-gray-600,
-.ck-style .text-gray-500 {
+#ck-app .text-gray-700,
+#ck-app .text-gray-600,
+#ck-app .text-gray-500,
+#ck-app .text-gray-400 {
   color: var(--muted-foreground) !important;
 }
-.ck-style .text-brand-black {
-  color: var(--base-foreground) !important;
-}
-.ck-style .border-gray-100,
-.ck-style .border-gray-200,
-.ck-style .border-gray-300 {
+#ck-app .border-gray-100,
+#ck-app .border-gray-200,
+#ck-app .border-gray-300 {
   border-color: var(--border-default) !important;
 }
-.ck-style .bg-gray-100,
-.ck-style .bg-gray-200,
-.ck-style .bg-gray-300 {
+#ck-app .bg-gray-100,
+#ck-app .bg-gray-200,
+#ck-app .bg-gray-300 {
   background-color: var(--secondary-background) !important;
 }
-.ck-style .text-opacity-60,
-.ck-style .text-opacity-80,
-.ck-style .text-opacity-90 {
+/* Guard: brand-black is remapped to a light foreground for text, so force
+   its background usage to a dark surface. Primary buttons override this to
+   the accent via their own rule below. */
+#ck-app .bg-brand-black {
+  background-color: var(--secondary-background) !important;
+}
+#ck-app .text-opacity-60,
+#ck-app .text-opacity-80,
+#ck-app .text-opacity-90 {
   --tw-text-opacity: 1 !important;
 }
 
-.ck-style [class*='bg-client-primary-light'] {
+#ck-app [class*='bg-client-primary-light'] {
   background-color: var(--secondary-background) !important;
 }
-.ck-style .bg-opacity-5 {
+#ck-app .bg-opacity-5 {
   --tw-bg-opacity: 1 !important;
 }
 .ck-pause-subscription-details {
@@ -133,53 +148,52 @@
   color: var(--muted-foreground) !important;
 }
 
-.ck-style .h-14.rounded-t-lg {
+#ck-app .h-14.rounded-t-lg {
   background-color: var(--secondary-background) !important;
 }
-.ck-style .bg-client-primary {
+#ck-app .bg-client-primary {
   background-color: var(--primary-background) !important;
 }
-.ck-style .text-client-primary,
-.ck-style .text-client-primary-light {
+#ck-app .text-client-primary,
+#ck-app .text-client-primary-light {
   color: var(--muted-foreground) !important;
 }
-.ck-style .text-client-primary-middle {
+#ck-app .text-client-primary-middle {
   color: var(--muted-foreground) !important;
   opacity: 0.4 !important;
 }
-.ck-style .border-client-primary {
+#ck-app .border-client-primary {
   border-color: var(--primary-background) !important;
 }
-.ck-style .border-client-primary-light {
+#ck-app .border-client-primary-light,
+#ck-app .border-text-client-primary {
   border-color: var(--border-default) !important;
 }
 
-.ck-style .ck-primary-button {
+/* Buttons carry both Churnkey component classes (.ck-*-button) and raw
+   utilities (bg-brand-black, bg-gray-200, text-white, text-brand-black).
+   Scope under the #ck-app id so these win over Churnkey's runtime-injected
+   `.ck-style` utilities — otherwise the utility bg/text colors leak through
+   and produce light-on-light / dark-on-dark buttons. */
+#ck-app .ck-primary-button,
+#ck-app .ck-black-primary-button {
   background: var(--primary-background) !important;
   color: var(--base-foreground) !important;
   border: none !important;
   border-radius: 8px !important;
   font-weight: 600 !important;
 }
-.ck-style .ck-primary-button:hover {
+#ck-app .ck-primary-button:hover,
+#ck-app .ck-black-primary-button:hover {
   background: var(--primary-background-hover) !important;
 }
-.ck-style .ck-black-primary-button {
-  background: var(--primary-background) !important;
+#ck-app .ck-gray-primary-button {
+  background: var(--secondary-background) !important;
   color: var(--base-foreground) !important;
   border: 1px solid var(--border-default) !important;
   border-radius: 8px !important;
 }
-.ck-style .ck-black-primary-button:hover {
-  background: var(--primary-background-hover) !important;
-}
-.ck-style .ck-gray-primary-button {
-  background: var(--secondary-background) !important;
-  color: var(--muted-foreground) !important;
-  border: 1px solid var(--border-default) !important;
-  border-radius: 8px !important;
-}
-.ck-style .ck-text-button,
-.ck-style .ck-black-text-button {
+#ck-app .ck-text-button,
+#ck-app .ck-black-text-button {
   color: var(--muted-foreground) !important;
 }

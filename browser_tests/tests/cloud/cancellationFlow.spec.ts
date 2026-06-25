@@ -5,6 +5,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
 
 import type { ChurnkeyInitConfig } from '@/platform/cloud/churnkey/types'
+import type { ChurnkeyAuthResponse } from '@/platform/workspace/api/workspaceApi'
 
 const CANCEL_AT = '2026-12-31T12:00:00Z'
 const STUB_APP_ID = 'e2e-stub'
@@ -13,6 +14,13 @@ const VALID_AUTH_RESPONSE = {
   customer_id: 'cus_e2e_test',
   auth_hash: 'fake-hmac',
   mode: 'test'
+} satisfies ChurnkeyAuthResponse
+
+// The production router's catch-all body for undeployed routes (verified
+// against cloud.comfy.org) — what the frontend sees until the backend
+// ships the endpoint.
+const NOT_DEPLOYED_RESPONSE = {
+  error: { message: 'Not Found', type: 'not_found' }
 }
 
 interface ChurnkeyInitCall {
@@ -30,6 +38,8 @@ async function stubChurnkey(page: Page): Promise<void> {
     const w = window as ChurnkeyStubWindow
     w.__CHURNKEY_APP_ID_OVERRIDE__ = appId
     w.__churnkeyCalls = []
+    // Defining `init` up front also makes the client skip injecting the
+    // real embed script.
     w.churnkey = {
       created: true,
       init: (action, config) => {
@@ -44,7 +54,9 @@ const AUTH_ROUTE_GLOB = '**/api/billing/churnkey/auth'
 
 async function mockAuthEndpoint(
   page: Page,
-  fulfill: { status: number; body: object }
+  fulfill:
+    | { status: 200; body: ChurnkeyAuthResponse }
+    | { status: 404; body: typeof NOT_DEPLOYED_RESPONSE }
 ): Promise<void> {
   await page.route(AUTH_ROUTE_GLOB, (route) =>
     route.fulfill({
@@ -68,13 +80,9 @@ test.describe('Cancellation flow routing', { tag: '@cloud' }, () => {
     dialog = new CancelSubscriptionDialog(comfyPage.page)
   })
 
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.page.unroute(AUTH_ROUTE_GLOB)
-  })
-
   test.describe('flag disabled', () => {
     test('routes to the legacy cancel dialog', async ({ comfyPage }) => {
-      await comfyPage.featureFlags.setServerFeatures({
+      await comfyPage.featureFlags.overrideFlags({
         churnkey_cancellation_enabled: false
       })
 
@@ -87,7 +95,7 @@ test.describe('Cancellation flow routing', { tag: '@cloud' }, () => {
 
   test.describe('flag enabled', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.featureFlags.setServerFeatures({
+      await comfyPage.featureFlags.overrideFlags({
         churnkey_cancellation_enabled: true
       })
       await stubChurnkey(comfyPage.page)
@@ -98,7 +106,7 @@ test.describe('Cancellation flow routing', { tag: '@cloud' }, () => {
     }) => {
       await mockAuthEndpoint(comfyPage.page, {
         status: 404,
-        body: { code: 'NOT_FOUND', message: 'endpoint not deployed' }
+        body: NOT_DEPLOYED_RESPONSE
       })
 
       await dialog.open(CANCEL_AT)
@@ -115,7 +123,7 @@ test.describe('Cancellation flow routing', { tag: '@cloud' }, () => {
         body: VALID_AUTH_RESPONSE
       })
 
-      await dialog.open(CANCEL_AT, false)
+      await dialog.launch(CANCEL_AT)
 
       await expect
         .poll(() => getChurnkeyInitCalls(comfyPage.page).then((c) => c.length))

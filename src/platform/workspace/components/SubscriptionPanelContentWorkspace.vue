@@ -530,9 +530,10 @@ const tierPrice = computed(() =>
 const memberCount = computed(() => members.value.length)
 const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
 
+// Canceled subscriptions have no renewalDate — credits will not refill, so
+// the refill date is hidden rather than falling back to endDate.
 const refillsDate = computed(() => {
-  // TODO: should we actually use end date here, or just hide?
-  const source = subscription.value?.renewalDate ?? subscription.value?.endDate
+  const source = subscription.value?.renewalDate
   if (!source) return ''
   const date = new Date(source)
   const day = String(date.getDate()).padStart(2, '0')
@@ -541,27 +542,16 @@ const refillsDate = computed(() => {
   return `${month}/${day}/${year}`
 })
 
-const creditsRemainingLabel = computed(() =>
-  isYearlySubscription.value
-    ? t(
-        'subscription.creditsRemainingThisYear',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
-      )
-    : t(
-        'subscription.creditsRemainingThisMonth',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
-      )
-)
+const creditsRemainingLabel = computed(() => {
+  if (!refillsDate.value) return t('subscription.creditsIncluded')
+  return t(
+    isYearlySubscription.value
+      ? 'subscription.creditsRemainingThisYear'
+      : 'subscription.creditsRemainingThisMonth',
+    { date: refillsDate.value },
+    { escapeParameter: false }
+  )
+})
 
 const planTotalCredits = computed(() => {
   const credits = getTierCredits(tierKey.value)

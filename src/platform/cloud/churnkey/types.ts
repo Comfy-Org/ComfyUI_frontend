@@ -3,7 +3,7 @@
 
 export type ChurnkeyMode = 'live' | 'test' | 'sandbox'
 
-export type ChurnkeyProvider = 'stripe' | 'chargebee' | 'braintree' | 'paddle'
+type ChurnkeyProvider = 'stripe' | 'chargebee' | 'braintree' | 'paddle'
 
 export interface ChurnkeyHandlerResult {
   message?: string
@@ -40,9 +40,10 @@ export interface ChurnkeySessionResults {
   [key: string]: unknown
 }
 
-interface ChurnkeyWindow {
+export interface ChurnkeyWindow {
   created?: boolean
-  init: (action: 'show' | 'restart', config: ChurnkeyInitConfig) => void
+  /** Defined once the embed script (loaded on demand) has executed. */
+  init?: (action: 'show' | 'restart', config: ChurnkeyInitConfig) => void
   hide?: () => void
   clearState?: () => void
 }

@@ -1,22 +1,17 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { launchChurnkeyCancellation } from '@/platform/cloud/churnkey/launchChurnkeyCancellation'
+import { isChurnkeyConfigured } from '@/platform/cloud/churnkey/churnkeyClient'
 import {
   ChurnkeyAuthUnavailableError,
-  useChurnkey
-} from '@/platform/cloud/churnkey/useChurnkey'
+  ChurnkeyEmbedLoadError
+} from '@/platform/cloud/churnkey/errors'
+import { launchChurnkeyCancellation } from '@/platform/cloud/churnkey/launchChurnkeyCancellation'
 
 import { showCancelSubscriptionDialog } from './showCancelSubscriptionDialog'
 
 function shouldUseChurnkey(): boolean {
   const { flags } = useFeatureFlags()
   if (!flags.churnkeyCancellationEnabled) return false
-  if (!useChurnkey().isConfigured) {
-    console.warn(
-      '[Churnkey] Cancellation flag is enabled but CHURNKEY_APP_ID is not set; falling back to legacy dialog.'
-    )
-    return false
-  }
-  return true
+  return isChurnkeyConfigured()
 }
 
 export async function launchCancellationFlow(cancelAt?: string): Promise<void> {
@@ -28,7 +23,10 @@ export async function launchCancellationFlow(cancelAt?: string): Promise<void> {
   try {
     await launchChurnkeyCancellation()
   } catch (err) {
-    if (err instanceof ChurnkeyAuthUnavailableError) {
+    if (
+      err instanceof ChurnkeyAuthUnavailableError ||
+      err instanceof ChurnkeyEmbedLoadError
+    ) {
       await showCancelSubscriptionDialog(cancelAt)
       return
     }

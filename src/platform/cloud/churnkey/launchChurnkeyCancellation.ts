@@ -4,33 +4,22 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { CancellationFlowClosedMetadata } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
+import type { ChurnkeySession } from './churnkeyClient'
+import { prepareChurnkey } from './churnkeyClient'
+import { ChurnkeyAuthUnavailableError, ChurnkeyEmbedLoadError } from './errors'
 import type { ChurnkeySessionResults } from './types'
-import { ChurnkeyAuthUnavailableError, useChurnkey } from './useChurnkey'
 
 type CancellationOutcome = CancellationFlowClosedMetadata['outcome']
-type FailureReason = NonNullable<
-  CancellationFlowClosedMetadata['failure_reason']
->
 
 function deriveOutcome(
   results: ChurnkeySessionResults,
-  canceledThisSession: boolean
+  canceledThisSession: boolean,
+  cancelApiFailed: boolean
 ): CancellationOutcome {
   if (canceledThisSession) return 'canceled'
+  if (cancelApiFailed) return 'unknown'
   if (results.status === 'closed') return 'reconsidered'
   return results.status ?? 'unknown'
-}
-
-function classifyFailure(err: unknown): FailureReason {
-  if (err instanceof Error) {
-    if (err.message.includes('embed script has not loaded')) {
-      return 'embed_not_loaded'
-    }
-    if (err.message.includes('Churnkey is not configured')) {
-      return 'auth_unavailable'
-    }
-  }
-  return 'unexpected'
 }
 
 function buildCustomerAttributes(
@@ -49,100 +38,106 @@ let inFlight = false
 
 export async function launchChurnkeyCancellation(): Promise<void> {
   if (inFlight) return
-
-  const churnkey = useChurnkey()
-  if (!churnkey.isConfigured) {
-    throw new Error('Churnkey is not configured')
-  }
-
   inFlight = true
   try {
-    const billing = useBillingContext()
-    const telemetry = useTelemetry()
-    const toast = useToastStore()
-
-    let canceledThisSession = false
-    let lastSurveyResponse: string | undefined
-    let closedTracked = false
-
-    function trackClosed(
-      outcome: CancellationOutcome,
-      failureReason?: FailureReason
-    ) {
-      if (closedTracked) return
-      closedTracked = true
-      telemetry?.trackCancellationFlowClosed({
-        outcome,
-        ...(lastSurveyResponse !== undefined && {
-          survey_response: lastSurveyResponse
-        }),
-        ...(failureReason !== undefined && { failure_reason: failureReason })
-      })
-      if (outcome === 'reconsidered') {
-        telemetry?.trackCancellationReconsidered()
-      }
-    }
-
-    telemetry?.trackCancellationFlowOpened()
-
-    const useHandleCancel = billing.type.value === 'workspace'
-
-    try {
-      await churnkey.show({
-        customerAttributes: buildCustomerAttributes(billing),
-        ...(useHandleCancel && {
-          handleCancel: async () => {
-            try {
-              await billing.cancelSubscription()
-            } catch (err) {
-              const message =
-                err instanceof Error
-                  ? err.message
-                  : t('subscription.cancelDialog.failed')
-              const wrapped = new Error(message)
-              if (err instanceof Error) wrapped.cause = err
-              throw wrapped
-            }
-            return { message: t('subscription.cancelSuccess') }
-          }
-        }),
-        // Fires after a successful cancel — whether via handleCancel (team)
-        // or Churnkey's own Stripe cancel (legacy).
-        onCancel: (surveyResponse) => {
-          canceledThisSession = true
-          lastSurveyResponse = surveyResponse
-          telemetry?.trackMonthlySubscriptionCancelled()
-        },
-        onClose: (results) => {
-          const outcome = deriveOutcome(results, canceledThisSession)
-          trackClosed(outcome)
-          // Refresh local state so the UI reflects the cancellation. Failure
-          // here is non-blocking; the watcher / next page load will catch up.
-          if (canceledThisSession) {
-            void billing.fetchStatus().catch((err: unknown) => {
-              console.warn('[Churnkey] fetchStatus after cancel failed', err)
-            })
-          }
-          // Reset Churnkey's cached session state so the next launch
-          // restarts at step 1 (e.g. user visited Stripe but did not cancel).
-          window.churnkey?.clearState?.()
-        }
-      })
-    } catch (err) {
-      if (err instanceof ChurnkeyAuthUnavailableError) {
-        // Re-throw so the caller can route to the legacy dialog.
-        throw err
-      }
-      trackClosed('unknown', classifyFailure(err))
-      const detail = err instanceof Error ? err.message : t('g.unknownError')
-      toast.add({
-        severity: 'error',
-        summary: t('subscription.cancelDialog.failed'),
-        detail,
-        life: 5000
-      })
-    }
+    await runCancellationFlow()
   } finally {
     inFlight = false
+  }
+}
+
+async function runCancellationFlow(): Promise<void> {
+  const billing = useBillingContext()
+  const telemetry = useTelemetry()
+  const toast = useToastStore()
+
+  function showFailureToast(err: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: t('subscription.cancelDialog.failed'),
+      detail: err instanceof Error ? err.message : t('g.unknownError'),
+      life: 5000
+    })
+  }
+
+  let session: ChurnkeySession
+  try {
+    session = await prepareChurnkey()
+  } catch (err) {
+    if (
+      err instanceof ChurnkeyAuthUnavailableError ||
+      err instanceof ChurnkeyEmbedLoadError
+    ) {
+      // Re-throw so the caller can route to the legacy dialog.
+      throw err
+    }
+    showFailureToast(err)
+    return
+  }
+
+  let canceledThisSession = false
+  let cancelApiFailed = false
+  let lastSurveyResponse: string | undefined
+
+  telemetry?.trackCancellationFlowOpened()
+
+  try {
+    const results = await session.show({
+      customerAttributes: buildCustomerAttributes(billing),
+      // Workspace billing cancels through our API; legacy billing omits
+      // handleCancel so Churnkey cancels directly via Stripe.
+      ...(billing.type.value === 'workspace' && {
+        handleCancel: async () => {
+          try {
+            await billing.cancelSubscription()
+          } catch (err) {
+            cancelApiFailed = true
+            const message =
+              err instanceof Error
+                ? err.message
+                : t('subscription.cancelDialog.failed')
+            // Churnkey displays the rejection message in its own UI.
+            throw new Error(message, { cause: err })
+          }
+          cancelApiFailed = false
+          return { message: t('subscription.cancelSuccess') }
+        }
+      }),
+      // Fires after a successful cancel — whether via handleCancel (team)
+      // or Churnkey's own Stripe cancel (legacy). No double-fire with
+      // useSubscriptionCancellationWatcher: that watcher only runs after
+      // opening the Stripe billing portal via manageSubscription.
+      onCancel: (surveyResponse) => {
+        canceledThisSession = true
+        lastSurveyResponse = surveyResponse
+        telemetry?.trackMonthlySubscriptionCancelled()
+      }
+    })
+
+    const outcome = deriveOutcome(results, canceledThisSession, cancelApiFailed)
+    const failureReason = cancelApiFailed
+      ? ('cancel_api_failed' as const)
+      : undefined
+    telemetry?.trackCancellationFlowClosed({
+      outcome,
+      ...(lastSurveyResponse !== undefined && {
+        survey_response: lastSurveyResponse
+      }),
+      ...(failureReason !== undefined && { failure_reason: failureReason })
+    })
+
+    if (canceledThisSession) {
+      // Refresh local state so the UI reflects the cancellation. Failure
+      // here is non-blocking; the next page load will catch up.
+      void billing.fetchStatus().catch(() => {})
+    }
+  } catch (err) {
+    // session.show only rejects when churnkey.init itself throws — keep
+    // the funnel balanced since `opened` has already been tracked.
+    telemetry?.trackCancellationFlowClosed({
+      outcome: 'unknown',
+      failure_reason: 'unexpected'
+    })
+    showFailureToast(err)
   }
 }

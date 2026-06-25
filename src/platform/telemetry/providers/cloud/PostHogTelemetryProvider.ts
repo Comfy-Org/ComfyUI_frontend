@@ -563,19 +563,15 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackCancellationFlowClosed(metadata: CancellationFlowClosedMetadata): void {
     this.trackEvent(TelemetryEvents.CANCELLATION_FLOW_CLOSED, metadata)
-  }
 
-  trackCancellationReconsidered(): void {
-    this.trackEvent(TelemetryEvents.CANCELLATION_RECONSIDERED)
-
-    if (this.posthog && this.isEnabled) {
-      try {
-        this.posthog.people.set({
-          cancellation_reconsidered_at: new Date().toISOString()
-        })
-      } catch (error) {
-        console.error('Failed to set PostHog user property:', error)
-      }
+    if (metadata.outcome !== 'reconsidered') return
+    if (!this.posthog || !this.isEnabled) return
+    try {
+      this.posthog.people.set({
+        cancellation_reconsidered_at: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Failed to set PostHog user property:', error)
     }
   }
 }

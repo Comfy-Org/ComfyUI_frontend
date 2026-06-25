@@ -6,6 +6,7 @@ import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.v
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import { workspaceDialogPt } from '@/platform/workspace/components/dialogs/workspaceDialogPt'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -446,15 +447,6 @@ export const useDialogService = () => {
   }
 
   // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
-  const workspaceDialogPt = {
-    headless: true,
-    pt: {
-      header: { class: 'p-0! hidden' },
-      content: { class: 'p-0! m-0! rounded-2xl' },
-      root: { class: 'rounded-2xl' }
-    }
-  } as const
-
   async function showDeleteWorkspaceDialog(options?: {
     workspaceId?: string
     workspaceName?: string

@@ -1,16 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  ChurnkeyAuthUnavailableError,
+  ChurnkeyEmbedLoadError
+} from '@/platform/cloud/churnkey/errors'
 
 const showCancelSubscriptionDialog = vi.hoisted(() => vi.fn())
 const launchChurnkeyCancellationMock = vi.hoisted(() => vi.fn())
 const useFeatureFlagsMock = vi.hoisted(() => vi.fn())
-const useChurnkeyMock = vi.hoisted(() => vi.fn())
-
-class FakeAuthUnavailableError extends Error {
-  constructor() {
-    super('Churnkey auth endpoint not available')
-    this.name = 'ChurnkeyAuthUnavailableError'
-  }
-}
+const isChurnkeyConfiguredMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./showCancelSubscriptionDialog', () => ({
   showCancelSubscriptionDialog
@@ -20,9 +18,8 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: useFeatureFlagsMock
 }))
 
-vi.mock('@/platform/cloud/churnkey/useChurnkey', () => ({
-  useChurnkey: useChurnkeyMock,
-  ChurnkeyAuthUnavailableError: FakeAuthUnavailableError
+vi.mock('@/platform/cloud/churnkey/churnkeyClient', () => ({
+  isChurnkeyConfigured: isChurnkeyConfiguredMock
 }))
 
 vi.mock('@/platform/cloud/churnkey/launchChurnkeyCancellation', () => ({
@@ -36,18 +33,14 @@ describe('launchCancellationFlow', () => {
     showCancelSubscriptionDialog.mockReset()
     launchChurnkeyCancellationMock.mockReset()
     useFeatureFlagsMock.mockReset()
-    useChurnkeyMock.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+    isChurnkeyConfiguredMock.mockReset()
   })
 
   it('launches Churnkey when the flag is on and the embed is configured', async () => {
     useFeatureFlagsMock.mockReturnValue({
       flags: { churnkeyCancellationEnabled: true }
     })
-    useChurnkeyMock.mockReturnValue({ isConfigured: true })
+    isChurnkeyConfiguredMock.mockReturnValue(true)
     launchChurnkeyCancellationMock.mockResolvedValue(undefined)
 
     await launchCancellationFlow('2026-12-01')
@@ -64,33 +57,43 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow('2026-12-01')
 
     expect(launchChurnkeyCancellationMock).not.toHaveBeenCalled()
-    expect(useChurnkeyMock).not.toHaveBeenCalled()
+    expect(isChurnkeyConfiguredMock).not.toHaveBeenCalled()
     expect(showCancelSubscriptionDialog).toHaveBeenCalledWith('2026-12-01')
   })
 
   it('falls back to the legacy dialog when CHURNKEY_APP_ID is missing', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     useFeatureFlagsMock.mockReturnValue({
       flags: { churnkeyCancellationEnabled: true }
     })
-    useChurnkeyMock.mockReturnValue({ isConfigured: false })
+    isChurnkeyConfiguredMock.mockReturnValue(false)
 
     await launchCancellationFlow('2026-12-01')
 
     expect(launchChurnkeyCancellationMock).not.toHaveBeenCalled()
     expect(showCancelSubscriptionDialog).toHaveBeenCalledWith('2026-12-01')
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('CHURNKEY_APP_ID')
-    )
   })
 
   it('falls back to the legacy dialog on ChurnkeyAuthUnavailableError', async () => {
     useFeatureFlagsMock.mockReturnValue({
       flags: { churnkeyCancellationEnabled: true }
     })
-    useChurnkeyMock.mockReturnValue({ isConfigured: true })
+    isChurnkeyConfiguredMock.mockReturnValue(true)
     launchChurnkeyCancellationMock.mockRejectedValue(
-      new FakeAuthUnavailableError()
+      new ChurnkeyAuthUnavailableError()
+    )
+
+    await launchCancellationFlow('2026-12-01')
+
+    expect(showCancelSubscriptionDialog).toHaveBeenCalledWith('2026-12-01')
+  })
+
+  it('falls back to the legacy dialog when the embed script fails to load', async () => {
+    useFeatureFlagsMock.mockReturnValue({
+      flags: { churnkeyCancellationEnabled: true }
+    })
+    isChurnkeyConfiguredMock.mockReturnValue(true)
+    launchChurnkeyCancellationMock.mockRejectedValue(
+      new ChurnkeyEmbedLoadError()
     )
 
     await launchCancellationFlow('2026-12-01')
@@ -102,7 +105,7 @@ describe('launchCancellationFlow', () => {
     useFeatureFlagsMock.mockReturnValue({
       flags: { churnkeyCancellationEnabled: true }
     })
-    useChurnkeyMock.mockReturnValue({ isConfigured: true })
+    isChurnkeyConfiguredMock.mockReturnValue(true)
     launchChurnkeyCancellationMock.mockRejectedValue(
       new Error('something else')
     )
