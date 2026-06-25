@@ -23,7 +23,7 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
     const raw = sessionStorage.getItem(getStorageKey(namespace))
     if (!raw) return null
 
-    const parsed = JSON.parse(raw)
+    const parsed: unknown = JSON.parse(raw)
     if (!isValidQueryRecord(parsed)) {
       console.warn('[preservedQuery] invalid storage format')
       sessionStorage.removeItem(getStorageKey(namespace))
