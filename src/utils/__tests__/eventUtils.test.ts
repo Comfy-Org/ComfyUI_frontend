@@ -159,6 +159,133 @@ describe('eventUtils', () => {
 
       expect(actual).toEqual([])
     })
+
+    it('should prefer the URI resource over a dataTransfer file when both are present', async () => {
+      // Regression test: dragging an in-page <img> (e.g. from the asset
+      // gallery) can make the browser synthesize a lossy re-encoded file
+      // into dataTransfer.files alongside the genuine resource URL. The URL
+      // must win so the original file (with its metadata intact) is used.
+      const uri =
+        'https://example.com/api/view?filename=original.png&type=output'
+      const originalBlob = new Blob(
+        [new Uint8Array([0x89, 0x50, 0x4e, 0x47])],
+        {
+          type: 'image/png'
+        }
+      )
+      fetchSpy.mockResolvedValue(new Response(originalBlob))
+
+      const synthesizedFile = new File(
+        [new Uint8Array([0xff, 0xd8])],
+        'original.png',
+        { type: 'image/jpeg' }
+      )
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(synthesizedFile)
+      dataTransfer.setData('text/uri-list', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(actual).toHaveLength(1)
+      expect(actual[0].type).toBe('image/png')
+      expect(actual[0].name).toBe('original.png')
+      expect(actual[0]).not.toBe(synthesizedFile)
+    })
+
+    it('should fall back to dataTransfer files when the URI fetch responds with a non-ok status', async () => {
+      const uri =
+        'https://example.com/api/view?filename=missing.png&type=output'
+      fetchSpy.mockResolvedValue(new Response(null, { status: 404 }))
+
+      const fallbackFile = new File([new Uint8Array()], 'fallback.json', {
+        type: 'application/json'
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(fallbackFile)
+      dataTransfer.setData('text/uri-list', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(actual).toEqual([fallbackFile])
+    })
+
+    it('should extract the filename from the URI query parameter', async () => {
+      const uri =
+        'https://example.com/api/view?filename=original.png&type=output'
+      const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(imageBlob))
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/uri-list', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(actual[0].name).toBe('original.png')
+    })
+
+    it('should fall back to the last path segment when the URI has no filename query parameter', async () => {
+      const uri = 'https://example.com/static/some-resource.png'
+      const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(imageBlob))
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/uri-list', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(actual[0].name).toBe('some-resource.png')
+    })
+
+    it('should skip leading comment lines in a text/uri-list payload', async () => {
+      // Regression test: per RFC 2483, text/uri-list may contain comment
+      // lines starting with '#'. Naively taking the first line would treat
+      // the comment as the URI, which (resolving as a same-page fragment)
+      // can fetch successfully and wrongly shadow real dragged files.
+      const uri = 'https://example.com/api/view?filename=real.png&type=output'
+      const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(imageBlob))
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/uri-list', `# a comment line\n${uri}`)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(fetchSpy).toHaveBeenCalledWith(uri)
+      expect(actual).toHaveLength(1)
+    })
+
+    it('should fall back to dataTransfer files when text/uri-list contains only a comment', async () => {
+      const fallbackFile = new File([new Uint8Array()], 'fallback.json', {
+        type: 'application/json'
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(fallbackFile)
+      dataTransfer.setData('text/uri-list', '#just-a-comment')
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(fetchSpy).not.toHaveBeenCalled()
+      expect(actual).toEqual([fallbackFile])
+    })
   })
 })
 
