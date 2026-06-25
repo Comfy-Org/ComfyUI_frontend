@@ -21,15 +21,11 @@ import { useLegacyBilling } from './useLegacyBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 /**
- * Unified billing context that selects the billing implementation by flag and
- * backend readiness.
+ * Unified billing context that selects the billing implementation by build/flag.
  *
  * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
- * - Team workspaces enabled:
- *   - Team workspaces: workspace billing via /api/billing/*
- *   - Personal workspaces: workspace billing only once the backend signals it
- *     can serve personal identities over /api/billing/* (the
- *     personalWorkspaceBillingReady flag); legacy billing until then
+ * - Team workspaces enabled: workspace billing via /api/billing/* for both
+ *   personal (single-seat workspace) and team workspaces
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -90,19 +86,14 @@ function useBillingContextInternal(): BillingContext {
   const error = ref<string | null>(null)
 
   /**
-   * Determines which billing type to use:
+   * Determines which billing type to use, keyed only on the build/flag:
    * - Team workspaces feature disabled (OSS/Desktop): legacy (/customers)
-   * - Team workspaces feature enabled:
-   *   - Team workspace: workspace (/api/billing)
-   *   - Personal workspace: workspace (/api/billing) only when the backend is
-   *     ready to serve personal billing; legacy (/customers) otherwise
+   * - Team workspaces feature enabled: workspace (/api/billing), for both
+   *   personal (single-seat workspace) and team workspaces
    */
-  const type = computed<BillingType>(() => {
-    if (!flags.teamWorkspacesEnabled) return 'legacy'
-    if (store.isInPersonalWorkspace && !flags.personalWorkspaceBillingReady)
-      return 'legacy'
-    return 'workspace'
-  })
+  const type = computed<BillingType>(() =>
+    flags.teamWorkspacesEnabled ? 'workspace' : 'legacy'
+  )
 
   const activeContext = computed(() =>
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
@@ -148,18 +139,13 @@ function useBillingContextInternal(): BillingContext {
     return plan?.max_seats ?? getTierFeatures(tierKey).maxMembers
   }
 
-  // Sync subscription info to workspace store for display in workspace switcher.
-  // A subscription is considered "subscribed" if it's active AND not cancelled,
-  // so the delete button stays enabled after cancellation, before the period ends.
-  // Only mirror personal subscriptions once personal billing runs on the
-  // workspace path; while personal is still on legacy, its data comes from
-  // /customers and must not be mirrored into the workspace store.
+  // Sync subscription info to workspace store for display in workspace switcher
+  // A subscription is considered "subscribed" for workspace purposes if it's active AND not cancelled
+  // This ensures the delete button is enabled after cancellation, even before the period ends
   watch(
     subscription,
     (sub) => {
       if (!sub) return
-      if (store.isInPersonalWorkspace && !flags.personalWorkspaceBillingReady)
-        return
 
       store.updateActiveWorkspace({
         isSubscribed: sub.isActive && !sub.isCancelled,

@@ -57,12 +57,7 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    // Personal gets the workspace dialog variant only once its billing actually
-    // runs on the workspace path; team always gets it under flag-on.
-    const useWorkspaceVariant =
-      flags.teamWorkspacesEnabled &&
-      (!workspaceStore.isInPersonalWorkspace ||
-        flags.personalWorkspaceBillingReady)
+    const useWorkspaceVariant = flags.teamWorkspacesEnabled
     const isPersonal = workspaceStore.isInPersonalWorkspace
 
     const component = useWorkspaceVariant
