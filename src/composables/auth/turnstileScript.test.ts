@@ -117,14 +117,33 @@ describe('loadTurnstile', () => {
     expect(scriptCount()).toBe(1)
   })
 
-  it('rejects, removes the self-appended script, and clears the cache when the script loads without the global', async () => {
+  it('polls for the global when it is published asynchronously after the load event', async () => {
+    vi.useFakeTimers()
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
-    // load fires but Cloudflare never set window.turnstile
     scriptEl()!.dispatchEvent(new Event('load'))
+    // global published shortly after load
+    const api = fakeApi()
+    window.turnstile = api
+    await vi.advanceTimersByTimeAsync(50)
 
-    await expect(promise).rejects.toThrow(/without global/i)
+    await expect(promise).resolves.toBe(api)
+    // tag stays in place on success
+    expect(scriptEl()).not.toBeNull()
+  })
+
+  it('rejects and clears the cache when the global never appears after load (poll timeout)', async () => {
+    vi.useFakeTimers()
+    const loadTurnstile = await freshLoadTurnstile()
+
+    const promise = loadTurnstile()
+    scriptEl()!.dispatchEvent(new Event('load'))
+    // global never published; deadline elapses
+    const assertion = expect(promise).rejects.toThrow(/timed out/i)
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await assertion
     // dead tag is removed so a later retry starts clean
     expect(scriptEl()).toBeNull()
     // cache was reset → a later call starts a brand-new load

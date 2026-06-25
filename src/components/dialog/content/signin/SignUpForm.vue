@@ -70,7 +70,7 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -94,6 +94,10 @@ const turnstileWidget =
 const submitBlockedByTurnstile = computed(
   () => turnstileEnforced.value && !turnstileToken.value
 )
+
+watch(turnstileEnabled, (on) => {
+  if (!on) turnstileToken.value = ''
+})
 
 const emit = defineEmits<{
   submit: [values: SignUpData, turnstileToken?: string]

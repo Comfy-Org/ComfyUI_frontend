@@ -1,12 +1,8 @@
 import { computed } from 'vue'
 
 import { getTurnstileSiteKey } from '@/config/turnstile'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { TurnstileMode } from '@/platform/remoteConfig/types'
-import { api } from '@/scripts/api'
-import { getDevOverride } from '@/utils/devFeatureFlagOverride'
-
-const SIGNUP_TURNSTILE_FLAG = 'signup_turnstile'
 
 /**
  * Clamp an externally-sourced value to a known TurnstileMode. Unknown strings
@@ -15,14 +11,6 @@ const SIGNUP_TURNSTILE_FLAG = 'signup_turnstile'
  */
 export function normalizeTurnstileMode(raw: string | undefined): TurnstileMode {
   return raw === 'shadow' || raw === 'enforce' ? raw : 'off'
-}
-
-function resolveTurnstileMode(): TurnstileMode {
-  const raw =
-    getDevOverride<TurnstileMode>(SIGNUP_TURNSTILE_FLAG) ??
-    remoteConfig.value.signup_turnstile ??
-    api.getServerFeature<TurnstileMode>(SIGNUP_TURNSTILE_FLAG, 'off')
-  return normalizeTurnstileMode(raw)
 }
 
 /**
@@ -46,7 +34,8 @@ export function isTurnstileEnabled(
  * - `enforced`: block submit until the challenge is solved
  */
 export function useTurnstile() {
-  const mode = computed(resolveTurnstileMode)
+  const { flags } = useFeatureFlags()
+  const mode = computed(() => normalizeTurnstileMode(flags.signupTurnstileMode))
   const siteKey = computed(getTurnstileSiteKey)
   const enabled = computed(() => isTurnstileEnabled(mode.value, siteKey.value))
   const enforced = computed(() => enabled.value && mode.value === 'enforce')

@@ -75,6 +75,7 @@ onMounted(async () => {
         clearToken()
         console.warn('Turnstile challenge failed')
         errorMessage.value = t('auth.turnstile.failed')
+        if (widgetId && window.turnstile) window.turnstile.reset(widgetId)
       }
     })
   } catch (error) {

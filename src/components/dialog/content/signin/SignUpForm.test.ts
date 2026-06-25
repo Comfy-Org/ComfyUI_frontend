@@ -211,6 +211,30 @@ describe('SignUpForm', () => {
     })
   })
 
+  describe('Turnstile token hygiene', () => {
+    it('clears the stale token when Turnstile becomes disabled', async () => {
+      mockTurnstileEnabled.value = true
+      mockTurnstileEnforced.value = true
+      const { user } = renderComponent()
+      await fillValidSignup(user)
+
+      emitTurnstileToken!('stale-token')
+      await nextTick()
+      expect(
+        screen.getByRole('button', { name: signUpButton })
+      ).not.toBeDisabled()
+
+      mockTurnstileEnabled.value = false
+      await nextTick()
+
+      // re-enable: the stale token must have been cleared so submit is blocked again
+      mockTurnstileEnabled.value = true
+      await nextTick()
+
+      expect(screen.getByRole('button', { name: signUpButton })).toBeDisabled()
+    })
+  })
+
   describe('Turnstile submit gating', () => {
     it('disables the submit button in enforce mode until a token is present', async () => {
       mockTurnstileEnabled.value = true

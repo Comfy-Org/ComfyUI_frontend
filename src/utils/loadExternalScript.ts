@@ -17,6 +17,15 @@ export function createScriptLoader<T>(
     if (scriptPromise) return scriptPromise
 
     scriptPromise = new Promise<T>((resolve, reject) => {
+      let settled = false
+      let cancelPoll: (() => void) | undefined
+
+      function trySettle(fn: () => void) {
+        if (settled) return
+        settled = true
+        fn()
+      }
+
       const ready = getReady()
       if (ready !== null) {
         resolve(ready)
@@ -27,43 +36,53 @@ export function createScriptLoader<T>(
         `script[src="${src}"]`
       )
 
-      if (existing) {
-        // load/error may have already fired on the pre-existing tag; poll for readiness
-        const timeoutId = window.setTimeout(() => {
-          window.clearInterval(pollId)
-          scriptPromise = null
-          reject(new Error(`Script load timed out: ${src}`))
-        }, timeoutMs)
+      function startPoll(onSuccess: () => void): () => void {
         const pollId = window.setInterval(() => {
           const value = getReady()
           if (value !== null) {
             window.clearInterval(pollId)
-            window.clearTimeout(timeoutId)
-            resolve(value)
+            onSuccess()
+            trySettle(() => resolve(value))
           }
         }, POLL_INTERVAL_MS)
+        return () => window.clearInterval(pollId)
+      }
+
+      if (existing) {
+        // load/error may have already fired on the pre-existing tag; poll for readiness
+        const timeoutId = window.setTimeout(() => {
+          cancelPoll?.()
+          trySettle(() => {
+            scriptPromise = null
+            reject(new Error(`Script load timed out: ${src}`))
+          })
+        }, timeoutMs)
+        cancelPoll = startPoll(() => window.clearTimeout(timeoutId))
         return
       }
 
       const scriptEl = document.createElement('script')
 
       const timeoutId = window.setTimeout(() => {
+        cancelPoll?.()
         scriptEl.remove()
-        scriptPromise = null
-        reject(new Error(`Script load timed out: ${src}`))
+        trySettle(() => {
+          scriptPromise = null
+          reject(new Error(`Script load timed out: ${src}`))
+        })
       }, timeoutMs)
 
       scriptEl.addEventListener(
         'load',
         () => {
-          window.clearTimeout(timeoutId)
+          if (settled) return
           const value = getReady()
           if (value !== null) {
-            resolve(value)
+            window.clearTimeout(timeoutId)
+            trySettle(() => resolve(value))
           } else {
-            scriptEl.remove()
-            scriptPromise = null
-            reject(new Error(`Script loaded without global: ${src}`))
+            // global may arrive asynchronously after load; poll under the shared timeout
+            cancelPoll = startPoll(() => window.clearTimeout(timeoutId))
           }
         },
         { once: true }
@@ -73,8 +92,10 @@ export function createScriptLoader<T>(
         () => {
           window.clearTimeout(timeoutId)
           scriptEl.remove()
-          scriptPromise = null
-          reject(new Error(`Script failed to load: ${src}`))
+          trySettle(() => {
+            scriptPromise = null
+            reject(new Error(`Script failed to load: ${src}`))
+          })
         },
         { once: true }
       )

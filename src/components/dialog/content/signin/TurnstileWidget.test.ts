@@ -176,6 +176,20 @@ describe('TurnstileWidget', () => {
     expect(container.textContent).toContain('Verification failed')
   })
 
+  it('resets the widget on a challenge error to fetch a fresh challenge', async () => {
+    const { api, options } = fakeTurnstile()
+    mockLoadTurnstile.mockResolvedValue(api)
+    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+
+    renderWidget()
+    await flush()
+
+    options()!['error-callback']!()
+    await flush()
+
+    expect(api.reset).toHaveBeenCalledWith('widget-id')
+  })
+
   it('shows the failure message when the Turnstile script fails to load', async () => {
     mockLoadTurnstile.mockRejectedValue(new Error('script failed'))
 
