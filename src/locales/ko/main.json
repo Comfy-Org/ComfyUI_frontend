@@ -871,6 +871,7 @@
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
     "LUMA_CONCEPTS": "Luma 컨셉",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "Luma 참조",
     "MASK": "마스크",
     "MESH": "메시",
@@ -3846,7 +3847,7 @@
     "workspaceNotSubscribed": "이 워크스페이스는 구독 중이 아닙니다",
     "yearly": "연간",
     "yearlyCreditsLabel": "연간 총 크레딧",
-    "yearlyDiscount": "20% 할인",
+    "saveYearly": "20% 절감",
     "yourPlanIncludes": "귀하의 플랜 포함 사항:"
   },
   "tabMenu": {
@@ -3979,6 +3980,7 @@
     "fileTooLarge": "파일이 너무 큽니다({size} MB). 최대 지원 크기는 {maxSize} MB입니다.",
     "fileUploadFailed": "파일 업로드에 실패했습니다",
     "interrupted": "실행이 중단되었습니다",
+    "invalidTemplateData": "노드 템플릿을 불러오지 못했습니다: 잘못된 데이터",
     "legacyMaskEditorDeprecated": "레거시 마스크 에디터는 더 이상 지원되지 않으며 곧 제거될 예정입니다.",
     "migrateToLitegraphReroute": "향후 버전에서는 Reroute 노드가 제거됩니다. LiteGraph 에서 자체 제공하는 경유점으로 변환하려면 클릭하세요.",
     "missingModelVerificationFailed": "누락된 모델 검증에 실패했습니다. 일부 모델이 오류 탭에 표시되지 않을 수 있습니다.",

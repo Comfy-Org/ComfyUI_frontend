@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
@@ -23,10 +24,8 @@ function createDeferredPromise<T>() {
 }
 
 const mockIsActiveSubscription = ref(false)
-const mockSubscriptionTier = ref<
-  'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
->(null)
-const mockIsYearlySubscription = ref(false)
+const mockSubscriptionTier = ref<SubscriptionTier | null>(null)
+const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
@@ -65,13 +64,25 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
-    isFreeTier: computed(() => false),
-    subscriptionTier: computed(() => mockSubscriptionTier.value),
-    isYearlySubscription: computed(() => mockIsYearlySubscription.value),
-    subscriptionStatus: ref(null)
+    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
+    tier: computed(() => mockSubscriptionTier.value),
+    subscription: computed(() =>
+      mockSubscriptionTier.value
+        ? {
+            isActive: mockIsActiveSubscription.value,
+            tier: mockSubscriptionTier.value,
+            duration: mockSubscriptionDuration.value,
+            planSlug: null,
+            renewalDate: null,
+            endDate: null,
+            isCancelled: false,
+            hasFunds: true
+          }
+        : null
+    )
   })
 }))
 
@@ -217,7 +228,7 @@ describe('PricingTable', () => {
     vi.clearAllMocks()
     mockIsActiveSubscription.value = false
     mockSubscriptionTier.value = null
-    mockIsYearlySubscription.value = false
+    mockSubscriptionDuration.value = 'MONTHLY'
     mockUserId.value = 'user-123'
     mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
@@ -362,6 +373,7 @@ describe('PricingTable', () => {
     it('should not call accessBillingPortal when clicking current plan', async () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'CREATOR'
+      mockSubscriptionDuration.value = 'ANNUAL'
 
       renderComponent()
       await flushPromises()
@@ -370,10 +382,27 @@ describe('PricingTable', () => {
         .getAllByRole('button')
         .find((b) => b.textContent?.includes('Current Plan'))
 
+      expect(currentPlanButton).toBeDefined()
+      expect(currentPlanButton).toBeDisabled()
       await userEvent.click(currentPlanButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).not.toHaveBeenCalled()
+    })
+
+    it('does not highlight a current plan when the facade duration differs from the selected cycle', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'CREATOR'
+      mockSubscriptionDuration.value = 'MONTHLY'
+
+      renderComponent()
+      await flushPromises()
+
+      const currentPlanButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Current Plan'))
+
+      expect(currentPlanButton).toBeUndefined()
     })
 
     it('should initiate checkout instead of billing portal for new subscribers', async () => {
