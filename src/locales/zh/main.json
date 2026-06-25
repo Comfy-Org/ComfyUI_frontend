@@ -3694,7 +3694,6 @@
       "keepSubscription": "保留订阅",
       "title": "取消订阅"
     },
-    "cancelSubscription": "取消订阅",
     "cancelSuccess": "订阅取消成功",
     "canceled": "已取消",
     "canceledCard": {

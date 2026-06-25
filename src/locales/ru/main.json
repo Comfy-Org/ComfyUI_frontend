@@ -3682,7 +3682,6 @@
       "keepSubscription": "Сохранить подписку",
       "title": "Отмена подписки"
     },
-    "cancelSubscription": "Отменить подписку",
     "cancelSuccess": "Подписка успешно отменена",
     "canceled": "Отменено",
     "canceledCard": {

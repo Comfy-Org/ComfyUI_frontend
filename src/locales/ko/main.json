@@ -3682,7 +3682,6 @@
       "keepSubscription": "구독 유지",
       "title": "구독 취소"
     },
-    "cancelSubscription": "구독 취소",
     "cancelSuccess": "구독이 성공적으로 취소되었습니다",
     "canceled": "취소됨",
     "canceledCard": {
