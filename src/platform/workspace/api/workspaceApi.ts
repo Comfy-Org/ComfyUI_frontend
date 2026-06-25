@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -321,6 +322,9 @@ const workspaceApiClient = axios.create({
   }
 })
 
+// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
+attachUnifiedRemintInterceptor(workspaceApiClient)
+
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
@@ -519,7 +523,7 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),
         null,
-        { headers }
+        { headers, __skipUnifiedRemint: true }
       )
       return response.data
     } catch (err) {
