@@ -165,6 +165,7 @@ describe('useComfyHubPublishWizard', () => {
       expect(formData.value.comparisonAfterUrl).toBe(
         'https://cdn.example.com/after.png'
       )
+      expect(formData.value.existingThumbnailType).toBe('imageComparison')
     })
 
     it('does not overwrite a freshly attached thumbnail file with the prefill URL', () => {

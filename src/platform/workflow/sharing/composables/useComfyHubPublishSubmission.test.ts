@@ -232,6 +232,28 @@ describe('useComfyHubPublishSubmission', () => {
     )
   })
 
+  it('prefers a newly uploaded comparison-after file over the existing URL', async () => {
+    const afterFile = new File(['after'], 'after.png', { type: 'image/png' })
+
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        thumbnailType: 'imageComparison',
+        comparisonBeforeFile: null,
+        comparisonAfterFile: afterFile,
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        comparisonAfterUrl: 'https://cdn.example.com/after.png',
+        existingThumbnailType: 'imageComparison'
+      })
+    )
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thumbnailComparisonTokenOrUrl: 'token-1'
+      })
+    )
+  })
+
   it('uploads all example images', async () => {
     const file1 = new File(['img1'], 'img1.png', { type: 'image/png' })
     const file2 = new File(['img2'], 'img2.png', { type: 'image/png' })
