@@ -62,10 +62,17 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
         Boolean(item.tooltip) && toValue(item.disabled) && 'pointer-events-auto'
       )
     "
+    v-bind="
+      'checked' in item
+        ? { role: 'menuitemradio', 'aria-checked': Boolean(item.checked) }
+        : {}
+    "
     :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >
-    <i class="size-5 shrink-0" :class="item.icon" />
+    <!-- Items declaring an icon key (even empty) keep the slot so labels align
+         within icon-bearing menus; icon-less menus render labels flush-left. -->
+    <i v-if="'icon' in item" class="size-5 shrink-0" :class="item.icon" />
     <div class="mr-auto truncate" v-text="item.label" />
     <i v-if="item.checked" class="icon-[lucide--check] shrink-0" />
     <div

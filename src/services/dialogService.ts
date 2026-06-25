@@ -19,6 +19,7 @@ import type {
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -542,6 +543,21 @@ export const useDialogService = () => {
     })
   }
 
+  async function showChangeMemberRoleDialog(props: {
+    memberId: string
+    memberName: string
+    targetRole: WorkspaceRole
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'change-member-role',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
@@ -712,6 +728,7 @@ export const useDialogService = () => {
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
+    showChangeMemberRoleDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,

@@ -481,6 +481,24 @@ export const workspaceApi = {
   },
 
   /**
+   * Change a member's role (member ↔ owner).
+   * PATCH /api/workspace/members/:userId
+   */
+  async updateMemberRole(userId: UserId, role: WorkspaceRole): Promise<Member> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.patch<Member>(
+        api.apiURL(`/workspace/members/${userId}`),
+        { role },
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * List pending invites for the workspace.
    * GET /api/workspace/invites
    */
