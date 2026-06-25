@@ -156,6 +156,8 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  /** Required for the per-credit Team plan; selects the slider stop. */
+  team_credit_stop_id?: string
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -603,7 +605,8 @@ export const workspaceApi = {
   async subscribe(
     planSlug: string,
     returnUrl?: string,
-    cancelUrl?: string
+    cancelUrl?: string,
+    teamCreditStopId?: string
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -612,7 +615,8 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           return_url: returnUrl,
-          cancel_url: cancelUrl
+          cancel_url: cancelUrl,
+          team_credit_stop_id: teamCreditStopId
         } satisfies SubscribeRequest,
         { headers }
       )
