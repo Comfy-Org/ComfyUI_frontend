@@ -1,8 +1,6 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
-import { api } from '@/scripts/api'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 /**
@@ -48,44 +46,5 @@ export function mapTaskOutputToAssetItem(
     thumbnail_url: output.previewUrl,
     preview_url: output.url,
     user_metadata: metadata
-  }
-}
-
-/**
- * Strips ComfyUI's trailing directory-type annotation (e.g. ` [input]`,
- * ` [output]`, `[temp]`) from a filename returned by the OSS internal
- * `/internal/files/{type}` endpoint. The annotation is part of the wire
- * format LoadImage-style widgets expect, but for the assets sidebar we
- * want the canonical on-disk filename so type detection / titles work.
- */
-function stripDirectoryAnnotation(filename: string): string {
-  return filename.replace(/\s*\[(?:input|output|temp)\]\s*$/i, '')
-}
-
-/**
- * Maps input directory file to AssetItem format
- * @param filename The filename
- * @param index File index for unique ID
- * @param directory The directory type
- * @returns AssetItem formatted object
- */
-export function mapInputFileToAssetItem(
-  filename: string,
-  index: number,
-  directory: 'input' | 'output' = 'input'
-): AssetItem {
-  const cleanName = stripDirectoryAnnotation(filename)
-  const params = new URLSearchParams({ filename: cleanName, type: directory })
-  const preview_url = api.apiURL(`/view?${params}`)
-  appendCloudResParam(params, cleanName)
-
-  return {
-    id: `${directory}-${index}-${cleanName}`,
-    name: cleanName,
-    size: 0,
-    created_at: new Date().toISOString(),
-    tags: [directory],
-    thumbnail_url: api.apiURL(`/view?${params}`),
-    preview_url
   }
 }
