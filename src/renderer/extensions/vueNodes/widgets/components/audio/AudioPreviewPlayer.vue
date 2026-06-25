@@ -88,64 +88,58 @@
           <i class="text-secondary icon-[lucide--download] size-4" />
         </Button>
 
-        <!-- Options Button -->
-        <Button
-          v-if="showOptionsButton"
-          variant="textonly"
-          size="unset"
-          :aria-label="$t('g.moreOptions')"
-          class="size-6 rounded-sm"
-          @click="toggleOptionsMenu"
-        >
-          <i class="text-secondary icon-[lucide--more-vertical] size-4" />
-        </Button>
+        <!-- Options Menu -->
+        <DropdownMenu v-if="showOptionsButton" :modal="false">
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="textonly"
+              size="unset"
+              :aria-label="$t('g.moreOptions')"
+              class="size-6 rounded-sm"
+            >
+              <i class="text-secondary icon-[lucide--more-vertical] size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent size="lg" align="end" :side-offset="4">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                {{ $t('g.playbackSpeed') }}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem
+                  v-for="speed in playbackSpeedOptions"
+                  :key="speed.value"
+                  checkable
+                  :checked="playbackRate === speed.value"
+                  @select="setPlaybackSpeed(speed.value)"
+                >
+                  {{ speed.label }}
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <div class="w-48 px-2 py-1.5" @pointerdown.stop @keydown.stop>
+              <label class="mb-2 block text-xs text-base-foreground">{{
+                $t('g.volume')
+              }}</label>
+              <Slider
+                :model-value="volume * 10"
+                :min="0"
+                :max="10"
+                :step="1"
+                class="w-full"
+                @update:model-value="handleVolumeChange"
+              />
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-
-      <!-- Options Menu -->
-      <TieredMenu
-        ref="optionsMenu"
-        :model="menuItems"
-        popup
-        class="audio-player-menu"
-        :pt:root:class="
-          cn('border-component-node-border bg-component-node-widget-background')
-        "
-        :pt:submenu:class="cn('bg-component-node-widget-background')"
-      >
-        <template #item="{ item }">
-          <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label class="mb-2 block text-xs text-base-foreground">{{
-              item.label
-            }}</label>
-            <Slider
-              :model-value="volume * 10"
-              :min="0"
-              :max="10"
-              :step="1"
-              class="w-full"
-              @update:model-value="handleVolumeChange"
-            />
-          </div>
-          <div
-            v-else
-            class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
-            @click="item.onClick?.()"
-          >
-            <span class="text-base-foreground">{{ item.label }}</span>
-            <i
-              v-if="item.selected"
-              class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
-            />
-          </div>
-        </template>
-      </TieredMenu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Slider from 'primevue/slider'
-import TieredMenu from 'primevue/tieredmenu'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
@@ -154,7 +148,14 @@ import { useToast } from 'primevue/usetoast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
+import DropdownMenuSub from '@/components/ui/dropdown-menu/DropdownMenuSub.vue'
+import DropdownMenuSubContent from '@/components/ui/dropdown-menu/DropdownMenuSubContent.vue'
+import DropdownMenuSubTrigger from '@/components/ui/dropdown-menu/DropdownMenuSubTrigger.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 
 import { formatTime } from '@/utils/formatUtil'
 
@@ -168,7 +169,6 @@ const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
 
 // Refs
 const audioRef = useTemplateRef('audioRef')
-const optionsMenu = ref()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
@@ -248,11 +248,6 @@ const handleEnded = () => {
   currentTime.value = 0
 }
 
-// Options menu
-const toggleOptionsMenu = (event: Event) => {
-  optionsMenu.value?.toggle(event)
-}
-
 const setPlaybackSpeed = (speed: number) => {
   playbackRate.value = speed
   if (audioRef.value) {
@@ -272,31 +267,10 @@ const handleVolumeChange = (value: number | number[]) => {
   }
 }
 
-const menuItems = computed(() => [
-  {
-    label: t('g.playbackSpeed'),
-    items: [
-      {
-        label: t('g.halfSpeed'),
-        onClick: () => setPlaybackSpeed(0.5),
-        selected: playbackRate.value === 0.5
-      },
-      {
-        label: t('g.1x'),
-        onClick: () => setPlaybackSpeed(1),
-        selected: playbackRate.value === 1
-      },
-      {
-        label: t('g.2x'),
-        onClick: () => setPlaybackSpeed(2),
-        selected: playbackRate.value === 2
-      }
-    ]
-  },
-  {
-    label: t('g.volume'),
-    key: 'volume'
-  }
+const playbackSpeedOptions = computed(() => [
+  { label: t('g.halfSpeed'), value: 0.5 },
+  { label: t('g.1x'), value: 1 },
+  { label: t('g.2x'), value: 2 }
 ])
 
 whenever(
@@ -309,10 +283,3 @@ whenever(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.audio-player-menu {
-  --p-tieredmenu-item-focus-background: rgb(255 255 255 / 0.1);
-  --p-tieredmenu-item-active-background: rgb(255 255 255 / 0.1);
-}
-</style>

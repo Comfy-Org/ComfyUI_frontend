@@ -1,93 +1,64 @@
 <template>
-  <div class="flex flex-col">
-    <Button
-      variant="textonly"
-      class="w-full"
-      @click="handleViewModeChange('list')"
-    >
-      <span class="flex items-center gap-2">
-        <i class="icon-[lucide--table-of-contents] size-4" />
-        <span>{{ $t('sideToolbar.queueProgressOverlay.viewList') }}</span>
-      </span>
+  <DropdownMenuItem @select="handleViewModeChange('list')">
+    <template #icon><i class="icon-[lucide--table-of-contents]" /></template>
+    {{ $t('sideToolbar.queueProgressOverlay.viewList') }}
+    <i
+      v-if="viewMode === 'list'"
+      class="ml-auto icon-[lucide--check] size-3.5"
+    />
+  </DropdownMenuItem>
+
+  <DropdownMenuItem @select="handleViewModeChange('grid')">
+    <template #icon><i class="icon-[lucide--layout-grid]" /></template>
+    {{ $t('sideToolbar.queueProgressOverlay.viewGrid') }}
+    <i
+      v-if="viewMode === 'grid'"
+      class="ml-auto icon-[lucide--check] size-3.5"
+    />
+  </DropdownMenuItem>
+
+  <template v-if="showSortOptions">
+    <DropdownMenuSeparator />
+
+    <DropdownMenuItem @select="handleSortChange('newest')">
+      {{ $t('sideToolbar.mediaAssets.sortNewestFirst') }}
       <i
-        class="ml-auto icon-[lucide--check] size-4"
-        :class="viewMode !== 'list' && 'opacity-0'"
+        v-if="sortBy === 'newest'"
+        class="ml-auto icon-[lucide--check] size-3.5"
       />
-    </Button>
+    </DropdownMenuItem>
 
-    <Button
-      variant="textonly"
-      class="w-full"
-      @click="handleViewModeChange('grid')"
-    >
-      <span class="flex items-center gap-2">
-        <i class="icon-[lucide--layout-grid] size-4" />
-        <span>{{ $t('sideToolbar.queueProgressOverlay.viewGrid') }}</span>
-      </span>
+    <DropdownMenuItem @select="handleSortChange('oldest')">
+      {{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}
       <i
-        class="ml-auto icon-[lucide--check] size-4"
-        :class="viewMode !== 'grid' && 'opacity-0'"
+        v-if="sortBy === 'oldest'"
+        class="ml-auto icon-[lucide--check] size-3.5"
       />
-    </Button>
+    </DropdownMenuItem>
 
-    <template v-if="showSortOptions">
-      <div class="my-1 w-full border-b border-border-subtle" />
-
-      <Button
-        variant="textonly"
-        class="w-full"
-        @click="handleSortChange('newest')"
-      >
-        <span>{{ $t('sideToolbar.mediaAssets.sortNewestFirst') }}</span>
+    <template v-if="showGenerationTimeSort">
+      <DropdownMenuItem @select="handleSortChange('longest')">
+        {{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}
         <i
-          class="ml-auto icon-[lucide--check] size-4"
-          :class="sortBy !== 'newest' && 'opacity-0'"
+          v-if="sortBy === 'longest'"
+          class="ml-auto icon-[lucide--check] size-3.5"
         />
-      </Button>
+      </DropdownMenuItem>
 
-      <Button
-        variant="textonly"
-        class="w-full"
-        @click="handleSortChange('oldest')"
-      >
-        <span>{{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}</span>
+      <DropdownMenuItem @select="handleSortChange('fastest')">
+        {{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}
         <i
-          class="ml-auto icon-[lucide--check] size-4"
-          :class="sortBy !== 'oldest' && 'opacity-0'"
+          v-if="sortBy === 'fastest'"
+          class="ml-auto icon-[lucide--check] size-3.5"
         />
-      </Button>
-
-      <template v-if="showGenerationTimeSort">
-        <Button
-          variant="textonly"
-          class="w-full"
-          @click="handleSortChange('longest')"
-        >
-          <span>{{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}</span>
-          <i
-            class="ml-auto icon-[lucide--check] size-4"
-            :class="sortBy !== 'longest' && 'opacity-0'"
-          />
-        </Button>
-
-        <Button
-          variant="textonly"
-          class="w-full"
-          @click="handleSortChange('fastest')"
-        >
-          <span>{{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}</span>
-          <i
-            class="ml-auto icon-[lucide--check] size-4"
-            :class="sortBy !== 'fastest' && 'opacity-0'"
-          />
-        </Button>
-      </template>
+      </DropdownMenuItem>
     </template>
-  </div>
+  </template>
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
 
 export type SortBy = 'newest' | 'oldest' | 'longest' | 'fastest'
 

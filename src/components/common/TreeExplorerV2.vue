@@ -39,6 +39,7 @@
 
     <ContextMenuPortal v-if="showContextMenu && contextMenuNode?.data">
       <ContextMenuContent
+        size="lg"
         class="z-9999 min-w-32 overflow-hidden rounded-md border border-border-default bg-comfy-menu-bg p-1 shadow-md"
       >
         <ContextMenuItem

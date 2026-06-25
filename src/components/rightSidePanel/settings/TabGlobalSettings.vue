@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
+
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -51,15 +52,21 @@ const snapToGrid = computed({
 })
 
 // CONNECTION LINKS settings
-const linkShape = computed({
-  get: () => settingStore.get('Comfy.Graph.LinkMarkers'),
-  set: (value) => settingStore.set('Comfy.Graph.LinkMarkers', value)
+const linkShape = computed<string | undefined>({
+  get: () => {
+    const value = settingStore.get('Comfy.Graph.LinkMarkers')
+    return value === undefined ? undefined : String(value)
+  },
+  set: (value) => {
+    if (value === undefined) return
+    void settingStore.set('Comfy.Graph.LinkMarkers', Number(value))
+  }
 })
 
 const linkShapeOptions = computed(() => [
-  { value: LinkMarkerShape.None, label: t('g.none') },
-  { value: LinkMarkerShape.Circle, label: t('shape.circle') },
-  { value: LinkMarkerShape.Arrow, label: t('shape.arrow') }
+  { value: String(LinkMarkerShape.None), name: t('g.none') },
+  { value: String(LinkMarkerShape.Circle), name: t('shape.circle') },
+  { value: String(LinkMarkerShape.Arrow), name: t('shape.arrow') }
 ])
 
 let theOldLinkRenderMode: LinkRenderType = LiteGraph.SPLINE_LINK
@@ -170,21 +177,12 @@ function openFullSettings() {
       </template>
       <div class="space-y-4 px-4 py-3">
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
-          <Select
+          <SingleSelect
             v-model="linkShape"
             :options="linkShapeOptions"
             :aria-label="t('rightSidePanel.globalSettings.linkShape')"
             :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-            size="small"
-            :pt="{
-              option: 'text-xs',
-              dropdown: 'w-8',
-              label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
-              overlay: 'w-fit min-w-full'
-            }"
-            data-capture-wheel="true"
-            option-label="label"
-            option-value="value"
+            size="md"
           />
         </LayoutField>
         <FieldSwitch

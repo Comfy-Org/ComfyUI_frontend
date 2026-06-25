@@ -1,7 +1,38 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Slots } from 'vue'
+import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
+  default: (
+    _: unknown,
+    {
+      slots,
+      emit,
+      attrs
+    }: {
+      slots: Slots
+      emit: (e: string, ev?: Event) => void
+      attrs: Record<string, unknown>
+    }
+  ) =>
+    h(
+      'button',
+      {
+        ...attrs,
+        type: 'button',
+        onClick: (ev: Event) => emit('select', ev)
+      },
+      [slots.icon?.(), slots.default?.()]
+    )
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuShortcut.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('span', slots.default?.())
+}))
 
 import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
 
@@ -70,12 +101,8 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-function renderComponent(props = {}) {
+function renderComponent() {
   return render(ZoomControlsModal, {
-    props: {
-      visible: true,
-      ...props
-    },
     global: {
       plugins: [i18n],
       stubs: {
@@ -166,11 +193,5 @@ describe('ZoomControlsModal', () => {
     expect(mockGetCommand).toHaveBeenCalledWith('Comfy.Canvas.ZoomIn')
     expect(mockGetCommand).toHaveBeenCalledWith('Comfy.Canvas.ZoomOut')
     expect(mockGetCommand).toHaveBeenCalledWith('Comfy.Canvas.FitView')
-  })
-
-  it('should not be visible when visible prop is false', () => {
-    renderComponent({ visible: false })
-
-    expect(screen.queryByTestId('zoom-in-action')).toBeNull()
   })
 })

@@ -3,11 +3,39 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
-import type { Component } from 'vue'
+import type { Component, Slots } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenu.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', { 'data-testid': 'dropdown-menu' }, slots.default?.())
+}))
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuTrigger.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', { 'data-testid': 'dropdown-menu-trigger' }, slots.default?.())
+}))
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuContent.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', { 'data-testid': 'queue-context-menu' }, slots.default?.())
+}))
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
+  default: (
+    props: { disabled?: boolean },
+    { slots, emit }: { slots: Slots; emit: (e: string) => void }
+  ) =>
+    h(
+      'button',
+      {
+        type: 'button',
+        'data-disabled': props.disabled ? '' : undefined,
+        disabled: props.disabled,
+        onClick: () => emit('select')
+      },
+      [slots.icon?.(), slots.default?.()]
+    )
+}))
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
@@ -138,12 +166,6 @@ function createWrapper({
         QueueNotificationBannerHost: true,
         CurrentUserButton: true,
         LoginButton: true,
-        ContextMenu: {
-          name: 'ContextMenu',
-          props: ['model'],
-          template:
-            '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
-        },
         ...stubs
       },
       directives: {
@@ -531,14 +553,16 @@ describe('TopMenuSection', () => {
     })
   })
 
+  function findClearQueueButton(container: Element) {
+    return Array.from(
+      container.querySelectorAll<HTMLButtonElement>('button')
+    ).find((b) => b.textContent?.includes('Clear queue'))
+  }
+
   it('disables the clear queue context menu item when no queued jobs exist', () => {
     const { container } = createWrapper()
-    const menuEl = container.querySelector('[data-testid="context-menu"]')
-    const model = JSON.parse(
-      menuEl?.getAttribute('data-model') ?? '[]'
-    ) as MenuItem[]
-    expect(model[0]?.label).toBe('Clear queue')
-    expect(model[0]?.disabled).toBe(true)
+    const item = findClearQueueButton(container)
+    expect(item?.hasAttribute('disabled')).toBe(true)
   })
 
   it('enables the clear queue context menu item when queued jobs exist', async () => {
@@ -548,11 +572,8 @@ describe('TopMenuSection', () => {
 
     await nextTick()
 
-    const menuEl = container.querySelector('[data-testid="context-menu"]')
-    const model = JSON.parse(
-      menuEl?.getAttribute('data-model') ?? '[]'
-    ) as MenuItem[]
-    expect(model[0]?.disabled).toBe(false)
+    const item = findClearQueueButton(container)
+    expect(item?.hasAttribute('disabled')).toBe(false)
   })
 
   it('shows manager red dot only for manager conflicts', async () => {

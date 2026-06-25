@@ -52,6 +52,22 @@ vi.mock('@/components/button/MoreButton.vue', () => ({
     h('div', slots.default?.({ close: () => {} }))
 }))
 
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
+  default: (
+    props: { disabled?: boolean },
+    { slots, emit }: { slots: Slots; emit: (e: string) => void }
+  ) =>
+    h(
+      'button',
+      {
+        type: 'button',
+        disabled: props.disabled,
+        onClick: () => emit('select')
+      },
+      [slots.icon?.(), slots.default?.()]
+    )
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

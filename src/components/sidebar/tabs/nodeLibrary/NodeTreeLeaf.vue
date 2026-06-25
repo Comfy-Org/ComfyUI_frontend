@@ -47,7 +47,9 @@
           <i
             :class="
               cn(
-                isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+                isBookmarked
+                  ? 'icon-[lucide--bookmark] fill-current'
+                  : 'icon-[lucide--bookmark]',
                 'size-3.5'
               )
             "
@@ -61,7 +63,7 @@
           :aria-label="$t('g.learnMore')"
           @click.stop="onHelpClick"
         >
-          <i class="pi pi-question size-3.5" />
+          <i class="icon-[lucide--circle-help] size-3.5" />
         </Button>
       </template>
     </TreeExplorerTreeNode>
@@ -72,12 +74,38 @@
       </div>
     </teleport>
   </div>
-  <ContextMenu ref="menu" :model="menuItems" />
+  <DropdownMenu v-model:open="menuOpen" :modal="false">
+    <DropdownMenuTrigger as-child>
+      <button
+        type="button"
+        aria-hidden="true"
+        tabindex="-1"
+        class="pointer-events-none fixed size-0 opacity-0"
+        :style="{ left: `${menuAnchor.x}px`, top: `${menuAnchor.y}px` }"
+      />
+    </DropdownMenuTrigger>
+    <DropdownMenuContent
+      size="lg"
+      align="start"
+      :side-offset="0"
+      :collision-padding="8"
+    >
+      <DropdownMenuItem
+        v-for="(menuItem, idx) in menuItems"
+        :key="idx"
+        :class="menuItemDestructiveClasses"
+        @select="() => menuItem.command?.()"
+      >
+        <template v-if="menuItem.icon" #icon>
+          <i :class="menuItem.icon" />
+        </template>
+        {{ menuItem.label }}
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
 </template>
 
 <script setup lang="ts">
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
@@ -86,6 +114,11 @@ import { useI18n } from 'vue-i18n'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
+import { menuItemDestructiveClasses } from '@/components/ui/menu.styles'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
@@ -130,7 +163,8 @@ const editBlueprint = async () => {
     )
   await useSubgraphStore().editBlueprint(props.node.data.name)
 }
-const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const menuOpen = ref(false)
+const menuAnchor = ref({ x: 0, y: 0 })
 const subgraphStore = useSubgraphStore()
 const isUserBlueprint = computed(() => {
   const name = nodeDef.value.name
@@ -139,21 +173,28 @@ const isUserBlueprint = computed(() => {
     name.slice(subgraphStore.typePrefix.length)
   )
 })
-const menuItems = computed<MenuItem[]>(() => {
+type LeafMenuItem = {
+  label: string
+  icon?: string
+  command?: () => void
+}
+const menuItems = computed<LeafMenuItem[]>(() => {
   if (!isUserBlueprint.value) return []
 
   return [
     {
       label: t('g.delete'),
-      icon: 'pi pi-trash',
-      severity: 'error',
+      icon: 'icon-[lucide--trash-2]',
       command: deleteBlueprint
     }
   ]
 })
 function handleContextMenu(event: Event) {
   if (!isUserBlueprint.value) return
-  menu.value?.show(event)
+  const mouseEvent = event as MouseEvent
+  event.preventDefault()
+  menuAnchor.value = { x: mouseEvent.clientX, y: mouseEvent.clientY }
+  menuOpen.value = true
 }
 function deleteBlueprint() {
   if (!props.node.data) return

@@ -59,14 +59,28 @@
         }"
       >
         <template #header>
-          <Button
-            size="icon"
-            variant="muted-textonly"
-            @click="menu?.show($event)"
-          >
-            <i class="pi pi-ellipsis-h" />
-          </Button>
-          <ContextMenu ref="menu" :model="contextMenuItems" />
+          <DropdownMenu :modal="false">
+            <DropdownMenuTrigger as-child>
+              <Button size="icon" variant="muted-textonly">
+                <i class="icon-[lucide--ellipsis]" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent size="lg" align="end" :side-offset="4">
+              <template v-for="(menuItem, idx) in contextMenuItems" :key="idx">
+                <DropdownMenuSeparator v-if="menuItem.separator" />
+                <DropdownMenuItem
+                  v-else
+                  :disabled="menuItem.disabled"
+                  @select="() => menuItem.command?.()"
+                >
+                  <template v-if="menuItem.icon" #icon>
+                    <i :class="menuItem.icon" />
+                  </template>
+                  {{ menuItem.label }}
+                </DropdownMenuItem>
+              </template>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </template>
         <template #body="slotProps">
           <ToggleSwitch
@@ -83,7 +97,6 @@
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
-import ContextMenu from 'primevue/contextmenu'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import SelectButton from 'primevue/selectbutton'
@@ -94,6 +107,11 @@ import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -200,11 +218,18 @@ const applyChanges = () => {
   window.location.reload()
 }
 
-const menu = ref<InstanceType<typeof ContextMenu>>()
-const contextMenuItems = computed(() => [
+type MenuEntry = {
+  separator?: boolean
+  label?: string
+  icon?: string
+  disabled?: boolean
+  command?: () => void | Promise<void>
+}
+
+const contextMenuItems = computed<MenuEntry[]>(() => [
   {
     label: t('g.enableSelected'),
-    icon: 'pi pi-check',
+    icon: 'icon-[lucide--check]',
     command: async () => {
       selectedExtensions.value.forEach((ext) => {
         if (!extensionStore.isExtensionReadOnly(ext.name)) {
@@ -216,7 +241,7 @@ const contextMenuItems = computed(() => [
   },
   {
     label: t('g.disableSelected'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: async () => {
       selectedExtensions.value.forEach((ext) => {
         if (!extensionStore.isExtensionReadOnly(ext.name)) {
@@ -226,22 +251,20 @@ const contextMenuItems = computed(() => [
       await updateExtensionStatus()
     }
   },
-  {
-    separator: true
-  },
+  { separator: true },
   {
     label: t('g.enableAll'),
-    icon: 'pi pi-check',
+    icon: 'icon-[lucide--check]',
     command: enableAllExtensions
   },
   {
     label: t('g.disableAll'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: disableAllExtensions
   },
   {
     label: t('g.disableThirdParty'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: disableThirdPartyExtensions,
     disabled: !extensionStore.hasThirdPartyExtensions
   }

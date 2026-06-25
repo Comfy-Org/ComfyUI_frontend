@@ -55,13 +55,13 @@ describe('KeyComboImpl', () => {
       expect(combo.toString()).toBe('Ctrl + Shift')
     })
 
-    it('keeps the primary key for non-modifier shortcuts', () => {
+    it('uppercases single-character primary keys for display', () => {
       const combo = KeyComboImpl.fromEvent(
         mockKeyEvent({ key: 'k', ctrlKey: true, shiftKey: true })
       )
 
-      expect(combo.getKeySequences()).toEqual(['Ctrl', 'Shift', 'k'])
-      expect(combo.toString()).toBe('Ctrl + Shift + k')
+      expect(combo.getKeySequences()).toEqual(['Ctrl', 'Shift', 'K'])
+      expect(combo.toString()).toBe('Ctrl + Shift + K')
     })
   })
 

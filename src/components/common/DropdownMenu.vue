@@ -69,6 +69,7 @@ const contentStyle = computed(() => {
 
     <DropdownMenuPortal :to>
       <DropdownMenuContent
+        size="lg"
         side="bottom"
         :side-offset="5"
         :collision-padding="10"

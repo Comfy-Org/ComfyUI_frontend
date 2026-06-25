@@ -19,7 +19,7 @@
       {{ queueButtonLabel }}
     </Button>
 
-    <DropdownMenuRoot>
+    <DropdownMenu>
       <DropdownMenuTrigger as-child>
         <Button
           variant="secondary"
@@ -31,45 +31,25 @@
           <TinyChevronIcon />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          :side-offset="4"
-          class="z-1000 min-w-44 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+      <DropdownMenuContent size="lg" :side-offset="4" class="min-w-44">
+        <DropdownMenuItem
+          v-for="item in queueModeMenuItems"
+          :key="item.key"
+          v-tooltip="{ value: item.tooltip, showDelay: 600 }"
+          @select="item.command"
         >
-          <DropdownMenuItem
-            v-for="item in queueModeMenuItems"
-            :key="item.key"
-            as-child
-            @select.prevent="item.command"
-          >
-            <Button
-              v-tooltip="{
-                value: item.tooltip,
-                showDelay: 600
-              }"
-              :variant="
-                item.key === selectedQueueMode ? 'primary' : 'secondary'
-              "
-              size="sm"
-              :class="queueMenuItemButtonClass"
-            >
-              {{ item.label }}
-            </Button>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
+          {{ item.label }}
+          <i
+            v-if="item.key === selectedQueueMode"
+            class="ml-auto icon-[lucide--check] size-3.5"
+          />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   </ButtonGroup>
 </template>
 
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -78,6 +58,10 @@ import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
@@ -184,7 +168,6 @@ const queueButtonVariant = computed<'destructive' | 'primary'>(() =>
 const queueActionButtonClass = 'h-full rounded-lg gap-1.5 px-4 font-light'
 const queueMenuTriggerClass =
   'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
-const queueMenuItemButtonClass = 'w-full justify-start font-normal'
 
 const iconClass = computed(() => {
   if (isStopInstantAction.value) {

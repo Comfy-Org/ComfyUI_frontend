@@ -1,51 +1,49 @@
 <template>
-  <div
-    ref="wrapperRef"
-    v-tooltip.bottom="{
-      value: tooltipText,
-      showDelay: 512
-    }"
-    :data-testid="`subgraph-breadcrumb-item-${item.key}`"
-    :data-active="isActive ? '' : undefined"
-    draggable="false"
-    class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
-    :class="{
-      'flex items-center gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': isActive,
-      'active-breadcrumb-item': isActive
-    }"
-    @click="handleClick"
-  >
-    <i
-      v-if="hasMissingNodes && isRoot"
-      data-testid="subgraph-breadcrumb-missing-nodes-icon"
-      class="icon-[lucide--triangle-alert] text-warning-background"
-    />
-    <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
-    <Tag
-      v-if="item.isBlueprint"
-      data-testid="subgraph-breadcrumb-blueprint-tag"
-      :value="t('breadcrumbsMenu.blueprint')"
-      severity="primary"
-    />
-    <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-  </div>
-  <Menu
-    v-if="isActive || isRoot"
-    ref="menu"
-    :model="menuItems"
-    :popup="true"
-    :pt="{
-      root: {
-        'data-testid': `subgraph-breadcrumb-menu-${item.key}`,
-        style: 'background-color: var(--comfy-menu-bg)'
-      },
-      itemLink: {
-        class: 'py-2'
-      }
-    }"
-  />
+  <DropdownMenu v-model:open="isMenuOpen" :modal="false">
+    <DropdownMenuTrigger as-child>
+      <div
+        ref="wrapperRef"
+        v-tooltip.bottom="{
+          value: tooltipText,
+          showDelay: 512
+        }"
+        :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+        :data-active="isActive ? '' : undefined"
+        draggable="false"
+        class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
+        :class="{
+          'flex items-center gap-1': isActive,
+          'p-breadcrumb-item-link-menu-visible': isMenuOpen,
+          'p-breadcrumb-item-link-icon-visible': isActive,
+          'active-breadcrumb-item': isActive
+        }"
+        @click="handleClick"
+      >
+        <i
+          v-if="hasMissingNodes && isRoot"
+          data-testid="subgraph-breadcrumb-missing-nodes-icon"
+          class="icon-[lucide--triangle-alert] text-warning-background"
+        />
+        <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
+        <Tag
+          v-if="item.isBlueprint"
+          data-testid="subgraph-breadcrumb-blueprint-tag"
+          :value="t('breadcrumbsMenu.blueprint')"
+          severity="primary"
+        />
+        <i v-if="isActive" class="icon-[lucide--chevron-down] size-3" />
+      </div>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent
+      v-if="isActive || isRoot"
+      size="lg"
+      align="start"
+      :side-offset="4"
+      :data-testid="`subgraph-breadcrumb-menu-${item.key}`"
+    >
+      <WorkflowActionsList :items="menuItems" />
+    </DropdownMenuContent>
+  </DropdownMenu>
   <InputText
     v-if="isEditing"
     ref="itemInputRef"
@@ -61,13 +59,15 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import type { MenuState } from 'primevue/menu'
-import Menu from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -95,7 +95,7 @@ const hasMissingNodes = computed(() =>
 )
 
 const { t } = useI18n()
-const menu = ref<InstanceType<typeof Menu> & MenuState>()
+const isMenuOpen = ref(false)
 const dialogService = useDialogService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -173,13 +173,12 @@ const handleClick = (event: MouseEvent) => {
   }
 
   if (event.detail === 1) {
-    if (isActive) {
-      menu.value?.toggle(event)
-    } else {
+    if (!isActive) {
+      event.preventDefault()
       item.command?.({ item: item, originalEvent: event })
     }
   } else if (isActive && event.detail === 2) {
-    menu.value?.hide()
+    isMenuOpen.value = false
     event.stopPropagation()
     event.preventDefault()
     startRename()

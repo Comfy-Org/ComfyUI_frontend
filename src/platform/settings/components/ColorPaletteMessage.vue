@@ -5,12 +5,11 @@
         {{ $t('settingsCategories.ColorPalette') }}
       </div>
       <div class="actions">
-        <Select
+        <SingleSelect
           v-model="activePaletteId"
+          size="md"
           class="w-44"
-          :options="palettes"
-          option-label="name"
-          option-value="id"
+          :options="paletteOptions"
         />
         <Button
           size="icon"
@@ -18,7 +17,7 @@
           :title="$t('g.export')"
           @click="colorPaletteService.exportColorPalette(activePaletteId)"
         >
-          <i class="pi pi-file-export" />
+          <i class="icon-[lucide--file-up]" />
         </Button>
         <Button
           size="icon"
@@ -26,7 +25,7 @@
           :title="$t('g.import')"
           @click="importCustomPalette"
         >
-          <i class="pi pi-file-import" />
+          <i class="icon-[lucide--file-down]" />
         </Button>
         <Button
           size="icon"
@@ -35,7 +34,7 @@
           :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
           @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
         >
-          <i class="pi pi-trash" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
       </div>
     </div>
@@ -45,9 +44,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Message from 'primevue/message'
-import Select from 'primevue/select'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -56,6 +56,10 @@ const settingStore = useSettingStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
+
+const paletteOptions = computed(() =>
+  palettes.value.map((p) => ({ name: p.name, value: p.id }))
+)
 
 const importCustomPalette = async () => {
   const palette = await colorPaletteService.importColorPalette()

@@ -111,7 +111,6 @@ function getModifierSequences(combo: KeyComboImpl): string[] {
 
 function getKeyLabel(key: string, normalizeSingleCharacter = false): string {
   const label = MODIFIER_KEY_LABELS[key] ?? key
-  return normalizeSingleCharacter && label.length === 1
-    ? label.toLowerCase()
-    : label
+  if (label.length !== 1) return label
+  return normalizeSingleCharacter ? label.toLowerCase() : label.toUpperCase()
 }

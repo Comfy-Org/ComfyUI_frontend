@@ -34,16 +34,50 @@
       </slot>
     </template>
   </Tree>
-  <ContextMenu ref="menu" :model="menuItems" />
+  <DropdownMenu v-model:open="menuOpen" :modal="false">
+    <DropdownMenuTrigger as-child>
+      <button
+        type="button"
+        aria-hidden="true"
+        tabindex="-1"
+        class="pointer-events-none fixed size-0 opacity-0"
+        :style="{ left: `${menuAnchor.x}px`, top: `${menuAnchor.y}px` }"
+      />
+    </DropdownMenuTrigger>
+    <DropdownMenuContent
+      size="lg"
+      align="start"
+      :side-offset="0"
+      :collision-padding="8"
+    >
+      <template v-for="(menuItem, idx) in visibleMenuItems" :key="idx">
+        <DropdownMenuSeparator v-if="menuItem.separator" />
+        <DropdownMenuItem
+          v-else
+          :disabled="resolveDisabled(menuItem)"
+          @select="(event: Event) => invokeCommand(menuItem, event)"
+        >
+          <template v-if="menuItem.icon" #icon>
+            <i :class="menuItem.icon" />
+          </template>
+          {{ menuItem.label }}
+        </DropdownMenuItem>
+      </template>
+    </DropdownMenuContent>
+  </DropdownMenu>
 </template>
 <script setup lang="ts" generic="T">
-import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
 import { computed, provide, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
@@ -140,7 +174,8 @@ const onNodeContentClick = async (
   }
   emit('nodeClick', node, e)
 }
-const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const menuOpen = ref(false)
+const menuAnchor = ref({ x: 0, y: 0 })
 const menuTargetNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
 const extraMenuItems = computed(() => {
   const node = menuTargetNode.value
@@ -187,7 +222,7 @@ const menuItems = computed<MenuItem[]>(() => {
     getAddFolderMenuItem(node),
     {
       label: t('g.rename'),
-      icon: 'pi pi-file-edit',
+      icon: 'icon-[lucide--square-pen]',
       command: () => {
         if (node) {
           renameCommand(node)
@@ -197,7 +232,7 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       label: t('g.delete'),
-      icon: 'pi pi-trash',
+      icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (node) {
           await deleteCommand(node)
@@ -217,14 +252,27 @@ const menuItems = computed<MenuItem[]>(() => {
   }))
 })
 
+const visibleMenuItems = computed(() =>
+  menuItems.value.filter((item) => item.visible !== false)
+)
+function resolveDisabled(menuItem: MenuItem): boolean {
+  const disabled = menuItem.disabled
+  if (typeof disabled === 'function') return Boolean(disabled())
+  return Boolean(disabled)
+}
+function invokeCommand(menuItem: MenuItem, event: Event) {
+  menuItem.command?.({ originalEvent: event, item: menuItem })
+}
 const handleContextMenu = (
   e: MouseEvent,
   node: RenderedTreeExplorerNode<T>
 ) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
-  if (menuItems.value.filter((item) => item.visible).length > 0) {
-    menu.value?.show(e)
+  if (visibleMenuItems.value.length > 0) {
+    e.preventDefault()
+    menuAnchor.value = { x: e.clientX, y: e.clientY }
+    menuOpen.value = true
   }
 }
 

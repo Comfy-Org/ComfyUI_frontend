@@ -1,8 +1,6 @@
 <!-- A popover that shows current user information and actions -->
 <template>
-  <div
-    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <div class="current-user-popover w-full">
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
@@ -77,78 +75,59 @@
       />
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <DropdownMenuSeparator />
 
-    <div
+    <DropdownMenuItem
       v-if="isActiveSubscription"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
-      @click="handleOpenPartnerNodesInfo"
+      @select="handleOpenPartnerNodesInfo"
     >
-      <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.partnerNodesCredits')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--tag]" /></template>
+      {{ $t('subscription.partnerNodesCredits') }}
+    </DropdownMenuItem>
 
-    <div
+    <DropdownMenuItem
       v-if="isCloud"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
-      @click="handleOpenPlansAndPricing"
+      @select="handleOpenPlansAndPricing"
     >
-      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.plansAndPricing')
-      }}</span>
+      <template #icon><i class="icon-[lucide--receipt-text]" /></template>
+      {{ $t('subscription.plansAndPricing') }}
       <span
         v-if="canUpgrade"
-        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
+        class="ml-auto rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
       >
         {{ $t('subscription.upgrade') }}
       </span>
-    </div>
+    </DropdownMenuItem>
 
-    <div
+    <DropdownMenuItem
       v-if="isActiveSubscription"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @select="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.managePlan')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--file-text]" /></template>
+      {{ $t('subscription.managePlan') }}
+    </DropdownMenuItem>
 
-    <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+    <DropdownMenuItem
       data-testid="user-settings-menu-item"
-      @click="handleOpenUserSettings"
+      @select="handleOpenUserSettings"
     >
-      <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('userSettings.accountSettings')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--settings-2]" /></template>
+      {{ $t('userSettings.accountSettings') }}
+    </DropdownMenuItem>
 
-    <Divider class="mx-0 my-2" />
+    <DropdownMenuSeparator />
 
-    <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
-      data-testid="logout-menu-item"
-      @click="handleLogout"
-    >
-      <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('auth.signOut.signOut')
-      }}</span>
-    </div>
+    <DropdownMenuItem data-testid="logout-menu-item" @select="handleLogout">
+      <template #icon><i class="icon-[lucide--log-out]" /></template>
+      {{ $t('auth.signOut.signOut') }}
+    </DropdownMenuItem>
   </div>
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -156,6 +135,8 @@ import { useI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'

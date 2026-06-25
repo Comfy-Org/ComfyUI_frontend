@@ -1,47 +1,18 @@
-<!--
-TODO: Extract checkbox pattern into reusable Checkbox component
-- Create src/components/input/Checkbox.vue with:
-  - Hidden native <input type="checkbox"> for accessibility
-  - Custom visual styling matching this implementation
-  - Semantic tokens (--primary-background, --input-surface, etc.)
-- Use this Checkbox component in:
-  - MediaAssetFilterMenu.vue (this file)
-  - MultiSelect.vue option template
-  - SingleSelect.vue if needed
-- Benefits: Consistent checkbox UI, better maintainability, reusable design system component
--->
 <template>
-  <div class="m-0 flex flex-col gap-0 p-0">
-    <div
-      v-for="filter in filters"
-      :key="filter.type"
-      class="flex h-10 min-w-32 cursor-pointer items-center gap-2 rounded-lg px-2 hover:bg-secondary-background-hover"
-      tabindex="0"
-      role="checkbox"
-      :aria-checked="mediaTypeFilters.includes(filter.type)"
-      @click="toggleMediaType(filter.type)"
-      @keydown.enter.prevent="toggleMediaType(filter.type)"
-      @keydown.space.prevent="toggleMediaType(filter.type)"
-    >
-      <div
-        class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
-        :class="
-          mediaTypeFilters.includes(filter.type)
-            ? 'border-primary-background bg-primary-background'
-            : 'bg-secondary-background'
-        "
-      >
-        <i
-          v-if="mediaTypeFilters.includes(filter.type)"
-          class="icon-[lucide--check] text-xs font-bold text-white"
-        />
-      </div>
-      <span class="text-sm">{{ $t(filter.label) }}</span>
-    </div>
-  </div>
+  <DropdownMenuCheckboxItem
+    v-for="filter in filters"
+    :key="filter.type"
+    :checked="mediaTypeFilters.includes(filter.type)"
+    @select="(event) => event.preventDefault()"
+    @update:checked="toggleMediaType(filter.type)"
+  >
+    {{ $t(filter.label) }}
+  </DropdownMenuCheckboxItem>
 </template>
 
 <script setup lang="ts">
+import DropdownMenuCheckboxItem from '@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue'
+
 const { mediaTypeFilters } = defineProps<{
   mediaTypeFilters: string[]
 }>()

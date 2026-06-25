@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenu :modal="false">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
@@ -46,23 +46,19 @@
             data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
-            <i class="pi pi-times" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </div>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
-      <ContextMenuContent
-        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
-      >
-        <WorkflowActionsList
-          :items="contextMenuItems"
-          :item-component="ContextMenuItem"
-          :separator-component="ContextMenuSeparator"
-        />
-      </ContextMenuContent>
-    </ContextMenuPortal>
-  </ContextMenuRoot>
+    <ContextMenuContent size="lg" class="z-1000">
+      <WorkflowActionsList
+        :items="contextMenuItems"
+        :item-component="ContextMenuItem"
+        :separator-component="ContextMenuSeparator"
+      />
+    </ContextMenuContent>
+  </ContextMenu>
 
   <WorkflowTabPopover
     ref="popoverRef"
@@ -73,19 +69,16 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuPortal,
-  ContextMenuRoot,
-  ContextMenuSeparator,
-  ContextMenuTrigger
-} from 'reka-ui'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/context-menu/ContextMenu.vue'
+import ContextMenuContent from '@/components/ui/context-menu/ContextMenuContent.vue'
+import ContextMenuItem from '@/components/ui/context-menu/ContextMenuItem.vue'
+import ContextMenuSeparator from '@/components/ui/context-menu/ContextMenuSeparator.vue'
+import ContextMenuTrigger from '@/components/ui/context-menu/ContextMenuTrigger.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
@@ -253,15 +246,15 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
   {
     id: 'close-tab',
     label: t('tabMenu.closeTab'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: () => onCloseWorkflow(props.workflowOption)
   },
   {
     id: 'close-tabs-to-left',
     label: t('tabMenu.closeTabsToLeft'),
     overlayIcon: {
-      mainIcon: 'pi pi-times',
-      subIcon: 'pi pi-arrow-left',
+      mainIcon: 'icon-[lucide--x]',
+      subIcon: 'icon-[lucide--arrow-left]',
       positionX: 'right',
       positionY: 'bottom',
       subIconScale: 0.5
@@ -273,8 +266,8 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
     id: 'close-tabs-to-right',
     label: t('tabMenu.closeTabsToRight'),
     overlayIcon: {
-      mainIcon: 'pi pi-times',
-      subIcon: 'pi pi-arrow-right',
+      mainIcon: 'icon-[lucide--x]',
+      subIcon: 'icon-[lucide--arrow-right]',
       positionX: 'right',
       positionY: 'bottom',
       subIconScale: 0.5
@@ -286,8 +279,8 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
     id: 'close-other-tabs',
     label: t('tabMenu.closeOtherTabs'),
     overlayIcon: {
-      mainIcon: 'pi pi-times',
-      subIcon: 'pi pi-arrows-h',
+      mainIcon: 'icon-[lucide--x]',
+      subIcon: 'icon-[lucide--arrow-left-right]',
       positionX: 'right',
       positionY: 'bottom',
       subIconScale: 0.5

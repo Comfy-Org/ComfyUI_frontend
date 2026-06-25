@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import Popover from 'primevue/popover'
-import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import type {
   FilterOption,
   OwnershipFilterOption,
@@ -45,54 +48,6 @@ const actionButtonStyle = cn(
 const layoutSwitchItemStyle =
   'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-base-foreground active:scale-95'
 
-const sortPopoverRef = useTemplateRef('sortPopoverRef')
-const sortTriggerRef = useTemplateRef('sortTriggerRef')
-const isSortPopoverOpen = ref(false)
-
-function toggleSortPopover(event: Event) {
-  if (!sortPopoverRef.value || !sortTriggerRef.value) return
-  isSortPopoverOpen.value = !isSortPopoverOpen.value
-  sortPopoverRef.value.toggle(event, sortTriggerRef.value.$el)
-}
-function closeSortPopover() {
-  isSortPopoverOpen.value = false
-  sortPopoverRef.value?.hide()
-}
-
-function handleSortSelected(item: SortOption) {
-  sortSelected.value = item.id
-  closeSortPopover()
-}
-
-const ownershipPopoverRef = useTemplateRef('ownershipPopoverRef')
-const ownershipTriggerRef = useTemplateRef('ownershipTriggerRef')
-const isOwnershipPopoverOpen = ref(false)
-
-function toggleOwnershipPopover(event: Event) {
-  if (!ownershipPopoverRef.value || !ownershipTriggerRef.value) return
-  isOwnershipPopoverOpen.value = !isOwnershipPopoverOpen.value
-  ownershipPopoverRef.value.toggle(event, ownershipTriggerRef.value.$el)
-}
-function closeOwnershipPopover() {
-  isOwnershipPopoverOpen.value = false
-  ownershipPopoverRef.value?.hide()
-}
-
-function handleOwnershipSelected(item: OwnershipFilterOption) {
-  ownershipSelected.value = item.value
-  closeOwnershipPopover()
-}
-
-const baseModelPopoverRef = useTemplateRef('baseModelPopoverRef')
-const baseModelTriggerRef = useTemplateRef('baseModelTriggerRef')
-const isBaseModelPopoverOpen = ref(false)
-
-function toggleBaseModelPopover(event: Event) {
-  if (!baseModelPopoverRef.value || !baseModelTriggerRef.value) return
-  isBaseModelPopoverOpen.value = !isBaseModelPopoverOpen.value
-  baseModelPopoverRef.value.toggle(event, baseModelTriggerRef.value.$el)
-}
-
 function toggleBaseModelSelection(item: FilterOption) {
   const current = new Set(baseModelSelected.value)
   baseModelSelected.value = current.has(item.value)
@@ -130,199 +85,122 @@ function handleSearchEnter(event: KeyboardEvent) {
       {{ t('widgets.uploadSelect.topResult', { result: candidateLabel }) }}
     </span>
 
-    <Button
-      ref="sortTriggerRef"
-      :aria-label="t('assetBrowser.sortBy')"
-      :title="t('assetBrowser.sortBy')"
-      variant="textonly"
-      size="icon"
-      :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
-        )
-      "
-      @click="toggleSortPopover"
-    >
-      <div
-        v-if="sortSelected !== 'default'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
-      />
-      <i class="icon-[lucide--arrow-up-down] size-4" />
-    </Button>
-    <Popover
-      ref="sortPopoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class: 'absolute z-50'
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
-      @hide="isSortPopoverOpen = false"
-    >
-      <div
-        :class="
-          cn(
-            'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
-          )
-        "
-      >
+    <DropdownMenu :modal="false">
+      <DropdownMenuTrigger as-child>
         <Button
+          :aria-label="t('assetBrowser.sortBy')"
+          :title="t('assetBrowser.sortBy')"
+          variant="textonly"
+          size="icon"
+          :class="
+            cn(
+              actionButtonStyle,
+              'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
+            )
+          "
+        >
+          <div
+            v-if="sortSelected !== 'default'"
+            class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+          />
+          <i class="icon-[lucide--arrow-up-down] size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent size="lg" align="end" :side-offset="4">
+        <DropdownMenuItem
           v-for="item of sortOptions"
           :key="item.name"
-          variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="handleSortSelected(item)"
+          checkable
+          :checked="sortSelected === item.id"
+          @select="sortSelected = item.id"
         >
-          <span>{{ item.name }}</span>
-          <i
-            v-if="sortSelected === item.id"
-            class="icon-[lucide--check] size-4"
-          />
-        </Button>
-      </div>
-    </Popover>
+          {{ item.name }}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
-    <Button
+    <DropdownMenu
       v-if="showOwnershipFilter && ownershipOptions?.length"
-      ref="ownershipTriggerRef"
-      :aria-label="t('assetBrowser.ownership')"
-      :title="t('assetBrowser.ownership')"
-      variant="textonly"
-      size="icon"
-      :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
-        )
-      "
-      @click="toggleOwnershipPopover"
+      :modal="false"
     >
-      <div
-        v-if="ownershipSelected !== 'all'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
-      />
-      <i class="icon-[lucide--user] size-4" />
-    </Button>
-    <Popover
-      ref="ownershipPopoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class: 'absolute z-50'
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
-      @hide="isOwnershipPopoverOpen = false"
-    >
-      <div
-        :class="
-          cn(
-            'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
-          )
-        "
-      >
+      <DropdownMenuTrigger as-child>
         <Button
+          :aria-label="t('assetBrowser.ownership')"
+          :title="t('assetBrowser.ownership')"
+          variant="textonly"
+          size="icon"
+          :class="
+            cn(
+              actionButtonStyle,
+              'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
+            )
+          "
+        >
+          <div
+            v-if="ownershipSelected !== 'all'"
+            class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+          />
+          <i class="icon-[lucide--user] size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent size="lg" align="end" :side-offset="4">
+        <DropdownMenuItem
           v-for="item of ownershipOptions"
           :key="item.value"
-          variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="handleOwnershipSelected(item)"
+          checkable
+          :checked="ownershipSelected === item.value"
+          @select="ownershipSelected = item.value"
         >
-          <span>{{ item.name }}</span>
-          <i
-            v-if="ownershipSelected === item.value"
-            class="icon-[lucide--check] size-4"
-          />
-        </Button>
-      </div>
-    </Popover>
+          {{ item.name }}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
-    <Button
+    <DropdownMenu
       v-if="showBaseModelFilter && baseModelOptions?.length"
-      ref="baseModelTriggerRef"
-      :aria-label="t('assetBrowser.baseModel')"
-      :title="t('assetBrowser.baseModel')"
-      variant="textonly"
-      size="icon"
-      :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
-        )
-      "
-      @click="toggleBaseModelPopover"
+      :modal="false"
     >
-      <div
-        v-if="baseModelSelected.size > 0"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
-      />
-      <i class="icon-[comfy--ai-model] size-4" />
-    </Button>
-    <Popover
-      ref="baseModelPopoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class: 'absolute z-50'
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
-      @hide="isBaseModelPopoverOpen = false"
-    >
-      <div
-        :class="
-          cn(
-            'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
-          )
-        "
-      >
+      <DropdownMenuTrigger as-child>
         <Button
+          :aria-label="t('assetBrowser.baseModel')"
+          :title="t('assetBrowser.baseModel')"
+          variant="textonly"
+          size="icon"
+          :class="
+            cn(
+              actionButtonStyle,
+              'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
+            )
+          "
+        >
+          <div
+            v-if="baseModelSelected.size > 0"
+            class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+          />
+          <i class="icon-[comfy--ai-model] size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent size="lg" align="end" :side-offset="4">
+        <DropdownMenuItem
           v-for="item of baseModelOptions"
           :key="item.value"
-          variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="toggleBaseModelSelection(item)"
+          checkable
+          :checked="baseModelSelected.has(item.value)"
+          @select="
+            (event: Event) => {
+              event.preventDefault()
+              toggleBaseModelSelection(item)
+            }
+          "
         >
-          <span>{{ item.name }}</span>
-          <i
-            v-if="baseModelSelected.has(item.value)"
-            class="icon-[lucide--check] size-4"
-          />
-        </Button>
-        <span class="h-0 w-full border-b border-border-default" />
-        <Button
-          variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="baseModelSelected = new Set()"
-        >
+          {{ item.name }}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem @select="baseModelSelected = new Set()">
           {{ t('g.clearFilters') }}
-        </Button>
-      </div>
-    </Popover>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
     <div
       :class="

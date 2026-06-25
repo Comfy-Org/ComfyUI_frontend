@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import type { Slots } from 'vue'
+import { h } from 'vue'
 
 import MediaAssetFilterMenu from '@/platform/assets/components/MediaAssetFilterMenu.vue'
 
@@ -8,6 +10,35 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue', () => ({
+  default: (
+    props: { checked?: boolean },
+    {
+      slots,
+      emit
+    }: {
+      slots: Slots
+      emit: (e: string, value?: boolean | Event) => void
+    }
+  ) =>
+    h(
+      'button',
+      {
+        type: 'button',
+        role: 'checkbox',
+        'aria-checked': props.checked ? 'true' : 'false',
+        onClick: () => emit('update:checked', !props.checked),
+        onKeydown: (event: KeyboardEvent) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            emit('update:checked', !props.checked)
+          }
+        }
+      },
+      slots.default?.()
+    )
 }))
 
 function renderMenu(mediaTypeFilters: string[] = []) {

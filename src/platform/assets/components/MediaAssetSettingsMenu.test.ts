@@ -1,10 +1,26 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import type { Slots } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
 import MediaAssetSettingsMenu from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
 import type { SortBy } from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
+  default: (
+    _: unknown,
+    { slots, emit }: { slots: Slots; emit: (e: string) => void }
+  ) =>
+    h('button', { type: 'button', onClick: () => emit('select') }, [
+      slots.icon?.(),
+      slots.default?.()
+    ])
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuSeparator.vue', () => ({
+  default: () => h('hr')
+}))
 
 const KEYS = {
   list: 'sideToolbar.queueProgressOverlay.viewList',

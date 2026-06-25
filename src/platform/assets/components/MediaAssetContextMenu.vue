@@ -1,51 +1,28 @@
-<template>
-  <ContextMenu
-    ref="contextMenu"
-    :model="contextMenuItems"
-    :pt="{
-      root: {
-        id: contextMenuId,
-        class: cn(
-          'rounded-lg',
-          'bg-secondary-background text-base-foreground',
-          'shadow-lg'
-        )
-      }
-    }"
-    @hide="onMenuHide"
-  >
-    <template #item="{ item, props }">
-      <Button
-        variant="secondary"
-        class="w-full justify-start"
-        v-bind="props.action"
-      >
-        <i v-if="item.icon" :class="item.icon" class="size-4" />
-        <span>{{
-          typeof item.label === 'function' ? item.label() : (item.label ?? '')
-        }}</span>
-      </Button>
-    </template>
-  </ContextMenu>
-</template>
-
 <script setup lang="ts">
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
-import { computed, ref, useId } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
+
+type ContextMenuItem = {
+  separator?: boolean
+  label?: string
+  icon?: string
+  disabled?: boolean
+  command?: () => unknown
+}
 
 const {
   asset,
@@ -74,114 +51,75 @@ const emit = defineEmits<{
   'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
-type ContextMenuHandle = {
-  show: (event: MouseEvent) => void
-  hide: () => void
-}
-
-const contextMenu = ref<ContextMenuHandle | null>(null)
-const contextMenuId = useId()
-const isVisible = ref(false)
+const isOpen = ref(false)
+const anchor = ref({ x: 0, y: 0 })
 const actions = useMediaAssetActions()
 const { t } = useI18n()
 
-useDismissableOverlay({
-  isOpen: isVisible,
-  getOverlayEl: () => document.getElementById(contextMenuId),
-  onDismiss: hide,
-  dismissOnScroll: true
-})
-
 const showAddToWorkflow = computed(() => {
-  // Output assets can always be added
   if (assetType === 'output') return true
-
-  // Input assets: check if file type is supported by loader nodes
   if (assetType === 'input' && asset?.name) {
     const { nodeType } = detectNodeTypeFromFilename(asset.name)
     return nodeType !== null
   }
-
   return false
 })
 
 const showWorkflowActions = computed(() => {
-  // Output assets always have workflow metadata
   if (assetType === 'output') return true
-
-  // Input assets: only formats that support workflow metadata
   if (assetType === 'input' && asset?.name) {
     return supportsWorkflowMetadata(asset.name)
   }
-
   return false
 })
 
-const showCopyJobId = computed(() => {
-  return assetType !== 'input'
-})
+const showCopyJobId = computed(() => assetType !== 'input')
 
 const shouldShowDeleteButton = computed(() => {
   const propAllows = showDeleteButton ?? true
   const typeAllows =
     assetType === 'output' || (assetType === 'input' && isCloud)
-
   return propAllows && typeAllows
 })
 
-// Context menu items
-const contextMenuItems = computed<MenuItem[]>(() => {
+const contextMenuItems = computed<ContextMenuItem[]>(() => {
   if (!asset) return []
 
-  const items: MenuItem[] = []
-
-  // Check if current asset is part of the selection
+  const items: ContextMenuItem[] = []
   const isCurrentAssetSelected = selectedAssets?.some(
     (selectedAsset) => selectedAsset.id === asset.id
   )
 
-  // Bulk mode: Show selected count and bulk actions only if current asset is selected
   if (
     isBulkMode &&
     selectedAssets &&
     selectedAssets.length > 0 &&
     isCurrentAssetSelected
   ) {
-    // Header item showing selected count
     items.push({
       label: t('mediaAsset.selection.multipleSelectedAssets'),
       disabled: true
     })
-
-    // Bulk Add to Workflow
     items.push({
       label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
       icon: 'icon-[comfy--node]',
       command: () => emit('bulk-add-to-workflow', selectedAssets)
     })
-
-    // Bulk Open Workflow
     items.push({
       label: t('mediaAsset.selection.openWorkflowAll'),
       icon: 'icon-[comfy--workflow]',
       command: () => emit('bulk-open-workflow', selectedAssets)
     })
-
-    // Bulk Export Workflow
     items.push({
       label: t('mediaAsset.selection.exportWorkflowAll'),
       icon: 'icon-[lucide--file-output]',
       command: () => emit('bulk-export-workflow', selectedAssets)
     })
-
-    // Bulk Download
     items.push({
       label: t('mediaAsset.selection.downloadSelectedAll'),
       icon: 'icon-[lucide--download]',
       command: () => emit('bulk-download', selectedAssets)
     })
-
-    // Bulk Delete (if allowed)
     if (shouldShowDeleteButton.value) {
       items.push({
         label: t('mediaAsset.selection.deleteSelectedAll'),
@@ -189,13 +127,9 @@ const contextMenuItems = computed<MenuItem[]>(() => {
         command: () => emit('bulk-delete', selectedAssets)
       })
     }
-
     return items
   }
 
-  // Individual mode: Show all menu options
-
-  // Inspect
   if (isPreviewableMediaType(fileKind)) {
     items.push({
       label: t('mediaAsset.actions.inspect'),
@@ -204,7 +138,6 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  // Add to workflow (conditional)
   if (showAddToWorkflow.value) {
     items.push({
       label: t('mediaAsset.actions.insertAsNodeInWorkflow'),
@@ -213,14 +146,12 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  // Download
   items.push({
     label: t('mediaAsset.actions.download'),
     icon: 'icon-[lucide--download]',
     command: () => actions.downloadAssets([asset])
   })
 
-  // Separator before workflow actions (only if there are workflow actions)
   if (showWorkflowActions.value) {
     items.push({ separator: true })
     items.push({
@@ -235,7 +166,6 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  // Copy job ID
   if (showCopyJobId.value) {
     items.push({ separator: true })
     items.push({
@@ -247,7 +177,6 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  // Delete
   if (shouldShowDeleteButton.value) {
     items.push({ separator: true })
     items.push({
@@ -267,20 +196,65 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   return items
 })
 
-function onMenuHide() {
-  isVisible.value = false
-  emit('hide')
-}
-
-function show(event: MouseEvent) {
-  isVisible.value = true
-  contextMenu.value?.show(event)
+async function show(event: MouseEvent) {
+  anchor.value = { x: event.clientX, y: event.clientY }
+  if (isOpen.value) {
+    isOpen.value = false
+    await nextTick()
+  }
+  isOpen.value = true
 }
 
 function hide() {
-  isVisible.value = false
-  contextMenu.value?.hide()
+  isOpen.value = false
+}
+
+function onOpenChange(open: boolean) {
+  if (!open) emit('hide')
+}
+
+function runCommand(item: ContextMenuItem) {
+  if (item.separator || item.disabled) return
+  void item.command?.()
 }
 
 defineExpose({ show, hide })
 </script>
+
+<template>
+  <DropdownMenu
+    v-model:open="isOpen"
+    :modal="false"
+    @update:open="onOpenChange"
+  >
+    <DropdownMenuTrigger as-child>
+      <button
+        type="button"
+        aria-hidden="true"
+        tabindex="-1"
+        class="pointer-events-none fixed size-0 opacity-0"
+        :style="{ left: `${anchor.x}px`, top: `${anchor.y}px` }"
+      />
+    </DropdownMenuTrigger>
+    <DropdownMenuContent
+      size="lg"
+      :side-offset="0"
+      align="start"
+      :collision-padding="8"
+    >
+      <template v-for="(item, index) in contextMenuItems" :key="index">
+        <DropdownMenuSeparator v-if="item.separator" />
+        <DropdownMenuItem
+          v-else
+          :disabled="item.disabled"
+          @select="runCommand(item)"
+        >
+          <template v-if="item.icon" #icon>
+            <i :class="item.icon" />
+          </template>
+          {{ item.label }}
+        </DropdownMenuItem>
+      </template>
+    </DropdownMenuContent>
+  </DropdownMenu>
+</template>

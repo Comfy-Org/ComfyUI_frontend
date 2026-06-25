@@ -53,17 +53,10 @@
           ref="dropdown-menu-button"
           size="sm"
         >
-          <template #default>
-            <Button
-              variant="secondary"
-              size="md"
-              class="justify-start"
-              @click="confirmDeletion"
-            >
-              <i class="icon-[lucide--trash-2]" />
-              <span>{{ $t('g.delete') }}</span>
-            </Button>
-          </template>
+          <DropdownMenuItem @select="confirmDeletion">
+            <template #icon><i class="icon-[lucide--trash-2]" /></template>
+            {{ $t('g.delete') }}
+          </DropdownMenuItem>
         </MoreButton>
       </IconGroup>
     </div>
@@ -138,6 +131,7 @@ import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
