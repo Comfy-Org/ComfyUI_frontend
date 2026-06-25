@@ -730,13 +730,56 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "display_name": "Build JSON Prompt (Ideogram)",
+    "description": "Build a JSON prompt for the Ideogram 4 model.",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Prompt elements from the node Create Bounding Boxes."
+      },
+      "high_level_description": {
+        "name": "high_level_description",
+        "tooltip": "Optional description of the image in one or two sentences. Strongly recommended."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Mandatory description of the image background or environment."
+      },
+      "style": {
+        "name": "style"
+      },
+      "aesthetics": {
+        "name": "aesthetics",
+        "tooltip": "Mandatory aesthetic keywords (e.g. moody, cinematic, desaturated)."
+      },
+      "lighting": {
+        "name": "lighting",
+        "tooltip": "Mandatory lighting description (e.g. golden hour, rim light, dramatic shadows)."
+      },
+      "medium": {
+        "name": "medium",
+        "tooltip": "Mandatory medium type (e.g. photograph, illustration, 3d_render, painting, graphic_design). When style = photo, set to photograph."
+      },
+      "color_palette": {
+        "name": "color_palette",
+        "tooltip": "Hex color codes that steer the image's dominant colors. Up to 16 entries."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -793,7 +836,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -840,7 +883,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -2633,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Convert Array to String",
+    "inputs": {
+      "array": {
+        "name": "array"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "Spaces per indent level. 0 produces compact single-line string."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Convert Dictionary to String",
+    "inputs": {
+      "dictionary": {
+        "name": "dictionary"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "Spaces per indent level. 0 produces compact single-line string."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2691,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "display_name": "Create Bounding Boxes",
+    "description": "Draw bounding boxes in a canvas. Outputs Ideogram prompt elements, pixel-space bounding boxes, and a preview image.",
+    "inputs": {
+      "width": {
+        "name": "width",
+        "tooltip": "Width of the canvas and the pixel grid for the bounding boxes."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Height of the canvas and the pixel grid for the bounding boxes."
+      },
+      "editor_state": {
+        "name": "editor_state",
+        "tooltip": "Draw bounding boxes and set each box type, text, description, color palette. Start with background element first and foreground last."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Optional image used as background in the canvas and preview."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "preview",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "elements",
         "tooltip": null
       }
     }
@@ -11905,6 +12018,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "first_": {
+        "name": "first."
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "last_": {
+        "name": "last."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "ModelMergeLTXV",
     "inputs": {
@@ -17573,6 +17811,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Seed",
+    "inputs": {
+      "seed": {
+        "name": "seed"
+      },
+      "fixed": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "seed",
         "tooltip": null
       }
     }
