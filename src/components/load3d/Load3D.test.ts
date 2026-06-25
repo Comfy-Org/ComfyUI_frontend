@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import type { ComponentWidget } from '@/scripts/domWidget'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 const { load3dState, resolveNodeMock, settingGetMock } = vi.hoisted(() => ({

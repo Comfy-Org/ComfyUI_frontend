@@ -11,7 +11,7 @@ import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/N
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'

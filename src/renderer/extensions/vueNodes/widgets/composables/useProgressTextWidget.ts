@@ -8,7 +8,7 @@ import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 type TextPreviewCustomProps = Omit<

@@ -5,7 +5,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import { nextTick } from 'vue'
 
 import type {

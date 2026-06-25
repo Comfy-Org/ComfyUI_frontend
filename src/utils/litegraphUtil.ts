@@ -27,11 +27,7 @@ import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
-import {
-  UNASSIGNED_NODE_ID,
-  nodeId as toNodeId,
-  parseNodeId
-} from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 

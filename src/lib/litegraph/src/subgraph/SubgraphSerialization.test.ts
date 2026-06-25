@@ -17,7 +17,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createTestSubgraph,
   createTestSubgraphNode,

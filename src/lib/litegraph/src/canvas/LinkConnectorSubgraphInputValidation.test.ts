@@ -14,7 +14,7 @@ import type {
   NodeInputSlot
 } from '@/lib/litegraph/src/litegraph'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
 import {

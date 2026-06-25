@@ -26,7 +26,7 @@ import type {
 } from '@/renderer/core/canvas/pathRenderer'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
-import { nodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -344,8 +344,8 @@ export class LitegraphLinkAdapter {
             path: path,
             bounds: bounds,
             centerPos: centerPos,
-            sourceNodeId: nodeId(link.origin_id),
-            targetNodeId: nodeId(link.target_id),
+            sourceNodeId: toNodeId(link.origin_id),
+            targetNodeId: toNodeId(link.target_id),
             sourceSlot: link.origin_slot,
             targetSlot: link.target_slot
           })

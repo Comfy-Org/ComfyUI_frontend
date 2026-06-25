@@ -8,7 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/scripts/app', () => ({

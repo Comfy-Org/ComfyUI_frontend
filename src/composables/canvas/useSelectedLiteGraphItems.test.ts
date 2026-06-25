@@ -11,7 +11,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
 const mockApp = vi.hoisted(() => ({

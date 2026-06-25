@@ -8,7 +8,7 @@ import type {
   NodeId as LayoutNodeId,
   NodeLayout
 } from '@/renderer/core/layout/types'
-import { nodeId as layoutNodeId } from '@/types/nodeId'
+import { toNodeId as layoutNodeId } from '@/types/nodeId'
 import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 
 // Mock layoutStore

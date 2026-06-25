@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { useLayoutMutations } from './layoutMutations'
 

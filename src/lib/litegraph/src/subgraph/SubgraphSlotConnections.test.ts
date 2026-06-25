@@ -21,7 +21,7 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))

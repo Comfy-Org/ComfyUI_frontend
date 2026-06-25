@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import { nodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 
 const previewExposureSchema = z.object({
   name: z.string(),
-  sourceNodeId: z.string().transform(nodeId),
+  sourceNodeId: z.string().transform(toNodeId),
   sourcePreviewName: z.string()
 })
 export type PreviewExposure = z.infer<typeof previewExposureSchema>

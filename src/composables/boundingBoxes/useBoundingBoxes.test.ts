@@ -6,7 +6,7 @@ import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
 import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 const { appState } = vi.hoisted(() => ({
   appState: { node: null as unknown }

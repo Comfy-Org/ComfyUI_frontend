@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { EditorOutputData } from '@/stores/maskEditorDataStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 const SOURCE_NODE_ID = toNodeId(1)
 const RESET_NODE_ID = toNodeId(42)

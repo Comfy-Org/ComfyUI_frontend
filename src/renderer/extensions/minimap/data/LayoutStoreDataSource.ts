@@ -1,7 +1,7 @@
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import type { MinimapNodeData } from '../types'
 import { AbstractMinimapDataSource } from './AbstractMinimapDataSource'

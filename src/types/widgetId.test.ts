@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { WidgetId } from './widgetId'
 import { isWidgetId, parseWidgetId, widgetId } from './widgetId'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 describe('widgetId', () => {
   const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'

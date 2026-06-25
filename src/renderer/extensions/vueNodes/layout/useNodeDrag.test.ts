@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { NodeLayout } from '@/renderer/core/layout/types'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead

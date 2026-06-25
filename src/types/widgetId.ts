@@ -1,4 +1,4 @@
-import { nodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 type UUID = string
 
@@ -38,7 +38,7 @@ export function parseWidgetId(id: WidgetId): {
 
   return {
     graphId: groups.graphId,
-    nodeId: nodeId(decodeWidgetIdSegment(groups.nodeId)),
+    nodeId: toNodeId(decodeWidgetIdSegment(groups.nodeId)),
     name: decodeWidgetIdSegment(groups.name)
   }
 }

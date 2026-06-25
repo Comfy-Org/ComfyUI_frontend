@@ -27,7 +27,7 @@ vi.mock('@/scripts/domWidget', () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'

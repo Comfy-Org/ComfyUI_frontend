@@ -6,7 +6,7 @@ import type { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { ErrorCardData } from './types'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { useErrorReport } from './useErrorReport'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 async function flushPromises() {
   await new Promise((resolve) => setTimeout(resolve, 0))

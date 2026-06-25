@@ -24,7 +24,7 @@ import type {
   WidgetDependency
 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { Expression } from 'jsonata'
 import jsonata from 'jsonata'

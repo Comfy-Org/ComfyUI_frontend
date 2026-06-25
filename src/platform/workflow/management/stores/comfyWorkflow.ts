@@ -17,7 +17,7 @@ export interface InputWidgetConfig {
 }
 
 type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
-export type LinearOutputNodeId = SerializedNodeId
+type LinearOutputNodeId = SerializedNodeId
 export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
 export interface LinearData {

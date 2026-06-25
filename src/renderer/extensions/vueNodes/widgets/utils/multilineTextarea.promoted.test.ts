@@ -12,7 +12,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId as makeWidgetId } from '@/types/widgetId'
 
 import { createPromotedMultilineWidget } from './multilineTextarea'

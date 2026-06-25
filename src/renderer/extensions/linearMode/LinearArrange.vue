@@ -10,7 +10,7 @@ import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPrev
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()

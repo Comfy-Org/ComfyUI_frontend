@@ -1,7 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
 import type { PositionedNode } from '@/renderer/core/spatial/boundsCalculator'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import type {
   IMinimapDataSource,

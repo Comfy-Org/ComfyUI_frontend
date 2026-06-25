@@ -27,7 +27,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 import { useMissingModelStore } from './missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 function makeModelCandidate(
   name: string,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isNodeId, nodeId as toNodeId, parseNodeId } from '@/types/nodeId'
+import { isNodeId, toNodeId, parseNodeId } from '@/types/nodeId'
 
 describe('nodeId', () => {
   it('normalizes serialized node ids to strings', () => {

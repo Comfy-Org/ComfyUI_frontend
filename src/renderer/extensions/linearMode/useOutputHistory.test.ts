@@ -7,7 +7,7 @@ import type { InProgressItem } from '@/renderer/extensions/linearMode/linearMode
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 const mediaRef = ref<AssetItem[]>([])
 const pendingResolveRef = ref(new Set<string>())

@@ -1,4 +1,4 @@
-import { nodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
@@ -30,7 +30,7 @@ export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
 export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
 
 function parseNodeIdSegment(part: string): NodeId {
-  return nodeId(part)
+  return toNodeId(part)
 }
 
 function nodeExecutionIdFromString(value: string): NodeExecutionId | null {

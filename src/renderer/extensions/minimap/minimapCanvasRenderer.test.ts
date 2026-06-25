@@ -12,7 +12,7 @@ import {
   createMockLLink,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({

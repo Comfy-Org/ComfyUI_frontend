@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import type { NodeLayout } from '@/renderer/core/layout/types'

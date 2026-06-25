@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 const { appState } = vi.hoisted(() => ({ appState: { node: null as unknown } }))
 

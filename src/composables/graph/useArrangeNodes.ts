@@ -7,7 +7,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 export type ArrangeLayout = 'vertical' | 'horizontal' | 'grid'
