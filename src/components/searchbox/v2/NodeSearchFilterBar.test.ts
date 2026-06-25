@@ -55,7 +55,7 @@ describe(NodeSearchFilterBar, () => {
   const buttonTexts = () =>
     screen.getAllByRole('button').map((b) => b.textContent?.trim())
 
-  it.each([
+  it.for([
     { prop: 'hasFavorites', label: 'Bookmarked' },
     { prop: 'hasBlueprintNodes', label: 'Blueprints' },
     { prop: 'hasEssentialNodes', label: 'Essentials' },

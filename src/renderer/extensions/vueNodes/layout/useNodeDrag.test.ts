@@ -297,6 +297,7 @@ describe('useNodeDrag auto-pan', () => {
     const drag = useNodeDrag()
 
     drag.startDrag(pointerEvent(750, 300), '1')
+    drag.handleDrag(pointerEvent(760, 300), '1')
     testState.mutationFns.batchMoveNodes.mockClear()
 
     testState.mockDs.offset[0] -= 5
@@ -309,20 +310,46 @@ describe('useNodeDrag auto-pan', () => {
     expect(nodeIds).toContain('2')
   })
 
-  it('updates auto-pan pointer on handleDrag', () => {
+  it('starts auto-pan on handleDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), '1')
 
     drag.handleDrag(pointerEvent(790, 300), '1')
 
-    expect(
-      testState.capturedAutoPanInstance.current!.updatePointer
-    ).toHaveBeenCalledWith(790, 300)
+    const autoPan = testState.capturedAutoPanInstance.current
+    if (!autoPan) throw new Error('Auto-pan controller was not created')
+    expect(autoPan.start).toHaveBeenCalledTimes(1)
+    expect(autoPan.updatePointer).toHaveBeenCalledWith(790, 300)
+  })
+
+  it('reuses auto-pan controller across handleDrag calls', () => {
+    const drag = useNodeDrag()
+    drag.startDrag(pointerEvent(400, 300), '1')
+
+    drag.handleDrag(pointerEvent(790, 300), '1')
+    const autoPan = testState.capturedAutoPanInstance.current
+    if (!autoPan) throw new Error('Auto-pan controller was not created')
+
+    testState.requestAnimationFrameCallback?.(0)
+    drag.handleDrag(pointerEvent(795, 305), '1')
+
+    expect(testState.capturedAutoPanInstance.current).toBe(autoPan)
+    expect(autoPan.start).toHaveBeenCalledTimes(1)
+    expect(autoPan.updatePointer).toHaveBeenLastCalledWith(795, 305)
+  })
+
+  it('does not start auto-pan before handleDrag', () => {
+    const drag = useNodeDrag()
+
+    drag.startDrag(pointerEvent(790, 300), '1')
+
+    expect(testState.capturedAutoPanInstance.current).toBeNull()
   })
 
   it('stops auto-pan on endDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), '1')
+    drag.handleDrag(pointerEvent(400, 300), '1')
     expect(testState.capturedAutoPanInstance.current).not.toBeNull()
 
     drag.endDrag(pointerEvent(400, 300), '1')
@@ -333,6 +360,7 @@ describe('useNodeDrag auto-pan', () => {
   it('does not move nodes if onPan fires after endDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), '1')
+    drag.handleDrag(pointerEvent(400, 300), '1')
     const onPan = testState.capturedOnPan.current!
 
     drag.endDrag(pointerEvent(400, 300), '1')

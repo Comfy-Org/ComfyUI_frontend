@@ -70,6 +70,7 @@
         v-if="suggestions.length > 0"
         position="popper"
         :side-offset="4"
+        :style="contentStyle"
         :class="
           cn(
             'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
@@ -99,7 +100,7 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import type { HTMLAttributes } from 'vue'
+import type { HTMLAttributes, StyleValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -132,7 +133,8 @@ const {
   suggestions = [],
   optionLabel,
   optionKey,
-  class: className
+  class: className,
+  contentStyle
 } = defineProps<{
   placeholder?: string
   icon?: string
@@ -144,6 +146,7 @@ const {
   optionLabel?: keyof T & string
   optionKey?: keyof T & string
   class?: HTMLAttributes['class']
+  contentStyle?: StyleValue
 }>()
 
 const emit = defineEmits<{

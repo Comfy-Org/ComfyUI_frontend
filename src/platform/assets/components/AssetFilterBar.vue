@@ -12,6 +12,7 @@
         v-model="activeFileFormatObjects"
         :label="$t('assetBrowser.fileFormats')"
         :options="availableFileFormats"
+        :content-style="contentStyle"
         class="min-w-32"
         data-component-id="asset-filter-file-formats"
         @update:model-value="handleFilterChange"
@@ -22,6 +23,7 @@
         v-model="activeBaseModelObjects"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
+        :content-style="contentStyle"
         class="min-w-32"
         data-component-id="asset-filter-base-models"
         @update:model-value="handleFilterChange"
@@ -32,6 +34,7 @@
         v-model="ownership"
         :label="$t('assetBrowser.ownership')"
         :options="ownershipOptions"
+        :content-style="contentStyle"
         class="min-w-32"
         data-component-id="asset-filter-ownership"
         @update:model-value="handleFilterChange"
@@ -43,6 +46,7 @@
         v-model="sortBy"
         :label="$t('assetBrowser.sortBy')"
         :options="sortOptions"
+        :content-style="contentStyle"
         class="min-w-32"
         data-component-id="asset-filter-sort"
         @update:model-value="handleFilterChange"
@@ -57,6 +61,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
@@ -78,9 +83,14 @@ const sortOptions = computed(() => [
   { name: t('assetBrowser.sortZA'), value: 'name-desc' as const }
 ])
 
-const { assets = [], showOwnershipFilter = false } = defineProps<{
+const {
+  assets = [],
+  showOwnershipFilter = false,
+  contentStyle
+} = defineProps<{
   assets?: AssetItem[]
   showOwnershipFilter?: boolean
+  contentStyle?: StyleValue
 }>()
 
 const selectedFileFormats = ref<SelectOption[]>([])

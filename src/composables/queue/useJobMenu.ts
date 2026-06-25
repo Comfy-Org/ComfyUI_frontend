@@ -8,6 +8,7 @@ import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/as
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
@@ -63,7 +64,14 @@ export function useJobMenu(
     if (!data) return
     const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
-    await workflowService.openWorkflow(temp)
+    try {
+      await workflowService.openWorkflow(temp)
+    } catch (error) {
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.queueOpenWorkflowFailedTitle'),
+        reportType: 'queueOpenWorkflowError'
+      })
+    }
   }
 
   const copyJobId = async (item?: JobListItem | null) => {
@@ -139,9 +147,11 @@ export function useJobMenu(
 
     const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
     if (!nodeDef) return
-    const node = litegraphService.addNodeOnGraph(nodeDef, {
-      pos: litegraphService.getCanvasCenter()
-    })
+    const node = withNodeAddSource('programmatic', () =>
+      litegraphService.addNodeOnGraph(nodeDef, {
+        pos: litegraphService.getCanvasCenter()
+      })
+    )
 
     if (!node) return
 

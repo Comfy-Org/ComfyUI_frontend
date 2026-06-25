@@ -134,7 +134,7 @@ describe('useSlotElementTracking', () => {
     mockClientPosToCanvasPos.mockClear()
   })
 
-  it.each([
+  it.for([
     { type: 'input' as const, isInput: true },
     { type: 'output' as const, isInput: false }
   ])('cleans up $type slot layout on unmount', async ({ type, isInput }) => {

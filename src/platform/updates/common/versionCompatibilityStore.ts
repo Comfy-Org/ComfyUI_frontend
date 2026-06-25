@@ -1,13 +1,34 @@
 import { until, useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { gt, valid } from 'semver'
+import { coerce, gt } from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
+interface OutdatedComfyPackage {
+  name: string
+  installed: string
+  required: string
+}
+
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+// Already covered by the dedicated frontend warning, which uses the
+// running bundle's version rather than the installed pip version.
+const FRONTEND_PACKAGE_NAME = 'comfyui-frontend-package'
+
+// Backend reports PEP 440 versions (e.g. "0.3.0.post1", "1.0.0rc1");
+// coerce strips the suffix so we can compare with semver. Note: this means
+// "0.4.0" vs "0.4.0.post1" both coerce to "0.4.0" and compare equal — a
+// post-release alone is not treated as outdated.
+function isOutdated(installed: string, required: string): boolean {
+  const installedSemver = coerce(installed)
+  const requiredSemver = coerce(required)
+  if (!installedSemver || !requiredSemver) return false
+  return gt(requiredSemver, installedSemver)
+}
 
 export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
@@ -25,16 +46,8 @@ export const useVersionCompatibilityStore = defineStore(
     )
 
     const isFrontendOutdated = computed(() => {
-      if (
-        !frontendVersion.value ||
-        !requiredFrontendVersion.value ||
-        !valid(frontendVersion.value) ||
-        !valid(requiredFrontendVersion.value)
-      ) {
-        return false
-      }
-      // Returns true if required version is greater than frontend version
-      return gt(requiredFrontendVersion.value, frontendVersion.value)
+      if (!frontendVersion.value || !requiredFrontendVersion.value) return false
+      return isOutdated(frontendVersion.value, requiredFrontendVersion.value)
     })
 
     const isFrontendNewer = computed(() => {
@@ -43,19 +56,48 @@ export const useVersionCompatibilityStore = defineStore(
       return false
     })
 
+    const outdatedComfyPackages = computed<OutdatedComfyPackage[]>(() => {
+      const packages =
+        systemStatsStore.systemStats?.system?.comfy_package_versions ?? []
+      const out: OutdatedComfyPackage[] = []
+      for (const pkg of packages) {
+        if (pkg.name === FRONTEND_PACKAGE_NAME) continue
+        if (!pkg.installed || !pkg.required) continue
+        if (!isOutdated(pkg.installed, pkg.required)) continue
+        out.push({
+          name: pkg.name,
+          installed: pkg.installed,
+          required: pkg.required
+        })
+      }
+      return out
+    })
+
     const hasVersionMismatch = computed(() => {
-      return isFrontendOutdated.value
+      return isFrontendOutdated.value || outdatedComfyPackages.value.length > 0
     })
 
     const versionKey = computed(() => {
+      if (!frontendVersion.value) return null
       if (
-        !frontendVersion.value ||
-        !backendVersion.value ||
-        !requiredFrontendVersion.value
+        !backendVersion.value &&
+        !requiredFrontendVersion.value &&
+        outdatedComfyPackages.value.length === 0
       ) {
         return null
       }
-      return `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+      const baseKey = `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+      if (outdatedComfyPackages.value.length === 0) return baseKey
+      const packageKey = [...outdatedComfyPackages.value]
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.installed.localeCompare(b.installed) ||
+            a.required.localeCompare(b.required)
+        )
+        .map((pkg) => `${pkg.name}@${pkg.installed}->${pkg.required}`)
+        .join(',')
+      return `${baseKey}-${packageKey}`
     })
 
     // Use reactive storage for dismissals - creates a reactive ref that syncs with localStorage
@@ -111,6 +153,14 @@ export const useVersionCompatibilityStore = defineStore(
       return null
     })
 
+    const packageWarningMessages = computed(() =>
+      outdatedComfyPackages.value.map((pkg) => ({
+        name: pkg.name,
+        installedVersion: pkg.installed,
+        requiredVersion: pkg.required
+      }))
+    )
+
     async function checkVersionCompatibility() {
       if (!systemStatsStore.systemStats) {
         await until(systemStatsStore.isInitialized)
@@ -120,11 +170,13 @@ export const useVersionCompatibilityStore = defineStore(
     function dismissWarning() {
       if (!versionKey.value) return
 
-      const dismissUntil = Date.now() + DISMISSAL_DURATION_MS
-      dismissalStorage.value = {
-        ...dismissalStorage.value,
-        [versionKey.value]: dismissUntil
+      const now = Date.now()
+      const pruned: Record<string, number> = {}
+      for (const [key, until] of Object.entries(dismissalStorage.value)) {
+        if (until > now) pruned[key] = until
       }
+      pruned[versionKey.value] = now + DISMISSAL_DURATION_MS
+      dismissalStorage.value = pruned
     }
 
     async function initialize() {
@@ -138,6 +190,8 @@ export const useVersionCompatibilityStore = defineStore(
       hasVersionMismatch,
       shouldShowWarning,
       warningMessage,
+      packageWarningMessages,
+      outdatedComfyPackages,
       isFrontendOutdated,
       isFrontendNewer,
       checkVersionCompatibility,

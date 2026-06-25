@@ -14,7 +14,7 @@ describe('migrateReroute', () => {
       return JSON.parse(fileContent) as WorkflowJSON04
     }
 
-    it.each([
+    it.for([
       'branching.json',
       'single_connected.json',
       'floating.json',

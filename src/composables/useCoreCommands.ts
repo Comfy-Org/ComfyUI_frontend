@@ -4,6 +4,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -40,6 +41,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import {
   useQueueSettingsStore,
@@ -82,7 +84,9 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const modelStore = useModelStore()
   const telemetry = useTelemetry()
+  const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
 
@@ -306,7 +310,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Refresh Node Definitions',
       category: 'essentials' as const,
       function: async () => {
-        await app.refreshComboInNodes()
+        await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
       }
     },
     {
@@ -497,7 +501,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -520,7 +524,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -542,7 +546,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return

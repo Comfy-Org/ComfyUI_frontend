@@ -130,6 +130,7 @@ describe('useLoad3dViewer', () => {
       hasAnimations: vi.fn().mockReturnValue(false),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getSourceFormat: vi.fn().mockReturnValue(null),
       getCurrentModelCapabilities: vi.fn().mockReturnValue({
         fitToViewer: true,
         requiresMaterialRebuild: false,
@@ -404,6 +405,23 @@ describe('useLoad3dViewer', () => {
           .intensity
       ).toBe(1)
     })
+
+    it('should preserve unknown fields on Model Config when restoring', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      viewer.restoreInitialState()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
+    })
   })
 
   describe('applyChanges', () => {
@@ -456,6 +474,23 @@ describe('useLoad3dViewer', () => {
       const result = await viewer.applyChanges()
 
       expect(result).toBe(false)
+    })
+
+    it('should preserve unknown fields on Model Config when applying', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      await viewer.applyChanges()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
     })
   })
 
@@ -584,7 +619,7 @@ describe('useLoad3dViewer', () => {
         requiresMaterialRebuild: false,
         gizmoTransform: true,
         lighting: false,
-        exportable: false,
+        exportable: true,
         materialModes: [],
         fitTargetSize: 20
       })
@@ -596,7 +631,7 @@ describe('useLoad3dViewer', () => {
         expect.stringContaining('dropped.splat')
       )
       expect(viewer.canUseLighting.value).toBe(false)
-      expect(viewer.canExport.value).toBe(false)
+      expect(viewer.canExport.value).toBe(true)
       expect(viewer.isSplatModel.value).toBe(true)
       expect([...viewer.materialModes.value]).toEqual([])
     })

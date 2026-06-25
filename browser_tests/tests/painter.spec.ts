@@ -10,13 +10,16 @@ import {
 } from '@e2e/fixtures/utils/painter'
 import type { TestGraphAccess } from '@e2e/types/globals'
 
+const HIDDEN_PAINTER_WIDGET_NAMES = ['width', 'height', 'bg_color'] as const
+const HIDDEN_PAINTER_NUMBER_WIDGET_NAMES = ['width', 'height'] as const
+
 test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => window.app?.graph?.clear())
     await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
   })
 
-  test.describe('Widget rendering', { tag: ['@widget'] }, () => {
+  test.describe('Widget rendering', () => {
     test('Node enforces minimum size', async ({ comfyPage }) => {
       const size = await comfyPage.page.evaluate(() => {
         const graph = window.graph as TestGraphAccess | undefined
@@ -28,17 +31,15 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       expect(size![1]).toBeGreaterThanOrEqual(550)
     })
 
-    test('Width, height, and bg_color standard widgets are hidden', async ({
+    test('Does not render hidden standard widgets in Vue mode', async ({
       comfyPage
     }) => {
-      const hiddenFlags = await comfyPage.page.evaluate(() => {
-        const graph = window.graph as TestGraphAccess | undefined
-        const node = graph?._nodes_by_id?.['1']
-        return (node?.widgets ?? [])
-          .filter((w) => ['width', 'height', 'bg_color'].includes(w.name))
-          .map((w) => w.options.hidden ?? false)
-      })
-      expect(hiddenFlags).toEqual([true, true, true])
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      await expect(node).toBeVisible()
+
+      for (const widgetName of HIDDEN_PAINTER_WIDGET_NAMES) {
+        await expect(node.getByLabel(widgetName, { exact: true })).toBeHidden()
+      }
     })
   })
 
@@ -549,7 +550,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       expect(uploadCount, 'should upload exactly once').toBe(1)
     })
 
-    test('Empty canvas does not upload on serialization', async ({
+    test('Empty canvas uploads a transparent placeholder on serialization', async ({
       comfyPage
     }) => {
       let uploadCount = 0
@@ -566,7 +567,10 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       await triggerSerialization(comfyPage.page)
 
-      expect(uploadCount, 'empty canvas should not upload').toBe(0)
+      expect(
+        uploadCount,
+        'empty canvas should upload a transparent PNG so the backend receives a valid asset reference (Painter.execute treats painter_alpha=0 as no-mask)'
+      ).toBe(1)
     })
 
     test('Upload failure shows error toast', async ({ comfyPage }) => {
@@ -692,18 +696,26 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
   })
 
-  test('Controls collapse to single column in compact mode', async ({
+  test('Controls stack label above widget in compact mode', async ({
     comfyPage
   }) => {
     const painterWidget = comfyPage.vueNodes
       .getNodeLocator('1')
       .locator('.widget-expands')
     const toolLabel = painterWidget.getByText('Tool', { exact: true })
+    const brushButton = painterWidget.getByText('Brush', { exact: true })
 
     await expect(
       toolLabel,
-      'tool label should be visible in two-column layout'
+      'tool label should be visible in wide layout'
     ).toBeVisible()
+
+    const wideLabelBox = await toolLabel.boundingBox()
+    const wideBrushBox = await brushButton.boundingBox()
+    expect(
+      wideLabelBox && wideBrushBox && wideLabelBox.x < wideBrushBox.x,
+      'label should sit to the left of the brush button in wide layout'
+    ).toBe(true)
 
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess | undefined
@@ -716,8 +728,22 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
     await expect(
       toolLabel,
-      'tool label should hide in compact single-column layout'
-    ).toBeHidden()
+      'tool label should remain visible in compact layout'
+    ).toBeVisible()
+
+    await expect
+      .poll(
+        async () => {
+          const labelBox = await toolLabel.boundingBox()
+          const brushBox = await brushButton.boundingBox()
+          if (!labelBox || !brushBox) return false
+          return labelBox.y + labelBox.height <= brushBox.y
+        },
+        {
+          message: 'label should stack above the brush button in compact layout'
+        }
+      )
+      .toBe(true)
   })
 
   test('Multiple sequential strokes at different positions all accumulate', async ({
@@ -762,6 +788,49 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       .toBe(true)
   })
 })
+
+test.describe(
+  'Painter legacy LiteGraph rendering',
+  { tag: ['@widget', '@canvas'] },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.page.evaluate(() => window.app?.graph?.clear())
+      await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
+    })
+
+    test('Does not open editors for backend-hidden number widget rows in legacy LiteGraph', async ({
+      comfyPage
+    }) => {
+      const painterNodes = await comfyPage.nodeOps.getNodeRefsByType('Painter')
+      expect(painterNodes).toHaveLength(1)
+      const painterNode = painterNodes[0]!
+      const maskWidget = await painterNode.getWidgetByName('mask')
+      const maskWidgetClientPosition = await maskWidget.getPosition()
+      const widgetRowClientHeight = await comfyPage.page.evaluate(
+        () =>
+          (window.LiteGraph!.NODE_WIDGET_HEIGHT + 4) *
+          window.app!.canvas.ds.scale
+      )
+      const legacyPrompt = comfyPage.page.locator('.graphdialog')
+      await expect(legacyPrompt).toBeHidden()
+
+      for (const [
+        index,
+        widgetName
+      ] of HIDDEN_PAINTER_NUMBER_WIDGET_NAMES.entries()) {
+        await test.step(`Click ${widgetName} row`, async () => {
+          await comfyPage.page.mouse.click(
+            maskWidgetClientPosition.x,
+            maskWidgetClientPosition.y + widgetRowClientHeight * (index + 1)
+          )
+          await comfyPage.nextFrame()
+          await expect(legacyPrompt).toBeHidden()
+        })
+      }
+    })
+  }
+)
 
 test.describe(
   'Painter — input image connection',

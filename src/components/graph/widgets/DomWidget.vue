@@ -69,11 +69,7 @@ const updateDomClipping = () => {
     return
   }
 
-  const override = widgetState.positionOverride
-  const overrideInGraph =
-    override && lgCanvas.graph?.getNodeById(override.node.id)
-  const ownerNode = overrideInGraph ? override.node : widgetState.widget.node
-  const isSelected = selectedNode === ownerNode
+  const isSelected = selectedNode === widgetState.widget.node
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
@@ -144,7 +140,6 @@ watch(
     () => widgetState.zIndex,
     () => widgetState.readonly,
     () => widgetState.computedDisabled,
-    () => widgetState.positionOverride,
     enableDomClipping
   ],
   () => {
@@ -189,13 +184,7 @@ onMounted(() => {
       const lgCanvas = canvasStore.canvas
       if (!lgCanvas) return
 
-      const override = widgetState.positionOverride
-      const overrideInGraph =
-        override && lgCanvas.graph?.getNodeById(override.node.id)
-      const ownerNode = overrideInGraph
-        ? override.node
-        : widgetState.widget.node
-
+      const ownerNode = widgetState.widget.node
       lgCanvas.selectNode(ownerNode)
       lgCanvas.bringToFront(ownerNode)
     }

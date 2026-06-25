@@ -113,6 +113,50 @@ git commit apps/website/src/data/ashby-roles.snapshot.json
 The script exits non-zero on any non-fresh outcome so stale/empty
 snapshots can't be accidentally committed.
 
+## Cloud nodes integration
+
+`/cloud/supported-nodes` (and `/zh-CN/`) lists custom-node packs preinstalled on Comfy Cloud, joined with public metadata from the [ComfyUI Custom Node Registry](https://registry.comfy.org) ([`api.comfy.org`](https://api.comfy.org)). See [`src/pages/cloud/supported-nodes/AGENTS.md`](src/pages/cloud/supported-nodes/AGENTS.md) for the build pipeline, source-file map, and key invariants.
+
+Build-time env var: `WEBSITE_CLOUD_API_KEY` (Cloud `/api/object_info` auth; the build falls back to the committed snapshot when unset). Must also be set in the Vercel project environment.
+
+### Production strictness
+
+`src/utils/cloudNodes.build.ts` throws when `fetchCloudNodesForBuild()` returns
+`{ status: 'stale' }` **and** `process.env.VERCEL_ENV === 'production'`. This
+prevents the production deploy from silently shipping an out-of-date snapshot
+when the Cloud API is unreachable or `WEBSITE_CLOUD_API_KEY` is missing. Preview
+and local builds continue to use the committed snapshot with a warning
+annotation.
+
+### Required GitHub Actions / Vercel secrets
+
+| Name                    | Where                                           | Purpose                                                                |
+| ----------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- |
+| `WEBSITE_CLOUD_API_KEY` | GitHub Actions repo secret + Vercel project env | Auth for Cloud `/api/object_info`. Required for fresh production data. |
+
+The `Release: Website` workflow uses the GitHub Actions secret to regenerate
+`apps/website/src/data/cloud-nodes.snapshot.json` via
+`.github/actions/cloud-nodes-pull/action.yaml`. The Vercel environment value is
+read at build time by `vercel build` in `ci-vercel-website-preview.yaml`; the
+`deploy-production` job hard-fails before `vercel build --prod` if the secret
+is missing.
+
+### Refreshing the snapshot
+
+To update the committed snapshot manually (e.g. after onboarding new packs
+to Comfy Cloud):
+
+```bash
+WEBSITE_CLOUD_API_KEY=… \
+  pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot
+git commit apps/website/src/data/cloud-nodes.snapshot.json
+```
+
+The script exits non-zero on any non-fresh outcome so stale/empty snapshots
+can't be accidentally committed. Otherwise the `Release: Website` GitHub
+Actions workflow runs the same step on every manual dispatch and opens a PR
+with the refreshed snapshot.
+
 ## HubSpot contact form
 
 The contact page uses HubSpot's hosted form embed for the interest form:
@@ -146,3 +190,4 @@ renders the documented embed container.
 - `pnpm test:unit` — Vitest unit tests
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
+- `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

@@ -1,7 +1,6 @@
+import { expect } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-
-import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -632,3 +631,88 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     })
   })
 })
+
+test(
+  'link interactions',
+  { tag: ['@vue-nodes', '@subgraph'] },
+  async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+    await comfyPage.vueNodes.enterSubgraph('2')
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const seedSlot = ksampler.getSlot('seed')
+    const seedIOSlot = await comfyPage.subgraph.getInputSlot('seed')
+
+    await test.step('Make second INT typed connection', async () => {
+      const toPos = await seedIOSlot.getOpenSlotPosition()
+      await seedSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      const isConnected = () => comfyPage.vueNodes.isSlotConnected(seedSlot)
+      await expect.poll(isConnected).toBe(true)
+    })
+
+    const rawClip = await comfyPage.subgraph.getInputBounds()
+    const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
+    const clip = { ...rawClip, ...absolutePos }
+    await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+    const twoLinkScreenshot = await comfyPage.page.screenshot({ clip })
+
+    const stepsSlot = ksampler.getSlot('steps')
+
+    await test.step('Node -> I/O hover effect', async () => {
+      await stepsSlot.hover()
+      await stepsSlot.click({ trial: true })
+      await comfyPage.page.mouse.down()
+      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+
+      await expect(comfyPage.page).toHaveScreenshot('vue-io-highlight.png', {
+        clip
+      })
+
+      //cancel link operation
+      await stepsSlot.hover()
+      await comfyPage.page.mouse.up()
+    })
+
+    await ksampler.title.hover()
+
+    const slotParent = stepsSlot.locator('../..')
+    await expect(slotParent, 'unconnected slot is hidden').toHaveCSS(
+      'opacity',
+      '0'
+    )
+
+    await test.step('Connect I/O to node with snap', async () => {
+      const hasSnap = () =>
+        comfyPage.page.evaluate(() => !!app!.canvas._highlight_pos)
+      expect(await hasSnap()).toBe(false)
+
+      const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
+      await comfyPage.canvas.hover({ position: emptySlotPos })
+      await comfyPage.page.mouse.down()
+      await stepsSlot.hover()
+      await expect.poll(hasSnap).toBe(true)
+      await comfyPage.page.mouse.up()
+
+      //move hover off the slot
+      await ksampler.title.hover()
+    })
+
+    await expect(slotParent, 'connected slot is visible').not.toHaveCSS(
+      'opacity',
+      '0'
+    )
+
+    await test.step('Can disconnect link by right click', async () => {
+      const stepsIOSlot = await comfyPage.subgraph.getInputSlot('steps')
+      const { x, y } = await stepsIOSlot.getPosition()
+      await comfyPage.page.mouse.click(x, y, { button: 'right' })
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
+
+      await expect(slotParent).toHaveCSS('opacity', '0')
+
+      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+      const postScreenshot = await comfyPage.page.screenshot({ clip })
+      expect(postScreenshot).toStrictEqual(twoLinkScreenshot)
+    })
+  }
+)

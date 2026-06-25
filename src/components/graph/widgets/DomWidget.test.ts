@@ -74,10 +74,6 @@ function createWidgetState(computedDisabled: boolean): DomWidgetState {
   })
 
   domWidgetStore.registerWidget(widget)
-  domWidgetStore.setPositionOverride(widget.id, {
-    node: createMockLGraphNode({ id: 2 }),
-    widget: { computedDisabled } as DomWidgetState['widget']
-  })
 
   const state = domWidgetStore.widgetStates.get(widget.id)
   if (!state) throw new Error('Expected registered DomWidgetState')

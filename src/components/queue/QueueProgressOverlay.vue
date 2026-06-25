@@ -4,6 +4,7 @@
     :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
   >
     <div
+      data-testid="queue-progress-overlay"
       class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
       @mouseenter="isHovered = true"
@@ -66,6 +67,7 @@ import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { isCloud } from '@/platform/distribution/types'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -93,6 +95,7 @@ const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const {
   totalPercentFormatted,
@@ -188,6 +191,7 @@ const {
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  trackFeatureUsed()
   const jobId = item.taskRef?.jobId
   if (!jobId) return
 
@@ -209,6 +213,7 @@ const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
 })
 
 const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  trackFeatureUsed()
   if (!item.taskRef) return
   await queueStore.delete(item.taskRef)
 })
@@ -224,10 +229,12 @@ const setExpanded = (expanded: boolean) => {
 }
 
 const viewAllJobs = () => {
+  trackFeatureUsed()
   setExpanded(true)
 }
 
 const toggleAssetsSidebar = () => {
+  trackFeatureUsed()
   sidebarTabStore.toggleSidebarTab('assets')
 }
 
@@ -257,12 +264,14 @@ const focusAssetInSidebar = async (item: JobListItem) => {
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
+    trackFeatureUsed()
     await openResultGallery(item)
     await focusAssetInSidebar(item)
   }
 )
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
+  trackFeatureUsed()
   // Capture pending jobIds before clearing
   const pendingJobIds = queueStore.pendingTasks
     .map((task) => task.jobId)
@@ -275,6 +284,7 @@ const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
 })
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
+  trackFeatureUsed()
   const tasks = queueStore.runningTasks
   const jobIds = tasks
     .map((task) => task.jobId)
@@ -298,6 +308,7 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
 })
 
 const onClearHistoryFromMenu = () => {
+  trackFeatureUsed()
   showQueueClearHistoryDialog()
 }
 </script>

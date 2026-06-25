@@ -199,7 +199,6 @@
     "name": "Engine PLY",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "Selecione a engine para carregar arquivos PLY. \"threejs\" usa o PLYLoader nativo do Three.js (melhor para arquivos PLY de malha). \"fastply\" usa um carregador otimizado para arquivos PLY de nuvem de pontos ASCII. \"sparkjs\" usa Spark.js para arquivos PLY de Gaussian Splatting 3D."

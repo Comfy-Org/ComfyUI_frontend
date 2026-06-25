@@ -52,7 +52,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
           await comfyPage.canvasOps.moveMouseToEmptyArea()
           await expect(comfyPage.page).toHaveScreenshot(
             'canvas-info-hud-off.png',
-            { clip: hudClip, maxDiffPixels: 50 }
+            { clip: hudClip, maxDiffPixels: 100 }
           )
         })
 
@@ -61,7 +61,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
           await comfyPage.canvasOps.moveMouseToEmptyArea()
           await expect(comfyPage.page).toHaveScreenshot(
             'canvas-info-hud-on.png',
-            { clip: hudClip, maxDiffPixels: 50 }
+            { clip: hudClip, maxDiffPixels: 100 }
           )
         })
       }

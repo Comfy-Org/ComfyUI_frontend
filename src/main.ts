@@ -11,13 +11,19 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
+import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
+import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
+import { isDesktop, isNightly } from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -25,19 +31,25 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
-/**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
- */
 const isCloud = __DISTRIBUTION__ === 'cloud'
+const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+const requiresRemoteConfigBootstrap = isCloud || hasHostTelemetryBridge
 
-if (isCloud) {
+if (requiresRemoteConfigBootstrap) {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
+}
 
+if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+}
+
+if (hasHostTelemetryBridge) {
+  const { initHostTelemetry } =
+    await import('@/platform/telemetry/initHostTelemetry')
+  initHostTelemetry()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -81,10 +93,32 @@ Sentry.init({
         defaultIntegrations: false
       })
 })
+// Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
+// Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
+// not user-facing in stable releases.
+setAssertReporter((message) => {
+  if (isDesktop) {
+    Sentry.captureMessage(message, { level: 'warning' })
+  }
+  if (isNightly) {
+    useToastStore(pinia).add({
+      severity: 'warn',
+      summary: 'Assertion failed',
+      detail: message
+    })
+  }
+})
+
 app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
+    zIndex: {
+      modal: 1800,
+      overlay: 1800,
+      menu: 1800,
+      tooltip: 1800
+    },
     theme: {
       preset: ComfyUIPreset,
       options: {
@@ -107,6 +141,15 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
+  flushProxyWidgetMigration({
+    hostNode,
+    hostWidgetValues: nodeData?.widgets_values
+  })
+
+LGraph.autoExposePreviewNodes = (hostNode) =>
+  autoExposeKnownPreviewNodes(hostNode)
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
