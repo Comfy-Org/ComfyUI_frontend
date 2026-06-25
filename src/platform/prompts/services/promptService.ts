@@ -45,8 +45,21 @@ function toFileName(name: string): string {
   return name.toLowerCase().endsWith('.txt') ? name : `${name}.txt`
 }
 
-/** Legacy prompts have no prompt_id; treat the asset id as a single-version id. */
+/**
+ * Per-prompt tag carrying the stable logical id. The asset list endpoint omits
+ * user_metadata, so versions must group by a tag (which the list does return)
+ * rather than by metadata.
+ */
+const PROMPT_ID_TAG_PREFIX = 'prompt-id:'
+
+function promptIdTag(promptId: string): string {
+  return `${PROMPT_ID_TAG_PREFIX}${promptId}`
+}
+
+/** Legacy prompts have no prompt-id tag; treat the asset id as a single-version id. */
 function assetPromptId(asset: AssetItem): string {
+  const tagged = asset.tags?.find((tag) => tag.startsWith(PROMPT_ID_TAG_PREFIX))
+  if (tagged) return tagged.slice(PROMPT_ID_TAG_PREFIX.length)
   return readString(coerceObject(asset.user_metadata).prompt_id) ?? asset.id
 }
 
@@ -135,7 +148,8 @@ async function uploadPromptVersion(
 
   // Self-hosted asset APIs require the first tag to be a known category
   // (models/input/output); cloud accepts the bare prompt tag.
-  const tags = isCloud ? [PROMPT_TAG] : ['input', PROMPT_TAG]
+  const baseTags = isCloud ? [PROMPT_TAG] : ['input', PROMPT_TAG]
+  const tags = [...baseTags, promptIdTag(promptId)]
 
   const uploaded = await assetService.uploadAssetFromBase64({
     data: `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`,
@@ -144,10 +158,15 @@ async function uploadPromptVersion(
     user_metadata: { name: input.name, prompt_id: promptId }
   })
 
-  // The multipart upload does not reliably apply tags; ensure the prompt is
-  // retrievable by tag after a reload.
-  if (!uploaded.tags?.includes(PROMPT_TAG)) {
-    await assetService.addAssetTags(uploaded.id, [PROMPT_TAG])
+  // The multipart upload does not reliably apply tags, and the asset list
+  // endpoint omits user_metadata; ensure the prompt stays retrievable and
+  // groupable by tag after a reload.
+  const requiredTags = [PROMPT_TAG, promptIdTag(promptId)]
+  const missingTags = requiredTags.filter(
+    (tag) => !uploaded.tags?.includes(tag)
+  )
+  if (missingTags.length) {
+    await assetService.addAssetTags(uploaded.id, missingTags)
   }
 
   return {

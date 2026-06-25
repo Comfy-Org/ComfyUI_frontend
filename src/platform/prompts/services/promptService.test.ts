@@ -113,6 +113,28 @@ describe('fetchPrompts', () => {
     ])
   })
 
+  it('groups versions by the prompt-id tag when user_metadata is absent', async () => {
+    mockedAssetService.getAllAssetsByTag.mockResolvedValue([
+      asset({
+        id: 'v1',
+        created_at: '2026-01-01T00:00:00Z',
+        tags: ['input', 'prompt', 'prompt-id:p'],
+        user_metadata: {}
+      }),
+      asset({
+        id: 'v2',
+        created_at: '2026-02-01T00:00:00Z',
+        tags: ['input', 'prompt', 'prompt-id:p'],
+        user_metadata: {}
+      })
+    ])
+
+    const prompts = await fetchPrompts()
+
+    expect(prompts).toHaveLength(1)
+    expect(prompts[0]).toMatchObject({ id: 'p', latestAssetId: 'v2' })
+  })
+
   it('parses metadata returned as a JSON string', async () => {
     mockedAssetService.getAllAssetsByTag.mockResolvedValue([
       asset({
@@ -170,7 +192,7 @@ describe('createPrompt', () => {
 
     const payload = mockedAssetService.uploadAssetFromBase64.mock.calls[0][0]
     expect(payload.name).toBe('My Prompt.txt')
-    expect(payload.tags).toEqual(['input', 'prompt'])
+    expect(payload.tags).toEqual(['input', 'prompt', `prompt-id:${result.id}`])
     expect(payload.user_metadata).toEqual({
       name: 'My Prompt',
       prompt_id: result.id
@@ -187,16 +209,20 @@ describe('createPrompt', () => {
     expect(typeof result.id).toBe('string')
   })
 
-  it('ensures the prompt tag when the upload did not apply it', async () => {
+  it('ensures the prompt and id tags when the upload did not apply them', async () => {
     mockedAssetService.uploadAssetFromBase64.mockResolvedValue({
       ...asset({ id: 'y', name: 'y.txt', tags: [] }),
       created_new: true
     })
 
-    await createPrompt({ name: 'y', template: [{ type: 'text', value: 'x' }] })
+    const result = await createPrompt({
+      name: 'y',
+      template: [{ type: 'text', value: 'x' }]
+    })
 
     expect(mockedAssetService.addAssetTags).toHaveBeenCalledWith('y', [
-      'prompt'
+      'prompt',
+      `prompt-id:${result.id}`
     ])
   })
 })

@@ -15,9 +15,11 @@
     "managerSelectHint": "Select a prompt, or create a new one",
     "confirmDelete": "Confirm delete",
     "newPrompt": "New prompt",
+    "editName": "Edit name",
     "historyTitle": "History",
     "historyEmpty": "No versions yet",
     "currentVersion": "Current",
+    "viewVersion": "View version",
     "restore": "Restore"
   },
   "g": {

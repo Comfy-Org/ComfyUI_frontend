@@ -26,6 +26,22 @@ vi.mock('@/platform/prompts/services/promptService', () => ({
   fetchPromptVersions: vi.fn()
 }))
 
+vi.mock('@/components/widget/layout/BaseModalLayout.vue', () => ({
+  default: {
+    name: 'BaseModalLayout',
+    props: ['contentTitle', 'size', 'contentPadding', 'leftPanelWidth'],
+    template: `
+      <div data-testid="base-modal-layout">
+        <slot name="leftPanelHeaderTitle" />
+        <slot name="leftPanel" />
+        <slot name="header" />
+        <slot name="header-right-area" />
+        <slot name="content" />
+      </div>
+    `
+  }
+}))
+
 const mockedFetch = vi.mocked(fetchPrompts)
 const mockedFetchTemplate = vi.mocked(fetchPromptTemplate)
 const mockedCreate = vi.mocked(createPrompt)
@@ -39,8 +55,9 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { delete: 'Delete', cancel: 'Cancel', save: 'Save' },
+      g: { delete: 'Delete', cancel: 'Cancel', save: 'Save', close: 'Close' },
       promptNode: {
+        managerTitle: 'Manage prompts',
         searchPlaceholder: 'Search prompts',
         namePlaceholder: 'Prompt name',
         editorPlaceholder:
@@ -50,12 +67,14 @@ const i18n = createI18n({
         managerSelectHint: 'Select a prompt, or create a new one',
         confirmDelete: 'Confirm delete',
         newPrompt: 'New prompt',
+        editName: 'Edit name',
         menuVariables: 'Variables',
         menuSavedPrompts: 'Saved prompts',
         noMatches: 'No matches',
         historyTitle: 'History',
         historyEmpty: 'No versions yet',
         currentVersion: 'Current',
+        viewVersion: 'View version',
         restore: 'Restore'
       }
     }
@@ -129,6 +148,7 @@ describe('PromptManagerDialogContent', () => {
     renderDialog()
     await userEvent.click(await screen.findByText('Alpha'))
 
+    await userEvent.click(screen.getByLabelText('Edit name'))
     const nameInput = await screen.findByDisplayValue('Alpha')
     await userEvent.clear(nameInput)
     await userEvent.type(nameInput, 'Renamed')
@@ -138,16 +158,39 @@ describe('PromptManagerDialogContent', () => {
     expect(mockedSaveVersion).not.toHaveBeenCalled()
   })
 
-  it('deletes a prompt after confirmation', async () => {
+  it('deletes a prompt from the list on a confirming second click', async () => {
     mockedFetch.mockResolvedValue([prompt('1', 'Alpha')])
     mockedDelete.mockResolvedValue()
     renderDialog()
-    await userEvent.click(await screen.findByText('Alpha'))
+    await screen.findByText('Alpha')
 
-    await userEvent.click(screen.getByText('Delete'))
-    await userEvent.click(screen.getByText('Confirm delete'))
+    await userEvent.click(screen.getByLabelText('Delete'))
+    expect(mockedDelete).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByLabelText('Delete'))
 
     expect(mockedDelete).toHaveBeenCalledWith('1')
+  })
+
+  it('previews a version in the editor without saving a new one', async () => {
+    mockedFetch.mockResolvedValue([prompt('1', 'Alpha')])
+    mockedVersions.mockResolvedValue([
+      { assetId: 'v2', name: 'Alpha', createdAt: '2026-02-01T00:00:00Z' },
+      { assetId: 'v1', name: 'Alpha', createdAt: '2026-01-01T00:00:00Z' }
+    ])
+    mockedFetchTemplate.mockImplementation(async (id) =>
+      id === 'v1'
+        ? [{ type: 'text', value: 'old version' }]
+        : [{ type: 'text', value: 'latest' }]
+    )
+    renderDialog()
+    await userEvent.click(await screen.findByText('Alpha'))
+    await userEvent.click(screen.getByText('History'))
+
+    const viewButtons = await screen.findAllByLabelText('View version')
+    await userEvent.click(viewButtons[1])
+
+    expect(await screen.findByText('old version')).toBeInTheDocument()
+    expect(mockedSaveVersion).not.toHaveBeenCalled()
   })
 
   it('restores an older version as a new version', async () => {
@@ -161,6 +204,7 @@ describe('PromptManagerDialogContent', () => {
     renderDialog()
     await userEvent.click(await screen.findByText('Alpha'))
 
+    await userEvent.click(screen.getByText('History'))
     await userEvent.click(await screen.findByText('Restore'))
 
     expect(mockedSaveVersion).toHaveBeenCalledWith('1', {

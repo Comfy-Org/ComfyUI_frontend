@@ -6,7 +6,14 @@
       :contenteditable="readonly ? 'false' : 'true'"
       spellcheck="false"
       data-testid="prompt-editor"
-      class="size-full overflow-auto rounded-sm border border-border-default bg-component-node-widget-background p-2 wrap-break-word whitespace-pre-wrap outline-none"
+      :class="
+        cn(
+          'size-full overflow-auto wrap-break-word whitespace-pre-wrap outline-none',
+          bordered
+            ? 'rounded-sm border border-border-default bg-component-node-widget-background p-2'
+            : 'pb-10'
+        )
+      "
       @input="onInput"
       @keydown="onKeydown"
       @keyup="onKeyup"
@@ -17,7 +24,12 @@
     />
     <span
       v-if="isEmpty && placeholder"
-      class="pointer-events-none absolute top-2 left-2 text-muted-foreground"
+      :class="
+        cn(
+          'pointer-events-none absolute text-muted-foreground',
+          bordered ? 'top-2 left-2' : 'top-0 left-0'
+        )
+      "
     >
       {{ placeholder }}
     </span>
@@ -96,7 +108,8 @@ const {
   connectedNames = [],
   allowCreateVariable = false,
   placeholder = '',
-  readonly = false
+  readonly = false,
+  bordered = true
 } = defineProps<{
   /** `@` variable references this editor may offer and resolve. */
   variableNames?: string[]
@@ -106,6 +119,8 @@ const {
   allowCreateVariable?: boolean
   placeholder?: string
   readonly?: boolean
+  /** Render with the bordered widget chrome; set false for a flat text area. */
+  bordered?: boolean
 }>()
 
 const modelValue = defineModel<PromptTemplate>({ default: () => [] })

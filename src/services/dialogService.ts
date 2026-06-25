@@ -45,7 +45,7 @@ const HUG_CONTENT_CLASS =
  * (background/border/rounding) — neutralize the DialogContent box and
  * shrink-wrap it around the content.
  */
-const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
+export const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
 
 export type ConfirmationDialogType =
   | 'default'

@@ -85,6 +85,10 @@ import type {
   PromptTemplate
 } from '@/platform/prompts/schemas/promptTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  SELF_STYLED_PANEL_CONTENT_CLASS,
+  useDialogService
+} from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { usePromptStore } from '@/stores/promptStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -112,11 +116,13 @@ function getNode(): LGraphNode | undefined {
 }
 
 function openManager() {
-  useDialogStore().showDialog({
-    key: 'prompt-manager',
-    title: t('promptNode.managerTitle'),
+  const key = 'prompt-manager'
+  const dialogStore = useDialogStore()
+  useDialogService().showLayoutDialog({
+    key,
     component: PromptManagerDialogContent,
-    dialogComponentProps: { renderer: 'reka', size: 'lg' }
+    props: { onClose: () => dialogStore.closeDialog({ key }) },
+    dialogComponentProps: { contentClass: SELF_STYLED_PANEL_CONTENT_CLASS }
   })
 }
 
