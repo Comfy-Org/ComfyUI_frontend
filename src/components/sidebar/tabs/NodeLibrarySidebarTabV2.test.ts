@@ -31,11 +31,8 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
     isDragging: { value: false },
     draggedNode: { value: null },
-    cursorPosition: { value: { x: 0, y: 0 } },
     startDrag: vi.fn(),
-    cancelDrag: vi.fn(),
-    setupGlobalListeners: vi.fn(),
-    cleanupGlobalListeners: vi.fn()
+    cancelDrag: vi.fn()
   })
 }))
 

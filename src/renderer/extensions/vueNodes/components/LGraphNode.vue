@@ -48,7 +48,7 @@
         nodeData.mode === LGraphEventMode.ALWAYS &&
         !nodeData.hasErrors
       "
-      :id="nodeData.id"
+      :id="nodeId"
     />
     <div
       v-if="isSelected || executing"
@@ -340,11 +340,13 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-useVueElementTracking(String(nodeData.id), 'node')
+const nodeId = computed(() => String(nodeData.id))
+
+useVueElementTracking(nodeId.value, 'node')
 
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeData.id)
+  return selectedNodeIds.value.has(nodeId.value)
 })
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
@@ -353,7 +355,7 @@ const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const hasExecutionError = computed(
-  () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+  () => executionErrorStore.lastExecutionErrorNodeId === nodeId.value
 )
 
 const hasAnyError = computed((): boolean => {
@@ -674,7 +676,8 @@ const handleToggleAdvanced = () => {
 
 const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'graph_node_open_subgraph_clicked'
+    button_id: 'graph_node_open_subgraph_clicked',
+    element_group: 'graph_node'
   })
   const graph = app.rootGraph
   if (!graph) {

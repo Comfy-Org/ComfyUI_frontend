@@ -1,7 +1,6 @@
 <template>
   <SidebarTabTemplate hide-toolbar :title="$t('sideToolbar.nodes')">
     <template #body>
-      <NodeDragPreview />
       <div class="flex h-full flex-col">
         <div class="shrink-0 overflow-hidden bg-comfy-menu-bg">
           <div
@@ -167,7 +166,6 @@ import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
-import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
 const { flags } = useFeatureFlags()

@@ -9,7 +9,6 @@ import type {
   ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -19,8 +18,10 @@ import type {
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -34,7 +35,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from './types'
 
 /**
@@ -111,11 +113,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    this.dispatch((provider) => provider.trackRunButton?.(options))
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
+  }
+
+  trackRunButton(properties: RunButtonProperties): void {
+    this.dispatch((provider) => provider.trackRunButton?.(properties))
   }
 
   startTopupTracking(): void {
@@ -194,6 +197,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackTabCount(metadata: TabCountMetadata): void {
     this.dispatch((provider) => provider.trackTabCount?.(metadata))
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.dispatch((provider) => provider.trackShellLayout?.(metadata))
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {

@@ -20,6 +20,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import { type NodeLocatorId } from '@/types'
+import { widgetId } from '@/types/widgetId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
@@ -127,6 +128,7 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
+        audioUIWidget.options.serialize = false
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 
@@ -152,16 +154,16 @@ app.registerExtension({
 
         audioUIWidget.options.getValue = () =>
           (useWidgetValueStore().getWidget(
-            resolveNodeRootGraphId(node, app.rootGraph.id),
-            node.id,
-            inputName
+            widgetId(
+              resolveNodeRootGraphId(node, app.rootGraph.id),
+              node.id,
+              inputName
+            )
           )?.value as string) ?? ''
         audioUIWidget.options.setValue = (v) => {
           const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
-            graphId,
-            node.id,
-            inputName
+            widgetId(graphId, node.id, inputName)
           )
           if (widgetState) widgetState.value = v
         }

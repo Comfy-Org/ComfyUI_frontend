@@ -15,6 +15,10 @@ import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 // fixtures — Playwright runs auto fixtures before the `comfyPage` fixture's
 // internal `setup()`, so the page first-loads with mocks already in place.
 // See cloud-asset-default.spec.ts for the same pattern.
+//
+// Use `waitForAssets()` not `waitForAssets(MIXED_JOBS.length)`: VirtualGrid can
+// virtualize the 3D card out of the initial render (#11635). Filtering reads the
+// full store, so the per-filter count assertions still cover the behavior.
 
 const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
 
@@ -113,7 +117,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
 
@@ -136,7 +140,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('image')
@@ -153,7 +157,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('video')
@@ -167,7 +171,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('audio')
@@ -179,7 +183,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   test('Selecting only "3D" hides non-3D assets', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('3d')
@@ -193,7 +197,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('image')
@@ -211,7 +215,7 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets(MIXED_JOBS.length)
+    await tab.waitForAssets()
 
     await tab.openFilterMenu()
     await tab.toggleMediaTypeFilter('image')

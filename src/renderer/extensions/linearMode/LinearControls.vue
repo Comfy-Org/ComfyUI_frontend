@@ -57,7 +57,8 @@ async function runButtonClick(e: Event) {
 
     if (batchCount.value > 1) {
       useTelemetry()?.trackUiButtonClicked({
-        button_id: 'queue_run_multiple_batches_submitted'
+        button_id: 'queue_run_multiple_batches_submitted',
+        element_group: 'app_mode'
       })
     }
     await commandStore.execute(commandId, {

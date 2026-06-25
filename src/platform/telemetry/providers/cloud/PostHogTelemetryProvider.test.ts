@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as VueModule from 'vue'
+import type { Ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { TelemetryEvents } from '../../types'
 
@@ -12,6 +15,10 @@ const hoisted = vi.hoisted(() => {
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
+  const refs = {
+    tier: null as unknown as Ref<string | null>,
+    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
+  }
 
   return {
     mockCapture,
@@ -23,6 +30,7 @@ const hoisted = vi.hoisted(() => {
     mockReset,
     mockOnUserResolved,
     mockOnUserLogout,
+    refs,
     mockPosthog: {
       default: {
         init: mockInit,
@@ -36,14 +44,6 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    watch: vi.fn()
-  }
-})
-
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
     onUserResolved: hoisted.mockOnUserResolved,
@@ -51,21 +51,19 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-const mockRemoteConfig = vi.hoisted(
-  () => ({ value: null }) as { value: Record<string, unknown> | null }
-)
-
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: mockRemoteConfig
-}))
+vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+  const { ref } = await vi.importActual<typeof VueModule>('vue')
+  hoisted.refs.remoteConfig = ref<Record<string, unknown> | null>(null)
+  return { remoteConfig: hoisted.refs.remoteConfig }
+})
 
 vi.mock('posthog-js', () => hoisted.mockPosthog)
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    subscriptionTier: { value: null }
-  })
-}))
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { ref } = await vi.importActual<typeof VueModule>('vue')
+  hoisted.refs.tier = ref<string | null>(null)
+  return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
+})
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
@@ -82,7 +80,10 @@ function createProvider(
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRemoteConfig.value = null
+    hoisted.refs.remoteConfig.value = null
+    // Fresh tier ref per test: each provider registers an undisposed tier
+    // watch, so a shared ref would leak watchers across tests.
+    hoisted.refs.tier = ref<string | null>(null)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
@@ -116,7 +117,7 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it('applies posthog_config overrides from remote config', async () => {
-      mockRemoteConfig.value = {
+      hoisted.refs.remoteConfig.value = {
         posthog_config: {
           debug: true,
           api_host: 'https://custom.host.com'
@@ -149,6 +150,48 @@ describe('PostHogTelemetryProvider', () => {
       callback({ id: 'user-123' })
 
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
+    })
+
+    function tierPropertySets(): unknown[] {
+      return hoisted.mockPeopleSet.mock.calls
+        .map(([props]) => props)
+        .filter((props) => props && 'subscription_tier' in props)
+    }
+
+    it('sets subscription_tier reactively when the facade tier resolves', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      onResolved({ id: 'user-123' })
+
+      // Unresolved tier (null) does not set the property
+      expect(tierPropertySets()).toHaveLength(0)
+
+      hoisted.refs.tier.value = 'PRO'
+      await nextTick()
+      expect(hoisted.mockPeopleSet).toHaveBeenCalledWith({
+        subscription_tier: 'PRO'
+      })
+
+      hoisted.refs.tier.value = null
+      await nextTick()
+      expect(tierPropertySets()).toHaveLength(1)
+    })
+
+    it('keeps a single tier watcher across repeated user resolutions', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      onResolved({ id: 'user-1' })
+      onResolved({ id: 'user-1' })
+      onResolved({ id: 'user-2' })
+
+      hoisted.refs.tier.value = 'PRO'
+      await nextTick()
+
+      expect(tierPropertySets()).toHaveLength(1)
     })
   })
 
@@ -258,15 +301,15 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('captures events with metadata', async () => {
+    it('captures auth events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackAuth({ method: 'google' })
+      provider.trackAuth({ method: 'google', share_id: 'share-1' })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
-        { method: 'google' }
+        { method: 'google', share_id: 'share-1' }
       )
     })
 
@@ -276,25 +319,50 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackShareLinkOpened({
         share_id: 'share-1',
-        is_authenticated: true
+        is_authenticated: true,
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+      provider.trackShareFlow({
+        step: 'link_created',
+        source: 'app_mode',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
       })
       provider.trackSharedWorkflowRun({
         job_id: 'job-1',
-        share_id: 'share-1'
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
       })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.SHARE_LINK_OPENED,
         {
           share_id: 'share-1',
-          is_authenticated: true
+          is_authenticated: true,
+          view_mode: 'graph',
+          is_app_mode: false
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHARE_FLOW,
+        {
+          step: 'link_created',
+          source: 'app_mode',
+          share_id: 'share-1',
+          view_mode: 'app',
+          is_app_mode: true
         }
       )
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.SHARED_WORKFLOW_RUN,
         {
           job_id: 'job-1',
-          share_id: 'share-1'
+          share_id: 'share-1',
+          view_mode: 'app',
+          is_app_mode: true
         }
       )
     })
@@ -444,6 +512,71 @@ describe('PostHogTelemetryProvider', () => {
         {}
       )
     })
+
+    it('captures enabled funnel events by default', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSettingChanged({ setting_id: 'theme' })
+      provider.trackTemplateFilterChanged({
+        selected_models: [],
+        selected_use_cases: [],
+        selected_runs_on: [],
+        sort_by: 'default',
+        filtered_count: 1,
+        total_count: 2
+      })
+      provider.trackUiButtonClicked({
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SETTING_CHANGED,
+        { setting_id: 'theme' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.TEMPLATE_FILTER_CHANGED,
+        {
+          selected_models: [],
+          selected_use_cases: [],
+          selected_runs_on: [],
+          sort_by: 'default',
+          filtered_count: 1,
+          total_count: 2
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UI_BUTTON_CLICKED,
+        {
+          button_id: 'sidebar_settings_button_clicked',
+          element_group: 'sidebar'
+        }
+      )
+    })
+
+    it('captures shell layout snapshots', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const shellLayoutMetadata = {
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'floating',
+        actionbar_position: 'Top',
+        active_sidebar_tab: 'node-library',
+        right_side_panel_open: true,
+        bottom_panel_open: false,
+        open_workflow_tabs: 2
+      } as const
+
+      provider.trackShellLayout(shellLayoutMetadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHELL_LAYOUT,
+        shellLayoutMetadata
+      )
+    })
   })
 
   describe('survey tracking', () => {
@@ -580,7 +713,7 @@ describe('PostHogTelemetryProvider', () => {
 
     it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
       const remoteBefore_send = vi.fn()
-      mockRemoteConfig.value = {
+      hoisted.refs.remoteConfig.value = {
         posthog_config: {
           before_send: remoteBefore_send,
           person_profiles: 'always'
