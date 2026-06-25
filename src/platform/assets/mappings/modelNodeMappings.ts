@@ -226,5 +226,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
 
   // ---- ComfyUI core optical flow (RAFT) ----
-  ['optical_flow', 'OpticalFlowLoader', 'model_name']
+  ['optical_flow', 'OpticalFlowLoader', 'model_name'],
+
+  // ---- LTX-Video IC-LoRA (ComfyUI-LTXVideo) ----
+  ['loras', 'LTXICLoRALoaderModelOnly', 'lora_name']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>
