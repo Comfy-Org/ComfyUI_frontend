@@ -204,7 +204,7 @@ describe('useWorkspaceBilling', () => {
     it('exposes a null subscription before any status fetch', () => {
       const billing = setupBilling()
       expect(billing.subscription.value).toBeNull()
-      expect(billing.isActiveSubscription.value).toBe(false)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(false)
       expect(billing.isFreeTier.value).toBe(false)
     })
 
@@ -229,7 +229,7 @@ describe('useWorkspaceBilling', () => {
         isCancelled: true,
         hasFunds: true
       })
-      expect(billing.isActiveSubscription.value).toBe(true)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
       expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
         'workspace-1',
@@ -247,7 +247,7 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchStatus()
 
       expect(billing.subscription.value?.isCancelled).toBe(false)
-      expect(billing.isActiveSubscription.value).toBe(true)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
     })
 
     it('reports free tier when status tier is FREE', async () => {

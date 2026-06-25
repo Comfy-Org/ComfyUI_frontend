@@ -53,7 +53,8 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription, type: billingType } = useBillingContext()
+  const { canAccessSubscriptionFeatures, type: billingType } =
+    useBillingContext()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -154,7 +155,7 @@ export function useSettingUI(
 
   const shouldShowPlanCreditsPanel = computed(() => {
     if (!subscriptionPanel) return false
-    return isActiveSubscription.value
+    return canAccessSubscriptionFeatures.value
   })
 
   const shouldShowLegacyPlanCreditsPanel = computed(

@@ -84,7 +84,7 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: false },
+    canAccessSubscriptionFeatures: { value: false },
     isFreeTier: { value: true },
     type: { value: 'free' }
   }))
