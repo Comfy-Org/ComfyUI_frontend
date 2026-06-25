@@ -15,6 +15,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+vi.mock('@/components/error/useErrorOverlayState', () => ({
+  useErrorOverlayState: () => ({
+    overlayMessage: 'KSampler is missing a required input: model',
+    overlayTitle: 'Required input missing'
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -22,10 +29,7 @@ const i18n = createI18n({
     en: {
       linearMode: {
         error: {
-          workflowWarningTitle: 'Workflow has errors',
-          workflowWarningDescription:
-            'Review them in graph mode before running.',
-          workflowWarningAction: 'View in Graph',
+          goto: 'Show errors in graph',
           runWithErrorsAction: 'Run, workflow has errors'
         },
         mobileNoWorkflow: 'No workflow',
@@ -110,14 +114,17 @@ describe('LinearControls', () => {
   ])('shows a workflow error warning in $label controls', ({ mobile }) => {
     renderControls({ hasError: true, mobile })
 
-    const warning = screen.getByRole('alert')
-    expect(within(warning).getByText('Workflow has errors')).toBeInTheDocument()
+    const warning = screen.getByRole('status')
     expect(
-      within(warning).getByText('Review them in graph mode before running.')
+      within(warning).getByText('Required input missing')
     ).toBeInTheDocument()
     expect(
-      within(warning).getByRole('button', { name: 'View in Graph' })
+      within(warning).getByText('KSampler is missing a required input: model')
     ).toBeInTheDocument()
+    expect(
+      within(warning).getByRole('button', { name: 'Show errors in graph' })
+    ).toBeInTheDocument()
+    expect(within(warning).queryByLabelText('Close')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Run, workflow has errors' })
     ).toBeInTheDocument()
@@ -131,9 +138,9 @@ describe('LinearControls', () => {
     ({ mobile }) => {
       renderControls({ mobile })
 
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: 'View in Graph' })
+        screen.queryByRole('button', { name: 'Show errors in graph' })
       ).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
     }
