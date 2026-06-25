@@ -231,6 +231,22 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `execution_interrupted` WS event (user-initiated stop). */
+  executionInterrupted(jobId: string, nodeId: string): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_interrupted',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: 'Unknown',
+          executed: []
+        }
+      })
+    )
+  }
+
   /** Send `progress` WS event. */
   progress(jobId: string, nodeId: string, value: number, max: number): void {
     this.requireWs().send(

@@ -181,16 +181,21 @@ export function useSubscriptionCheckout(emit: {
 
       await handleSubscribeResponse(response)
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to subscribe'
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: message
-      })
+      showSubscribeError(error)
     } finally {
       isSubscribing.value = false
     }
+  }
+
+  function showSubscribeError(error: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail:
+        error instanceof Error
+          ? error.message
+          : t('subscription.subscribeFailed')
+    })
   }
 
   async function handleSubscribeResponse(
@@ -202,15 +207,29 @@ export function useSubscriptionCheckout(emit: {
       telemetry?.trackMonthlySubscriptionSucceeded()
       await Promise.all([fetchStatus(), fetchBalance()])
       checkoutStep.value = 'success'
-    } else if (
+      return
+    }
+
+    // needs_payment_method / pending_payment both finish asynchronously, so poll
+    // the billing op either way. needs_payment_method additionally points at a
+    // Stripe page to collect a card when the backend supplies the URL; without
+    // it we still poll rather than silently stranding the user on confirm.
+    if (
       response.status === 'needs_payment_method' &&
       response.payment_method_url
     ) {
-      window.open(response.payment_method_url, '_blank')
-      await advanceToSuccessOnOperation(response.billing_op_id)
-    } else if (response.status === 'pending_payment') {
-      await advanceToSuccessOnOperation(response.billing_op_id)
+      // The open runs after `await subscribe(...)`, so it's not a direct user
+      // gesture and can be popup-blocked; warn instead of failing silently.
+      const paymentWindow = window.open(response.payment_method_url, '_blank')
+      if (!paymentWindow) {
+        toast.add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('subscription.preview.paymentPopupBlocked')
+        })
+      }
     }
+    await advanceToSuccessOnOperation(response.billing_op_id)
   }
 
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
@@ -247,13 +266,7 @@ export function useSubscriptionCheckout(emit: {
 
       await handleSubscribeResponse(response)
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to subscribe'
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: message
-      })
+      showSubscribeError(error)
     } finally {
       isSubscribing.value = false
     }
