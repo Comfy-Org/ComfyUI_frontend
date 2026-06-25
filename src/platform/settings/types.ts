@@ -27,7 +27,9 @@ export interface SettingOption {
 }
 
 interface SettingTelemetryOptions {
-  // Emit a `setting_changed` event when this setting changes.
+  // Emit a `setting_changed` event from the store whenever this setting is
+  // persisted. Use for settings changed outside the settings dialog (e.g. the
+  // hidden theme setting); dialog changes are already tracked by SettingItem.
   trackChanges?: boolean
   // Ship previous_value/new_value with the event. Leave unset for settings
   // whose values must not leave the client (hidden/server/secret values).
