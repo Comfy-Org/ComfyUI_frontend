@@ -4,8 +4,7 @@ import type { Page } from '@playwright/test'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
-import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 
 /**
  * getSurveyCompletedStatus fails safe: a transient 401 on `/` must not bounce a
@@ -16,51 +15,12 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-function jsonRoute(body: unknown) {
-  return {
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(body)
-  }
-}
-
-async function mockCloudBoot(page: Page) {
-  // `/api/features` is the remote-config source: production builds resolve
-  // `onboardingSurveyEnabled` from it (the `ff:` localStorage override is
-  // dev-only). Enable the survey so the gate is actually live.
-  await page.route('**/api/features', (r) =>
-    r.fulfill(
-      jsonRoute({ onboarding_survey_enabled: true } satisfies RemoteConfig)
-    )
-  )
-  await page.route('**/api/system_stats', (r) =>
-    r.fulfill(jsonRoute(mockSystemStats))
-  )
-  await page.route('**/api/users', (r) =>
-    r.fulfill(
-      jsonRoute({
-        storage: 'server',
-        migrated: true,
-        users: { 'test-user-e2e': 'E2E Test User' }
-      })
-    )
-  )
-  // Cloud user status (getUserCloudStatus) — an active account so the gate
-  // proceeds to the survey check instead of bouncing back to login.
-  await page.route('**/api/user', (r) =>
-    r.fulfill(jsonRoute({ status: 'active' }))
-  )
-  await page.route('**/api/settings', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
-  await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
-}
+// `/api/features` is the remote-config source: production builds resolve
+// `onboardingSurveyEnabled` from it (the `ff:` localStorage override is
+// dev-only). Enable the survey so the gate is actually live.
+const BOOT_FEATURES = {
+  onboarding_survey_enabled: true
+} satisfies RemoteConfig
 
 // Genuine "not completed": the cloud backend returns 404 for a survey key that
 // was never stored. This is the response that must still route to the survey.
@@ -89,22 +49,13 @@ async function mockSurveyTransient401(page: Page) {
   )
 }
 
-async function bootCloud(page: Page) {
-  const auth = new CloudAuthHelper(page)
-  await auth.mockAuth()
-  // Pre-select the mock user to skip the user-select screen.
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.userId', 'test-user-e2e')
-  })
-}
-
 test.describe('Cloud onboarding survey gate', { tag: '@cloud' }, () => {
   test('a transient 401 on the survey check does not bounce a working user to the survey', async ({
     page
   }) => {
-    test.setTimeout(60_000)
+    test.slow()
 
-    await mockCloudBoot(page)
+    await mockCloudBoot(page, { features: BOOT_FEATURES })
     await mockSurveyTransient401(page)
     await bootCloud(page)
 
@@ -122,9 +73,9 @@ test.describe('Cloud onboarding survey gate', { tag: '@cloud' }, () => {
   test('a not-completed (404) user landing on / is routed to the survey', async ({
     page
   }) => {
-    test.setTimeout(60_000)
+    test.slow()
 
-    await mockCloudBoot(page)
+    await mockCloudBoot(page, { features: BOOT_FEATURES })
     await mockSurveyNotCompleted(page)
     await bootCloud(page)
 

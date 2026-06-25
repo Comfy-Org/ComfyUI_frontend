@@ -80,7 +80,6 @@ describe('ErrorNodeCard.vue', () => {
           },
           rightSidePanel: {
             locateNode: 'Locate Node',
-            enterSubgraph: 'Enter Subgraph',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues for related problems',
             getHelpTooltip:

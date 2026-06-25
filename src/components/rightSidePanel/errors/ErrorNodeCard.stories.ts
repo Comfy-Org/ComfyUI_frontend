@@ -27,7 +27,6 @@ const singleErrorCard: ErrorCardData = {
   title: 'CLIPTextEncode',
   nodeId: createNodeExecutionId([toNodeId(10)]),
   nodeTitle: 'CLIP Text Encode (Prompt)',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'Required input "text" is missing.',
@@ -41,7 +40,6 @@ const multipleErrorsCard: ErrorCardData = {
   title: 'VAEDecode',
   nodeId: createNodeExecutionId([toNodeId(24)]),
   nodeTitle: 'VAE Decode',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'Required input "samples" is missing.',
@@ -59,7 +57,6 @@ const runtimeErrorCard: ErrorCardData = {
   title: 'KSampler',
   nodeId: createNodeExecutionId([toNodeId(45)]),
   nodeTitle: 'KSampler',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'OutOfMemoryError: CUDA out of memory. Tried to allocate 1.2GB.',
@@ -79,7 +76,6 @@ const subgraphErrorCard: ErrorCardData = {
   title: 'KSampler',
   nodeId: createNodeExecutionId([toNodeId(3), toNodeId(15)]),
   nodeTitle: 'Nested KSampler',
-  isSubgraphNode: true,
   errors: [
     {
       message: 'Latent input is required.',
@@ -105,8 +101,7 @@ export const SingleValidationError: Story = {
   }
 }
 
-/** Subgraph node error — shows "Enter subgraph" button */
-export const WithEnterSubgraphButton: Story = {
+export const NestedNodeError: Story = {
   args: {
     card: subgraphErrorCard
   }

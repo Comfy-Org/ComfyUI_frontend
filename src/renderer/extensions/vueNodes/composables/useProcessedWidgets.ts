@@ -47,6 +47,12 @@ import {
   getLocatorIdFromNodeData
 } from '@/utils/graphTraversalUtil'
 
+const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
+type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
+function isTooltipValueType(val: unknown): val is TooltipValueType {
+  return TOOLTIP_VALUE_TYPES.includes(val as TooltipValueType)
+}
+
 interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
@@ -68,7 +74,7 @@ interface ProcessedWidget {
 }
 
 interface WidgetUiCallbacks {
-  getTooltipConfig: (widget: SafeWidgetData) => TooltipOptions
+  getTooltipConfig: (widget: SafeWidgetData, fullVal?: string) => TooltipOptions
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
@@ -319,7 +325,11 @@ export function computeProcessedWidgets({
       executionErrorStore
     )
 
-    const tooltipConfig = ui.getTooltipConfig(widget)
+    const valueTooltip =
+      isTooltipValueType(widget.type) && String(value).length > 10
+        ? String(value)
+        : undefined
+    const tooltipConfig = ui.getTooltipConfig(widget, valueTooltip)
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
@@ -375,7 +385,10 @@ export function useProcessedWidgets(
   const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
 
   const ui: WidgetUiCallbacks = {
-    getTooltipConfig: (widget) => createTooltipConfig(getWidgetTooltip(widget)),
+    getTooltipConfig: (widget, fullValue = '') =>
+      createTooltipConfig(
+        [getWidgetTooltip(widget), fullValue].join('\n\n').trim()
+      ),
     handleNodeRightClick
   }
 
