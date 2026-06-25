@@ -51,8 +51,9 @@ async function tryRemintToken(): Promise<string | null> {
  * Issues a `fetch` and, on a `401`, re-mints the unified Cloud JWT once and
  * retries the request exactly once with the fresh token. A persistent `401`
  * (or a `null` re-mint) surfaces the original Response unchanged — no retry
- * loop. Requires a replayable body: a one-shot `ReadableStream` body would be
- * drained by the first attempt (no current cloud caller sends one).
+ * loop. Requires a replayable body: a one-shot `ReadableStream` body cannot be
+ * replayed, so such a request surfaces its original `401` without a retry (no
+ * current cloud caller sends one).
  *
  * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
  * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
@@ -65,6 +66,13 @@ export async function fetchWithUnifiedRemint(
 ): Promise<Response> {
   const response = await fetch(input, init)
   if (!shouldRetryOn401 || response.status !== 401) {
+    return response
+  }
+
+  if (init.body instanceof ReadableStream) {
+    console.warn(
+      'fetchWithUnifiedRemint: a ReadableStream body is not replayable; surfacing the original 401'
+    )
     return response
   }
 

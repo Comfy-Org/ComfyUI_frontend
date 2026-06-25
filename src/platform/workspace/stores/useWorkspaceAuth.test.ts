@@ -1489,9 +1489,14 @@ describe('useWorkspaceAuthStore', () => {
       // Exactly one re-mint attempt — the primitive does not retry.
       expect(mockFetch).toHaveBeenCalledTimes(2)
       // A permanent failure resolves to null (the caller surfaces its 401),
-      // fires the error toast, and clears the dead session.
+      // fires the error toast keyed to the 401 code, and clears the dead session.
       expect(result).toBeNull()
-      expect(mockToastAdd).toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'workspaceAuth.errors.invalidFirebaseToken'
+        })
+      )
       expect(unifiedToken.value).toBeNull()
     })
 
@@ -1539,7 +1544,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    it('discards a stale concurrent mint so unifiedToken reflects the latest mint', async () => {
+    it('discards a stale concurrent mint but hands the discarded caller the winning token to retry with', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       const mockFetch = vi.fn().mockResolvedValue({
@@ -1572,15 +1577,16 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(unifiedToken.value).toBe('latest-token')
 
-      // The stale re-mint resolves last and must not clobber the latest token,
-      // and surfaces null so the caller's 401 stands instead of a stale retry.
+      // The stale re-mint resolves last and must not clobber the latest token.
+      // It returns the slot's winning token, not its own discarded mint, so the
+      // burst's discarded caller retries with the fresh token instead of a 401.
       resolveStale({
         ok: true,
         json: () =>
           Promise.resolve({ ...personalTokenResponse, token: 'stale-token' })
       })
 
-      expect(await remintA).toBeNull()
+      expect(await remintA).toBe('latest-token')
       expect(unifiedToken.value).toBe('latest-token')
     })
 

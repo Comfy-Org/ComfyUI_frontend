@@ -142,6 +142,25 @@ describe('fetchWithUnifiedRemint', () => {
     expect(mockRemint).toHaveBeenCalledTimes(1)
   })
 
+  it('surfaces the original 401 without re-minting when the body is a non-replayable stream', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized)
+    mockRemint.mockResolvedValue('tokenB')
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      {
+        method: 'POST',
+        body: new ReadableStream<Uint8Array>(),
+        headers: { Authorization: 'Bearer tokenA' }
+      },
+      true
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockRemint).not.toHaveBeenCalled()
+  })
+
   it.for([
     {
       shape: 'object',

@@ -577,6 +577,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         useAuthStore().notifyTokenRefreshed()
       }
     } catch (err) {
+      // Guard the toast on a live token so concurrent permanent failures across
+      // the proactive + reactive paths alarm the user once, not once per caller.
       if (isPermanentAuthError(err)) {
         if (unifiedToken.value) surfacePermanentAuthError(err)
         clearUnifiedContext()
@@ -614,11 +616,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return null
     }
     try {
-      // A mint discarded by the stale-guard (concurrent burst) returns false;
-      // surface null so the caller's original 401 stands instead of replaying a
-      // stale token.
-      const minted = await mintUnified(target)
-      return minted ? unifiedToken.value : null
+      // On a concurrent burst the stale-guard discards all but the winning
+      // mint. Return the slot's current token (the winner's, once it lands)
+      // rather than this call's own success, so a discarded caller can still
+      // retry with it instead of burning its one-shot retry on a fresh 401.
+      await mintUnified(target)
+      return unifiedToken.value ?? null
     } catch (err) {
       // Mirror refreshUnified: a permanent failure tears down the session;
       // guard the toast on a live token so a concurrent burst surfaces it once.
