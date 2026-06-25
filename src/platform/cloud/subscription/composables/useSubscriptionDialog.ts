@@ -33,7 +33,6 @@ export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const { permissions } = useWorkspaceUI()
   const { isFreeTier } = useSubscription()
 
   function hide() {
@@ -43,6 +42,11 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
+
+    // Resolved lazily (not at setup): useWorkspaceUI reads useBillingContext, so
+    // a setup-time read re-enters the half-built context during the
+    // useBillingContext -> useWorkspaceBilling -> useSubscriptionDialog cycle.
+    const { permissions } = useWorkspaceUI()
 
     // Members can't manage the workspace subscription, so a blocked run shows a
     // small read-only "ask your owner to reactivate" modal instead of the
