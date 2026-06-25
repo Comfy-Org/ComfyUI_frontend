@@ -13,7 +13,11 @@ import {
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetEntityId } from '@/world/entityIds'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
+import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
@@ -44,11 +48,15 @@ const createMockWidget = (
 })
 
 describe('getWidgetIdentity', () => {
-  it('keys dedupeIdentity by entityId and widget type', () => {
-    const entityId = widgetEntityId(GRAPH_ID, 'subgraph:19', 'text')
-    const widget = createMockWidget({ entityId, name: 'text', type: 'text' })
+  it('keys dedupeIdentity by widgetId and widget type', () => {
+    const id = widgetId(GRAPH_ID, 'subgraph:19', 'text')
+    const widget = createMockWidget({
+      widgetId: id,
+      name: 'text',
+      type: 'text'
+    })
     const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '1', 0)
-    expect(dedupeIdentity).toBe(`${entityId}:text`)
+    expect(dedupeIdentity).toBe(`${id}:text`)
     expect(renderKey).toBe(dedupeIdentity)
   })
 
@@ -58,7 +66,7 @@ describe('getWidgetIdentity', () => {
       sourceExecutionId: undefined
     })
     const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '5', 3)
-    expect(dedupeIdentity).toBe('node:5:test_widget:test_widget:combo')
+    expect(dedupeIdentity).toBe('node:5:test_widget:combo')
     expect(renderKey).toBe(dedupeIdentity)
   })
 
@@ -73,16 +81,16 @@ describe('getWidgetIdentity', () => {
       3
     )
     expect(dedupeIdentity).toBeUndefined()
-    expect(renderKey).toBe('transient::test_widget:test_widget:combo:3')
+    expect(renderKey).toBe('transient::test_widget:combo:3')
   })
 
   it('uses sourceExecutionId for identity when no nodeId', () => {
     const widget = createMockWidget({
       nodeId: undefined,
-      sourceExecutionId: '65:18'
+      sourceExecutionId: createNodeExecutionId([65, 18])
     })
     const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
-    expect(dedupeIdentity).toBe('exec:65:18:test_widget:test_widget:combo')
+    expect(dedupeIdentity).toBe('exec:65:18:test_widget:combo')
   })
 })
 
@@ -127,7 +135,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -143,7 +151,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         nodeErrors,
         executionErrorStore,
         missingModelStore
@@ -154,7 +162,7 @@ describe('hasWidgetError', () => {
   it('returns true via sourceExecutionId when execution store has matching error', () => {
     const widget = createMockWidget({
       name: 'seed',
-      sourceExecutionId: '65:18'
+      sourceExecutionId: createNodeExecutionId([65, 18])
     })
     executionErrorStore.lastNodeErrors = {
       '65:18': {
@@ -173,7 +181,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -187,7 +195,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -195,10 +203,10 @@ describe('hasWidgetError', () => {
     ).toBe(true)
   })
 
-  it('uses slotName for error matching when present', () => {
+  it('matches errors by the slot name (widget.name) for promoted widgets', () => {
     const widget = createMockWidget({
-      name: 'internal_name',
-      slotName: 'display_slot'
+      name: 'display_slot',
+      sourceWidgetName: 'internal_name'
     })
     const nodeErrors = {
       errors: [{ extra_info: { input_name: 'display_slot' } }]
@@ -206,12 +214,33 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         nodeErrors,
         executionErrorStore,
         missingModelStore
       )
     ).toBe(true)
+  })
+
+  it('matches missing models by the interior source widget name', () => {
+    const widget = createMockWidget({
+      name: 'display_slot',
+      sourceExecutionId: createNodeExecutionId([65, 18]),
+      sourceWidgetName: 'ckpt_name'
+    })
+    const spy = vi
+      .spyOn(missingModelStore, 'isWidgetMissingModel')
+      .mockReturnValue(true)
+    expect(
+      hasWidgetError(
+        widget,
+        createNodeExecutionId([1]),
+        undefined,
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
+    expect(spy).toHaveBeenCalledWith('65:18', 'ckpt_name')
   })
 })
 
@@ -226,13 +255,18 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('does not apply border styling to promoted widgets', () => {
+    const id = widgetId(GRAPH_ID, 'inner-subgraph:1', 'text')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'combo',
+      value: 'a',
+      options: {},
+      label: 'Text'
+    })
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
-      entityId: widgetEntityId(GRAPH_ID, 'inner-subgraph:1', 'text'),
-      slotName: 'text',
-      promotedLabel: 'Text'
+      widgetId: id
     })
 
     const result = computeProcessedWidgets({
@@ -263,8 +297,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
-      entityId: widgetEntityId(GRAPH_ID, 'inner-subgraph:1', 'text'),
-      slotName: 'text'
+      widgetId: widgetId(GRAPH_ID, 'inner-subgraph:1', 'text')
     })
 
     const result = computeProcessedWidgets({
@@ -322,14 +355,92 @@ describe('computeProcessedWidgets borderStyle', () => {
     )
   })
 
+  it('reads widget identity, value, label, and options from widgetId state', () => {
+    const id = widgetId(GRAPH_ID, 'host', 'text')
+    useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, 'host', 'text'), {
+      type: 'combo',
+      value: 'state value',
+      label: 'State Label',
+      options: { values: ['state value'] }
+    })
+    const widget = createMockWidget({
+      widgetId: id,
+      nodeId: 'host',
+      name: 'stale name',
+      type: 'combo',
+      options: { values: ['stale value'] }
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '3',
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result[0]).toMatchObject({
+      widgetId: id,
+      renderKey: `${id}:combo`,
+      value: 'state value',
+      simplified: {
+        name: 'text',
+        value: 'state value',
+        label: 'State Label',
+        options: { values: ['state value'] }
+      }
+    })
+  })
+
+  it('uses widget nodeId for simplified widget locator when present', () => {
+    const widget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: 'inner-node'
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: 'host-node',
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: [],
+        subgraphId: 'subgraph-node'
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result[0].simplified.nodeLocatorId).toBe(
+      createNodeLocatorId('subgraph-node', 'inner-node')
+    )
+  })
   it('deduplication keeps visible widget over hidden duplicate', () => {
-    const sharedEntityId = widgetEntityId(GRAPH_ID, '1', 'text')
+    const sharedWidgetId = widgetId(GRAPH_ID, '1', 'text')
     const hiddenWidget = createMockWidget({
       name: 'text',
       type: 'combo',
       nodeId: '1',
-      entityId: sharedEntityId,
-      slotName: 'text',
+      widgetId: sharedWidgetId,
       options: { hidden: true }
     })
 
@@ -337,8 +448,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: '1',
-      entityId: sharedEntityId,
-      slotName: 'text'
+      widgetId: sharedWidgetId
     })
 
     const result = computeProcessedWidgets({
@@ -399,13 +509,13 @@ describe('computeProcessedWidgets borderStyle', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].name).toBe('color')
-    expect(result[0].renderKey).toBe('node:1:color:color:color')
+    expect(result[0].renderKey).toBe('node:1:color:color')
   })
 })
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const GRAPH_ID = 'graph-test'
-  const NODE_ID = '1'
+  const NODE_ID = 1
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -440,9 +550,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       callback
     })
 
-    useWidgetValueStore().registerWidget(GRAPH_ID, {
-      nodeId: NODE_ID,
-      name: 'seed',
+    useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, NODE_ID, 'seed'), {
       type: 'combo',
       value: 0,
       options: {}
@@ -474,9 +582,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       nodeId: NODE_ID
     })
 
-    useWidgetValueStore().registerWidget(GRAPH_ID, {
-      nodeId: NODE_ID,
-      name: 'seed',
+    useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, NODE_ID, 'seed'), {
       type: 'combo',
       value: 0,
       options: {}
@@ -485,7 +591,9 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const [processed] = processWidgets([widget])
     processed.updateHandler(99)
 
-    const state = useWidgetValueStore().getWidget(GRAPH_ID, NODE_ID, 'seed')
+    const state = useWidgetValueStore().getWidget(
+      widgetId(GRAPH_ID, NODE_ID, 'seed')
+    )
     expect(state?.value).toBe(99)
   })
 
@@ -518,7 +626,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        NODE_ID,
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors[NODE_ID],
         executionErrorStore,
         missingModelStore
@@ -530,7 +638,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        NODE_ID,
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
         missingModelStore

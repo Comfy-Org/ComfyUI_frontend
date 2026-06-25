@@ -1,4 +1,4 @@
-import { workspaceDialogPt } from '@/platform/workspace/components/dialogs/workspaceDialogPt'
+import { workspaceDialogProps } from '@/platform/workspace/components/dialogs/workspaceDialogProps'
 import { useDialogStore } from '@/stores/dialogStore'
 
 export async function showCancelSubscriptionDialog(cancelAt?: string) {
@@ -9,7 +9,7 @@ export async function showCancelSubscriptionDialog(cancelAt?: string) {
     component,
     props: { cancelAt },
     dialogComponentProps: {
-      ...workspaceDialogPt
+      ...workspaceDialogProps
     }
   })
 }

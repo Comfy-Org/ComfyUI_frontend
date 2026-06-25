@@ -1,3 +1,5 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
+
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -6,7 +8,6 @@ import type {
   EditorOutputLayer,
   ImageRef
 } from '@/stores/maskEditorDataStore'
-import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -209,18 +210,11 @@ export function useMaskEditorSaver() {
   }
 
   async function uploadAllLayers(outputData: EditorOutputData): Promise<void> {
-    const sourceRef = dataStore.inputData!.sourceRef
-
-    const actualMaskedRef = await uploadMask(outputData.maskedImage, sourceRef)
-    const actualPaintRef = await uploadImage(outputData.paintLayer, sourceRef)
-    const actualPaintedRef = await uploadImage(
-      outputData.paintedImage,
-      sourceRef
-    )
-
-    const actualPaintedMaskedRef = await uploadMask(
-      outputData.paintedMaskedImage,
-      actualPaintedRef
+    const actualMaskedRef = await uploadLayer(outputData.maskedImage)
+    const actualPaintRef = await uploadLayer(outputData.paintLayer)
+    const actualPaintedRef = await uploadLayer(outputData.paintedImage)
+    const actualPaintedMaskedRef = await uploadLayer(
+      outputData.paintedMaskedImage
     )
 
     outputData.maskedImage.ref = actualMaskedRef
@@ -229,50 +223,10 @@ export function useMaskEditorSaver() {
     outputData.paintedMaskedImage.ref = actualPaintedMaskedRef
   }
 
-  async function uploadMask(
-    layer: EditorOutputLayer,
-    originalRef: ImageRef
-  ): Promise<ImageRef> {
+  async function uploadLayer(layer: EditorOutputLayer): Promise<ImageRef> {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
-    formData.append('original_ref', JSON.stringify(originalRef))
     formData.append('type', 'input')
-    formData.append('subfolder', 'clipspace')
-
-    const response = await api.fetchApi('/upload/mask', {
-      method: 'POST',
-      body: formData
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload mask: ${layer.ref.filename}`)
-    }
-
-    try {
-      const data = await response.json()
-      if (data?.name) {
-        return {
-          filename: data.name,
-          subfolder: data.subfolder || layer.ref.subfolder,
-          type: data.type || layer.ref.type
-        }
-      }
-    } catch (error) {
-      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
-    }
-
-    return layer.ref
-  }
-
-  async function uploadImage(
-    layer: EditorOutputLayer,
-    originalRef: ImageRef
-  ): Promise<ImageRef> {
-    const formData = new FormData()
-    formData.append('image', layer.blob, layer.ref.filename)
-    formData.append('original_ref', JSON.stringify(originalRef))
-    formData.append('type', 'input')
-    formData.append('subfolder', 'clipspace')
 
     const response = await api.fetchApi('/upload/image', {
       method: 'POST',
@@ -280,23 +234,35 @@ export function useMaskEditorSaver() {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to upload image: ${layer.ref.filename}`)
+      const body = await response.text().catch(() => '')
+      throw new Error(
+        `Failed to upload ${layer.ref.filename} (${response.status}${body ? `: ${body}` : ''})`
+      )
     }
 
+    let data: UploadImageResponse
     try {
-      const data = await response.json()
-      if (data?.name) {
-        return {
-          filename: data.name,
-          subfolder: data.subfolder || layer.ref.subfolder,
-          type: data.type || layer.ref.type
-        }
-      }
+      data = await response.json()
     } catch (error) {
-      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
+      throw new Error(
+        `Invalid upload response for ${layer.ref.filename}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        { cause: error }
+      )
     }
 
-    return layer.ref
+    if (!data?.name) {
+      throw new Error(
+        `Upload response missing 'name' for ${layer.ref.filename}`
+      )
+    }
+
+    return {
+      filename: data.name,
+      subfolder: data.subfolder || '',
+      type: data.type || 'input'
+    }
   }
 
   async function updateNodePreview(
@@ -322,19 +288,8 @@ export function useMaskEditorSaver() {
 
     const imageWidget = node.widgets?.find((w) => w.name === 'image')
     if (imageWidget) {
-      // Widget value format differs between Cloud and OSS:
-      // - Cloud: JUST the filename (subfolder handled by backend)
-      // - OSS: subfolder/filename (traditional format)
-      let widgetValue: string
-      if (isCloud) {
-        widgetValue =
-          mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-      } else {
-        widgetValue =
-          (mainRef.subfolder ? mainRef.subfolder + '/' : '') +
-          mainRef.filename +
-          (mainRef.type ? ` [${mainRef.type}]` : '')
-      }
+      const widgetValue =
+        mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
 
       imageWidget.value = widgetValue
 

@@ -1394,7 +1394,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_node',
-      displayTitle: 'Missing Node Packs (1)',
+      displayTitle: 'Missing Node Packs',
       displayMessage: 'Install missing packs to use this workflow.',
       toastTitle: 'Missing node: FooNode',
       toastMessage:
@@ -1410,7 +1410,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_node',
-      displayTitle: 'Unsupported Node Packs (1)',
+      displayTitle: 'Unsupported Node Packs',
       displayMessage:
         "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
       toastTitle: "FooNode isn't available on Cloud",
@@ -1471,7 +1471,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'swap_nodes',
-      displayTitle: 'Swap Nodes (1)',
+      displayTitle: 'Swap Nodes',
       displayMessage: 'Some nodes can be replaced with alternatives',
       toastTitle: 'OldNode can be replaced',
       toastMessage: 'Replace it with NewNode from the error panel.'
@@ -1520,7 +1520,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_model',
-      displayTitle: 'Missing Models (1)',
+      displayTitle: 'Missing Models',
       displayMessage: 'Download a model, or open the node to replace it.',
       toastTitle: 'sdxl.safetensors is missing',
       toastMessage: 'Checkpoint Loader Simple is missing a required model file.'
@@ -1535,7 +1535,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_model',
-      displayTitle: 'Missing Models (1)',
+      displayTitle: 'Missing Models',
       displayMessage: 'Import a model, or open the node to replace it.',
       toastTitle: "sdxl.safetensors isn't available on Cloud",
       toastMessage: "This model isn't supported. Choose a different one."
@@ -1573,7 +1573,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_media',
-      displayTitle: 'Missing Inputs (1)',
+      displayTitle: 'Missing Inputs',
       displayMessage: 'A required media input has no file selected.',
       toastTitle: 'Media input missing',
       toastMessage: 'Load Image is missing a required media file.'
@@ -1707,7 +1707,7 @@ describe('errorMessageResolver', () => {
         isCloud: false
       })
     ).toMatchObject({
-      displayTitle: 'Missing Inputs (2)',
+      displayTitle: 'Missing Inputs',
       toastTitle: 'Missing media inputs',
       toastMessage:
         'Please select the missing media inputs before running this workflow.'

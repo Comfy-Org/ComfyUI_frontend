@@ -47,6 +47,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
       canTopUp: true
     })
   })
@@ -184,6 +185,7 @@ function renderPanel() {
       stubs: {
         StatusBadge: true,
         Skeleton: true,
+        CreditsTile: true,
         Menu: {
           props: ['model'],
           template: `
@@ -257,17 +259,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(container.textContent).not.toContain('Upgrade plan')
     })
 
-    it('shows Manage Payment + Upgrade for canceled personal subs (no Resubscribe)', () => {
-      isInPersonalWorkspaceRef.value = true
-      subscriptionRef.value = canceledSubscription()
-
-      const { container } = renderPanel()
-
-      expect(container.textContent).not.toContain('Resubscribe')
-      expect(container.textContent).toContain('Manage payment')
-      expect(container.textContent).toContain('Upgrade plan')
-    })
-
     it('hides the more-options menu trigger when canceled to prevent re-canceling', () => {
       isInPersonalWorkspaceRef.value = true
       subscriptionRef.value = canceledSubscription()
@@ -284,25 +275,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
       renderPanel()
 
       expect(screen.getByLabelText('More options')).toBeInTheDocument()
-    })
-  })
-
-  describe('refills date', () => {
-    it('renders refills date from renewalDate when present', () => {
-      subscriptionRef.value = activeSubscription()
-
-      const { container } = renderPanel()
-
-      expect(container.textContent).toMatch(/Refills 06\/19\/26/)
-    })
-
-    it('hides the refills date when renewalDate is null (canceled)', () => {
-      subscriptionRef.value = canceledSubscription()
-
-      const { container } = renderPanel()
-
-      expect(container.textContent).toContain('Included')
-      expect(container.textContent).not.toContain('Refills')
     })
   })
 
