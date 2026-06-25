@@ -3,6 +3,7 @@ import type { Locator } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
 import {
   cleanupFakeModel,
   openErrorsTab,
@@ -398,38 +399,45 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         )
         await expect(getModelLabel(missingModelGroup)).toBeVisible()
 
-        await comfyPage.page.evaluate((value) => {
-          const hostNode = window.app!.graph!.getNodeById(2)
-          if (!hostNode?.isSubgraphNode()) {
-            throw new Error('Expected subgraph host node')
-          }
+        await comfyPage.page.evaluate(
+          ({ value, hostNodeId, interiorNodeId }) => {
+            const hostNode = window.app!.graph!.getNodeById(hostNodeId)
+            if (!hostNode?.isSubgraphNode()) {
+              throw new Error('Expected subgraph host node')
+            }
 
-          const interiorNode = hostNode.subgraph.getNodeById(1)
-          const widget = interiorNode?.widgets?.find(
-            (entry) => entry.name === 'ckpt_name'
-          )
-          type SettableWidget = typeof widget & {
-            setValue?: (
-              value: string,
-              options: {
-                e: PointerEvent
-                node: unknown
-                canvas: unknown
-              }
-            ) => void
-          }
-          const settableWidget = widget as SettableWidget | undefined
+            const interiorNode = hostNode.subgraph.getNodeById(interiorNodeId)
+            const widget = interiorNode?.widgets?.find(
+              (entry) => entry.name === 'ckpt_name'
+            )
+            type SettableWidget = typeof widget & {
+              setValue?: (
+                value: string,
+                options: {
+                  e: PointerEvent
+                  node: unknown
+                  canvas: unknown
+                }
+              ) => void
+            }
+            const settableWidget = widget as SettableWidget | undefined
 
-          if (!settableWidget?.setValue) {
-            throw new Error('Expected concrete ckpt_name widget')
-          }
+            if (!settableWidget?.setValue) {
+              throw new Error('Expected concrete ckpt_name widget')
+            }
 
-          settableWidget.setValue(value, {
-            e: new PointerEvent('pointerup'),
-            node: hostNode,
-            canvas: window.app!.canvas
-          })
-        }, resolvedModelName)
+            settableWidget.setValue(value, {
+              e: new PointerEvent('pointerup'),
+              node: hostNode,
+              canvas: window.app!.canvas
+            })
+          },
+          {
+            value: resolvedModelName,
+            hostNodeId: toNodeId(2),
+            interiorNodeId: toNodeId(1)
+          }
+        )
 
         await expect(missingModelGroup).toBeHidden()
       }
