@@ -13,7 +13,10 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-function makePreviewData(priceCents: number): PreviewSubscribeResponse {
+function makePreviewData(
+  priceCents: number,
+  duration: 'MONTHLY' | 'ANNUAL' = 'MONTHLY'
+): PreviewSubscribeResponse {
   return {
     allowed: true,
     transition_type: 'new_subscription',
@@ -26,7 +29,7 @@ function makePreviewData(priceCents: number): PreviewSubscribeResponse {
     new_plan: {
       slug: 'standard-monthly',
       tier: 'STANDARD',
-      duration: 'MONTHLY',
+      duration,
       price_cents: priceCents,
       credits_cents: 0,
       seat_summary: {
@@ -55,11 +58,58 @@ function renderCard() {
   })
 }
 
+function renderTeamCard() {
+  return render(SubscriptionSuccessWorkspace, {
+    props: {
+      teamPlan: {
+        id: 'team_700',
+        usd: 700,
+        credits: 147_700,
+        discountedUsd: 630
+      }
+    },
+    global: {
+      mocks: { $t: (key: string) => key },
+      stubs: {
+        Button: {
+          template: '<button @click="$emit(\'click\')"><slot /></button>'
+        }
+      }
+    }
+  })
+}
+
 describe('SubscriptionSuccessWorkspace', () => {
   it('renders the all-set heading and plan price', () => {
     renderCard()
     expect(screen.getByText('subscription.success.allSet')).toBeTruthy()
     expect(screen.getByText('$16')).toBeTruthy()
+  })
+
+  it('renders the team plan summary from the selected stop', () => {
+    renderTeamCard()
+    expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
+    expect(screen.getByText('$630')).toBeTruthy()
+    expect(screen.getByText(/147700/)).toBeTruthy()
+  })
+
+  it('shows the monthly-equivalent price for an annual personal plan', () => {
+    render(SubscriptionSuccessWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: makePreviewData(33_600, 'ANNUAL')
+      },
+      global: {
+        mocks: { $t: (key: string) => key },
+        stubs: {
+          Button: {
+            template: '<button @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+    expect(screen.getByText('$28')).toBeTruthy()
+    expect(screen.queryByText('$336')).toBeNull()
   })
 
   it('emits close when the close button is clicked', async () => {
