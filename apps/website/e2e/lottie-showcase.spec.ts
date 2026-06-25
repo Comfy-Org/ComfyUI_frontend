@@ -143,25 +143,28 @@ test.describe('ProductShowcase - mobile Lottie layout @mobile', () => {
     page
   }) => {
     const section = await scrollToShowcase(page)
+    // Wait for onMounted hydration: the mobile slot (aspect-video) must appear
+    // before we assert the desktop ink container is gone.
+    await expect(section.locator('div[class*="aspect-video"]').first()).toBeAttached({ timeout: 10_000 })
     // v-if="!isMobile" — the desktop ink container should not exist in the section
     const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]')
     await expect(inkContainer).toHaveCount(0)
   })
 
   test('only one mobile Lottie slot is mounted at a time', async ({ page }) => {
-    await scrollToShowcase(page)
-    // Mobile slots are aspect-video divs; with v-if only the active one exists
-    const mobileSlots = page.locator('div[class*="aspect-video"]')
-    await expect(mobileSlots).toHaveCount(1)
+    const section = await scrollToShowcase(page)
+    // Mobile slots are aspect-video divs inside the showcase section; with v-if only the active one exists
+    const mobileSlots = section.locator('div[class*="aspect-video"]')
+    await expect(mobileSlots).toHaveCount(1, { timeout: 10_000 })
   })
 
   test('switching tab replaces the mobile Lottie slot', async ({ page }) => {
-    await scrollToShowcase(page)
+    const section = await scrollToShowcase(page)
     const secondBtn = page.getByRole('button', { name: /App mode/i }).first()
     await secondBtn.click()
-    // Still only one slot; the previous one was unmounted
-    const mobileSlots = page.locator('div[class*="aspect-video"]')
-    await expect(mobileSlots).toHaveCount(1)
+    // Still only one slot inside the section; the previous one was unmounted
+    const mobileSlots = section.locator('div[class*="aspect-video"]')
+    await expect(mobileSlots).toHaveCount(1, { timeout: 10_000 })
   })
 })
 
