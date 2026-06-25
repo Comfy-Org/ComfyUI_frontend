@@ -172,7 +172,11 @@ function handleDragDrop() {
             variant="primary"
             class="grow"
             size="lg"
-            :aria-describedby="hasAnyError ? runErrorWarningId : undefined"
+            :aria-describedby="
+              hasAnyError && isActiveSubscription
+                ? runErrorWarningId
+                : undefined
+            "
             @click="runButtonClick"
           >
             <i aria-hidden="true" class="icon-[lucide--play]" />
@@ -206,7 +210,9 @@ function handleDragDrop() {
           variant="primary"
           class="mt-4 w-full text-sm"
           size="lg"
-          :aria-describedby="hasAnyError ? runErrorWarningId : undefined"
+          :aria-describedby="
+            hasAnyError && isActiveSubscription ? runErrorWarningId : undefined
+          "
           @click="runButtonClick"
         >
           <i aria-hidden="true" class="icon-[lucide--play]" />
