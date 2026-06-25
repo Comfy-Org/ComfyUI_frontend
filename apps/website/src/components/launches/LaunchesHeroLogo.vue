@@ -24,7 +24,7 @@ const { loaded } = useHeroLogo(logoContainer, {
   tiltX: 0,
   tiltZ: 0,
   cursorTiltStrength: 0,
-  respectReducedMotion: false,
+  respectReducedMotion: true,
   baseUrl: 'https://media.comfy.org/website/image-sequences/full-logo-spin',
   fadeInDurationMs: 400
 })
