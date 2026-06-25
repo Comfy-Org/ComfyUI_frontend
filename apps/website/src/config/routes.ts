@@ -8,7 +8,7 @@ const baseRoutes = {
   cloudEnterprise: '/cloud/enterprise',
   api: '/api',
   gallery: '/gallery',
-  drops: '/drops',
+  drops: '/launches',
   about: '/about',
   careers: '/careers',
   customers: '/customers',

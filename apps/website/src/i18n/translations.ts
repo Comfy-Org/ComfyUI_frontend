@@ -4933,8 +4933,8 @@ const translations = {
   // Drops page (/drops) — head metadata
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'drops.page.title': {
-    en: 'Drops — Everything new in ComfyUI',
-    'zh-CN': 'Drops — ComfyUI 最新动态'
+    en: 'Launches — Everything new in ComfyUI',
+    'zh-CN': 'Launches — ComfyUI 最新动态'
   },
   'drops.page.description': {
     en: 'Explore everything new in Comfy — releases, features, models, and resources across platform, cloud, community, and developer tools.',
@@ -4990,7 +4990,7 @@ const translations = {
   // Drops page (/drops) — drops grid
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'drops.section.title': {
-    en: 'Latest Drops',
+    en: 'Latest Launches',
     'zh-CN': '最新发布'
   }
 } as const satisfies Record<string, Record<Locale, string>>

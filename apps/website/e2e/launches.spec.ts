@@ -7,8 +7,8 @@ import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const PATH_EN = '/drops'
-const PATH_ZH = '/zh-CN/drops'
+const PATH_EN = '/launches'
+const PATH_ZH = '/zh-CN/launches'
 const CLOUD_URL = 'https://cloud.comfy.org'
 
 const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
@@ -43,13 +43,13 @@ function dropsSection(page: Page, locale: Locale) {
   })
 }
 
-test.describe('Drops landing — desktop @smoke', () => {
-  test('renders the configured title at /drops', async ({ page }) => {
+test.describe('Launches landing — desktop @smoke', () => {
+  test('renders the configured title at /launches', async ({ page }) => {
     await page.goto(PATH_EN)
     await expect(page).toHaveTitle(t('drops.page.title', 'en'))
   })
 
-  test('renders the localized title at /zh-CN/drops', async ({ page }) => {
+  test('renders the localized title at /zh-CN/launches', async ({ page }) => {
     await page.goto(PATH_ZH)
     await expect(page).toHaveTitle(t('drops.page.title', 'zh-CN'))
   })
@@ -184,7 +184,7 @@ test.describe('Drops landing — desktop @smoke', () => {
   })
 })
 
-test.describe('Drops landing — mobile @mobile', () => {
+test.describe('Launches landing — mobile @mobile', () => {
   test('drops grid stacks in a single column at mobile width', async ({
     page
   }) => {
