@@ -14,6 +14,15 @@ import { performTeamSubscriptionCheckout } from '@/platform/cloud/subscription/u
 
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 
+function isBillingCycle(value: string): value is BillingCycle {
+  return value === 'monthly' || value === 'yearly'
+}
+
+// Only paid personal tiers can be checked out via this redirect.
+function isCheckoutTierKey(value: string): value is TierKey {
+  return ['standard', 'creator', 'pro', 'founder'].includes(value)
+}
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -65,11 +74,8 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
-  const validCycles: BillingCycle[] = ['monthly', 'yearly']
-  const billingCycle: BillingCycle = (validCycles as string[]).includes(
-    cycleParam
-  )
-    ? (cycleParam as BillingCycle)
+  const billingCycle: BillingCycle = isBillingCycle(cycleParam)
+    ? cycleParam
     : 'monthly'
 
   // Team is a per-credit plan picked on a slider, so it carries a `stop` (the
@@ -92,16 +98,12 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
-  // Only paid personal tiers can be checked out via redirect
-  const validTierKeys: TierKey[] = ['standard', 'creator', 'pro', 'founder']
-  if (!(validTierKeys as string[]).includes(tierKeyParam)) {
+  if (!isCheckoutTierKey(tierKeyParam)) {
     await router.push('/')
     return
   }
 
-  const tierKey = tierKeyParam as TierKey
-
-  selectedTierKey.value = tierKey
+  selectedTierKey.value = tierKeyParam
 
   if (!isInitialized.value) {
     await initialize()
@@ -110,7 +112,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (isActiveSubscription.value) {
     await accessBillingPortal(undefined, false)
   } else {
-    await performSubscriptionCheckout(tierKey, billingCycle, false)
+    await performSubscriptionCheckout(tierKeyParam, billingCycle, false)
   }
 }, reportError)
 

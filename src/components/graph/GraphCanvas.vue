@@ -195,11 +195,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
-import { isCloud } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
-import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
-import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
+import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
 const { t } = useI18n()
 const emit = defineEmits<{
@@ -458,11 +454,7 @@ useEventListener(
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
-const { flags } = useFeatureFlags()
-// Set up URL loaders during setup phase so useRoute/useRouter work correctly
-const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
-const createWorkspaceUrlLoader = isCloud ? useCreateWorkspaceUrlLoader() : null
-const pricingTableUrlLoader = isCloud ? usePricingTableUrlLoader() : null
+const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -571,36 +563,8 @@ onMounted(async () => {
     () => canvasStore.updateSelectedItems()
   )
 
-  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
-  // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
-  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
-    await inviteUrlLoader.loadInviteFromUrl()
-  }
-
-  // Open create workspace dialog from URL if present (e.g., ?create_workspace=1)
-  if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {
-    try {
-      await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
-    } catch (error) {
-      console.error(
-        '[GraphCanvas] Failed to load create workspace from URL:',
-        error
-      )
-    }
-  }
-
-  // Open the pricing table from URL if present (e.g., ?pricing=1 / ?pricing=team).
-  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
-  if (pricingTableUrlLoader) {
-    try {
-      await pricingTableUrlLoader.loadPricingTableFromUrl()
-    } catch (error) {
-      console.error(
-        '[GraphCanvas] Failed to load pricing table from URL:',
-        error
-      )
-    }
-  }
+  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing)
+  await runUrlActionLoaders()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
