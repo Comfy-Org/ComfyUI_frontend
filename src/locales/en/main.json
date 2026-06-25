@@ -2763,7 +2763,7 @@
   "workspacePanel": {
     "invite": "Invite",
     "inviteMember": "Invite member",
-    "inviteLimitReached": "You've reached the maximum of 50 members",
+    "inviteLimitReached": "You've reached the maximum of {count} members",
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
@@ -2773,7 +2773,8 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/{maxSeats} Members",
+      "header": "Members",
+      "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2782,26 +2783,29 @@
       "columns": {
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
-        "joinDate": "Join date"
+        "role": "Role"
       },
       "actions": {
-        "copyLink": "Copy invite link",
-        "revokeInvite": "Revoke invite",
+        "resendInvite": "Resend invite",
+        "cancelInvite": "Cancel invite",
         "removeMember": "Remove member"
       },
-      "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
-      "upsellBannerUpgrade": "Upgrade to the Creator plan or above to invite additional team members.",
-      "viewPlans": "View plans",
+      "upsellBanner": "To add teammates, upgrade your plan.",
+      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
+      "upgradeToTeam": "Upgrade to Team",
+      "reactivateTeam": "Reactivate Team",
+      "needMoreMembers": "Need more members?",
+      "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
-      "createNewWorkspace": "create a new one."
+      "searchPlaceholder": "Search..."
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
-      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
+      "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
       "title": "Edit workspace details",
@@ -2831,26 +2835,18 @@
       "revoke": "Uninvite"
     },
     "inviteUpsellDialog": {
-      "titleNotSubscribed": "A subscription is required to invite members",
+      "titleNotSubscribed": "A Team plan is required to invite members",
       "titleSingleSeat": "Your current plan supports a single seat",
-      "messageNotSubscribed": "To add team members to this workspace, you need a Creator plan or above. The Standard plan supports only a single seat (the owner).",
-      "messageSingleSeat": "The Standard plan includes one seat for the workspace owner. To invite additional members, upgrade to the Creator plan or above to unlock multiple seats.",
-      "viewPlans": "View Plans",
-      "upgradeToCreator": "Upgrade to Creator"
+      "messageNotSubscribed": "To add teammates to this workspace, upgrade to a Team plan.",
+      "messageSingleSeat": "Your current plan includes one seat for the workspace owner. To add teammates, upgrade to a Team plan.",
+      "upgradeToTeam": "Upgrade to Team"
     },
     "inviteMemberDialog": {
-      "title": "Invite a person to this workspace",
-      "message": "Create a shareable invite link to send to someone",
-      "placeholder": "Enter the person's email",
-      "createLink": "Create link",
-      "linkStep": {
-        "title": "Send this link to the person",
-        "message": "Make sure their account uses this email.",
-        "copyLink": "Copy Link",
-        "done": "Done"
-      },
-      "linkCopied": "Copied",
-      "linkCopyFailed": "Failed to copy link"
+      "title": "Invite members to this workspace",
+      "placeholder": "Enter emails separated by commas",
+      "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
+      "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
+      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}"
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
@@ -2877,6 +2873,8 @@
         "title": "Left workspace",
         "message": "You have left the workspace."
       },
+      "inviteResent": "Invite resent",
+      "inviteResendFailed": "Failed to resend invite",
       "failedToUpdateWorkspace": "Failed to update workspace",
       "failedToCreateWorkspace": "Failed to create workspace",
       "failedToDeleteWorkspace": "Failed to delete workspace",
