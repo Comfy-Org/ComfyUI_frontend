@@ -314,11 +314,17 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({ show: mockShowSubscriptionDialog })
+  })
+)
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: mockIsActiveSubscription,
     subscription: mockSubscription,
-    showSubscriptionDialog: mockShowSubscriptionDialog,
     getMaxSeats: (tierKey: string) => {
       const seats: Record<string, number> = {
         free: 1,

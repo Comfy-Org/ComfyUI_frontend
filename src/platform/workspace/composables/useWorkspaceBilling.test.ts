@@ -261,13 +261,15 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isFreeTier.value).toBe(true)
       expect(billing.balance.value?.amountMicros).toBe(0)
 
-      await billing.subscribe('pro', 'return', 'cancel')
+      await billing.subscribe('pro', {
+        returnUrl: 'return',
+        cancelUrl: 'cancel'
+      })
 
-      expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith(
-        'pro',
-        'return',
-        'cancel'
-      )
+      expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith('pro', {
+        returnUrl: 'return',
+        cancelUrl: 'cancel'
+      })
       // State reflects the refreshed post-subscribe responses.
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(billing.isFreeTier.value).toBe(false)
@@ -687,7 +689,7 @@ describe('useWorkspaceBilling', () => {
   })
 
   describe('subscribe argument forwarding', () => {
-    it('forwards undefined for return/cancel URLs when called with planSlug only', async () => {
+    it('forwards undefined options when called with planSlug only', async () => {
       mockWorkspaceApi.subscribe.mockResolvedValue({
         billing_op_id: 'op-x',
         status: 'subscribed'
@@ -698,10 +700,26 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.subscribe('pro')
 
+      expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith('pro', undefined)
+    })
+
+    it('forwards team_credit_stop options to the api', async () => {
+      mockWorkspaceApi.subscribe.mockResolvedValue({
+        billing_op_id: 'op-y',
+        status: 'needs_payment_method'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.subscribe('team_per_credit_annual', {
+        teamCreditStopId: 'team_700',
+        billingCycle: 'yearly'
+      })
+
       expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith(
-        'pro',
-        undefined,
-        undefined
+        'team_per_credit_annual',
+        { teamCreditStopId: 'team_700', billingCycle: 'yearly' }
       )
     })
   })

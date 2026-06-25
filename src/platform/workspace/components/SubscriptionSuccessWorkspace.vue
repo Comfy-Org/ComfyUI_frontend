@@ -3,7 +3,7 @@
     class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
   >
     <div class="flex flex-col items-center gap-4 pt-8">
-      <i class="pi pi-check-circle text-success-foreground text-5xl" />
+      <i class="pi pi-check-circle text-5xl text-success-background" />
       <h2
         class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
       >
@@ -54,13 +54,20 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
-const { tierKey, previewData = null } = defineProps<{
-  tierKey: Exclude<TierKey, 'free' | 'founder'>
+const {
+  tierKey,
+  previewData = null,
+  teamPlan = null
+} = defineProps<{
+  tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
+  teamPlan?: TeamPlanSelection | null
 }>()
 
 defineEmits<{
@@ -69,13 +76,23 @@ defineEmits<{
 
 const { t, n } = useI18n()
 
-const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
-
-const displayPrice = computed(() =>
-  previewData?.new_plan
-    ? (previewData.new_plan.price_cents / 100).toFixed(0)
-    : '0'
+const tierName = computed(() =>
+  teamPlan
+    ? t('subscription.teamPlan.name')
+    : t(`subscription.tiers.${tierKey}.name`)
 )
 
-const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
+const displayPrice = computed(() => {
+  if (teamPlan) return String(teamPlan.discountedUsd)
+  if (!previewData?.new_plan) return '0'
+  const cents = previewData.new_plan.price_cents
+  const monthlyCents = isAnnualDuration(previewData.new_plan.duration)
+    ? cents / 12
+    : cents
+  return (monthlyCents / 100).toFixed(0)
+})
+
+const displayCredits = computed(() =>
+  n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
+)
 </script>
