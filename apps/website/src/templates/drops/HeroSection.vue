@@ -16,17 +16,17 @@ const routes = getRoutes(locale)
     :visual="{
       type: 'video',
       src: 'https://media.comfy.org/website/drops/Drops_hero_rotatinglogo.webm',
-      alt: t('drops.hero.visualAlt', locale),
+      alt: t('launches.hero.visualAlt', locale),
       width: 1760,
       height: 528
     }"
-    :title="t('drops.hero.title', locale)"
+    :title="t('launches.hero.title', locale)"
     :primary-cta="{
-      label: t('drops.hero.primary', locale),
+      label: t('launches.hero.primary', locale),
       href: routes.download
     }"
     :secondary-cta="{
-      label: t('drops.hero.secondary', locale),
+      label: t('launches.hero.secondary', locale),
       href: externalLinks.cloud,
       target: '_blank'
     }"

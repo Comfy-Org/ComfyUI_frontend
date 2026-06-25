@@ -20,7 +20,7 @@ function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 1,
-      name: t('drops.hero.title', locale)
+      name: t('launches.hero.title', locale)
     })
   })
 }
@@ -29,7 +29,7 @@ function ctaSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('drops.cta.heading', locale)
+      name: t('launches.cta.heading', locale)
     })
   })
 }
@@ -38,7 +38,7 @@ function dropsSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('drops.section.title', locale)
+      name: t('launches.section.title', locale)
     })
   })
 }
@@ -46,12 +46,12 @@ function dropsSection(page: Page, locale: Locale) {
 test.describe('Launches landing — desktop @smoke', () => {
   test('renders the configured title at /launches', async ({ page }) => {
     await page.goto(PATH_EN)
-    await expect(page).toHaveTitle(t('drops.page.title', 'en'))
+    await expect(page).toHaveTitle(t('launches.page.title', 'en'))
   })
 
   test('renders the localized title at /zh-CN/launches', async ({ page }) => {
     await page.goto(PATH_ZH)
-    await expect(page).toHaveTitle(t('drops.page.title', 'zh-CN'))
+    await expect(page).toHaveTitle(t('launches.page.title', 'zh-CN'))
   })
 
   test('is indexable at both locales', async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe('Launches landing — desktop @smoke', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: t('drops.hero.title', 'en')
+        name: t('launches.hero.title', 'en')
       })
     ).toBeVisible()
 
@@ -77,7 +77,7 @@ test.describe('Launches landing — desktop @smoke', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: t('drops.hero.title', 'zh-CN')
+        name: t('launches.hero.title', 'zh-CN')
       })
     ).toBeVisible()
   })
@@ -89,7 +89,7 @@ test.describe('Launches landing — desktop @smoke', () => {
     ] as const) {
       await page.goto(path)
       const primary = heroSection(page, locale).getByRole('link', {
-        name: t('drops.hero.primary', locale)
+        name: t('launches.hero.primary', locale)
       })
       await expect(primary).toBeVisible()
       await expect(primary).toHaveAttribute('href', expectedHref)
@@ -102,7 +102,7 @@ test.describe('Launches landing — desktop @smoke', () => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const secondary = heroSection(page, locale).getByRole('link', {
-        name: t('drops.hero.secondary', locale)
+        name: t('launches.hero.secondary', locale)
       })
       await expect(secondary).toBeVisible()
       await expect(secondary).toHaveAttribute('href', CLOUD_URL)
@@ -120,12 +120,12 @@ test.describe('Launches landing — desktop @smoke', () => {
       await expect(
         section.getByRole('heading', {
           level: 2,
-          name: t('drops.cta.heading', locale)
+          name: t('launches.cta.heading', locale)
         })
       ).toBeVisible()
 
       const primary = section.getByRole('link', {
-        name: t('drops.cta.primary', locale)
+        name: t('launches.cta.primary', locale)
       })
       await expect(primary).toBeVisible()
       await expect(primary).toHaveAttribute('href', externalLinks.cloud)
@@ -133,7 +133,7 @@ test.describe('Launches landing — desktop @smoke', () => {
       await expect(primary).toHaveAttribute('rel', 'noopener noreferrer')
 
       const secondary = section.getByRole('link', {
-        name: t('drops.cta.secondary', locale)
+        name: t('launches.cta.secondary', locale)
       })
       await expect(secondary).toBeVisible()
       await expect(secondary).toHaveAttribute('href', externalLinks.workflows)
@@ -152,7 +152,7 @@ test.describe('Launches landing — desktop @smoke', () => {
       await expect(
         section.getByRole('heading', {
           level: 2,
-          name: t('drops.section.title', locale)
+          name: t('launches.section.title', locale)
         })
       ).toBeVisible()
 
@@ -206,7 +206,7 @@ test.describe('Launches landing — mobile @mobile', () => {
     await page.goto(PATH_EN)
     const heading = page.getByRole('heading', {
       level: 2,
-      name: t('drops.cta.heading', 'en')
+      name: t('launches.cta.heading', 'en')
     })
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()

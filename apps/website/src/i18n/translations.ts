@@ -1849,6 +1849,7 @@ const translations = {
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
+  'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
@@ -4930,66 +4931,66 @@ const translations = {
     'zh-CN': '阅读联盟计划条款'
   },
 
-  // Drops page (/drops) — head metadata
+  // Launches page (/launches) — head metadata
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
-  'drops.page.title': {
-    en: 'Launches — Everything new in ComfyUI',
-    'zh-CN': 'Launches — ComfyUI 最新动态'
+  'launches.page.title': {
+    en: 'ComfyUI Live Demo & Q&A — June 29 Launch Livestream',
+    'zh-CN': 'ComfyUI 直播演示与问答 — 6 月 29 日发布直播'
   },
-  'drops.page.description': {
-    en: 'Explore everything new in Comfy — releases, features, models, and resources across platform, cloud, community, and developer tools.',
+  'launches.page.description': {
+    en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',
     'zh-CN':
-      '探索 Comfy 的最新动态 — 涵盖平台、云端、社区和开发者工具的发布、功能、模型和资源。'
+      '6 月 29 日加入 ComfyUI 直播，观看实操产品演示并参与实时问答。了解桌面、云端和社区的最新内容，并获得解答。'
   },
 
-  // Drops page (/drops) — hero section
+  // Launches page (/launches) — hero section
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
-  'drops.hero.title': {
+  'launches.hero.title': {
     en: 'Everything new in ComfyUI',
     'zh-CN': 'ComfyUI 全新内容'
   },
-  'drops.hero.primary': {
+  'launches.hero.primary': {
     en: 'Download Desktop',
     'zh-CN': '下载桌面版'
   },
-  'drops.hero.secondary': {
+  'launches.hero.secondary': {
     en: 'Launch Cloud',
     'zh-CN': '启动云端'
   },
-  'drops.hero.visualAlt': {
+  'launches.hero.visualAlt': {
     en: 'Comfy',
     'zh-CN': 'Comfy'
   },
 
-  // Drops page (/drops) — subscribe banner
+  // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
-  'drops.banner.text': {
+  'launches.banner.text': {
     en: 'Join the live stream. Get answers in real time.',
     'zh-CN': '加入直播，实时获得解答。'
   },
-  'drops.banner.cta': {
-    en: 'Sign up now',
-    'zh-CN': '立即注册'
+  'launches.banner.cta': {
+    en: 'Join livestream',
+    'zh-CN': '加入直播'
   },
 
-  // Drops page (/drops) — closing CTA
+  // Launches page (/launches) — closing CTA
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
-  'drops.cta.heading': {
+  'launches.cta.heading': {
     en: 'Everything Comfy ships. All in one place.',
     'zh-CN': 'Comfy 的全部内容，一处尽享。'
   },
-  'drops.cta.primary': {
+  'launches.cta.primary': {
     en: 'Open Comfy Cloud',
     'zh-CN': '打开 Comfy Cloud'
   },
-  'drops.cta.secondary': {
+  'launches.cta.secondary': {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
   },
 
-  // Drops page (/drops) — drops grid
+  // Launches page (/launches) — launches grid
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
-  'drops.section.title': {
+  'launches.section.title': {
     en: 'Latest Launches',
     'zh-CN': '最新发布'
   }

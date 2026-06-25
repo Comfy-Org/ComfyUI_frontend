@@ -9,7 +9,7 @@ import { livestream } from './livestream'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const signUpHref = 'https://luma.com/l7c5z4gp'
+const signUpHref = `https://www.youtube.com/watch?v=${livestream.youtubeVideoId}`
 
 // Hide once the livestream window closes — both for visitors arriving after
 // the event and for visitors whose tab is open when it ends.
@@ -37,7 +37,9 @@ onUnmounted(() => {
     <div
       class="bg-primary-comfy-plum max-w-8xl rounded-5xl text-primary-warm-white mx-auto flex w-full flex-col items-center justify-center gap-2 px-6 py-5 text-center text-sm sm:flex-row sm:gap-4"
     >
-      <p class="ppformula-text-center">{{ t('drops.banner.text', locale) }}</p>
+      <p class="ppformula-text-center">
+        {{ t('launches.banner.text', locale) }}
+      </p>
       <Button
         :href="signUpHref"
         as="a"
@@ -46,7 +48,7 @@ onUnmounted(() => {
         target="_blank"
         rel="noopener noreferrer"
       >
-        {{ t('drops.banner.cta', locale) }}
+        {{ t('launches.banner.cta', locale) }}
       </Button>
     </div>
   </div>

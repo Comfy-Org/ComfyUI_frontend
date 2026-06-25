@@ -13,7 +13,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <h2
       class="text-primary-warm-white text-3xl font-light tracking-tight lg:text-5xl"
     >
-      {{ t('drops.section.title', locale) }}
+      {{ t('launches.section.title', locale) }}
     </h2>
 
     <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-6 lg:mt-12">

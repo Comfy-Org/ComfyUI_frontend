@@ -10,14 +10,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <CtaCenter01
-    :heading="t('drops.cta.heading', locale)"
+    :heading="t('launches.cta.heading', locale)"
     :primary-cta="{
-      label: t('drops.cta.primary', locale),
+      label: t('launches.cta.primary', locale),
       href: externalLinks.cloud,
       target: '_blank'
     }"
     :secondary-cta="{
-      label: t('drops.cta.secondary', locale),
+      label: t('launches.cta.secondary', locale),
       href: externalLinks.workflows,
       target: '_blank'
     }"
