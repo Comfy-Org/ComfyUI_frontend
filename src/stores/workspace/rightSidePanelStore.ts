@@ -87,6 +87,10 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     highlightGlobalSetting.value = settingName
   }
 
+  function clearHighlight() {
+    highlightGlobalSetting.value = null
+  }
+
   return {
     isOpen,
     activeTab,
@@ -100,6 +104,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     togglePanel,
     focusSection,
     clearFocusedSection,
-    triggerHighlight
+    triggerHighlight,
+    clearHighlight
   }
 })

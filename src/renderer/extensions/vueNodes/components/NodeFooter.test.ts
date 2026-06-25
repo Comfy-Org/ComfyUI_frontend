@@ -319,27 +319,32 @@ describe('NodeFooter', () => {
         deselectAll: deselectAllSpy
       } as unknown as typeof app.canvas
 
-      renderFooter({ showAdvancedInputsButton: true, showAdvancedState: true })
-      const settingStore = (
-        await import('@/platform/settings/settingStore')
-      ).useSettingStore()
-      vi.mocked(settingStore.get).mockImplementation((key) => {
-        if (key === 'Comfy.UseNewMenu') return 'Enabled'
-        return false
-      })
+      try {
+        renderFooter({
+          showAdvancedInputsButton: true,
+          showAdvancedState: true
+        })
+        const settingStore = (
+          await import('@/platform/settings/settingStore')
+        ).useSettingStore()
+        vi.mocked(settingStore.get).mockImplementation((key) => {
+          if (key === 'Comfy.UseNewMenu') return 'Top'
+          return false
+        })
 
-      const rightSidePanelStore = (
-        await import('@/stores/workspace/rightSidePanelStore')
-      ).useRightSidePanelStore()
-      const openPanelSpy = vi.spyOn(rightSidePanelStore, 'openPanel')
+        const rightSidePanelStore = (
+          await import('@/stores/workspace/rightSidePanelStore')
+        ).useRightSidePanelStore()
+        const openPanelSpy = vi.spyOn(rightSidePanelStore, 'openPanel')
 
-      const settingsBtn = screen.getByTestId('advanced-settings-button')
-      await user.click(settingsBtn)
+        const settingsBtn = screen.getByTestId('advanced-settings-button')
+        await user.click(settingsBtn)
 
-      expect(deselectAllSpy).toHaveBeenCalledOnce()
-      expect(openPanelSpy).toHaveBeenCalledWith('settings')
-
-      app.canvas = originalCanvas
+        expect(deselectAllSpy).toHaveBeenCalledOnce()
+        expect(openPanelSpy).toHaveBeenCalledWith('settings')
+      } finally {
+        app.canvas = originalCanvas
+      }
     })
   })
 })

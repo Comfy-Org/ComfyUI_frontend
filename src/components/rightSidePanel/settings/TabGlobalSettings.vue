@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -53,15 +53,13 @@ function triggerHighlightAnimation() {
     }, 900)
   }, 30)
 
-  rightSidePanelStore.highlightGlobalSetting = null
+  rightSidePanelStore.clearHighlight()
 }
 
-if (
-  rightSidePanelStore.highlightGlobalSetting ===
-  'Comfy.Node.AlwaysShowAdvancedWidgets'
-) {
-  triggerHighlightAnimation()
-}
+onScopeDispose(() => {
+  if (highlightTimeout) clearTimeout(highlightTimeout)
+  if (resetTimeout) clearTimeout(resetTimeout)
+})
 
 watch(
   () => rightSidePanelStore.highlightGlobalSetting,
@@ -69,7 +67,8 @@ watch(
     if (newVal === 'Comfy.Node.AlwaysShowAdvancedWidgets') {
       triggerHighlightAnimation()
     }
-  }
+  },
+  { immediate: true }
 )
 
 // NODES settings

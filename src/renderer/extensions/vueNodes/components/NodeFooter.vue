@@ -104,6 +104,7 @@
         v-tooltip.bottom="tooltipConfig"
         variant="textonly"
         data-testid="advanced-settings-button"
+        :aria-label="t('rightSidePanel.advancedWidgetSettings')"
         class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex aspect-square h-full w-8 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface pt-9 pr-1 pb-4"
         :class="[tabStyles, enterRadiusClass]"
         :style="headerColorStyle"
@@ -222,6 +223,7 @@
       v-tooltip.bottom="tooltipConfig"
       variant="textonly"
       data-testid="advanced-settings-button"
+      :aria-label="t('rightSidePanel.advancedWidgetSettings')"
       class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex aspect-square h-full w-10 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface"
       :class="[
         tabStyles,
