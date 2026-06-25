@@ -14,11 +14,7 @@
         :is-small="isSmall"
       />
     </template>
-    <div
-      ref="feedbackRef"
-      data-tf-auto-resize
-      :data-tf-widget="APP_MODE_FEEDBACK_TYPEFORM_ID"
-    />
+    <div ref="feedbackRef" data-tf-auto-resize :data-tf-widget="typeformId" />
   </Popover>
   <SidebarIcon
     v-else
@@ -35,13 +31,13 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 
 import Popover from '@/components/ui/Popover.vue'
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTypeformEmbed } from '@/platform/surveys/useTypeformEmbed'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SidebarIcon from './SidebarIcon.vue'
@@ -61,9 +57,8 @@ const sidebarOnLeft = computed(
 )
 
 const feedbackRef = useTemplateRef<HTMLDivElement>('feedbackRef')
-whenever(feedbackRef, () => {
-  const scriptEl = document.createElement('script')
-  scriptEl.src = '//embed.typeform.com/next/embed.js'
-  feedbackRef.value?.appendChild(scriptEl)
-})
+const { typeformId } = useTypeformEmbed(
+  feedbackRef,
+  APP_MODE_FEEDBACK_TYPEFORM_ID
+)
 </script>
