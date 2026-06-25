@@ -15,23 +15,27 @@
         :key="email"
         :value="email"
         :class="
-          cn(
-            'rounded-full',
-            !EMAIL_REGEX.test(email) && 'bg-danger/20 text-danger'
-          )
+          cn('rounded-full', !isValidEmail(email) && 'bg-danger/20 text-danger')
         "
       >
         <TagsInputItemText />
         <TagsInputItemDelete />
       </TagsInputItem>
       <TagsInputInput
-        auto-focus
+        :auto-focus="autoFocus"
         class="min-w-0 text-sm"
+        :aria-label="placeholder"
+        :aria-describedby="describedBy"
         :placeholder="emails.length === 0 ? placeholder : undefined"
       />
     </TagsInput>
 
-    <p v-if="invalidEmails.length > 0" class="text-danger m-0 text-xs">
+    <p
+      v-if="invalidEmails.length > 0"
+      :id="invalidEmailsHintId"
+      role="alert"
+      class="text-danger m-0 text-xs"
+    >
       {{
         $t(
           'workspacePanel.inviteMemberDialog.invalidEmailCount',
@@ -39,7 +43,12 @@
         )
       }}
     </p>
-    <p v-else-if="isSeatLimitReached" class="m-0 text-xs text-muted-foreground">
+    <p
+      v-if="isAtSeatLimit"
+      :id="seatLimitHintId"
+      aria-live="polite"
+      class="m-0 text-xs text-muted-foreground"
+    >
       {{ $t('workspacePanel.inviteMemberDialog.seatLimitReached', maxSeats) }}
     </p>
 
@@ -63,6 +72,8 @@
         :class="cn(!cancelLabel && 'w-full rounded-lg')"
         :loading
         :disabled="!canSubmit"
+        :aria-busy="loading"
+        :aria-label="loading ? $t('g.loading') : submitLabel"
         @click="onSubmit"
       >
         {{ submitLabel }}
@@ -73,7 +84,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -85,10 +96,13 @@ import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  EMAIL_DELIMITER,
+  isValidEmail,
+  normalizeEmail,
+  sanitizeInviteEmails
+} from '@/platform/workspace/utils/inviteEmails'
 import { cn } from '@comfyorg/tailwind-utils'
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const EMAIL_DELIMITER = /[,\s]+/
 
 const {
   submitLabel,
@@ -96,7 +110,8 @@ const {
   source,
   cancelLabel,
   maxSeats = Number.POSITIVE_INFINITY,
-  showSubmit = true
+  showSubmit = true,
+  autoFocus = false
 } = defineProps<{
   submitLabel: string
   placeholder: string
@@ -106,6 +121,9 @@ const {
   /** Hide the built-in submit row so a parent can place the action elsewhere
    *  (e.g. the team-upgrade success footer); drive it via the exposed submit. */
   showSubmit?: boolean
+  /** Focus the email input on mount. Off by default so an embedding dialog
+   *  keeps control of its own focus order. */
+  autoFocus?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -121,10 +139,13 @@ const workspaceStore = useTeamWorkspaceStore()
 const emails = ref<string[]>([])
 const loading = ref(false)
 
+const invalidEmailsHintId = useId()
+const seatLimitHintId = useId()
+
 const invalidEmails = computed(() =>
-  emails.value.filter((email) => !EMAIL_REGEX.test(email))
+  emails.value.filter((email) => !isValidEmail(email))
 )
-const isSeatLimitReached = computed(() => emails.value.length >= maxSeats)
+const isAtSeatLimit = computed(() => emails.value.length >= maxSeats)
 const canSubmit = computed(
   () =>
     emails.value.length > 0 &&
@@ -132,37 +153,45 @@ const canSubmit = computed(
     invalidEmails.value.length === 0
 )
 
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase()
-}
+const describedBy = computed(() =>
+  [
+    invalidEmails.value.length > 0 ? invalidEmailsHintId : undefined,
+    isAtSeatLimit.value ? seatLimitHintId : undefined
+  ]
+    .filter(Boolean)
+    .join(' ')
+)
 
 function onEmailsUpdate(value: string[]) {
-  const nonEmpty = value.filter((email) => email.length > 0)
-  emails.value =
-    nonEmpty.length > maxSeats ? nonEmpty.slice(0, maxSeats) : nonEmpty
+  emails.value = sanitizeInviteEmails(value, maxSeats)
 }
 
 async function onSubmit() {
-  if (!canSubmit.value || loading.value) return
+  if (loading.value) return
   loading.value = true
+  if (!canSubmit.value) {
+    loading.value = false
+    return
+  }
   try {
-    const submitted = [...emails.value]
+    const emailSnapshot = [...emails.value]
     const results = await Promise.allSettled(
-      submitted.map((email) => workspaceStore.createInvite(email))
+      emailSnapshot.map((email) => workspaceStore.createInvite(email))
     )
-    const failedEmails = submitted.filter(
+    const failedEmails = emailSnapshot.filter(
       (_, index) => results[index].status === 'rejected'
     )
-    const invited = submitted.filter((email) => !failedEmails.includes(email))
+    const invitedCount = emailSnapshot.length - failedEmails.length
 
-    if (invited.length > 0) {
-      telemetry?.trackWorkspaceInviteSent({ source, count: invited.length })
+    if (invitedCount > 0) {
+      telemetry?.trackWorkspaceInviteSent({ source, count: invitedCount })
+      emit(
+        'submitted',
+        emailSnapshot.filter((email) => !failedEmails.includes(email))
+      )
     }
 
-    if (failedEmails.length === 0) {
-      emit('submitted', submitted)
-      return
-    }
+    if (failedEmails.length === 0) return
 
     emails.value = failedEmails
     toast.add({
@@ -170,12 +199,21 @@ async function onSubmit() {
       summary: t(
         'workspacePanel.inviteMemberDialog.failedCount',
         failedEmails.length
-      )
+      ),
+      life: 5000
     })
   } finally {
     loading.value = false
   }
 }
 
-defineExpose({ submit: onSubmit, canSubmit, loading })
+defineExpose({
+  submit: onSubmit,
+  get canSubmit() {
+    return canSubmit.value
+  },
+  get loading() {
+    return loading.value
+  }
+})
 </script>

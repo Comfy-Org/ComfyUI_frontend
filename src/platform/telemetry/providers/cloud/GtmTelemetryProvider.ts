@@ -184,7 +184,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
-    this.pushEvent('workspace_invite_sent', { ...metadata })
+    this.pushEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

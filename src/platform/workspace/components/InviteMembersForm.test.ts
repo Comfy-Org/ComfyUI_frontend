@@ -17,7 +17,7 @@ const { mockCreateInvite, mockToastAdd, mockTrackInviteSent } = vi.hoisted(
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite
+    createInvite: mockCreateInvite as (email: string) => Promise<PendingInvite>
   })
 }))
 
@@ -121,7 +121,7 @@ describe('InviteMembersForm', () => {
     expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
   })
 
-  it('keeps only failed emails as chips and toasts on partial failure', async () => {
+  it('keeps failed emails as chips, toasts, and emits the invited subset on partial failure', async () => {
     mockCreateInvite.mockImplementation(async (email: string) => {
       if (email === 'fail@x.com') throw new Error('nope')
       return pendingInviteFor(email)
@@ -137,11 +137,28 @@ describe('InviteMembersForm', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(emitted().submitted).toBeUndefined()
+    expect(emitted().submitted).toEqual([[['ok@x.com']]])
     expect(mockTrackInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
       count: 1
     })
+  })
+
+  it('keeps all chips, toasts, and emits nothing when every invite fails', async () => {
+    mockCreateInvite.mockRejectedValue(new Error('nope'))
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(emitted().submitted).toBeUndefined()
+    expect(mockTrackInviteSent).not.toHaveBeenCalled()
   })
 
   it('caps the number of chips at maxSeats', async () => {

@@ -40,28 +40,32 @@
         <p class="m-0 text-sm text-muted-foreground">
           {{ $t('subscription.success.inviteSubtext') }}
         </p>
-        <p
-          v-if="invitedEmails.length > 0"
-          class="text-success-foreground m-0 text-sm"
-        >
-          {{
-            $t(
-              'workspacePanel.inviteMemberDialog.invitedMessage',
-              { emails: invitedEmails.join(', ') },
-              invitedEmails.length
-            )
-          }}
-        </p>
-        <InviteMembersForm
-          v-else
-          ref="inviteForm"
-          :show-submit="false"
-          source="post_upgrade_success"
-          :submit-label="$t('subscription.success.sendInvites')"
-          :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
-          :max-seats="invitableSeats"
-          @submitted="onInvited"
-        />
+        <div aria-live="polite">
+          <p
+            v-if="invitedEmails.length > 0"
+            ref="invitedMessage"
+            tabindex="-1"
+            class="text-success-foreground m-0 text-sm"
+          >
+            {{
+              $t(
+                'workspacePanel.inviteMemberDialog.invitedMessage',
+                { emails: invitedEmails.join(', ') },
+                invitedEmails.length
+              )
+            }}
+          </p>
+          <InviteMembersForm
+            v-else
+            ref="inviteForm"
+            :show-submit="false"
+            source="post_upgrade_success"
+            :submit-label="$t('subscription.success.sendInvites')"
+            :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
+            :max-seats="invitableSeats"
+            @submitted="onInvited"
+          />
+        </div>
       </div>
     </div>
 
@@ -90,9 +94,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -100,7 +105,10 @@ import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPric
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import { MAX_WORKSPACE_MEMBERS } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  MAX_WORKSPACE_MEMBERS,
+  useTeamWorkspaceStore
+} from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 
@@ -122,6 +130,8 @@ defineEmits<{
 
 const { t, n } = useI18n()
 const { flags } = useFeatureFlags()
+const { getMaxSeats } = useBillingContext()
+const workspaceStore = useTeamWorkspaceStore()
 
 const tierName = computed(() =>
   teamPlan
@@ -143,23 +153,35 @@ const displayCredits = computed(() =>
   n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
 )
 
-// A team plan caps members at a flat MAX_WORKSPACE_MEMBERS; the buyer already
-// holds one seat post-upgrade, so invites fill the rest.
-const invitableSeats = computed(() => MAX_WORKSPACE_MEMBERS - 1)
+const planSeatCap = computed(() =>
+  tierKey ? getMaxSeats(tierKey) : MAX_WORKSPACE_MEMBERS
+)
+const occupiedSeats = computed(() =>
+  Math.max(
+    1,
+    workspaceStore.members.length + workspaceStore.pendingInvites.length
+  )
+)
+const invitableSeats = computed(() =>
+  Math.max(0, planSeatCap.value - occupiedSeats.value)
+)
 
 const showInviteBlock = computed(() => isTeam && flags.teamWorkspacesEnabled)
 
 const invitedEmails = ref<string[]>([])
+const invitedMessage = ref<HTMLElement>()
 
 const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
 const canSendInvites = computed(() => inviteForm.value?.canSubmit ?? false)
 const isSendingInvites = computed(() => inviteForm.value?.loading ?? false)
 
 function handleSendInvites() {
-  void inviteForm.value?.submit()
+  void inviteForm.value?.submit()?.catch(console.error)
 }
 
-function onInvited(emails: string[]) {
+async function onInvited(emails: string[]) {
   invitedEmails.value = emails
+  await nextTick()
+  invitedMessage.value?.focus()
 }
 </script>

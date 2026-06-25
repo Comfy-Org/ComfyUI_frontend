@@ -14,10 +14,25 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-// Provide just the seat cap so the component import doesn't drag the team store's
-// i18n/app chain into this unit test.
+const { mockMembers, mockPendingInvites } = vi.hoisted(() => ({
+  mockMembers: [] as unknown[],
+  mockPendingInvites: [] as unknown[]
+}))
+
+// Provide just the seat cap + member/invite slots so the component import doesn't
+// drag the team store's i18n/app chain into this unit test.
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  MAX_WORKSPACE_MEMBERS: 30
+  MAX_WORKSPACE_MEMBERS: 30,
+  useTeamWorkspaceStore: () => ({
+    members: mockMembers,
+    pendingInvites: mockPendingInvites
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    getMaxSeats: () => 30
+  })
 }))
 
 const { mockFlags } = vi.hoisted(() => ({
@@ -32,7 +47,9 @@ vi.mock('./InviteMembersForm.vue', () => ({
   default: {
     name: 'InviteMembersForm',
     props: ['maxSeats', 'source', 'submitLabel', 'placeholder'],
-    template: '<div data-testid="invite-form">seats:{{ maxSeats }}</div>'
+    emits: ['submitted'],
+    template:
+      '<div data-testid="invite-form">seats:{{ maxSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
   }
 }))
 
@@ -104,6 +121,8 @@ describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockFlags.teamWorkspacesEnabled = true
+    mockMembers.length = 0
+    mockPendingInvites.length = 0
   })
 
   afterEach(() => {
@@ -177,5 +196,27 @@ describe('SubscriptionSuccessWorkspace', () => {
     mockFlags.teamWorkspacesEnabled = false
     renderTeamCard()
     expect(screen.queryByTestId('invite-form')).toBeNull()
+  })
+
+  it('subtracts existing members and pending invites from invitable seats', () => {
+    mockMembers.push({}, {})
+    mockPendingInvites.push({})
+    renderTeamCard()
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      `seats:${MAX_WORKSPACE_MEMBERS - 3}`
+    )
+  })
+
+  it('swaps the form for the success message once invites are submitted', async () => {
+    renderTeamCard()
+    expect(screen.getByTestId('invite-form')).toBeTruthy()
+
+    await userEvent.click(screen.getByTestId('stub-submit'))
+
+    expect(screen.queryByTestId('invite-form')).toBeNull()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.invitedMessage')
+    ).toBeTruthy()
+    expect(screen.queryByText('subscription.success.sendInvites')).toBeNull()
   })
 })

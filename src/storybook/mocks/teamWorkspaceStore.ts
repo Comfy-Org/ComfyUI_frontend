@@ -1,3 +1,8 @@
+import type {
+  PendingInvite,
+  WorkspaceMember
+} from '../../platform/workspace/stores/teamWorkspaceStore'
+
 /**
  * Storybook mock for `useTeamWorkspaceStore`.
  *
@@ -9,9 +14,12 @@ export const MAX_WORKSPACE_MEMBERS = 50
 
 export function useTeamWorkspaceStore() {
   return {
-    createInvite: async (email: string) => ({
+    members: [] as WorkspaceMember[],
+    pendingInvites: [] as PendingInvite[],
+    createInvite: async (email: string): Promise<PendingInvite> => ({
       id: `inv-${email}`,
       email,
+      token: `token-${email}`,
       inviteDate: new Date(0),
       expiryDate: new Date(0)
     })
