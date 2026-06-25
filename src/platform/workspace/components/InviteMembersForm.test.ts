@@ -45,7 +45,6 @@ function pendingInviteFor(email: string): PendingInvite {
   return {
     id: `inv-${email}`,
     email,
-    token: `token-${email}`,
     inviteDate: new Date(0),
     expiryDate: new Date(0)
   }

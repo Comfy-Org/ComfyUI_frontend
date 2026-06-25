@@ -10,7 +10,7 @@ import type {
  * Storybook. This stub resolves invites locally so the post-upgrade invite
  * block can be exercised without a backend.
  */
-export const MAX_WORKSPACE_MEMBERS = 50
+export const MAX_WORKSPACE_MEMBERS = 30
 
 export function useTeamWorkspaceStore() {
   return {
@@ -19,7 +19,6 @@ export function useTeamWorkspaceStore() {
     createInvite: async (email: string): Promise<PendingInvite> => ({
       id: `inv-${email}`,
       email,
-      token: `token-${email}`,
       inviteDate: new Date(0),
       expiryDate: new Date(0)
     })

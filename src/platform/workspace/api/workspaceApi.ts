@@ -149,6 +149,8 @@ type SubscriptionTransitionType =
 
 interface PreviewSubscribeRequest {
   plan_slug: string
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
 }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
@@ -158,6 +160,7 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
 }
@@ -165,6 +168,11 @@ interface SubscribeRequest {
 export interface SubscribeOptions {
   returnUrl?: string
   cancelUrl?: string
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
+}
+
+export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
 }
@@ -593,12 +601,19 @@ export const workspaceApi = {
    * Preview subscription change
    * POST /api/billing/preview-subscribe
    */
-  async previewSubscribe(planSlug: string): Promise<PreviewSubscribeResponse> {
+  async previewSubscribe(
+    planSlug: string,
+    options: PreviewSubscribeOptions = {}
+  ): Promise<PreviewSubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PreviewSubscribeResponse>(
         api.apiURL('/billing/preview-subscribe'),
-        { plan_slug: planSlug } satisfies PreviewSubscribeRequest,
+        {
+          plan_slug: planSlug,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
+        } satisfies PreviewSubscribeRequest,
         { headers }
       )
       return response.data

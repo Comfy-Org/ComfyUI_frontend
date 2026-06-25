@@ -6,6 +6,7 @@ import type {
   BillingBalanceResponse,
   BillingStatusResponse,
   CreateTopupResponse,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SubscribeOptions,
   SubscribeResponse
@@ -169,12 +170,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function previewSubscribe(
-    planSlug: string
+    planSlug: string,
+    options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.previewSubscribe(planSlug)
+      return await workspaceApi.previewSubscribe(planSlug, options)
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to preview subscription'

@@ -52,11 +52,16 @@ export const TEAM_PLAN_CREDIT_STOPS: readonly CreditStop[] = [
 /** Default stop per DES-197: index 2 = $700 / 147,700 credits. */
 export const DEFAULT_TEAM_PLAN_STOP_INDEX = 2
 
-/** Plan slugs for the per-credit Team plan, keyed by billing cycle. */
-export const TEAM_PLAN_SLUG_BY_CYCLE = {
-  monthly: 'team_per_credit_monthly',
-  yearly: 'team_per_credit_annual'
-} as const
+/**
+ * Per-credit Team plan slug for a billing cadence (cloud catalog). The slug
+ * encodes the cadence; `POST /api/billing/subscribe` reads `plan_slug` +
+ * `team_credit_stop_id` and resolves all amounts server-side from the stop.
+ */
+export function getTeamPlanSlug(billingCycle: 'monthly' | 'yearly'): string {
+  return billingCycle === 'yearly'
+    ? 'team_per_credit_annual'
+    : 'team_per_credit_monthly'
+}
 
 /**
  * Map the backend `team_credit_stops` payload to the slider's `CreditStop[]`.

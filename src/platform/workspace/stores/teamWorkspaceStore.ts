@@ -28,7 +28,6 @@ export interface WorkspaceMember {
 export interface PendingInvite {
   id: string
   email: string
-  token: string
   inviteDate: Date
   expiryDate: Date
 }
@@ -60,7 +59,6 @@ function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
   return {
     id: invite.id,
     email: invite.email,
-    token: invite.token,
     inviteDate: new Date(invite.invited_at),
     expiryDate: new Date(invite.expires_at)
   }
@@ -106,7 +104,7 @@ function setLastWorkspaceId(workspaceId: string): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-export const MAX_WORKSPACE_MEMBERS = 50
+export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
@@ -608,6 +606,40 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
+  const resendingInviteIds = new Set<string>()
+
+  /**
+   * Resend a pending invite by issuing a fresh one before revoking the old.
+   * Create-first so a failed resend never destroys the original invite. If the
+   * revoke fails, the store is resynced (so the leftover original surfaces) and
+   * the error is rethrown so the caller can report the partial failure rather
+   * than show success over two live invites for the same email.
+   */
+  async function resendInvite(inviteId: string): Promise<PendingInvite> {
+    if (resendingInviteIds.has(inviteId)) {
+      throw new Error('Invite resend already in progress')
+    }
+    const invite = activeWorkspace.value?.pendingInvites.find(
+      (i) => i.id === inviteId
+    )
+    if (!invite) {
+      throw new Error('Invite not found')
+    }
+    resendingInviteIds.add(inviteId)
+    try {
+      const newInvite = await createInvite(invite.email)
+      try {
+        await revokeInvite(inviteId)
+      } catch (error) {
+        await fetchPendingInvites()
+        throw error
+      }
+      return newInvite
+    } finally {
+      resendingInviteIds.delete(inviteId)
+    }
+  }
+
   /**
    * Accept a workspace invite.
    * Returns workspace info so UI can offer "View Workspace" button.
@@ -624,44 +656,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       workspaceId: response.workspace_id,
       workspaceName: response.workspace_name
     }
-  }
-
-  function buildInviteLink(token: string): string {
-    const baseUrl = window.location.origin
-    return `${baseUrl}?invite=${encodeURIComponent(token)}`
-  }
-
-  /**
-   * Get the invite link for a pending invite.
-   */
-  function getInviteLink(inviteId: string): string | null {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    return invite ? buildInviteLink(invite.token) : null
-  }
-
-  /**
-   * Create an invite link for a given email.
-   */
-  async function createInviteLink(email: string): Promise<string> {
-    const invite = await createInvite(email)
-    return buildInviteLink(invite.token)
-  }
-
-  /**
-   * Copy an invite link to clipboard.
-   */
-  async function copyInviteLink(inviteId: string): Promise<string> {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    if (!invite) {
-      throw new Error('Invite not found')
-    }
-    const inviteLink = buildInviteLink(invite.token)
-    await navigator.clipboard.writeText(inviteLink)
-    return inviteLink
   }
 
   //TODO: when billing lands update this
@@ -728,10 +722,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     fetchPendingInvites,
     createInvite,
     revokeInvite,
+    resendInvite,
     acceptInvite,
-    getInviteLink,
-    createInviteLink,
-    copyInviteLink,
 
     // Subscription
     subscribeWorkspace,

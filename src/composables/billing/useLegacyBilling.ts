@@ -5,6 +5,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SubscribeOptions,
   SubscribeResponse
@@ -155,7 +156,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function previewSubscribe(
-    _planSlug: string
+    _planSlug: string,
+    _options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
     // Legacy billing doesn't support preview - returns null
     return null

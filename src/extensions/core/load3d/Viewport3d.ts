@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+import { WebGLViewport } from '@/renderer/three/WebGLViewport'
+
 import type { CameraManager } from './CameraManager'
 import type { ControlsManager } from './ControlsManager'
 import type { EventManager } from './EventManager'
@@ -27,8 +29,7 @@ export type Viewport3dDeps = {
   viewHelperManager: ViewHelperManager
 }
 
-export class Viewport3d {
-  renderer: THREE.WebGLRenderer
+export class Viewport3d extends WebGLViewport {
   protected clock: THREE.Clock
   private renderLoop: RenderLoopHandle | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
@@ -52,7 +53,6 @@ export class Viewport3d {
   isViewerMode: boolean = false
 
   private disposeContextMenuGuard: (() => void) | null = null
-  private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
   private externalActiveCamera: THREE.Camera | null = null
   private overlay: SceneOverlay | null = null
@@ -63,6 +63,7 @@ export class Viewport3d {
     deps: Viewport3dDeps,
     options: Load3DOptions = {}
   ) {
+    super(deps.renderer)
     this.clock = new THREE.Clock()
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
@@ -73,7 +74,6 @@ export class Viewport3d {
       this.applyTargetSize(options.width, options.height)
     }
 
-    this.renderer = deps.renderer
     this.eventManager = deps.eventManager
     this.sceneManager = deps.sceneManager
     this.cameraManager = deps.cameraManager
@@ -94,7 +94,7 @@ export class Viewport3d {
     this.STATUS_MOUSE_ON_VIEWER = false
 
     this.initContextMenu()
-    this.initResizeObserver(container)
+    this.observeResize(container, () => this.handleResize())
   }
 
   start(): void {
@@ -116,16 +116,6 @@ export class Viewport3d {
     this.targetWidth = width
     this.targetHeight = height
     this.targetAspectRatio = width / height
-  }
-
-  private initResizeObserver(container: Element | HTMLElement): void {
-    if (typeof ResizeObserver === 'undefined') return
-
-    this.resizeObserver?.disconnect()
-    this.resizeObserver = new ResizeObserver(() => {
-      this.handleResize()
-    })
-    this.resizeObserver.observe(container)
   }
 
   private initContextMenu(): void {
@@ -400,29 +390,15 @@ export class Viewport3d {
       this.initialRenderTimer = null
     }
 
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect()
-      this.resizeObserver = null
-    }
-
     this.disposeContextMenuGuard?.()
     this.disposeContextMenuGuard = null
-
-    this.renderer.forceContextLoss()
-    const canvas = this.renderer.domElement
-    const event = new Event('webglcontextlost', {
-      bubbles: true,
-      cancelable: true
-    })
-    canvas.dispatchEvent(event)
 
     this.renderLoop?.stop()
     this.renderLoop = null
 
     this.disposeManagers()
 
-    this.renderer.dispose()
-    this.renderer.domElement.remove()
+    this.disposeRenderer()
   }
 
   protected disposeManagers(): void {
