@@ -2409,7 +2409,9 @@
     "topupProcessing": "Processing payment — adding credits...",
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
-    "topupTimeout": "Top-up verification timed out"
+    "topupTimeout": "Top-up verification timed out",
+    "cancelFailed": "Failed to cancel subscription",
+    "cancelTimeout": "Subscription cancellation timed out"
   },
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
@@ -2508,6 +2510,13 @@
       "pollingSuccess": "Subscription activated successfully!",
       "pollingFailed": "Subscription activation failed",
       "pollingTimeout": "Timed out waiting for subscription. Please refresh and try again."
+    },
+    "inactive": {
+      "memberTitle": "This workspace's subscription is inactive",
+      "memberDescription": "Ask your workspace owner to reactivate the workspace's subscription to run workflows.",
+      "memberCta": "Ok, got it",
+      "memberRunTooltip": "Contact your workspace owner to resubscribe",
+      "runLabel": "Run"
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
@@ -2701,9 +2710,9 @@
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
-      "message": "Workspaces create a new credit pool that can be shared among members. You'll become the owner after creating this.",
-      "nameLabel": "Workspace name*",
-      "namePlaceholder": "Enter workspace name",
+      "message": "Workspaces keep your projects and files organized. Subscribe to a Team plan to invite members.",
+      "nameLabel": "Workspace name",
+      "namePlaceholder": "Ex: Comfy Org",
       "create": "Create"
     },
     "toast": {
@@ -2749,7 +2758,7 @@
     "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
-    "createWorkspace": "Create new workspace",
+    "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "failedToSwitch": "Failed to switch workspace"
   },
@@ -3625,6 +3634,10 @@
     "hideAdvancedShort": "Hide advanced",
     "errors": "Errors",
     "noErrors": "No errors",
+    "errorsDetected": "Error detected | Errors detected",
+    "resolveBeforeRun": "Resolve before running the workflow",
+    "expand": "Expand",
+    "collapse": "Collapse",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
     "errorLog": "Error log",
     "findOnGithubTooltip": "Search GitHub issues for related problems",
@@ -3671,7 +3684,6 @@
     }
   },
   "errorOverlay": {
-    "errorCount": "{count} ERROR | {count} ERRORS",
     "multipleErrorCount": "{count} error found | {count} errors found",
     "multipleErrorsMessage": "Resolve them before running the workflow.",
     "viewDetails": "View details",
