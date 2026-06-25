@@ -61,7 +61,9 @@ const mqMobile = useMediaQuery('(max-width: 1023px)')
 let stopMqWatch: (() => void) | null = null
 onMounted(() => {
   isMobile.value = mqMobile.value
-  stopMqWatch = watch(mqMobile, (v) => { isMobile.value = v })
+  stopMqWatch = watch(mqMobile, (v) => {
+    isMobile.value = v
+  })
 })
 onBeforeUnmount(() => stopMqWatch?.())
 
@@ -78,10 +80,10 @@ useIntersectionObserver(sectionRef, ([entry]) => {
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />
-      <p class="text-primary-comfy-canvas mt-12 max-w-xl text-sm/relaxed">
+      <p class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle1', locale) }}
       </p>
-      <p class="text-primary-comfy-canvas mt-4 max-w-xl text-sm/relaxed">
+      <p class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle2', locale) }}
       </p>
     </div>
@@ -99,7 +101,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
           "
         >
           <div
-            class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
+            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-primary-comfy-ink"
           >
             <div
               v-for="(feature, i) in features"
@@ -142,7 +144,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               "
             >
               <div
-                class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
+                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
               >
                 <LottieVideoPlayer
                   :src="feature.lottie.src"

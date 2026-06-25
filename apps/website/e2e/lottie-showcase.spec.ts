@@ -64,9 +64,7 @@ test.describe('ProductShowcase - accordion @interaction', () => {
     ).toBeVisible()
     // First item description collapses via grid-rows-[0fr]
     await expect(
-      page
-        .getByText(/Build powerful AI pipelines by connecting nodes/i)
-        .first()
+      page.getByText(/Build powerful AI pipelines by connecting nodes/i).first()
     ).toBeHidden()
   })
 })
@@ -81,9 +79,9 @@ test.describe('ProductShowcase - desktop Lottie layout @interaction', () => {
     await scrollToShowcase(page)
     // The desktop column contains the border-spin container with aspect-ratio
     // class. We match by the unique combination of classes on the outer wrapper.
-    const desktopCol = page.locator(
-      'div[class*="rounded-5xl"][class*="overflow-hidden"]'
-    ).first()
+    const desktopCol = page
+      .locator('div[class*="rounded-5xl"][class*="overflow-hidden"]')
+      .first()
     await expect(desktopCol).toBeAttached()
   })
 

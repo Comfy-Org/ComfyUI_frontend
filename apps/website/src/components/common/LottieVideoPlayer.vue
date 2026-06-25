@@ -27,8 +27,11 @@ const XLINK_NS = 'http://www.w3.org/1999/xlink'
 // On Safari we skip the image→foreignObject swap; the poster covers the static
 // <image> placeholder until the user navigates away.
 const isWebKit =
-  typeof CSS !== 'undefined' && CSS.supports('-webkit-hyphens', 'none') &&
-  !/chrome|crios|fxios/i.test(typeof navigator !== 'undefined' ? navigator.userAgent : '')
+  typeof CSS !== 'undefined' &&
+  CSS.supports('-webkit-hyphens', 'none') &&
+  !/chrome|crios|fxios/i.test(
+    typeof navigator !== 'undefined' ? navigator.userAgent : ''
+  )
 
 const lottieContainer = useTemplateRef<HTMLDivElement>('lottieContainer')
 const assetsLoaded = ref(false)
@@ -229,7 +232,9 @@ onBeforeUnmount(() => {
       :class="
         cn(
           'absolute inset-0 size-full object-cover transition-opacity duration-300',
-          assetsLoaded ? 'pointer-events-none opacity-0' : 'pointer-events-none opacity-100',
+          assetsLoaded
+            ? 'pointer-events-none opacity-0'
+            : 'pointer-events-none opacity-100',
           posterClass
         )
       "
