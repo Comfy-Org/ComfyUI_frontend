@@ -56,6 +56,7 @@ export function useBillingContext(): BillingContext {
     error: ref<string | null>(null),
     isActiveSubscription: computed(() => state.value.isActiveSubscription),
     canRunWorkflows: computed(() => state.value.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(() => false),
     isFreeTier: computed(() => false),
     isLegacyTeamPlan: computed(() => false),
     isTeamPlan: computed(() => state.value.isTeamPlan),

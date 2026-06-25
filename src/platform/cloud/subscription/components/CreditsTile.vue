@@ -250,7 +250,7 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   currentTeamCreditStop,
   fetchBalance,
@@ -352,7 +352,7 @@ const monthlyUsageLabel = computed(() =>
 )
 
 const showBreakdown = computed(
-  () => isActiveSubscription.value && !zeroState && !inactivePlan
+  () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
 )
 const showBar = computed(
   () =>
@@ -362,7 +362,7 @@ const showBar = computed(
 )
 const showActionButton = computed(
   () =>
-    isActiveSubscription.value &&
+    canAccessSubscriptionFeatures.value &&
     !zeroState &&
     !inactivePlan &&
     permissions.value.canTopUp

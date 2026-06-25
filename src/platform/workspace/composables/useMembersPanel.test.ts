@@ -265,7 +265,7 @@ const {
   mockIsInviteLimitReached,
   mockPermissions,
   mockUiConfig,
-  mockIsActiveSubscription,
+  mockCanAccessSubscriptionFeatures,
   mockIsInitialized,
   mockIsTeamPlan,
   mockSubscriptionStatus,
@@ -308,7 +308,7 @@ const {
       workspaceMenuAction: 'delete' as 'delete' | null,
       workspaceMenuDisabledTooltip: null as string | null
     }),
-    mockIsActiveSubscription: ref(true),
+    mockCanAccessSubscriptionFeatures: ref(true),
     mockIsInitialized: ref(true),
     mockIsTeamPlan: ref(true),
     mockSubscriptionStatus: ref<string | null>('active'),
@@ -374,9 +374,7 @@ vi.mock(
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: mockIsActiveSubscription,
-    isInitialized: mockIsInitialized,
-    isTeamPlan: mockIsTeamPlan,
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     subscription: mockSubscription,
     subscriptionStatus: mockSubscriptionStatus,
     getMaxSeats: (tierKey: string) => {
@@ -431,11 +429,7 @@ describe('useMembersPanel', () => {
     mockOriginalOwnerId.value = null
     mockTotalMemberSlots.value = 0
     mockIsInviteLimitReached.value = false
-    mockIsActiveSubscription.value = true
-    mockIsInitialized.value = true
-    mockIsTeamPlan.value = true
-    mockSubscriptionStatus.value = 'active'
-    mockWorkspaceRole.value = 'owner'
+    mockCanAccessSubscriptionFeatures.value = true
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,
@@ -483,7 +477,7 @@ describe('useMembersPanel', () => {
     })
 
     it('is off the team plan when the subscription is inactive', async () => {
-      mockIsActiveSubscription.value = false
+      mockCanAccessSubscriptionFeatures.value = false
       const panel = await setup()
       expect(panel.isOnTeamPlan.value).toBe(false)
     })
