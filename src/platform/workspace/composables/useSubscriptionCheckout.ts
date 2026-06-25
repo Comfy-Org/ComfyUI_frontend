@@ -19,6 +19,19 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
+/**
+ * Which screen the `preview` step shows. Only a change prorates: a team change
+ * carries `previewData` (handleSubscribeTeamClick sets it solely for an immediate
+ * team transition), a personal change is anything other than `new_subscription`;
+ * the rest are display-only fresh-subscribe confirms.
+ */
+type PreviewVariant =
+  | 'team-change'
+  | 'team-new'
+  | 'personal-change'
+  | 'personal-new'
+  | null
+
 export function findPlanSlug(
   plans: Plan[],
   tierKey: CheckoutTierKey,
@@ -59,6 +72,18 @@ export function useSubscriptionCheckout(emit: {
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
   const isTeamCheckout = computed(() => selectedTeamStop.value !== null)
+
+  const previewVariant = computed<PreviewVariant>(() => {
+    if (selectedTeamStop.value) {
+      return previewData.value ? 'team-change' : 'team-new'
+    }
+    if (previewData.value) {
+      return previewData.value.transition_type === 'new_subscription'
+        ? 'personal-new'
+        : 'personal-change'
+    }
+    return null
+  })
 
   function getApiPlanSlug(
     tierKey: CheckoutTierKey,
@@ -307,6 +332,7 @@ export function useSubscriptionCheckout(emit: {
     selectedBillingCycle,
     isPolling,
     isTeamCheckout,
+    previewVariant,
     handleSubscribeClick,
     handleSubscribeTeamClick,
     handleBackToPricing,

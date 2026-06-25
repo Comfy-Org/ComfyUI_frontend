@@ -354,6 +354,83 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('previewVariant', () => {
+    it('is null on the initial pricing step', async () => {
+      const checkout = await setup()
+      expect(checkout.previewVariant.value).toBeNull()
+    })
+
+    it('is personal-new for a fresh personal subscription preview', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription'
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewVariant.value).toBe('personal-new')
+    })
+
+    it('is personal-change for a personal plan transition preview', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade'
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewVariant.value).toBe('personal-change')
+    })
+
+    it('is team-new for a fresh team subscribe (nothing to prorate)', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(checkout.previewVariant.value).toBe('team-new')
+    })
+
+    it('is team-change once an immediate team transition preview resolves', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewVariant.value).toBe('team-change')
+    })
+  })
+
   describe('handleTeamSubscribe', () => {
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
       const checkout = await setup()
