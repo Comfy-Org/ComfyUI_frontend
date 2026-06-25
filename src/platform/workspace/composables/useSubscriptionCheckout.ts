@@ -162,7 +162,7 @@ export function useSubscriptionCheckout(emit: {
 
     if (!payload.isChange || !payload.stop.id) return
     try {
-      const planSlug = TEAM_PLAN_SLUG_BY_CYCLE[payload.billingCycle]
+      const planSlug = getTeamPlanSlug(payload.billingCycle)
       const response = await previewSubscribe(planSlug, {
         teamCreditStopId: payload.stop.id,
         billingCycle: payload.billingCycle
