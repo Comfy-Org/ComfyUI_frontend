@@ -3594,7 +3594,6 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "buildAnApp": "Build an app",
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { storeToRefs } from 'pinia'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -13,11 +12,11 @@ import { useI18n } from 'vue-i18n'
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
+import { useViewModeToggle } from '@/composables/useViewModeToggle'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
-import { useViewModeToggleStore } from '@/stores/viewModeToggleStore'
 
 type ViewMode = 'graph' | 'app'
 
@@ -38,7 +37,7 @@ const { source, align = 'start' } = defineProps<{
 const { t } = useI18n()
 const keybindingStore = useKeybindingStore()
 const dropdownOpen = ref(false)
-const { displayLinearMode } = storeToRefs(useViewModeToggleStore())
+const { displayLinearMode } = useViewModeToggle()
 
 const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
@@ -101,6 +100,13 @@ function switchMode() {
 // pointer event from bubbling up and opening the menu instead of switching.
 function onSegmentPointerDown(seg: ViewModeSegment, e: PointerEvent) {
   if (!seg.active) e.stopPropagation()
+}
+
+// Keyboard mirror of the pointer guard: stop Enter/Space on an inactive segment
+// from bubbling to the trigger. The button's native activation still fires
+// onSegmentClick to switch mode, so the menu stays closed.
+function onSegmentKeydown(seg: ViewModeSegment, e: KeyboardEvent) {
+  if (!seg.active && (e.key === 'Enter' || e.key === ' ')) e.stopPropagation()
 }
 
 function onSegmentClick(seg: ViewModeSegment, e: MouseEvent) {
@@ -170,6 +176,7 @@ const tooltipPt = {
               )
             "
             @pointerdown="onSegmentPointerDown(seg, $event)"
+            @keydown="onSegmentKeydown(seg, $event)"
             @click="onSegmentClick(seg, $event)"
           >
             <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />

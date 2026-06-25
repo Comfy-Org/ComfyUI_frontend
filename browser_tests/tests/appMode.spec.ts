@@ -194,20 +194,40 @@ test.describe('App mode usage', () => {
   test('Toggle segment flips mode without opening the menu', async ({
     comfyPage
   }) => {
-    await expect(comfyPage.page.getByTestId('view-mode-toggle')).toBeVisible()
+    const toggle = comfyPage.page.getByTestId(
+      TestIds.workflowActions.viewModeToggle
+    )
+    await expect(toggle).toBeVisible()
 
     await comfyPage.page.getByRole('button', { name: 'Enter app mode' }).click()
 
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     // The inactive segment switches mode; it must not also open the actions menu.
     await expect(comfyPage.page.getByRole('menu')).toBeHidden()
-    await expect(comfyPage.page.getByTestId('view-mode-toggle')).toBeVisible()
+    await expect(toggle).toBeVisible()
+  })
+
+  test('Toggle segment flips mode via keyboard without opening the menu', async ({
+    comfyPage
+  }) => {
+    const appSegment = comfyPage.page.getByRole('button', {
+      name: 'Enter app mode'
+    })
+    await appSegment.focus()
+    await appSegment.press('Enter')
+
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    // Keyboard activation of the inactive segment must switch mode without the
+    // keydown bubbling to the trigger and opening the actions menu.
+    await expect(comfyPage.page.getByRole('menu')).toBeHidden()
   })
 
   test('Mode toggle returns to app mode after exiting the builder', async ({
     comfyPage
   }) => {
-    const toggle = comfyPage.page.getByTestId('view-mode-toggle')
+    const toggle = comfyPage.page.getByTestId(
+      TestIds.workflowActions.viewModeToggle
+    )
     await comfyPage.appMode.enableLinearMode()
     await expect(toggle).toBeVisible()
 
@@ -221,7 +241,9 @@ test.describe('App mode usage', () => {
   test('Mode toggle survives a sidebar tab remounting the app panel', async ({
     comfyPage
   }) => {
-    const toggle = comfyPage.page.getByTestId('view-mode-toggle')
+    const toggle = comfyPage.page.getByTestId(
+      TestIds.workflowActions.viewModeToggle
+    )
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     await expect(toggle).toBeVisible()
