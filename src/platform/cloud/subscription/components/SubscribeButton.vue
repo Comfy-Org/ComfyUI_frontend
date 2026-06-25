@@ -37,12 +37,12 @@ const emit = defineEmits<{
   subscribed: []
 }>()
 
-const { isActiveSubscription, showSubscriptionDialog, tier } =
+const { canAccessSubscriptionFeatures, showSubscriptionDialog, tier } =
   useBillingContext()
 const isAwaitingStripeSubscription = ref(false)
 
 watch(
-  [isAwaitingStripeSubscription, isActiveSubscription],
+  [isAwaitingStripeSubscription, canAccessSubscriptionFeatures],
   ([awaiting, isActive]) => {
     if (isCloud && awaiting && isActive) {
       emit('subscribed')

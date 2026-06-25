@@ -162,7 +162,7 @@ function isOriginalOwnerByEmail(
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
   const { userEmail } = useCurrentUser()
-  const { isActiveSubscription, subscription } = useBillingContext()
+  const { canAccessSubscriptionFeatures, subscription } = useBillingContext()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
   const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
@@ -222,7 +222,8 @@ function useWorkspaceUIInternal() {
   // their menus can't desync on a billing-flag change.
   const isDeleteDisabled = computed(
     () =>
-      isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
+      canAccessSubscriptionFeatures.value &&
+      !(subscription.value?.isCancelled ?? false)
   )
 
   const deleteDisabledTooltipKey = computed(() =>
@@ -237,7 +238,7 @@ function useWorkspaceUIInternal() {
     workspaceRole,
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isOriginalOwner,
     isTeamPlanCancelled,
     isDeleteDisabled,

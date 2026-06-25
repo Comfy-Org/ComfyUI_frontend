@@ -265,7 +265,7 @@ const {
   mockIsInviteLimitReached,
   mockPermissions,
   mockUiConfig,
-  mockIsActiveSubscription,
+  mockCanAccessSubscriptionFeatures,
   mockSubscription
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
@@ -302,7 +302,7 @@ const {
       workspaceMenuAction: 'delete' as 'leave' | 'delete' | null,
       workspaceMenuDisabledTooltip: null as string | null
     }),
-    mockIsActiveSubscription: ref(true),
+    mockCanAccessSubscriptionFeatures: ref(true),
     mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
       tier: 'PRO',
       isCancelled: false
@@ -364,7 +364,7 @@ vi.mock(
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: mockIsActiveSubscription,
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     subscription: mockSubscription,
     getMaxSeats: (tierKey: string) => {
       const seats: Record<string, number> = {
@@ -405,7 +405,7 @@ describe('useMembersPanel', () => {
     mockIsWorkspaceSubscribed.value = true
     mockTotalMemberSlots.value = 0
     mockIsInviteLimitReached.value = false
-    mockIsActiveSubscription.value = true
+    mockCanAccessSubscriptionFeatures.value = true
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
   })
 

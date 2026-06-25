@@ -92,7 +92,7 @@ export interface BillingState {
   currentTeamCreditStop: ComputedRef<CurrentTeamCreditStop | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
-  isActiveSubscription: ComputedRef<boolean>
+  canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
   /** Coarse funding state (`billing_status`); legacy reports null. */

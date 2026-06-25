@@ -4,11 +4,11 @@ import { nextTick, ref } from 'vue'
 
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
-const mockIsActiveSubscription = ref(true)
+const mockCanAccessSubscriptionFeatures = ref(true)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: mockIsActiveSubscription
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures
   })
 }))
 
@@ -32,7 +32,7 @@ function renderWrapper() {
 
 describe('CloudRunButtonWrapper', () => {
   beforeEach(() => {
-    mockIsActiveSubscription.value = true
+    mockCanAccessSubscriptionFeatures.value = true
   })
 
   it('renders the runnable queue button when the subscription is active', () => {
@@ -45,7 +45,7 @@ describe('CloudRunButtonWrapper', () => {
   })
 
   it('locks the run button when the subscription is inactive', () => {
-    mockIsActiveSubscription.value = false
+    mockCanAccessSubscriptionFeatures.value = false
     renderWrapper()
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
@@ -53,12 +53,12 @@ describe('CloudRunButtonWrapper', () => {
   })
 
   it('unlocks the run button once the subscription becomes active again', async () => {
-    mockIsActiveSubscription.value = false
+    mockCanAccessSubscriptionFeatures.value = false
     renderWrapper()
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
 
-    mockIsActiveSubscription.value = true
+    mockCanAccessSubscriptionFeatures.value = true
     await nextTick()
 
     expect(screen.getByTestId('queue-button')).toBeInTheDocument()

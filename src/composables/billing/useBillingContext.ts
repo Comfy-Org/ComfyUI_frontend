@@ -132,8 +132,8 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentTeamCreditStop)
   )
 
-  const isActiveSubscription = computed(() =>
-    toValue(activeContext.value.isActiveSubscription)
+  const canAccessSubscriptionFeatures = computed(() =>
+    toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
@@ -141,7 +141,7 @@ function useBillingContextInternal(): BillingContext {
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       !isFreeTier.value &&
       currentTeamCreditStop.value === null &&
       (currentPlanSlug.value
@@ -296,7 +296,7 @@ function useBillingContextInternal(): BillingContext {
     currentTeamCreditStop,
     isLoading,
     error,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isFreeTier,
     isLegacyTeamPlan,
     billingStatus,

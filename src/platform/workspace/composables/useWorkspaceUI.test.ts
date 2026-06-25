@@ -41,7 +41,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: ref(mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: ref(mockIsActiveSubscription.value),
     subscription: ref({ isCancelled: mockIsCancelled.value })
   })
 }))

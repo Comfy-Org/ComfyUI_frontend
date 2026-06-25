@@ -26,7 +26,7 @@ export function useBillingContext(): BillingContext {
     currentTeamCreditStop: computed(() => null),
     isLoading: ref(false),
     error: ref<string | null>(null),
-    isActiveSubscription: computed(() => false),
+    canAccessSubscriptionFeatures: computed(() => false),
     isFreeTier: computed(() => false),
     isLegacyTeamPlan: computed(() => false),
     billingStatus: computed(() => null),
