@@ -181,31 +181,28 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
-  // Reinitialize when the workspace or the resolved billing type changes.
-  // type can flip after setup (e.g. when the team-workspaces flag resolves from
-  // authenticated config), which swaps the active backend and needs a fresh init.
+  function resetBillingState() {
+    isInitialized.value = false
+    error.value = null
+  }
+
+  // type can flip after setup when the team-workspaces flag resolves from
+  // authenticated config, swapping the active backend; a fresh init is needed.
+  // The watch fires only when id or type actually changes, so any fire with a
+  // workspace selected warrants a reinit.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
-    async (
-      [newWorkspaceId, newType],
-      [oldWorkspaceId, oldType] = [undefined, undefined]
-    ) => {
+    async ([newWorkspaceId]) => {
       if (!newWorkspaceId) {
-        // No workspace selected - reset state
-        isInitialized.value = false
-        error.value = null
+        resetBillingState()
         return
       }
 
-      if (newWorkspaceId !== oldWorkspaceId || newType !== oldType) {
-        // Workspace or billing type changed - reinitialize
-        isInitialized.value = false
-        try {
-          await initialize()
-        } catch (err) {
-          // Error is already captured in error ref
-          console.error('Failed to initialize billing context:', err)
-        }
+      isInitialized.value = false
+      try {
+        await initialize()
+      } catch (err) {
+        console.error('Failed to initialize billing context:', err)
       }
     },
     { immediate: true }
