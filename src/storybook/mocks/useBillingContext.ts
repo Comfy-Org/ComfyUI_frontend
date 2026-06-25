@@ -33,7 +33,7 @@ export function useBillingContext(): BillingContext {
     subscriptionStatus: computed(() => null),
     tier: computed(() => null),
     renewalDate: computed(() => null),
-    getMaxSeats: () => 1,
+    getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
     initialize: async () => {},
     fetchStatus: async () => {},
     fetchBalance: async () => {},

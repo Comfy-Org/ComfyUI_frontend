@@ -2783,8 +2783,12 @@
     },
     "success": {
       "allSet": "You're all set",
+      "inviteEmailsPlaceholder": "Enter emails separated by commas",
+      "inviteSubtext": "You can also invite people later from Settings",
+      "inviteTitle": "Invite your team",
       "planUpdated": "Your plan has been successfully updated.",
-      "receiptEmailed": "A receipt has been emailed to you."
+      "receiptEmailed": "A receipt has been emailed to you.",
+      "sendInvites": "Send invites"
     }
   },
   "userSettings": {
@@ -2897,7 +2901,8 @@
       "placeholder": "Enter emails separated by commas",
       "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
       "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
-      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}"
+      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
+      "seatLimitReached": "You can invite up to {count} teammate. | You can invite up to {count} teammates."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",

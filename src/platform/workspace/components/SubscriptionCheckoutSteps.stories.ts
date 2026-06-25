@@ -205,3 +205,17 @@ export const SuccessAllSet: Story = {
     template: `${shell}<SubscriptionSuccessWorkspace tier-key="creator" :preview-data="previewData" /></div>`
   })
 }
+
+/**
+ * Team success — "You're all set" with the inline "Invite your team" block
+ * (FE-965 / DES-394). Team-only: gated on a team plan + teamWorkspacesEnabled.
+ */
+export const TeamSuccessWithInvite: Story = {
+  render: () => ({
+    components: { SubscriptionSuccessWorkspace },
+    data: () => ({
+      teamPlan: { usd: 700, credits: 147_700, discountedUsd: 630 }
+    }),
+    template: `${shell}<SubscriptionSuccessWorkspace :team-plan="teamPlan" is-team /></div>`
+  })
+}
