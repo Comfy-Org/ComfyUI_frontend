@@ -463,14 +463,17 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(([toNodeId]) => {
-            const node = window.app!.canvas.graph!.getNodeById(toNodeId(19))
-            if (!node) return null
-            const widget = node.widgets?.find((entry: { name: string }) =>
-              entry.name.includes('seed')
-            )
-            return widget?.label || widget?.name || null
-          }, [toNodeId])
+          comfyPage.page.evaluate(
+            ([toNodeId]) => {
+              const node = window.app!.canvas.graph!.getNodeById(toNodeId(19))
+              if (!node) return null
+              const widget = node.widgets?.find((entry: { name: string }) =>
+                entry.name.includes('seed')
+              )
+              return widget?.label || widget?.name || null
+            },
+            [toNodeId]
+          )
         )
         .toBe(RENAMED_LABEL)
 
