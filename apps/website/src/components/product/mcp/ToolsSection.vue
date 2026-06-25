@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { t } from '../../../i18n/translations'
 import GlassCard from '../../common/GlassCard.vue'
 import SectionHeader from '../../common/SectionHeader.vue'
@@ -40,10 +42,12 @@ const tools = [
       >
         <!-- Text -->
         <div
-          :class="[
-            'order-2 flex flex-col justify-center gap-4 p-6 lg:w-1/2 lg:p-12',
-            i % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
-          ]"
+          :class="
+            cn(
+              'order-2 flex flex-col justify-center gap-4 p-6 lg:w-1/2 lg:p-12',
+              i % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
+            )
+          "
         >
           <h3 class="text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
             {{ t(tool.titleKey, locale) }}
@@ -55,10 +59,9 @@ const tools = [
 
         <!-- Image -->
         <div
-          :class="[
-            'order-1 lg:w-1/2',
-            i % 2 === 0 ? 'lg:order-2' : 'lg:order-1'
-          ]"
+          :class="
+            cn('order-1 lg:w-1/2', i % 2 === 0 ? 'lg:order-2' : 'lg:order-1')
+          "
         >
           <img
             :src="tool.image"

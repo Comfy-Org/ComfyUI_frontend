@@ -1831,7 +1831,7 @@ const translations = {
     'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
   },
   'mcp.hero.subtitle': {
-    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can attend the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
     'zh-CN':
       'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
