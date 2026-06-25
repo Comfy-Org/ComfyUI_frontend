@@ -1227,6 +1227,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true
   },
   {
+    id: 'Comfy.Assets.ModelLibraryAssetView',
+    name: 'Asset-backed model library',
+    type: 'hidden',
+    tooltip:
+      'When enabled, the model library opens the asset browser. When disabled, it opens the sidebar.',
+    defaultValue: isCloud ? true : false,
+    experimental: true
+  },
+  {
     id: 'Comfy.VersionCompatibility.DisableWarnings',
     name: 'Disable version compatibility warnings',
     type: 'hidden',
