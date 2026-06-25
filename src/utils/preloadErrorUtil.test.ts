@@ -119,6 +119,15 @@ describe('isExtensionOriginPreloadError', () => {
     expect(isExtensionOriginPreloadError(error, info)).toBe(true)
   })
 
+  it('detects an extension URL served under a reverse-proxy path prefix', () => {
+    const error = makeError(
+      'Failed to fetch dynamically imported module: https://example.com/comfy/extensions/SomePack/widgets.js'
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(true)
+  })
+
   it('detects an evaluation error thrown inside an extension module via the stack', () => {
     const error = makeError(
       "Cannot read properties of undefined (reading 'SomeExport')",

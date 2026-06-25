@@ -84,7 +84,12 @@ export function parsePreloadError(error: Error): PreloadErrorInfo {
 function isExtensionFileUrl(url: string): boolean {
   try {
     // Base only matters for relative URLs; any origin works.
-    return new URL(url, 'https://localhost').pathname.startsWith('/extensions/')
+    const { pathname } = new URL(url, 'https://localhost')
+    // Self-hosted deployments behind a reverse proxy serve extensions under a
+    // path prefix (e.g. `/comfy/extensions/...`), so match the segment anywhere
+    // rather than anchoring to root, while excluding the dev-server source path.
+    if (pathname.includes('/src/extensions/')) return false
+    return pathname.includes('/extensions/')
   } catch {
     return false
   }
