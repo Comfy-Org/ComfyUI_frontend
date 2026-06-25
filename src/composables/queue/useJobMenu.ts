@@ -6,7 +6,6 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
 import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -83,14 +82,13 @@ export function useJobMenu(
   const cancelJob = async (item?: JobListItem | null) => {
     const target = resolveItem(item)
     if (!target) return
-    if (target.state === 'running' || target.state === 'initialization') {
-      if (isCloud) {
-        await api.deleteItem('queue', target.id)
-      } else {
-        await api.interrupt(target.id)
-      }
-    } else if (target.state === 'pending') {
-      await api.deleteItem('queue', target.id)
+    if (
+      target.state === 'running' ||
+      target.state === 'initialization' ||
+      target.state === 'pending'
+    ) {
+      // State-agnostic cancel (see api.ts cancelJob for the runtime-parity caveat).
+      await api.cancelJob(target.id)
     }
     executionStore.clearInitializationByJobId(target.id)
     await queueStore.update()

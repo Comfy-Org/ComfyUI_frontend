@@ -15,7 +15,6 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { MissingNodeType } from '@/types/comfy'
@@ -121,20 +120,7 @@ export async function runMissingModelPipeline({
     getDirectory
   )
 
-  const modelStore = useModelStore()
-  await modelStore.loadModelFolders()
-  const enrichedAll = await enrichWithEmbeddedMetadata(
-    candidates,
-    graphData,
-    async (name, directory) => {
-      const folder = await modelStore.getLoadedModelFolder(directory)
-      const models = folder?.models
-      return !!(
-        models && Object.values(models).some((m) => m.file_name === name)
-      )
-    },
-    isCloud ? isAssetBrowserWidget : undefined
-  )
+  const enrichedAll = enrichWithEmbeddedMetadata(candidates, graphData)
 
   // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
   // scans only checked each node's own mode; the cascade from an

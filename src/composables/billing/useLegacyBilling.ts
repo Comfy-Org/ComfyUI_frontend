@@ -93,6 +93,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
   // Legacy billing doesn't have workspace-style plans
   const plans = computed(() => [])
   const currentPlanSlug = computed(() => null)
+  const teamCreditStops = computed(() => null)
+  const currentTeamCreditStop = computed(() => null)
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -200,6 +202,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,

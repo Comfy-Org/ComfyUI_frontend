@@ -26,6 +26,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 vi.mock('@/extensions/core/load3d', () => ({}))
+vi.mock('@/extensions/core/load3dAdvanced', () => ({}))
 vi.mock('@/extensions/core/load3dPreviewExtensions', () => ({}))
 vi.mock('@/extensions/core/saveMesh', () => ({}))
 
