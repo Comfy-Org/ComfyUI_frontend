@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
@@ -17,10 +18,12 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
  * The credits tile only lives inside the authenticated cloud app, which the
  * shared `comfyPage` fixture can't boot (it expects the OSS devtools backend).
  * Instead this drives a raw page: mock Firebase auth + every boot endpoint so
- * the cloud app initializes against fully stubbed data, with a single personal
- * workspace that routes the billing facade through the legacy `/customers/*`
- * endpoints (mocked with an active Pro subscription). The tile should then
- * render its total / progress bar / monthly+additional breakdown / add-credits.
+ * the cloud app initializes against fully stubbed data. With team workspaces
+ * enabled the facade routes a personal workspace through the workspace
+ * `/api/billing/*` endpoints (mocked with an active Pro subscription); the
+ * legacy `/customers/*` shapes are mocked too for the flag-off path. The tile
+ * should then render its total / progress bar / monthly+additional breakdown /
+ * add-credits.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -29,6 +32,32 @@ const jsonRoute = (body: unknown) => ({
   contentType: 'application/json',
   body: JSON.stringify(body)
 })
+
+// Legacy `/customers/balance` and workspace `/api/billing/balance` share the
+// same response shape, so one body fulfills both endpoints.
+const balanceRoute = (balance: {
+  amount: number
+  monthly: number
+  prepaid: number
+}) =>
+  jsonRoute({
+    amount_micros: balance.amount,
+    currency: 'usd',
+    effective_balance_micros: balance.amount,
+    cloud_credit_balance_micros: balance.monthly,
+    prepaid_balance_micros: balance.prepaid
+  })
+
+// 6000 -> 12,660 total; 5000 -> 10,550 monthly remaining; 1000 -> 2,110 extra.
+const DEFAULT_BALANCE = { amount: 6000, monthly: 5000, prepaid: 1000 }
+
+const mockBillingStatus: BillingStatusResponse = {
+  is_active: true,
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  renewal_date: '2099-02-20T12:00:00Z',
+  has_funds: true
+}
 
 async function mockCloudBoot(page: Page) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
@@ -70,8 +99,7 @@ async function mockCloudBoot(page: Page) {
   )
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
-  // Workspace list — a single personal workspace keeps the billing facade on
-  // the legacy `/customers/*` path.
+  // Single personal workspace.
   await page.route('**/api/workspaces', (r) =>
     r.fulfill(
       jsonRoute({
@@ -87,7 +115,7 @@ async function mockCloudBoot(page: Page) {
     )
   )
 
-  // Legacy billing (api.comfy.org/customers/*).
+  // Legacy billing (flag-off path, api.comfy.org/customers/*).
   await page.route('**/customers/cloud-subscription-status', (r) =>
     r.fulfill(
       jsonRoute({
@@ -100,15 +128,19 @@ async function mockCloudBoot(page: Page) {
     )
   )
   await page.route('**/customers/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: 6000, // -> 12,660 total credits
-        currency: 'usd',
-        effective_balance_micros: 6000,
-        cloud_credit_balance_micros: 5000, // -> 10,550 monthly remaining
-        prepaid_balance_micros: 1000 // -> 2,110 additional
-      })
-    )
+    r.fulfill(balanceRoute(DEFAULT_BALANCE))
+  )
+
+  // Workspace billing (flag-on path) — a personal workspace now routes through
+  // `/api/billing/*`.
+  await page.route('**/api/billing/status', (r) =>
+    r.fulfill(jsonRoute(mockBillingStatus))
+  )
+  await page.route('**/api/billing/balance', (r) =>
+    r.fulfill(balanceRoute(DEFAULT_BALANCE))
+  )
+  await page.route('**/api/billing/plans', (r) =>
+    r.fulfill(jsonRoute({ plans: [] }))
   )
 }
 
@@ -117,16 +149,12 @@ async function mockBalance(
   balance: { amount: number; monthly: number; prepaid: number }
 ) {
   await page.unroute('**/customers/balance')
+  await page.unroute('**/api/billing/balance')
   await page.route('**/customers/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: balance.amount,
-        currency: 'usd',
-        effective_balance_micros: balance.amount,
-        cloud_credit_balance_micros: balance.monthly,
-        prepaid_balance_micros: balance.prepaid
-      })
-    )
+    r.fulfill(balanceRoute(balance))
+  )
+  await page.route('**/api/billing/balance', (r) =>
+    r.fulfill(balanceRoute(balance))
   )
 }
 

@@ -212,6 +212,27 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER }
       )
     })
+
+    it('updateMemberRole() sends PATCH /workspace/members/:userId with the role', async () => {
+      const updated = {
+        id: 'user-42',
+        name: 'Jane',
+        email: 'jane@test.comfy.org',
+        joined_at: '2025-01-03T00:00:00Z',
+        role: 'owner',
+        is_original_owner: false
+      }
+      mockAxiosInstance.patch.mockResolvedValue({ data: updated })
+
+      const result = await workspaceApi.updateMemberRole('user-42', 'owner')
+
+      expect(mockAxiosInstance.patch).toHaveBeenCalledWith(
+        '/api/workspace/members/user-42',
+        { role: 'owner' },
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(updated)
+    })
   })
 
   describe('invite management', () => {
