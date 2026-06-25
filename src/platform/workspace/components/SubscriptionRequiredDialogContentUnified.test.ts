@@ -22,6 +22,7 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     selectedBillingCycle: ref('yearly'),
     isPolling: ref(false),
     isTeamCheckout: computed(() => false),
+    previewVariant: computed(() => null),
     handleSubscribeClick: vi.fn(),
     handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
     handleBackToPricing: vi.fn(),

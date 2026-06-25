@@ -19,6 +19,19 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
+/**
+ * Which screen the `preview` step shows. Only a change prorates: a team change
+ * carries `previewData` (handleSubscribeTeamClick sets it solely for an immediate
+ * team transition), a personal change is anything other than `new_subscription`;
+ * the rest are display-only fresh-subscribe confirms.
+ */
+type PreviewVariant =
+  | 'team-change'
+  | 'team-new'
+  | 'personal-change'
+  | 'personal-new'
+  | null
+
 export function findPlanSlug(
   plans: Plan[],
   tierKey: CheckoutTierKey,
@@ -59,6 +72,18 @@ export function useSubscriptionCheckout(emit: {
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
   const isTeamCheckout = computed(() => selectedTeamStop.value !== null)
+
+  const previewVariant = computed<PreviewVariant>(() => {
+    if (selectedTeamStop.value) {
+      return previewData.value ? 'team-change' : 'team-new'
+    }
+    if (previewData.value) {
+      return previewData.value.transition_type === 'new_subscription'
+        ? 'personal-new'
+        : 'personal-change'
+    }
+    return null
+  })
 
   function getApiPlanSlug(
     tierKey: CheckoutTierKey,
@@ -118,18 +143,40 @@ export function useSubscriptionCheckout(emit: {
   }
 
   /**
-   * Team-plan checkout entry: show the display-only "Confirm your payment" step
-   * for the selected slider stop, then subscribe via `handleTeamSubscription`.
+   * Team-plan checkout entry. A fresh subscribe has nothing to prorate and shows
+   * the display-only "Confirm your payment" step. An existing subscriber changing
+   * their credit commitment gets a prorated transition preview when the backend
+   * can describe it; until `preview-subscribe` accepts a team stop the attempt
+   * falls back to the same display-only step.
    */
-  function handleSubscribeTeamClick(payload: {
+  async function handleSubscribeTeamClick(payload: {
     stop: TeamPlanSelection
     billingCycle: BillingCycle
+    isChange?: boolean
   }) {
     selectedTeamStop.value = payload.stop
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
     previewData.value = null
     checkoutStep.value = 'preview'
+
+    if (!payload.isChange || !payload.stop.id) return
+    try {
+      const planSlug = TEAM_PLAN_SLUG_BY_CYCLE[payload.billingCycle]
+      const response = await previewSubscribe(planSlug, {
+        teamCreditStopId: payload.stop.id,
+        billingCycle: payload.billingCycle
+      })
+      if (
+        response?.allowed &&
+        response.is_immediate &&
+        response.transition_type !== 'new_subscription'
+      ) {
+        previewData.value = response
+      }
+    } catch {
+      // Preview is best-effort; keep the display-only confirm on any failure.
+    }
   }
 
   function handleBackToPricing() {
@@ -285,6 +332,7 @@ export function useSubscriptionCheckout(emit: {
     selectedBillingCycle,
     isPolling,
     isTeamCheckout,
+    previewVariant,
     handleSubscribeClick,
     handleSubscribeTeamClick,
     handleBackToPricing,

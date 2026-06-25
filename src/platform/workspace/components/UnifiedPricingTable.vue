@@ -457,7 +457,12 @@ const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
   resubscribe: []
   subscribeTeam: [
-    payload: { stop: TeamPlanSelection; billingCycle: BillingCycle }
+    payload: {
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+      /** See `isTeamPlanChange`. */
+      isChange: boolean
+    }
   ]
 }>()
 
@@ -723,6 +728,13 @@ const isTeamButtonDisabled = computed(
       !isCancelled.value)
 )
 
+// A subscriber moving off their current plan is a prorated change rather than a
+// fresh subscribe; re-subscribe and the locked current plan exit before the
+// change emit, so this drives the prorated transition preview.
+const isTeamPlanChange = computed(
+  () => isTeamSubscribed.value && !isTeamCurrentPlanSelected.value
+)
+
 onMounted(() => {
   void fetchPlans()
 })
@@ -853,7 +865,8 @@ function handleSubscribeTeam() {
         currentBillingCycle.value
       )
     },
-    billingCycle: currentBillingCycle.value
+    billingCycle: currentBillingCycle.value,
+    isChange: isTeamPlanChange.value
   })
 }
 

@@ -148,6 +148,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
@@ -156,9 +157,16 @@ import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
 type PersonalTierKey = 'standard' | 'creator' | 'pro'
 
-const { previewData, isLoading = false } = defineProps<{
+const {
+  previewData,
+  isLoading = false,
+  teamPlan = null
+} = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
+  /** Set for a team credit-commit change: plan name + refill credits come from
+   *  the selected slider stop; all proration money stays driven by previewData. */
+  teamPlan?: TeamPlanSelection | null
 }>()
 
 defineEmits<{
@@ -209,7 +217,11 @@ const isCadenceChange = computed(
     previewData.current_plan.duration !== previewData.new_plan.duration
 )
 
-const newTierName = computed(() => formatTierName(previewData.new_plan.tier))
+const newTierName = computed(() =>
+  teamPlan
+    ? t('subscription.teamPlan.name')
+    : formatTierName(previewData.new_plan.tier)
+)
 const currentTierName = computed(() =>
   previewData.current_plan ? formatTierName(previewData.current_plan.tier) : ''
 )
@@ -242,18 +254,21 @@ const subscriptionLineLabel = computed(() =>
     ? t('subscription.preview.yearlySubscription')
     : t('subscription.preview.newMonthlySubscription')
 )
-const creditFromPlanLabel = computed(() =>
-  isCadenceChange.value
+const creditFromPlanLabel = computed(() => {
+  if (teamPlan) return t('subscription.preview.commitment')
+  return isCadenceChange.value
     ? t('subscription.preview.currentMonthly')
     : currentTierName.value
-)
+})
 
 const refillCredits = computed(() => {
-  const monthly = tierMonthlyCredits(previewData.new_plan.tier)
+  const monthly = teamPlan
+    ? teamPlan.credits
+    : tierMonthlyCredits(previewData.new_plan.tier)
   return n(newIsYearly.value ? monthly * 12 : monthly)
 })
 const monthlyRefillCredits = computed(() =>
-  n(tierMonthlyCredits(previewData.new_plan.tier))
+  n(teamPlan ? teamPlan.credits : tierMonthlyCredits(previewData.new_plan.tier))
 )
 const refillLabel = computed(() =>
   newIsYearly.value

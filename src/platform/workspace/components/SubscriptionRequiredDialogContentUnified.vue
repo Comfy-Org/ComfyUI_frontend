@@ -59,9 +59,26 @@
     />
 
     <template v-if="checkoutStep === 'preview'">
-      <!-- New Subscription -->
+      <SubscriptionTransitionPreviewWorkspace
+        v-if="previewVariant === 'team-change'"
+        :preview-data="previewData!"
+        :team-plan="selectedTeamStop!"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleTeamSubscribe"
+        @back="handleBackToPricing"
+      />
+
       <SubscriptionAddPaymentPreviewWorkspace
-        v-if="previewData && previewData.transition_type === 'new_subscription'"
+        v-else-if="previewVariant === 'team-new'"
+        :team-plan="selectedTeamStop!"
+        :billing-cycle="selectedBillingCycle"
+        :is-loading="isSubscribing || isPolling"
+        @add-credit-card="handleTeamSubscribe"
+        @back="handleBackToPricing"
+      />
+
+      <SubscriptionAddPaymentPreviewWorkspace
+        v-else-if="previewVariant === 'personal-new'"
         :preview-data="previewData"
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
@@ -70,25 +87,11 @@
         @back="handleBackToPricing"
       />
 
-      <!-- Plan Transition -->
       <SubscriptionTransitionPreviewWorkspace
-        v-else-if="
-          previewData && previewData.transition_type !== 'new_subscription'
-        "
-        :preview-data="previewData"
+        v-else-if="previewVariant === 'personal-change'"
+        :preview-data="previewData!"
         :is-loading="isSubscribing || isPolling"
         @confirm="handleConfirmTransition"
-        @back="handleBackToPricing"
-      />
-
-      <!-- Team (display-only confirm; the slider stop and active billing cycle
-           drive the real subscribe). -->
-      <SubscriptionAddPaymentPreviewWorkspace
-        v-else-if="selectedTeamStop"
-        :team-plan="selectedTeamStop"
-        :billing-cycle="selectedBillingCycle"
-        :is-loading="isSubscribing || isPolling"
-        @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
     </template>
@@ -139,6 +142,7 @@ const {
   selectedBillingCycle,
   isPolling,
   isTeamCheckout,
+  previewVariant,
   handleSubscribeClick,
   handleSubscribeTeamClick,
   handleBackToPricing,

@@ -163,7 +163,8 @@ describe('UnifiedPricingTable team plan CTA', () => {
     const cta = screen.getByRole('button', { name: 'Change plan' })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    expect(emitted().subscribeTeam).toBeTruthy()
+    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    expect(teamPayload).toMatchObject({ isChange: true })
   })
 
   it('lets an active sub change billing cycle at the current stop', async () => {
@@ -182,7 +183,8 @@ describe('UnifiedPricingTable team plan CTA', () => {
     const cta = screen.getByRole('button', { name: 'Change plan' })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    expect(emitted().subscribeTeam).toBeTruthy()
+    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    expect(teamPayload).toMatchObject({ isChange: true })
     expect(emitted().resubscribe).toBeFalsy()
   })
 

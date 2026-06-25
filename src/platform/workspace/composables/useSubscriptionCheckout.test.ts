@@ -249,7 +249,7 @@ describe('useSubscriptionCheckout', () => {
     it('transitions to preview with the selected team stop and cycle', async () => {
       const checkout = await setup()
 
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
         billingCycle: 'yearly'
       })
@@ -265,12 +265,176 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toBeNull()
       expect(checkout.selectedTierKey.value).toBeNull()
     })
+
+    it('previews a prorated transition when an existing subscriber changes stop', async () => {
+      const checkout = await setup()
+      const transition = {
+        allowed: true,
+        transition_type: 'upgrade' as const,
+        is_immediate: true,
+        cost_today_cents: 105_000
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(transition)
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        { teamCreditStopId: 'team_1400', billingCycle: 'monthly' }
+      )
+      expect(checkout.previewData.value).toStrictEqual(transition)
+    })
+
+    it('falls back to the display-only confirm when the preview is a fresh subscription', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+    })
+
+    it('falls back to the display-only confirm when the preview request fails', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+      expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('does not preview a fresh team subscribe (nothing to prorate)', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(checkout.previewData.value).toBeNull()
+    })
+  })
+
+  describe('previewVariant', () => {
+    it('is null on the initial pricing step', async () => {
+      const checkout = await setup()
+      expect(checkout.previewVariant.value).toBeNull()
+    })
+
+    it('is personal-new for a fresh personal subscription preview', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription'
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewVariant.value).toBe('personal-new')
+    })
+
+    it('is personal-change for a personal plan transition preview', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade'
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewVariant.value).toBe('personal-change')
+    })
+
+    it('is team-new for a fresh team subscribe (nothing to prorate)', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(checkout.previewVariant.value).toBe('team-new')
+    })
+
+    it('is team-change once an immediate team transition preview resolves', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewVariant.value).toBe('team-change')
+    })
   })
 
   describe('handleTeamSubscribe', () => {
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -299,7 +463,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('uses the annual plan slug for the yearly cycle', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -328,7 +492,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('opens the payment URL when the team subscribe needs a payment method', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -355,7 +519,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not subscribe and shows an error when the stop has no id', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: { usd: 700, credits: 147_700, discountedUsd: 630 },
         billingCycle: 'yearly'
       })
@@ -370,7 +534,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('shows an error toast when the team subscribe fails', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -406,7 +570,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('clears the selected team stop', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
         billingCycle: 'yearly'
       })

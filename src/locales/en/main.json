@@ -2748,6 +2748,7 @@
       "newMonthlySubscription": "New monthly subscription",
       "creditFromCurrent": "Credit from current {plan}",
       "currentMonthly": "monthly plan",
+      "commitment": "commitment",
       "creditsYoullGetToday": "Credits you'll get today",
       "refillReplacesNote": "Replaces your monthly refill. Existing balance is kept.",
       "afterThat": "After that",

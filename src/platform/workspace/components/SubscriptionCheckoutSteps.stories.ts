@@ -97,6 +97,38 @@ export const ConfirmTeamSubscription: Story = {
   })
 }
 
+/**
+ * Team credit-commit change — team_700 → team_1400 monthly (prorated). Plan name
+ * and refill credits come from the slider stop; the proration money is driven by
+ * previewData (cost_today_cents).
+ */
+export const ChangeTeamCreditCommit: Story = {
+  render: () => ({
+    components: { SubscriptionTransitionPreviewWorkspace },
+    data: () => ({
+      teamPlan: {
+        id: 'team_1400',
+        usd: 1400,
+        credits: 295_400,
+        discountedUsd: 1295
+      },
+      previewData: {
+        allowed: true,
+        transition_type: 'upgrade',
+        effective_at: TODAY,
+        is_immediate: true,
+        cost_today_cents: 105_000,
+        cost_next_period_cents: 140_000,
+        credits_today_cents: 0,
+        credits_next_period_cents: 0,
+        current_plan: plan('PRO', 'MONTHLY', 70_000, NEXT_YEAR),
+        new_plan: plan('PRO', 'MONTHLY', 140_000, NEXT_YEAR)
+      } satisfies PreviewSubscribeResponse
+    }),
+    template: `${shell}<SubscriptionTransitionPreviewWorkspace :team-plan="teamPlan" :preview-data="previewData" /></div>`
+  })
+}
+
 /** Immediate upgrade — Creator monthly → yearly (cadence change, prorated). */
 export const UpgradeCadenceYearly: Story = transitionStory({
   allowed: true,
