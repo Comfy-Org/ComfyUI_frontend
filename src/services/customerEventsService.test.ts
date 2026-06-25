@@ -8,7 +8,8 @@ import {
 
 // Hoist the mocks to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({
-  get: vi.fn()
+  get: vi.fn(),
+  interceptors: { response: { use: vi.fn() } }
 }))
 
 const mockAuthStore = vi.hoisted(() => ({

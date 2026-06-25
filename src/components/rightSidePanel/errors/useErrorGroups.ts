@@ -130,7 +130,6 @@ function createErrorCard(
     nodeId,
     nodeTitle: nodeInfo.title,
     graphNodeId: nodeInfo.graphNodeId,
-    isSubgraphNode: nodeId.includes(':'),
     errors: []
   }
 }

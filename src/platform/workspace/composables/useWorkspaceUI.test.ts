@@ -97,7 +97,7 @@ describe('useWorkspaceUI', () => {
         canViewPendingInvites: false,
         canInviteMembers: false,
         canManageInvites: false,
-        canRemoveMembers: false,
+        canManageMembers: false,
         canLeaveWorkspace: false,
         canAccessWorkspaceMenu: false
       })
@@ -110,8 +110,7 @@ describe('useWorkspaceUI', () => {
         showMembersList: false,
         showPendingTab: false,
         showSearch: false,
-        showDateColumn: false,
-        showRoleBadge: false,
+        showRoleColumn: false,
         showEditWorkspaceMenuItem: false,
         workspaceMenuAction: null,
         workspaceMenuDisabledTooltip: null
@@ -144,7 +143,7 @@ describe('useWorkspaceUI', () => {
         canViewPendingInvites: true,
         canInviteMembers: true,
         canManageInvites: true,
-        canRemoveMembers: true,
+        canManageMembers: true,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: true,
@@ -183,7 +182,7 @@ describe('useWorkspaceUI', () => {
         canViewPendingInvites: false,
         canInviteMembers: false,
         canManageInvites: false,
-        canRemoveMembers: false,
+        canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,

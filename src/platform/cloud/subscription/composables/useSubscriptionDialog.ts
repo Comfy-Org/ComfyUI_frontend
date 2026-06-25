@@ -3,7 +3,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -16,6 +15,7 @@ export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
+  | 'deep_link'
 
 export interface SubscriptionDialogOptions {
   reason?: SubscriptionDialogReason
@@ -33,7 +33,6 @@ export const useSubscriptionDialog = () => {
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
   const { permissions } = useWorkspaceUI()
-  const { isFreeTier } = useSubscription()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -159,6 +158,10 @@ export const useSubscriptionDialog = () => {
   }
 
   function show(options?: SubscriptionDialogOptions) {
+    // Free-tier state comes from the unified facade so it works on both the
+    // legacy (/customers) and workspace (/api/billing) paths. Resolved lazily
+    // (not at composable setup) to avoid the useBillingContext import cycle.
+    const { isFreeTier } = useBillingContext()
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
       const component = defineAsyncComponent(
         () =>
