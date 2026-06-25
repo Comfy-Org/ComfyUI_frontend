@@ -897,8 +897,8 @@ const translations = {
 
   // Cloud – ReasonSection
   'cloud.reason.heading': {
-    en: 'Why\nprofessionals\nchoose ',
-    'zh-CN': '专业人士为何\n选择'
+    en: 'What is ComfyUI Cloud, and how many concurrent jobs can it run?',
+    'zh-CN': 'ComfyUI Cloud 是什么，它能同时运行多少个任务？'
   },
   'cloud.reason.headingHighlight': {
     en: 'Cloud',
