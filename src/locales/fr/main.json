@@ -3264,7 +3264,6 @@
       "keepSubscription": "Conserver l'abonnement",
       "title": "Annuler l'abonnement"
     },
-    "cancelSubscription": "Annuler l’abonnement",
     "cancelSuccess": "Abonnement annulé avec succès",
     "canceled": "Annulé",
     "canceledCard": {
