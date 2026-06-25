@@ -341,7 +341,7 @@ export function useJobList() {
     for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
-        ts = task.executionEndTimestamp
+        ts = task.executionEndTimestamp ?? task.createTime
       } else {
         ts = task.createTime
       }

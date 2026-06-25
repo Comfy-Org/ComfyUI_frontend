@@ -14,7 +14,7 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
+  mockStartDrag,
   mockGetNodeProvider,
   mockToggleNodeOnEvent,
   mockRefreshModelFolder,
@@ -29,7 +29,7 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
+    mockStartDrag: vi.fn(),
     mockGetNodeProvider: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
     mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
@@ -37,8 +37,8 @@ const {
   }
 })
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
+vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
 }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
@@ -173,16 +173,13 @@ describe('ModelLibrarySidebarTab', () => {
     expect(screen.getByTestId('search-input')).toBeInTheDocument()
   })
 
-  it('handles model click and adds node to graph', async () => {
+  it('starts a ghost drag carrying the widget value to fill on placement', async () => {
     const mockNodeDef = { name: 'CheckpointLoaderSimple' }
-    const mockWidget = { name: 'ckpt_name', value: '' }
-    const mockGraphNode = { widgets: [mockWidget] }
 
     mockGetNodeProvider.mockReturnValue({
       nodeDef: mockNodeDef,
       key: 'ckpt_name'
     })
-    mockAddNodeOnGraph.mockReturnValue(mockGraphNode)
 
     renderComponent()
     await nextTick()
@@ -198,8 +195,10 @@ describe('ModelLibrarySidebarTab', () => {
     await modelLeaf?.handleClick?.(mockEvent)
 
     expect(mockGetNodeProvider).toHaveBeenCalledWith('checkpoints')
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef)
-    expect(mockWidget.value).toBe('model.safetensors')
+    expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+      widgetValues: { ckpt_name: 'model.safetensors' },
+      source: 'sidebar_drag'
+    })
   })
 
   it('toggles folder expansion on click', async () => {

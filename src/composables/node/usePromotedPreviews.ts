@@ -3,10 +3,14 @@ import { computed, toValue } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import {
+  appendNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
   sourceNodeId: string
@@ -38,7 +42,7 @@ export function usePromotedPreviews(
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
     leafSourceNodeId: string,
-    leafExecutionId: string,
+    leafExecutionId: NodeExecutionId,
     interiorNode: LGraphNode
   ): string[] | undefined {
     const locatorId = createNodeLocatorId(
@@ -68,6 +72,7 @@ export function usePromotedPreviews(
   const promotedPreviews = computed((): PromotedPreview[] => {
     const node = toValue(lgraphNode)
     if (!(node instanceof SubgraphNode)) return []
+    if (node.isDetached) return []
 
     const rootGraphId = node.rootGraph.id
     const hostLocator = String(node.id)
@@ -121,7 +126,7 @@ export function usePromotedPreviews(
       const urls = readReactivePreviewUrls(
         leafHost,
         leaf.sourceNodeId,
-        `${leafHostLocator}:${leaf.sourceNodeId}`,
+        appendNodeExecutionId(leafHostLocator, leaf.sourceNodeId),
         interiorNode
       )
       if (!urls?.length) return []

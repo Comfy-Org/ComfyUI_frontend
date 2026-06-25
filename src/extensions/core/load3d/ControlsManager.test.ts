@@ -14,6 +14,7 @@ vi.mock('three/examples/jsm/controls/OrbitControls', () => {
     object: THREE.Camera
     domElement: HTMLElement
     enableDamping = false
+    enabled = true
     target = new THREE.Vector3()
     update = vi.fn()
     dispose = vi.fn()
@@ -163,6 +164,26 @@ describe('ControlsManager', () => {
       manager.dispose()
 
       expect(manager.controls.dispose).toHaveBeenCalled()
+    })
+  })
+
+  describe('detach / attach', () => {
+    it('detach disables OrbitControls interaction', () => {
+      manager = new ControlsManager(makeRenderer(), camera, events)
+      expect(manager.controls.enabled).toBe(true)
+
+      manager.detach()
+
+      expect(manager.controls.enabled).toBe(false)
+    })
+
+    it('attach re-enables OrbitControls interaction', () => {
+      manager = new ControlsManager(makeRenderer(), camera, events)
+      manager.detach()
+
+      manager.attach()
+
+      expect(manager.controls.enabled).toBe(true)
     })
   })
 })

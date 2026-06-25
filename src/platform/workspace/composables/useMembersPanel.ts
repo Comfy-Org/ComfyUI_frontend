@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
@@ -84,12 +85,9 @@ export function useMembersPanel() {
   } = storeToRefs(workspaceStore)
   const { copyInviteLink } = workspaceStore
   const { permissions, uiConfig } = useWorkspaceUI()
-  const {
-    isActiveSubscription,
-    subscription,
-    showSubscriptionDialog,
-    getMaxSeats
-  } = useBillingContext()
+  const { isActiveSubscription, subscription, getMaxSeats } =
+    useBillingContext()
+  const subscriptionDialog = useSubscriptionDialog()
 
   const maxSeats = computed(() => {
     if (isPersonalWorkspace.value) return 1
@@ -111,7 +109,8 @@ export function useMembersPanel() {
     name: userDisplayName.value ?? '',
     email: userEmail.value ?? '',
     role: 'owner' as const,
-    joinDate: new Date(0)
+    joinDate: new Date(0),
+    isOriginalOwner: true
   }))
 
   const searchQuery = ref('')
@@ -188,6 +187,10 @@ export function useMembersPanel() {
     void showRemoveMemberDialog(member.id)
   }
 
+  function showTeamPlans() {
+    subscriptionDialog.show({ planMode: 'team' })
+  }
+
   return {
     searchQuery,
     activeView,
@@ -210,7 +213,7 @@ export function useMembersPanel() {
     isCurrentUser,
     selectMember,
     toggleSort,
-    showSubscriptionDialog,
+    showTeamPlans,
     handleCopyInviteLink,
     handleRevokeInvite,
     handleCreateWorkspace,

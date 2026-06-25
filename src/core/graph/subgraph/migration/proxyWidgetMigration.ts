@@ -1,6 +1,6 @@
 import { isEqual } from 'es-toolkit/compat'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   findHostInputForPromotion,
@@ -8,6 +8,7 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
@@ -27,6 +28,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
   disambiguatingSourceNodeId?: string
@@ -93,23 +95,24 @@ function resolveSourceWidget(
   sourceWidgetName: string,
   disambiguatingSourceNodeId?: string
 ): IBaseWidget | undefined {
-  const widgets = sourceNode.widgets
-  if (widgets && disambiguatingSourceNodeId !== undefined) {
-    const byDisambiguator = widgets.find(
-      (w) =>
-        isPromotedWidgetView(w) &&
-        w.sourceNodeId === disambiguatingSourceNodeId &&
-        w.sourceWidgetName === sourceWidgetName
-    )
-    if (byDisambiguator) return byDisambiguator
-    // Disambiguator missed: fall back only to non-promoted same-name widgets.
-    // A sibling PromotedWidgetView would re-introduce the cross-binding bug.
-    const byName = widgets.find(
-      (w) => !isPromotedWidgetView(w) && w.name === sourceWidgetName
-    )
-    if (byName) return byName
+  if (sourceNode.isSubgraphNode()) {
+    const input = sourceNode.inputs.find((input) => {
+      const target = resolveSubgraphInputTarget(sourceNode, input.name)
+      if (disambiguatingSourceNodeId) {
+        return (
+          target?.widgetName === sourceWidgetName &&
+          target.nodeId === disambiguatingSourceNodeId
+        )
+      }
+      if (input.name === sourceWidgetName) return true
+      return target?.widgetName === sourceWidgetName
+    })
+    // Store-backed projection for a promoted input on a nested subgraph node:
+    // getSlotFromWidget locates the backing slot by widgetId.
+    if (input?.widgetId) return promotedInputWidget(input) ?? undefined
   }
 
+  const widgets = sourceNode.widgets
   return (
     widgets?.find((w) => w.name === sourceWidgetName) ??
     getPromotableWidgets(sourceNode).find((w) => w.name === sourceWidgetName)
@@ -300,19 +303,6 @@ function classify(
     normalized.sourceWidgetName
   )
   if (linkedInput) {
-    const ambiguous =
-      hostNode.inputs.filter((input) => {
-        const w = input._widget
-        return (
-          !!w &&
-          isPromotedWidgetView(w) &&
-          w.sourceNodeId === normalized.sourceNodeId &&
-          w.sourceWidgetName === normalized.sourceWidgetName
-        )
-      }).length > 1
-    if (ambiguous) {
-      return { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
-    }
     return { kind: 'alreadyLinked', subgraphInputName: linkedInput.name }
   }
 
@@ -373,19 +363,23 @@ function classify(
   }
 }
 
-function applyHostValue(widget: IBaseWidget, entry: PendingEntry): void {
-  if (entry.isHole) return
-  if (
-    isPromotedWidgetView(widget) &&
-    typeof widget.hydrateHostValue === 'function'
-  ) {
-    widget.hydrateHostValue(entry.hostValue)
-    return
-  }
-  console.error(
-    '[proxyWidgetMigration] applyHostValue called with non-promoted widget; refusing to write to shared interior',
-    { widgetName: widget.name, type: widget.type }
-  )
+function applyHostValueToInput(
+  input: INodeInputSlot,
+  entry: PendingEntry
+): boolean {
+  if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
+  return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
+}
+
+function applyHostLabelToInput(
+  input: INodeInputSlot,
+  label: string | undefined
+): void {
+  if (label === undefined) return
+  input.label = label
+  if (!input.widgetId) return
+  const state = useWidgetValueStore().getWidget(input.widgetId)
+  if (state) state.label = label
 }
 
 function addUniqueSubgraphInput(
@@ -422,10 +416,9 @@ function repairAlreadyLinked(
     return { ok: false, reason: 'ambiguousSubgraphInput' }
   }
   const hostInput = matches[0]
-  if (!hostInput._widget) {
+  if (!applyHostValueToInput(hostInput, entry)) {
     return { ok: false, reason: 'missingSubgraphInput' }
   }
-  applyHostValue(hostInput._widget, entry)
   return { ok: true, subgraphInputName: hostInput.name }
 }
 
@@ -480,11 +473,10 @@ function repairCreateSubgraphInput(
   const hostInput = hostNode.inputs.find(
     (input) => input.name === newSubgraphInput.name
   )
-  if (!hostInput?._widget) {
-    return { ok: true, subgraphInputName: newSubgraphInput.name }
+  if (hostInput) {
+    applyHostLabelToInput(hostInput, slot.label)
+    applyHostValueToInput(hostInput, entry)
   }
-
-  applyHostValue(hostInput._widget, entry)
   return { ok: true, subgraphInputName: newSubgraphInput.name }
 }
 
@@ -649,22 +641,19 @@ function repairPrimitive(
     return failPrimitive('mutation failed; rolled back', { error: e })
   }
 
-  // Apply through the host's input mirror (PromotedWidgetView), NOT
-  // `newSubgraphInput._widget`: the interior is shared across hosts.
   const hostInput = hostNode.inputs.find(
     (input) => input.name === newSubgraphInput.name
   )
-  const hostInputWidget = hostInput?._widget
-  if (hostInputWidget) {
+  if (hostInput) {
     const valueEntry = validated.uniqueEntries.find((e) => !e.isHole)
     if (valueEntry) {
-      applyHostValue(hostInputWidget, valueEntry)
+      applyHostValueToInput(hostInput, valueEntry)
     } else {
       const primitiveValue = primitiveNode.widgets?.find(
         (w) => w.name === validated.sourceWidgetName
       )?.value as TWidgetValue | undefined
       if (primitiveValue !== undefined) {
-        applyHostValue(hostInputWidget, {
+        applyHostValueToInput(hostInput, {
           ...validated.uniqueEntries[0],
           hostValue: primitiveValue,
           isHole: false

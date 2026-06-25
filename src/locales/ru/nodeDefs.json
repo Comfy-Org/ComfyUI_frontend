@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Узел кондиционирования для Bernini для контекстного кондиционирования видео/изображений. Может использоваться для следующих задач: t2v (текст-видео), v2v (видео-видео), rv2v (редактирование видео с помощью референса), r2v (референс-видео), ads2v (вставка изображения/видео в видео). Референсные изображения, внедрённые как контекстные токены (r2v, rv2v), кодируются независимо с их собственным исходным соотношением сторон (длинная сторона ограничена ref_max_size).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Максимальный размер длинной стороны для reference_video и reference_images. Изменяется с сохранением пропорций и округляется до 16 пикселей."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Видео для вставки в исходное видео (ads2v)."
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Исходное видео для редактирования или изменения стиля (v2v, rv2v). Изменяется до ширины/высоты и обрезается до длины."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Scheduler выборки Бета",
     "inputs": {
@@ -585,6 +641,87 @@
       },
       "video": {
         "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "Удалите фон с видео с помощью Bria и получите вырезанные кадры плюс альфа-маску. Подключите оба к узлу компоновки или передайте их в Save WEBM для записи прозрачного видео.",
+    "display_name": "Bria Удаление фона видео (прозрачный)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел запускаться повторно; результаты всегда недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
+      },
+      "1": {
+        "name": "маска",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "Замените фон видео на однотонный хромакей с помощью Bria.",
+    "display_name": "Bria Video Green Screen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "green_shade": {
+        "name": "оттенок зелёного",
+        "tooltip": "Однородный оттенок хромакея, применяемый за передним планом: broadcast_green (#00B140), chroma_green (#00FF00) или blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел выполняться повторно; результаты всегда недетерминированы, независимо от seed."
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "Заменяет фон видео на предоставленное изображение или видео с помощью Bria. Выходное видео сохраняет разрешение и частоту кадров переднего плана; фон с другим соотношением сторон будет растянут для соответствия, поэтому для отсутствия искажений используйте совпадающее соотношение.",
+    "display_name": "Bria Video Замена Фона",
+    "inputs": {
+      "background_image": {
+        "name": "фон-изображение",
+        "tooltip": "Изображение для фона, которое будет размещено за передним планом. Укажите либо изображение, либо видео для фона, не оба одновременно."
+      },
+      "background_video": {
+        "name": "фон-видео",
+        "tooltip": "Видео для фона, которое будет размещено за передним планом. Укажите либо изображение, либо видео для фона, не оба одновременно."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результат всегда недетерминированный, независимо от seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Видео с передним планом, у которого будет заменён фон."
       }
     },
     "outputs": {
@@ -1212,6 +1349,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "Переопределить cfg на фиксированное значение в диапазоне [start, end] процентов шагов. При нескольких переопределениях при пересечении выигрывает ближайшее к сэмплеру.",
+    "display_name": "Переопределение CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "конечный_процент"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "start_percent": {
+        "name": "начальный_процент"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1721,6 +1881,10 @@
         "name": "конечная_сигма",
         "tooltip": "Последняя сигма, для которой эти настройки вступят в силу."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Принудительно использовать последовательные идентификаторы текстовых токенов вместо нулей. Следует использовать для контрольных точек с 22.05.2026 по 01.06.2026, которые обучались таким образом, но не содержат ключ __sequential__ в state dict."
+      },
       "model": {
         "name": "модель"
       },
@@ -1797,6 +1961,10 @@
     "outputs": {
       "0": {
         "name": "rgb_int",
+        "tooltip": null
+      },
+      "1": {
+        "name": "hex",
         "tooltip": null
       }
     }
@@ -2303,6 +2471,10 @@
         "name": "метод_объединения",
         "tooltip": "Метод объединения контекстных окон."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "Список индексов латентного пространства, которые нужно сохранить непосредственно в латентном шуме для каждого окна. Используется в рабочих процессах, где референсный контент (например, стартовое изображение) находится прямо в латентном шуме, а не в отдельных каналах кондиционирования (например, I2V в стиле inplace, как LTXV, AnimateDiff). Не зависит от cond_retain_index_list."
+      },
       "model": {
         "name": "модель",
         "tooltip": "Модель, к которой применяются контекстные окна во время сэмплирования."
@@ -2523,6 +2695,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "description": "Создаёт camera_info. Режим 'orbit' наводит с помощью углов yaw/pitch/distance вокруг цели; 'look_at' размещает камеру в мировой позиции. Координаты — в мировой системе координат наблюдателя (правосторонняя, Y-вверх).",
+    "display_name": "Создать информацию о камере",
+    "inputs": {
+      "camera_type": {
+        "name": "camera_type",
+        "tooltip": "Проекция, используемая Render Splat: перспективная (с искажением) или ортографическая (параллельная)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Вертикальный угол обзора в градусах."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Как определить камеру: углы орбиты, явная позиция или позиция + кватернион."
+      },
+      "mode_distance": {
+        "name": "distance"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "Крен камеры вокруг оси взгляда, в градусах."
+      },
+      "target_x": {
+        "name": "target_x",
+        "tooltip": "Точка взгляда (центр орбиты / цель). В режиме orbit перемещайте для панорамирования/трансляции всей камеры. Игнорируется в режиме кватерниона. По умолчанию — начало координат."
+      },
+      "target_y": {
+        "name": "target_y"
+      },
+      "target_z": {
+        "name": "target_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Цифровой зум (множитель фокусного расстояния). >1 увеличивает без перемещения камеры."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "Создать ключевой кадр хука",
     "inputs": {
@@ -2685,6 +2908,10 @@
         "name": "аудио",
         "tooltip": "Аудио, которое будет добавлено к видео."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Глубина цвета создаваемого видео. 10-бит обеспечивает более плавные градиенты с меньшим количеством полос, но некоторые проигрыватели и последующие узлы могут не поддерживать этот формат."
+      },
       "fps": {
         "name": "кадров в секунду"
       },
@@ -2789,6 +3016,98 @@
       },
       "1": {
         "name": "ИНДЕКС",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "Преобразовать карту глубины в триангулированную 3D-модель (mesh).",
+    "display_name": "Преобразовать DA3 Geometry в Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Какое изображение из батча конвертировать. Количество вершин на изображение различается, поэтому батчи не могут быть объединены."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Исключать пиксели, у которых нормализованная уверенность ниже этого значения (0 = оставить все, 1 = оставить только самый уверенный пиксель). Используется, если в geometry есть карта уверенности (Small/Base модели)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Шаг по вершинам. 1 = полное разрешение, 2 = половина и т.д."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Удалять треугольники, у которых диапазон глубины 3x3 превышает эту долю. 0 = отключено."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Использовать исходное изображение как текстуру базового цвета."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Исключать пиксели с вероятностью неба (sky >= 0.5) из mesh. Используется, если в geometry есть карта неба (Mono/Metric модели)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "Запустить Depth Anything 3 на изображении. В режиме multi-view каждое изображение рассматривается как отдельный вид одной сцены.",
+    "display_name": "Запустить Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: одновидовое изображение (работает с любым вариантом модели).\nmultiview: все изображения обрабатываются вместе для геометрической согласованности + позы камеры (только для Small/Base моделей)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: масштабировать так, чтобы длинная сторона = resolution (ограничивает память, по умолчанию).\nlower_bound_resize: масштабировать так, чтобы короткая сторона = resolution (сохраняет больше деталей на высоких/широких изображениях, требует больше памяти)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Разрешение, на котором работает модель (длинная сторона, кратно 14).\nМеньше = быстрее / меньше VRAM.\nБольше = больше деталей.\nРезультат увеличивается до исходного размера."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Словарь ненормализованных тензоров.\nВсегда содержит ключи: depth, image, mode.\nДополнительные ключи: sky (для Mono/Metric), confidence (для Small/Base), extrinsics + intrinsics (для multi-view)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Визуализировать карту глубины, карту уверенности или sky mask из данных geometry Depth Anything 3.",
+    "display_name": "Визуализировать Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: нормализованное изображение глубины в оттенках серого.\n- depth_colored: глубина, отображённая через Turbo colormap.\n- sky_mask: вероятность неба в диапазоне [0, 1] (только для Mono/Metric моделей).\n- confidence: нормализованная уверенность глубины (только для Small/Base моделей)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2899,6 +3218,34 @@
       },
       "type": {
         "name": "тип"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Двойной CFG-гуидер модели",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для положительного (условного) прохода."
+      },
+      "model_negative": {
+        "name": "отрицательная_модель",
+        "tooltip": "Модель, используемая для отрицательного (безусловного) прохода. Используйте ту же модель для обычного CFG."
+      },
+      "negative": {
+        "name": "отрицательный",
+        "tooltip": "Отрицательная настройка для отрицательной модели. Оставьте неподключённым для безтекстового (только изображение) безусловного прохода."
+      },
+      "positive": {
+        "name": "положительный"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3696,6 +4043,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "Преобразует файл File3D splat в гауссов splat. Обратная операция к Создать 3D файл (из Splat). Поддерживаемые форматы: PLY, SPLAT, KSPLAT, SPZ. PLY содержит полные сферические гармоники, остальные форматы — только базовый цвет. Формат определяется автоматически по содержимому файла.",
+    "display_name": "Получить Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D с гауссовым splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "Перевернуть сигмы",
     "inputs": {
@@ -3837,6 +4200,35 @@
     "inputs": {
       "conditioning": {
         "name": "conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "Удаляет замаскированный объект с изображения и восстанавливает фон. Нарисуйте маску поверх того, что хотите удалить.",
+    "display_name": "Flux Удалить объект с изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "dilate_pixels": {
+        "name": "dilate_pixels",
+        "tooltip": "Расширяет границы маски для чистого покрытия краёв объекта."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Белые области будут удалены; чёрные области сохраняются."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайный seed, используемый для создания шума."
       }
     },
     "outputs": {
@@ -4114,6 +4506,36 @@
       "seed": {
         "name": "seed",
         "tooltip": "Случайное зерно, используемое для создания шума."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "Виртуальная примерка: одевает человека в предоставленную одежду.",
+    "display_name": "Flux Виртуальная примерка",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "garment": {
+        "name": "garment",
+        "tooltip": "Изображение одежды для примерки."
+      },
+      "person": {
+        "name": "person",
+        "tooltip": "Изображение человека, которого нужно одеть."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Необязательная инструкция на естественном языке (например, как должна сидеть одежда)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно для генерации шума."
       }
     },
     "outputs": {
@@ -4550,6 +4972,14 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "Базовые инструкции, определяющие поведение ИИ."
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "Управляет случайностью генерации. Меньшее значение — более сфокусировано/детерминировано."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Порог ядерной выборки. Меньше — более сфокусировано, больше — более разнообразно."
       }
     },
     "outputs": {
@@ -4603,6 +5033,48 @@
       "video": {
         "name": "видео",
         "tooltip": "Необязательное видео для использования в качестве контекста для модели."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Генерируйте текстовые ответы с помощью моделей Gemini от Google. Введите текстовый запрос и, при необходимости, одно или несколько изображений, аудиоклипов, видео или файлов в качестве мультимодального контекста.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель Gemini, используемая для генерации ответа."
+      },
+      "model_max_output_tokens": {
+        "name": "максимум токенов вывода"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "уровень мышления"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовый ввод для модели. Включите подробные инструкции, вопросы или контекст."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для сэмплирования. Установите 0 для случайного seed. Детерминированный вывод не гарантируется."
+      },
+      "system_prompt": {
+        "name": "системный запрос",
+        "tooltip": "Базовые инструкции, определяющие поведение модели."
       }
     },
     "outputs": {
@@ -4716,6 +5188,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "Возвращает количество сплатов, суммированных по всему батчу.",
+    "display_name": "Получить количество сплатов",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "count",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "Извлекает все компоненты из видео: кадры, аудио и частоту кадров.",
     "display_name": "Извлечь компоненты видео",
@@ -4736,6 +5227,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -4926,10 +5421,12 @@
         "tooltip": "Длительность выходного видео в секундах."
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "Необязательное начальное изображение для grok-imagine-video. Обязательно для grok-imagine-video-1.5."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 в настоящее время всегда требует входное изображение."
       },
       "prompt": {
         "name": "prompt",
@@ -5535,6 +6032,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Планировщик Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "высота"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "шаги"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Генерирует изображения синхронно с использованием модели Ideogram V1.\n\nСсылки на изображения доступны ограниченное время; если вы хотите сохранить изображение, его необходимо скачать.",
     "display_name": "Ideogram V1",
@@ -5668,6 +6190,34 @@
       "resolution": {
         "name": "resolution",
         "tooltip": "Разрешение для генерации изображения. Если не установлено в Авто, этот параметр переопределяет aspect_ratio."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Генерирует изображения с помощью модели Ideogram 4.0 по текстовому запросу.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовый запрос для генерации изображения."
+      },
+      "rendering_speed": {
+        "name": "скорость_рендеринга",
+        "tooltip": "Управляет балансом между скоростью генерации и качеством."
+      },
+      "resolution": {
+        "name": "разрешение"
       },
       "seed": {
         "name": "seed"
@@ -7488,7 +8038,8 @@
         "name": "контроль после генерации"
       },
       "generate_audio": {
-        "name": "генерировать аудио"
+        "name": "генерировать аудио",
+        "tooltip": "'kling-3.0-turbo' всегда генерирует собственное аудио, поэтому переключатель аудио игнорируется."
       },
       "model": {
         "name": "модель",
@@ -7774,6 +8325,57 @@
       "1": {
         "name": "отрицательный",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVContextWindows": {
+    "description": "Установить окна контекста для моделей, подобных LTXV.",
+    "display_name": "Окна контекста LTXV",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "Замыкать ли цикл окна контекста; применяется только к циклическим расписаниям."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "Длина окна контекста в реальных кадрах. Должна быть 8*n + 1."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "Перекрытие окна контекста в реальных кадрах."
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "Зависимый от шага алгоритм планирования окон контекста."
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "Шаг окна контекста; применяется только к равномерным расписаниям."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Применять ли перемешивание шума FreeNoise, улучшает смешивание окон."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "Метод объединения окон контекста."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, к которой будут применяться окна контекста во время сэмплирования."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Сохранять первый латентный кадр в каждом окне контекста (может помочь сохранить начальный референс)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Разделять ли несколько кондиционирований (созданных ConditionCombine) по каждому окну на основе индекса региона."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Модель с применёнными окнами контекста во время сэмплирования."
       }
     }
   },
@@ -8530,6 +9132,49 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
+      }
+    }
+  },
+  "Load3DAdvanced": {
+    "display_name": "Загрузить 3D (расширено)",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -8563,6 +9208,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Загрузить Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9180,6 +9841,262 @@
       }
     }
   },
+  "LumaRay32ExtendVideoNode": {
+    "description": "Продлите ранее сгенерированное Ray 3.2 видео вперёд (продолжить после него) или назад (добавить перед ним). Подключите выход generation_id предыдущего узла Luma Ray 3.2. Продление всегда составляет 5 секунд.",
+    "display_name": "Luma Ray 3.2 Продлить видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Вперёд — продолжить после предыдущего clip; назад — добавить перед ним."
+      },
+      "direction_loop": {
+        "name": "loop"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для нового контента."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; результат всегда недетерминированный, независимо от seed."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "generation_id предыдущего Ray 3.2 видео для продления. Подключите выход generation_id другого узла Luma Ray 3.2."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "Создайте видео из начального и/или конечного кадра с помощью модели Ray 3.2 от Luma. Генерация с привязкой к изображению всегда длится 5 секунд.",
+    "display_name": "Luma Ray 3.2 Изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Последний кадр сгенерированного видео."
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Сделать видео бесшовным по циклу. Недоступно, если задан end_frame."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для генерации видео."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; результат всегда недетерминированный, независимо от seed."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Первый кадр сгенерированного видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "Закрепите направляющее изображение на определённой позиции временной шкалы выходного видео Ray 3.2. Подключите этот узел к входу 'keyframes' узла Luma Ray 3.2 Keyframes to Video; объединяйте несколько узлов через дополнительный вход 'keyframes' ниже.",
+    "display_name": "Luma Ray 3.2 Ключевой кадр",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Направляющее изображение для размещения в выбранный момент выходного видео."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Необязательные предыдущие ключевые кадры для объединения с этим."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "Как разместить это изображение на временной шкале выходного видео."
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "Создайте видео, интерполируя последовательность направляющих изображений, каждое из которых привязано к определённой позиции на временной шкале, с помощью Luma Ray 3.2. Постройте последовательность с помощью узлов Luma Ray 3.2 Keyframe (не менее 2).",
+    "display_name": "Luma Ray 3.2: Ключевые кадры в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Последовательность ключевых кадров из узлов Luma Ray 3.2 Keyframe (не менее 2)."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для генерации видео."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; результат всегда недетерминирован, независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "Создайте видео по текстовому запросу с помощью модели Luma Ray 3.2.",
+    "display_name": "Luma Ray 3.2: Текст в видео",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Сделать видео бесшовно зацикленным. Доступно только для длительности 5 секунд."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для генерации видео."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; результат всегда недетерминирован, независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "Перегенерируйте существующее видео по новому запросу с помощью Luma Ray 3.2 (смена стиля, освещения, добавление или удаление элементов), сохраняя исходное движение. Исходное видео — до 18 секунд; длина отредактированного видео совпадает с исходным.",
+    "display_name": "Luma Ray 3.2: Редактирование видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Опишите желаемое изменение."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; результат всегда недетерминирован, независимо от сида."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Степень сохранения или переосмысления исходника. 'auto' — выбор Ray 3.2; adhere_* — максимальное сохранение, flex_* — баланс, reimagine_* — максимальные изменения."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Исходное видео для редактирования. До 18 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "Измените соотношение сторон существующего видео, используя Luma Ray 3.2 для заполнения новых областей холста. Исходное видео до 30 секунд. Оплата за каждую секунду результата.",
+    "display_name": "Luma Ray 3.2 Видео Переформатирование",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Опишите, как должны быть заполнены новые области холста."
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; результаты недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Исходное видео для изменения формата. До 30 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
   "LumaReferenceNode": {
     "description": "Содержит изображение и вес для использования с узлом Luma Generate Image.",
     "display_name": "Luma Reference",
@@ -9655,6 +10572,21 @@
       "0": {
         "name": "изображения",
         "tooltip": "Обработанные изображения"
+      }
+    }
+  },
+  "MergeSplat": {
+    "description": "Объединяет любое количество гауссовых сплатов в один. Объединение нескольких декодирований одного и того же latent с разными сидами уплотняет поверхность, что может улучшить качество поверхности при создании сетки.",
+    "display_name": "Объединить сплаты",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -13423,6 +14355,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "Просмотр 3D (расширенный)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "3D-модель",
+        "tooltip": "Файл 3D-модели из предыдущего 3D-узла."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "состояние области просмотра"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
@@ -13447,6 +14425,58 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
+      }
+    }
+  },
+  "PreviewGaussianSplat": {
+    "display_name": "Предпросмотр Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
     }
   },
   "PreviewImage": {
@@ -13455,6 +14485,57 @@
     "inputs": {
       "images": {
         "name": "изображения"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Предпросмотр облака точек",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл облака точек (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14411,6 +15492,66 @@
       }
     }
   },
+  "RenderSplat": {
+    "description": "Визуализируйте гауссовский splat как изображение с анизотропным EWA-растеризатором (ориентированные эллиптические splat'ы, сглаженные, сортировка по глубине спереди назад). Камера берется из входа camera_info (Load / Preview 3D или узел Create Camera Info); оставьте пустым для автоматического кадрирования splat'а. Установите frames больше 1 для пакетной визуализации с поворотом (turntable), чтобы передать изображения в Video-узел.",
+    "display_name": "Рендер Splat",
+    "inputs": {
+      "background": {
+        "name": "фон"
+      },
+      "bg_image": {
+        "name": "фон. изображение",
+        "tooltip": "Необязательная фоновая пластина, компонуемая позади splat'а (заменяет сплошной цвет фона). Масштабируется под размер рендера; пакет используется для каждого кадра, одно изображение — для всех. Только для color/clay."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Камера для рендера — камера Load3D / Preview3D или узел Create Camera Info. Если пусто, splat будет автоматически кадрирован с вида 3/4 по умолчанию."
+      },
+      "frames": {
+        "name": "кадры",
+        "tooltip": "-1, 0, 1 = одиночное статичное изображение; >1 = поворотная анимация, камера вращается на полный круг 360° (работает с любым camera_info). Отрицательное значение вращает в другую сторону."
+      },
+      "headlight_shading": {
+        "name": "освещение от камеры",
+        "tooltip": "Диффузное освещение от источника света в позиции камеры (headlight), используя нормали splat'ов: затемняет поверхности, отворачивающиеся от взгляда, чтобы подчеркнуть форму/кривизну. 0 = плоский альбедо, 1 = максимальное затенение."
+      },
+      "height": {
+        "name": "высота"
+      },
+      "opacity_threshold": {
+        "name": "порог непрозрачности",
+        "tooltip": "Отсечь гауссианы с непрозрачностью ниже этого значения (удаляет слабые плавающие splat'ы)."
+      },
+      "render_style": {
+        "name": "стиль рендера",
+        "tooltip": "Что будет показано на выходном изображении: color (цвет), clay (нейтральное альбедо с затенением), depth (ближе = светлее), normal (OpenGL normal map)."
+      },
+      "sharpen": {
+        "name": "резкость",
+        "tooltip": "Увеличить резкость перекрывающихся splat'ов: 1.0 = физически корректное смешивание; больше — смещает каждый пиксель к доминирующему (ближайшему) splat'у для более четкой текстуры, не уменьшая splat'ы и не создавая разрывов. Не физически корректно при значениях выше 1."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "масштаб splat",
+        "tooltip": "Множитель для проецируемой площади каждого splat'а (меньше = более четкие точки, больше = мягче/плотнее поверхность)."
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображение",
+        "tooltip": null
+      },
+      "1": {
+        "name": "маска",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -14645,6 +15786,10 @@
       "megapixels": {
         "name": "megapixels",
         "tooltip": "Целевое количество мегапикселей. 1,0 МП ≈ 1024×1024 для квадрата."
+      },
+      "multiple": {
+        "name": "кратность",
+        "tooltip": "Ближайшая кратность результата для установки выбранного разрешения."
       }
     },
     "outputs": {
@@ -15080,6 +16225,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "Привязывает управляющее изображение к определённому моменту исходного видео, чтобы Aleph2 направлял редактирование в этой точке. Подключите этот узел к входу 'keyframes' узла Runway Aleph2 Video to Video; объединяйте несколько таких узлов (до 5) через дополнительный вход 'keyframes' ниже.",
+    "display_name": "Runway Aleph2 Ключевой Кадр",
+    "inputs": {
+      "image": {
+        "name": "изображение",
+        "tooltip": "Управляющее изображение, применяемое в выбранный момент исходного видео."
+      },
+      "keyframes": {
+        "name": "ключевые кадры",
+        "tooltip": "Необязательные предыдущие ключевые кадры для объединения с этим."
+      },
+      "timing": {
+        "name": "тайминг",
+        "tooltip": "Как разместить это изображение на временной шкале исходного видео."
+      },
+      "timing_seconds": {
+        "name": "секунды"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ключевые кадры",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "Привязывает управляющее изображение к определённому моменту итогового видео, чтобы направлять внешний вид отредактированного видео в этой точке. Подключите этот узел к входу 'prompt_images' узла Runway Aleph2 Video to Video; объединяйте несколько таких узлов (до 5) через дополнительный вход 'prompt_images' ниже.",
+    "display_name": "Runway Aleph2 Управляющее Изображение",
+    "inputs": {
+      "image": {
+        "name": "изображение",
+        "tooltip": "Управляющее изображение, размещаемое в выбранный момент итогового видео."
+      },
+      "position": {
+        "name": "позиция",
+        "tooltip": "Как разместить это изображение на временной шкале итогового видео."
+      },
+      "position_seconds": {
+        "name": "секунды"
+      },
+      "prompt_images": {
+        "name": "управляющие изображения",
+        "tooltip": "Необязательные предыдущие управляющие изображения для объединения с этим."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "управляющие изображения",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Редактируйте видео с помощью текстового запроса, используя модель Runway Aleph2. Aleph2 преобразует ваш видеоматериал (смена стиля, освещения, добавление или удаление элементов, изменение точки обзора), сохраняя исходное движение и тайминг; разрешение результата соответствует входному видео, которое должно быть длиной от 2 до 30 секунд с частотой не выше 30 кадров в секунду. Дополнительно можно управлять редактированием с помощью ключевых кадров (привязанных к исходному видео) или изображений-подсказок (привязанных к выходному видео) — используйте только один из этих вариантов, не оба одновременно.",
+    "display_name": "Runway Aleph2 Видео в Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Изображения-направления, привязанные к исходному видео, из узлов Aleph2 Keyframe (до 5). Используйте ключевые кадры или изображения-подсказки, не оба одновременно."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Опишите, что должно появиться на выходе (от 1 до 1000 символов)."
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "Изображения-направления, привязанные к выходному видео, из узлов Aleph2 Prompt Image (до 5). Используйте ключевые кадры или изображения-подсказки, не оба одновременно."
+      },
+      "public_figure_threshold": {
+        "name": "public_figure_threshold",
+        "tooltip": "Модерация контента для узнаваемых публичных лиц."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно для генерации"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Входное видео для редактирования. Должно быть длиной от 2 до 30 секунд с частотой не выше 30 кадров в секунду."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "Загрузите первый и последний ключевые кадры, составьте промпт и создайте видео. Более сложные переходы, например, когда последний кадр полностью отличается от первого, могут выиграть от более длительной продолжительности в 10 секунд. Это даст генерации больше времени для плавного перехода между двумя входными данными. Прежде чем начать, ознакомьтесь с лучшими практиками, чтобы убедиться, что ваши входные данные обеспечат успешный результат: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway: Первый-Последний кадр в видео",
@@ -15323,6 +16560,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "Создать цветную маску SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "Трек SAM3 для видео с движущейся позой. Будет отрисован в выходной pose_video_mask."
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "Список индексов людей через запятую для включения (например, '0,2,3'). Применяется к маскам как референсного, так и позового видео. Пусто = все."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "Трек SAM3 для референсного изображения."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "False = mask_video с чёрным фоном (режим анимации). True = белый фон (режим замены). Установите соответствующий replacement_mode на WanSCAILToVideo. reference_image_mask всегда с чёрным фоном."
+      },
+      "sort_by": {
+        "name": "sort_by",
+        "tooltip": "Порядок, в котором палитра цветов назначается отслеживаемым объектам (применяется к обоим видео, чтобы каждая личность сохраняла свой цвет). left_to_right = самый левый объект (по центроиду первого кадра) получает первый цвет; area = самый большой объект (по площади маски первого кадра) получает первый цвет; none = сохранить порядок SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -15337,6 +16609,9 @@
       },
       "draw_hands": {
         "name": "draw_hands"
+      },
+      "draw_head": {
+        "name": "рисовать_голову"
       },
       "face_point_size": {
         "name": "face_point_size"
@@ -16011,6 +17286,12 @@
       "images": {
         "name": "изображения"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16034,6 +17315,12 @@
       "quality": {
         "name": "качество"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16047,6 +17334,39 @@
       },
       "filename_prefix": {
         "name": "префикс_названия_файла"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveAudioAdvanced": {
+    "description": "Сохраняет входное аудио в выходной каталог ComfyUI.",
+    "display_name": "Сохранить аудио (расширенно)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для сохранения."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "Префикс для сохраняемого файла. Может включать токены форматирования, например %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Формат файла для сохранения аудио."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
       }
     }
   },
@@ -16065,6 +17385,12 @@
       "quality": {
         "name": "качество"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -16081,6 +17407,12 @@
       },
       "quality": {
         "name": "качество"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
       }
     }
   },
@@ -16111,6 +17443,11 @@
         "name": "изображения",
         "tooltip": "Изображения_для_сохранения."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -16135,6 +17472,12 @@
         "name": "изображения",
         "tooltip": "Изображения для сохранения."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
+      }
     }
   },
   "SaveImageDataSetToFolder": {
@@ -16152,6 +17495,10 @@
       "images": {
         "name": "images",
         "tooltip": "Список изображений для сохранения."
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "Перезаписывать существующие файлы или увеличивать имена файлов, чтобы избежать перезаписи."
       }
     }
   },
@@ -16170,6 +17517,10 @@
       "images": {
         "name": "images",
         "tooltip": "Список изображений для сохранения."
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "Перезаписывать существующие файлы или увеличивать имена файлов, чтобы избежать перезаписи."
       },
       "texts": {
         "name": "texts",
@@ -16193,6 +17544,11 @@
       },
       "samples": {
         "name": "образцы"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
       }
     }
   },
@@ -16223,6 +17579,12 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -16268,6 +17630,12 @@
         "name": "видео",
         "tooltip": "Видео для сохранения."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -16287,7 +17655,14 @@
         "name": "fps"
       },
       "images": {
-        "name": "изображения"
+        "name": "изображения",
+        "tooltip": "RGBA-изображения сохраняются с альфа-каналом как прозрачность (только кодек vp9)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
       }
     }
   },
@@ -16669,6 +18044,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "description": "Сериализует гауссовский splat в объект File3D для узлов Save / Preview 3D. Поддерживается только один элемент на пакет.",
+    "display_name": "Создать 3D-файл (из Splat)",
+    "inputs": {
+      "format": {
+        "name": "формат",
+        "tooltip": "ply: стандартный 3D Gaussian Splat с полными сферическими гармониками. ksplat: mkkellogg SplatBuffer (уровень 0, без сжатия), только базовый цвет. spz: Niantic сжатие gzip (~10x меньше), только базовый цвет."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D-модель",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "Извлечь цветную mesh из гауссового splat.",
+    "display_name": "Извлечь Mesh из Splat",
+    "inputs": {
+      "color_sharpen": {
+        "name": "резкость_цвета",
+        "tooltip": "Улучшить чёткость текстуры вершин: 1.0 = физически корректное смешивание; выше смещает цвет каждого вокселя к доминирующему гауссиану вместо усреднения с соседями (убирает размытие текстуры). Только цвет — геометрия не меняется."
+      },
+      "kernel": {
+        "name": "ядро",
+        "tooltip": "Максимальная полу-ширина splat в вокселях. Каждый гауссиан растеризуется в окне, размер которого равен его собственным 3-сигма, ограниченным этим значением — маленькие surfel остаются дешёвыми, большие не обрезаются. Увеличьте, если разреженные splat оставляют пробелы."
+      },
+      "level": {
+        "name": "уровень",
+        "tooltip": "Уровень изо-поверхности. Автоматически выбирается методом Отсу; это смещает его (1.0 = авто, ниже = более толстая/связанная поверхность, выше = более тонкая/плотная)."
+      },
+      "min_component": {
+        "name": "мин_компонент",
+        "tooltip": "Удалять связанные компоненты меньше этого количества вершин (0 = оставить все). Удаляет отдельные плавающие фрагменты и внутреннюю оболочку двойной стены."
+      },
+      "min_opacity": {
+        "name": "мин_непрозрачность",
+        "tooltip": "Игнорировать гауссианы слабее этого значения перед построением mesh."
+      },
+      "resolution": {
+        "name": "разрешение",
+        "tooltip": "Разрешение плотностной сетки вдоль самой длинной оси. Выше = более детализированная поверхность, больше VRAM/времени (растёт как resolution^3)."
+      },
+      "smooth": {
+        "name": "сглаживание",
+        "tooltip": "Итерации сглаживания mesh по Таубину. Сглаживает поверхность без её уменьшения (с сохранением объёма), в отличие от размытия плотности. 0 = необработанная поверхность."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -17805,6 +19242,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Референсное изображение(я) для редактирования. Boogu фокусируется на одном референсе на выборку; допускается больше."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -18371,6 +19839,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "Сдвиг, вращение и масштабирование гауссового splat. Неравномерное масштабирование также изменяет форму каждого отдельного splat, более медленный процесс.",
+    "display_name": "Трансформировать Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "вращать_x"
+      },
+      "rotate_y": {
+        "name": "вращать_y"
+      },
+      "rotate_z": {
+        "name": "вращать_z"
+      },
+      "scale_x": {
+        "name": "масштаб_x"
+      },
+      "scale_y": {
+        "name": "масштаб_y"
+      },
+      "scale_z": {
+        "name": "масштаб_z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "переместить_x"
+      },
+      "translate_y": {
+        "name": "переместить_y"
+      },
+      "translate_z": {
+        "name": "переместить_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "Обрезать аудио тензор в выбранном временном диапазоне.",
     "display_name": "Обрезка длительности аудио",
@@ -18550,6 +20060,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "Импорт внешней 3D-модели (например, из Rodin, Hunyuan3D или локального файла) в Tripo для использования с постобработкой Tripo: Текстурирование, Скелетирование, Конвертация. Рекомендуется GLB: текстуры сохраняются только при встраивании в файл. Обратите внимание, что для текстурирования импортированной модели требуется текстурный запрос.",
+    "display_name": "Tripo: Импорт модели",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель для импорта (GLB / FBX / OBJ / STL, до 150 МБ). Файлы OBJ и STL не содержат встроенных текстур."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
     "inputs": {
@@ -18608,6 +20134,169 @@
       },
       "1": {
         "name": "task_id модели",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 преобразование изображения в 3D. Оптимизировано для low-poly, игровых моделей.",
+    "display_name": "Tripo P1: Изображение в Модель",
+    "inputs": {
+      "auto_size": {
+        "name": "авторазмер",
+        "tooltip": "Масштабировать результат для приближения к реальным метрам."
+      },
+      "compress_geometry": {
+        "name": "сжать_геометрию",
+        "tooltip": "Применить сжатие на основе геометрии. Декомпрессируйте перед редактированием."
+      },
+      "enable_image_autofix": {
+        "name": "включить_автоисправление_изображения",
+        "tooltip": "Предобработка входного изображения для улучшения качества генерации."
+      },
+      "export_uv": {
+        "name": "экспорт_uv",
+        "tooltip": "UV-развёртка во время генерации. Отключите для более быстрой генерации только геометрии."
+      },
+      "face_limit": {
+        "name": "ограничение_граней",
+        "tooltip": "Целевое количество граней, 48-20000. -1 позволяет Tripo выбирать адаптивно."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "model_seed": {
+        "name": "seed_модели"
+      },
+      "output_mode": {
+        "name": "режим_вывода",
+        "tooltip": "\"Только геометрия\" возвращает меш без текстуры. \"С текстурой\" добавляет цветные/PBR карты."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "файл_модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_модели",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 преобразование из нескольких видов в 3D по 2-4 референсным изображениям в порядке [фронт, лево, зад, право]. Фронт обязателен; любые из остальных трёх могут быть опущены.",
+    "display_name": "Tripo P1: Мульти-вид в Модель",
+    "inputs": {
+      "auto_size": {
+        "name": "авторазмер",
+        "tooltip": "Масштабировать результат для приближения к реальным метрам."
+      },
+      "compress_geometry": {
+        "name": "сжать_геометрию",
+        "tooltip": "Применить сжатие на основе геометрии. Декомпрессируйте перед редактированием."
+      },
+      "export_uv": {
+        "name": "экспорт_uv",
+        "tooltip": "UV-развёртка во время генерации. Отключите для более быстрой генерации только геометрии."
+      },
+      "face_limit": {
+        "name": "ограничение_граней",
+        "tooltip": "Целевое количество граней, 48-20000. -1 позволяет Tripo выбирать адаптивно."
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Вид спереди (0°). Обязательно."
+      },
+      "image_back": {
+        "name": "изображение_сзади",
+        "tooltip": "Вид сзади (180°)."
+      },
+      "image_left": {
+        "name": "изображение_слева",
+        "tooltip": "Вид слева (90°), т.е. левая сторона объекта."
+      },
+      "image_right": {
+        "name": "изображение_справа",
+        "tooltip": "Вид справа (270°), т.е. правая сторона объекта."
+      },
+      "model_seed": {
+        "name": "seed_модели"
+      },
+      "output_mode": {
+        "name": "режим_вывода",
+        "tooltip": "\"Только геометрия\" возвращает меш без текстуры. \"С текстурой\" добавляет цветные/PBR карты."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "файл_модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_модели",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 преобразование текста в 3D. Оптимизировано для low-poly, игровых моделей с стабильной топологией.",
+    "display_name": "Tripo P1: Текст в Модель",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабировать результат для приближения к реальным метрам."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Применить сжатие на основе геометрии. Распакуйте перед редактированием."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "UV-развёртка во время генерации. Отключите для более быстрой генерации только геометрии."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Целевое количество полигонов, 48-20000. -1 позволяет Tripo выбрать автоматически."
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "До 255 символов."
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Только геометрия\" возвращает меш без текстуры. \"С текстурой\" добавляет цветовые/PBR карты."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "До 1024 символов."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
         "tooltip": null
       },
       "2": {
@@ -18687,6 +20376,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "Кодирует изображение с помощью DINOv3 и Flux2 VAE в TripoSplat положительное/отрицательное кондиционирование и создаёт целевой шум фиксированного размера (latent + камера) для KSampler.",
+    "display_name": "TripoSplat кондиционирование",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "DINOv3 ViT-H/16+ энкодер изображений"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "отрицательный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Целевой шум фиксированного размера (latent + камера)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "Обрезает центр каждого изображения до квадратного холста на чёрном фоне и добавляет отступы.",
+    "display_name": "TripoSplat Предобработка Изображения",
+    "inputs": {
+      "erode_radius": {
+        "name": "erode_radius",
+        "tooltip": "Эрозия альфа-матовой маски на заданный радиус в пикселях перед обрезкой (избегает появления артефактов по краям)."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Размер квадратного изображения. Модель обучена на 1024; другие размеры работают, но выходят за пределы распределения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "Патчит модель TripoSplat для стандартного узла Ksampler, чтобы показывать живой декодированный предпросмотр гауссовых splat на каждом шаге.",
+    "display_name": "TripoSplat Предпросмотр Сэмплирования",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "Количество гауссианов для предпросмотра (округляется до кратного 32)."
+      },
+      "octree_level": {
+        "name": "octree_level",
+        "tooltip": "Глубина октодерева для предпросмотра декодирования (меньше = дешевле/грубее)."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "Угол наклона камеры предпросмотра в градусах."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Максимальный радиус splat в пикселях. Каждый гауссиан масштабируется и ограничивается этим значением; меньше = тоньше/острее, больше = массивнее."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE декодер"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "Угол поворота камеры предпросмотра в градусах."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Текст в модель",
     "inputs": {
@@ -18759,6 +20543,10 @@
       },
       "texture_alignment": {
         "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Необязательное текстовое описание для текстурирования. На практике требуется для импортированных моделей (Tripo: Импорт модели), которые не содержат исходного изображения для определения цветов."
       },
       "texture_quality": {
         "name": "texture_quality"
@@ -19015,6 +20803,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "Декодирует сэмплированный TripoSplat latent в 3D гауссовый splat. Изменяйте количество гауссианов для регулировки плотности.",
+    "display_name": "TripoSplat Декодирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "Количество гауссианов для генерации (округляется до кратного 32). 262144 соответствует плотности точек октодерева; большее значение пересэмплирует те же точки (плотнее, но без новых деталей) и требует больше VRAM/времени."
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Задаёт seed для сэмплера точек октодерева (глобальный ГСЧ) для детерминированного декодирования."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE декодер"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -20548,6 +22366,14 @@
       "model": {
         "name": "модель",
         "tooltip": "Модель, к которой применяются контекстные окна во время сэмплирования."
+      },
+      "retain_first_frame": {
+        "name": "сохранить первый кадр",
+        "tooltip": "Сохранять первый кадр I2V в каждом контекстном окне (может помочь сохранить исходную ссылку)."
+      },
+      "split_conds_to_windows": {
+        "name": "разделить условия по окнам",
+        "tooltip": "Разделять ли несколько условий (созданных ConditionCombine) по каждому окну на основе индекса региона."
       }
     },
     "outputs": {
@@ -21335,7 +23161,8 @@
         "name": "размер_пакета"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "Визуальные признаки CLIP для кондиционирования. Модель обучена с растягиванием до соотношения сторон."
       },
       "height": {
         "name": "высота"
@@ -21362,14 +23189,39 @@
         "name": "видео_позы",
         "tooltip": "Видео, используемое для условия позы. Будет уменьшено до половины разрешения основного видео."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "Только для SCAIL-2. Цветное видео масок SAM3 для каждой идентичности с тем же разрешением, что и pose_video."
+      },
       "positive": {
         "name": "позитивный"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Хвостовые кадры previous_frames для привязки. SCAIL-2 обучен на 5 (81 кадр в фрагменте, шаг 76 кадров)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "Только для SCAIL-2. Полный декодированный вывод предыдущего фрагмента. В качестве якоря расширения используются только последние previous_frame_count."
+      },
       "reference_image": {
-        "name": "референсное_изображение"
+        "name": "референсное_изображение",
+        "tooltip": "Референсное изображение. Для нескольких референсов объедините все на одном изображении."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "Только для SCAIL-2. Цветная маска референса с тем же разрешением, что и reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "Только для SCAIL-2. False = режим анимации (pose_video_mask должен иметь чёрный фон). True = режим замены (pose_video_mask должен иметь белый фон)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Совокупный выходной кадр, с которого начинается этот фрагмент. Подключите от выхода video_frame_offset предыдущего фрагмента."
       },
       "width": {
         "name": "ширина"
@@ -21387,6 +23239,10 @@
       "2": {
         "name": "латентный",
         "tooltip": "Пустое латентное пространство размера генерации."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Скорректированное смещение + длина. Подключите к следующему фрагменту."
       }
     }
   },
