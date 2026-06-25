@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "您的 API 密钥无权访问此资源。请检查密钥权限。",
     "errorUserTokenInvalid": "您保存的 API 密钥无效或已过期。请在设置中更新密钥。",
     "failedToCreateNode": "创建节点失败。请重试或查看控制台获取详细信息。",
+    "useDisabledNoProvider": "没有为此模型类型注册匹配的节点。",
     "fileFormats": "文件格式",
     "fileName": "文件名",
     "fileSize": "文件大小",

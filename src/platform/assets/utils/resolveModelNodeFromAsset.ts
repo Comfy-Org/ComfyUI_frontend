@@ -8,6 +8,31 @@ import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 
+/**
+ * Extracts the category tag used to look up a node provider for this asset.
+ * Returns `undefined` when the asset carries no usable category tag.
+ */
+export function getAssetCategory(asset: AssetItem): string | undefined {
+  return asset.tags?.find((tag) => tag !== MODELS_TAG && tag !== MISSING_TAG)
+}
+
+/**
+ * Returns `false` only when we are confident the asset cannot be turned into a
+ * node (registry is initialised and no provider matches its category). While
+ * the registry is still warming up we return `true` so the UI stays enabled
+ * by default and only transitions to disabled once we know.
+ */
+export function canCreateNodeForAsset(asset: AssetItem): boolean {
+  const store = useModelToNodeStore()
+  store.registerDefaults()
+  if (!store.isReady) return true
+
+  const category = getAssetCategory(asset)
+  if (!category) return true
+
+  return Boolean(store.getNodeProvider(category))
+}
+
 type ResolveErrorCode = 'INVALID_ASSET' | 'NO_PROVIDER'
 
 export interface ResolveModelNodeError {
@@ -81,9 +106,7 @@ export function resolveModelNodeFromAsset(
     }
   }
 
-  const category = validAsset.tags.find(
-    (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
-  )
+  const category = getAssetCategory(validAsset)
   if (!category) {
     console.error(
       `Asset ${validAsset.id} has no valid category tag. Available tags: ${validAsset.tags.join(', ')} (expected tag other than '${MODELS_TAG}' or '${MISSING_TAG}')`

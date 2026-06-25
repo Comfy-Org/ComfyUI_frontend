@@ -12,6 +12,8 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   INPUT_TAG,
+  MISSING_TAG,
+  MODELS_TAG,
   OUTPUT_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
@@ -407,6 +409,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const pendingRequestByCategory = new Map<string, ModelPaginationState>()
       const pendingPromiseByCategory = new Map<string, Promise<void>>()
+      const reportedBrokenCategoriesByLoad = new Set<string>()
 
       function createState(
         existingAssets?: Map<string, AssetItem>
@@ -424,6 +427,32 @@ export const useAssetsStore = defineStore('assets', () => {
         const committed = modelStateByCategory.value.get(category)
         const pending = pendingRequestByCategory.get(category)
         return committed !== state && pending !== state
+      }
+
+      function reportBrokenCategoriesOnce(
+        loadKey: string,
+        assets: Map<string, AssetItem>
+      ): void {
+        if (reportedBrokenCategoriesByLoad.has(loadKey)) return
+        modelToNodeStore.registerDefaults()
+        if (!modelToNodeStore.isReady) return
+        reportedBrokenCategoriesByLoad.add(loadKey)
+
+        const broken = new Set<string>()
+        for (const asset of assets.values()) {
+          const category = asset.tags?.find(
+            (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
+          )
+          if (!category) continue
+          if (!modelToNodeStore.getNodeProvider(category)) broken.add(category)
+        }
+
+        if (broken.size > 0) {
+          console.warn(
+            `[AssetBrowser] No node provider for categories (${loadKey}):`,
+            [...broken].sort()
+          )
+        }
       }
 
       const EMPTY_ASSETS: AssetItem[] = []
@@ -587,6 +616,8 @@ export const useAssetsStore = defineStore('assets', () => {
           }
           assetsArrayCache.delete(category)
           pendingRequestByCategory.delete(category)
+
+          reportBrokenCategoriesOnce(category, state.assets)
         }
 
         const promise = loadBatches().finally(() => {

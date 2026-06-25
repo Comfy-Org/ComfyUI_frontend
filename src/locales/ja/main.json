@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "お使いのAPIトークンにはこのリソースへのアクセス権がありません。トークンの権限を確認してください。",
     "errorUserTokenInvalid": "保存されているAPIトークンが無効または期限切れです。設定でトークンを更新してください。",
     "failedToCreateNode": "ノードの作成に失敗しました。再試行するか、詳細はコンソールをご確認ください。",
+    "useDisabledNoProvider": "このモデルタイプに一致するノードが登録されていません。",
     "fileFormats": "ファイル形式",
     "fileName": "ファイル名",
     "fileSize": "ファイルサイズ",

@@ -16,7 +16,7 @@
     "
     @click.stop="interactive && $emit('focus', asset)"
     @focus="interactive && $emit('focus', asset)"
-    @keydown.enter.self="interactive && $emit('select', asset)"
+    @keydown.enter.self="interactive && canUseAsset && handleSelect()"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
@@ -111,9 +111,19 @@
         </div>
         <Button
           v-if="interactive"
+          v-tooltip.top="
+            canUseAsset
+              ? undefined
+              : {
+                  value: $t('assetBrowser.useDisabledNoProvider'),
+                  showDelay: tooltipDelay
+                }
+          "
           variant="secondary"
           size="lg"
           class="relative shrink-0"
+          :disabled="!canUseAsset"
+          :aria-disabled="!canUseAsset"
           @click.stop="handleSelect"
         >
           {{ $t('g.use') }}
@@ -142,6 +152,7 @@ import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
 import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
+import { canCreateNodeForAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -187,6 +198,8 @@ const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 
 const showAssetOptions = computed(() => !(asset.is_immutable ?? true))
 
+const canUseAsset = computed(() => canCreateNodeForAsset(asset))
+
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
 )
@@ -197,6 +210,7 @@ const { isLoading, error } = useImageQuiet({
 })
 
 function handleSelect() {
+  if (!canUseAsset.value) return
   acknowledgeAsset(asset.id)
   emit('select', asset)
 }
