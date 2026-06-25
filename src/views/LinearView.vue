@@ -14,7 +14,6 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@comfyorg/tailwind-utils'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
@@ -128,12 +127,7 @@ function dragDrop(e: DragEvent) {
           :style="
             showRightBuilder && !activeTab ? { display: 'none' } : undefined
           "
-          :class="
-            cn(
-              'arrange-panel overflow-hidden outline-none',
-              showLeftBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
-            )
-          "
+          class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
         >
           <AppBuilder v-if="showLeftBuilder" />
           <div
@@ -181,12 +175,7 @@ function dragDrop(e: DragEvent) {
           :style="
             showLeftBuilder && !activeTab ? { display: 'none' } : undefined
           "
-          :class="
-            cn(
-              'arrange-panel overflow-hidden outline-none',
-              showRightBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
-            )
-          "
+          class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
         >
           <AppBuilder v-if="showRightBuilder" />
           <LinearControls
