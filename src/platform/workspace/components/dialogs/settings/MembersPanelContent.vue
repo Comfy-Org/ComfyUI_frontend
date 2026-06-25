@@ -48,7 +48,6 @@
             variant="secondary"
             size="lg"
             :disabled="isInviteDisabled"
-            :aria-label="$t('workspacePanel.inviteMember')"
             @click="handleInviteMember"
           >
             {{ $t('workspacePanel.invite') }}

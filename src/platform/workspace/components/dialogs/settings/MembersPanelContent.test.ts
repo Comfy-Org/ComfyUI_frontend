@@ -481,7 +481,7 @@ describe('MembersPanelContent', () => {
     it('invokes the invite flow from the header invite button', async () => {
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: 'workspacePanel.inviteMember' })
+        screen.getByRole('button', { name: 'workspacePanel.invite' })
       )
       expect(mockHandleInviteMember).toHaveBeenCalled()
     })
@@ -490,7 +490,7 @@ describe('MembersPanelContent', () => {
       mockShowInviteButton.value = false
       renderComponent()
       expect(
-        screen.queryByRole('button', { name: 'workspacePanel.inviteMember' })
+        screen.queryByRole('button', { name: 'workspacePanel.invite' })
       ).toBeNull()
     })
 
@@ -498,7 +498,7 @@ describe('MembersPanelContent', () => {
       mockIsInviteDisabled.value = true
       renderComponent()
       const button = screen.getByRole('button', {
-        name: 'workspacePanel.inviteMember'
+        name: 'workspacePanel.invite'
       })
       expect((button as HTMLButtonElement).disabled).toBe(true)
     })
