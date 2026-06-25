@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isNodeId, toNodeId, parseNodeId } from '@/types/nodeId'
+import { toNodeId, parseNodeId } from '@/types/nodeId'
 
 describe('nodeId', () => {
   it('normalizes serialized node ids to strings', () => {
@@ -22,18 +22,5 @@ describe('parseNodeId', () => {
     expect(parseNodeId(Number.NaN)).toBeNull()
     expect(parseNodeId(null)).toBeNull()
     expect(parseNodeId(undefined)).toBeNull()
-  })
-})
-
-describe('isNodeId', () => {
-  it('accepts non-empty strings', () => {
-    expect(isNodeId('42')).toBe(true)
-    expect(isNodeId('node-42')).toBe(true)
-  })
-
-  it('rejects unparsed serialized ids and empty strings', () => {
-    expect(isNodeId(42)).toBe(false)
-    expect(isNodeId('')).toBe(false)
-    expect(isNodeId(null)).toBe(false)
   })
 })

@@ -28,7 +28,3 @@ export function parseNodeId(value: unknown): NodeId | null {
 
   return null
 }
-
-export function isNodeId(value: unknown): value is NodeId {
-  return typeof value === 'string' && value.length > 0
-}
