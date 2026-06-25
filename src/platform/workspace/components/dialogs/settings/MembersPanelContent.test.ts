@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
@@ -60,7 +60,7 @@ const {
       canViewPendingInvites: true,
       canInviteMembers: true,
       canManageInvites: true,
-      canRemoveMembers: true,
+      canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
@@ -105,6 +105,12 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     filteredMembers: mockFilteredMembers,
     filteredPendingInvites: mockFilteredPendingInvites,
     memberMenuItems: mockMemberMenuItems,
+    memberMenus: computed(
+      () =>
+        new Map(
+          mockFilteredMembers.value.map((m) => [m.id, mockMemberMenuItems()])
+        )
+    ),
     isPersonalWorkspace: mockIsPersonalWorkspace,
     members: mockMembers,
     pendingInvites: mockPendingInvites,
@@ -213,7 +219,7 @@ describe('MembersPanelContent', () => {
       canViewPendingInvites: true,
       canInviteMembers: true,
       canManageInvites: true,
-      canRemoveMembers: true,
+      canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
@@ -329,9 +335,15 @@ describe('MembersPanelContent', () => {
         createMember({ id: '2', name: 'Other', email: 'other@test.com' })
       ]
       renderComponent()
+
+      const creatorRow = screen.getByTestId('member-row-creator-1')
+      const otherRow = screen.getByTestId('member-row-2')
       expect(
-        screen.queryAllByRole('button', { name: 'g.moreOptions' })
-      ).toHaveLength(1)
+        within(creatorRow).queryByRole('button', { name: 'g.moreOptions' })
+      ).toBeNull()
+      expect(
+        within(otherRow).getByRole('button', { name: 'g.moreOptions' })
+      ).toBeInTheDocument()
     })
   })
 
@@ -380,7 +392,7 @@ describe('MembersPanelContent', () => {
         canViewPendingInvites: false,
         canInviteMembers: false,
         canManageInvites: false,
-        canRemoveMembers: false,
+        canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,

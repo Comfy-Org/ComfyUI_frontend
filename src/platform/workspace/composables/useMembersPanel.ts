@@ -30,8 +30,10 @@ export function sortMembers(
   originalOwnerId: string | null = null
 ): WorkspaceMember[] {
   return [...members].sort((a, b) => {
-    if (a.id === originalOwnerId) return -1
-    if (b.id === originalOwnerId) return 1
+    const aIsOriginalOwner = a.id === originalOwnerId
+    const bIsOriginalOwner = b.id === originalOwnerId
+    if (aIsOriginalOwner && !bIsOriginalOwner) return -1
+    if (!aIsOriginalOwner && bIsOriginalOwner) return 1
 
     if (a.role !== b.role) {
       const ownerFirst = a.role === 'owner' ? -1 : 1
@@ -209,6 +211,13 @@ export function useMembersPanel() {
     )
   })
 
+  // Built once per member list rather than per row on every render, so an
+  // unrelated re-render (e.g. typing in the search box) doesn't rebuild every
+  // row's menu and churn MemberListItem's props.
+  const memberMenus = computed(
+    () => new Map(filteredMembers.value.map((m) => [m.id, memberMenuItems(m)]))
+  )
+
   const filteredPendingInvites = computed(() => {
     const searched = filterBySearch(pendingInvites.value, searchQuery.value)
     return sortPendingInvites(searched, sortField.value, sortDirection.value)
@@ -282,6 +291,7 @@ export function useMembersPanel() {
     filteredMembers,
     filteredPendingInvites,
     memberMenuItems,
+    memberMenus,
     isPersonalWorkspace,
     members,
     pendingInvites,

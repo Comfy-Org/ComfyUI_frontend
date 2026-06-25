@@ -132,7 +132,7 @@
               <i class="icon-[lucide--chevrons-up-down] size-4" />
             </Button>
             <!-- Empty cell for action column header (OWNER only) -->
-            <div v-if="permissions.canRemoveMembers" />
+            <div v-if="permissions.canManageMembers" />
           </template>
         </div>
 
@@ -166,11 +166,11 @@
                 :show-role-column="
                   uiConfig.showRoleColumn && hasMultipleMembers
                 "
-                :can-manage-members="permissions.canRemoveMembers"
+                :can-manage-members="permissions.canManageMembers"
                 :is-single-seat-plan="!isOnTeamPlan"
                 :is-original-owner="isOriginalOwner(member)"
                 :striped="index % 2 === 1"
-                :menu-items="memberMenuItems(member)"
+                :menu-items="memberMenus.get(member.id)"
               />
             </template>
           </template>
@@ -239,7 +239,7 @@ const {
   personalWorkspaceMember,
   filteredMembers,
   filteredPendingInvites,
-  memberMenuItems,
+  memberMenus,
   isPersonalWorkspace,
   members,
   pendingInvites,

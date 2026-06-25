@@ -73,7 +73,17 @@ export class CloudWorkspaceMockHelper {
         })
       )
     )
-    await page.route('**/api/settings', (r) => r.fulfill(jsonRoute({})))
+    // A non-empty settings payload with TutorialCompleted marks the user as
+    // returning, so the new-user Templates dialog never auto-opens to block the
+    // Settings button. Errors tab off suppresses the model-folder 401 toast.
+    await page.route('**/api/settings', (r) =>
+      r.fulfill(
+        jsonRoute({
+          'Comfy.TutorialCompleted': true,
+          'Comfy.RightSidePanel.ShowErrorsTab': false
+        })
+      )
+    )
     await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
     await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
     await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
@@ -100,8 +110,8 @@ export class CloudWorkspaceMockHelper {
         state.patches.push({ url, role })
         const member = state.members.find((m) => m.id === id)
         if (member) member.role = role
-        // The store applies the returned Member to local state; echo the full
-        // updated row so role/id survive the round trip.
+        // Echo the updated row like the real BE; the store merges only the role
+        // locally, so the response body shape is not load-bearing.
         return route.fulfill(jsonRoute(member))
       }
       return route.fulfill(

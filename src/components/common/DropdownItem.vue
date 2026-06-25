@@ -62,6 +62,11 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
         Boolean(item.tooltip) && toValue(item.disabled) && 'pointer-events-auto'
       )
     "
+    v-bind="
+      'checked' in item
+        ? { role: 'menuitemradio', 'aria-checked': Boolean(item.checked) }
+        : {}
+    "
     :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >

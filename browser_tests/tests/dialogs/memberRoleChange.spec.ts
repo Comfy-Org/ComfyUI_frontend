@@ -66,7 +66,7 @@ async function openChangeRoleSubmenu(page: Page) {
   await expect(trigger).toBeVisible()
   await trigger.press('ArrowRight')
   await expect(
-    page.getByRole('menuitem', { name: 'Owner', exact: true })
+    page.getByRole('menuitemradio', { name: 'Owner', exact: true })
   ).toBeVisible()
 }
 
@@ -104,7 +104,19 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     const janeRow = memberRow(content, MEMBER_JANE.email)
     await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
-    await page.getByRole('menuitem', { name: 'Member', exact: true }).click()
+
+    // The current role is a checked radio item so assistive tech can announce
+    // which role is active.
+    await expect(
+      page.getByRole('menuitemradio', { name: 'Member', exact: true })
+    ).toHaveAttribute('aria-checked', 'true')
+    await expect(
+      page.getByRole('menuitemradio', { name: 'Owner', exact: true })
+    ).toHaveAttribute('aria-checked', 'false')
+
+    await page
+      .getByRole('menuitemradio', { name: 'Member', exact: true })
+      .click()
 
     await expect(page.getByRole('heading', { name: /an owner\?/ })).toHaveCount(
       0
@@ -121,7 +133,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     const janeRow = memberRow(content, MEMBER_JANE.email)
     await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
-    await page.getByRole('menuitem', { name: 'Owner', exact: true }).click()
+    await page
+      .getByRole('menuitemradio', { name: 'Owner', exact: true })
+      .click()
 
     await expect(
       page.getByRole('heading', { name: 'Make Jane an owner?' })
@@ -162,7 +176,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     const janeRow = memberRow(content, MEMBER_JANE.email)
     await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
-    await page.getByRole('menuitem', { name: 'Owner', exact: true }).click()
+    await page
+      .getByRole('menuitemradio', { name: 'Owner', exact: true })
+      .click()
     await page.getByRole('button', { name: 'Make owner' }).click()
 
     await expect(page.getByText('Role updated')).toBeVisible()
@@ -199,7 +215,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
 
     await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
-    await page.getByRole('menuitem', { name: 'Member', exact: true }).click()
+    await page
+      .getByRole('menuitemradio', { name: 'Member', exact: true })
+      .click()
     await expect(
       page.getByRole('heading', { name: 'Demote Jane to member?' })
     ).toBeVisible()
@@ -230,7 +248,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     const janeRow = memberRow(content, MEMBER_JANE.email)
     await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
-    await page.getByRole('menuitem', { name: 'Owner', exact: true }).click()
+    await page
+      .getByRole('menuitemradio', { name: 'Owner', exact: true })
+      .click()
     await page.getByRole('button', { name: 'Make owner' }).click()
 
     // US10 — error toast, dialog stays open, role unchanged.

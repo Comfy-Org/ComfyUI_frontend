@@ -1,5 +1,6 @@
 <template>
   <div
+    :data-testid="`member-row-${member.id}`"
     :class="
       cn(
         'grid w-full items-center rounded-lg p-2',
