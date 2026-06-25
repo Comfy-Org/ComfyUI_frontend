@@ -622,11 +622,8 @@ function repairPrimitive(
   const snapshot: SnapshotLink[] = (primitiveOutput.links ?? [])
     .map((id) => subgraph.links.get(id))
     .filter(
-      (
-        l
-      ): l is NonNullable<typeof l> & {
-        target_id: NodeId
-      } => l !== undefined && l.target_id !== UNASSIGNED_NODE_ID
+      (l): l is NonNullable<typeof l> =>
+        l !== undefined && l.target_id !== UNASSIGNED_NODE_ID
     )
     .map((l) => ({
       primitiveSlot: l.origin_slot,
