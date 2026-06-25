@@ -456,6 +456,28 @@ describe('useSubscriptionCheckout', () => {
       openSpy.mockRestore()
     })
 
+    it('warns when the payment popup is blocked', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-blocked',
+        payment_method_url: 'https://stripe.com/pay'
+      })
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'subscription.preview.paymentPopupBlocked'
+        })
+      )
+      openSpy.mockRestore()
+    })
+
     it('polls the operation without opening a window when needs_payment_method has no URL', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'

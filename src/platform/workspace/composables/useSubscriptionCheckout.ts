@@ -196,7 +196,16 @@ export function useSubscriptionCheckout(emit: {
       response.status === 'needs_payment_method' &&
       response.payment_method_url
     ) {
-      window.open(response.payment_method_url, '_blank')
+      // The open runs after `await subscribe(...)`, so it's not a direct user
+      // gesture and can be popup-blocked; warn instead of failing silently.
+      const paymentWindow = window.open(response.payment_method_url, '_blank')
+      if (!paymentWindow) {
+        toast.add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('subscription.preview.paymentPopupBlocked')
+        })
+      }
     }
     await advanceToSuccessOnOperation(response.billing_op_id)
   }

@@ -276,7 +276,7 @@ const currentPeriodEnd = computed(() =>
 const confirmTitle = computed(() =>
   isImmediate.value
     ? t('subscription.preview.confirmUpgradeTitle')
-    : t('subscription.preview.confirmChange')
+    : t('subscription.preview.confirmChangeTitle')
 )
 const confirmCta = computed(() =>
   isImmediate.value

@@ -652,6 +652,17 @@ const teamVideoEstimate = computed(() =>
 // the slider stops by list price so the current stop can be disabled.
 const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
 
+// `teamUsd` is seeded at mount from the fallback default; when the API stops
+// resolve afterwards with different breakpoints that seed can match no stop,
+// leaving the slider position and the subscribe payload out of sync. Snap to the
+// resolved default — but only while no real stop is pinned (a subscriber's stop
+// is set below; a user's own selection already matches a stop).
+watch(defaultTeamStop, (stop) => {
+  if (currentTeamCreditStop.value) return
+  if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
+  teamUsd.value = stop.usd
+})
+
 // Start the slider on the current stop so an active subscriber sees their plan
 // (disabled) and must move off it to change.
 watch(
