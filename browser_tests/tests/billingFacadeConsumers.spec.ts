@@ -3,6 +3,10 @@ import type { Page } from '@playwright/test'
 
 import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type {
+  BillingBalanceResponse,
+  BillingStatusResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
@@ -12,12 +16,12 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
  * Billing facade consumers — FE-933 (B3) regression.
  *
  * The repointed surfaces (avatar popover tier badge / balance, free-tier
- * dialog renewal date) must keep rendering from `useBillingContext`, which in
- * a personal workspace routes through the legacy `/customers/*` endpoints
- * (mocked here). Drives a raw `page` (not the `comfyPage` fixture) so the
- * cloud app boots against fully mocked endpoints — same pattern as
- * creditsTile.spec.ts. `team_workspaces_enabled: false` keeps the topbar on
- * the legacy popover variant that FE-933 repointed.
+ * dialog renewal date) must keep rendering from `useBillingContext`. The facade
+ * selects its backend by flag: `team_workspaces_enabled: false` routes through
+ * the legacy `/customers/*` endpoints, while `true` routes a personal workspace
+ * through the workspace `/api/billing/*` endpoints. Both shapes are mocked here.
+ * Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
+ * against fully mocked endpoints — same pattern as creditsTile.spec.ts.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -26,6 +30,25 @@ const jsonRoute = (body: unknown) => ({
   contentType: 'application/json',
   body: JSON.stringify(body)
 })
+
+// The workspace `/api/billing/status` shape mirrors the legacy subscription
+// status; map the fields so a single test fixture drives both backends.
+const toWorkspaceStatus = (
+  s: CloudSubscriptionStatusResponse
+): BillingStatusResponse => ({
+  is_active: s.is_active ?? false,
+  subscription_tier: s.subscription_tier ?? undefined,
+  subscription_duration: s.subscription_duration ?? undefined,
+  renewal_date: s.renewal_date ?? undefined,
+  cancel_at: s.end_date ?? undefined,
+  has_funds: s.has_fund ?? true
+})
+
+const mockBalance: BillingBalanceResponse = {
+  amount_micros: 6000, // -> 12,660 credits
+  currency: 'usd',
+  effective_balance_micros: 6000
+}
 
 async function mockCloudBoot(
   page: Page,
@@ -60,8 +83,7 @@ async function mockCloudBoot(
   )
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
-  // Single personal workspace: keeps the billing facade on the legacy
-  // `/customers/*` path when team workspaces are enabled.
+  // Single personal workspace.
   await page.route('**/api/workspaces', (r) =>
     r.fulfill(
       jsonRoute({
@@ -77,17 +99,24 @@ async function mockCloudBoot(
     )
   )
 
+  // Legacy backend (team_workspaces_enabled: false).
   await page.route('**/customers/cloud-subscription-status', (r) =>
     r.fulfill(jsonRoute(subscriptionStatus))
   )
   await page.route('**/customers/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: 6000, // -> 12,660 credits
-        currency: 'usd',
-        effective_balance_micros: 6000
-      })
-    )
+    r.fulfill(jsonRoute(mockBalance))
+  )
+
+  // Workspace backend (team_workspaces_enabled: true) — a personal workspace
+  // now routes through `/api/billing/*`.
+  await page.route('**/api/billing/status', (r) =>
+    r.fulfill(jsonRoute(toWorkspaceStatus(subscriptionStatus)))
+  )
+  await page.route('**/api/billing/balance', (r) =>
+    r.fulfill(jsonRoute(mockBalance))
+  )
+  await page.route('**/api/billing/plans', (r) =>
+    r.fulfill(jsonRoute({ plans: [] }))
   )
 }
 
@@ -134,10 +163,10 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
 
-    // Boots with team workspaces enabled (production shape); the facade still
-    // routes a personal workspace through `/customers/*`. With subscription
-    // gating on, an inactive FREE user gets the "Subscribe to run" button,
-    // which opens the free-tier dialog on click. (refreshRemoteConfig
+    // Boots with team workspaces enabled (production shape); the facade routes a
+    // personal workspace through the workspace `/api/billing/*` endpoints. With
+    // subscription gating on, an inactive FREE user gets the "Subscribe to run"
+    // button, which opens the free-tier dialog on click. (refreshRemoteConfig
     // overwrites window.__CONFIG__ from /api/features, so the flags must come
     // from the features mock, not an init script.)
     await mockCloudBoot(
