@@ -34,10 +34,15 @@ export async function performTeamSubscriptionCheckout(
     teamCreditStopId
   )
 
-  if (
-    response.status === 'needs_payment_method' &&
-    response.payment_method_url
-  ) {
+  if (response.status === 'needs_payment_method') {
+    // A needs_payment_method response without a URL is unusable: surface it to
+    // the caller's error handling rather than silently dropping the user home
+    // with a subscription stuck mid-payment.
+    if (!response.payment_method_url) {
+      throw new Error(
+        'Team subscription needs a payment method but no payment URL was returned'
+      )
+    }
     globalThis.location.href = response.payment_method_url
     return
   }

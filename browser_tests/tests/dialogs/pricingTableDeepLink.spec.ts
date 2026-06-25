@@ -38,13 +38,20 @@ const BOOT_SETTINGS = { 'Comfy.Assets.UseAssetAPI': false }
 // chain must not throw before it: a missing settings subpath, prompt exec_info,
 // or queue status each abort that chain.
 async function mockGraphBootExtras(page: Page) {
-  await page.route('**/api/settings/**', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/prompt', (r) =>
-    r.fulfill(jsonRoute({ exec_info: { queue_remaining: 0 } }))
-  )
-  await page.route('**/api/queue', (r) =>
-    r.fulfill(jsonRoute({ queue_running: [], queue_pending: [] }))
-  )
+  // Boot only reads these; fall back on any write so an unexpected POST/PUT
+  // surfaces instead of being masked by a blanket 200.
+  await page.route('**/api/settings/**', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({}))
+  })
+  await page.route('**/api/prompt', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({ exec_info: { queue_remaining: 0 } }))
+  })
+  await page.route('**/api/queue', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({ queue_running: [], queue_pending: [] }))
+  })
 }
 
 async function setupCloudApp(

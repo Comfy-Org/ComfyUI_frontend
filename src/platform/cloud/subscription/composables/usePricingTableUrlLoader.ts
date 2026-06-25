@@ -34,11 +34,11 @@ export function usePricingTableUrlLoader() {
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
     const param = query.pricing
-    if (!param || typeof param !== 'string') return
+    if (param === undefined) return
 
-    // Strip the param (even for ineligible users) and write the clean URL in a
-    // single replace before any await, so a clean URL is guaranteed even if the
-    // replace rejects or the gate later denies the user.
+    // Strip any present pricing param (even ineligible or malformed values) and
+    // write the clean URL in a single replace before any await, so a clean URL
+    // is guaranteed even if the replace rejects or the gate later denies.
     const cleanQuery = { ...query }
     delete cleanQuery.pricing
     router.replace({ query: cleanQuery }).catch((error) => {
@@ -49,8 +49,13 @@ export function usePricingTableUrlLoader() {
     })
     clearPreservedQuery(NAMESPACE)
 
-    // Fetch members (no-ops for personal) so the original-owner self-row loads
-    // before the gate; fetchMembers awaits, ensureMembersLoaded can return early.
+    // Only a non-empty string value opens the table; an empty/array param just
+    // gets stripped above.
+    if (typeof param !== 'string' || !param) return
+
+    // Load members before reading the gate so the original-owner self-row is
+    // present. fetchMembers always awaits the request; ensureMembersLoaded can
+    // early-return on a cached/in-flight load and let the gate read empty members.
     await workspaceStore.fetchMembers()
     if (!permissions.value.canManageSubscriptionLifecycle) return
 

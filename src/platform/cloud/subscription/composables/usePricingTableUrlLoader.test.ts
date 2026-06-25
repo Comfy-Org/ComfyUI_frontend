@@ -185,23 +185,27 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockShowPricingTable).toHaveBeenCalledOnce()
   })
 
-  it('ignores empty param', async () => {
+  it('strips but does not open for an empty param', async () => {
     mockRouteQuery.value = { pricing: '' }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'pricing'
+    )
   })
 
-  it('ignores non-string param', async () => {
+  it('strips but does not open for a non-string param', async () => {
     mockRouteQuery.value = { pricing: fromAny<string, unknown>(['array']) }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('opens the default tab for an unrecognized pricing value', async () => {

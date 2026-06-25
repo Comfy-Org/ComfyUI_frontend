@@ -71,6 +71,19 @@ describe('performTeamSubscriptionCheckout', () => {
     expect(assignedHref).toBe('/')
   })
 
+  it('throws when payment is needed but no payment URL is returned', async () => {
+    mockSubscribe.mockResolvedValue({
+      status: 'needs_payment_method',
+      billing_op_id: 'op_3'
+    })
+
+    await expect(
+      performTeamSubscriptionCheckout('team_700', 'yearly')
+    ).rejects.toThrow(/payment URL/)
+
+    expect(assignedHref).toBeUndefined()
+  })
+
   it('does nothing off cloud', async () => {
     mockIsCloud.value = false
 
