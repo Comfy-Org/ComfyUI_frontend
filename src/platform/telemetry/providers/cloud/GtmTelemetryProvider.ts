@@ -184,7 +184,9 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
-    this.pushEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
+    // GA4 names must be bare snake_case; the TelemetryEvents enum carries an
+    // `app:` prefix for Mixpanel/PostHog that dataLayer would forward verbatim.
+    this.pushEvent('workspace_invite_sent', metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

@@ -29,12 +29,6 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    getMaxSeats: () => 30
-  })
-}))
-
 const { mockFlags } = vi.hoisted(() => ({
   mockFlags: { teamWorkspacesEnabled: true }
 }))

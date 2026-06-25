@@ -1,4 +1,4 @@
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /** Split pasted/typed input on commas and newlines only, so addresses with
  *  surrounding whitespace (e.g. Outlook `"Alice B" <a@b.com>`) stay intact. */

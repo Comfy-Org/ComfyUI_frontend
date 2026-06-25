@@ -153,13 +153,14 @@ const canSubmit = computed(
     invalidEmails.value.length === 0
 )
 
-const describedBy = computed(() =>
-  [
-    invalidEmails.value.length > 0 ? invalidEmailsHintId : undefined,
-    isAtSeatLimit.value ? seatLimitHintId : undefined
-  ]
-    .filter(Boolean)
-    .join(' ')
+const describedBy = computed(
+  () =>
+    [
+      invalidEmails.value.length > 0 ? invalidEmailsHintId : undefined,
+      isAtSeatLimit.value ? seatLimitHintId : undefined
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined
 )
 
 function onEmailsUpdate(value: string[]) {
