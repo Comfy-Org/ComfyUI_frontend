@@ -139,15 +139,15 @@ test.describe('ProductShowcase - mobile Lottie layout @mobile', () => {
     await page.goto('/')
   })
 
-  test('mobile Lottie slot appears after hydration', async ({
-    page
-  }) => {
+  test('mobile Lottie slot appears after hydration', async ({ page }) => {
     const section = await scrollToShowcase(page)
     // After onMounted hydration flips isMobile=true, a mobile aspect-video slot
     // should appear. We don't assert the desktop column is gone because SSR
     // renders it initially (isMobile starts false) and hydration timing is
     // non-deterministic in the preview environment.
-    await expect(section.locator('div[class*="aspect-video"]').first()).toBeAttached({ timeout: 10_000 })
+    await expect(
+      section.locator('div[class*="aspect-video"]').first()
+    ).toBeAttached({ timeout: 10_000 })
   })
 
   test('only one mobile Lottie slot is mounted at a time', async ({ page }) => {
