@@ -4,18 +4,21 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   PendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  MAX_WORKSPACE_MEMBERS,
+  useTeamWorkspaceStore
+} from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
-type SortField = 'inviteDate' | 'expiryDate' | 'joinDate'
+type SortField = 'inviteDate' | 'expiryDate' | 'role'
 type SortDirection = 'asc' | 'desc'
 
 export function sortMembers(
@@ -24,8 +27,10 @@ export function sortMembers(
   sortDirection: SortDirection
 ): WorkspaceMember[] {
   return [...members].sort((a, b) => {
-    if (a.role === 'owner' && b.role !== 'owner') return -1
-    if (a.role !== 'owner' && b.role === 'owner') return 1
+    if (a.role !== b.role) {
+      const ownerFirst = a.role === 'owner' ? -1 : 1
+      return sortDirection === 'desc' ? ownerFirst : -ownerFirst
+    }
 
     const aIsCurrent = a.email.toLowerCase() === currentUserEmail?.toLowerCase()
     const bIsCurrent = b.email.toLowerCase() === currentUserEmail?.toLowerCase()
@@ -51,12 +56,20 @@ export function filterBySearch<T extends { email: string; name?: string }>(
   )
 }
 
+type InviteSortField = 'inviteDate' | 'expiryDate'
+
+// Pending invites carry no role, so the members' 'role' sort has no equivalent
+// here and falls back to the invite date.
+function toInviteSortField(sortField: SortField): InviteSortField {
+  return sortField === 'expiryDate' ? 'expiryDate' : 'inviteDate'
+}
+
 export function sortPendingInvites(
   invites: PendingInvite[],
   sortField: SortField,
   sortDirection: SortDirection
 ): PendingInvite[] {
-  const field = sortField === 'joinDate' ? 'inviteDate' : sortField
+  const field = toInviteSortField(sortField)
   return [...invites].sort((a, b) => {
     const aDate = a[field]
     const bDate = b[field]
@@ -74,37 +87,67 @@ export function useMembersPanel() {
   const {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
-    showCreateWorkspaceDialog
+    showInviteMemberDialog,
+    showInviteMemberUpsellDialog
   } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const {
     members,
     pendingInvites,
+    totalMemberSlots,
+    isInviteLimitReached,
     isInPersonalWorkspace: isPersonalWorkspace
   } = storeToRefs(workspaceStore)
-  const { copyInviteLink } = workspaceStore
+  const { resendInvite } = workspaceStore
   const { permissions, uiConfig } = useWorkspaceUI()
-  const {
-    isActiveSubscription,
-    subscription,
-    showSubscriptionDialog,
-    getMaxSeats
-  } = useBillingContext()
+  const { isOnTeamPlan, isCancelled, hasLapsedTeamPlan } = useTeamPlan()
+  const subscriptionDialog = useSubscriptionDialog()
 
-  const maxSeats = computed(() => {
-    if (isPersonalWorkspace.value) return 1
-    const tier = subscription.value?.tier
-    if (!tier) return 1
-    const tierKey = TIER_TO_KEY[tier]
-    if (!tierKey) return 1
-    return getMaxSeats(tierKey)
+  // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
+  // the subscription tier.
+  const maxSeats = computed(() => MAX_WORKSPACE_MEMBERS)
+
+  const hasMultipleMembers = computed(() => members.value.length > 1)
+
+  const showSearch = computed(
+    () => uiConfig.value.showSearch && hasMultipleMembers.value
+  )
+
+  const showViewTabs = computed(
+    () =>
+      isOnTeamPlan.value &&
+      (hasMultipleMembers.value || pendingInvites.value.length > 0)
+  )
+
+  const showInviteButton = computed(
+    () => permissions.value.canInviteMembers || isPersonalWorkspace.value
+  )
+
+  // Plan seat limit, with the flat backend cap (isInviteLimitReached) as backstop
+  const isMemberLimitReached = computed(
+    () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
+  )
+
+  // Invite is allowed only on an active (non-cancelled) team plan that is under
+  // the member cap.
+  const isInviteDisabled = computed(
+    () => !isOnTeamPlan.value || isCancelled.value || isMemberLimitReached.value
+  )
+
+  const inviteTooltip = computed(() => {
+    if (!isOnTeamPlan.value) return null
+    if (!isMemberLimitReached.value) return null
+    return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
   })
 
-  const isSingleSeatPlan = computed(() => {
-    if (isPersonalWorkspace.value) return false
-    if (!isActiveSubscription.value) return true
-    return maxSeats.value <= 1
-  })
+  function handleInviteMember() {
+    if (!isOnTeamPlan.value) {
+      void showInviteMemberUpsellDialog()
+      return
+    }
+    if (isCancelled.value || isMemberLimitReached.value) return
+    void showInviteMemberDialog()
+  }
 
   const personalWorkspaceMember = computed<WorkspaceMember>(() => ({
     id: 'self',
@@ -161,18 +204,18 @@ export function useMembersPanel() {
     }
   }
 
-  async function handleCopyInviteLink(invite: PendingInvite) {
+  async function handleResendInvite(invite: PendingInvite) {
     try {
-      await copyInviteLink(invite.id)
+      await resendInvite(invite.id)
       toast.add({
         severity: 'success',
-        summary: t('g.copied'),
+        summary: t('workspacePanel.toast.inviteResent'),
         life: 2000
       })
     } catch {
       toast.add({
         severity: 'error',
-        summary: t('g.error')
+        summary: t('workspacePanel.toast.inviteResendFailed')
       })
     }
   }
@@ -181,12 +224,12 @@ export function useMembersPanel() {
     void showRevokeInviteDialog(invite.id)
   }
 
-  function handleCreateWorkspace() {
-    void showCreateWorkspaceDialog()
-  }
-
   function handleRemoveMember(member: WorkspaceMember) {
     void showRemoveMemberDialog(member.id)
+  }
+
+  function showTeamPlans() {
+    subscriptionDialog.show({ planMode: 'team' })
   }
 
   return {
@@ -196,7 +239,15 @@ export function useMembersPanel() {
     sortDirection,
     selectedMember,
     maxSeats,
-    isSingleSeatPlan,
+    isOnTeamPlan,
+    hasLapsedTeamPlan,
+    hasMultipleMembers,
+    showSearch,
+    showViewTabs,
+    showInviteButton,
+    isInviteDisabled,
+    inviteTooltip,
+    handleInviteMember,
     personalWorkspaceMember,
     filteredMembers,
     filteredPendingInvites,
@@ -206,15 +257,13 @@ export function useMembersPanel() {
     pendingInvites,
     permissions,
     uiConfig,
-    isActiveSubscription,
     userPhotoUrl,
     isCurrentUser,
     selectMember,
     toggleSort,
-    showSubscriptionDialog,
-    handleCopyInviteLink,
+    showTeamPlans,
+    handleResendInvite,
     handleRevokeInvite,
-    handleCreateWorkspace,
     handleRemoveMember
   }
 }

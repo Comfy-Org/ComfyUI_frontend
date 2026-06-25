@@ -10,6 +10,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -144,6 +145,17 @@ const mockGetOutputAssetMetadata = vi.hoisted(() =>
 vi.mock('../schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: mockGetOutputAssetMetadata
 }))
+
+const mockResolveOutputAssetItems = vi.hoisted(() =>
+  vi.fn().mockResolvedValue([])
+)
+vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
+  const actual = await importOriginal<typeof outputAssetUtilModule>()
+  return {
+    ...actual,
+    resolveOutputAssetItems: mockResolveOutputAssetItems
+  }
+})
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
@@ -283,6 +295,8 @@ describe('useMediaAssetActions', () => {
     mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReset()
+    mockResolveOutputAssetItems.mockReset()
+    mockResolveOutputAssetItems.mockResolvedValue([])
   })
 
   describe('addWorkflow', () => {
@@ -579,6 +593,236 @@ describe('useMediaAssetActions', () => {
       expect(mockTrackExport).toHaveBeenCalledWith('test-task-id')
 
       unmount()
+    })
+  })
+
+  describe('downloadAssets - OSS multi-output expansion', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+    })
+
+    function createOutputAsset(
+      id: string,
+      name: string,
+      jobId: string,
+      outputCount?: number,
+      previewUrl?: string
+    ): AssetItem {
+      return createMockAsset({
+        id,
+        name,
+        tags: ['output'],
+        preview_url: previewUrl ?? `https://example.com/${name}`,
+        user_metadata: { jobId, nodeId: '1', subfolder: '', outputCount }
+      })
+    }
+
+    it('expands a grouped asset into individual downloads', async () => {
+      const grouped = createOutputAsset(
+        'g1',
+        'cover.png',
+        'job1',
+        3,
+        'https://example.com/cover.png'
+      )
+      mockResolveOutputAssetItems.mockResolvedValueOnce([
+        createOutputAsset('g1-out1', 'out1.png', 'job1'),
+        createOutputAsset('g1-out2', 'out2.png', 'job1'),
+        createOutputAsset('g1-out3', 'out3.png', 'job1')
+      ])
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([grouped])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(3)
+      })
+
+      expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
+      expect(mockResolveOutputAssetItems).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: 'job1', outputCount: 3 }),
+        expect.objectContaining({ createdAt: expect.any(String) })
+      )
+      expect(mockDownloadFile).toHaveBeenNthCalledWith(
+        1,
+        'https://example.com/out1.png',
+        'out1.png'
+      )
+      expect(mockDownloadFile).toHaveBeenNthCalledWith(
+        2,
+        'https://example.com/out2.png',
+        'out2.png'
+      )
+      expect(mockDownloadFile).toHaveBeenNthCalledWith(
+        3,
+        'https://example.com/out3.png',
+        'out3.png'
+      )
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+    })
+
+    it('mixes grouped and single-output assets in one selection', async () => {
+      const grouped = createOutputAsset('g1', 'cover.png', 'job1', 2)
+      const single = createOutputAsset('s1', 'solo.png', 'job2')
+
+      mockResolveOutputAssetItems.mockResolvedValueOnce([
+        createOutputAsset('g1-a', 'a.png', 'job1'),
+        createOutputAsset('g1-b', 'b.png', 'job1')
+      ])
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([grouped, single])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(3)
+      })
+
+      expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
+      const filenames = mockDownloadFile.mock.calls.map((call) => call[1])
+      expect(filenames).toEqual(['a.png', 'b.png', 'solo.png'])
+    })
+
+    it('falls back to the original asset when resolveOutputAssetItems returns empty', async () => {
+      const grouped = createOutputAsset(
+        'g1',
+        'cover.png',
+        'job1',
+        3,
+        'https://example.com/cover.png'
+      )
+      mockResolveOutputAssetItems.mockResolvedValueOnce([])
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([grouped])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(1)
+      })
+      expect(mockDownloadFile).toHaveBeenCalledWith(
+        'https://example.com/cover.png',
+        'cover.png'
+      )
+    })
+
+    it('does not call resolveOutputAssetItems when no grouped assets are selected', () => {
+      const single1 = createOutputAsset(
+        's1',
+        'a.png',
+        'job1',
+        undefined,
+        'https://example.com/a.png'
+      )
+      const single2 = createOutputAsset(
+        's2',
+        'b.png',
+        'job2',
+        1,
+        'https://example.com/b.png'
+      )
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([single1, single2])
+
+      expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
+      expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+    })
+
+    it('deduplicates downloads when an expanded child is also selected alongside its parent', async () => {
+      const grouped = createOutputAsset('job1-cover', 'cover.png', 'job1', 3)
+      const child = createMockAsset({
+        id: 'job1-child-a',
+        name: 'out1.png',
+        tags: ['output'],
+        preview_url: 'https://example.com/out1.png',
+        user_metadata: { jobId: 'job1', nodeId: '1', subfolder: '' }
+      })
+
+      mockResolveOutputAssetItems.mockResolvedValueOnce([
+        createMockAsset({
+          id: 'job1-child-a',
+          name: 'out1.png',
+          tags: ['output'],
+          preview_url: 'https://example.com/out1.png',
+          user_metadata: { jobId: 'job1', nodeId: '1', subfolder: '' }
+        }),
+        createMockAsset({
+          id: 'job1-child-b',
+          name: 'out2.png',
+          tags: ['output'],
+          preview_url: 'https://example.com/out2.png',
+          user_metadata: { jobId: 'job1', nodeId: '1', subfolder: '' }
+        })
+      ])
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([grouped, child])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+      })
+
+      const filenames = mockDownloadFile.mock.calls.map((call) => call[1])
+      expect(filenames).toEqual(['out1.png', 'out2.png'])
+    })
+
+    it('falls back to the preview download when resolveOutputAssetItems rejects', async () => {
+      const grouped = createOutputAsset(
+        'g1',
+        'cover.png',
+        'job1',
+        3,
+        'https://example.com/cover.png'
+      )
+      mockResolveOutputAssetItems.mockRejectedValueOnce(new Error('boom'))
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([grouped])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(1)
+      })
+      expect(mockDownloadFile).toHaveBeenCalledWith(
+        'https://example.com/cover.png',
+        'cover.png'
+      )
+    })
+
+    it('still downloads resolvable assets when one grouped asset fails to expand', async () => {
+      const failingGrouped = createOutputAsset(
+        'g1',
+        'cover1.png',
+        'job1',
+        3,
+        'https://example.com/cover1.png'
+      )
+      const okGrouped = createOutputAsset('g2', 'cover2.png', 'job2', 2)
+
+      mockResolveOutputAssetItems.mockImplementation(
+        (metadata: { jobId: string }) => {
+          if (metadata.jobId === 'job1') {
+            return Promise.reject(new Error('job1 lookup failed'))
+          }
+          return Promise.resolve([
+            createOutputAsset('g2-a', 'out2a.png', 'job2'),
+            createOutputAsset('g2-b', 'out2b.png', 'job2')
+          ])
+        }
+      )
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([failingGrouped, okGrouped])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(3)
+      })
+
+      const filenames = mockDownloadFile.mock.calls.map((call) => call[1])
+      expect(filenames).toEqual(['cover1.png', 'out2a.png', 'out2b.png'])
     })
   })
 

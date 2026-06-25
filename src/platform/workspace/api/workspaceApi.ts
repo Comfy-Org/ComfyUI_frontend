@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -118,9 +119,27 @@ export interface Plan {
   seat_summary: PlanSeatSummary
 }
 
+interface TeamCreditStopPrice {
+  list_price_cents: number
+  price_cents: number
+}
+
+interface TeamCreditStop {
+  id: string
+  credits: number
+  monthly: TeamCreditStopPrice
+  yearly: TeamCreditStopPrice
+}
+
+export interface TeamCreditStops {
+  default_stop_index: number
+  stops: TeamCreditStop[]
+}
+
 interface BillingPlansResponse {
   current_plan_slug?: string
   plans: Plan[]
+  team_credit_stops?: TeamCreditStops
 }
 
 type SubscriptionTransitionType =
@@ -138,6 +157,8 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  /** Required for the per-credit Team plan; selects the slider stop. */
+  team_credit_stop_id?: string
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -214,6 +235,12 @@ export type BillingStatus =
   | 'payment_failed'
   | 'inactive'
 
+export interface CurrentTeamCreditStop {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
+
 export interface BillingStatusResponse {
   is_active: boolean
   subscription_status?: BillingSubscriptionStatus
@@ -224,6 +251,7 @@ export interface BillingStatusResponse {
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
+  team_credit_stop?: CurrentTeamCreditStop
 }
 
 export interface BillingBalanceResponse {
@@ -295,6 +323,9 @@ const workspaceApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
+attachUnifiedRemintInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
@@ -494,7 +525,7 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),
         null,
-        { headers }
+        { headers, __skipUnifiedRemint: true }
       )
       return response.data
     } catch (err) {
@@ -578,7 +609,8 @@ export const workspaceApi = {
   async subscribe(
     planSlug: string,
     returnUrl?: string,
-    cancelUrl?: string
+    cancelUrl?: string,
+    teamCreditStopId?: string
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -587,7 +619,8 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           return_url: returnUrl,
-          cancel_url: cancelUrl
+          cancel_url: cancelUrl,
+          team_credit_stop_id: teamCreditStopId
         } satisfies SubscribeRequest,
         { headers }
       )
