@@ -36,6 +36,7 @@ import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { appendNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
@@ -310,7 +311,7 @@ function scheduleAddedNodeScan(node: LGraphNode): void {
 
 function handleNodeModeChange(
   localGraph: LGraph,
-  nodeId: number,
+  nodeId: NodeId,
   oldMode: number,
   newMode: number
 ): void {
@@ -323,7 +324,7 @@ function handleNodeModeChange(
 
   // Find the node by local ID in the graph that fired the event,
   // then compute its execution ID relative to the root graph.
-  const node = localGraph.getNodeById(nodeId === -1 ? null : toNodeId(nodeId))
+  const node = localGraph.getNodeById(nodeId)
   if (!node) return
 
   const execId = getExecutionIdByNode(app.rootGraph, node)
@@ -409,7 +410,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     if (event.type === 'node:property:changed' && event.property === 'mode') {
       handleNodeModeChange(
         graph,
-        event.nodeId as number,
+        toNodeId(event.nodeId),
         event.oldValue as number,
         event.newValue as number
       )
