@@ -235,8 +235,8 @@ async function handlePublish(): Promise<void> {
 
   isPublishing.value = true
   try {
-    await submitToComfyHub(formData.value)
     await syncWorkflowName()
+    await submitToComfyHub(formData.value)
     const path = workflowStore.activeWorkflow?.path
     if (path) {
       cachePublishPrefill(path, formData.value)
@@ -266,7 +266,10 @@ function updateFormData(patch: Partial<ComfyHubPublishFormData>) {
 
 async function fetchPublishPrefill() {
   const path = workflowStore.activeWorkflow?.path
-  if (!path) return
+  if (!path) {
+    isAlreadyPublished.value = false
+    return
+  }
 
   try {
     const status = await shareService.getPublishStatus(path)
@@ -278,6 +281,7 @@ async function fetchPublishPrefill() {
       applyPrefill(prefill)
     }
   } catch (error) {
+    isAlreadyPublished.value = false
     console.warn('Failed to fetch publish prefill:', error)
     const cached = getCachedPrefill(path)
     if (cached) {

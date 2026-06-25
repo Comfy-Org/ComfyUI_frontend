@@ -277,6 +277,9 @@ describe('ComfyHubPublishDialog', () => {
       expect.anything(),
       'workflows/renamed.json'
     )
+    expect(mockRenameWorkflow.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSubmitToComfyHub.mock.invocationCallOrder[0]
+    )
   })
 
   it('does not rename when the published name matches the file name', async () => {
