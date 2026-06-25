@@ -46,7 +46,22 @@ vi.mock('@/i18n', () => {
     'errorCatalog.promptErrors.prompt_no_outputs.title':
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
-      'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+      'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
+    'errorCatalog.runtimeErrors.execution_failed.message':
+      'Node threw an error during execution.',
+    'errorCatalog.runtimeErrors.execution_failed.itemLabel': '{nodeName}',
+    'errorCatalog.runtimeErrors.execution_failed.toastTitle':
+      '{nodeName} failed',
+    'errorCatalog.runtimeErrors.execution_failed.toastMessage':
+      'This node threw an error during execution. Check its inputs or try a different configuration.',
+    'errorCatalog.runtimeErrors.out_of_memory.title': 'Generation failed',
+    'errorCatalog.runtimeErrors.out_of_memory.message':
+      'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
+    'errorCatalog.runtimeErrors.out_of_memory.itemLabel': '{nodeName}',
+    'errorCatalog.runtimeErrors.out_of_memory.toastTitle': 'Generation failed',
+    'errorCatalog.runtimeErrors.out_of_memory.toastMessage':
+      'Not enough GPU memory. Try reducing image resolution or batch size and run again.'
   }
 
   const interpolate = (
@@ -158,6 +173,7 @@ function createErrorGroups() {
 describe('useErrorGroups', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockIsCloud.value = false
   })
 
   describe('missingPackGroups', () => {
@@ -421,7 +437,8 @@ describe('useErrorGroups', () => {
       )
     })
 
-    it('includes execution error from runtime errors', async () => {
+    it('uses general execution_failed display fields for unrecognized runtime execution errors', async () => {
+      mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
@@ -430,7 +447,7 @@ describe('useErrorGroups', () => {
         node_type: 'KSampler',
         executed: [],
         exception_type: 'RuntimeError',
-        exception_message: 'CUDA out of memory',
+        exception_message: 'mat1 and mat2 shapes cannot be multiplied',
         traceback: ['line 1', 'line 2'],
         current_inputs: {},
         current_outputs: {}
@@ -443,15 +460,52 @@ describe('useErrorGroups', () => {
       expect(execGroups.length).toBeGreaterThan(0)
       if (execGroups[0].type !== 'execution') return
       expect(execGroups[0].cards[0].errors[0]).toMatchObject({
-        message: 'RuntimeError: CUDA out of memory',
+        message: 'RuntimeError: mat1 and mat2 shapes cannot be multiplied',
         details: 'line 1\nline 2',
         isRuntimeError: true,
-        exceptionType: 'RuntimeError'
+        exceptionType: 'RuntimeError',
+        catalogId: 'execution_failed',
+        displayTitle: 'Execution failed',
+        displayMessage: 'Node threw an error during execution.',
+        displayItemLabel: 'KSampler',
+        toastTitle: 'KSampler failed',
+        toastMessage:
+          'This node threw an error during execution. Check its inputs or try a different configuration.'
       })
-      // TODO(FE-816 overlay-redesign): Runtime execution errors intentionally
-      // bypass catalog display fields until targeted runtime handling lands.
-      expect(execGroups[0].cards[0].errors[0].displayItemLabel).toBeUndefined()
-      expect(execGroups[0].cards[0].errors[0].toastTitle).toBeUndefined()
+    })
+
+    it('adds display fields for targeted runtime execution errors', async () => {
+      mockIsCloud.value = true
+      const { store, groups } = createErrorGroups()
+      store.lastExecutionError = {
+        prompt_id: 'test-prompt',
+        timestamp: Date.now(),
+        node_id: 5,
+        node_type: 'KSampler',
+        executed: [],
+        exception_type: 'torch.OutOfMemoryError',
+        exception_message:
+          'Allocation on device 0 failed.\nThis error means you ran out of memory on your GPU.',
+        traceback: ['line 1', 'line 2'],
+        current_inputs: {},
+        current_outputs: {}
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const error = execGroup.cards[0].errors[0]
+      expect(error.message).toContain('torch.OutOfMemoryError:')
+      expect(error.catalogId).toBe('out_of_memory')
+      expect(error.displayMessage).toBe(
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.'
+      )
+      expect(error.displayItemLabel).toBe('KSampler')
+      expect(error.toastTitle).toBe('Generation failed')
     })
 
     it('includes prompt error when present', async () => {
