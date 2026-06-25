@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "Tu token de API no tiene acceso a este recurso. Por favor, revisa los permisos de tu token.",
     "errorUserTokenInvalid": "Tu token de API almacenado no es válido o ha expirado. Por favor, actualiza tu token en la configuración.",
     "failedToCreateNode": "No se pudo crear el nodo. Inténtalo de nuevo o revisa la consola para más detalles.",
+    "failedToSetModelValue": "Nodo añadido, pero su modelo no pudo establecerse automáticamente. Consulta la consola para más detalles.",
     "fileFormats": "Formatos de archivo",
     "fileName": "Nombre del archivo",
     "fileSize": "Tamaño del archivo",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "No se encontró ninguna cuenta con este correo electrónico. ¿Te gustaría crear una nueva cuenta?",
       "auth/weak-password": "La contraseña es demasiado débil. Por favor, usa una contraseña más segura con al menos 6 caracteres.",
       "auth/wrong-password": "La contraseña que ingresaste es incorrecta. Por favor, inténtalo de nuevo.",
-      "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo."
+      "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.",
+      "signupBlocked": "No pudimos crear tu cuenta en este momento. Por favor, inténtalo de nuevo más tarde. Si el problema persiste, escribe a support@comfy.org."
     },
     "login": {
       "andText": "y",
@@ -345,6 +347,17 @@
     "width": "Ancho",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "Borrar todo",
+    "clickRegionToEdit": "Haz clic en una región para editarla.",
+    "colors": "paleta_de_colores",
+    "descLabel": "descripción",
+    "descPlaceholder": "descripción de esta región",
+    "textLabel": "Texto",
+    "textPlaceholder": "texto a renderizar (literal)",
+    "typeObj": "obj",
+    "typeText": "texto"
   },
   "breadcrumbsMenu": {
     "app": "Aplicación",
@@ -755,6 +768,13 @@
     "creditsAvailable": "Créditos disponibles",
     "details": "Detalles",
     "eventType": "Tipo de evento",
+    "eventTypes": {
+      "accountCreated": "Cuenta creada",
+      "apiNodeUsage": "Uso de nodo asociado",
+      "apiUsage": "Uso de API",
+      "creditAdded": "Créditos añadidos",
+      "gpuUsage": "Uso de GPU"
+    },
     "faqs": "Preguntas frecuentes",
     "invoiceHistory": "Historial de facturas",
     "lastUpdated": "Última actualización",
@@ -1829,6 +1849,35 @@
     "zoomIn": "Acercar",
     "zoomOptions": "Opciones de Zoom",
     "zoomOut": "Alejar"
+  },
+  "hdrViewer": {
+    "channel": "Canal",
+    "channels": {
+      "a": "Alfa",
+      "b": "B",
+      "g": "G",
+      "luminance": "Luminancia",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "Avisos de recorte",
+    "dither": "Difuminado",
+    "exposure": "Exposición",
+    "failedToLoad": "No se pudo cargar la imagen HDR",
+    "fitView": "Ajustar",
+    "hdrImage": "Imagen HDR",
+    "histogram": "Histograma",
+    "inf": "Inf",
+    "max": "Máx",
+    "mean": "Media",
+    "min": "Mín",
+    "nan": "NaN",
+    "normalizeExposure": "Exposición automática",
+    "openInHdrViewer": "Abrir en el visor HDR",
+    "resolution": "Resolución",
+    "sourceGamut": "Gama de origen",
+    "stdDev": "Desv. estándar",
+    "title": "Visor HDR"
   },
   "help": {
     "helpCenterMenu": "Menú del Centro de Ayuda",
@@ -2957,6 +3006,10 @@
     "uploadError": "Error al cargar la imagen del pintor: {status} - {statusText}",
     "width": "Ancho"
   },
+  "palette": {
+    "addColor": "Agregar un color",
+    "swatchTitle": "Haz clic para editar · arrastra para reordenar · clic derecho para eliminar"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
     "downloadingModel": "Descargando modelo...",
@@ -3702,6 +3755,27 @@
     "customLoRAsLabel": "Importa tus propios LoRAs",
     "description": "Elige el mejor plan para ti",
     "descriptionWorkspace": "Elige el mejor plan para tu espacio de trabajo",
+    "downgrade": {
+      "body": "Todos los demás miembros de este espacio de trabajo serán eliminados inmediatamente.",
+      "confirm": "Cambiar plan",
+      "confirmationPhrase": "Entiendo",
+      "confirmationPrompt": "Escribe \"{phrase}\" para confirmar.",
+      "failed": "No se pudo cambiar el plan",
+      "failedAfterMemberRemoval": "Los miembros del equipo fueron eliminados, pero el cambio de plan no se completó — por favor, inténtalo de nuevo o contacta con soporte",
+      "memberRemovalFailed": "No se pudo eliminar a {email} del equipo — algunos miembros pueden haber sido eliminados y tu plan no fue cambiado",
+      "notAllowed": "Este cambio de plan no está disponible",
+      "paymentMethodRequired": "Se requiere un método de pago para cambiar de plan",
+      "paymentPageBlocked": "No se pudo abrir la página de pago — por favor, inténtalo de nuevo",
+      "title": "¿Cambiar al plan {plan}?"
+    },
+    "enterprise": {
+      "cta": "Saber más",
+      "flexibility": "¿Buscas más flexibilidad o funciones personalizadas?",
+      "name": "Enterprise",
+      "needMoreMembers": "¿Necesitas más miembros?",
+      "reachOut": "Contáctanos y agendemos una charla."
+    },
+    "everythingInPlus": "Todo en {plan}, además:",
     "expiresDate": "Caduca el {date}",
     "freeTier": {
       "description": "Tu plan gratuito incluye {credits} créditos cada mes para probar Comfy Cloud.",
@@ -3748,6 +3822,7 @@
     "messageSupport": "Contactar con soporte",
     "monthly": "Mensual",
     "monthlyBonusDescription": "Bono de créditos mensual",
+    "monthlyCredits": "créditos mensuales",
     "monthlyCreditsInfo": "Estos créditos se renuevan mensualmente y no se acumulan",
     "monthlyCreditsLabel": "Créditos mensuales",
     "monthlyCreditsPerMemberLabel": "Créditos mensuales / miembro",
@@ -3760,7 +3835,13 @@
     "partnerNodesCredits": "Créditos de Nodos de Socio",
     "partnerNodesDescription": "Para ejecutar modelos comerciales/propietarios",
     "perMonth": "USD / mes",
+    "personalHeader": "Los planes personales son solo para uso individual. {action}",
+    "personalHeaderAction": "Para agregar compañeros, suscríbete al plan de equipo.",
     "personalWorkspace": "Espacio de trabajo personal",
+    "planScope": {
+      "personal": "Para uso personal",
+      "team": "Para equipos"
+    },
     "plansAndPricing": "Planes y precios",
     "plansForWorkspace": "Planes para {workspace}",
     "prepaidCreditsInfo": "Créditos comprados por separado que no expiran",
@@ -3771,8 +3852,10 @@
       "confirm": "Confirmar",
       "confirmPayment": "Confirma tu pago",
       "confirmPlanChange": "Confirma el cambio de plan",
+      "creditsRefillTo": "Los créditos se recargan hasta",
       "eachMonthCreditsRefill": "Cada mes los créditos se recargan a",
       "ends": "Finaliza el {date}",
+      "everyMonthStarting": "Cada mes a partir del {date}",
       "hideFeatures": "Ocultar funciones",
       "nextPaymentDue": "Próximo pago el {date}. Cancela en cualquier momento.",
       "perMember": "/ miembro",
@@ -3782,10 +3865,18 @@
       "showMoreFeatures": "Mostrar más funciones",
       "starting": "Comienza el {date}",
       "startingToday": "Comienza hoy",
+      "subscribeToPlan": "Suscribirse al plan {plan}",
+      "switchToPlan": "Cambiar al plan {plan}",
       "terms": "Términos",
       "termsAgreement": "Al continuar, aceptas los {terms} y la {privacy} de Comfy Org.",
-      "totalDueToday": "Total a pagar hoy"
+      "totalDueToday": "Total a pagar hoy",
+      "youllBeCharged": "Se te cobrará"
     },
+    "pricingBlurb": "*Basado en esta plantilla, {seeDetails}. Contáctanos para {questions} o {enterpriseDiscussions}. Para más detalles sobre precios, {clickHere}.",
+    "pricingBlurbClickHere": "haz clic aquí",
+    "pricingBlurbEnterprise": "discusiones enterprise",
+    "pricingBlurbQuestions": "preguntas",
+    "pricingBlurbSeeDetails": "ver detalles",
     "refreshCredits": "Actualizar créditos",
     "renewsDate": "Se renueva el {date}",
     "required": {
@@ -3799,6 +3890,8 @@
     "resubscribe": "Volver a suscribirse",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "saveYearly": "Ahorra 20%",
+    "saveYearlyUpTo": "Ahorra hasta un 20%",
     "soloUseOnly": "Solo para uso individual",
     "subscribeForMore": "Mejorar",
     "subscribeNow": "Suscribirse Ahora",
@@ -3807,10 +3900,34 @@
     "subscribeToRun": "Suscribirse",
     "subscribeToRunFull": "Suscribirse a Ejecutar",
     "subscriptionRequiredMessage": "Se requiere una suscripción para que los miembros ejecuten flujos de trabajo en la nube",
+    "success": {
+      "allSet": "Todo listo",
+      "planUpdated": "Tu plan se ha actualizado correctamente.",
+      "receiptEmailed": "Se ha enviado un recibo a tu correo electrónico."
+    },
+    "teamHeader": "Para equipos que desean colaborar. ¿Necesitas más miembros? {learnMore} sobre enterprise.",
+    "teamHeaderLearnMore": "Saber más",
+    "teamPlan": {
+      "changePlan": "Cambiar plan",
+      "checkoutComingSoon": "El pago del plan de equipo estará disponible próximamente.",
+      "comingSoonLabel": "Próximamente:",
+      "cta": "Suscribirse al plan anual de equipo",
+      "ctaMonthly": "Suscribirse al plan mensual de equipo",
+      "currentPlan": "Plan actual",
+      "detailsTitle": "Detalles",
+      "name": "Plan de equipo",
+      "perkConcurrentRuns": "Los miembros pueden ejecutar flujos de trabajo simultáneamente",
+      "perkInviteMembers": "Invita a miembros del equipo",
+      "perkProjectAssets": "Gestión de proyectos y recursos",
+      "perkRolePermissions": "Permisos basados en roles",
+      "perkSharedPool": "Bolsa de créditos compartida para todos los miembros",
+      "tagline": "Elige tu propia suscripción mensual de créditos. Obtén un mayor descuento con una suscripción de más créditos."
+    },
     "teamWorkspace": "Espacio de trabajo en equipo",
     "tierNameYearly": "{name} Anual",
     "tiers": {
       "creator": {
+        "feature1": "Importa tus propios modelos",
         "name": "Creador"
       },
       "founder": {
@@ -3820,9 +3937,12 @@
         "name": "Gratis"
       },
       "pro": {
+        "feature1": "Mayor tiempo de ejecución del flujo de trabajo (hasta 1 hora)",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "Tiempo máximo de ejecución del flujo de trabajo de 30 minutos",
+        "feature2": "Agrega más créditos en cualquier momento",
         "name": "Estándar"
       }
     },
@@ -3835,6 +3955,7 @@
     "upgradeToAddCredits": "Mejorar para añadir créditos",
     "usdPerMonth": "USD / mes",
     "usdPerMonthPerMember": "USD / mes / miembro",
+    "videoEstimate": "Genera ~{count} videos de 5s*",
     "videoEstimateExplanation": "Estas estimaciones se basan en la plantilla Wan 2.2 Imagen a Video usando la configuración predeterminada (5 segundos, 640x640, 16fps, muestreo de 4 pasos).",
     "videoEstimateHelp": "Más detalles sobre esta plantilla",
     "videoEstimateLabel": "Cantidad aprox. de videos de 5s generados con la plantilla Wan 2.2 Imagen a Video",
@@ -3844,6 +3965,7 @@
     "viewMoreDetails": "Ver más detalles",
     "viewMoreDetailsPlans": "Ver más detalles sobre planes y precios",
     "viewUsageHistory": "Ver historial de uso",
+    "whatsIncluded": "Qué está incluido:",
     "workspaceNotSubscribed": "Este espacio de trabajo no tiene una suscripción",
     "yearly": "Anual",
     "yearlyCreditsLabel": "Total de créditos anuales",

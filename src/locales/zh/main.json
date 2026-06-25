@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "您的 API 密钥无权访问此资源。请检查密钥权限。",
     "errorUserTokenInvalid": "您保存的 API 密钥无效或已过期。请在设置中更新密钥。",
     "failedToCreateNode": "创建节点失败。请重试或查看控制台获取详细信息。",
+    "failedToSetModelValue": "节点已添加，但其模型未能自动设置。详情请查看控制台。",
     "fileFormats": "文件格式",
     "fileName": "文件名",
     "fileSize": "文件大小",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "未找到使用此电子邮件的账户。您想要创建一个新账户吗？",
       "auth/weak-password": "密码强度太弱。请使用至少6个字符的更强密码。",
       "auth/wrong-password": "您输入的密码不正确，请重试。",
-      "generic": "登录时出现问题，请重试。"
+      "generic": "登录时出现问题，请重试。",
+      "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。"
     },
     "login": {
       "andText": "和",
@@ -345,6 +347,17 @@
     "width": "宽度",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "全部清除",
+    "clickRegionToEdit": "点击区域进行编辑。",
+    "colors": "调色板",
+    "descLabel": "描述",
+    "descPlaceholder": "该区域的描述",
+    "textLabel": "文本",
+    "textPlaceholder": "要渲染的文本（原文）",
+    "typeObj": "obj",
+    "typeText": "text"
   },
   "breadcrumbsMenu": {
     "app": "应用",
@@ -755,6 +768,13 @@
     "creditsAvailable": "积分可用",
     "details": "详情",
     "eventType": "事件类型",
+    "eventTypes": {
+      "accountCreated": "账户已创建",
+      "apiNodeUsage": "合作节点使用",
+      "apiUsage": "API 使用",
+      "creditAdded": "已添加积分",
+      "gpuUsage": "GPU 使用"
+    },
     "faqs": "常见问题",
     "invoiceHistory": "发票历史",
     "lastUpdated": "最近更新",
@@ -1829,6 +1849,35 @@
     "zoomIn": "放大",
     "zoomOptions": "缩放选项",
     "zoomOut": "缩小"
+  },
+  "hdrViewer": {
+    "channel": "通道",
+    "channels": {
+      "a": "Alpha",
+      "b": "B",
+      "g": "G",
+      "luminance": "亮度",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "裁剪警告",
+    "dither": "抖动",
+    "exposure": "曝光",
+    "failedToLoad": "HDR 图像加载失败",
+    "fitView": "适应",
+    "hdrImage": "HDR 图像",
+    "histogram": "直方图",
+    "inf": "无穷大",
+    "max": "最大值",
+    "mean": "均值",
+    "min": "最小值",
+    "nan": "NaN",
+    "normalizeExposure": "自动曝光",
+    "openInHdrViewer": "在 HDR 查看器中打开",
+    "resolution": "分辨率",
+    "sourceGamut": "源色域",
+    "stdDev": "标准差",
+    "title": "HDR 查看器"
   },
   "help": {
     "helpCenterMenu": "帮助中心菜单",
@@ -2957,6 +3006,10 @@
     "uploadError": "上传绘图图像失败：{status} - {statusText}",
     "width": "宽度"
   },
+  "palette": {
+    "addColor": "添加颜色",
+    "swatchTitle": "点击编辑 · 拖动排序 · 右键移除"
+  },
   "progressToast": {
     "allDownloadsCompleted": "所有下载已完成",
     "downloadingModel": "正在下载模型...",
@@ -3714,6 +3767,27 @@
     "customLoRAsLabel": "导入您的 Lora",
     "description": "选择最适合您的订阅计划",
     "descriptionWorkspace": "为您的工作区选择最佳方案",
+    "downgrade": {
+      "body": "该工作区的所有其他成员将被立即移除。",
+      "confirm": "更改方案",
+      "confirmationPhrase": "我已了解",
+      "confirmationPrompt": "请输入“{phrase}”以确认。",
+      "failed": "更改方案失败",
+      "failedAfterMemberRemoval": "团队成员已被移除，但方案更改未完成 — 请重试或联系客服",
+      "memberRemovalFailed": "无法将 {email} 从团队移除 — 部分成员可能已被移除，您的方案未更改",
+      "notAllowed": "无法进行此方案更改",
+      "paymentMethodRequired": "更改方案需要添加支付方式",
+      "paymentPageBlocked": "无法打开支付页面 — 请重试",
+      "title": "切换到 {plan} 方案？"
+    },
+    "enterprise": {
+      "cta": "了解更多",
+      "flexibility": "需要更多灵活性或定制功能？",
+      "name": "企业版",
+      "needMoreMembers": "需要更多成员？",
+      "reachOut": "请联系我们，安排沟通。"
+    },
+    "everythingInPlus": "包含 {plan} 的所有内容，并额外提供：",
     "expiresDate": "于 {date} 过期",
     "freeTier": {
       "description": "您的免费套餐每月包含 {credits} 积分，可体验 Comfy Cloud。",
@@ -3760,6 +3834,7 @@
     "messageSupport": "消息支持",
     "monthly": "月度",
     "monthlyBonusDescription": "每月积分奖励",
+    "monthlyCredits": "每月积分",
     "monthlyCreditsInfo": "积分每月刷新，不会保留",
     "monthlyCreditsLabel": "每月积分",
     "monthlyCreditsPerMemberLabel": "每成员每月积分",
@@ -3772,7 +3847,13 @@
     "partnerNodesCredits": "合作伙伴节点积分",
     "partnerNodesDescription": "用于运行商业/专有模型",
     "perMonth": "美元 / 月",
+    "personalHeader": "个人方案仅限个人使用。{action}",
+    "personalHeaderAction": "如需添加团队成员，请订阅团队方案。",
     "personalWorkspace": "个人工作区",
+    "planScope": {
+      "personal": "个人使用",
+      "team": "团队使用"
+    },
     "plansAndPricing": "订阅和定价",
     "plansForWorkspace": "{workspace} 的套餐",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
@@ -3783,8 +3864,10 @@
       "confirm": "确认",
       "confirmPayment": "确认付款",
       "confirmPlanChange": "确认更改方案",
+      "creditsRefillTo": "积分补充至",
       "eachMonthCreditsRefill": "每月积分补充至",
       "ends": "{date} 结束",
+      "everyMonthStarting": "每月从 {date} 开始",
       "hideFeatures": "隐藏功能",
       "nextPaymentDue": "下次付款截止日期 {date}。可随时取消。",
       "perMember": "/ 每成员",
@@ -3794,10 +3877,18 @@
       "showMoreFeatures": "显示更多功能",
       "starting": "{date} 开始",
       "startingToday": "今日开始",
+      "subscribeToPlan": "订阅 {plan}",
+      "switchToPlan": "切换到 {plan}",
       "terms": "条款",
       "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
-      "totalDueToday": "今日应付总额"
+      "totalDueToday": "今日应付总额",
+      "youllBeCharged": "您将被收取"
     },
+    "pricingBlurb": "*基于此模板，{seeDetails}。如有{questions}或{enterpriseDiscussions}，请联系我们。更多价格详情，{clickHere}。",
+    "pricingBlurbClickHere": "点击这里",
+    "pricingBlurbEnterprise": "企业合作",
+    "pricingBlurbQuestions": "问题咨询",
+    "pricingBlurbSeeDetails": "查看详情",
     "refreshCredits": "刷新额度",
     "renewsDate": "将于 {date} 续订",
     "required": {
@@ -3811,6 +3902,8 @@
     "resubscribe": "重新订阅",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
+    "saveYearly": "年付节省 20%",
+    "saveYearlyUpTo": "最高可节省 20%",
     "soloUseOnly": "仅限个人使用",
     "subscribeForMore": "升级",
     "subscribeNow": "立即订阅",
@@ -3819,10 +3912,34 @@
     "subscribeToRun": "订阅",
     "subscribeToRunFull": "订阅 Run",
     "subscriptionRequiredMessage": "成员在云端运行工作流需要订阅",
+    "success": {
+      "allSet": "设置完成",
+      "planUpdated": "您的方案已成功更新。",
+      "receiptEmailed": "收据已发送至您的邮箱。"
+    },
+    "teamHeader": "适合希望协作的团队。需要更多成员？{learnMore} 了解企业版。",
+    "teamHeaderLearnMore": "了解更多",
+    "teamPlan": {
+      "changePlan": "更改方案",
+      "checkoutComingSoon": "团队方案结算即将上线。",
+      "comingSoonLabel": "即将上线：",
+      "cta": "订阅团队年付方案",
+      "ctaMonthly": "订阅团队月付方案",
+      "currentPlan": "当前方案",
+      "detailsTitle": "详情",
+      "name": "团队方案",
+      "perkConcurrentRuns": "成员可同时运行多个工作流",
+      "perkInviteMembers": "邀请团队成员",
+      "perkProjectAssets": "项目与资产管理",
+      "perkRolePermissions": "基于角色的权限管理",
+      "perkSharedPool": "所有成员共享积分池",
+      "tagline": "自定义每月积分订阅。订阅更多积分可享更大折扣。"
+    },
     "teamWorkspace": "团队工作区",
     "tierNameYearly": "{name} 年度",
     "tiers": {
       "creator": {
+        "feature1": "导入您自己的模型",
         "name": "Creator"
       },
       "founder": {
@@ -3832,9 +3949,12 @@
         "name": "免费"
       },
       "pro": {
+        "feature1": "更长的工作流运行时间（最长 1 小时）",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "最长 30 分钟工作流运行时间",
+        "feature2": "可随时增加积分",
         "name": "Standard"
       }
     },
@@ -3847,6 +3967,7 @@
     "upgradeToAddCredits": "升级以添加积分",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "美元 / 月 / 每成员",
+    "videoEstimate": "可生成约 {count} 个 5 秒视频*",
     "videoEstimateExplanation": "这些预估基于 Wan Fun Control 生成 5 秒视频。",
     "videoEstimateHelp": "这是什么？",
     "videoEstimateLabel": "可使用  Wan Fun Control 模板生成 5 秒视频的数量",
@@ -3856,6 +3977,7 @@
     "viewMoreDetails": "查看更多详情",
     "viewMoreDetailsPlans": "查看有关订阅和定价的更多信息",
     "viewUsageHistory": "查看使用历史",
+    "whatsIncluded": "包含内容：",
     "workspaceNotSubscribed": "此工作区未订阅",
     "yearly": "年度",
     "yearlyCreditsLabel": "总共年度积分",

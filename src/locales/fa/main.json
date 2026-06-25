@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "توکن API شما به این منبع دسترسی ندارد. لطفاً مجوزهای توکن خود را بررسی کنید.",
     "errorUserTokenInvalid": "توکن API ذخیره‌شده شما نامعتبر یا منقضی شده است. لطفاً توکن خود را در تنظیمات به‌روزرسانی کنید.",
     "failedToCreateNode": "ایجاد node ناموفق بود. لطفاً دوباره تلاش کنید یا کنسول را بررسی کنید.",
+    "failedToSetModelValue": "Node اضافه شد، اما مدل آن به‌صورت خودکار تنظیم نشد. برای جزئیات بیشتر کنسول را بررسی کنید.",
     "fileFormats": "فرمت‌های فایل",
     "fileName": "نام فایل",
     "fileSize": "اندازه فایل",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "حسابی با این ایمیل یافت نشد. مایل به ایجاد حساب جدید هستید؟",
       "auth/weak-password": "رمز عبور خیلی ضعیف است. لطفاً از رمز عبور قوی‌تر با حداقل ۶ کاراکتر استفاده کنید.",
       "auth/wrong-password": "رمز عبور وارد شده نادرست است. لطفاً دوباره تلاش کنید.",
-      "generic": "در ورود شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید."
+      "generic": "در ورود شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
+      "signupBlocked": "در حال حاضر امکان ایجاد حساب کاربری وجود ندارد. لطفاً بعداً دوباره تلاش کنید. اگر این مشکل ادامه داشت، با support@comfy.org تماس بگیرید."
     },
     "login": {
       "andText": "و",
@@ -345,6 +347,17 @@
     "width": "عرض",
     "x": "ایکس",
     "y": "وای"
+  },
+  "boundingBoxes": {
+    "clearAll": "پاک‌سازی همه",
+    "clickRegionToEdit": "برای ویرایش، روی یک ناحیه کلیک کنید.",
+    "colors": "پالت رنگ",
+    "descLabel": "توضیحات",
+    "descPlaceholder": "توضیحات این ناحیه",
+    "textLabel": "متن",
+    "textPlaceholder": "متن برای نمایش (عیناً)",
+    "typeObj": "obj",
+    "typeText": "متن"
   },
   "breadcrumbsMenu": {
     "app": "برنامه",
@@ -755,6 +768,13 @@
     "creditsAvailable": "اعتبار موجود",
     "details": "جزئیات",
     "eventType": "نوع رویداد",
+    "eventTypes": {
+      "accountCreated": "حساب کاربری ایجاد شد",
+      "apiNodeUsage": "استفاده از Node شریک",
+      "apiUsage": "استفاده از API",
+      "creditAdded": "اعتبار افزوده شد",
+      "gpuUsage": "استفاده از GPU"
+    },
     "faqs": "سؤالات متداول",
     "invoiceHistory": "تاریخچه فاکتورها",
     "lastUpdated": "آخرین به‌روزرسانی",
@@ -1829,6 +1849,35 @@
     "zoomIn": "بزرگ‌نمایی",
     "zoomOptions": "گزینه‌های بزرگ‌نمایی",
     "zoomOut": "کوچک‌نمایی"
+  },
+  "hdrViewer": {
+    "channel": "کانال",
+    "channels": {
+      "a": "آلفا",
+      "b": "B",
+      "g": "G",
+      "luminance": "درخشندگی",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "هشدار برش",
+    "dither": "دیتر",
+    "exposure": "نوردهی",
+    "failedToLoad": "بارگذاری تصویر HDR ناموفق بود",
+    "fitView": "متناسب‌سازی",
+    "hdrImage": "تصویر HDR",
+    "histogram": "هیستوگرام",
+    "inf": "بی‌نهایت",
+    "max": "بیشینه",
+    "mean": "میانگین",
+    "min": "کمینه",
+    "nan": "NaN",
+    "normalizeExposure": "نوردهی خودکار",
+    "openInHdrViewer": "باز کردن در نمایشگر HDR",
+    "resolution": "وضوح",
+    "sourceGamut": "گاموت منبع",
+    "stdDev": "انحراف معیار",
+    "title": "نمایشگر HDR"
   },
   "help": {
     "helpCenterMenu": "منوی مرکز راهنما",
@@ -2957,6 +3006,10 @@
     "uploadError": "بارگذاری تصویر painter ناموفق بود: {status} - {statusText}",
     "width": "عرض"
   },
+  "palette": {
+    "addColor": "افزودن رنگ",
+    "swatchTitle": "برای ویرایش کلیک کنید · برای جابجایی بکشید · برای حذف راست‌کلیک کنید"
+  },
   "progressToast": {
     "allDownloadsCompleted": "همه دانلودها تکمیل شدند",
     "downloadingModel": "در حال دانلود مدل...",
@@ -3714,6 +3767,27 @@
     "customLoRAsLabel": "LoRAهای خود را وارد کنید",
     "description": "بهترین طرح را برای خود انتخاب کنید",
     "descriptionWorkspace": "بهترین طرح را برای فضای کاری خود انتخاب کنید",
+    "downgrade": {
+      "body": "تمام اعضای دیگر این فضای کاری بلافاصله حذف خواهند شد.",
+      "confirm": "تغییر پلن",
+      "confirmationPhrase": "متوجه شدم",
+      "confirmationPrompt": "برای تأیید، عبارت «{phrase}» را وارد کنید.",
+      "failed": "تغییر پلن انجام نشد",
+      "failedAfterMemberRemoval": "اعضای تیم حذف شدند، اما تغییر پلن کامل نشد — لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید",
+      "memberRemovalFailed": "امکان حذف {email} از تیم وجود ندارد — برخی اعضا ممکن است قبلاً حذف شده باشند و پلن شما تغییر نکرده است",
+      "notAllowed": "این تغییر پلن در دسترس نیست",
+      "paymentMethodRequired": "برای تغییر پلن، نیاز به روش پرداخت است",
+      "paymentPageBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً دوباره تلاش کنید",
+      "title": "تغییر به پلن {plan}؟"
+    },
+    "enterprise": {
+      "cta": "بیشتر بدانید",
+      "flexibility": "به دنبال امکانات یا انعطاف‌پذیری بیشتر هستید؟",
+      "name": "سازمانی",
+      "needMoreMembers": "به اعضای بیشتری نیاز دارید؟",
+      "reachOut": "با ما تماس بگیرید تا زمانی برای گفتگو هماهنگ کنیم."
+    },
+    "everythingInPlus": "همه امکانات {plan}، به‌علاوه:",
     "expiresDate": "انقضا در {date}",
     "freeTier": {
       "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
@@ -3760,6 +3834,7 @@
     "messageSupport": "پیام به پشتیبانی",
     "monthly": "ماهانه",
     "monthlyBonusDescription": "پاداش ماهانه اعتبار",
+    "monthlyCredits": "اعتبار ماهانه",
     "monthlyCreditsInfo": "این اعتبارها هر ماه شارژ می‌شوند و منتقل نمی‌شوند",
     "monthlyCreditsLabel": "اعتبار ماهانه",
     "monthlyCreditsPerMemberLabel": "اعتبار ماهانه / هر عضو",
@@ -3772,7 +3847,13 @@
     "partnerNodesCredits": "قیمت‌گذاری Partner Nodes",
     "partnerNodesDescription": "برای اجرای مدل‌های تجاری/اختصاصی",
     "perMonth": "/ ماه",
+    "personalHeader": "پلن‌های شخصی فقط برای استفاده فردی هستند. {action}",
+    "personalHeaderAction": "برای افزودن هم‌تیمی، به پلن تیمی ارتقا دهید.",
     "personalWorkspace": "فضای کاری شخصی",
+    "planScope": {
+      "personal": "برای استفاده شخصی",
+      "team": "برای تیم‌ها"
+    },
     "plansAndPricing": "طرح‌ها و قیمت‌ها",
     "plansForWorkspace": "طرح‌ها برای {workspace}",
     "prepaidCreditsInfo": "اعتبارهای پیش‌پرداخت تا یک سال پس از تاریخ خرید منقضی می‌شوند.",
@@ -3783,8 +3864,10 @@
       "confirm": "تأیید",
       "confirmPayment": "تأیید پرداخت",
       "confirmPlanChange": "تأیید تغییر طرح",
+      "creditsRefillTo": "اعتبارها به این مقدار شارژ می‌شوند",
       "eachMonthCreditsRefill": "هر ماه اعتبار به این مقدار بازنشانی می‌شود",
       "ends": "پایان در {date}",
+      "everyMonthStarting": "هر ماه از {date} شروع می‌شود",
       "hideFeatures": "مخفی کردن امکانات",
       "nextPaymentDue": "پرداخت بعدی در {date}. هر زمان می‌توانید لغو کنید.",
       "perMember": "/ هر عضو",
@@ -3794,10 +3877,18 @@
       "showMoreFeatures": "نمایش امکانات بیشتر",
       "starting": "شروع از {date}",
       "startingToday": "شروع از امروز",
+      "subscribeToPlan": "اشتراک پلن {plan}",
+      "switchToPlan": "تغییر به پلن {plan}",
       "terms": "شرایط",
       "termsAgreement": "با ادامه، شما با {terms} و {privacy} Comfy Org موافقت می‌کنید.",
-      "totalDueToday": "مبلغ قابل پرداخت امروز"
+      "totalDueToday": "مبلغ قابل پرداخت امروز",
+      "youllBeCharged": "شما مبلغ زیر را پرداخت خواهید کرد"
     },
+    "pricingBlurb": "*بر اساس این قالب، {seeDetails}. برای {questions} یا {enterpriseDiscussions} با ما تماس بگیرید. برای جزئیات بیشتر قیمت‌گذاری، {clickHere}.",
+    "pricingBlurbClickHere": "اینجا کلیک کنید",
+    "pricingBlurbEnterprise": "بحث‌های سازمانی",
+    "pricingBlurbQuestions": "سؤالات",
+    "pricingBlurbSeeDetails": "جزئیات را ببینید",
     "refreshCredits": "به‌روزرسانی اعتبارها",
     "renewsDate": "تمدید در {date}",
     "required": {
@@ -3811,6 +3902,8 @@
     "resubscribe": "تمدید اشتراک",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
+    "saveYearly": "صرفه‌جویی ۲۰٪",
+    "saveYearlyUpTo": "تا ۲۰٪ صرفه‌جویی کنید",
     "soloUseOnly": "فقط برای استفاده فردی",
     "subscribeForMore": "ارتقاء",
     "subscribeNow": "هم‌اکنون اشتراک بگیرید",
@@ -3819,10 +3912,34 @@
     "subscribeToRun": "اشتراک",
     "subscribeToRunFull": "اشتراک برای اجرا",
     "subscriptionRequiredMessage": "برای اجرای workflowها در Cloud، اشتراک لازم است.",
+    "success": {
+      "allSet": "همه چیز آماده است",
+      "planUpdated": "پلن شما با موفقیت به‌روزرسانی شد.",
+      "receiptEmailed": "رسید به ایمیل شما ارسال شد."
+    },
+    "teamHeader": "برای تیم‌هایی که قصد همکاری دارند. به اعضای بیشتری نیاز دارید؟ {learnMore} درباره پلن سازمانی.",
+    "teamHeaderLearnMore": "بیشتر بدانید",
+    "teamPlan": {
+      "changePlan": "تغییر پلن",
+      "checkoutComingSoon": "پرداخت پلن تیمی به‌زودی فعال می‌شود.",
+      "comingSoonLabel": "به‌زودی:",
+      "cta": "اشتراک سالانه تیمی",
+      "ctaMonthly": "اشتراک ماهانه تیمی",
+      "currentPlan": "پلن فعلی",
+      "detailsTitle": "جزئیات",
+      "name": "پلن تیمی",
+      "perkConcurrentRuns": "اعضا می‌توانند workflowها را به‌صورت همزمان اجرا کنند",
+      "perkInviteMembers": "دعوت اعضای تیم",
+      "perkProjectAssets": "مدیریت پروژه و دارایی‌ها",
+      "perkRolePermissions": "دسترسی مبتنی بر نقش",
+      "perkSharedPool": "استخر اعتبار مشترک برای همه اعضا",
+      "tagline": "اشتراک اعتباری ماهانه دلخواه خود را انتخاب کنید. با اعتبار بیشتر، تخفیف بیشتری دریافت کنید."
+    },
     "teamWorkspace": "فضای کاری تیمی",
     "tierNameYearly": "{name} سالانه",
     "tiers": {
       "creator": {
+        "feature1": "امکان وارد کردن مدل‌های شخصی",
         "name": "خالق"
       },
       "founder": {
@@ -3832,9 +3949,12 @@
         "name": "رایگان"
       },
       "pro": {
+        "feature1": "زمان اجرای workflow طولانی‌تر (تا ۱ ساعت)",
         "name": "حرفه‌ای"
       },
       "standard": {
+        "feature1": "حداکثر زمان اجرای workflow: ۳۰ دقیقه",
+        "feature2": "امکان افزودن اعتبار بیشتر در هر زمان",
         "name": "استاندارد"
       }
     },
@@ -3847,6 +3967,7 @@
     "upgradeToAddCredits": "برای افزودن اعتبار ارتقاء دهید",
     "usdPerMonth": "دلار آمریکا / ماه",
     "usdPerMonthPerMember": "دلار آمریکا / ماه / هر عضو",
+    "videoEstimate": "تولید حدود ~{count} ویدیو ۵ ثانیه‌ای*",
     "videoEstimateExplanation": "این تخمین‌ها بر اساس قالب Wan 2.2 Image-to-Video با تنظیمات پیش‌فرض (۵ ثانیه، ۶۴۰×۶۴۰، ۱۶ فریم بر ثانیه، ۴ مرحله نمونه‌گیری) است.",
     "videoEstimateHelp": "جزئیات بیشتر درباره این قالب",
     "videoEstimateLabel": "تخمین تعداد ویدیوهای ۵ ثانیه‌ای تولید شده با قالب Wan 2.2 Image-to-Video",
@@ -3856,6 +3977,7 @@
     "viewMoreDetails": "مشاهده جزئیات بیشتر",
     "viewMoreDetailsPlans": "مشاهده جزئیات بیشتر درباره طرح‌ها و قیمت‌ها",
     "viewUsageHistory": "مشاهده تاریخچه استفاده",
+    "whatsIncluded": "شامل موارد زیر:",
     "workspaceNotSubscribed": "این محیط کاری اشتراک فعال ندارد",
     "yearly": "سالانه",
     "yearlyCreditsLabel": "کل اعتبار سالانه",

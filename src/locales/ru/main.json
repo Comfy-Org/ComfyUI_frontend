@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "Ваш API-токен не имеет доступа к этому ресурсу. Проверьте права доступа токена.",
     "errorUserTokenInvalid": "Ваш сохранённый API-токен недействителен или истёк. Обновите токен в настройках.",
     "failedToCreateNode": "Не удалось создать узел. Попробуйте ещё раз или проверьте консоль для подробностей.",
+    "failedToSetModelValue": "Узел добавлен, но его модель не удалось установить автоматически. Проверьте консоль для подробностей.",
     "fileFormats": "Форматы файлов",
     "fileName": "Имя файла",
     "fileSize": "Размер файла",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
       "auth/weak-password": "Пароль слишком слабый. Пожалуйста, используйте более надежный пароль длиной не менее 6 символов.",
       "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз.",
-      "generic": "Произошла ошибка при входе в систему. Пожалуйста, попробуйте еще раз."
+      "generic": "Произошла ошибка при входе в систему. Пожалуйста, попробуйте еще раз.",
+      "signupBlocked": "Сейчас не удалось создать ваш аккаунт. Пожалуйста, попробуйте позже. Если проблема повторяется, напишите на support@comfy.org."
     },
     "login": {
       "andText": "и",
@@ -345,6 +347,17 @@
     "width": "Ширина",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "Очистить всё",
+    "clickRegionToEdit": "Кликните по области для редактирования.",
+    "colors": "палитра_цветов",
+    "descLabel": "описание",
+    "descPlaceholder": "описание этой области",
+    "textLabel": "Текст",
+    "textPlaceholder": "текст для отображения (дословно)",
+    "typeObj": "объект",
+    "typeText": "текст"
   },
   "breadcrumbsMenu": {
     "app": "Приложение",
@@ -755,6 +768,13 @@
     "creditsAvailable": "Доступно кредитов",
     "details": "Детали",
     "eventType": "Тип события",
+    "eventTypes": {
+      "accountCreated": "Аккаунт создан",
+      "apiNodeUsage": "Использование партнерского узла",
+      "apiUsage": "Использование API",
+      "creditAdded": "Кредиты добавлены",
+      "gpuUsage": "Использование GPU"
+    },
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",
     "lastUpdated": "Последнее обновление",
@@ -1829,6 +1849,35 @@
     "zoomIn": "Увеличить",
     "zoomOptions": "Параметры масштабирования",
     "zoomOut": "Уменьшить"
+  },
+  "hdrViewer": {
+    "channel": "Канал",
+    "channels": {
+      "a": "Альфа",
+      "b": "B",
+      "g": "G",
+      "luminance": "Яркость",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "Предупреждения о клиппинге",
+    "dither": "Дизеринг",
+    "exposure": "Экспозиция",
+    "failedToLoad": "Не удалось загрузить HDR изображение",
+    "fitView": "Вписать",
+    "hdrImage": "HDR изображение",
+    "histogram": "Гистограмма",
+    "inf": "Беск.",
+    "max": "Макс.",
+    "mean": "Среднее",
+    "min": "Мин.",
+    "nan": "NaN",
+    "normalizeExposure": "Автоэкспозиция",
+    "openInHdrViewer": "Открыть в HDR просмотрщике",
+    "resolution": "Разрешение",
+    "sourceGamut": "Исходный цветовой охват",
+    "stdDev": "Ст. отклонение",
+    "title": "HDR Просмотрщик"
   },
   "help": {
     "helpCenterMenu": "Меню справочного центра",
@@ -2957,6 +3006,10 @@
     "uploadError": "Не удалось загрузить изображение: {status} - {statusText}",
     "width": "Ширина"
   },
+  "palette": {
+    "addColor": "Добавить цвет",
+    "swatchTitle": "Клик — редактировать · перетащить — изменить порядок · ПКМ — удалить"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Все загрузки завершены",
     "downloadingModel": "Загрузка модели...",
@@ -3702,6 +3755,27 @@
     "customLoRAsLabel": "Импортируйте свои LoRA",
     "description": "Выберите лучший план для себя",
     "descriptionWorkspace": "Выберите лучший тариф для вашего рабочего пространства",
+    "downgrade": {
+      "body": "Все остальные участники этой рабочей области будут немедленно удалены.",
+      "confirm": "Сменить тариф",
+      "confirmationPhrase": "Я понимаю",
+      "confirmationPrompt": "Введите «{phrase}» для подтверждения.",
+      "failed": "Не удалось сменить тариф",
+      "failedAfterMemberRemoval": "Участники команды были удалены, но смена тарифа не завершена — попробуйте еще раз или обратитесь в поддержку",
+      "memberRemovalFailed": "Не удалось удалить {email} из команды — некоторые участники могли быть уже удалены, и ваш тариф не был изменён",
+      "notAllowed": "Смена этого тарифа недоступна",
+      "paymentMethodRequired": "Для смены тарифа требуется способ оплаты",
+      "paymentPageBlocked": "Не удалось открыть страницу оплаты — попробуйте еще раз",
+      "title": "Перейти на тариф {plan}?"
+    },
+    "enterprise": {
+      "cta": "Узнать больше",
+      "flexibility": "Нужна большая гибкость или индивидуальные функции?",
+      "name": "Корпоративный тариф",
+      "needMoreMembers": "Нужно больше участников?",
+      "reachOut": "Свяжитесь с нами, чтобы назначить встречу."
+    },
+    "everythingInPlus": "Всё в {plan}, плюс:",
     "expiresDate": "Истекает {date}",
     "freeTier": {
       "description": "Ваш бесплатный тариф включает {credits} кредитов каждый месяц для использования Comfy Cloud.",
@@ -3748,6 +3822,7 @@
     "messageSupport": "Написать в поддержку",
     "monthly": "Ежемесячно",
     "monthlyBonusDescription": "Ежемесячный бонус кредитов",
+    "monthlyCredits": "кредитов в месяц",
     "monthlyCreditsInfo": "Эти кредиты обновляются ежемесячно и не переносятся",
     "monthlyCreditsLabel": "Ежемесячные кредиты",
     "monthlyCreditsPerMemberLabel": "Ежемесячные кредиты / участник",
@@ -3760,7 +3835,13 @@
     "partnerNodesCredits": "Кредиты партнёрских узлов",
     "partnerNodesDescription": "Для запуска коммерческих/проприетарных моделей",
     "perMonth": "USD / месяц",
+    "personalHeader": "Личные тарифы предназначены только для индивидуального использования. {action}",
+    "personalHeaderAction": "Чтобы добавить участников, оформите командный тариф.",
     "personalWorkspace": "Личное рабочее пространство",
+    "planScope": {
+      "personal": "Для личного использования",
+      "team": "Для команд"
+    },
     "plansAndPricing": "Планы и цены",
     "plansForWorkspace": "Тарифы для {workspace}",
     "prepaidCreditsInfo": "Кредиты, приобретённые отдельно и не имеющие срока действия",
@@ -3771,8 +3852,10 @@
       "confirm": "Подтвердить",
       "confirmPayment": "Подтвердите оплату",
       "confirmPlanChange": "Подтвердите смену тарифа",
+      "creditsRefillTo": "Кредиты пополняются до",
       "eachMonthCreditsRefill": "Ежемесячное пополнение кредитов до",
       "ends": "Заканчивается {date}",
+      "everyMonthStarting": "Каждый месяц начиная с {date}",
       "hideFeatures": "Скрыть функции",
       "nextPaymentDue": "Следующий платеж {date}. Отменить можно в любое время.",
       "perMember": "/ участник",
@@ -3782,10 +3865,18 @@
       "showMoreFeatures": "Показать больше функций",
       "starting": "Начинается {date}",
       "startingToday": "Начинается сегодня",
+      "subscribeToPlan": "Подписаться на {plan}",
+      "switchToPlan": "Перейти на {plan}",
       "terms": "Условия",
       "termsAgreement": "Продолжая, вы соглашаетесь с {terms} и {privacy} Comfy Org.",
-      "totalDueToday": "Итого к оплате сегодня"
+      "totalDueToday": "Итого к оплате сегодня",
+      "youllBeCharged": "С вас будет списано"
     },
+    "pricingBlurb": "*Основано на этом шаблоне, {seeDetails}. Свяжитесь с нами по {questions} или для {enterpriseDiscussions}. Для подробной информации о ценах {clickHere}.",
+    "pricingBlurbClickHere": "нажмите здесь",
+    "pricingBlurbEnterprise": "корпоративным обсуждениям",
+    "pricingBlurbQuestions": "вопросам",
+    "pricingBlurbSeeDetails": "подробнее",
     "refreshCredits": "Обновить кредиты",
     "renewsDate": "Обновляется {date}",
     "required": {
@@ -3799,6 +3890,8 @@
     "resubscribe": "Возобновить подписку",
     "resubscribeSuccess": "Подписка успешно возобновлена",
     "resubscribeTo": "Возобновить подписку на {plan}",
+    "saveYearly": "Экономьте 20%",
+    "saveYearlyUpTo": "Экономьте до 20%",
     "soloUseOnly": "Только для индивидуального использования",
     "subscribeForMore": "Обновить",
     "subscribeNow": "Подписаться сейчас",
@@ -3807,10 +3900,34 @@
     "subscribeToRun": "Подписаться",
     "subscribeToRunFull": "Подписаться для запуска",
     "subscriptionRequiredMessage": "Для запуска рабочих процессов в облаке участникам требуется подписка",
+    "success": {
+      "allSet": "Всё готово",
+      "planUpdated": "Ваш тариф успешно обновлён.",
+      "receiptEmailed": "Квитанция отправлена на вашу электронную почту."
+    },
+    "teamHeader": "Для команд, желающих сотрудничать. Нужно больше участников? {learnMore} о корпоративных возможностях.",
+    "teamHeaderLearnMore": "Узнать больше",
+    "teamPlan": {
+      "changePlan": "Сменить тариф",
+      "checkoutComingSoon": "Оформление командного тарифа скоро появится.",
+      "comingSoonLabel": "Скоро появится:",
+      "cta": "Оформить командную годовую подписку",
+      "ctaMonthly": "Оформить командную месячную подписку",
+      "currentPlan": "Текущий тариф",
+      "detailsTitle": "Детали",
+      "name": "Командный тариф",
+      "perkConcurrentRuns": "Участники могут запускать рабочие процессы одновременно",
+      "perkInviteMembers": "Приглашайте участников команды",
+      "perkProjectAssets": "Управление проектами и ресурсами",
+      "perkRolePermissions": "Ролевые разрешения",
+      "perkSharedPool": "Общий пул кредитов для всех участников",
+      "tagline": "Выберите собственную ежемесячную подписку на кредиты. Чем больше кредитов — тем больше скидка."
+    },
     "teamWorkspace": "Командное рабочее пространство",
     "tierNameYearly": "{name} Ежегодно",
     "tiers": {
       "creator": {
+        "feature1": "Импортируйте собственные модели",
         "name": "Creator"
       },
       "founder": {
@@ -3820,9 +3937,12 @@
         "name": "Бесплатно"
       },
       "pro": {
+        "feature1": "Более длительное выполнение рабочего процесса (до 1 часа)",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "Максимальное время выполнения рабочего процесса — 30 минут",
+        "feature2": "Добавляйте кредиты в любое время",
         "name": "Standard"
       }
     },
@@ -3835,6 +3955,7 @@
     "upgradeToAddCredits": "Обновите, чтобы добавить кредиты",
     "usdPerMonth": "USD / мес",
     "usdPerMonthPerMember": "USD / мес / участник",
+    "videoEstimate": "Генерирует ~{count} 5-секундных видео*",
     "videoEstimateExplanation": "Эти оценки основаны на шаблоне Wan 2.2 Image-to-Video с настройками по умолчанию (5 секунд, 640x640, 16 кадров/с, 4 шага семплирования).",
     "videoEstimateHelp": "Подробнее об этом шаблоне",
     "videoEstimateLabel": "Примерное количество 5-секундных видео, созданных с помощью шаблона Wan 2.2 Image-to-Video",
@@ -3844,6 +3965,7 @@
     "viewMoreDetails": "Подробнее",
     "viewMoreDetailsPlans": "Подробнее о планах и ценах",
     "viewUsageHistory": "История использования",
+    "whatsIncluded": "Что входит:",
     "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
     "yearly": "Ежегодно",
     "yearlyCreditsLabel": "Годовые кредиты",

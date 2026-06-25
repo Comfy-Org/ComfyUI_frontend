@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "お使いのAPIトークンにはこのリソースへのアクセス権がありません。トークンの権限を確認してください。",
     "errorUserTokenInvalid": "保存されているAPIトークンが無効または期限切れです。設定でトークンを更新してください。",
     "failedToCreateNode": "ノードの作成に失敗しました。再試行するか、詳細はコンソールをご確認ください。",
+    "failedToSetModelValue": "ノードは追加されましたが、モデルを自動設定できませんでした。詳細はコンソールをご確認ください。",
     "fileFormats": "ファイル形式",
     "fileName": "ファイル名",
     "fileSize": "ファイルサイズ",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？",
       "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
       "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。",
-      "generic": "サインイン中に問題が発生しました。もう一度お試しください。"
+      "generic": "サインイン中に問題が発生しました。もう一度お試しください。",
+      "signupBlocked": "現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。"
     },
     "login": {
       "andText": "および",
@@ -345,6 +347,17 @@
     "width": "幅",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "すべてクリア",
+    "clickRegionToEdit": "編集する領域をクリックしてください。",
+    "colors": "カラーパレット",
+    "descLabel": "説明",
+    "descPlaceholder": "この領域の説明",
+    "textLabel": "テキスト",
+    "textPlaceholder": "表示するテキスト（そのまま）",
+    "typeObj": "obj",
+    "typeText": "テキスト"
   },
   "breadcrumbsMenu": {
     "app": "アプリ",
@@ -755,6 +768,13 @@
     "creditsAvailable": "利用可能なクレジット",
     "details": "詳細",
     "eventType": "イベントタイプ",
+    "eventTypes": {
+      "accountCreated": "アカウント作成",
+      "apiNodeUsage": "パートナーノード利用",
+      "apiUsage": "API利用",
+      "creditAdded": "クレジット追加",
+      "gpuUsage": "GPU利用"
+    },
     "faqs": "よくある質問",
     "invoiceHistory": "請求履歴",
     "lastUpdated": "最終更新",
@@ -1829,6 +1849,35 @@
     "zoomIn": "拡大",
     "zoomOptions": "ズームオプション",
     "zoomOut": "縮小"
+  },
+  "hdrViewer": {
+    "channel": "チャンネル",
+    "channels": {
+      "a": "アルファ",
+      "b": "B",
+      "g": "G",
+      "luminance": "輝度",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "クリップ警告",
+    "dither": "ディザ",
+    "exposure": "露出",
+    "failedToLoad": "HDR画像の読み込みに失敗しました",
+    "fitView": "フィット",
+    "hdrImage": "HDR画像",
+    "histogram": "ヒストグラム",
+    "inf": "Inf",
+    "max": "最大",
+    "mean": "平均",
+    "min": "最小",
+    "nan": "NaN",
+    "normalizeExposure": "自動露出",
+    "openInHdrViewer": "HDRビューアで開く",
+    "resolution": "解像度",
+    "sourceGamut": "ソースガマット",
+    "stdDev": "標準偏差",
+    "title": "HDRビューア"
   },
   "help": {
     "helpCenterMenu": "ヘルプセンターメニュー",
@@ -2957,6 +3006,10 @@
     "uploadError": "ペインター画像のアップロードに失敗しました: {status} - {statusText}",
     "width": "幅"
   },
+  "palette": {
+    "addColor": "色を追加",
+    "swatchTitle": "クリックで編集 · ドラッグで並べ替え · 右クリックで削除"
+  },
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
     "downloadingModel": "モデルをダウンロード中...",
@@ -3702,6 +3755,27 @@
     "customLoRAsLabel": "独自のLoRAをインポート",
     "description": "あなたに最適なプランを選択してください",
     "descriptionWorkspace": "ワークスペースに最適なプランを選択してください",
+    "downgrade": {
+      "body": "このワークスペースの他のメンバーはすぐに削除されます。",
+      "confirm": "プランを変更",
+      "confirmationPhrase": "理解しました",
+      "confirmationPrompt": "確認のため「{phrase}」と入力してください。",
+      "failed": "プランの変更に失敗しました",
+      "failedAfterMemberRemoval": "チームメンバーは削除されましたが、プランの変更が完了しませんでした。再度お試しいただくか、サポートまでご連絡ください。",
+      "memberRemovalFailed": "{email} をチームから削除できませんでした。一部のメンバーはすでに削除されている可能性があり、プランは変更されませんでした。",
+      "notAllowed": "このプラン変更は利用できません",
+      "paymentMethodRequired": "プランを変更するにはお支払い方法が必要です",
+      "paymentPageBlocked": "お支払いページを開けませんでした。再度お試しください。",
+      "title": "{plan}プランに変更しますか？"
+    },
+    "enterprise": {
+      "cta": "詳細を見る",
+      "flexibility": "より柔軟な対応やカスタム機能をご希望ですか？",
+      "name": "エンタープライズ",
+      "needMoreMembers": "さらに多くのメンバーが必要ですか？",
+      "reachOut": "ぜひご連絡ください。お打ち合わせを調整いたします。"
+    },
+    "everythingInPlus": "{plan}のすべて、さらに：",
     "expiresDate": "{date} に期限切れ",
     "freeTier": {
       "description": "無料プランには、Comfy Cloudをお試しいただける毎月{credits}クレジットが含まれています。",
@@ -3748,6 +3822,7 @@
     "messageSupport": "サポートに連絡",
     "monthly": "月額",
     "monthlyBonusDescription": "月間クレジットボーナス",
+    "monthlyCredits": "月間クレジット",
     "monthlyCreditsInfo": "これらのクレジットは毎月リフレッシュされ、繰り越しはできません",
     "monthlyCreditsLabel": "月間クレジット",
     "monthlyCreditsPerMemberLabel": "月間クレジット / メンバー",
@@ -3760,7 +3835,13 @@
     "partnerNodesCredits": "パートナーノードクレジット",
     "partnerNodesDescription": "商用/独自モデルの実行用",
     "perMonth": "USD / 月",
+    "personalHeader": "個人プランは個人利用専用です。{action}",
+    "personalHeaderAction": "チームメンバーを追加するには、チームプランにご加入ください。",
     "personalWorkspace": "個人ワークスペース",
+    "planScope": {
+      "personal": "個人向け",
+      "team": "チーム向け"
+    },
     "plansAndPricing": "プランと価格",
     "plansForWorkspace": "{workspace} のプラン",
     "prepaidCreditsInfo": "別途購入した有効期限のないクレジット",
@@ -3771,8 +3852,10 @@
       "confirm": "確認",
       "confirmPayment": "お支払いを確認",
       "confirmPlanChange": "プラン変更を確認",
+      "creditsRefillTo": "クレジットが補充されます：",
       "eachMonthCreditsRefill": "毎月クレジットが補充されます",
       "ends": "{date}に終了",
+      "everyMonthStarting": "毎月{date}から開始",
       "hideFeatures": "機能を隠す",
       "nextPaymentDue": "次回のお支払いは{date}です。いつでもキャンセルできます。",
       "perMember": "/ メンバー",
@@ -3782,10 +3865,18 @@
       "showMoreFeatures": "さらに機能を表示",
       "starting": "{date}から開始",
       "startingToday": "本日から開始",
+      "subscribeToPlan": "{plan}に加入",
+      "switchToPlan": "{plan}に切り替え",
       "terms": "利用規約",
       "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
-      "totalDueToday": "本日のお支払い合計"
+      "totalDueToday": "本日のお支払い合計",
+      "youllBeCharged": "ご請求額："
     },
+    "pricingBlurb": "*このテンプレートに基づきます。{seeDetails}。{questions}や{enterpriseDiscussions}についてはお問い合わせください。詳細な料金については{clickHere}。",
+    "pricingBlurbClickHere": "こちらをクリック",
+    "pricingBlurbEnterprise": "エンタープライズのご相談",
+    "pricingBlurbQuestions": "ご質問",
+    "pricingBlurbSeeDetails": "詳細を見る",
     "refreshCredits": "クレジットを更新",
     "renewsDate": "{date} に更新",
     "required": {
@@ -3799,6 +3890,8 @@
     "resubscribe": "再購読する",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
+    "saveYearly": "年間契約で20%お得",
+    "saveYearlyUpTo": "最大20%お得",
     "soloUseOnly": "個人利用のみ",
     "subscribeForMore": "アップグレード",
     "subscribeNow": "今すぐ購読",
@@ -3807,10 +3900,34 @@
     "subscribeToRun": "購読する",
     "subscribeToRunFull": "実行を購読",
     "subscriptionRequiredMessage": "クラウドでワークフローを実行するにはメンバーにサブスクリプションが必要です",
+    "success": {
+      "allSet": "準備が整いました",
+      "planUpdated": "プランが正常に更新されました。",
+      "receiptEmailed": "領収書をメールで送信しました。"
+    },
+    "teamHeader": "コラボレーションを希望するチーム向け。さらに多くのメンバーが必要ですか？{learnMore}（エンタープライズについて）。",
+    "teamHeaderLearnMore": "詳細はこちら",
+    "teamPlan": {
+      "changePlan": "プランを変更",
+      "checkoutComingSoon": "チームプランのチェックアウトは近日公開予定です。",
+      "comingSoonLabel": "近日公開：",
+      "cta": "チーム年間プランに加入",
+      "ctaMonthly": "チーム月間プランに加入",
+      "currentPlan": "現在のプラン",
+      "detailsTitle": "詳細",
+      "name": "チームプラン",
+      "perkConcurrentRuns": "メンバーはワークフローを同時に実行可能",
+      "perkInviteMembers": "チームメンバーを招待",
+      "perkProjectAssets": "プロジェクト・アセット管理",
+      "perkRolePermissions": "ロールベースの権限管理",
+      "perkSharedPool": "全メンバーで共有するクレジットプール",
+      "tagline": "月間クレジット数を自由に選択。多くのクレジットでさらに割引。"
+    },
     "teamWorkspace": "チームワークスペース",
     "tierNameYearly": "{name} 年間",
     "tiers": {
       "creator": {
+        "feature1": "独自モデルのインポート",
         "name": "クリエイター"
       },
       "founder": {
@@ -3820,9 +3937,12 @@
         "name": "無料"
       },
       "pro": {
+        "feature1": "より長いワークフロー実行時間（最大1時間）",
         "name": "プロ"
       },
       "standard": {
+        "feature1": "最大30分のワークフロー実行時間",
+        "feature2": "いつでもクレジットを追加可能",
         "name": "スタンダード"
       }
     },
@@ -3835,6 +3955,7 @@
     "upgradeToAddCredits": "クレジット追加のためアップグレード",
     "usdPerMonth": "USD / 月",
     "usdPerMonthPerMember": "USD / 月 / メンバー",
+    "videoEstimate": "約{count}本の5秒動画を生成*",
     "videoEstimateExplanation": "これらの見積もりは、Wan 2.2 画像から動画テンプレートのデフォルト設定（5秒、640x640、16fps、4ステップサンプリング）に基づいています。",
     "videoEstimateHelp": "このテンプレートの詳細",
     "videoEstimateLabel": "Wan 2.2 画像から動画テンプレートで生成される約5秒動画数",
@@ -3844,6 +3965,7 @@
     "viewMoreDetails": "詳細を表示",
     "viewMoreDetailsPlans": "プランと価格の詳細を見る",
     "viewUsageHistory": "利用履歴を表示",
+    "whatsIncluded": "含まれる内容：",
     "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
     "yearlyCreditsLabel": "年間合計クレジット",

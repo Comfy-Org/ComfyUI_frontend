@@ -5419,7 +5419,7 @@
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "The resolution of the output video."
+        "tooltip": "The resolution of the output video. 1080p is only available for grok-imagine-video-1.5."
       },
       "aspect_ratio": {
         "name": "aspect_ratio",

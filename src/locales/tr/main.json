@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "API anahtarınızın bu kaynağa erişimi yok. Lütfen anahtar izinlerinizi kontrol edin.",
     "errorUserTokenInvalid": "Kayıtlı API anahtarınız geçersiz veya süresi dolmuş. Lütfen ayarlardan anahtarınızı güncelleyin.",
     "failedToCreateNode": "Düğüm oluşturulamadı. Lütfen tekrar deneyin veya ayrıntılar için konsolu kontrol edin.",
+    "failedToSetModelValue": "Düğüm eklendi, ancak modeli otomatik olarak ayarlanamadı. Detaylar için konsolu kontrol edin.",
     "fileFormats": "Dosya formatları",
     "fileName": "Dosya Adı",
     "fileSize": "Dosya Boyutu",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "Bu e-posta ile ilişkili bir hesap bulunamadı. Yeni bir hesap oluşturmak ister misiniz?",
       "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
       "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin.",
-      "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin."
+      "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin.",
+      "signupBlocked": "Şu anda hesabınızı oluşturamıyoruz. Lütfen daha sonra tekrar deneyin. Sorun devam ederse support@comfy.org adresine e-posta gönderin."
     },
     "login": {
       "andText": "ve",
@@ -345,6 +347,17 @@
     "width": "Genişlik",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "Tümünü temizle",
+    "clickRegionToEdit": "Düzenlemek için bir bölgeye tıklayın.",
+    "colors": "renk_paleti",
+    "descLabel": "açıklama",
+    "descPlaceholder": "bu bölgenin açıklaması",
+    "textLabel": "Metin",
+    "textPlaceholder": "görüntülenecek metin (aynen)",
+    "typeObj": "nesne",
+    "typeText": "metin"
   },
   "breadcrumbsMenu": {
     "app": "Uygulama",
@@ -755,6 +768,13 @@
     "creditsAvailable": "Mevcut kredi",
     "details": "Detaylar",
     "eventType": "Etkinlik Türü",
+    "eventTypes": {
+      "accountCreated": "Hesap Oluşturuldu",
+      "apiNodeUsage": "Partner Node Kullanımı",
+      "apiUsage": "API Kullanımı",
+      "creditAdded": "Kredi Eklendi",
+      "gpuUsage": "GPU Kullanımı"
+    },
     "faqs": "SSS",
     "invoiceHistory": "Fatura Geçmişi",
     "lastUpdated": "Son güncellenme",
@@ -1829,6 +1849,35 @@
     "zoomIn": "Yakınlaştır",
     "zoomOptions": "Yakınlaştırma Seçenekleri",
     "zoomOut": "Uzaklaştır"
+  },
+  "hdrViewer": {
+    "channel": "Kanal",
+    "channels": {
+      "a": "Alfa",
+      "b": "B",
+      "g": "G",
+      "luminance": "Parlaklık",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "Kırpma uyarıları",
+    "dither": "Dithering",
+    "exposure": "Pozlama",
+    "failedToLoad": "HDR görüntü yüklenemedi",
+    "fitView": "Sığdır",
+    "hdrImage": "HDR görüntü",
+    "histogram": "Histogram",
+    "inf": "Sonsuz",
+    "max": "Maks",
+    "mean": "Ortalama",
+    "min": "Min",
+    "nan": "NaN",
+    "normalizeExposure": "Otomatik pozlama",
+    "openInHdrViewer": "HDR Görüntüleyicide Aç",
+    "resolution": "Çözünürlük",
+    "sourceGamut": "Kaynak renk aralığı",
+    "stdDev": "Std sapma",
+    "title": "HDR Görüntüleyici"
   },
   "help": {
     "helpCenterMenu": "Yardım Merkezi Menüsü",
@@ -2957,6 +3006,10 @@
     "uploadError": "Ressam görseli yüklenemedi: {status} - {statusText}",
     "width": "Genişlik"
   },
+  "palette": {
+    "addColor": "Renk ekle",
+    "swatchTitle": "Düzenlemek için tıkla · Sürükleyerek sırala · Kaldırmak için sağ tıkla"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Tüm indirmeler tamamlandı",
     "downloadingModel": "Model indiriliyor...",
@@ -3702,6 +3755,27 @@
     "customLoRAsLabel": "Kendi LoRA'larınızı içe aktarın",
     "description": "Sizin için en iyi planı seçin",
     "descriptionWorkspace": "Çalışma alanınız için en iyi planı seçin",
+    "downgrade": {
+      "body": "Bu çalışma alanındaki diğer tüm üyeler hemen kaldırılacaktır.",
+      "confirm": "Planı değiştir",
+      "confirmationPhrase": "Anladım",
+      "confirmationPrompt": "Onaylamak için \"{phrase}\" yazın.",
+      "failed": "Plan değiştirilemedi",
+      "failedAfterMemberRemoval": "Ekip üyeleri kaldırıldı, ancak plan değişikliği tamamlanamadı — lütfen tekrar deneyin veya destek ile iletişime geçin",
+      "memberRemovalFailed": "{email} ekipten kaldırılamadı — bazı üyeler zaten kaldırılmış olabilir ve planınız değiştirilmedi",
+      "notAllowed": "Bu plan değişikliği mevcut değil",
+      "paymentMethodRequired": "Plan değiştirmek için bir ödeme yöntemi gereklidir",
+      "paymentPageBlocked": "Ödeme sayfası açılamadı — lütfen tekrar deneyin",
+      "title": "{plan} planına geçilsin mi?"
+    },
+    "enterprise": {
+      "cta": "Daha fazla bilgi",
+      "flexibility": "Daha fazla esneklik veya özel özellikler mi arıyorsunuz?",
+      "name": "Kurumsal",
+      "needMoreMembers": "Daha fazla üyeye mi ihtiyacınız var?",
+      "reachOut": "Bizimle iletişime geçin ve bir görüşme planlayalım."
+    },
+    "everythingInPlus": "{plan} planındaki her şey ve ayrıca:",
     "expiresDate": "{date} tarihinde sona erer",
     "freeTier": {
       "description": "Ücretsiz planınız, Comfy Cloud'u denemek için her ay {credits} kredi içerir.",
@@ -3748,6 +3822,7 @@
     "messageSupport": "Destek ekibine mesaj gönder",
     "monthly": "Aylık",
     "monthlyBonusDescription": "Aylık kredi bonusu",
+    "monthlyCredits": "aylık kredi",
     "monthlyCreditsInfo": "Bu krediler her ay yenilenir ve devretmez",
     "monthlyCreditsLabel": "Aylık krediler",
     "monthlyCreditsPerMemberLabel": "Aylık kredi / üye",
@@ -3760,7 +3835,13 @@
     "partnerNodesCredits": "Partner Düğümleri kredileri",
     "partnerNodesDescription": "Ticari/özel modelleri çalıştırmak için",
     "perMonth": "USD / ay",
+    "personalHeader": "Bireysel planlar yalnızca kişisel kullanım içindir. {action}",
+    "personalHeaderAction": "Ekip arkadaşları eklemek için ekip planına abone olun.",
     "personalWorkspace": "Kişisel Çalışma Alanı",
+    "planScope": {
+      "personal": "Bireysel Kullanım İçin",
+      "team": "Ekipler İçin"
+    },
     "plansAndPricing": "Planlar ve fiyatlandırma",
     "plansForWorkspace": "{workspace} için planlar",
     "prepaidCreditsInfo": "Ayrıca satın alınan ve son kullanma tarihi olmayan krediler",
@@ -3771,8 +3852,10 @@
       "confirm": "Onayla",
       "confirmPayment": "Ödemenizi onaylayın",
       "confirmPlanChange": "Plan değişikliğini onaylayın",
+      "creditsRefillTo": "Krediler yenilenir",
       "eachMonthCreditsRefill": "Her ay krediler yenilenir",
       "ends": "{date} tarihinde bitiyor",
+      "everyMonthStarting": "Her ay {date} tarihinde başlar",
       "hideFeatures": "Özellikleri gizle",
       "nextPaymentDue": "Sonraki ödeme {date} tarihinde. İstediğiniz zaman iptal edebilirsiniz.",
       "perMember": "/ üye",
@@ -3782,10 +3865,18 @@
       "showMoreFeatures": "Daha fazla özelliği göster",
       "starting": "{date} tarihinde başlıyor",
       "startingToday": "Bugünden itibaren başlıyor",
+      "subscribeToPlan": "{plan} planına abone ol",
+      "switchToPlan": "{plan} planına geç",
       "terms": "Şartlar",
       "termsAgreement": "Devam ederek Comfy Org'un {terms} ve {privacy} politikasını kabul etmiş olursunuz.",
-      "totalDueToday": "Bugün ödenecek toplam tutar"
+      "totalDueToday": "Bugün ödenecek toplam tutar",
+      "youllBeCharged": "Şu kadar ücretlendirileceksiniz"
     },
+    "pricingBlurb": "*Bu şablona göre, {seeDetails}. {questions} veya {enterpriseDiscussions} için bizimle iletişime geçin. Daha fazla fiyatlandırma detayı için {clickHere}.",
+    "pricingBlurbClickHere": "buraya tıklayın",
+    "pricingBlurbEnterprise": "kurumsal görüşmeler",
+    "pricingBlurbQuestions": "sorular",
+    "pricingBlurbSeeDetails": "detayları gör",
     "refreshCredits": "Kredileri yenile",
     "renewsDate": "{date} tarihinde yenilenir",
     "required": {
@@ -3799,6 +3890,8 @@
     "resubscribe": "Yeniden abone ol",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planına yeniden abone ol",
+    "saveYearly": "%20 tasarruf edin",
+    "saveYearlyUpTo": "%20'ye kadar tasarruf edin",
     "soloUseOnly": "Sadece bireysel kullanım",
     "subscribeForMore": "Yükselt",
     "subscribeNow": "Hemen Abone Ol",
@@ -3807,10 +3900,34 @@
     "subscribeToRun": "Abone Ol",
     "subscribeToRunFull": "Çalıştırmaya Abone Ol",
     "subscriptionRequiredMessage": "Üyelerin Bulut'ta iş akışlarını çalıştırabilmesi için abonelik gereklidir",
+    "success": {
+      "allSet": "Her şey hazır",
+      "planUpdated": "Planınız başarıyla güncellendi.",
+      "receiptEmailed": "Makbuz e-posta ile gönderildi."
+    },
+    "teamHeader": "Birlikte çalışmak isteyen ekipler için. Daha fazla üyeye mi ihtiyacınız var? {learnMore} kurumsal hakkında.",
+    "teamHeaderLearnMore": "Daha fazla bilgi",
+    "teamPlan": {
+      "changePlan": "Planı değiştir",
+      "checkoutComingSoon": "Ekip planı ödeme sayfası yakında geliyor.",
+      "comingSoonLabel": "Yakında:",
+      "cta": "Ekip Yıllık Aboneliğe Geç",
+      "ctaMonthly": "Ekip Aylık Aboneliğe Geç",
+      "currentPlan": "Mevcut plan",
+      "detailsTitle": "Detaylar",
+      "name": "Ekip Planı",
+      "perkConcurrentRuns": "Üyeler iş akışlarını aynı anda çalıştırabilir",
+      "perkInviteMembers": "Ekip üyelerini davet edin",
+      "perkProjectAssets": "Proje ve varlık yönetimi",
+      "perkRolePermissions": "Rol tabanlı izinler",
+      "perkSharedPool": "Tüm üyeler için ortak kredi havuzu",
+      "tagline": "Kendi aylık kredi aboneliğinizi seçin. Daha fazla krediyle daha büyük indirim elde edin."
+    },
     "teamWorkspace": "Takım Çalışma Alanı",
     "tierNameYearly": "{name} Yıllık",
     "tiers": {
       "creator": {
+        "feature1": "Kendi modellerinizi içe aktarın",
         "name": "Yaratıcı"
       },
       "founder": {
@@ -3820,9 +3937,12 @@
         "name": "Ücretsiz"
       },
       "pro": {
+        "feature1": "Daha uzun iş akışı çalışma süresi (1 saate kadar)",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "30 dakika maksimum iş akışı çalışma süresi",
+        "feature2": "İstediğiniz zaman daha fazla kredi ekleyin",
         "name": "Standart"
       }
     },
@@ -3835,6 +3955,7 @@
     "upgradeToAddCredits": "Kredi eklemek için yükselt",
     "usdPerMonth": "USD / ay",
     "usdPerMonthPerMember": "USD / ay / üye",
+    "videoEstimate": "Yaklaşık {count} adet 5 sn'lik video üretir*",
     "videoEstimateExplanation": "Bu tahminler, varsayılan ayarlarla (5 saniye, 640x640, 16fps, 4 adım örnekleme) Wan 2.2 Görselden Videoya şablonuna dayanmaktadır.",
     "videoEstimateHelp": "Bu şablon hakkında daha fazla bilgi",
     "videoEstimateLabel": "Wan 2.2 Görselden Videoya şablonu ile yaklaşık 5 sn'lik video sayısı",
@@ -3844,6 +3965,7 @@
     "viewMoreDetails": "Daha fazla detay görüntüle",
     "viewMoreDetailsPlans": "Planlar ve fiyatlandırma hakkında daha fazla detay",
     "viewUsageHistory": "Kullanım geçmişini görüntüle",
+    "whatsIncluded": "Dahil olanlar:",
     "workspaceNotSubscribed": "Bu çalışma alanı bir aboneliğe sahip değil",
     "yearly": "Yıllık",
     "yearlyCreditsLabel": "Toplam yıllık krediler",

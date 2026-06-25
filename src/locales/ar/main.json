@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "رمز API الخاص بك لا يملك صلاحية الوصول إلى هذا المورد. يرجى التحقق من أذونات الرمز.",
     "errorUserTokenInvalid": "رمز API المخزن غير صالح أو منتهي الصلاحية. يرجى تحديث الرمز في الإعدادات.",
     "failedToCreateNode": "فشل إنشاء العقدة. يرجى المحاولة مرة أخرى أو التحقق من وحدة التحكم للحصول على التفاصيل.",
+    "failedToSetModelValue": "تمت إضافة العقدة، لكن لم يتم تعيين النموذج تلقائيًا. تحقق من وحدة التحكم لمزيد من التفاصيل.",
     "fileFormats": "تنسيقات الملفات",
     "fileName": "اسم الملف",
     "fileSize": "حجم الملف",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "لم يتم العثور على حساب بهذا البريد الإلكتروني. هل ترغب في إنشاء حساب جديد؟",
       "auth/weak-password": "كلمة المرور ضعيفة جداً. يرجى استخدام كلمة مرور أقوى تحتوي على 6 أحرف على الأقل.",
       "auth/wrong-password": "كلمة المرور التي أدخلتها غير صحيحة. يرجى المحاولة مرة أخرى.",
-      "generic": "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى."
+      "generic": "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+      "signupBlocked": "تعذر إنشاء حسابك الآن. يرجى المحاولة لاحقًا. إذا استمرت المشكلة، راسل support@comfy.org."
     },
     "login": {
       "andText": "و",
@@ -345,6 +347,17 @@
     "width": "العرض",
     "x": "س",
     "y": "ص"
+  },
+  "boundingBoxes": {
+    "clearAll": "مسح الكل",
+    "clickRegionToEdit": "انقر على منطقة لتعديلها.",
+    "colors": "لوحة الألوان",
+    "descLabel": "الوصف",
+    "descPlaceholder": "وصف هذه المنطقة",
+    "textLabel": "نص",
+    "textPlaceholder": "النص المراد عرضه (كما هو)",
+    "typeObj": "كائن",
+    "typeText": "نص"
   },
   "breadcrumbsMenu": {
     "app": "التطبيق",
@@ -755,6 +768,13 @@
     "creditsAvailable": "الرصيد المتاح",
     "details": "التفاصيل",
     "eventType": "نوع الحدث",
+    "eventTypes": {
+      "accountCreated": "تم إنشاء الحساب",
+      "apiNodeUsage": "استخدام عقدة الشريك",
+      "apiUsage": "استخدام API",
+      "creditAdded": "تمت إضافة أرصدة",
+      "gpuUsage": "استخدام GPU"
+    },
     "faqs": "الأسئلة المتكررة",
     "invoiceHistory": "تاريخ الفواتير",
     "lastUpdated": "آخر تحديث",
@@ -1829,6 +1849,35 @@
     "zoomIn": "تكبير",
     "zoomOptions": "خيارات التكبير",
     "zoomOut": "تصغير"
+  },
+  "hdrViewer": {
+    "channel": "القناة",
+    "channels": {
+      "a": "ألفا",
+      "b": "B",
+      "g": "G",
+      "luminance": "السطوع",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "تحذيرات القص",
+    "dither": "تنعيم",
+    "exposure": "التعريض",
+    "failedToLoad": "فشل في تحميل صورة HDR",
+    "fitView": "ملاءمة",
+    "hdrImage": "صورة HDR",
+    "histogram": "مخطط بياني",
+    "inf": "لانهاية",
+    "max": "الحد الأقصى",
+    "mean": "المتوسط",
+    "min": "الحد الأدنى",
+    "nan": "غير رقم",
+    "normalizeExposure": "التعريض التلقائي",
+    "openInHdrViewer": "افتح في عارض HDR",
+    "resolution": "الدقة",
+    "sourceGamut": "مجال الألوان الأصلي",
+    "stdDev": "الانحراف المعياري",
+    "title": "عارض HDR"
   },
   "help": {
     "helpCenterMenu": "قائمة مركز المساعدة",
@@ -2957,6 +3006,10 @@
     "uploadError": "فشل في رفع صورة الرسام: {status} - {statusText}",
     "width": "العرض"
   },
+  "palette": {
+    "addColor": "إضافة لون",
+    "swatchTitle": "انقر للتعديل · اسحب لإعادة الترتيب · انقر بزر الفأرة الأيمن للإزالة"
+  },
   "progressToast": {
     "allDownloadsCompleted": "اكتملت جميع التنزيلات",
     "downloadingModel": "جاري تنزيل النموذج...",
@@ -3702,6 +3755,27 @@
     "customLoRAsLabel": "استيراد LoRAs الخاصة بك",
     "description": "اختر الخطة الأنسب لك",
     "descriptionWorkspace": "اختر أفضل خطة لمساحة العمل الخاصة بك",
+    "downgrade": {
+      "body": "سيتم إزالة جميع الأعضاء الآخرين من مساحة العمل هذه فورًا.",
+      "confirm": "تغيير الخطة",
+      "confirmationPhrase": "أنا أفهم",
+      "confirmationPrompt": "اكتب \"{phrase}\" للتأكيد.",
+      "failed": "فشل في تغيير الخطة",
+      "failedAfterMemberRemoval": "تمت إزالة أعضاء الفريق، لكن لم يكتمل تغيير الخطة — يرجى المحاولة مرة أخرى أو التواصل مع الدعم",
+      "memberRemovalFailed": "تعذر إزالة {email} من الفريق — قد يكون بعض الأعضاء قد أُزيلوا بالفعل ولم يتم تغيير خطتك",
+      "notAllowed": "تغيير الخطة غير متاح",
+      "paymentMethodRequired": "مطلوب وسيلة دفع لتغيير الخطط",
+      "paymentPageBlocked": "تعذر فتح صفحة الدفع — يرجى المحاولة مرة أخرى",
+      "title": "تغيير إلى خطة {plan}؟"
+    },
+    "enterprise": {
+      "cta": "اعرف المزيد",
+      "flexibility": "تبحث عن مزيد من المرونة أو ميزات مخصصة؟",
+      "name": "المؤسسات",
+      "needMoreMembers": "تحتاج إلى المزيد من الأعضاء؟",
+      "reachOut": "تواصل معنا ولنحدد موعدًا للحديث."
+    },
+    "everythingInPlus": "كل ما في {plan}، بالإضافة إلى:",
     "expiresDate": "ينتهي في {date}",
     "freeTier": {
       "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
@@ -3748,6 +3822,7 @@
     "messageSupport": "مراسلة الدعم",
     "monthly": "شهري",
     "monthlyBonusDescription": "مكافأة الرصيد الشهرية",
+    "monthlyCredits": "رصيد شهري",
     "monthlyCreditsInfo": "يتم تحديث هذا الرصيد شهريًا ولا ينتقل للشهر التالي",
     "monthlyCreditsLabel": "الرصيد الشهري",
     "monthlyCreditsPerMemberLabel": "الرصيد الشهري / عضو",
@@ -3760,7 +3835,13 @@
     "partnerNodesCredits": "رصيد العقد الشريكة",
     "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
     "perMonth": "دولار أمريكي / شهر",
+    "personalHeader": "الخطط الشخصية للاستخدام الفردي فقط. {action}",
+    "personalHeaderAction": "لإضافة زملاء، اشترك في خطة الفريق.",
     "personalWorkspace": "مساحة العمل الشخصية",
+    "planScope": {
+      "personal": "للاستخدام الشخصي",
+      "team": "للفرق"
+    },
     "plansAndPricing": "الخطط والأسعار",
     "plansForWorkspace": "الخطط لمساحة العمل {workspace}",
     "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
@@ -3771,8 +3852,10 @@
       "confirm": "تأكيد",
       "confirmPayment": "تأكيد الدفع",
       "confirmPlanChange": "تأكيد تغيير الخطة",
+      "creditsRefillTo": "سيتم إعادة تعبئة الرصيد إلى",
       "eachMonthCreditsRefill": "يتم إعادة تعبئة الرصيد كل شهر إلى",
       "ends": "ينتهي في {date}",
+      "everyMonthStarting": "كل شهر ابتداءً من {date}",
       "hideFeatures": "إخفاء الميزات",
       "nextPaymentDue": "الدفع القادم مستحق في {date}. يمكنك الإلغاء في أي وقت.",
       "perMember": "/ عضو",
@@ -3782,10 +3865,18 @@
       "showMoreFeatures": "عرض المزيد من الميزات",
       "starting": "يبدأ في {date}",
       "startingToday": "يبدأ اليوم",
+      "subscribeToPlan": "اشترك في {plan}",
+      "switchToPlan": "انتقل إلى {plan}",
       "terms": "الشروط",
       "termsAgreement": "بالمتابعة، أنت توافق على {terms} و{privacy} الخاصة بـ Comfy Org.",
-      "totalDueToday": "الإجمالي المستحق اليوم"
+      "totalDueToday": "الإجمالي المستحق اليوم",
+      "youllBeCharged": "سيتم خصم"
     },
+    "pricingBlurb": "*استنادًا إلى هذا القالب، {seeDetails}. تواصل معنا لـ {questions} أو {enterpriseDiscussions}. لمزيد من تفاصيل الأسعار، {clickHere}.",
+    "pricingBlurbClickHere": "اضغط هنا",
+    "pricingBlurbEnterprise": "مناقشات المؤسسات",
+    "pricingBlurbQuestions": "الاستفسارات",
+    "pricingBlurbSeeDetails": "اعرض التفاصيل",
     "refreshCredits": "تحديث الرصيد",
     "renewsDate": "تجديد في {date}",
     "required": {
@@ -3799,6 +3890,8 @@
     "resubscribe": "إعادة الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
+    "saveYearly": "وفر ٢٠٪",
+    "saveYearlyUpTo": "وفر حتى ٢٠٪",
     "soloUseOnly": "للاستخدام الفردي فقط",
     "subscribeForMore": "ترقية",
     "subscribeNow": "اشترك الآن",
@@ -3807,10 +3900,34 @@
     "subscribeToRun": "اشتراك",
     "subscribeToRunFull": "الاشتراك للتشغيل",
     "subscriptionRequiredMessage": "الاشتراك مطلوب للأعضاء لتشغيل سير العمل على السحابة",
+    "success": {
+      "allSet": "تم كل شيء بنجاح",
+      "planUpdated": "تم تحديث خطتك بنجاح.",
+      "receiptEmailed": "تم إرسال إيصال إلى بريدك الإلكتروني."
+    },
+    "teamHeader": "للفرق التي ترغب في التعاون. تحتاج إلى المزيد من الأعضاء؟ {learnMore} حول المؤسسات.",
+    "teamHeaderLearnMore": "اعرف المزيد",
+    "teamPlan": {
+      "changePlan": "تغيير الخطة",
+      "checkoutComingSoon": "الدفع لخطة الفريق قادم قريبًا.",
+      "comingSoonLabel": "قريبًا:",
+      "cta": "اشترك في خطة الفريق السنوية",
+      "ctaMonthly": "اشترك في خطة الفريق الشهرية",
+      "currentPlan": "الخطة الحالية",
+      "detailsTitle": "التفاصيل",
+      "name": "خطة الفريق",
+      "perkConcurrentRuns": "يمكن للأعضاء تشغيل سير العمل في نفس الوقت",
+      "perkInviteMembers": "دعوة أعضاء الفريق",
+      "perkProjectAssets": "إدارة المشاريع والأصول",
+      "perkRolePermissions": "أذونات حسب الدور",
+      "perkSharedPool": "رصيد مشترك لجميع الأعضاء",
+      "tagline": "اختر اشتراك الرصيد الشهري الخاص بك. احصل على خصم أكبر مع اشتراك رصيد أكبر."
+    },
     "teamWorkspace": "مساحة عمل الفريق",
     "tierNameYearly": "{name} سنوي",
     "tiers": {
       "creator": {
+        "feature1": "استيراد نماذجك الخاصة",
         "name": "المُبدع"
       },
       "founder": {
@@ -3820,9 +3937,12 @@
         "name": "مجاني"
       },
       "pro": {
+        "feature1": "مدة تشغيل سير عمل أطول (حتى ساعة واحدة)",
         "name": "احترافي"
       },
       "standard": {
+        "feature1": "حد أقصى لمدة تشغيل سير العمل ٣٠ دقيقة",
+        "feature2": "إضافة المزيد من الرصيد في أي وقت",
         "name": "قياسي"
       }
     },
@@ -3835,6 +3955,7 @@
     "upgradeToAddCredits": "قم بالترقية لإضافة أرصدة",
     "usdPerMonth": "دولار أمريكي / شهريًا",
     "usdPerMonthPerMember": "دولار أمريكي / شهر / عضو",
+    "videoEstimate": "ينتج تقريبًا ~{count} فيديوهات ٥ ثوانٍ*",
     "videoEstimateExplanation": "هذه التقديرات مبنية على قالب Wan 2.2 لتحويل الصورة إلى فيديو باستخدام الإعدادات الافتراضية (5 ثوانٍ، 640x640، 16 إطار/ثانية، 4 خطوات أخذ عينات).",
     "videoEstimateHelp": "مزيد من التفاصيل حول هذا القالب",
     "videoEstimateLabel": "العدد التقريبي لمقاطع الفيديو 5 ثوانٍ التي يتم إنشاؤها باستخدام قالب Wan 2.2 لتحويل الصورة إلى فيديو",
@@ -3844,6 +3965,7 @@
     "viewMoreDetails": "عرض المزيد من التفاصيل",
     "viewMoreDetailsPlans": "عرض المزيد من التفاصيل حول الخطط والأسعار",
     "viewUsageHistory": "عرض سجل الاستخدام",
+    "whatsIncluded": "ما يتضمنه:",
     "workspaceNotSubscribed": "هذه مساحة العمل ليست مشتركة",
     "yearly": "سنوي",
     "yearlyCreditsLabel": "إجمالي الرصيد السنوي",
