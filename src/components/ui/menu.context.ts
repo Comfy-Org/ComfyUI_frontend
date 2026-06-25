@@ -1,5 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
-import { computed, inject, onBeforeUnmount, provide, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, provide, ref, watch } from 'vue'
 
 const menuIconRegistryKey: InjectionKey<Ref<number>> =
   Symbol('menuIconRegistry')
@@ -11,13 +11,27 @@ export function provideMenuIconRegistry() {
 
 export function useReserveLeading(hasOwnIcon: () => boolean) {
   const registry = inject(menuIconRegistryKey, null)
-  if (registry && hasOwnIcon()) {
-    registry.value++
+  const source = computed(() => hasOwnIcon())
+  if (registry) {
+    let contributed = false
+    watch(
+      source,
+      (has) => {
+        if (has && !contributed) {
+          registry.value++
+          contributed = true
+        } else if (!has && contributed) {
+          registry.value--
+          contributed = false
+        }
+      },
+      { immediate: true }
+    )
     onBeforeUnmount(() => {
-      registry.value--
+      if (contributed) registry.value--
     })
   }
-  return computed(() => hasOwnIcon() || (registry?.value ?? 0) > 0)
+  return computed(() => source.value || (registry?.value ?? 0) > 0)
 }
 
 export type MenuSize = 'default' | 'lg'
@@ -45,12 +59,25 @@ export function provideMenuCheckRegistry() {
 
 export function useRegisterCheckable(checkable: () => boolean) {
   const registry = inject(menuCheckRegistryKey, null)
-  if (registry && checkable()) {
-    registry.value++
-    onBeforeUnmount(() => {
-      registry.value--
-    })
-  }
+  if (!registry) return
+  const source = computed(() => checkable())
+  let contributed = false
+  watch(
+    source,
+    (active) => {
+      if (active && !contributed) {
+        registry.value++
+        contributed = true
+      } else if (!active && contributed) {
+        registry.value--
+        contributed = false
+      }
+    },
+    { immediate: true }
+  )
+  onBeforeUnmount(() => {
+    if (contributed) registry.value--
+  })
 }
 
 export function useMenuHasCheckables() {

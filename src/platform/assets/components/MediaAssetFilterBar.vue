@@ -10,7 +10,7 @@
     <template #actions>
       <MediaAssetFilterButton
         v-if="isCloud"
-        v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
+        :tooltip="$t('assetBrowser.filterBy')"
       >
         <MediaAssetFilterMenu
           :media-type-filters
@@ -18,7 +18,7 @@
         />
       </MediaAssetFilterButton>
       <MediaAssetSettingsButton
-        v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+        :tooltip="$t('sideToolbar.mediaAssets.viewSettings')"
       >
         <MediaAssetSettingsMenu
           v-model:view-mode="viewMode"

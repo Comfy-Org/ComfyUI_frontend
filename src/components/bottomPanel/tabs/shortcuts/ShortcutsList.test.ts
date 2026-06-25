@@ -32,7 +32,7 @@ describe('ShortcutsList', () => {
       category: 'essentials',
       keybinding: {
         combo: {
-          getKeySequences: () => ['Control', 'n']
+          getKeySequences: () => ['Control', 'N']
         }
       }
     } as ComfyCommandImpl,
@@ -42,7 +42,7 @@ describe('ShortcutsList', () => {
       category: 'essentials',
       keybinding: {
         combo: {
-          getKeySequences: () => ['Shift', 'a']
+          getKeySequences: () => ['Shift', 'A']
         }
       }
     } as ComfyCommandImpl,
@@ -52,7 +52,7 @@ describe('ShortcutsList', () => {
       category: 'essentials',
       keybinding: {
         combo: {
-          getKeySequences: () => ['Control', 'Shift', 'c']
+          getKeySequences: () => ['Control', 'Shift', 'C']
         }
       }
     } as ComfyCommandImpl
@@ -86,10 +86,10 @@ describe('ShortcutsList', () => {
 
     const text = container.textContent!
     expect(text).toContain('Ctrl')
-    expect(text).toContain('n')
+    expect(text).toContain('N')
     expect(text).toContain('Shift')
-    expect(text).toContain('a')
-    expect(text).toContain('c')
+    expect(text).toContain('A')
+    expect(text).toContain('C')
   })
 
   it('should filter out commands without keybindings', () => {

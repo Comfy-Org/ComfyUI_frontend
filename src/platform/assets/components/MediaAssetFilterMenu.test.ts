@@ -29,13 +29,7 @@ vi.mock('@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue', () => ({
         type: 'button',
         role: 'checkbox',
         'aria-checked': props.checked ? 'true' : 'false',
-        onClick: () => emit('update:checked', !props.checked),
-        onKeydown: (event: KeyboardEvent) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            emit('update:checked', !props.checked)
-          }
-        }
+        onClick: () => emit('update:checked', !props.checked)
       },
       slots.default?.()
     )

@@ -40,7 +40,7 @@ const itemClass = computed(() => menuItemClassesFor(size.value))
 const leadingClass = computed(() => menuItemLeadingClassesFor(size.value))
 const trailingSize = computed(() => trailingIconSizeClass(size.value))
 
-useRegisterCheckable(() => props.checkable === true)
+useRegisterCheckable(() => props.checkable === true || props.checked === true)
 const hasCheckables = useMenuHasCheckables()
 </script>
 

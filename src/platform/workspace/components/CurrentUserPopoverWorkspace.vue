@@ -187,7 +187,7 @@
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Skeleton from 'primevue/skeleton'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -342,9 +342,7 @@ const toggleWorkspaceSwitcher = () => {
   isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
 }
 
-const refreshBalance = () => {
+onMounted(() => {
   void fetchBalance()
-}
-
-defineExpose({ refreshBalance })
+})
 </script>

@@ -37,12 +37,9 @@ const hasActivePredicate = computed(
 
 const isActive = computed(() => Boolean(item.comfyCommand?.active?.()))
 
-const nodes2Enabled = computed({
-  get: () => Boolean(settingStore.get('Comfy.VueNodes.Enabled') ?? false),
-  set: async (value: boolean) => {
-    await settingStore.set('Comfy.VueNodes.Enabled', value)
-  }
-})
+const nodes2Enabled = computed(() =>
+  Boolean(settingStore.get('Comfy.VueNodes.Enabled') ?? false)
+)
 
 async function onNodes2ToggleChange(value: boolean) {
   await settingStore.set('Comfy.VueNodes.Enabled', value)
@@ -87,7 +84,7 @@ function onMouseDown(event: MouseEvent) {
     <span class="flex-1">{{ item.label }}</span>
     <Tag severity="info" class="text-xs">{{ t('g.beta') }}</Tag>
     <ToggleSwitch
-      v-model="nodes2Enabled"
+      :model-value="nodes2Enabled"
       :aria-label="item.label as string"
       :pt="{
         root: { style: { width: '38px', height: '20px' } },

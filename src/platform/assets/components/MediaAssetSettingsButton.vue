@@ -2,6 +2,7 @@
   <DropdownMenu :modal="false">
     <DropdownMenuTrigger as-child>
       <Button
+        v-tooltip.top="tooltip ? { value: tooltip } : null"
         variant="secondary"
         size="icon"
         :aria-label="$t('sideToolbar.mediaAssets.viewSettings')"
@@ -20,4 +21,6 @@ import Button from '@/components/ui/button/Button.vue'
 import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
 import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
 import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
+
+defineProps<{ tooltip?: string }>()
 </script>

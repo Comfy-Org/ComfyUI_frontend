@@ -39,7 +39,6 @@
     <DropdownMenuContent size="lg" align="end" :side-offset="4" class="w-80">
       <CurrentUserPopoverWorkspace
         v-if="teamWorkspacesEnabled && initState === 'ready'"
-        ref="workspacePopoverContent"
         @close="isOpen = false"
       />
       <CurrentUserPopoverLegacy
@@ -53,7 +52,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Skeleton from 'primevue/skeleton'
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
@@ -111,11 +110,4 @@ const workspaceName = computed(() => {
 })
 
 const isOpen = ref(false)
-const workspacePopoverContent = ref<{
-  refreshBalance: () => void
-} | null>(null)
-
-watch(isOpen, (open) => {
-  if (open) workspacePopoverContent.value?.refreshBalance()
-})
 </script>

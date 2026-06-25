@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenuItem @select="handleViewModeChange('list')">
+  <DropdownMenuItem @select="(e: Event) => handleViewModeChange(e, 'list')">
     <template #icon><i class="icon-[lucide--table-of-contents]" /></template>
     {{ $t('sideToolbar.queueProgressOverlay.viewList') }}
     <i
@@ -8,7 +8,7 @@
     />
   </DropdownMenuItem>
 
-  <DropdownMenuItem @select="handleViewModeChange('grid')">
+  <DropdownMenuItem @select="(e: Event) => handleViewModeChange(e, 'grid')">
     <template #icon><i class="icon-[lucide--layout-grid]" /></template>
     {{ $t('sideToolbar.queueProgressOverlay.viewGrid') }}
     <i
@@ -20,7 +20,7 @@
   <template v-if="showSortOptions">
     <DropdownMenuSeparator />
 
-    <DropdownMenuItem @select="handleSortChange('newest')">
+    <DropdownMenuItem @select="(e: Event) => handleSortChange(e, 'newest')">
       {{ $t('sideToolbar.mediaAssets.sortNewestFirst') }}
       <i
         v-if="sortBy === 'newest'"
@@ -28,7 +28,7 @@
       />
     </DropdownMenuItem>
 
-    <DropdownMenuItem @select="handleSortChange('oldest')">
+    <DropdownMenuItem @select="(e: Event) => handleSortChange(e, 'oldest')">
       {{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}
       <i
         v-if="sortBy === 'oldest'"
@@ -37,7 +37,7 @@
     </DropdownMenuItem>
 
     <template v-if="showGenerationTimeSort">
-      <DropdownMenuItem @select="handleSortChange('longest')">
+      <DropdownMenuItem @select="(e: Event) => handleSortChange(e, 'longest')">
         {{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}
         <i
           v-if="sortBy === 'longest'"
@@ -45,7 +45,7 @@
         />
       </DropdownMenuItem>
 
-      <DropdownMenuItem @select="handleSortChange('fastest')">
+      <DropdownMenuItem @select="(e: Event) => handleSortChange(e, 'fastest')">
         {{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}
         <i
           v-if="sortBy === 'fastest'"
@@ -71,11 +71,13 @@ const { showSortOptions = false, showGenerationTimeSort = false } =
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 
-function handleViewModeChange(value: 'list' | 'grid') {
+function handleViewModeChange(event: Event, value: 'list' | 'grid') {
+  event.preventDefault()
   viewMode.value = value
 }
 
-function handleSortChange(value: SortBy) {
+function handleSortChange(event: Event, value: SortBy) {
+  event.preventDefault()
   sortBy.value = value
 }
 </script>

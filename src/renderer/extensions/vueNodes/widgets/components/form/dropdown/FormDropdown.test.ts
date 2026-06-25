@@ -90,6 +90,7 @@ function mountDropdown(
       multiple: options.multiple,
       searcher: options.searcher,
       searchQuery: options.searchQuery,
+      isOpen: false,
       'onUpdate:selected': options.onUpdateSelected
     },
     global: {
@@ -122,8 +123,11 @@ function getCandidateLabel(): string {
   return menuEl.getAttribute('data-candidate-label') ?? ''
 }
 
-async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Open' }))
+async function openDropdown(
+  ctx: { rerender: (props: Record<string, unknown>) => Promise<void> },
+  extraProps: Record<string, unknown> = {}
+) {
+  await ctx.rerender({ ...extraProps, isOpen: true })
   await flushPromises()
 }
 
@@ -216,13 +220,13 @@ describe('FormDropdown', () => {
         sourceItems.filter((item) => item.id === 'keep')
     )
 
-    const { user } = mountDropdown(
+    const ctx = mountDropdown(
       [createItem('keep', 'alpha'), createItem('drop', 'beta')],
       { searcher }
     )
     await flushPromises()
 
-    await openDropdown(user)
+    await openDropdown(ctx)
 
     expect(searcher).toHaveBeenCalled()
     expect(getMenuItems().map((item) => item.id)).toEqual(['keep'])
@@ -230,13 +234,13 @@ describe('FormDropdown', () => {
 
   it('selects the top matching item when Enter is pressed in search', async () => {
     const onUpdateSelected = vi.fn()
-    const { user } = mountDropdown(
+    const ctx = mountDropdown(
       [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
       { searchQuery: 'alp', onUpdateSelected }
     )
-    await openDropdown(user)
+    await openDropdown(ctx)
 
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await ctx.user.click(screen.getByRole('button', { name: 'Search enter' }))
     await flushPromises()
 
     expect(onUpdateSelected).toHaveBeenCalledWith(new Set(['alpha']))
@@ -245,13 +249,13 @@ describe('FormDropdown', () => {
 
   it('does not select when Enter is pressed with an empty search query', async () => {
     const onUpdateSelected = vi.fn()
-    const { user } = mountDropdown(
+    const ctx = mountDropdown(
       [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
       { onUpdateSelected }
     )
-    await openDropdown(user)
+    await openDropdown(ctx)
 
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await ctx.user.click(screen.getByRole('button', { name: 'Search enter' }))
     await flushPromises()
 
     expect(onUpdateSelected).not.toHaveBeenCalled()
@@ -286,22 +290,23 @@ describe('FormDropdown', () => {
       createItem('beta', 'beta.ckpt'),
       createItem('alpha', 'alpha.ckpt')
     ]
-    const { rerender, user } = mountDropdown(items, {
+    const ctx = mountDropdown(items, {
       searcher,
       onUpdateSelected
     })
-    await openDropdown(user)
+    await openDropdown(ctx)
 
-    await rerender({
+    await ctx.rerender({
       items,
       searcher,
       searchQuery: 'alp',
+      isOpen: true,
       'onUpdate:selected': onUpdateSelected
     })
 
     expect(getCandidateIndex()).toBe(-1)
 
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await ctx.user.click(screen.getByRole('button', { name: 'Search enter' }))
     await flushPromises()
 
     expect(onUpdateSelected).toHaveBeenCalledWith(new Set(['alpha']))
@@ -309,11 +314,11 @@ describe('FormDropdown', () => {
   })
 
   it('provides the candidate label for screen reader announcement', async () => {
-    const { user } = mountDropdown(
+    const ctx = mountDropdown(
       [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
       { searchQuery: 'alp' }
     )
-    await openDropdown(user)
+    await openDropdown(ctx)
 
     expect(getCandidateIndex()).toBe(0)
     expect(getCandidateLabel()).toBe('alpha.ckpt')
@@ -340,24 +345,26 @@ describe('FormDropdown', () => {
       createItem('beta', 'beta.ckpt'),
       createItem('alpha', 'alpha.ckpt')
     ]
-    const { rerender, user } = mountDropdown(items, {
+    const ctx = mountDropdown(items, {
       searcher,
       onUpdateSelected
     })
-    await openDropdown(user)
+    await openDropdown(ctx)
 
-    await rerender({
+    await ctx.rerender({
       items,
       searcher,
       searchQuery: 'alp',
+      isOpen: true,
       'onUpdate:selected': onUpdateSelected
     })
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await ctx.user.click(screen.getByRole('button', { name: 'Search enter' }))
 
-    await rerender({
+    await ctx.rerender({
       items,
       searcher,
       searchQuery: 'bet',
+      isOpen: true,
       'onUpdate:selected': onUpdateSelected
     })
     resolveAlphaSearch()
@@ -369,15 +376,15 @@ describe('FormDropdown', () => {
 
   it('does not select a search result from multi-select dropdowns', async () => {
     const onUpdateSelected = vi.fn()
-    const { user } = mountDropdown(
+    const ctx = mountDropdown(
       [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
       { multiple: true, searchQuery: 'alp', onUpdateSelected }
     )
-    await openDropdown(user)
+    await openDropdown(ctx)
 
     expect(getCandidateIndex()).toBe(-1)
 
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await ctx.user.click(screen.getByRole('button', { name: 'Search enter' }))
     await flushPromises()
 
     expect(onUpdateSelected).not.toHaveBeenCalled()

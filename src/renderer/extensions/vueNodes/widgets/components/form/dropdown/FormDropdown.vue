@@ -186,11 +186,6 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const toggleDropdown = (_event: Event) => {
-  if (disabled) return
-  isOpen.value = !isOpen.value
-}
-
 function focusTrigger() {
   triggerRef.value?.focus()
 }
@@ -282,7 +277,6 @@ function handleSearchEnter() {
         :disabled
         :accept
         :is-uploading
-        @select-click="toggleDropdown"
         @file-change="handleFileChange"
       />
     </PopoverTrigger>

@@ -10,12 +10,16 @@ import type { SortBy } from '@/platform/assets/components/MediaAssetSettingsMenu
 vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
   default: (
     _: unknown,
-    { slots, emit }: { slots: Slots; emit: (e: string) => void }
+    { slots, emit }: { slots: Slots; emit: (e: string, ev: Event) => void }
   ) =>
-    h('button', { type: 'button', onClick: () => emit('select') }, [
-      slots.icon?.(),
-      slots.default?.()
-    ])
+    h(
+      'button',
+      {
+        type: 'button',
+        onClick: (event: Event) => emit('select', event)
+      },
+      [slots.icon?.(), slots.default?.()]
+    )
 }))
 
 vi.mock('@/components/ui/dropdown-menu/DropdownMenuSeparator.vue', () => ({
