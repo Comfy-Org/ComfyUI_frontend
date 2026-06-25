@@ -39,13 +39,27 @@ describe('errorResponseFromBody', () => {
     )
   })
 
-  it('falls back entirely for non-object bodies', () => {
-    for (const body of [undefined, null, 'oops', 42, true, ['x']]) {
+  it('falls back entirely for non-object, non-string bodies', () => {
+    for (const body of [undefined, null, 42, true, ['x']]) {
       expect(errorResponseFromBody(body, 'fallback')).toEqual({
         code: 'UNKNOWN_ERROR',
         message: 'fallback'
       })
     }
+  })
+
+  it('uses a plain-string body as the message', () => {
+    expect(errorResponseFromBody('Service Unavailable', 'fallback')).toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Service Unavailable'
+    })
+  })
+
+  it('falls back for a blank-string body', () => {
+    expect(errorResponseFromBody('   ', 'fallback')).toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'fallback'
+    })
   })
 
   it('treats empty-string code and message as missing', () => {
@@ -82,24 +96,25 @@ describe('errorResponseFromBody', () => {
 
 describe('parseErrorResponse', () => {
   function makeResponse(overrides: {
-    json?: () => Promise<unknown>
+    text?: () => Promise<string>
     status?: number
     statusText?: string
   }): Response {
     return {
       status: overrides.status ?? 500,
       statusText: overrides.statusText ?? 'Internal Server Error',
-      json: overrides.json ?? (async () => ({}))
+      text: overrides.text ?? (async () => '{}')
     } as Response
   }
 
   it('parses a canonical error body', async () => {
     const response = makeResponse({
-      json: async () => ({
-        code: 'INVALID_INPUT',
-        message: 'Bad field',
-        details: { field: 'name' }
-      })
+      text: async () =>
+        JSON.stringify({
+          code: 'INVALID_INPUT',
+          message: 'Bad field',
+          details: { field: 'name' }
+        })
     })
     await expect(parseErrorResponse(response)).resolves.toEqual({
       code: 'INVALID_INPUT',
@@ -109,17 +124,43 @@ describe('parseErrorResponse', () => {
   })
 
   it('salvages a legacy message-only body', async () => {
-    const response = makeResponse({ json: async () => ({ message: 'Nope' }) })
+    const response = makeResponse({
+      text: async () => JSON.stringify({ message: 'Nope' })
+    })
     await expect(parseErrorResponse(response)).resolves.toEqual({
       code: 'UNKNOWN_ERROR',
       message: 'Nope'
     })
   })
 
-  it('falls back to statusText when the body is not JSON', async () => {
+  it('uses a plain-text body as the message', async () => {
     const response = makeResponse({
-      json: async () => {
-        throw new SyntaxError('not json')
+      text: async () => 'upstream connect error',
+      statusText: 'Bad Gateway',
+      status: 502
+    })
+    await expect(parseErrorResponse(response)).resolves.toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'upstream connect error'
+    })
+  })
+
+  it('falls back to statusText when the body is empty', async () => {
+    const response = makeResponse({
+      text: async () => '',
+      statusText: 'Bad Gateway',
+      status: 502
+    })
+    await expect(parseErrorResponse(response)).resolves.toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Bad Gateway'
+    })
+  })
+
+  it('falls back to statusText when the body cannot be read', async () => {
+    const response = makeResponse({
+      text: async () => {
+        throw new TypeError('stream failed')
       },
       statusText: 'Bad Gateway',
       status: 502
@@ -132,9 +173,7 @@ describe('parseErrorResponse', () => {
 
   it('falls back to the status code when statusText is empty', async () => {
     const response = makeResponse({
-      json: async () => {
-        throw new SyntaxError('not json')
-      },
+      text: async () => '',
       statusText: '',
       status: 402
     })

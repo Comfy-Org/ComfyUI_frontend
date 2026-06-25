@@ -18,6 +18,12 @@ export function errorResponseFromBody(
   body: unknown,
   fallbackMessage: string
 ): ErrorResponse {
+  if (typeof body === 'string') {
+    return {
+      code: UNKNOWN_ERROR_CODE,
+      message: body.trim() !== '' ? body : fallbackMessage
+    }
+  }
   const record =
     typeof body === 'object' && body !== null && !Array.isArray(body)
       ? (body as Record<string, unknown>)
@@ -39,19 +45,29 @@ export function errorResponseFromBody(
   return details !== undefined ? { code, message, details } : { code, message }
 }
 
+/** Parse JSON when possible, otherwise surface the raw text. */
+function parseJsonOrText(text: string): unknown {
+  if (text.trim() === '') return undefined
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
+
 /**
  * Parse a failed HTTP `Response` into the canonical
  * `ErrorResponse { code, message, details? }` shape.
  *
- * Never throws: non-JSON bodies and legacy payloads degrade to a
- * status-derived message and the `UNKNOWN_ERROR` code.
+ * Never throws: the body is read as text and JSON-parsed when possible, so
+ * plain-text error bodies (e.g. from a proxy) survive as the message. Empty
+ * or unreadable bodies degrade to a status-derived message and the
+ * `UNKNOWN_ERROR` code.
  */
 export async function parseErrorResponse(
   response: Response
 ): Promise<ErrorResponse> {
-  const body: unknown = await response.json().catch(() => undefined)
-  return errorResponseFromBody(
-    body,
-    response.statusText || `HTTP ${response.status}`
-  )
+  const fallbackMessage = response.statusText || `HTTP ${response.status}`
+  const text = await response.text().catch(() => '')
+  return errorResponseFromBody(parseJsonOrText(text), fallbackMessage)
 }
