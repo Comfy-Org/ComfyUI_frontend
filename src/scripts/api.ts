@@ -1105,6 +1105,52 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Cancels a single job by id via `POST /api/jobs/{job_id}/cancel` (idempotent:
+   * already-terminal jobs are a no-op). Requires runtime parity — not every
+   * runtime exposes this endpoint yet; do not merge callers before parity lands.
+   *
+   * @param {string} jobId The id of the job to cancel
+   */
+  async cancelJob(jobId: string) {
+    const res = await this.fetchApi(
+      `/jobs/${encodeURIComponent(jobId)}/cancel`,
+      {
+        method: 'POST'
+      }
+    )
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(
+        `Failed to cancel job ${jobId}: ${res.status}${body ? ` — ${body}` : ''}`
+      )
+    }
+  }
+
+  /**
+   * Cancels multiple jobs in a single request via `POST /api/jobs/cancel` with
+   * body `{ job_ids: [...] }`. Already-terminal jobs are no-ops. Same runtime
+   * parity requirement as {@link cancelJob}.
+   *
+   * @param {string[]} jobIds The ids of the jobs to cancel
+   */
+  async cancelJobs(jobIds: string[]) {
+    if (!jobIds.length) return
+    const res = await this.fetchApi('/jobs/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ job_ids: jobIds })
+    })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(
+        `Failed to cancel jobs: ${res.status}${body ? ` — ${body}` : ''}`
+      )
+    }
+  }
+
+  /**
    * Gets user configuration data and where data should be stored
    */
   async getUserConfig(): Promise<User> {
