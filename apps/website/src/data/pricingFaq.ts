@@ -74,9 +74,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '团队计划是如何运作的？'
     },
     answer: {
-      en: "The Team Plan puts your whole team on <strong>one shared credit pool.</strong> Every member draws from the same balance, so you're not juggling separate subscriptions. Key things to know:\n\n<strong>One pool, shared.</strong> Everyone generates against the same credit balance.\n<strong>Invite by email.</strong> Add teammates, and resend or revoke access any time.\n<strong>Owners manage billing.</strong> Assign owners who handle payment and buy top-ups for the team.\n<strong>Upgrade in place.</strong> Move an existing workspace to a team and your workflows, models, and assets stay attached.\n\nChoose your monthly credit commitment that fits your team. Get started today.",
+      en: 'The Team Plan puts your whole team on <strong>one shared credit pool.</strong> Every member draws from the same balance, so you\'re not juggling separate subscriptions. Key things to know:\n\n<strong>One pool, shared.</strong> Everyone generates against the same credit balance.\n<strong>Invite by email.</strong> Add teammates, and resend or revoke access any time.\n<strong>Owners manage billing.</strong> Assign owners who handle payment and buy top-ups for the team.\n<strong>Upgrade in place.</strong> Move an existing workspace to a team and your workflows, models, and assets stay attached.\n\nChoose your monthly credit commitment that fits your team. <a href="https://cloud.comfy.org/?pricing=team" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Get started today.</a>',
       'zh-CN':
-        '团队计划让整个团队共享<strong>一个积分池</strong>。每位成员都从同一余额中扣费，无需分别管理多个订阅。要点：\n\n<strong>一池共享。</strong>所有人都从同一积分余额中生成内容。\n<strong>邮箱邀请。</strong>添加团队成员，随时重新发送或撤销访问权限。\n<strong>所有者管理账单。</strong>指定所有者负责付款，并为团队购买充值积分。\n<strong>原地升级。</strong>将现有工作区升级为团队工作区，您的工作流、模型和资产都将保留。\n\n选择适合您团队的每月积分承诺。立即开始。'
+        '团队计划让整个团队共享<strong>一个积分池</strong>。每位成员都从同一余额中扣费，无需分别管理多个订阅。要点：\n\n<strong>一池共享。</strong>所有人都从同一积分余额中生成内容。\n<strong>邮箱邀请。</strong>添加团队成员，随时重新发送或撤销访问权限。\n<strong>所有者管理账单。</strong>指定所有者负责付款，并为团队购买充值积分。\n<strong>原地升级。</strong>将现有工作区升级为团队工作区，您的工作流、模型和资产都将保留。\n\n选择适合您团队的每月积分承诺。<a href="https://cloud.comfy.org/?pricing=team" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">立即开始。</a>'
     }
   },
   {
@@ -86,9 +86,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '我可以控制团队消耗积分的方式吗？'
     },
     answer: {
-      en: "Today, owners control the shared pool and top-ups. We're actively building finer-grained controls: <strong>spending limits</strong> at the user, project, and workspace level, <strong>per-project budgets and chargebacks</strong>, <strong>auto-recharge</strong> when the pool runs low, and <strong>self-serve teams beyond 30 seats</strong>.",
+      en: "Today, owners control the shared pool and top-ups. We're actively building finer-grained controls: <strong>spending limits</strong> at the user, project, and workspace level, <strong>per-project budgets and chargebacks</strong>, <strong>auto-recharge</strong> when the pool runs low, and <strong>self-serve teams beyond 25 seats</strong>.",
       'zh-CN':
-        '目前，所有者掌控共享积分池和充值。我们正在积极开发更细粒度的控制功能：用户、项目和工作区级别的<strong>消费上限</strong>、<strong>按项目预算与分摊</strong>、积分池余额不足时的<strong>自动充值</strong>，以及<strong>超过 30 个席位的自助式团队</strong>。'
+        '目前，所有者掌控共享积分池和充值。我们正在积极开发更细粒度的控制功能：用户、项目和工作区级别的<strong>消费上限</strong>、<strong>按项目预算与分摊</strong>、积分池余额不足时的<strong>自动充值</strong>，以及<strong>超过 25 个席位的自助式团队</strong>。'
     }
   },
   {
@@ -99,9 +99,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
         '团队计划是按席位计费吗？我可以为某个项目临时加入一位自由职业者吗？'
     },
     answer: {
-      en: "No. Team pricing is based on <strong>your monthly credit commit</strong>, not per-seat. Invite a freelancer, they draw from the shared credit pool while they're working, then remove them when the project wraps. <strong>No charge for adding or removing people.</strong> Member count is capped at <strong>25</strong> today; if you hit the cap, contact support for additional seats.",
+      en: 'No. Team pricing is based on <strong>your monthly credit commit</strong>, not per-seat. Invite a freelancer, they draw from the shared credit pool while they\'re working, then remove them when the project wraps. <strong>No charge for adding or removing people.</strong> Member count is capped at <strong>25</strong> today; if you hit the cap, <a href="https://portal.usepylon.com/comfy-org/forms/question" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">contact support</a> for additional seats.',
       'zh-CN':
-        '不是。团队定价基于<strong>您每月承诺的积分量</strong>，而非按席位计费。邀请自由职业者后，他们在工作期间从共享积分池中扣费，项目结束后再将其移除即可。<strong>添加或移除成员都不收取额外费用。</strong>目前成员数量上限为 <strong>25</strong> 人；如果您达到上限，请联系支持以增加席位。'
+        '不是。团队定价基于<strong>您每月承诺的积分量</strong>，而非按席位计费。邀请自由职业者后，他们在工作期间从共享积分池中扣费，项目结束后再将其移除即可。<strong>添加或移除成员都不收取额外费用。</strong>目前成员数量上限为 <strong>25</strong> 人；如果您达到上限，请<a href="https://portal.usepylon.com/comfy-org/forms/question" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">联系支持</a>以增加席位。'
     }
   },
   {
@@ -159,9 +159,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '运行时长和并发的限制是什么？'
     },
     answer: {
-      en: 'Each workflow has a max runtime of <strong>30 minutes</strong> on Standard and Creator, raised to <strong>1 hour</strong> on Pro. Jobs over the limit are cancelled automatically to keep the system fair and stable. You can queue up to <strong>100 workflows</strong> at once, and run <strong>1 / 3 / 5</strong> concurrently via API on Standard / Creator / Pro. On Team plan, the limit is raised to 25, matching the number of members on the team. Need higher API rate limits? Contact enterprise@comfy.org.',
+      en: 'Each workflow has a max runtime of <strong>30 minutes</strong> on Standard and Creator, raised to <strong>1 hour</strong> on Pro. Jobs over the limit are cancelled automatically to keep the system fair and stable. You can queue up to <strong>100 workflows</strong> at once, and run <strong>1 / 3 / 5</strong> concurrently via API on Standard / Creator / Pro. On Team plan, the limit is raised to 25, matching the number of members on the team. Need higher API rate limits? Contact <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
       'zh-CN':
-        'Standard 和 Creator 上，单个工作流的最长运行时长为 <strong>30 分钟</strong>；Pro 上提升至 <strong>1 小时</strong>。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 <strong>100 个工作流</strong>，并在 Standard / Creator / Pro 上通过 API 分别并发运行 <strong>1 / 3 / 5</strong> 个工作流。在团队计划中，此上限提升至 25，与团队成员上限一致。需要更高的 API 速率限制？请联系 enterprise@comfy.org。'
+        'Standard 和 Creator 上，单个工作流的最长运行时长为 <strong>30 分钟</strong>；Pro 上提升至 <strong>1 小时</strong>。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 <strong>100 个工作流</strong>，并在 Standard / Creator / Pro 上通过 API 分别并发运行 <strong>1 / 3 / 5</strong> 个工作流。在团队计划中，此上限提升至 25，与团队成员上限一致。需要更高的 API 速率限制？请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
     }
   }
 ] as const
