@@ -58,7 +58,6 @@ export const useSubscriptionDialog = () => {
     }
 
     const useWorkspaceVariant = flags.teamWorkspacesEnabled
-    const isPersonal = workspaceStore.isInPersonalWorkspace
 
     const component = useWorkspaceVariant
       ? defineAsyncComponent(
@@ -78,7 +77,7 @@ export const useSubscriptionDialog = () => {
     const workspaceProps = {
       onClose: hide,
       reason: options?.reason,
-      isPersonal
+      isPersonal: workspaceStore.isInPersonalWorkspace
     }
 
     dialogService.showLayoutDialog({

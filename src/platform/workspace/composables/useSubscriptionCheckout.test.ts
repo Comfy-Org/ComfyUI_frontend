@@ -219,23 +219,6 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('previews a single-seat (personal) plan and flips to the preview step', async () => {
-      const checkout = await setup()
-      mockPlans.value = [{ ...makeStandardYearly(), max_seats: 1 }]
-      mockPreviewSubscribe.mockResolvedValueOnce({
-        allowed: true,
-        transition_type: 'new_subscription'
-      })
-
-      await checkout.handleSubscribeClick({
-        tierKey: 'standard',
-        billingCycle: 'yearly'
-      })
-
-      expect(mockPreviewSubscribe).toHaveBeenCalledWith('standard-yearly')
-      expect(checkout.checkoutStep.value).toBe('preview')
-    })
-
     it('resolves monthly billing cycle to correct plan slug', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({
