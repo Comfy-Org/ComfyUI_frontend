@@ -108,13 +108,13 @@ function dragDrop(e: DragEvent) {
       </div>
     </div>
     <div
-      class="flex flex-1 overflow-hidden bg-app-mode-background"
+      class="flex flex-1 overflow-hidden bg-secondary-background"
       :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
     >
       <div id="app-side-toolbar-host" class="contents" />
       <Splitter
         :key="splitterKey"
-        class="h-full flex-1 border-none bg-app-mode-background"
+        class="h-full flex-1 border-none bg-secondary-background"
         @resizestart="$event.originalEvent.preventDefault()"
         @resizeend="onResizeEnd"
       >
