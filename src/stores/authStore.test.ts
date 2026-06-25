@@ -12,7 +12,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
@@ -1049,6 +1049,18 @@ describe('useAuthStore', () => {
       mockApiKeyGetAuthHeader.mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
+    })
+
+    it('carries the HTTP status on a non-ok response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity'
+      })
+
+      const error = await store.createCustomer().catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(AuthStoreError)
+      expect((error as AuthStoreError).status).toBe(422)
     })
   })
 })

@@ -70,9 +70,12 @@ export type BillingPortalTargetTier = NonNullable<
 >['target_tier']
 
 export class AuthStoreError extends Error {
-  constructor(message: string) {
+  readonly status: number | undefined
+
+  constructor(message: string, status?: number) {
     super(message)
     this.name = 'AuthStoreError'
+    this.status = status
   }
 }
 
@@ -348,7 +351,8 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText
-        })
+        }),
+        createCustomerRes.status
       )
     }
 
