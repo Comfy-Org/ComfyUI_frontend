@@ -1,11 +1,11 @@
 <template>
   <div class="flex size-full flex-col">
-    <header class="mb-8 flex items-center gap-4">
+    <header class="mb-6 flex items-center gap-4">
       <WorkspaceProfilePic
         class="size-12 text-3xl!"
         :workspace-name="workspaceName"
       />
-      <h1 class="text-3xl text-base-foreground">
+      <h1 class="text-3xl font-semibold text-base-foreground">
         {{ workspaceName }}
       </h1>
     </header>
