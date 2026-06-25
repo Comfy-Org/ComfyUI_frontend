@@ -1522,6 +1522,42 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(warnSpy).toHaveBeenCalledTimes(1)
     })
 
+    it('warns again when a refresh introduces a new broken category', async () => {
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag)
+        .mockResolvedValueOnce([supportedAsset('a', 'BEN')])
+        .mockResolvedValueOnce([
+          supportedAsset('a', 'BEN'),
+          supportedAsset('b', 'WAN')
+        ])
+
+      await store.updateModelsForTag('models')
+      store.invalidateCategory('tag:models')
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).toHaveBeenCalledTimes(2)
+      expect(warnSpy).toHaveBeenLastCalledWith(
+        expect.stringContaining('No node provider for categories'),
+        ['BEN', 'WAN']
+      )
+    })
+
+    it('stops warning once an extension registers a provider for the previously broken category', async () => {
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        supportedAsset('a', 'BEN')
+      ])
+
+      await store.updateModelsForTag('models')
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+
+      mockModelToNodeState.registeredCategories.add('BEN')
+      store.invalidateCategory('tag:models')
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+    })
+
     it('skips the report while the modelToNode registry is not ready', async () => {
       mockModelToNodeState.isReady = false
       const store = useAssetsStore()

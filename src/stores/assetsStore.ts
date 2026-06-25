@@ -12,11 +12,10 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   INPUT_TAG,
-  MISSING_TAG,
-  MODELS_TAG,
   OUTPUT_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
+import { getAssetCategory } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -411,6 +410,10 @@ export const useAssetsStore = defineStore('assets', () => {
       const pendingPromiseByCategory = new Map<string, Promise<void>>()
       const reportedBrokenCategoriesByLoad = new Set<string>()
 
+      function brokenCategoriesFingerprint(loadKey: string, broken: string[]) {
+        return `${loadKey}::${[...broken].sort().join(',')}`
+      }
+
       function createState(
         existingAssets?: Map<string, AssetItem>
       ): ModelPaginationState {
@@ -433,26 +436,26 @@ export const useAssetsStore = defineStore('assets', () => {
         loadKey: string,
         assets: Map<string, AssetItem>
       ): void {
-        if (reportedBrokenCategoriesByLoad.has(loadKey)) return
         modelToNodeStore.registerDefaults()
         if (!modelToNodeStore.isReady) return
-        reportedBrokenCategoriesByLoad.add(loadKey)
 
         const broken = new Set<string>()
         for (const asset of assets.values()) {
-          const category = asset.tags?.find(
-            (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
-          )
+          const category = getAssetCategory(asset)
           if (!category) continue
           if (!modelToNodeStore.getNodeProvider(category)) broken.add(category)
         }
+        if (broken.size === 0) return
 
-        if (broken.size > 0) {
-          console.warn(
-            `[AssetBrowser] No node provider for categories (${loadKey}):`,
-            [...broken].sort()
-          )
-        }
+        const sorted = [...broken].sort()
+        const fingerprint = brokenCategoriesFingerprint(loadKey, sorted)
+        if (reportedBrokenCategoriesByLoad.has(fingerprint)) return
+        reportedBrokenCategoriesByLoad.add(fingerprint)
+
+        console.warn(
+          `[AssetBrowser] No node provider for categories (${loadKey}):`,
+          sorted
+        )
       }
 
       const EMPTY_ASSETS: AssetItem[] = []

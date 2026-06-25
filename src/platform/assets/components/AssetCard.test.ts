@@ -140,7 +140,7 @@ describe('AssetCard', () => {
       )
       const useBtn = findUseButton()
       expect(useBtn).toBeDefined()
-      expect(useBtn).not.toBeDisabled()
+      expect(useBtn).toHaveAttribute('aria-disabled', 'false')
     })
 
     it('disables Use when the registry is ready and the category has no provider', () => {
@@ -151,7 +151,7 @@ describe('AssetCard', () => {
         })
       )
       const useBtn = findUseButton()
-      expect(useBtn).toBeDisabled()
+      expect(useBtn).toHaveAttribute('aria-disabled', 'true')
     })
 
     it('keeps Use enabled while the registry is still warming up', () => {
@@ -163,7 +163,18 @@ describe('AssetCard', () => {
         })
       )
       const useBtn = findUseButton()
-      expect(useBtn).not.toBeDisabled()
+      expect(useBtn).toHaveAttribute('aria-disabled', 'false')
+    })
+
+    it('keeps the use button hoverable (not pointer-events-none) when disabled so the tooltip can fire', () => {
+      renderCard(
+        createDisplayAsset({
+          id: 'unsupported',
+          tags: ['models', 'BEN']
+        })
+      )
+      const useBtn = findUseButton()
+      expect(useBtn).not.toHaveAttribute('disabled')
     })
   })
 

@@ -121,8 +121,12 @@
           "
           variant="secondary"
           size="lg"
-          class="relative shrink-0"
-          :disabled="!canUseAsset"
+          :class="
+            cn(
+              'relative shrink-0',
+              !canUseAsset && 'cursor-not-allowed opacity-50'
+            )
+          "
           :aria-disabled="!canUseAsset"
           @click.stop="handleSelect"
         >
