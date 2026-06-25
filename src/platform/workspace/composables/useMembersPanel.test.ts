@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   PendingInvite,
   WorkspaceMember
@@ -318,6 +319,20 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  WorkspaceApiError: class WorkspaceApiError extends Error {
+    constructor(
+      message: string,
+      public status?: number,
+      public code?: string,
+      public retryAfter?: number
+    ) {
+      super(message)
+      this.name = 'WorkspaceApiError'
+    }
+  }
+}))
+
 vi.mock('pinia', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -526,6 +541,20 @@ describe('useMembersPanel', () => {
         expect.objectContaining({
           severity: 'error',
           summary: 'workspacePanel.toast.inviteResendFailed'
+        })
+      )
+    })
+
+    it('shows a cooldown toast when the resend is rate limited (429)', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('Too Many Requests', 429, undefined, 30)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          summary: 'workspacePanel.toast.inviteResendCooldown'
         })
       )
     })

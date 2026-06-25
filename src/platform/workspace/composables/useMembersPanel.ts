@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -248,7 +249,20 @@ export function useMembersPanel() {
         summary: t('workspacePanel.toast.inviteResent'),
         life: 2000
       })
-    } catch {
+    } catch (err) {
+      if (err instanceof WorkspaceApiError && err.status === 429) {
+        toast.add({
+          severity: 'warn',
+          summary: t('workspacePanel.toast.inviteResendCooldown'),
+          detail: err.retryAfter
+            ? t('workspacePanel.toast.inviteResendCooldownDetail', {
+                seconds: err.retryAfter
+              })
+            : undefined,
+          life: 3000
+        })
+        return
+      }
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.toast.inviteResendFailed')
