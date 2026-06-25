@@ -2,6 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
+import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
@@ -29,6 +30,8 @@ const customerApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+attachUnifiedRemintInterceptor(customerApiClient)
 
 export const useCustomerEventsService = () => {
   const isLoading = ref(false)

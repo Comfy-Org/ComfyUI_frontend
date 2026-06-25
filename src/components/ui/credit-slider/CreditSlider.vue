@@ -13,7 +13,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS
+  TEAM_PLAN_CREDIT_STOPS,
+  getStopDiscountedMonthlyUsd
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
@@ -83,7 +84,7 @@ const effectiveDiscountPercent = computed(() =>
     : current.value.discountPercentYearly
 )
 const discountedMonthly = computed(() =>
-  Math.round(current.value.usd * (1 - effectiveDiscountPercent.value / 100))
+  getStopDiscountedMonthlyUsd(current.value, cycle)
 )
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
 const hasDiscount = computed(() => effectiveDiscountPercent.value > 0)

@@ -2,26 +2,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 
-// Mock dependencies
-const mockFetchBalance = vi.fn()
+const mockBillingFetchBalance = vi.fn()
+const mockAuthFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
+const mockToastAdd = vi.fn()
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mockToastAdd })
+}))
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
   useAuthActions: () => ({
-    fetchBalance: mockFetchBalance
-  })
-}))
-
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    fetchStatus: mockFetchStatus
+    fetchBalance: mockAuthFetchBalance
   })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    fetchBalance: mockBillingFetchBalance,
     fetchStatus: mockFetchStatus
   })
 }))
@@ -119,20 +119,21 @@ describe('useSubscriptionActions', () => {
   })
 
   describe('handleRefresh', () => {
-    it('should call both fetchBalance and fetchStatus', async () => {
+    it('should refresh balance and status through the billing facade', async () => {
       const { handleRefresh } = useSubscriptionActions()
       await handleRefresh()
 
-      expect(mockFetchBalance).toHaveBeenCalledOnce()
+      expect(mockBillingFetchBalance).toHaveBeenCalledOnce()
       expect(mockFetchStatus).toHaveBeenCalledOnce()
+      expect(mockAuthFetchBalance).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
-      mockFetchBalance.mockRejectedValueOnce(new Error('Fetch failed'))
+    it('swallows refresh failures without surfacing a toast', async () => {
+      mockBillingFetchBalance.mockRejectedValueOnce(new Error('Fetch failed'))
       const { handleRefresh } = useSubscriptionActions()
 
-      // Should not throw
       await expect(handleRefresh()).resolves.toBeUndefined()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 

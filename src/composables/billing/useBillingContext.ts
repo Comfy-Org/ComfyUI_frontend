@@ -7,6 +7,10 @@ import {
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type {
+  PreviewSubscribeOptions,
+  SubscribeOptions
+} from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -27,11 +31,11 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
 
 /**
- * Unified billing context that automatically switches between legacy (user-scoped)
- * and workspace billing based on the active workspace type.
+ * Unified billing context that selects the billing implementation by build/flag.
  *
- * - Personal workspaces use legacy billing via /customers/* endpoints
- * - Team workspaces use workspace billing via /billing/* endpoints
+ * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
+ * - Team workspaces enabled: workspace billing via /api/billing/* for both
+ *   personal (single-seat workspace) and team workspaces
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -92,16 +96,14 @@ function useBillingContextInternal(): BillingContext {
   const error = ref<string | null>(null)
 
   /**
-   * Determines which billing type to use:
-   * - If team workspaces feature is disabled: always use legacy (/customers)
-   * - If team workspaces feature is enabled:
-   *   - Personal workspace: use legacy (/customers)
-   *   - Team workspace: use workspace (/billing)
+   * Determines which billing type to use, keyed only on the build/flag:
+   * - Team workspaces feature disabled (OSS/Desktop): legacy (/customers)
+   * - Team workspaces feature enabled: workspace (/api/billing), for both
+   *   personal (single-seat workspace) and team workspaces
    */
-  const type = computed<BillingType>(() => {
-    if (!flags.teamWorkspacesEnabled) return 'legacy'
-    return store.isInPersonalWorkspace ? 'legacy' : 'workspace'
-  })
+  const type = computed<BillingType>(() =>
+    flags.teamWorkspacesEnabled ? 'workspace' : 'legacy'
+  )
 
   const activeContext = computed(() =>
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
@@ -173,7 +175,7 @@ function useBillingContextInternal(): BillingContext {
   watch(
     subscription,
     (sub) => {
-      if (!sub || store.isInPersonalWorkspace) return
+      if (!sub) return
 
       store.updateActiveWorkspace({
         isSubscribed: sub.isActive && !sub.isCancelled,
@@ -183,26 +185,28 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
-  // Initialize billing when workspace changes
+  function resetBillingState() {
+    isInitialized.value = false
+    error.value = null
+  }
+
+  // type can flip after setup when the team-workspaces flag resolves from
+  // authenticated config, swapping the active backend; a fresh init is needed.
+  // The watch fires only when id or type actually changes, so any fire with a
+  // workspace selected warrants a reinit.
   watch(
-    () => store.activeWorkspace?.id,
-    async (newWorkspaceId, oldWorkspaceId) => {
+    [() => store.activeWorkspace?.id, () => type.value],
+    async ([newWorkspaceId]) => {
       if (!newWorkspaceId) {
-        // No workspace selected - reset state
-        isInitialized.value = false
-        error.value = null
+        resetBillingState()
         return
       }
 
-      if (newWorkspaceId !== oldWorkspaceId) {
-        // Workspace changed - reinitialize
-        isInitialized.value = false
-        try {
-          await initialize()
-        } catch (err) {
-          // Error is already captured in error ref
-          console.error('Failed to initialize billing context:', err)
-        }
+      isInitialized.value = false
+      try {
+        await initialize()
+      } catch (err) {
+        console.error('Failed to initialize billing context:', err)
       }
     },
     { immediate: true }
@@ -233,16 +237,15 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchBalance()
   }
 
-  async function subscribe(
-    planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
-  ) {
-    return activeContext.value.subscribe(planSlug, returnUrl, cancelUrl)
+  async function subscribe(planSlug: string, options?: SubscribeOptions) {
+    return activeContext.value.subscribe(planSlug, options)
   }
 
-  async function previewSubscribe(planSlug: string) {
-    return activeContext.value.previewSubscribe(planSlug)
+  async function previewSubscribe(
+    planSlug: string,
+    options?: PreviewSubscribeOptions
+  ) {
+    return activeContext.value.previewSubscribe(planSlug, options)
   }
 
   async function manageSubscription() {
@@ -258,6 +261,15 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function topup(amountCents: number) {
+    if (
+      !Number.isInteger(amountCents) ||
+      amountCents <= 0 ||
+      amountCents % 100 !== 0
+    ) {
+      throw new Error(
+        'Top-up amount must be a positive whole-dollar cent value'
+      )
+    }
     return activeContext.value.topup(amountCents)
   }
 

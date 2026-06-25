@@ -2514,6 +2514,7 @@
     "resubscribe": "Resubscribe",
     "resubscribeTo": "Resubscribe to {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
+    "subscribeFailed": "Failed to subscribe",
     "canceledCard": {
       "title": "Your subscription has been canceled",
       "description": "You won't be charged again. Your features remain active until {date}."
@@ -2553,6 +2554,23 @@
     "creditsRemainingThisMonth": "Included (Refills {date})",
     "creditsRemainingThisYear": "Included (Refills {date})",
     "creditsYouveAdded": "Additional",
+    "remaining": "remaining",
+    "refillsDate": "Refills {date}",
+    "refillsNextCycle": "Refills next cycle",
+    "creditsUsed": "{used} used",
+    "creditsLeftOfTotal": "{remaining} left of {total}",
+    "monthlyUsageProgress": "{used} of {total} monthly credits used",
+    "additionalCreditsInfo": "About additional credits",
+    "additionalCredits": "Additional credits",
+    "additionalCreditsInUse": "In use",
+    "usedAfterMonthly": "Used after monthly runs out",
+    "monthlyCreditsUsedUpTitle": "Monthly credits are used up. Refills {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "Monthly credits are used up",
+    "monthlyCreditsUsedUpDescription": "You're now spending additional credits.",
+    "outOfCreditsTitle": "You're out of credits. Credits refill {date}",
+    "outOfCreditsTitleNoDate": "You're out of credits",
+    "outOfCreditsDescription": "Add more credits to continue generating.",
+    "additionalCreditsTooltip": "Credits you add on top of your plan. Used after monthly credits run out. Each expires one year after purchase.",
     "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
     "viewMoreDetailsPlans": "View more details about plans & pricing",
     "nextBillingCycle": "next billing cycle",
@@ -2563,6 +2581,7 @@
     "billedYearly": "{total} Billed yearly",
     "monthly": "Monthly",
     "yearly": "Yearly",
+    "saveYearly": "Save 20%",
     "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
@@ -2573,7 +2592,6 @@
       "benefit2": "Up to 1 hour runtime per job on Pro",
       "benefit3": "Bring your own models (Creator & Pro)"
     },
-    "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
       "free": {
         "name": "Free"
@@ -2650,9 +2668,9 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
+      "unavailable": "This team plan is not available right now.",
       "changePlan": "Change plan",
-      "currentPlan": "Current plan",
-      "checkoutComingSoon": "Team plan checkout is coming soon."
+      "currentPlan": "Current plan"
     },
     "enterprise": {
       "name": "Enterprise",
@@ -2721,10 +2739,11 @@
     "preview": {
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
-      "startingToday": "Starting today",
+      "startingToday": "Starts today",
       "starting": "Starting {date}",
       "ends": "Ends {date}",
       "eachMonthCreditsRefill": "Each month credits refill to",
+      "eachYearCreditsRefill": "Each year credits refill to",
       "everyMonthStarting": "Every month starting {date}",
       "creditsRefillTo": "Credits refill to",
       "youllBeCharged": "You'll be charged",
@@ -2735,6 +2754,24 @@
       "proratedCharge": "Prorated charge for {plan}",
       "totalDueToday": "Total due today",
       "nextPaymentDue": "Next payment due {date}. Cancel anytime.",
+      "confirmUpgradeTitle": "Confirm your upgrade",
+      "confirmUpgradeCta": "Confirm upgrade",
+      "confirmChange": "Confirm change",
+      "confirmChangeTitle": "Review your scheduled change",
+      "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
+      "switchesToday": "Switches today",
+      "startsOn": "Starts {date}",
+      "yearlySubscription": "Yearly subscription",
+      "newMonthlySubscription": "New monthly subscription",
+      "creditFromCurrent": "Credit from current {plan}",
+      "currentMonthly": "monthly plan",
+      "commitment": "commitment",
+      "creditsYoullGetToday": "Credits you'll get today",
+      "refillReplacesNote": "Replaces your monthly refill. Existing balance is kept.",
+      "afterThat": "After that",
+      "creditsRefillMonthlyTo": "Credits refill monthly to",
+      "billedEachMonth": "{amount} billed each month. Cancel anytime.",
+      "stayOnUntil": "You'll stay on {plan} until {date}.",
       "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}.",
       "terms": "Terms",
       "privacyPolicy": "Privacy Policy",
@@ -2746,8 +2783,12 @@
     },
     "success": {
       "allSet": "You're all set",
+      "inviteEmailsPlaceholder": "Enter emails separated by commas",
+      "inviteSubtext": "You can also invite people later from Settings",
+      "inviteTitle": "Invite your team",
       "planUpdated": "Your plan has been successfully updated.",
-      "receiptEmailed": "A receipt has been emailed to you."
+      "receiptEmailed": "A receipt has been emailed to you.",
+      "sendInvites": "Send invites"
     }
   },
   "userSettings": {
@@ -2763,7 +2804,7 @@
   "workspacePanel": {
     "invite": "Invite",
     "inviteMember": "Invite member",
-    "inviteLimitReached": "You've reached the maximum of 50 members",
+    "inviteLimitReached": "You've reached the maximum of {count} members",
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
@@ -2773,7 +2814,8 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/{maxSeats} Members",
+      "header": "Members",
+      "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2782,26 +2824,30 @@
       "columns": {
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
-        "joinDate": "Join date"
+        "role": "Role"
       },
       "actions": {
-        "copyLink": "Copy invite link",
-        "revokeInvite": "Revoke invite",
+        "resendInvite": "Resend invite",
+        "cancelInvite": "Cancel invite",
+        "changeRole": "Change role",
         "removeMember": "Remove member"
       },
-      "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
-      "upsellBannerUpgrade": "Upgrade to the Creator plan or above to invite additional team members.",
-      "viewPlans": "View plans",
+      "upsellBanner": "To add teammates, upgrade your plan.",
+      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
+      "upgradeToTeam": "Upgrade to Team",
+      "reactivateTeam": "Reactivate Team",
+      "needMoreMembers": "Need more members?",
+      "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
-      "createNewWorkspace": "create a new one."
+      "searchPlaceholder": "Search..."
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
-      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
+      "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
       "title": "Edit workspace details",
@@ -2825,32 +2871,38 @@
       "success": "Member removed",
       "error": "Failed to remove member"
     },
+    "changeRoleDialog": {
+      "promoteTitle": "Make {name} an owner?",
+      "promoteIntro": "They'll be able to:",
+      "promotePermissionCredits": "Add additional credits",
+      "promotePermissionManage": "Manage members, payment methods, and workspace settings",
+      "promotePermissionRoles": "Promote and demote other owners (except the workspace creator).",
+      "promoteConfirm": "Make owner",
+      "demoteTitle": "Demote {name} to member?",
+      "demoteMessage": "They'll lose admin access.",
+      "demoteConfirm": "Demote to member",
+      "success": "Role updated",
+      "error": "Failed to update role"
+    },
     "revokeInviteDialog": {
       "title": "Uninvite this person?",
       "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
       "revoke": "Uninvite"
     },
     "inviteUpsellDialog": {
-      "titleNotSubscribed": "A subscription is required to invite members",
+      "titleNotSubscribed": "A Team plan is required to invite members",
       "titleSingleSeat": "Your current plan supports a single seat",
-      "messageNotSubscribed": "To add team members to this workspace, you need a Creator plan or above. The Standard plan supports only a single seat (the owner).",
-      "messageSingleSeat": "The Standard plan includes one seat for the workspace owner. To invite additional members, upgrade to the Creator plan or above to unlock multiple seats.",
-      "viewPlans": "View Plans",
-      "upgradeToCreator": "Upgrade to Creator"
+      "messageNotSubscribed": "To add teammates to this workspace, upgrade to a Team plan.",
+      "messageSingleSeat": "Your current plan includes one seat for the workspace owner. To add teammates, upgrade to a Team plan.",
+      "upgradeToTeam": "Upgrade to Team"
     },
     "inviteMemberDialog": {
-      "title": "Invite a person to this workspace",
-      "message": "Create a shareable invite link to send to someone",
-      "placeholder": "Enter the person's email",
-      "createLink": "Create link",
-      "linkStep": {
-        "title": "Send this link to the person",
-        "message": "Make sure their account uses this email.",
-        "copyLink": "Copy Link",
-        "done": "Done"
-      },
-      "linkCopied": "Copied",
-      "linkCopyFailed": "Failed to copy link"
+      "title": "Invite members to this workspace",
+      "placeholder": "Enter emails separated by commas",
+      "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
+      "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
+      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
+      "seatLimitReached": "You can invite up to {count} teammate. | You can invite up to {count} teammates."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
@@ -2877,6 +2929,8 @@
         "title": "Left workspace",
         "message": "You have left the workspace."
       },
+      "inviteResent": "Invite resent",
+      "inviteResendFailed": "Failed to resend invite",
       "failedToUpdateWorkspace": "Failed to update workspace",
       "failedToCreateWorkspace": "Failed to create workspace",
       "failedToDeleteWorkspace": "Failed to delete workspace",
@@ -3787,7 +3841,6 @@
     "errorLog": "Error log",
     "findOnGithubTooltip": "Search GitHub issues for related problems",
     "getHelpTooltip": "Report this error and we'll help you resolve it",
-    "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
