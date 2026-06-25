@@ -3841,7 +3841,6 @@
     "errorLog": "Error log",
     "findOnGithubTooltip": "Search GitHub issues for related problems",
     "getHelpTooltip": "Report this error and we'll help you resolve it",
-    "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
