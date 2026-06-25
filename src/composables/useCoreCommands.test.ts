@@ -5,13 +5,11 @@ import { ref } from 'vue'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
@@ -55,6 +53,7 @@ vi.mock('@/scripts/app', () => {
       }),
       openClipspace: vi.fn(),
       refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
+      queuePrompt: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
         clear: mockGraphClear
@@ -116,7 +115,9 @@ vi.mock('@/services/litegraphService', () => ({
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
+    trackHelpResourceClicked: mockTrackHelpResourceClicked,
+    trackRunButton: vi.fn(),
+    trackWorkflowExecution: vi.fn()
   }))
 }))
 
@@ -135,23 +136,6 @@ vi.mock('@/stores/executionStore', () => ({
 
 vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
-}))
-
-const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
-}))
-
-const mockAssetBrowse = vi.hoisted(() =>
-  vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
-)
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
-  useAssetBrowserDialog: vi.fn(() => ({ browse: mockAssetBrowse }))
-}))
-
-const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/node/startModelNodeDragFromAsset', () => ({
-  startModelNodeDragFromAsset: mockStartModelNodeDrag
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
@@ -195,10 +179,16 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   }))
 }))
 
+const { mockCanAccessSubscriptionFeatures, mockShowSubscriptionDialog } =
+  vi.hoisted(() => ({
+    mockCanAccessSubscriptionFeatures: { value: true },
+    mockShowSubscriptionDialog: vi.fn()
+  }))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: { value: true },
-    showSubscriptionDialog: vi.fn()
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+    showSubscriptionDialog: mockShowSubscriptionDialog
   }))
 }))
 
@@ -298,6 +288,7 @@ describe('useCoreCommands', () => {
 
     // Reset app state
     app.canvas.subgraph = undefined
+    mockCanAccessSubscriptionFeatures.value = true
 
     // Mock settings store
     vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
@@ -638,46 +629,52 @@ describe('useCoreCommands', () => {
     })
   })
 
-  describe('BrowseModelAssets command', () => {
-    const asset = fromPartial<AssetItem>({ id: 'asset-1' })
+  describe('Queue commands with subscription check', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
 
-    async function selectAssetFromBrowser() {
-      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
+    it('Comfy.QueuePrompt shows subscription dialog and skips queue when features inaccessible', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
 
-      const command = useCoreCommands().find(
-        (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
-      )!
-      await command.function()
+      await findCmd('Comfy.QueuePrompt').function()
 
-      const { onAssetSelected } = mockAssetBrowse.mock.calls[0][0]
-      onAssetSelected?.(asset)
-    }
-
-    it('starts a model node drag for the selected asset', async () => {
-      mockStartModelNodeDrag.mockReturnValue(undefined)
-
-      await selectAssetFromBrowser()
-
-      expect(mockStartModelNodeDrag).toHaveBeenCalledWith(
-        asset,
-        'asset_browser'
-      )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(app.queuePrompt).not.toHaveBeenCalled()
     })
 
-    it('shows an error toast when the asset cannot start a drag', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      mockStartModelNodeDrag.mockReturnValue({
-        code: 'NO_PROVIDER',
-        message: 'No node provider registered',
-        assetId: 'asset-1'
-      })
+    it('Comfy.QueuePrompt queues prompt when features accessible', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
 
-      await selectAssetFromBrowser()
+      await findCmd('Comfy.QueuePrompt').function()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, expect.any(Number))
+    })
+
+    it('Comfy.QueuePromptFront shows subscription dialog and skips queue when features inaccessible', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+
+      await findCmd('Comfy.QueuePromptFront').function()
+
+      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.QueuePromptFront queues prompt at front when features accessible', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
+
+      await findCmd('Comfy.QueuePromptFront').function()
+
+      expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
+      expect(app.queuePrompt).toHaveBeenCalledWith(-1, expect.any(Number))
+    })
+
+    it('Comfy.QueueSelectedOutputNodes shows subscription dialog when features inaccessible', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+
+      await findCmd('Comfy.QueueSelectedOutputNodes').function()
+
+      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
     })
   })
 })
