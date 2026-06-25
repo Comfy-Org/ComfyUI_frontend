@@ -18,7 +18,7 @@ vi.mock('@/components/error/useErrorOverlayState', () => ({
   })
 }))
 
-vi.mock('@/components/error/useViewErrorsInGraph', () => ({
+vi.mock('@/composables/useViewErrorsInGraph', () => ({
   useViewErrorsInGraph: () => ({
     viewErrorsInGraph: mocks.viewErrorsInGraph
   })

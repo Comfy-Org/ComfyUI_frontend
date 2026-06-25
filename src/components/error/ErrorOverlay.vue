@@ -68,7 +68,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
-import { useViewErrorsInGraph } from '@/components/error/useViewErrorsInGraph'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 

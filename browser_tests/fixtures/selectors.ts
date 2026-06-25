@@ -173,7 +173,7 @@ export const TestIds = {
     mobileWorkflows: 'linear-mobile-workflows',
     outputInfo: 'linear-output-info',
     runButton: 'linear-run-button',
-    validationWarning: 'linear-error-warning',
+    validationWarning: 'linear-validation-warning',
     viewErrorsInGraph: 'linear-view-errors',
     widgetContainer: 'linear-widgets'
   },

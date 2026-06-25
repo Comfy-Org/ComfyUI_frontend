@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
-import { useViewErrorsInGraph } from '@/components/error/useViewErrorsInGraph'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 
 const { t } = useI18n()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
@@ -12,8 +12,9 @@ const { overlayMessage, overlayTitle } = useErrorOverlayState()
 
 <template>
   <div
+    id="linear-run-error-warning"
     role="status"
-    data-testid="linear-error-warning"
+    data-testid="linear-validation-warning"
     class="mb-3 flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default border-l-destructive-background bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out"
   >
     <div class="flex w-full items-start gap-2">
@@ -28,7 +29,7 @@ const { overlayMessage, overlayTitle } = useErrorOverlayState()
 
     <div
       class="flex w-full items-start gap-2"
-      data-testid="linear-error-warning-message"
+      data-testid="linear-validation-warning-message"
     >
       <span class="size-4 shrink-0" aria-hidden="true" />
       <p

@@ -29,8 +29,7 @@ const i18n = createI18n({
     en: {
       linearMode: {
         error: {
-          goto: 'Show errors in graph',
-          runWithErrorsAction: 'Run, workflow has errors'
+          goto: 'Show errors in graph'
         },
         mobileNoWorkflow: 'No workflow',
         runCount: 'Run count',
@@ -125,9 +124,10 @@ describe('LinearControls', () => {
       within(warning).getByRole('button', { name: 'Show errors in graph' })
     ).toBeInTheDocument()
     expect(within(warning).queryByLabelText('Close')).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Run, workflow has errors' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Run' })).toHaveAttribute(
+      'aria-describedby',
+      'linear-run-error-warning'
+    )
   })
 
   it.for([
@@ -142,7 +142,9 @@ describe('LinearControls', () => {
       expect(
         screen.queryByRole('button', { name: 'Show errors in graph' })
       ).not.toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Run' })).not.toHaveAttribute(
+        'aria-describedby'
+      )
     }
   )
 })

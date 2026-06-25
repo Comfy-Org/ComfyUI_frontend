@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { enableErrorsOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -49,15 +49,11 @@ test.describe(
       const appModeOverlay = comfyPage.appMode.centerPanel.getByTestId(
         TestIds.dialogs.errorOverlay
       )
-      await expect(appModeOverlay).toBeVisible()
-      await appModeOverlay
-        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
-        .click()
       await expect(appModeOverlay).toBeHidden()
 
       await expect(comfyPage.appMode.validationWarning).toBeVisible()
       await expect(comfyPage.appMode.validationWarning).toContainText(
-        /Workflow has errors/i
+        /Required input missing/i
       )
       await expect(comfyPage.appMode.viewErrorsInGraphButton).toBeVisible()
 
@@ -70,6 +66,41 @@ test.describe(
       await expect(
         comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
       ).toBeVisible()
+    })
+
+    test('keeps the app mode run button enabled when the warning is visible', async ({
+      comfyPage
+    }) => {
+      const exec = new ExecutionHelper(comfyPage)
+      await exec.mockValidationFailure({
+        [SAVE_IMAGE_NODE_ID]: buildSaveImageRequiredInputError()
+      })
+
+      await comfyPage.appMode.runButton.click()
+      await expect(comfyPage.appMode.validationWarning).toBeVisible()
+      await expect(comfyPage.appMode.runButton).toBeEnabled()
+
+      let promptQueued = false
+      const mockResponse: PromptResponse = {
+        prompt_id: 'test-id',
+        node_errors: {},
+        error: ''
+      }
+      await comfyPage.page.route(
+        '**/api/prompt',
+        async (route) => {
+          promptQueued = true
+          await route.fulfill({
+            status: 200,
+            body: JSON.stringify(mockResponse)
+          })
+        },
+        { times: 1 }
+      )
+
+      await comfyPage.appMode.runButton.click()
+
+      await expect.poll(() => promptQueued).toBe(true)
     })
   }
 )
