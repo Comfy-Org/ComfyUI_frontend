@@ -98,7 +98,7 @@ function createResizeEntry(options?: {
   } = options ?? {}
 
   const element = document.createElement('div')
-  element.dataset.nodeId = nodeId
+  element.dataset.nodeId = String(nodeId)
   if (collapsed) {
     element.dataset.collapsed = ''
   }

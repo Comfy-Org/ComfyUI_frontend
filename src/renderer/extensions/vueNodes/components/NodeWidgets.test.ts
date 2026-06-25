@@ -12,6 +12,8 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
@@ -64,7 +66,7 @@ describe('NodeWidgets', () => {
   const createMockNodeData = (
     nodeType: string = 'TestNode',
     widgets: SafeWidgetData[] = [],
-    id: string = '1'
+    id: NodeId = 1
   ): VueNodeData => ({
     id,
     type: nodeType,
@@ -231,13 +233,13 @@ describe('NodeWidgets', () => {
       nodeId: undefined,
       name: 'string_a',
       type: 'text',
-      sourceExecutionId: '65:18'
+      sourceExecutionId: createNodeExecutionId([65, 18])
     })
     const secondTransientEntry = createMockWidget({
       nodeId: undefined,
       name: 'string_a',
       type: 'text',
-      sourceExecutionId: '65:19'
+      sourceExecutionId: createNodeExecutionId([65, 19])
     })
     const nodeData = createMockNodeData('SubgraphNode', [
       firstTransientEntry,
