@@ -150,7 +150,11 @@ type SubscriptionTransitionType =
 
 interface PreviewSubscribeRequest {
   plan_slug: string
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
 }
+
+type SubscribeBillingCycle = 'monthly' | 'yearly'
 
 interface SubscribeRequest {
   plan_slug: string
@@ -159,6 +163,19 @@ interface SubscribeRequest {
   cancel_url?: string
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
+}
+
+export interface SubscribeOptions {
+  returnUrl?: string
+  cancelUrl?: string
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
+}
+
+export interface PreviewSubscribeOptions {
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -606,12 +623,19 @@ export const workspaceApi = {
    * Preview subscription change
    * POST /api/billing/preview-subscribe
    */
-  async previewSubscribe(planSlug: string): Promise<PreviewSubscribeResponse> {
+  async previewSubscribe(
+    planSlug: string,
+    options: PreviewSubscribeOptions = {}
+  ): Promise<PreviewSubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PreviewSubscribeResponse>(
         api.apiURL('/billing/preview-subscribe'),
-        { plan_slug: planSlug } satisfies PreviewSubscribeRequest,
+        {
+          plan_slug: planSlug,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
+        } satisfies PreviewSubscribeRequest,
         { headers }
       )
       return response.data
@@ -626,9 +650,7 @@ export const workspaceApi = {
    */
   async subscribe(
     planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string,
-    teamCreditStopId?: string
+    options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -636,9 +658,10 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
-          return_url: returnUrl,
-          cancel_url: cancelUrl,
-          team_credit_stop_id: teamCreditStopId
+          return_url: options.returnUrl,
+          cancel_url: options.cancelUrl,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
         } satisfies SubscribeRequest,
         { headers }
       )
