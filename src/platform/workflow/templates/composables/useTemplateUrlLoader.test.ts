@@ -18,13 +18,17 @@ const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn()
 }))
 
-// Mock vue-router
-let mockQueryParams: Record<string, string | string[] | undefined> = {}
+const routeMocks = vi.hoisted(() => ({
+  query: {} as Record<string, string | string[] | undefined>
+}))
+
 const mockRouterReplace = vi.fn()
 
 vi.mock('vue-router', () => ({
   useRoute: vi.fn(() => ({
-    query: mockQueryParams
+    get query() {
+      return routeMocks.query
+    }
   })),
   useRouter: vi.fn(() => ({
     replace: mockRouterReplace
@@ -83,12 +87,13 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
-    mockQueryParams = {}
+    vi.clearAllMocks()
+    routeMocks.query = {}
     mockCanvasStore.linearMode = false
   })
 
   it('does not load template when no query param present', () => {
-    mockQueryParams = {}
+    routeMocks.query = {}
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     void loadTemplateFromUrl()
@@ -98,7 +103,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('loads template when query param is present', async () => {
-    mockQueryParams = { template: 'flux_simple' }
+    routeMocks.query = { template: 'flux_simple' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -112,7 +117,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('uses default source when source param is not provided', async () => {
-    mockQueryParams = { template: 'flux_simple' }
+    routeMocks.query = { template: 'flux_simple' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -124,7 +129,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('uses custom source when source param is provided', async () => {
-    mockQueryParams = { template: 'custom-template', source: 'custom-module' }
+    routeMocks.query = { template: 'custom-template', source: 'custom-module' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -136,7 +141,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('shows error toast when template loading fails', async () => {
-    mockQueryParams = { template: 'invalid-template' }
+    routeMocks.query = { template: 'invalid-template' }
     mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
@@ -151,7 +156,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('handles array query params correctly', () => {
     // Vue Router can return string[] for duplicate params
-    mockQueryParams = { template: ['first', 'second'] }
+    routeMocks.query = { template: ['first', 'second'] }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     void loadTemplateFromUrl()
@@ -162,7 +167,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('rejects invalid template parameter with special characters', () => {
     // Test path traversal attempt
-    mockQueryParams = { template: '../../../etc/passwd' }
+    routeMocks.query = { template: '../../../etc/passwd' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     void loadTemplateFromUrl()
@@ -172,7 +177,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('rejects invalid template parameter with slash', () => {
-    mockQueryParams = { template: 'path/to/template' }
+    routeMocks.query = { template: 'path/to/template' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     void loadTemplateFromUrl()
@@ -192,7 +197,7 @@ describe('useTemplateUrlLoader', () => {
 
     for (const template of validTemplates) {
       vi.clearAllMocks()
-      mockQueryParams = { template }
+      routeMocks.query = { template }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
@@ -202,7 +207,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('rejects invalid source parameter with special characters', () => {
-    mockQueryParams = { template: 'flux_simple', source: '../malicious' }
+    routeMocks.query = { template: 'flux_simple', source: '../malicious' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     void loadTemplateFromUrl()
@@ -216,7 +221,7 @@ describe('useTemplateUrlLoader', () => {
 
     for (const source of validSources) {
       vi.clearAllMocks()
-      mockQueryParams = { template: 'flux_simple', source }
+      routeMocks.query = { template: 'flux_simple', source }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
@@ -229,7 +234,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('shows error toast when exception is thrown', async () => {
-    mockQueryParams = { template: 'flux_simple' }
+    routeMocks.query = { template: 'flux_simple' }
     mockLoadTemplates.mockRejectedValueOnce(new Error('Network error'))
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
@@ -243,7 +248,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('removes template params from URL after successful load', async () => {
-    mockQueryParams = {
+    routeMocks.query = {
       template: 'flux_simple',
       source: 'custom',
       mode: 'linear',
@@ -259,7 +264,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('removes template params from URL even on error', async () => {
-    mockQueryParams = { template: 'invalid', source: 'custom', other: 'param' }
+    routeMocks.query = { template: 'invalid', source: 'custom', other: 'param' }
     mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
@@ -271,7 +276,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('removes template params from URL even on exception', async () => {
-    mockQueryParams = { template: 'flux_simple', other: 'param' }
+    routeMocks.query = { template: 'flux_simple', other: 'param' }
     mockLoadTemplates.mockRejectedValueOnce(new Error('Network error'))
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
@@ -283,7 +288,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('sets linear mode when mode=linear and template loads successfully', async () => {
-    mockQueryParams = { template: 'flux_simple', mode: 'linear' }
+    routeMocks.query = { template: 'flux_simple', mode: 'linear' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -296,7 +301,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('does not set linear mode when template loading fails', async () => {
-    mockQueryParams = { template: 'invalid-template', mode: 'linear' }
+    routeMocks.query = { template: 'invalid-template', mode: 'linear' }
     mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
@@ -306,7 +311,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('does not set linear mode when mode parameter is not linear', async () => {
-    mockQueryParams = { template: 'flux_simple', mode: 'graph' }
+    routeMocks.query = { template: 'flux_simple', mode: 'graph' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -319,7 +324,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('rejects invalid mode parameter with special characters', () => {
-    mockQueryParams = { template: 'flux_simple', mode: '../malicious' }
+    routeMocks.query = { template: 'flux_simple', mode: '../malicious' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     void loadTemplateFromUrl()
@@ -329,7 +334,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('handles array mode params correctly', () => {
     // Vue Router can return string[] for duplicate params
-    mockQueryParams = {
+    routeMocks.query = {
       template: 'flux_simple',
       mode: ['linear', 'graph']
     }
@@ -343,7 +348,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('warns about unsupported mode values but continues loading', async () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockQueryParams = { template: 'flux_simple', mode: 'unsupported' }
+    routeMocks.query = { template: 'flux_simple', mode: 'unsupported' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -361,7 +366,7 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('accepts supported mode parameter: linear', async () => {
-    mockQueryParams = { template: 'flux_simple', mode: 'linear' }
+    routeMocks.query = { template: 'flux_simple', mode: 'linear' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -381,7 +386,7 @@ describe('useTemplateUrlLoader', () => {
       vi.clearAllMocks()
       consoleSpy.mockClear()
       mockCanvasStore.linearMode = false
-      mockQueryParams = { template: 'flux_simple', mode }
+      routeMocks.query = { template: 'flux_simple', mode }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
@@ -409,7 +414,7 @@ describe('useTemplateUrlLoader', () => {
     })
 
     it('transitions refs through success lifecycle', async () => {
-      mockQueryParams = { template: 'flux_simple' }
+      routeMocks.query = { template: 'flux_simple' }
 
       let resolveLoadTemplates: (() => void) | undefined
       mockLoadTemplates.mockImplementationOnce(
@@ -441,7 +446,7 @@ describe('useTemplateUrlLoader', () => {
     })
 
     it('sets hasAttempted after failed template load without setting error', async () => {
-      mockQueryParams = { template: 'invalid-template' }
+      routeMocks.query = { template: 'invalid-template' }
       mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
       const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
@@ -459,7 +464,7 @@ describe('useTemplateUrlLoader', () => {
     })
 
     it('sets error and hasAttempted when load throws', async () => {
-      mockQueryParams = { template: 'flux_simple' }
+      routeMocks.query = { template: 'flux_simple' }
       const thrownError = new Error('Network error')
       mockLoadTemplates.mockRejectedValueOnce(thrownError)
 
@@ -479,7 +484,7 @@ describe('useTemplateUrlLoader', () => {
     })
 
     it('keeps refs unchanged when template param is missing', async () => {
-      mockQueryParams = {}
+      routeMocks.query = {}
 
       const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
         useTemplateUrlLoader()
@@ -502,7 +507,7 @@ describe('useTemplateUrlLoader', () => {
 
       for (const query of invalidQueries) {
         vi.clearAllMocks()
-        mockQueryParams = query
+        routeMocks.query = query
 
         const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
           useTemplateUrlLoader()
@@ -517,7 +522,7 @@ describe('useTemplateUrlLoader', () => {
     })
 
     it('resets stale state on retry after error', async () => {
-      mockQueryParams = { template: 'flux_simple' }
+      routeMocks.query = { template: 'flux_simple' }
       const thrownError = new Error('Network error')
       mockLoadTemplates.mockRejectedValueOnce(thrownError)
 
