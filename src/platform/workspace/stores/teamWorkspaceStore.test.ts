@@ -1280,25 +1280,25 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.pendingInvites[0].id).toBe('inv-1')
     })
 
-    it('resendInvite resyncs invites when revoking the old invite fails', async () => {
-      mockWorkspaceApi.listInvites.mockResolvedValue({
-        invites: [
-          {
-            id: 'inv-1',
-            email: 'one@test.com',
-            token: 'token-1',
-            invited_at: '2024-01-01T00:00:00Z',
-            expires_at: '2024-01-08T00:00:00Z'
-          }
-        ]
-      })
-      mockWorkspaceApi.createInvite.mockResolvedValue({
+    it('resendInvite resyncs invites and rethrows when revoking the old fails', async () => {
+      const inviteOne = {
+        id: 'inv-1',
+        email: 'one@test.com',
+        token: 'token-1',
+        invited_at: '2024-01-01T00:00:00Z',
+        expires_at: '2024-01-08T00:00:00Z'
+      }
+      const inviteTwo = {
         id: 'inv-2',
         email: 'one@test.com',
         token: 'token-2',
         invited_at: '2024-02-01T00:00:00Z',
         expires_at: '2024-02-08T00:00:00Z'
-      })
+      }
+      mockWorkspaceApi.listInvites
+        .mockResolvedValueOnce({ invites: [inviteOne] })
+        .mockResolvedValue({ invites: [inviteOne, inviteTwo] })
+      mockWorkspaceApi.createInvite.mockResolvedValue(inviteTwo)
       mockWorkspaceApi.revokeInvite.mockRejectedValue(
         new Error('revoke failed')
       )
@@ -1309,10 +1309,43 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
       await store.fetchPendingInvites()
 
-      const result = await store.resendInvite('inv-1')
+      await expect(store.resendInvite('inv-1')).rejects.toThrow('revoke failed')
 
-      expect(result.id).toBe('inv-2')
       expect(mockWorkspaceApi.listInvites).toHaveBeenCalledTimes(2)
+      expect(store.pendingInvites.map((i) => i.id)).toEqual(['inv-1', 'inv-2'])
+    })
+
+    it('resendInvite rejects a concurrent resend for the same invite', async () => {
+      const inviteOne = {
+        id: 'inv-1',
+        email: 'one@test.com',
+        token: 'token-1',
+        invited_at: '2024-01-01T00:00:00Z',
+        expires_at: '2024-01-08T00:00:00Z'
+      }
+      mockWorkspaceApi.listInvites.mockResolvedValue({ invites: [inviteOne] })
+      mockWorkspaceApi.createInvite.mockResolvedValue({
+        id: 'inv-2',
+        email: 'one@test.com',
+        token: 'token-2',
+        invited_at: '2024-02-01T00:00:00Z',
+        expires_at: '2024-02-08T00:00:00Z'
+      })
+      mockWorkspaceApi.revokeInvite.mockResolvedValue(undefined)
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchPendingInvites()
+
+      const first = store.resendInvite('inv-1')
+      await expect(store.resendInvite('inv-1')).rejects.toThrow(
+        'already in progress'
+      )
+      await first
+
+      expect(mockWorkspaceApi.createInvite).toHaveBeenCalledTimes(1)
     })
 
     it('resendInvite throws for an unknown invite id', async () => {

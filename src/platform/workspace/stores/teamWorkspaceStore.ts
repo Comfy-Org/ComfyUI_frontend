@@ -642,24 +642,38 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
+  const resendingInviteIds = new Set<string>()
+
   /**
    * Resend a pending invite by issuing a fresh one before revoking the old.
-   * Create-first so a failed resend never destroys the original invite.
+   * Create-first so a failed resend never destroys the original invite. If the
+   * revoke fails, the store is resynced (so the leftover original surfaces) and
+   * the error is rethrown so the caller can report the partial failure rather
+   * than show success over two live invites for the same email.
    */
   async function resendInvite(inviteId: string): Promise<PendingInvite> {
+    if (resendingInviteIds.has(inviteId)) {
+      throw new Error('Invite resend already in progress')
+    }
     const invite = activeWorkspace.value?.pendingInvites.find(
       (i) => i.id === inviteId
     )
     if (!invite) {
       throw new Error('Invite not found')
     }
-    const newInvite = await createInvite(invite.email)
+    resendingInviteIds.add(inviteId)
     try {
-      await revokeInvite(inviteId)
-    } catch {
-      await fetchPendingInvites()
+      const newInvite = await createInvite(invite.email)
+      try {
+        await revokeInvite(inviteId)
+      } catch (error) {
+        await fetchPendingInvites()
+        throw error
+      }
+      return newInvite
+    } finally {
+      resendingInviteIds.delete(inviteId)
     }
-    return newInvite
   }
 
   /**

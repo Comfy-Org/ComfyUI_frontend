@@ -156,6 +156,25 @@ describe('InviteMemberDialogContent', () => {
     expect(inviteButton()).toBeEnabled()
   })
 
+  it('stays on the form and keeps every chip when all invites fail', async () => {
+    mockCreateInvite.mockRejectedValue(new Error('nope'))
+    const { user } = renderDialog()
+
+    await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
+    await user.click(inviteButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    expect(
+      screen.queryByText('workspacePanel.inviteMemberDialog.invitedMessage')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(inviteButton()).toBeEnabled()
+  })
+
   it('closes without inviting on Cancel', async () => {
     const { user } = renderDialog()
 

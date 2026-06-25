@@ -15,18 +15,20 @@ export function useTeamPlan() {
     useTeamWorkspaceStore()
   )
 
+  const isTeamWorkspace = computed(() => !isInPersonalWorkspace.value)
+
   const isOnTeamPlan = computed(
-    () => !isInPersonalWorkspace.value && isWorkspaceSubscribed.value
+    () => isTeamWorkspace.value && isWorkspaceSubscribed.value
   )
   const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
-  // Subscribed-then-lapsed (cancelled or ended), not never-subscribed — drives
-  // reactivate-vs-upgrade copy.
-  const hasLapsedTeamPlan = computed(
+  const isSubscriptionLapsed = computed(
     () =>
-      !isInPersonalWorkspace.value &&
-      (subscriptionStatus.value === 'canceled' ||
-        subscriptionStatus.value === 'ended')
+      subscriptionStatus.value === 'canceled' ||
+      subscriptionStatus.value === 'ended'
+  )
+  const hasLapsedTeamPlan = computed(
+    () => isTeamWorkspace.value && isSubscriptionLapsed.value
   )
 
   return { isOnTeamPlan, isCancelled, hasLapsedTeamPlan }

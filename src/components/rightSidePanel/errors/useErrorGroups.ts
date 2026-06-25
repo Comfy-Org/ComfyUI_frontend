@@ -39,8 +39,8 @@ import {
   resolveRunErrorMessage
 } from '@/platform/errorCatalog/errorMessageResolver'
 import {
-  isNodeExecutionId,
-  compareExecutionId
+  compareExecutionId,
+  tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
@@ -82,7 +82,7 @@ interface ErrorSearchItem {
 type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
 /** Resolve display info for a node by its execution ID. */
-function resolveNodeInfo(nodeId: string) {
+function resolveNodeInfo(nodeId: NodeExecutionId) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
 
   return {
@@ -119,7 +119,7 @@ function getOrCreateGroup(
 }
 
 function createErrorCard(
-  nodeId: string,
+  nodeId: NodeExecutionId,
   classType: string,
   idPrefix: string
 ): ErrorCardData {
@@ -130,7 +130,7 @@ function createErrorCard(
     nodeId,
     nodeTitle: nodeInfo.title,
     graphNodeId: nodeInfo.graphNodeId,
-    isSubgraphNode: isNodeExecutionId(nodeId),
+    isSubgraphNode: nodeId.includes(':'),
     errors: []
   }
 }
@@ -288,7 +288,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return map
   })
 
-  function isErrorInSelection(executionNodeId: string): boolean {
+  function isErrorInSelection(executionNodeId: NodeExecutionId): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 
@@ -305,7 +305,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function addNodeErrorToGroup(
     groupsMap: Map<string, GroupEntry>,
-    nodeId: string,
+    nodeId: NodeExecutionId,
     classType: string,
     idPrefix: string,
     error: CataloguedErrorItem,
@@ -371,9 +371,11 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   ) {
     if (!executionErrorStore.lastNodeErrors) return
 
-    for (const [nodeId, nodeError] of Object.entries(
+    for (const [rawNodeId, nodeError] of Object.entries(
       executionErrorStore.lastNodeErrors
     )) {
+      const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
+      if (!nodeId) continue
       const nodeDisplayName =
         resolveNodeInfo(nodeId).title || nodeError.class_type
       for (const e of nodeError.errors) {
@@ -404,9 +406,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!executionErrorStore.lastExecutionError) return
 
     const e = executionErrorStore.lastExecutionError
+    const nodeId = tryNormalizeNodeExecutionId(e.node_id)
+    if (!nodeId) return
+
     addNodeErrorToGroup(
       groupsMap,
-      String(e.node_id),
+      nodeId,
       e.node_type,
       'exec',
       {
@@ -417,8 +422,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         ...resolveRunErrorMessage({
           kind: 'execution',
           error: e,
-          nodeDisplayName:
-            resolveNodeInfo(String(e.node_id)).title || e.node_type
+          nodeDisplayName: resolveNodeInfo(nodeId).title || e.node_type
         })
       },
       filterBySelection
@@ -669,7 +673,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   }
 
-  function isAssetErrorInSelection(executionNodeId: string): boolean {
+  function isAssetErrorInSelection(executionNodeId: NodeExecutionId): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 
@@ -691,12 +695,17 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return false
   }
 
+  function isAssetCandidateInSelection(nodeId: string | number): boolean {
+    const executionNodeId = tryNormalizeNodeExecutionId(nodeId)
+    return executionNodeId ? isAssetErrorInSelection(executionNodeId) : false
+  }
+
   const filteredMissingModelGroups = computed(() => {
     if (!selectedNodeInfo.value.nodeIds) return missingModelGroups.value
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
     if (!filtered.length) return []
     return groupMissingModelCandidates(filtered, isCloud)
@@ -707,7 +716,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
     if (!filtered.length) return []
     return groupCandidatesByMediaType(filtered)

@@ -387,6 +387,35 @@
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
   },
+  "hdrViewer": {
+    "title": "HDR Viewer",
+    "openInHdrViewer": "Open in HDR Viewer",
+    "hdrImage": "HDR image",
+    "failedToLoad": "Failed to load HDR image",
+    "exposure": "Exposure",
+    "normalizeExposure": "Auto exposure",
+    "channel": "Channel",
+    "channels": {
+      "rgb": "RGB",
+      "r": "R",
+      "g": "G",
+      "b": "B",
+      "a": "Alpha",
+      "luminance": "Luminance"
+    },
+    "sourceGamut": "Source gamut",
+    "dither": "Dither",
+    "clipWarnings": "Clip warnings",
+    "fitView": "Fit",
+    "histogram": "Histogram",
+    "resolution": "Resolution",
+    "min": "Min",
+    "max": "Max",
+    "mean": "Mean",
+    "stdDev": "Std dev",
+    "nan": "NaN",
+    "inf": "Inf"
+  },
   "manager": {
     "title": "Nodes Manager",
     "nodePackInfo": "Node Pack Info",
@@ -866,8 +895,8 @@
       "nodes": "Nodes",
       "models": "Models",
       "assets": "Assets",
-      "workflows": "Workflows",
-      "templates": "Templates",
+      "workflows": "Work\u00adflows",
+      "templates": "Tem\u00adplates",
       "console": "Console",
       "menu": "Menu",
       "imported": "Imported",
@@ -2113,6 +2142,21 @@
     "monotone_cubic": "Smooth",
     "linear": "Linear"
   },
+  "boundingBoxes": {
+    "clearAll": "Clear all",
+    "clickRegionToEdit": "Click a region to edit it.",
+    "typeObj": "obj",
+    "typeText": "text",
+    "textLabel": "Text",
+    "descLabel": "description",
+    "textPlaceholder": "text to render (verbatim)",
+    "descPlaceholder": "description of this region",
+    "colors": "color_palette"
+  },
+  "palette": {
+    "addColor": "Add a color",
+    "swatchTitle": "Click edit · drag reorder · right-click remove"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
@@ -2519,6 +2563,7 @@
     "billedYearly": "{total} Billed yearly",
     "monthly": "Monthly",
     "yearly": "Yearly",
+    "saveYearly": "Save 20%",
     "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
@@ -2529,7 +2574,6 @@
       "benefit2": "Up to 1 hour runtime per job on Pro",
       "benefit3": "Bring your own models (Creator & Pro)"
     },
-    "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
       "free": {
         "name": "Free"
@@ -2958,7 +3002,7 @@
     "share": "Share"
   },
   "shortcuts": {
-    "shortcuts": "Shortcuts",
+    "shortcuts": "Short\u00adcuts",
     "essentials": "Essential",
     "viewControls": "View Controls",
     "manageShortcuts": "Manage Shortcuts",

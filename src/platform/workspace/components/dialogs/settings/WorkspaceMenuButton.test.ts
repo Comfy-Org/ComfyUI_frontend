@@ -5,34 +5,8 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
-
-const CREATOR = {
-  id: 'creator',
-  name: 'Creator',
-  email: 'creator@test.com',
-  joinDate: new Date('2026-01-01T00:00:00Z'),
-  role: 'owner' as const,
-  isOriginalOwner: true
-}
-const LATER_OWNER = {
-  id: 'owner-2',
-  name: 'Owner Two',
-  email: 'owner2@test.com',
-  joinDate: new Date('2026-02-01T00:00:00Z'),
-  role: 'owner' as const,
-  isOriginalOwner: false
-}
-const LATER_MEMBER = {
-  id: 'member-2',
-  name: 'Member Two',
-  email: 'member2@test.com',
-  joinDate: new Date('2026-02-01T00:00:00Z'),
-  role: 'member' as const,
-  isOriginalOwner: false
-}
 
 const ownerConfig = {
   showEditWorkspaceMenuItem: true,
@@ -47,8 +21,7 @@ const memberConfig = {
 }
 
 const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
-const mockMembers = ref<WorkspaceMember[]>([CREATOR, LATER_OWNER])
-const mockUserEmail = ref<string | null>('owner2@test.com')
+const mockIsCurrentUserOriginalOwner = ref(false)
 const mockIsWorkspaceSubscribed = ref(false)
 
 const mockShowLeaveWorkspaceDialog = vi.fn()
@@ -62,12 +35,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
-    members: mockMembers
+    isCurrentUserOriginalOwner: mockIsCurrentUserOriginalOwner
   })
-}))
-
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userEmail: mockUserEmail })
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -104,15 +73,12 @@ describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUiConfig.value = ownerConfig
-    mockMembers.value = [CREATOR, LATER_OWNER]
-    mockUserEmail.value = 'owner2@test.com'
+    mockIsCurrentUserOriginalOwner.value = false
     mockIsWorkspaceSubscribed.value = false
   })
 
   it('lets a member leave and offers no destructive workspace actions', () => {
     mockUiConfig.value = memberConfig
-    mockMembers.value = [CREATOR, LATER_MEMBER]
-    mockUserEmail.value = 'member2@test.com'
     renderComponent()
 
     const leave = screen.getByRole('button', { name: 'Leave Workspace' })
@@ -134,7 +100,7 @@ describe('WorkspaceMenuButton', () => {
   })
 
   it('shows the creator a disabled Leave option', () => {
-    mockUserEmail.value = 'creator@test.com'
+    mockIsCurrentUserOriginalOwner.value = true
     renderComponent()
 
     expect(
@@ -152,7 +118,7 @@ describe('WorkspaceMenuButton', () => {
 
   it('does not open the leave dialog for the creator', async () => {
     const user = userEvent.setup()
-    mockUserEmail.value = 'creator@test.com'
+    mockIsCurrentUserOriginalOwner.value = true
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
