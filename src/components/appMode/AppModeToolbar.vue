@@ -2,9 +2,9 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
+import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { VIEW_MODE_TOGGLE_HOST_ID } from '@/constants/viewModeToggle'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
@@ -16,7 +16,7 @@ const { hasNodes } = storeToRefs(appModeStore)
 
 <template>
   <div class="pointer-events-auto flex flex-row items-start gap-2">
-    <div :id="VIEW_MODE_TOGGLE_HOST_ID.app" class="contents" />
+    <WorkflowActionsDropdown source="app_mode_toolbar" />
     <Button
       v-if="enableAppBuilder"
       variant="base"

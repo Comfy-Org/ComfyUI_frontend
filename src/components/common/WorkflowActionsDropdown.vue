@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -15,8 +16,8 @@ import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useViewModeToggleStore } from '@/stores/viewModeToggleStore'
 
 type ViewMode = 'graph' | 'app'
 
@@ -35,9 +36,9 @@ const { source, align = 'start' } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const canvasStore = useCanvasStore()
 const keybindingStore = useKeybindingStore()
 const dropdownOpen = ref(false)
+const { displayLinearMode } = storeToRefs(useViewModeToggleStore())
 
 const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
@@ -45,22 +46,6 @@ const { menuItems } = useWorkflowActionsMenu(
 )
 const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
   () => menuItems.value
-)
-
-// This single instance is teleported between the graph and app slots on mode
-// switch. Reparenting a node in the same frame its classes change cancels the
-// CSS transition, so the visual mode lags one paint behind the real mode: the
-// teleport reparents first, then the segment morph animates in place.
-const displayLinearMode = ref(canvasStore.linearMode)
-watch(
-  () => canvasStore.linearMode,
-  (mode) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        displayLinearMode.value = mode
-      })
-    })
-  }
 )
 
 const toggleShortcut = computed(() => {

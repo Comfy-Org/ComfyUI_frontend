@@ -24,9 +24,6 @@
       <BuilderMenu />
       <BuilderFooterToolbar />
     </template>
-    <Teleport v-if="actionsToggleVisible" defer :to="actionsToggleTarget">
-      <WorkflowActionsDropdown :source="actionsToggleSource" />
-    </Teleport>
   </div>
 
   <GlobalToast />
@@ -76,10 +73,6 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
-import {
-  VIEW_MODE_TOGGLE_HOST_ID,
-  VIEW_MODE_TOGGLE_SOURCE
-} from '@/constants/viewModeToggle'
 import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
@@ -117,7 +110,6 @@ import { electronAPI } from '@/utils/envUtil'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
-import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
@@ -135,23 +127,6 @@ const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 const workspaceStore = useWorkspaceStore()
-
-// Render only once the target host exists, so the id-string Teleport resolves.
-// The app host (LinearView) is present whenever app mode is active; the graph
-// host (breadcrumb) lives in the canvas-ready overlay, so gate on canvas
-// readiness and focus mode exactly as the side toolbar host does.
-const actionsToggleVisible = computed(() => {
-  if (isBuilderMode.value) return false
-  if (linearMode.value) return true
-  return graphCanvasReady.value && !workspaceStore.focusMode
-})
-const actionsToggleTarget = computed(
-  () =>
-    `#${linearMode.value ? VIEW_MODE_TOGGLE_HOST_ID.app : VIEW_MODE_TOGGLE_HOST_ID.graph}`
-)
-const actionsToggleSource = computed(() =>
-  linearMode.value ? VIEW_MODE_TOGGLE_SOURCE.app : VIEW_MODE_TOGGLE_SOURCE.graph
-)
 
 const mobile = useBreakpoints(breakpointsTailwind).smaller('md')
 const graphCanvasReady = ref(false)

@@ -14,7 +14,10 @@
       '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
     }"
   >
-    <div :id="VIEW_MODE_TOGGLE_HOST_ID.graph" class="contents" />
+    <WorkflowActionsDropdown
+      v-if="!canvasStore.linearMode"
+      source="breadcrumb_subgraph_menu_selected"
+    />
     <Button
       v-if="isInSubgraph"
       class="back-button pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
@@ -54,8 +57,8 @@ import type { MenuItem } from 'primevue/menuitem'
 import { computed, onUpdated, ref, watch } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
+import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { VIEW_MODE_TOGGLE_HOST_ID } from '@/constants/viewModeToggle'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -71,6 +74,7 @@ const ICON_WIDTH = 20
 
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
+const canvasStore = useCanvasStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>

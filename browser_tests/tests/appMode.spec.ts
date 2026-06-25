@@ -191,24 +191,17 @@ test.describe('App mode usage', () => {
       .toBeLessThanOrEqual(1)
   })
 
-  test('Toggle segment flips mode without opening the menu, reusing one instance', async ({
+  test('Toggle segment flips mode without opening the menu', async ({
     comfyPage
   }) => {
-    const toggle = comfyPage.page.getByTestId('view-mode-toggle')
-    await expect(toggle).toBeVisible()
-
-    // Tag the single instance so we can prove the same DOM node is teleported
-    // across the switch rather than destroyed and recreated.
-    await toggle.evaluate((el) => el.setAttribute('data-identity', 'persist'))
+    await expect(comfyPage.page.getByTestId('view-mode-toggle')).toBeVisible()
 
     await comfyPage.page.getByRole('button', { name: 'Enter app mode' }).click()
 
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     // The inactive segment switches mode; it must not also open the actions menu.
     await expect(comfyPage.page.getByRole('menu')).toBeHidden()
-    await expect(
-      comfyPage.page.getByTestId('view-mode-toggle')
-    ).toHaveAttribute('data-identity', 'persist')
+    await expect(comfyPage.page.getByTestId('view-mode-toggle')).toBeVisible()
   })
 
   test('Mode toggle returns to app mode after exiting the builder', async ({
@@ -221,9 +214,20 @@ test.describe('App mode usage', () => {
     await comfyPage.appMode.enterBuilder()
     await expect(toggle).toBeHidden()
 
-    // The builder host unmounts the toggle; on exit the teleport must re-resolve
-    // its app-mode host even though that host re-mounts after GraphView updates.
     await comfyPage.appMode.footer.exitButton.click()
+    await expect(toggle).toBeVisible()
+  })
+
+  test('Mode toggle survives a sidebar tab remounting the app panel', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.page.getByTestId('view-mode-toggle')
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    await expect(toggle).toBeVisible()
+
+    // Opening a sidebar tab remounts the app panel; the toggle re-renders with it.
+    await comfyPage.menu.assetsTab.tabButton.click()
     await expect(toggle).toBeVisible()
   })
 
