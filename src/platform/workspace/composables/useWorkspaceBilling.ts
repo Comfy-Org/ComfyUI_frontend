@@ -67,9 +67,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     return {
       amountMicros: data.amount_micros,
       currency: data.currency,
-      effectiveBalanceMicros: data.effective_balance_micros,
-      prepaidBalanceMicros: data.prepaid_balance_micros,
-      cloudCreditBalanceMicros: data.cloud_credit_balance_micros
+      effectiveBalanceMicros:
+        data.effective_balance_micros ?? data.amount_micros,
+      prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
+      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
     }
   })
 

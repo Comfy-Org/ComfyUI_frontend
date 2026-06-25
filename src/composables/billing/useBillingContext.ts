@@ -261,6 +261,15 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function topup(amountCents: number) {
+    if (
+      !Number.isInteger(amountCents) ||
+      amountCents <= 0 ||
+      amountCents % 100 !== 0
+    ) {
+      throw new Error(
+        'Top-up amount must be a positive whole-dollar cent value'
+      )
+    }
     return activeContext.value.topup(amountCents)
   }
 
