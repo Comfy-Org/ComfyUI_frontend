@@ -1,0 +1,95 @@
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as Record<string, unknown>),
+    useI18n: () => ({ t: (key: string) => key })
+  }
+})
+
+import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
+
+import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
+
+function renderStep(
+  props: Record<string, unknown> = {},
+  callbacks: Record<string, ReturnType<typeof vi.fn>> = {}
+) {
+  return render(ComfyHubThumbnailStep, {
+    props: { thumbnailType: 'image' as ThumbnailType, ...props, ...callbacks },
+    global: {
+      mocks: { $t: (key: string) => key },
+      stubs: {
+        ToggleGroup: {
+          template:
+            '<div><button data-testid="type-image" @click="$emit(\'update:modelValue\', \'image\')" /><button data-testid="type-video" @click="$emit(\'update:modelValue\', \'video\')" /><slot /></div>'
+        },
+        ToggleGroupItem: { template: '<div><slot /></div>', props: ['value'] },
+        Button: {
+          template:
+            '<button data-testid="clear-button" @click="$emit(\'click\')"><slot /></button>'
+        }
+      }
+    }
+  })
+}
+
+describe('ComfyHubThumbnailStep', () => {
+  it('shows the existing image thumbnail on the image tab', () => {
+    renderStep({
+      thumbnailType: 'image',
+      thumbnailUrl: 'https://cdn.example.com/thumb.png',
+      existingThumbnailType: 'image'
+    })
+
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/thumb.png'
+    )
+  })
+
+  it('does not show an existing image thumbnail on the video tab', () => {
+    renderStep({
+      thumbnailType: 'video',
+      thumbnailUrl: 'https://cdn.example.com/thumb.png',
+      existingThumbnailType: 'image'
+    })
+
+    // The image must not leak into the video tab as a preview; the upload
+    // prompt stays visible instead.
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(
+      screen.getByText('comfyHubPublish.uploadPromptClickToBrowse')
+    ).toBeTruthy()
+  })
+
+  it('keeps the existing thumbnail URL when the type changes', async () => {
+    const user = userEvent.setup()
+    const onUpdateThumbnailUrl = vi.fn()
+    const onUpdateThumbnailFile = vi.fn()
+    const onUpdateThumbnailType = vi.fn()
+    renderStep(
+      {
+        thumbnailType: 'image',
+        thumbnailUrl: 'https://cdn.example.com/thumb.png',
+        existingThumbnailType: 'image'
+      },
+      {
+        'onUpdate:thumbnailUrl': onUpdateThumbnailUrl,
+        'onUpdate:thumbnailFile': onUpdateThumbnailFile,
+        'onUpdate:thumbnailType': onUpdateThumbnailType
+      }
+    )
+
+    await user.click(screen.getByTestId('type-video'))
+
+    expect(onUpdateThumbnailType).toHaveBeenCalledWith('video')
+    // The uploaded file is cleared, but the existing URL is preserved so
+    // toggling back restores the preview.
+    expect(onUpdateThumbnailFile).toHaveBeenCalledWith(null)
+    expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
+  })
+})
