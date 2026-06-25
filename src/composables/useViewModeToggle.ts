@@ -1,5 +1,5 @@
-import { ref, watch } from 'vue';
-import type { Ref } from 'vue';
+import { effectScope, ref, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -14,21 +14,25 @@ let displayLinearMode: Ref<boolean> | undefined
  * The value is a module-level singleton so it survives the graph-mode toggle
  * unmounting and the app-mode toggle mounting in its place during a switch; a
  * remount within the same mode reads the already-settled value and stays still.
+ * The watcher runs in a detached effect scope so it outlives the component that
+ * first calls this, rather than being stopped when that component unmounts.
  */
 export function useViewModeToggle() {
   if (!displayLinearMode) {
     const canvasStore = useCanvasStore()
     const mode = ref(canvasStore.linearMode)
-    watch(
-      () => canvasStore.linearMode,
-      (next) => {
-        requestAnimationFrame(() => {
+    effectScope(true).run(() => {
+      watch(
+        () => canvasStore.linearMode,
+        (next) => {
           requestAnimationFrame(() => {
-            mode.value = next
+            requestAnimationFrame(() => {
+              mode.value = next
+            })
           })
-        })
-      }
-    )
+        }
+      )
+    })
     displayLinearMode = mode
   }
   return { displayLinearMode }

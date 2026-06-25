@@ -13,12 +13,6 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
-    <Teleport v-if="showSideToolbar" :to="sideToolbarTarget">
-      <SideToolbar
-        :visible-tab-ids="sideToolbarVisibleTabIds"
-        :force-connected="linearMode"
-      />
-    </Teleport>
     <template v-if="isBuilderMode">
       <BuilderToolbar />
       <BuilderMenu />
@@ -38,12 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  breakpointsTailwind,
-  useBreakpoints,
-  useEventListener,
-  useIntervalFn
-} from '@vueuse/core'
+import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 
 import {
@@ -60,7 +49,6 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
-import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -102,7 +90,6 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -126,26 +113,6 @@ const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
-const workspaceStore = useWorkspaceStore()
-
-const mobile = useBreakpoints(breakpointsTailwind).smaller('md')
-const graphCanvasReady = ref(false)
-
-const showSideToolbar = computed(() => {
-  if (isBuilderMode.value) return false
-  if (linearMode.value) return !mobile.value
-  return (
-    graphCanvasReady.value &&
-    !workspaceStore.focusMode &&
-    settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
-  )
-})
-const sideToolbarTarget = computed(() =>
-  linearMode.value ? '#app-side-toolbar-host' : '#graph-side-toolbar-host'
-)
-const sideToolbarVisibleTabIds = computed(() =>
-  linearMode.value ? ['assets', 'apps'] : undefined
-)
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {
@@ -327,7 +294,6 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
-  graphCanvasReady.value = true
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {

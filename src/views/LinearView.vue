@@ -10,6 +10,7 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -110,7 +111,11 @@ function dragDrop(e: DragEvent) {
       class="flex flex-1 overflow-hidden bg-secondary-background"
       :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
     >
-      <div id="app-side-toolbar-host" class="contents" />
+      <SideToolbar
+        v-if="!isBuilderMode"
+        :visible-tab-ids="['assets', 'apps']"
+        force-connected
+      />
       <Splitter
         :key="splitterKey"
         class="h-full flex-1 border-none bg-secondary-background"

@@ -1,4 +1,4 @@
-import { nextTick, reactive } from 'vue'
+import { effectScope, nextTick, reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const canvasStore = reactive({ linearMode: false })
@@ -78,5 +78,23 @@ describe('useViewModeToggle', () => {
     flushFrames()
 
     expect(second.displayLinearMode.value).toBe(true)
+  })
+
+  it('keeps tracking the mode after the first caller is disposed', async () => {
+    const { useViewModeToggle } =
+      await import('@/composables/useViewModeToggle')
+
+    // Simulate the component that first reads the value (e.g. the graph-mode
+    // toggle) mounting and then unmounting on a mode switch. The watcher must
+    // outlive that scope so later switches still propagate.
+    const scope = effectScope()
+    const { displayLinearMode } = scope.run(() => useViewModeToggle())!
+    scope.stop()
+
+    canvasStore.linearMode = true
+    await nextTick()
+    flushFrames()
+
+    expect(displayLinearMode.value).toBe(true)
   })
 })
