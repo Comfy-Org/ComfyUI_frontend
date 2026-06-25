@@ -9,7 +9,8 @@ const {
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
+    interceptors: { response: { use: vi.fn() } }
   },
   mockGetAuthHeaderOrThrow: vi.fn(),
   mockGetFirebaseAuthHeaderOrThrow: vi.fn()
@@ -265,7 +266,7 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, __skipUnifiedRemint: true }
       )
       expect(result).toEqual(data)
     })
