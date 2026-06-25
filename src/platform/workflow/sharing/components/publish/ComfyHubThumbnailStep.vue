@@ -290,11 +290,15 @@ const thumbnailFileUrl = useObjectUrl(() => thumbnailFile ?? undefined)
 const thumbnailPreviewUrl = computed(
   () => thumbnailFileUrl.value ?? existingSingleUrl.value
 )
-const showVideoPreview = computed(() =>
-  thumbnailFile
-    ? thumbnailFile.type.startsWith('video/')
-    : thumbnailType === 'video'
-)
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i.test(url)
+}
+const showVideoPreview = computed(() => {
+  if (thumbnailFile) return thumbnailFile.type.startsWith('video/')
+  return thumbnailType === 'video' && !!existingSingleUrl.value
+    ? isVideoUrl(existingSingleUrl.value)
+    : false
+})
 
 function setThumbnailPreview(file: File) {
   const maxSize = file.type.startsWith('video/')

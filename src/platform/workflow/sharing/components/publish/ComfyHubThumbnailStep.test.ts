@@ -92,4 +92,48 @@ describe('ComfyHubThumbnailStep', () => {
     expect(onUpdateThumbnailFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
   })
+
+  it('renders a restored GIF thumbnail as an image, not a video', () => {
+    const { container } = renderStep({
+      thumbnailType: 'video',
+      thumbnailUrl: 'https://cdn.example.com/anim.gif',
+      existingThumbnailType: 'video'
+    })
+
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/anim.gif'
+    )
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    expect(container.querySelector('video')).toBeNull()
+  })
+
+  it('renders a restored mp4 thumbnail as a video', () => {
+    const { container } = renderStep({
+      thumbnailType: 'video',
+      thumbnailUrl: 'https://cdn.example.com/clip.mp4',
+      existingThumbnailType: 'video'
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    const video = container.querySelector('video')
+    expect(video?.getAttribute('src')).toBe('https://cdn.example.com/clip.mp4')
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('restores both comparison images on the comparison tab', () => {
+    const { container } = renderStep({
+      thumbnailType: 'imageComparison',
+      thumbnailUrl: 'https://cdn.example.com/before.png',
+      comparisonAfterUrl: 'https://cdn.example.com/after.png',
+      existingThumbnailType: 'imageComparison'
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    const srcs = Array.from(container.querySelectorAll('img')).map((el) =>
+      el.getAttribute('src')
+    )
+    expect(srcs).toContain('https://cdn.example.com/before.png')
+    expect(srcs).toContain('https://cdn.example.com/after.png')
+  })
 })
