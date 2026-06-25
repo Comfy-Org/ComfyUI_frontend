@@ -2515,6 +2515,7 @@
     "resubscribe": "Resubscribe",
     "resubscribeTo": "Resubscribe to {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
+    "subscribeFailed": "Failed to subscribe",
     "canceledCard": {
       "title": "Your subscription has been canceled",
       "description": "You won't be charged again. Your features remain active until {date}."
@@ -2554,6 +2555,23 @@
     "creditsRemainingThisMonth": "Included (Refills {date})",
     "creditsRemainingThisYear": "Included (Refills {date})",
     "creditsYouveAdded": "Additional",
+    "remaining": "remaining",
+    "refillsDate": "Refills {date}",
+    "refillsNextCycle": "Refills next cycle",
+    "creditsUsed": "{used} used",
+    "creditsLeftOfTotal": "{remaining} left of {total}",
+    "monthlyUsageProgress": "{used} of {total} monthly credits used",
+    "additionalCreditsInfo": "About additional credits",
+    "additionalCredits": "Additional credits",
+    "additionalCreditsInUse": "In use",
+    "usedAfterMonthly": "Used after monthly runs out",
+    "monthlyCreditsUsedUpTitle": "Monthly credits are used up. Refills {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "Monthly credits are used up",
+    "monthlyCreditsUsedUpDescription": "You're now spending additional credits.",
+    "outOfCreditsTitle": "You're out of credits. Credits refill {date}",
+    "outOfCreditsTitleNoDate": "You're out of credits",
+    "outOfCreditsDescription": "Add more credits to continue generating.",
+    "additionalCreditsTooltip": "Credits you add on top of your plan. Used after monthly credits run out. Each expires one year after purchase.",
     "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
     "viewMoreDetailsPlans": "View more details about plans & pricing",
     "nextBillingCycle": "next billing cycle",
@@ -2651,9 +2669,9 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
+      "unavailable": "This team plan is not available right now.",
       "changePlan": "Change plan",
-      "currentPlan": "Current plan",
-      "checkoutComingSoon": "Team plan checkout is coming soon."
+      "currentPlan": "Current plan"
     },
     "enterprise": {
       "name": "Enterprise",
@@ -2722,10 +2740,11 @@
     "preview": {
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
-      "startingToday": "Starting today",
+      "startingToday": "Starts today",
       "starting": "Starting {date}",
       "ends": "Ends {date}",
       "eachMonthCreditsRefill": "Each month credits refill to",
+      "eachYearCreditsRefill": "Each year credits refill to",
       "everyMonthStarting": "Every month starting {date}",
       "creditsRefillTo": "Credits refill to",
       "youllBeCharged": "You'll be charged",
@@ -2736,6 +2755,24 @@
       "proratedCharge": "Prorated charge for {plan}",
       "totalDueToday": "Total due today",
       "nextPaymentDue": "Next payment due {date}. Cancel anytime.",
+      "confirmUpgradeTitle": "Confirm your upgrade",
+      "confirmUpgradeCta": "Confirm upgrade",
+      "confirmChange": "Confirm change",
+      "confirmChangeTitle": "Review your scheduled change",
+      "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
+      "switchesToday": "Switches today",
+      "startsOn": "Starts {date}",
+      "yearlySubscription": "Yearly subscription",
+      "newMonthlySubscription": "New monthly subscription",
+      "creditFromCurrent": "Credit from current {plan}",
+      "currentMonthly": "monthly plan",
+      "commitment": "commitment",
+      "creditsYoullGetToday": "Credits you'll get today",
+      "refillReplacesNote": "Replaces your monthly refill. Existing balance is kept.",
+      "afterThat": "After that",
+      "creditsRefillMonthlyTo": "Credits refill monthly to",
+      "billedEachMonth": "{amount} billed each month. Cancel anytime.",
+      "stayOnUntil": "You'll stay on {plan} until {date}.",
       "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}.",
       "terms": "Terms",
       "privacyPolicy": "Privacy Policy",
@@ -2747,8 +2784,12 @@
     },
     "success": {
       "allSet": "You're all set",
+      "inviteEmailsPlaceholder": "Enter emails separated by commas",
+      "inviteSubtext": "You can also invite people later from Settings",
+      "inviteTitle": "Invite your team",
       "planUpdated": "Your plan has been successfully updated.",
-      "receiptEmailed": "A receipt has been emailed to you."
+      "receiptEmailed": "A receipt has been emailed to you.",
+      "sendInvites": "Send invites"
     }
   },
   "userSettings": {
@@ -2789,6 +2830,7 @@
       "actions": {
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
+        "changeRole": "Change role",
         "removeMember": "Remove member"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
@@ -2830,6 +2872,19 @@
       "success": "Member removed",
       "error": "Failed to remove member"
     },
+    "changeRoleDialog": {
+      "promoteTitle": "Make {name} an owner?",
+      "promoteIntro": "They'll be able to:",
+      "promotePermissionCredits": "Add additional credits",
+      "promotePermissionManage": "Manage members, payment methods, and workspace settings",
+      "promotePermissionRoles": "Promote and demote other owners (except the workspace creator).",
+      "promoteConfirm": "Make owner",
+      "demoteTitle": "Demote {name} to member?",
+      "demoteMessage": "They'll lose admin access.",
+      "demoteConfirm": "Demote to member",
+      "success": "Role updated",
+      "error": "Failed to update role"
+    },
     "revokeInviteDialog": {
       "title": "Uninvite this person?",
       "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
@@ -2847,7 +2902,8 @@
       "placeholder": "Enter emails separated by commas",
       "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
       "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
-      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}"
+      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
+      "seatLimitReached": "You can invite up to {count} teammate. | You can invite up to {count} teammates."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
@@ -14,14 +14,15 @@ import type {
 
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
+const mockMemberMenuItems = vi.fn(() => [])
 const mockShowTeamPlans = vi.fn()
-const mockSelectMember = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
 
 const {
   mockMembers,
   mockPendingInvites,
+  mockOriginalOwnerId,
   mockFilteredMembers,
   mockFilteredPendingInvites,
   mockIsPersonalWorkspace,
@@ -42,6 +43,7 @@ const {
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
+    mockOriginalOwnerId: ref<string | null>(null),
     mockHasMultipleMembers: ref(true),
     mockShowSearch: ref(true),
     mockShowViewTabs: ref(true),
@@ -58,7 +60,7 @@ const {
       canViewPendingInvites: true,
       canInviteMembers: true,
       canManageInvites: true,
-      canRemoveMembers: true,
+      canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
@@ -102,7 +104,13 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     })),
     filteredMembers: mockFilteredMembers,
     filteredPendingInvites: mockFilteredPendingInvites,
-    memberMenuItems: computed(() => []),
+    memberMenuItems: mockMemberMenuItems,
+    memberMenus: computed(
+      () =>
+        new Map(
+          mockFilteredMembers.value.map((m) => [m.id, mockMemberMenuItems()])
+        )
+    ),
     isPersonalWorkspace: mockIsPersonalWorkspace,
     members: mockMembers,
     pendingInvites: mockPendingInvites,
@@ -111,12 +119,13 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     userPhotoUrl: ref(null),
     isCurrentUser: (m: WorkspaceMember) =>
       m.email.toLowerCase() === 'owner@example.com',
-    selectMember: mockSelectMember,
+    isOriginalOwner: (m: WorkspaceMember) => m.id === mockOriginalOwnerId.value,
     toggleSort: mockToggleSort,
     showTeamPlans: mockShowTeamPlans,
     handleResendInvite: mockHandleResendInvite,
     handleRevokeInvite: mockHandleRevokeInvite,
-    handleRemoveMember: vi.fn()
+    handleRemoveMember: vi.fn(),
+    handleChangeRole: vi.fn()
   })
 }))
 
@@ -156,8 +165,7 @@ function renderComponent() {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
         UserAvatar: true,
-        WorkspaceMenuButton: true,
-        Menu: { template: '<div />', props: ['model', 'popup'] }
+        WorkspaceMenuButton: true
       },
       directives: { tooltip: () => {} }
     }
@@ -191,8 +199,10 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
 describe('MembersPanelContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockPendingInvites.value = []
+    mockOriginalOwnerId.value = null
     mockFilteredMembers.value = []
     mockFilteredPendingInvites.value = []
     mockIsPersonalWorkspace.value = false
@@ -209,7 +219,7 @@ describe('MembersPanelContent', () => {
       canViewPendingInvites: true,
       canInviteMembers: true,
       canManageInvites: true,
-      canRemoveMembers: true,
+      canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
@@ -312,6 +322,29 @@ describe('MembersPanelContent', () => {
         screen.queryAllByRole('button', { name: 'g.moreOptions' })
       ).toHaveLength(0)
     })
+
+    it('does not show more options on the original owner row', () => {
+      mockOriginalOwnerId.value = 'creator-1'
+      mockFilteredMembers.value = [
+        createMember({
+          id: 'creator-1',
+          name: 'Creator',
+          email: 'creator@test.com',
+          role: 'owner'
+        }),
+        createMember({ id: '2', name: 'Other', email: 'other@test.com' })
+      ]
+      renderComponent()
+
+      const creatorRow = screen.getByTestId('member-row-creator-1')
+      const otherRow = screen.getByTestId('member-row-2')
+      expect(
+        within(creatorRow).queryByRole('button', { name: 'g.moreOptions' })
+      ).toBeNull()
+      expect(
+        within(otherRow).getByRole('button', { name: 'g.moreOptions' })
+      ).toBeInTheDocument()
+    })
   })
 
   describe('pending invites tab', () => {
@@ -359,7 +392,7 @@ describe('MembersPanelContent', () => {
         canViewPendingInvites: false,
         canInviteMembers: false,
         canManageInvites: false,
-        canRemoveMembers: false,
+        canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,
@@ -481,7 +514,7 @@ describe('MembersPanelContent', () => {
     it('invokes the invite flow from the header invite button', async () => {
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', { name: 'workspacePanel.invite' })
+        screen.getByRole('button', { name: 'workspacePanel.inviteMember' })
       )
       expect(mockHandleInviteMember).toHaveBeenCalled()
     })
@@ -490,7 +523,7 @@ describe('MembersPanelContent', () => {
       mockShowInviteButton.value = false
       renderComponent()
       expect(
-        screen.queryByRole('button', { name: 'workspacePanel.invite' })
+        screen.queryByRole('button', { name: 'workspacePanel.inviteMember' })
       ).toBeNull()
     })
 
@@ -498,7 +531,7 @@ describe('MembersPanelContent', () => {
       mockIsInviteDisabled.value = true
       renderComponent()
       const button = screen.getByRole('button', {
-        name: 'workspacePanel.invite'
+        name: 'workspacePanel.inviteMember'
       })
       expect((button as HTMLButtonElement).disabled).toBe(true)
     })

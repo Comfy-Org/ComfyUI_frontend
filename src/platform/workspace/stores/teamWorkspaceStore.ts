@@ -147,16 +147,28 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.members ?? []
   )
 
-  // True when the current user is the active workspace's original owner,
-  // resolved from the self-row of the loaded members list. Matches by email
-  // (the stable current-user join key; member.id is a cloud user id, not the
-  // Firebase uid). Fails closed when members are not loaded or no self-row
-  // matches, so lifecycle gating stays hidden until the real signal arrives.
+  // The active workspace's original owner (creator). Prefers the
+  // `is_original_owner` flag; without it, falls back to the earliest-joined
+  // owner — never a plain member, who must stay role-changeable.
+  const originalOwnerId = computed<string | null>(() => {
+    const flagged = members.value.find((m) => m.isOriginalOwner)
+    if (flagged) return flagged.id
+    const owners = members.value.filter((m) => m.role === 'owner')
+    if (owners.length === 0) return null
+    return owners.reduce((earliest, m) =>
+      m.joinDate < earliest.joinDate ? m : earliest
+    ).id
+  })
+
+  // True when the current user is that original owner. Single-sourced from
+  // `originalOwnerId` so the two creator signals can never disagree. Matches the
+  // self-row by email (the stable current-user join key; member.id is a cloud
+  // user id, not the Firebase uid) and fails closed until members load.
   const isCurrentUserOriginalOwner = computed(() => {
     const email = useCurrentUser().userEmail.value?.toLowerCase()
     if (!email) return false
     const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
-    return selfRow?.isOriginalOwner ?? false
+    return !!selfRow && selfRow.id === originalOwnerId.value
   })
 
   const pendingInvites = computed<PendingInvite[]>(
@@ -564,6 +576,30 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Change a member's role in the current workspace.
+   */
+  async function changeMemberRole(
+    userId: string,
+    role: WorkspaceMember['role']
+  ): Promise<void> {
+    if (userId === originalOwnerId.value) {
+      throw new Error("Cannot change the workspace creator's role")
+    }
+    // Only the role changes; merge it onto the existing row rather than trusting
+    // the PATCH response to echo a full Member (a 204/partial body would
+    // otherwise drop joined_at / is_original_owner).
+    await workspaceApi.updateMemberRole(userId, role)
+    const current = activeWorkspace.value
+    if (current) {
+      updateActiveWorkspace({
+        members: current.members.map((m) =>
+          m.id === userId ? { ...m, role } : m
+        )
+      })
+    }
+  }
+
+  /**
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
@@ -693,6 +729,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     members,
     isCurrentUserOriginalOwner,
     pendingInvites,
+    originalOwnerId,
     totalMemberSlots,
     isInviteLimitReached,
     workspaceId,
@@ -717,6 +754,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     fetchMembers,
     ensureMembersLoaded,
     removeMember,
+    changeMemberRole,
 
     // Invite Actions
     fetchPendingInvites,

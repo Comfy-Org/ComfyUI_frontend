@@ -45,12 +45,11 @@ describe('performTeamSubscriptionCheckout', () => {
 
     await performTeamSubscriptionCheckout('team_700', 'yearly')
 
-    expect(mockSubscribe).toHaveBeenCalledWith(
-      'team_per_credit_annual',
-      'https://app.test/payment/success',
-      'https://app.test/payment/failed',
-      'team_700'
-    )
+    expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_annual', {
+      returnUrl: 'https://app.test/payment/success',
+      cancelUrl: 'https://app.test/payment/failed',
+      teamCreditStopId: 'team_700'
+    })
     expect(assignedHref).toBe('https://stripe.test/pay')
   })
 
@@ -62,12 +61,11 @@ describe('performTeamSubscriptionCheckout', () => {
 
     await performTeamSubscriptionCheckout('team_1400', 'monthly')
 
-    expect(mockSubscribe).toHaveBeenCalledWith(
-      'team_per_credit_monthly',
-      expect.any(String),
-      expect.any(String),
-      'team_1400'
-    )
+    expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
+      returnUrl: expect.any(String),
+      cancelUrl: expect.any(String),
+      teamCreditStopId: 'team_1400'
+    })
     expect(assignedHref).toBe('/')
   })
 
