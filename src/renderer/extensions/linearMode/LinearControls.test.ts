@@ -9,9 +9,13 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
+const billingMock = vi.hoisted(() => ({
+  isActiveSubscription: true
+}))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: true
+    isActiveSubscription: billingMock.isActiveSubscription
   })
 }))
 
@@ -66,11 +70,15 @@ const nodeErrors: Record<string, NodeError> = {
 
 function renderControls({
   hasError = false,
+  isActiveSubscription = true,
   mobile = false
 }: {
   hasError?: boolean
+  isActiveSubscription?: boolean
   mobile?: boolean
 } = {}) {
+  billingMock.isActiveSubscription = isActiveSubscription
+
   const pinia = createTestingPinia({
     createSpy: vi.fn,
     stubActions: false
@@ -105,6 +113,7 @@ function renderControls({
 describe('LinearControls', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    billingMock.isActiveSubscription = true
   })
 
   it.for([
@@ -145,6 +154,22 @@ describe('LinearControls', () => {
       expect(screen.getByRole('button', { name: 'Run' })).not.toHaveAttribute(
         'aria-describedby'
       )
+    }
+  )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'does not show the workflow error warning in $label controls without an active subscription',
+    ({ mobile }) => {
+      renderControls({
+        hasError: true,
+        isActiveSubscription: false,
+        mobile
+      })
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
     }
   )
 })

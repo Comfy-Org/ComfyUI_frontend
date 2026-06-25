@@ -142,7 +142,7 @@ function handleDragDrop() {
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
-        <LinearRunErrorWarning v-if="hasAnyError" />
+        <LinearRunErrorWarning v-if="hasAnyError && isActiveSubscription" />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
           class="mt-4 w-full"
@@ -185,7 +185,7 @@ function handleDragDrop() {
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
-        <LinearRunErrorWarning v-if="hasAnyError" />
+        <LinearRunErrorWarning v-if="hasAnyError && isActiveSubscription" />
         <div
           class="m-1 mb-2 text-node-component-slot-text"
           v-text="t('linearMode.runCount')"
