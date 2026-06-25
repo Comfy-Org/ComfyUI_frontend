@@ -12,7 +12,7 @@ import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
@@ -113,12 +113,12 @@ const test = baseTest.extend<TestContext>({
           const link = graph.floatingLinks.get(linkId)
           expect(link).toBeDefined()
 
-          if (link!.target_id === -1) {
-            expect(link!.origin_id).not.toBe(-1)
+          if (link!.target_id === UNASSIGNED_NODE_ID) {
+            expect(link!.origin_id).not.toBe(UNASSIGNED_NODE_ID)
             expect(link!.origin_slot).not.toBe(-1)
             expect(link!.target_slot).toBe(-1)
           } else {
-            expect(link!.origin_id).toBe(-1)
+            expect(link!.origin_id).toBe(UNASSIGNED_NODE_ID)
             expect(link!.origin_slot).toBe(-1)
             expect(link!.target_slot).not.toBe(-1)
           }
@@ -151,8 +151,8 @@ const test = baseTest.extend<TestContext>({
       }
 
       for (const link of graph.floatingLinks.values()) {
-        if (link.target_id === -1) {
-          expect(link.origin_id).not.toBe(-1)
+        if (link.target_id === UNASSIGNED_NODE_ID) {
+          expect(link.origin_id).not.toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).not.toBe(-1)
           expect(link.target_slot).toBe(-1)
           const outputFloatingLinks = graph.getNodeById(
@@ -161,7 +161,7 @@ const test = baseTest.extend<TestContext>({
           expect(outputFloatingLinks).toBeDefined()
           expect(outputFloatingLinks).toContain(link)
         } else {
-          expect(link.origin_id).toBe(-1)
+          expect(link.origin_id).toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).toBe(-1)
           expect(link.target_slot).not.toBe(-1)
           const inputFloatingLinks = graph.getNodeById(toNodeId(link.target_id))

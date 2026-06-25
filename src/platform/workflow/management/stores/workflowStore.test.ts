@@ -18,6 +18,7 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
@@ -833,8 +834,8 @@ describe('useWorkflowStore', () => {
         _nodes: [] as unknown[],
         nodes: [] as unknown[],
         subgraphs: new Map(),
-        getNodeById: (id: string | number) => {
-          if (String(id) === '123') return mockNode
+        getNodeById: (id: NodeId) => {
+          if (id === toNodeId(123)) return mockNode
           return null
         }
       }
@@ -850,7 +851,7 @@ describe('useWorkflowStore', () => {
       } as Partial<Subgraph> as Subgraph
 
       const mockNode = {
-        id: 123,
+        id: toNodeId(123),
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
       }

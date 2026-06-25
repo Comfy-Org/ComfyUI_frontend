@@ -28,7 +28,7 @@ import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkEndpointNodeId, LinkId } from './LLink'
+import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -971,7 +971,8 @@ export class LGraph
       return
     }
 
-    // nodes
+    if (node.id != null) node.id = toNodeId(node.id)
+
     if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
@@ -1150,8 +1151,10 @@ export class LGraph
   /**
    * Returns a node by its id.
    */
-  getNodeById(id: LinkEndpointNodeId | null | undefined): LGraphNode | null {
-    return id != null && id !== -1 ? this._nodes_by_id[id] : null
+  getNodeById(id: NodeId | null | undefined): LGraphNode | null {
+    return id != null && id !== UNASSIGNED_NODE_ID
+      ? this._nodes_by_id[id]
+      : null
   }
 
   /**
@@ -1412,7 +1415,7 @@ export class LGraph
     this.floatingLinksInternal.set(link.id, link)
 
     const slot =
-      link.target_id !== -1
+      link.target_id !== UNASSIGNED_NODE_ID
         ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
         : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
@@ -1435,7 +1438,7 @@ export class LGraph
     this.floatingLinksInternal.delete(link.id)
 
     const slot =
-      link.target_id !== -1
+      link.target_id !== UNASSIGNED_NODE_ID
         ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
         : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
@@ -2043,9 +2046,9 @@ export class LGraph
       }
     }
     const newLinks: {
-      oid: LinkEndpointNodeId
+      oid: NodeId
       oslot: number
-      tid: LinkEndpointNodeId
+      tid: NodeId
       tslot: number
       id: LinkId
       iparent?: RerouteId
@@ -2066,7 +2069,9 @@ export class LGraph
         externalParentId = outerLink.parentId
       } else {
         const origin_id =
-          link.origin_id === -1 ? undefined : nodeIdMap.get(link.origin_id)
+          link.origin_id === UNASSIGNED_NODE_ID
+            ? undefined
+            : nodeIdMap.get(link.origin_id)
         if (!origin_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2092,7 +2097,9 @@ export class LGraph
         continue
       } else {
         const target_id =
-          link.target_id === -1 ? undefined : nodeIdMap.get(link.target_id)
+          link.target_id === UNASSIGNED_NODE_ID
+            ? undefined
+            : nodeIdMap.get(link.target_id)
         if (!target_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2130,7 +2137,7 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        if (newLink.tid === -1) continue
+        if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
         created = this.inputNode.slots[newLink.oslot].connect(
@@ -2142,7 +2149,7 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        if (newLink.oid === -1) continue
+        if (newLink.oid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.oid)
         if (!tnode) continue
         created = this.outputNode.slots[newLink.tslot].connect(
@@ -2150,7 +2157,11 @@ export class LGraph
           tnode
         )
       } else {
-        if (newLink.oid === -1 || newLink.tid === -1) continue
+        if (
+          newLink.oid === UNASSIGNED_NODE_ID ||
+          newLink.tid === UNASSIGNED_NODE_ID
+        )
+          continue
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
@@ -3138,11 +3149,15 @@ function patchLinkNodeIds(
 ): void {
   for (const link of links.values()) {
     const newOrigin =
-      link.origin_id === -1 ? undefined : remappedIds.get(link.origin_id)
+      link.origin_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.origin_id)
     if (newOrigin !== undefined) link.origin_id = newOrigin
 
     const newTarget =
-      link.target_id === -1 ? undefined : remappedIds.get(link.target_id)
+      link.target_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.target_id)
     if (newTarget !== undefined) link.target_id = newTarget
   }
 }

@@ -1,10 +1,12 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkEndpointNodeId, LinkId } from './LLink'
+import type { LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -182,7 +184,7 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  get origin_id(): LinkEndpointNodeId | undefined {
+  get origin_id(): NodeId | undefined {
     return this.firstLink?.origin_id
   }
 
@@ -372,7 +374,7 @@ export class Reroute
 
     for (const linkId of this.floatingLinkIds) {
       const link = floatingLinks.get(linkId)
-      if (link?.[idProp] === -1) out.push(link)
+      if (link?.[idProp] === UNASSIGNED_NODE_ID) out.push(link)
     }
     return out
   }
@@ -807,7 +809,7 @@ function getNextPos(
   if (linkPos) return linkPos
 
   // Floating link with no input to find
-  if (link.target_id === -1 || link.target_slot === -1) return
+  if (link.target_id === UNASSIGNED_NODE_ID || link.target_slot === -1) return
 
   return network.getNodeById(link.target_id)?.getInputPos(link.target_slot)
 }

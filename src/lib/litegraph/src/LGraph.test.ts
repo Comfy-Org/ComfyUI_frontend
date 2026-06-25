@@ -17,7 +17,7 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
@@ -80,6 +80,25 @@ describe('LGraph', () => {
 
     expect(result).toBeUndefined()
     expect(graph.nodes.length).toBe(initialNodeCount)
+  })
+  it('normalizes legacy numeric node ids when adding nodes', () => {
+    const graph = new LGraph()
+    const unassignedNode = new LGraphNode('legacy-unassigned')
+    Reflect.set(unassignedNode, 'id', -1)
+
+    graph.add(unassignedNode)
+
+    expect(unassignedNode.id).toBe(toNodeId(1))
+    expect(graph.getNodeById(toNodeId(1))).toBe(unassignedNode)
+
+    const preassignedNode = new LGraphNode('legacy-preassigned')
+    Reflect.set(preassignedNode, 'id', 7)
+
+    graph.add(preassignedNode)
+
+    expect(preassignedNode.id).toBe(toNodeId(7))
+    expect(graph.getNodeById(toNodeId(7))).toBe(preassignedNode)
+    expect(graph.last_node_id).toBe(7)
   })
 
   test('can be instantiated', ({ expect }) => {
@@ -1066,8 +1085,10 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const link of graph.subgraphs.get(SUBGRAPH_B)!.links.values()) {
-      if (link.origin_id !== -1) expect(idsB.has(link.origin_id)).toBe(true)
-      if (link.target_id !== -1) expect(idsB.has(link.target_id)).toBe(true)
+      if (link.origin_id !== UNASSIGNED_NODE_ID)
+        expect(idsB.has(link.origin_id)).toBe(true)
+      if (link.target_id !== UNASSIGNED_NODE_ID)
+        expect(idsB.has(link.target_id)).toBe(true)
     }
   })
 

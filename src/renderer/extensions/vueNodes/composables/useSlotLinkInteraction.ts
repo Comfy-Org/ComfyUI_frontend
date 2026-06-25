@@ -32,7 +32,7 @@ import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
 
@@ -219,7 +219,7 @@ export function useSlotLinkInteraction({
     link: LLink | undefined
   ): { position: Point; direction: LinkDirection } | null => {
     if (!link) return null
-    if (link.origin_id === -1) return null
+    if (link.origin_id === UNASSIGNED_NODE_ID) return null
 
     const slotKey = getSlotKey(link.origin_id, link.origin_slot, false)
     const layout = layoutStore.getSlotLayout(slotKey)

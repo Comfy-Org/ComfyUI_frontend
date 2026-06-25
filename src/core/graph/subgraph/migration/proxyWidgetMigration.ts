@@ -29,7 +29,7 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
@@ -276,7 +276,7 @@ function collectTargetsStrict(
   for (const linkId of linkIds) {
     const link = subgraph.links.get(linkId)
     if (!link) return undefined
-    if (link.target_id === -1) return undefined
+    if (link.target_id === UNASSIGNED_NODE_ID) return undefined
     targets.push({
       targetNodeId: link.target_id,
       targetSlot: link.target_slot
@@ -293,7 +293,7 @@ function collectTargetsSkippingDangling(
   const linkIds = primitiveNode.outputs?.[0]?.links ?? []
   return linkIds.flatMap((linkId) => {
     const link = subgraph.links.get(linkId)
-    return link && link.target_id !== -1
+    return link && link.target_id !== UNASSIGNED_NODE_ID
       ? [
           {
             targetNodeId: link.target_id,
@@ -626,7 +626,7 @@ function repairPrimitive(
         l
       ): l is NonNullable<typeof l> & {
         target_id: NodeId
-      } => l !== undefined && l.target_id !== -1
+      } => l !== undefined && l.target_id !== UNASSIGNED_NODE_ID
     )
     .map((l) => ({
       primitiveSlot: l.origin_slot,

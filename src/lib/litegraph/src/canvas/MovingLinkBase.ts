@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -37,13 +37,13 @@ export abstract class MovingLinkBase implements RenderLink {
   abstract readonly fromDirection: LinkDirection
   abstract readonly fromSlotIndex: SlotIndex
 
-  readonly outputNodeId: SerializedNodeId
+  readonly outputNodeId: NodeId
   readonly outputNode: LGraphNode
   readonly outputSlot: INodeOutputSlot
   readonly outputIndex: number
   readonly outputPos: Point
 
-  readonly inputNodeId: SerializedNodeId
+  readonly inputNodeId: NodeId
   readonly inputNode: LGraphNode
   readonly inputSlot: INodeInputSlot
   readonly inputIndex: number
