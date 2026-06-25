@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCoachmarkController } from '@/platform/onboarding/coachmarkController'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
@@ -11,7 +10,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
-const { requestTour } = useCoachmarkController()
 const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
@@ -29,18 +27,8 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
     class="mx-auto flex h-full max-w-lg flex-col items-center justify-center gap-6 p-8 text-center"
   >
     <div class="flex flex-col gap-2">
-      <h2
-        class="inline-flex items-center justify-center gap-1.5 text-3xl font-semibold text-muted-foreground"
-      >
+      <h2 class="text-3xl font-semibold text-muted-foreground">
         {{ t('linearMode.welcome.title') }}
-        <Button
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="t('linearMode.welcome.startTour')"
-          @click="requestTour('appMode')"
-        >
-          <i class="icon-[lucide--info] size-5" />
-        </Button>
       </h2>
     </div>
 

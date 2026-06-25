@@ -90,10 +90,12 @@ export function useCoachmarkTour(refs: {
     waitForTarget
   } = useCoachmarkTarget(step)
 
+  // The landing renders as a real Dialog that owns its own focus trap and escape
+  // handling, so the cross-subtree trap only runs for spotlight steps.
   const focusTrap = useFocusTrap({
     cardRef,
     getTarget: () => targetEl.value,
-    isActive: () => !!step.value,
+    isActive: () => !!step.value && !step.value.landing,
     isSuspended: () => awaitingDeferredTarget,
     onEscape: () => end('skipped')
   })

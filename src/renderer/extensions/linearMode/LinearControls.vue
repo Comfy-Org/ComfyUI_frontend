@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import { useCoachmarkController } from '@/platform/onboarding/coachmarkController'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -21,6 +22,7 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
+const { requestTour } = useCoachmarkController()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
@@ -89,11 +91,18 @@ function handleDragDrop() {
       class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
     >
       <span
-        class="truncate font-bold"
+        class="min-w-0 flex-1 truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
-      <div class="flex-1" />
-      <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
+      <Button
+        variant="textonly"
+        size="icon"
+        :aria-label="t('linearMode.welcome.startTour')"
+        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        @click="requestTour('appMode')"
+      >
+        <i class="icon-[lucide--circle-question-mark] size-4" />
+      </Button>
     </section>
     <div
       class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"

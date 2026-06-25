@@ -1,100 +1,90 @@
 <template>
-  <div v-if="step" ref="overlayRef" class="pointer-events-none fixed inset-0">
-    <template v-if="step.landing">
-      <div
-        class="pointer-events-auto absolute inset-0 bg-black/60"
-        @click.self.stop
+  <CoachmarkLanding
+    v-if="step?.landing"
+    v-model:open="landingOpen"
+    :title="t(step.titleKey)"
+    :message="t(step.bodyKey)"
+    :image="step.image"
+    :primary-label="primaryLabel"
+    :skip-label="skipLabel"
+    @start="onPrimary"
+  />
+  <div
+    v-else-if="step"
+    ref="overlayRef"
+    class="pointer-events-none fixed inset-0"
+  >
+    <div class="pointer-events-auto absolute inset-0" :style="blockerStyle" />
+    <div
+      aria-hidden="true"
+      data-testid="coach-spotlight"
+      class="pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_rgba(0,0,0,0.62)] transition-all duration-300"
+      :style="spotlightStyle"
+    />
+    <svg
+      v-if="targetRect"
+      aria-hidden="true"
+      class="pointer-events-none absolute overflow-visible transition-all duration-300"
+      :style="spotlightStyle"
+    >
+      <rect
+        data-testid="coach-spotlight-ring"
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        rx="10"
+        fill="none"
+        stroke="white"
+        stroke-width="2"
+        stroke-dasharray="8 8"
+        :class="
+          marching && 'motion-safe:animate-[coach-march_0.7s_linear_infinite]'
+        "
       />
-      <div
-        class="pointer-events-none absolute inset-0 flex items-center justify-center"
+    </svg>
+    <div
+      ref="cardRef"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t(step.titleKey)"
+      :aria-describedby="bodyId"
+      class="pointer-events-auto absolute transition-[left,top] duration-300"
+      :style="cardStyle"
+    >
+      <CoachmarkCard
+        :subtitle="
+          t('onboardingCoachmarks.stepLabel', {
+            current: countedStepIdx + 1,
+            total: countedSteps.length
+          })
+        "
+        :title="t(step.titleKey)"
+        :message="t(step.bodyKey)"
+        :message-id="bodyId"
+        :image="step.image"
+        :elevated="step.elevated"
       >
-        <div ref="cardRef" class="pointer-events-auto">
-          <CoachmarkLanding
-            :title="t(step.titleKey)"
-            :message="t(step.bodyKey)"
-            :image="step.image"
-            :primary-label="primaryLabel"
-            :skip-label="skipLabel"
-            @skip="end('skipped')"
-            @start="onPrimary"
-            @close="end('skipped')"
-          />
-        </div>
-      </div>
-    </template>
-    <template v-else>
-      <div class="pointer-events-auto absolute inset-0" :style="blockerStyle" />
-      <div
-        aria-hidden="true"
-        data-testid="coach-spotlight"
-        class="pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_rgba(0,0,0,0.62)] transition-all duration-300"
-        :style="spotlightStyle"
-      />
-      <svg
-        v-if="targetRect"
-        aria-hidden="true"
-        class="pointer-events-none absolute overflow-visible transition-all duration-300"
-        :style="spotlightStyle"
-      >
-        <rect
-          data-testid="coach-spotlight-ring"
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          rx="10"
-          fill="none"
-          stroke="white"
-          stroke-width="2"
-          stroke-dasharray="8 8"
-          :class="
-            marching && 'motion-safe:animate-[coach-march_0.7s_linear_infinite]'
-          "
-        />
-      </svg>
-      <div
-        ref="cardRef"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="t(step.titleKey)"
-        :aria-describedby="bodyId"
-        class="pointer-events-auto absolute transition-[left,top] duration-300"
-        :style="cardStyle"
-      >
-        <CoachmarkCard
-          :subtitle="
-            t('onboardingCoachmarks.stepLabel', {
-              current: countedStepIdx + 1,
-              total: countedSteps.length
-            })
-          "
-          :title="t(step.titleKey)"
-          :message="t(step.bodyKey)"
-          :message-id="bodyId"
-          :image="step.image"
-          :elevated="step.elevated"
-        >
-          <template #actions>
-            <Button
-              v-if="showSkip"
-              variant="secondary"
-              size="md"
-              @click="end('skipped')"
-            >
-              {{ skipLabel }}
-            </Button>
-            <Button
-              v-if="!expectsTargetInteraction"
-              variant="inverted"
-              size="md"
-              @click="onPrimary"
-            >
-              {{ primaryLabel }}
-            </Button>
-          </template>
-        </CoachmarkCard>
-      </div>
-    </template>
+        <template #actions>
+          <Button
+            v-if="showSkip"
+            variant="secondary"
+            size="md"
+            @click="end('skipped')"
+          >
+            {{ skipLabel }}
+          </Button>
+          <Button
+            v-if="!expectsTargetInteraction"
+            variant="inverted"
+            size="md"
+            @click="onPrimary"
+          >
+            {{ primaryLabel }}
+          </Button>
+        </template>
+      </CoachmarkCard>
+    </div>
   </div>
 </template>
 
@@ -142,6 +132,16 @@ const {
   onPrimary,
   end
 } = useCoachmarkTour({ cardRef, overlayRef })
+
+// The landing renders as a real modal Dialog; dismissing it (escape, close
+// button, Skip) ends the tour. Advancing to a spotlight step flips `step.landing`
+// to false, closing the Dialog without re-triggering this skip.
+const landingOpen = computed({
+  get: () => !!step.value?.landing,
+  set: (value) => {
+    if (!value) end('skipped')
+  }
+})
 
 // Keep the padded spotlight box — and its dashed outline — inside the viewport
 // when the target hugs an edge.
