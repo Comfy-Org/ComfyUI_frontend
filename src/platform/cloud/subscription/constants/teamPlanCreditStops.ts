@@ -50,6 +50,17 @@ export const TEAM_PLAN_CREDIT_STOPS: readonly CreditStop[] = [
 export const DEFAULT_TEAM_PLAN_STOP_INDEX = 2
 
 /**
+ * Per-credit Team plan slug for a billing cadence (cloud catalog). The slug
+ * encodes the cadence; `POST /api/billing/subscribe` reads `plan_slug` +
+ * `team_credit_stop_id` and resolves all amounts server-side from the stop.
+ */
+export function getTeamPlanSlug(billingCycle: 'monthly' | 'yearly'): string {
+  return billingCycle === 'yearly'
+    ? 'team_per_credit_annual'
+    : 'team_per_credit_monthly'
+}
+
+/**
  * Discounted monthly price for a stop's list `usd`, applying the billing-cycle
  * discount (yearly = full `discountPercentYearly`; monthly halves it). Shared by
  * the slider display and the checkout confirm step so the two never drift.
