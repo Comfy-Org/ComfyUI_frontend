@@ -43,12 +43,6 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isFreeTier: mockIsFreeTier
-  })
-}))
-
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -65,6 +59,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    isFreeTier: mockIsFreeTier,
     isLegacyTeamPlan: mockIsLegacyTeamPlan
   })
 }))
@@ -204,6 +199,43 @@ describe('useSubscriptionDialog', () => {
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props.initialPlanMode).toBe('team')
+    })
+  })
+
+  describe('show', () => {
+    it('opens the free-tier dialog for a free-tier personal user', () => {
+      mockIsFreeTier.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'free-tier-info' })
+      )
+    })
+
+    it('falls back to the pricing table for a non-free-tier user', () => {
+      mockIsFreeTier.value = false
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'subscription-required' })
+      )
+    })
+
+    it('falls back to the pricing table for a free-tier team workspace', () => {
+      mockIsFreeTier.value = true
+      mockIsInPersonalWorkspace.value = false
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'subscription-required' })
+      )
     })
   })
 
