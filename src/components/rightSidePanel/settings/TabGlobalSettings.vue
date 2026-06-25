@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import { computed, ref, watch, onScopeDispose } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -28,38 +28,11 @@ const rightSidePanelStore = useRightSidePanelStore()
 const colorPaletteStore = useColorPaletteStore()
 
 const isHighlightingAdvanced = ref(false)
-let highlightTimeout: ReturnType<typeof setTimeout> | null = null
-let resetTimeout: ReturnType<typeof setTimeout> | null = null
 
 function triggerHighlightAnimation() {
-  if (highlightTimeout) {
-    clearTimeout(highlightTimeout)
-    highlightTimeout = null
-  }
-  if (resetTimeout) {
-    clearTimeout(resetTimeout)
-    resetTimeout = null
-  }
-
-  isHighlightingAdvanced.value = false
-
-  resetTimeout = setTimeout(() => {
-    isHighlightingAdvanced.value = true
-    resetTimeout = null
-
-    highlightTimeout = setTimeout(() => {
-      isHighlightingAdvanced.value = false
-      highlightTimeout = null
-    }, 900)
-  }, 30)
-
+  isHighlightingAdvanced.value = true
   rightSidePanelStore.clearHighlight()
 }
-
-onScopeDispose(() => {
-  if (highlightTimeout) clearTimeout(highlightTimeout)
-  if (resetTimeout) clearTimeout(resetTimeout)
-})
 
 watch(
   () => rightSidePanelStore.highlightGlobalSetting,
@@ -159,6 +132,7 @@ function openFullSettings() {
           :tooltip="t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')"
           :class="{ 'animate-highlight': isHighlightingAdvanced }"
           :data-theme="colorPaletteStore.activePaletteId"
+          @animationend="isHighlightingAdvanced = false"
         />
         <FieldSwitch
           v-model="showToolbox"
@@ -262,61 +236,3 @@ function openFullSettings() {
     </div>
   </div>
 </template>
-
-<style scoped>
-@keyframes highlight-animation {
-  0% {
-    background-color: transparent;
-    box-shadow: 0 0 0 6px transparent;
-    border-radius: 4px;
-  }
-  6%,
-  63% {
-    background-color: var(--highlight-color);
-    box-shadow: 0 0 0 6px var(--highlight-color);
-    border-radius: 4px;
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: 0 0 0 6px transparent;
-    border-radius: 4px;
-  }
-}
-
-.animate-highlight {
-  --highlight-color: color-mix(
-    in srgb,
-    var(--p-primary-color) 35%,
-    transparent
-  );
-  --highlight-text-color: #ffffff;
-  animation: highlight-animation 0.9s ease-out;
-}
-
-[data-theme='solarized'].animate-highlight {
-  --highlight-color: rgb(0 0 0 / 0.45);
-}
-
-[data-theme='arc'].animate-highlight {
-  --highlight-color: rgb(82 148 226 / 0.45);
-}
-
-[data-theme='github'].animate-highlight {
-  --highlight-color: rgb(9 105 218 / 0.45);
-}
-
-[data-theme='light'].animate-highlight {
-  --highlight-text-color: #111827;
-}
-
-@keyframes highlight-text-flash {
-  6%,
-  63% {
-    color: var(--highlight-text-color);
-  }
-}
-
-.animate-highlight :deep(span) {
-  animation: highlight-text-flash 0.9s ease-out;
-}
-</style>

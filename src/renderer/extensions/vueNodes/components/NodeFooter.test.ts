@@ -1,6 +1,14 @@
 import { cleanup, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  afterEach,
+  afterAll
+} from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import PrimeVue from 'primevue/config'
@@ -26,10 +34,7 @@ vi.hoisted(() => {
       }
     }
   })()
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: localStorageMock,
-    writable: true
-  })
+  vi.stubGlobal('localStorage', localStorageMock)
 })
 
 const mockSettingsDialogShow = vi.fn()
@@ -100,6 +105,10 @@ function allButtonClasses(container: Element): string {
 describe('NodeFooter', () => {
   afterEach(() => {
     cleanup()
+  })
+
+  afterAll(() => {
+    vi.unstubAllGlobals()
   })
 
   describe('rendering branches', () => {
