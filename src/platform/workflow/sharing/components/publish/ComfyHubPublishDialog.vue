@@ -60,6 +60,7 @@
         :is-first-step
         :is-last-step
         :is-publishing
+        :is-update="isAlreadyPublished"
         :on-update-form-data="updateFormData"
         :on-go-next="goNext"
         :on-go-back="goBack"
@@ -129,6 +130,7 @@ const {
   applyPrefill
 } = useComfyHubPublishWizard()
 const isPublishing = ref(false)
+const isAlreadyPublished = ref(false)
 const needsSave = ref(false)
 const workflowName = ref('')
 const nameInputRef = ref<InstanceType<typeof Input> | null>(null)
@@ -205,6 +207,27 @@ function handleRequireProfile() {
   openProfileCreationStep()
 }
 
+async function syncWorkflowName(): Promise<void> {
+  const workflow = workflowStore.activeWorkflow
+  if (!workflow || workflow.isTemporary) return
+
+  const desiredName = formData.value.name.trim().replace(/\.json$/i, '')
+  const currentName = workflow.filename.replace(/\.json$/i, '')
+  if (!desiredName || desiredName === currentName) return
+
+  const newPath = buildWorkflowPath(workflow.directory, desiredName)
+  try {
+    await workflowService.renameWorkflow(workflow, newPath)
+  } catch (error) {
+    console.error('Failed to rename workflow after publish:', error)
+    toast.add({
+      severity: 'warn',
+      summary: t('comfyHubPublish.renameFailedTitle'),
+      detail: t('comfyHubPublish.renameFailedDescription')
+    })
+  }
+}
+
 async function handlePublish(): Promise<void> {
   if (isPublishing.value) {
     return
@@ -213,6 +236,7 @@ async function handlePublish(): Promise<void> {
   isPublishing.value = true
   try {
     await submitToComfyHub(formData.value)
+    await syncWorkflowName()
     const path = workflowStore.activeWorkflow?.path
     if (path) {
       cachePublishPrefill(path, formData.value)
@@ -246,6 +270,7 @@ async function fetchPublishPrefill() {
 
   try {
     const status = await shareService.getPublishStatus(path)
+    isAlreadyPublished.value = status.isPublished
     const prefill = status.isPublished
       ? (status.prefill ?? getCachedPrefill(path))
       : getCachedPrefill(path)
@@ -266,6 +291,14 @@ onMounted(() => {
   void fetchProfile()
   void fetchPublishPrefill()
 })
+
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  (newPath, oldPath) => {
+    if (!newPath || newPath === oldPath) return
+    void fetchPublishPrefill()
+  }
+)
 
 onBeforeUnmount(() => {
   for (const image of formData.value.exampleImages) {

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
@@ -30,6 +30,10 @@ const mockCachePublishPrefill = vi.hoisted(() => vi.fn())
 const mockGetCachedPrefill = vi.hoisted(() => vi.fn())
 const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
+const mockRenameWorkflow = vi.hoisted(() => vi.fn())
+const mockFormDataHolder = vi.hoisted(
+  () => ({ value: null }) as { value: Record<string, unknown> | null }
+)
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
@@ -45,20 +49,25 @@ vi.mock(
   () => ({
     useComfyHubPublishWizard: () => ({
       currentStep: ref('finish'),
-      formData: ref({
-        name: '',
-        description: '',
-        tags: [],
-        models: [],
-        customNodes: [],
-        thumbnailType: 'image',
-        thumbnailFile: null,
-        comparisonBeforeFile: null,
-        comparisonAfterFile: null,
-        exampleImages: [],
-        tutorialUrl: '',
-        metadata: {}
-      }),
+      formData: ref(
+        (mockFormDataHolder.value = {
+          name: '',
+          description: '',
+          tags: [],
+          models: [],
+          customNodes: [],
+          thumbnailType: 'image',
+          thumbnailFile: null,
+          thumbnailUrl: null,
+          existingThumbnailType: null,
+          comparisonBeforeFile: null,
+          comparisonAfterFile: null,
+          comparisonAfterUrl: null,
+          exampleImages: [],
+          tutorialUrl: '',
+          metadata: {}
+        })
+      ),
       isFirstStep: ref(false),
       isLastStep: ref(true),
       goToStep: mockGoToStep,
@@ -90,23 +99,44 @@ vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
-    renameWorkflow: vi.fn(),
+    renameWorkflow: mockRenameWorkflow,
     saveWorkflow: vi.fn()
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
+const mockWorkflowStore = vi.hoisted(() => {
+  return {
+    instance: null as { activeWorkflow: Record<string, unknown> | null } | null
+  }
+})
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
+  const { reactive } = await import('vue')
+  mockWorkflowStore.instance = reactive({
     activeWorkflow: {
       path: 'workflows/test.json',
       filename: 'test.json',
       directory: 'workflows',
       isTemporary: false,
       isModified: false
-    },
-    saveWorkflow: vi.fn()
+    } as Record<string, unknown> | null
   })
-}))
+  return {
+    useWorkflowStore: () => ({
+      ...mockWorkflowStore.instance,
+      get activeWorkflow() {
+        return mockWorkflowStore.instance?.activeWorkflow ?? null
+      },
+      saveWorkflow: vi.fn()
+    })
+  }
+})
+
+function setActiveWorkflow(workflow: Record<string, unknown> | null) {
+  if (mockWorkflowStore.instance) {
+    mockWorkflowStore.instance.activeWorkflow = workflow
+  }
+}
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -117,8 +147,17 @@ describe('ComfyHubPublishDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActiveWorkflow({
+      path: 'workflows/test.json',
+      filename: 'test.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    })
     mockFetchProfile.mockResolvedValue(null)
     mockSubmitToComfyHub.mockResolvedValue(undefined)
+    mockRenameWorkflow.mockResolvedValue(undefined)
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = ''
     mockGetCachedPrefill.mockReturnValue(null)
     mockGetPublishStatus.mockResolvedValue({
       isPublished: false,
@@ -226,6 +265,31 @@ describe('ComfyHubPublishDialog', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('renames the local workflow when the published name differs', async () => {
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockRenameWorkflow).toHaveBeenCalledWith(
+      expect.anything(),
+      'workflows/renamed.json'
+    )
+  })
+
+  it('does not rename when the published name matches the file name', async () => {
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'test'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockRenameWorkflow).not.toHaveBeenCalled()
+  })
+
   it('applies prefill when workflow is already published with metadata', async () => {
     mockGetPublishStatus.mockResolvedValue({
       isPublished: true,
@@ -281,5 +345,42 @@ describe('ComfyHubPublishDialog', () => {
 
     expect(mockApplyPrefill).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('refetches prefill when the active workflow path changes (e.g. rename)', async () => {
+    renderComponent()
+    await flushPromises()
+    expect(mockGetPublishStatus).toHaveBeenLastCalledWith('workflows/test.json')
+
+    mockGetPublishStatus.mockClear()
+    setActiveWorkflow({
+      path: 'workflows/renamed.json',
+      filename: 'renamed.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    })
+    await nextTick()
+    await flushPromises()
+
+    expect(mockGetPublishStatus).toHaveBeenCalledWith('workflows/renamed.json')
+  })
+
+  it('does not refetch prefill when the active workflow path is unchanged', async () => {
+    renderComponent()
+    await flushPromises()
+
+    mockGetPublishStatus.mockClear()
+    setActiveWorkflow({
+      path: 'workflows/test.json',
+      filename: 'test.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: true
+    })
+    await nextTick()
+    await flushPromises()
+
+    expect(mockGetPublishStatus).not.toHaveBeenCalled()
   })
 })
