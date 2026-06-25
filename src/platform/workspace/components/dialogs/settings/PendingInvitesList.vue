@@ -34,31 +34,37 @@
       <span class="text-sm text-muted-foreground">
         {{ formatDate(invite.expiryDate) }}
       </span>
-      <div class="flex items-center justify-end gap-2">
-        <Button
-          v-tooltip="{
-            value: $t('workspacePanel.members.actions.copyLink'),
-            showDelay: 300
-          }"
-          variant="secondary"
-          size="md"
-          :aria-label="$t('workspacePanel.members.actions.copyLink')"
-          @click="$emit('copyLink', invite)"
-        >
-          <i class="icon-[lucide--link] size-4" />
-        </Button>
-        <Button
-          v-tooltip="{
-            value: $t('workspacePanel.members.actions.revokeInvite'),
-            showDelay: 300
-          }"
-          variant="secondary"
-          size="md"
-          :aria-label="$t('workspacePanel.members.actions.revokeInvite')"
-          @click="$emit('revoke', invite)"
-        >
-          <i class="icon-[lucide--mail-x] size-4" />
-        </Button>
+      <div class="flex items-center justify-end">
+        <MoreButton v-slot="{ close }" :aria-label="$t('g.moreOptions')">
+          <Button
+            variant="textonly"
+            size="unset"
+            :class="menuItemClass"
+            @click="
+              () => {
+                close()
+                $emit('resend', invite)
+              }
+            "
+          >
+            <i class="icon-[lucide--mail-plus] size-4" />
+            <span>{{ $t('workspacePanel.members.actions.resendInvite') }}</span>
+          </Button>
+          <Button
+            variant="textonly"
+            size="unset"
+            :class="menuItemClass"
+            @click="
+              () => {
+                close()
+                $emit('revoke', invite)
+              }
+            "
+          >
+            <i class="icon-[lucide--mail-x] size-4" />
+            <span>{{ $t('workspacePanel.members.actions.cancelInvite') }}</span>
+          </Button>
+        </MoreButton>
       </div>
     </div>
     <div
@@ -73,9 +79,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
 defineProps<{
   invites: PendingInvite[]
@@ -83,7 +92,7 @@ defineProps<{
 }>()
 
 defineEmits<{
-  copyLink: [invite: PendingInvite]
+  resend: [invite: PendingInvite]
   revoke: [invite: PendingInvite]
 }>()
 
