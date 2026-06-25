@@ -440,6 +440,57 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   })
 })
 
+describe('useExecutionStore - clearActiveJobIfStale', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('clears the active job and progress state when not in the active set', () => {
+    store.activeJobId = 'job-1'
+    store.queuedJobs = { 'job-1': { nodes: { 'node-1': false } } }
+    store.nodeProgressStates = {
+      'node-1': {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: 'node-1',
+        display_node_id: 'node-1',
+        prompt_id: 'job-1'
+      }
+    }
+
+    store.clearActiveJobIfStale(new Set(['job-2']))
+
+    expect(store.activeJobId).toBeNull()
+    expect(store.queuedJobs['job-1']).toBeUndefined()
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('preserves the active job when present in the active set', () => {
+    store.activeJobId = 'job-1'
+    store.queuedJobs = { 'job-1': { nodes: {} } }
+
+    store.clearActiveJobIfStale(new Set(['job-1', 'job-2']))
+
+    expect(store.activeJobId).toBe('job-1')
+    expect(store.queuedJobs['job-1']).toBeDefined()
+  })
+
+  it('is a no-op when there is no active job', () => {
+    store.activeJobId = null
+    store.queuedJobs = { other: { nodes: {} } }
+
+    store.clearActiveJobIfStale(new Set())
+
+    expect(store.activeJobId).toBeNull()
+    expect(store.queuedJobs['other']).toBeDefined()
+  })
+})
+
 describe('useExecutionStore - progress_text startup guard', () => {
   let store: ReturnType<typeof useExecutionStore>
 
