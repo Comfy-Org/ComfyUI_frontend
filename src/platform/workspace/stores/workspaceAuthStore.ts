@@ -577,8 +577,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         useAuthStore().notifyTokenRefreshed()
       }
     } catch (err) {
+      // Guard the toast on a live token so concurrent permanent failures across
+      // the proactive + reactive paths alarm the user once, not once per caller.
       if (isPermanentAuthError(err)) {
-        surfacePermanentAuthError(err)
+        if (unifiedToken.value) surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified token refresh failed:', err)
@@ -614,14 +616,22 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return null
     }
     try {
+      // On a concurrent burst the stale-guard discards all but the winning
+      // mint. Return the slot's current token (the winner's, once it lands)
+      // rather than this call's own success, so a discarded caller can still
+      // retry with it instead of burning its one-shot retry on a fresh 401.
       await mintUnified(target)
-      return unifiedToken.value
+      return unifiedToken.value ?? null
     } catch (err) {
+      // Mirror refreshUnified: a permanent failure tears down the session;
+      // guard the toast on a live token so a concurrent burst surfaces it once.
       if (isPermanentAuthError(err)) {
-        surfacePermanentAuthError(err)
+        if (unifiedToken.value) surfacePermanentAuthError(err)
         clearUnifiedContext()
+      } else {
+        console.warn('Unified reactive re-mint failed:', err)
       }
-      throw err
+      return null
     }
   }
 
