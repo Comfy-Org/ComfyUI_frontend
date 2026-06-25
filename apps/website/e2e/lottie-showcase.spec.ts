@@ -93,7 +93,9 @@ test.describe('ProductShowcase - desktop Lottie layout @interaction', () => {
   }) => {
     const section = await scrollToShowcase(page)
     // Scope to the inner ink container of the desktop Lottie column
-    const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]').first()
+    const inkContainer = section
+      .locator('div[class*="bg-primary-comfy-ink"]')
+      .first()
     const wrappers = inkContainer.locator(
       'div[class*="absolute"][class*="inset-0"][class*="transition-opacity"]'
     )
@@ -102,7 +104,9 @@ test.describe('ProductShowcase - desktop Lottie layout @interaction', () => {
 
   test('only the active scene wrapper is opaque', async ({ page }) => {
     const section = await scrollToShowcase(page)
-    const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]').first()
+    const inkContainer = section
+      .locator('div[class*="bg-primary-comfy-ink"]')
+      .first()
     const wrappers = inkContainer.locator(
       'div[class*="absolute"][class*="inset-0"][class*="transition-opacity"]'
     )
@@ -118,7 +122,9 @@ test.describe('ProductShowcase - desktop Lottie layout @interaction', () => {
     const secondBtn = page.getByRole('button', { name: /App mode/i }).first()
     await secondBtn.click()
 
-    const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]').first()
+    const inkContainer = section
+      .locator('div[class*="bg-primary-comfy-ink"]')
+      .first()
     const wrappers = inkContainer.locator(
       'div[class*="absolute"][class*="inset-0"][class*="transition-opacity"]'
     )
