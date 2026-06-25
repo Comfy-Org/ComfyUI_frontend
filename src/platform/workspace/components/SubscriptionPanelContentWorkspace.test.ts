@@ -120,6 +120,10 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
     : null
 )
 
+const mockInitialize = vi.fn()
+const mockIsLoading = ref(false)
+const mockError = ref<string | null>(null)
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
@@ -127,9 +131,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
+    isLoading: mockIsLoading,
+    error: mockError,
     showSubscriptionDialog: mockShowSubscriptionDialog,
     manageSubscription: mockManageSubscription,
-    resubscribe: mockResubscribe
+    resubscribe: mockResubscribe,
+    initialize: mockInitialize
   })
 }))
 
@@ -141,16 +148,47 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userEmail: mockUserEmail })
-}))
+// Mirrors useWorkspaceUI's original-owner derivation (earliest join date, ties
+// broken by member id) so member/email toggles still drive owner-only menus.
+const mockIsOriginalOwner = computed(() => {
+  if (mockIsInPersonalWorkspace.value) return true
+  const email = mockUserEmail.value?.toLowerCase()
+  if (!email || mockMembers.value.length === 0) return false
+  const original = [...mockMembers.value].sort(
+    (a, b) =>
+      a.joinDate.getTime() - b.joinDate.getTime() || a.id.localeCompare(b.id)
+  )[0]
+  return original.email.toLowerCase() === email
+})
+
+const mockIsTeamPlanCancelled = computed(
+  () =>
+    !mockIsInPersonalWorkspace.value &&
+    (mockSubscription.value?.isCancelled ?? false)
+)
+
+const mockIsDeleteDisabled = computed(
+  () =>
+    mockIsActiveSubscription.value &&
+    !(mockSubscription.value?.isCancelled ?? false)
+)
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
       canManageSubscription: mockCanManageSubscription.value
     })),
-    uiConfig: computed(() => mockUiConfig.value)
+    uiConfig: computed(() => mockUiConfig.value),
+    isInPersonalWorkspace: mockIsInPersonalWorkspace,
+    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    isOriginalOwner: mockIsOriginalOwner,
+    isTeamPlanCancelled: mockIsTeamPlanCancelled,
+    isDeleteDisabled: mockIsDeleteDisabled,
+    deleteDisabledTooltipKey: computed(() =>
+      mockIsDeleteDisabled.value
+        ? mockUiConfig.value.workspaceMenuDisabledTooltip
+        : null
+    )
   })
 }))
 
@@ -253,6 +291,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
       credits_monthly: 147700,
       stop_usd: 700
     }
+    mockIsLoading.value = false
+    mockError.value = null
   })
 
   it('renders the subscribed credit stop price and renewal subtitle', () => {
@@ -278,8 +318,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     }
     renderComponent()
 
-    // team_2500 yearly.price_cents 200000 -> $2000, labelled per month.
-    expect(screen.getByText('$2000')).toBeInTheDocument()
+    // team_2500 yearly.price_cents 200000 -> $2,000, labelled per month.
+    expect(screen.getByText('$2,000')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
   })
 
@@ -290,6 +330,38 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('$100')).toBeInTheDocument()
     expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
+  })
+
+  it('falls back to the per-member price when the subscribed stop id is stale', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_unknown',
+      credits_monthly: 1,
+      stop_usd: 1
+    }
+    renderComponent()
+
+    expect(screen.getByText('$100')).toBeInTheDocument()
+    expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockRestore()
+  })
+
+  it('shows cents when the subscribed stop price is not a whole dollar', () => {
+    mockTeamCreditStops.value = {
+      default_stop_index: 0,
+      stops: [
+        {
+          id: 'team_700',
+          credits: 147700,
+          monthly: { list_price_cents: 70000, price_cents: 66550 },
+          yearly: { list_price_cents: 70000, price_cents: 63000 }
+        }
+      ]
+    }
+    renderComponent()
+
+    expect(screen.getByText('$665.50')).toBeInTheDocument()
   })
 
   it('wires Manage billing and Change plan actions for subscription managers', async () => {
@@ -368,6 +440,31 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'data-zero-state',
       'true'
     )
+  })
+
+  it('shows a loading indicator instead of a false Free plan while billing loads', () => {
+    mockHasSubscription.value = false
+    mockIsLoading.value = true
+    renderComponent()
+
+    expect(screen.getByText('Loading')).toBeInTheDocument()
+    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(screen.queryByText('$0')).not.toBeInTheDocument()
+  })
+
+  it('shows a retry affordance instead of a false Free plan when billing fails', async () => {
+    const user = userEvent.setup()
+    mockHasSubscription.value = false
+    mockError.value = 'network down'
+    renderComponent()
+
+    expect(
+      screen.getByText("We couldn't load your plan details.")
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(mockInitialize).toHaveBeenCalledOnce()
   })
 
   it('shows the zero-state contact-owner view to unsubscribed members', () => {

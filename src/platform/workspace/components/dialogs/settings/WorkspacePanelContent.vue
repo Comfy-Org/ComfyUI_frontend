@@ -192,11 +192,17 @@ const isSingleSeatPlan = computed(() => {
   return getMaxSeats(tierKey) <= 1
 })
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
+const { workspaceName, members, isInviteLimitReached } =
   storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
-const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
+const {
+  workspaceRole,
+  permissions,
+  uiConfig,
+  isDeleteDisabled,
+  deleteDisabledTooltipKey
+} = useWorkspaceUI()
 const activeTab = ref(defaultTab)
 
 const planTabLabel = computed(() => t('workspacePanel.tabs.planCredits'))
@@ -218,18 +224,9 @@ function handleEditWorkspace() {
   showEditWorkspaceDialog()
 }
 
-// Disable delete when workspace has an active subscription (to prevent accidental deletion)
-// Use workspace's own subscription status, not the global isActiveSubscription
-const isDeleteDisabled = computed(
-  () =>
-    uiConfig.value.workspaceMenuAction === 'delete' &&
-    isWorkspaceSubscribed.value
-)
-
 const deleteTooltip = computed(() => {
-  if (!isDeleteDisabled.value) return null
-  const tooltipKey = uiConfig.value.workspaceMenuDisabledTooltip
-  return tooltipKey ? t(tooltipKey) : null
+  const key = deleteDisabledTooltipKey.value
+  return key ? t(key) : null
 })
 
 const inviteTooltip = computed(() => {

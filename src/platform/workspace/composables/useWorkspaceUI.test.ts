@@ -1,16 +1,42 @@
+import { ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockActiveWorkspace = vi.hoisted(() => ({
   value: null as WorkspaceWithRole | null
 }))
+const mockMembers = vi.hoisted(() => ({ value: [] as WorkspaceMember[] }))
+const mockUserEmail = vi.hoisted(() => ({ value: null as string | null }))
+const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
+const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     get activeWorkspace() {
       return mockActiveWorkspace.value
+    },
+    get isInPersonalWorkspace() {
+      return mockActiveWorkspace.value?.type === 'personal'
+    },
+    get isWorkspaceSubscribed() {
+      return false
+    },
+    get members() {
+      return mockMembers.value
     }
+  })
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ userEmail: ref(mockUserEmail.value) })
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    isActiveSubscription: ref(mockIsActiveSubscription.value),
+    subscription: ref({ isCancelled: mockIsCancelled.value })
   })
 }))
 
@@ -50,10 +76,16 @@ describe('useWorkspaceUI', () => {
   beforeEach(() => {
     vi.resetModules()
     mockActiveWorkspace.value = null
+    mockMembers.value = []
+    mockUserEmail.value = null
+    mockIsActiveSubscription.value = false
+    mockIsCancelled.value = false
   })
 
   afterEach(() => {
     mockActiveWorkspace.value = null
+    mockMembers.value = []
+    mockUserEmail.value = null
   })
 
   describe('when no active workspace', () => {
@@ -192,6 +224,56 @@ describe('useWorkspaceUI', () => {
       expect(ui.uiConfig.value.pendingGridCols).toBe(
         'grid-cols-[50%_20%_20%_10%]'
       )
+    })
+  })
+
+  describe('isOriginalOwner', () => {
+    const earlier = new Date('2026-01-01T00:00:00Z')
+
+    function member(
+      id: string,
+      email: string,
+      joinDate: Date
+    ): WorkspaceMember {
+      return { id, name: id, email, joinDate, role: 'owner' }
+    }
+
+    beforeEach(() => {
+      mockActiveWorkspace.value = teamOwnerWorkspace
+    })
+
+    it('treats the personal owner as their own original owner', async () => {
+      mockActiveWorkspace.value = personalWorkspace
+      const ui = await loadComposable()
+
+      expect(ui.isOriginalOwner.value).toBe(true)
+    })
+
+    it('names the earliest-joined member as the original owner', async () => {
+      mockMembers.value = [
+        member('m2', 'late@example.com', new Date('2026-02-01T00:00:00Z')),
+        member('m1', 'early@example.com', earlier)
+      ]
+      mockUserEmail.value = 'early@example.com'
+      const ui = await loadComposable()
+
+      expect(ui.isOriginalOwner.value).toBe(true)
+    })
+
+    it('breaks join-date ties with the member id so only one is the owner', async () => {
+      mockMembers.value = [
+        member('m-b', 'b@example.com', earlier),
+        member('m-a', 'a@example.com', earlier)
+      ]
+
+      mockUserEmail.value = 'a@example.com'
+      const owner = await loadComposable()
+      expect(owner.isOriginalOwner.value).toBe(true)
+
+      vi.resetModules()
+      mockUserEmail.value = 'b@example.com'
+      const notOwner = await loadComposable()
+      expect(notOwner.isOriginalOwner.value).toBe(false)
     })
   })
 

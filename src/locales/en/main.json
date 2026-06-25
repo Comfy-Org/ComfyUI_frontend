@@ -2459,7 +2459,6 @@
     "manageSubscription": "Manage subscription",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
-    "cancelSubscription": "Cancel Subscription",
     "cancelPlan": "Cancel plan",
     "canceled": "Canceled",
     "resubscribe": "Resubscribe",
@@ -2509,6 +2508,8 @@
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
     "whatsIncluded": "What's included:",
+    "planLoadError": "We couldn't load your plan details.",
+    "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "teamPerks": {

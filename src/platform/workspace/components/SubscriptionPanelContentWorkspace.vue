@@ -11,10 +11,41 @@
       </div>
     </div>
 
+    <!-- Billing data still loading: avoid rendering a false Free/$0 plan -->
+    <div
+      v-else-if="isLoading && !subscription"
+      class="rounded-2xl border border-interface-stroke p-6"
+    >
+      <div class="flex items-center gap-2 py-4 text-muted-foreground">
+        <i class="pi pi-spin pi-spinner" />
+        <span>{{ $t('g.loading') }}</span>
+      </div>
+    </div>
+
+    <!-- Billing fetch failed: offer retry rather than a misleading Free plan -->
+    <div
+      v-else-if="error && !subscription"
+      class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
+    >
+      <div class="flex items-center gap-2 text-text-secondary">
+        <i class="pi pi-exclamation-circle text-danger" />
+        <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
+      </div>
+      <Button
+        variant="secondary"
+        size="lg"
+        class="rounded-lg px-4 text-sm font-normal"
+        :loading="isLoading"
+        @click="handleRetry"
+      >
+        {{ $t('subscription.planLoadErrorRetry') }}
+      </Button>
+    </div>
+
     <template v-else>
       <!-- Cancelled subscription info card -->
       <div
-        v-if="isCancelled"
+        v-if="isTeamPlanCancelled"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div
@@ -44,9 +75,9 @@
             <!-- OWNER Unsubscribed TEAM workspace -->
             <template v-if="showTeamSubscribePrompt">
               <div class="flex flex-col gap-2">
-                <div class="text-sm font-bold text-text-primary">
+                <h3 class="m-0 text-sm font-bold text-text-primary">
                   {{ $t('subscription.workspaceNotSubscribed') }}
-                </div>
+                </h3>
                 <div class="text-sm text-text-secondary">
                   {{ $t('subscription.subscriptionRequiredMessage') }}
                 </div>
@@ -64,9 +95,9 @@
             <!-- MEMBER View - read-only, workspace not subscribed -->
             <template v-else-if="isMemberView">
               <div class="flex flex-col gap-2">
-                <div class="text-sm font-bold text-text-primary">
+                <h3 class="m-0 text-sm font-bold text-text-primary">
                   {{ $t('subscription.workspaceNotSubscribed') }}
-                </div>
+                </h3>
                 <div class="text-sm text-text-secondary">
                   {{ $t('subscription.contactOwnerToSubscribe') }}
                 </div>
@@ -76,16 +107,12 @@
             <!-- OWNER personal workspace without subscription (Free plan) -->
             <template v-else-if="isPersonalFree">
               <div class="flex flex-col gap-2">
-                <span class="text-base font-bold text-text-primary">
+                <h3 class="m-0 text-base font-bold text-text-primary">
                   {{ $t('subscription.tiers.free.name') }}
-                </span>
+                </h3>
                 <div class="flex items-baseline gap-1 font-inter">
-                  <span class="text-2xl font-semibold">
-                    ${{ freeTierPrice }}
-                  </span>
-                  <span class="text-base">
-                    {{ $t('subscription.usdPerMonth') }}
-                  </span>
+                  <span class="text-2xl font-semibold">{{ displayPrice }}</span>
+                  <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
@@ -98,8 +125,8 @@
                   {{ $t('subscription.subscribe') }}
                 </Button>
                 <DropdownMenu
-                  v-if="planMenuItems.length > 0"
-                  :entries="planMenuEntries"
+                  v-if="menuEntries.length > 0"
+                  :entries="menuEntries"
                 >
                   <template #button>
                     <Button
@@ -120,26 +147,24 @@
             <template v-else>
               <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2">
-                  <span class="text-base font-bold text-text-primary">
+                  <h3 class="m-0 text-base font-bold text-text-primary">
                     {{ planDisplayName }}
-                  </span>
+                  </h3>
                   <StatusBadge
-                    v-if="isCancelled"
+                    v-if="isTeamPlanCancelled"
                     :label="$t('subscription.canceled')"
                     severity="warn"
                   />
                 </div>
                 <div class="flex items-baseline gap-1 font-inter">
-                  <span class="text-2xl font-semibold"
-                    >${{ displayPrice }}</span
-                  >
+                  <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
                 <div
                   v-if="isActiveSubscription"
                   class="text-sm text-text-secondary"
                 >
-                  <template v-if="isCancelled">
+                  <template v-if="isTeamPlanCancelled">
                     {{
                       $t('subscription.endsOnDate', {
                         date: formattedEndDate
@@ -170,7 +195,7 @@
                   {{ $t('subscription.manageBilling') }}
                 </Button>
                 <Button
-                  v-if="isCancelled && isOriginalOwner"
+                  v-if="isTeamPlanCancelled && isOriginalOwner"
                   size="lg"
                   variant="primary"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -180,7 +205,9 @@
                   {{ $t('subscription.reactivatePlan') }}
                 </Button>
                 <Button
-                  v-else-if="!isCancelled && permissions.canManageSubscription"
+                  v-else-if="
+                    !isTeamPlanCancelled && permissions.canManageSubscription
+                  "
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -193,8 +220,8 @@
                   }}
                 </Button>
                 <DropdownMenu
-                  v-if="planMenuItems.length > 0"
-                  :entries="planMenuEntries"
+                  v-if="menuEntries.length > 0"
+                  :entries="menuEntries"
                 >
                   <template #button>
                     <Button
@@ -285,58 +312,31 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
-import { useToast } from 'primevue/usetoast'
-
+import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
-import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useDialogService } from '@/services/dialogService'
-import {
-  DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
-  getTierPrice
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
+import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const workspaceStore = useTeamWorkspaceStore()
-const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
+const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions, uiConfig } = useWorkspaceUI()
-const { userEmail } = useCurrentUser()
+const { permissions, isOriginalOwner, isTeamPlanCancelled } = useWorkspaceUI()
 const { t, n, locale } = useI18n()
-
-// The creator (earliest-joined member) can't leave their own workspace.
-const isCurrentUserCreator = computed(() => {
-  const email = userEmail.value?.toLowerCase()
-  if (!email || members.value.length === 0) return false
-  const currentMember = members.value.find(
-    (member) => member.email.toLowerCase() === email
-  )
-  return (
-    !!currentMember &&
-    members.value.every((member) => currentMember.joinDate <= member.joinDate)
-  )
-})
-
-// Cancel / reactivate / delete are original-owner-only; personal workspaces are
-// single-member, so the user is always their own original owner.
-const isOriginalOwner = computed(
-  () => isInPersonalWorkspace.value || isCurrentUserCreator.value
-)
-const toast = useToast()
 
 const billingOperationStore = useBillingOperationStore()
 const isSettingUp = computed(() => billingOperationStore.isSettingUp)
@@ -345,57 +345,24 @@ const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
   subscription,
-  teamCreditStops,
-  currentTeamCreditStop,
+  isLoading,
+  error,
   showSubscriptionDialog,
   manageSubscription,
-  resubscribe
+  initialize
 } = useBillingContext()
 
-const {
-  showCancelSubscriptionDialog,
-  showLeaveWorkspaceDialog,
-  showEditWorkspaceDialog,
-  showDeleteWorkspaceDialog
-} = useDialogService()
 const { showPricingTable } = useSubscriptionDialog()
 
-const isResubscribing = ref(false)
+const { isResubscribing, handleResubscribe } = useResubscribe()
+const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
+const { menuEntries } = useWorkspaceMenuItems()
 
-async function handleResubscribe() {
-  isResubscribing.value = true
-  try {
-    await resubscribe()
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.resubscribeSuccess'),
-      life: 5000
-    })
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to resubscribe'
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: message
-    })
-  } finally {
-    isResubscribing.value = false
-  }
-}
-
-// Only show cancelled state for team workspaces (workspace billing)
-// Personal workspaces use legacy billing which has different cancellation semantics
-const isCancelled = computed(
-  () =>
-    !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
-)
-
-// Show subscribe prompt to owners without active subscription
-// Don't show if subscription is cancelled (still active until end date)
+// Show subscribe prompt to owners without active subscription. A cancelled plan
+// stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
-  if (isCancelled.value) return false
+  if (isTeamPlanCancelled.value) return false
   if (isInPersonalWorkspace.value) return !isActiveSubscription.value
   return !isWorkspaceSubscribed.value
 })
@@ -404,7 +371,6 @@ const showTeamSubscribePrompt = computed(
   () => showSubscribePrompt.value && !isInPersonalWorkspace.value
 )
 
-// Personal workspace without subscription renders the Free plan header
 const isPersonalFree = computed(
   () => showSubscribePrompt.value && isInPersonalWorkspace.value
 )
@@ -413,7 +379,6 @@ const isTeamActive = computed(
   () => !isInPersonalWorkspace.value && isActiveSubscription.value
 )
 
-// MEMBER view without subscription - members can't manage subscription
 const isMemberView = computed(
   () =>
     !permissions.value.canManageSubscription &&
@@ -421,12 +386,10 @@ const isMemberView = computed(
     !isWorkspaceSubscribed.value
 )
 
-// Show zero state for credits (no real billing data yet)
 const showZeroState = computed(
   () => showTeamSubscribePrompt.value || isMemberView.value
 )
 
-// Subscribe workspace - opens the subscription dialog (personal or workspace variant)
 function handleSubscribeWorkspace() {
   showSubscriptionDialog()
 }
@@ -440,7 +403,10 @@ function handleViewMoreDetails() {
   window.open('https://www.comfy.org/cloud/pricing', '_blank')
 }
 
-const subscriptionTier = computed(() => subscription.value?.tier ?? null)
+async function handleRetry() {
+  await initialize()
+}
+
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
@@ -463,7 +429,7 @@ const formattedEndDate = computed(() =>
 )
 
 const subscriptionTierName = computed(() => {
-  const tier = subscriptionTier.value
+  const tier = subscription.value?.tier
   if (!tier) return ''
   const key = TIER_TO_KEY[tier] ?? 'standard'
   const baseName = t(`subscription.tiers.${key}.name`)
@@ -478,119 +444,11 @@ const planDisplayName = computed(() =>
     : t('subscription.teamPlanName')
 )
 
-// A workspace (team or personal) can't be deleted while its subscription is
-// active and not yet cancelled — the owner must cancel first.
-const isDeleteDisabled = computed(
-  () =>
-    isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
-)
-
-const deleteTooltip = computed(() =>
-  isDeleteDisabled.value
-    ? t('workspacePanel.menu.deleteWorkspaceDisabledTooltip')
-    : undefined
-)
-
-const planMenuItems = computed<MenuItem[]>(() => {
-  const config = uiConfig.value
-  const items: MenuItem[] = []
-
-  if (config.showEditWorkspaceMenuItem) {
-    items.push({
-      label: t('workspacePanel.menu.editWorkspace'),
-      command: () => void showEditWorkspaceDialog()
-    })
-  }
-
-  // Cancel plan: the original owner of an active paid plan (team or personal).
-  if (
-    isOriginalOwner.value &&
-    isActiveSubscription.value &&
-    !isCancelled.value &&
-    !isFreeTierPlan.value
-  ) {
-    items.push({
-      label: t('subscription.cancelPlan'),
-      command: () =>
-        showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
-    })
-  }
-
-  // Delete: a team's original owner, or a personal owner on a paid plan.
-  if (
-    isOriginalOwner.value &&
-    (!isInPersonalWorkspace.value || isActiveSubscription.value)
-  ) {
-    items.push({
-      label: t('workspacePanel.menu.deleteWorkspace'),
-      // Disabled Delete keeps the danger color and stays hoverable so its
-      // "cancel first" tooltip shows (the shared item style would otherwise mute
-      // it and block pointer events).
-      class: isDeleteDisabled.value
-        ? 'data-disabled:cursor-not-allowed data-disabled:text-coral-700 data-disabled:pointer-events-auto'
-        : 'text-coral-700',
-      disabled: isDeleteDisabled.value,
-      tooltip: deleteTooltip.value,
-      command: isDeleteDisabled.value
-        ? undefined
-        : () => void showDeleteWorkspaceDialog()
-    })
-  }
-
-  // Members and promoted (non-original) owners can leave; the creator cannot.
-  if (!isInPersonalWorkspace.value && !isOriginalOwner.value) {
-    items.push({
-      label: t('workspacePanel.menu.leaveWorkspace'),
-      command: () => void showLeaveWorkspaceDialog()
-    })
-  }
-
-  return items
-})
-
-// Figma 3343-25140 renders a divider between every menu option.
-const planMenuEntries = computed<MenuItem[]>(() =>
-  planMenuItems.value.flatMap((item, index) =>
-    index === 0 ? [item] : [{ separator: true }, item]
-  )
-)
-
 const tierKey = computed(() => {
-  const tier = subscriptionTier.value
-  if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
+  const tier = subscription.value?.tier
+  if (!tier) return 'free'
+  return TIER_TO_KEY[tier] ?? 'standard'
 })
-const tierPrice = computed(() =>
-  getTierPrice(tierKey.value, isYearlySubscription.value)
-)
-
-const freeTierPrice = getTierPrice('free')
-
-const billingCycleKey = computed(() =>
-  subscription.value?.duration === 'ANNUAL' ? 'yearly' : 'monthly'
-)
-
-const currentStop = computed(() => {
-  const id = currentTeamCreditStop.value?.id
-  const stops = teamCreditStops.value?.stops
-  if (!id || !stops) return null
-  return stops.find((stop) => stop.id === id) ?? null
-})
-
-// Team price is the subscribed credit stop's per-month price (both monthly and
-// yearly stops are per-month); seats no longer drive team pricing. Falls back to
-// the per-member tier price until stops resolve.
-const workspacePlanCost = computed(() => {
-  const stop = currentStop.value
-  if (!stop) return null
-  return (stop[billingCycleKey.value].price_cents / 100).toFixed(0)
-})
-const displayPrice = computed(() => workspacePlanCost.value ?? tierPrice.value)
-const priceUnitLabel = computed(() =>
-  workspacePlanCost.value !== null || isInPersonalWorkspace.value
-    ? t('subscription.usdPerMonth')
-    : t('subscription.usdPerMonthPerMember')
-)
 
 const TEAM_PERK_KEYS = [
   'inviteMembers',
