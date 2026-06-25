@@ -145,7 +145,9 @@ test.describe('ProductShowcase - mobile Lottie layout @mobile', () => {
     const section = await scrollToShowcase(page)
     // Wait for onMounted hydration: the mobile slot (aspect-video) must appear
     // before we assert the desktop ink container is gone.
-    await expect(section.locator('div[class*="aspect-video"]').first()).toBeAttached({ timeout: 10_000 })
+    await expect(
+      section.locator('div[class*="aspect-video"]').first()
+    ).toBeAttached({ timeout: 10_000 })
     // v-if="!isMobile" — the desktop ink container should not exist in the section
     const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]')
     await expect(inkContainer).toHaveCount(0)
