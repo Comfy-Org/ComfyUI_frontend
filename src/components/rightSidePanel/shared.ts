@@ -108,18 +108,14 @@ export function searchWidgetsAndNodes(
     nodeMatches.map((result) => result.item.nodeId)
   )
 
-  return list
-    .map((item, index) => {
-      if (matchedNodeIds.has(searchableList[index].nodeId)) {
-        return { ...item, keep: true }
-      }
-      return {
-        ...item,
-        keep: false,
-        widgets: searchWidgets(item.widgets, query)
-      }
-    })
-    .filter((item) => item.keep || item.widgets.length > 0)
+  return list.flatMap((item) => {
+    if (matchedNodeIds.has(item.node.id)) {
+      return [item]
+    }
+
+    const widgets = searchWidgets(item.widgets, query)
+    return widgets.length > 0 ? [{ ...item, widgets }] : []
+  })
 }
 
 type MixedSelectionItem = LGraphGroup | LGraphNode
