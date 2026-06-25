@@ -32,9 +32,9 @@ const { width: containerWidth } = useElementSize(containerRef)
 const lines = computed(() => {
   if (!textWidth.value || !containerWidth.value) return [text]
 
-  const renderWidth = containerWidth.value - 30
-  if (textWidth.value <= renderWidth) return [text]
+  const safeRenderWidth = containerWidth.value - 30
+  if (textWidth.value <= safeRenderWidth) return [text]
 
-  return splitTextAtWordBoundary(text, renderWidth / textWidth.value)
+  return splitTextAtWordBoundary(text, safeRenderWidth / textWidth.value)
 })
 </script>

@@ -16,6 +16,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
@@ -143,7 +144,7 @@ describe('useSubgraphStore', () => {
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    await store.editBlueprint(store.typePrefix + 'test')
+    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
@@ -157,11 +158,11 @@ describe('useSubgraphStore', () => {
   })
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    const first = store.getBlueprint(store.typePrefix + 'test')
+    const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     first.nodes[0].id = -1
     first.definitions!.subgraphs![0].id = 'corrupted'
 
-    const second = store.getBlueprint(store.typePrefix + 'test')
+    const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
     expect(second.definitions!.subgraphs![0].id).toBe('123')
   })

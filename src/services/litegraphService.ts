@@ -62,6 +62,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { isBlueprintType } from '@/utils/blueprintUtils'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
@@ -905,7 +906,7 @@ export const useLitegraphService = () => {
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
-    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
+    if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
       const items: object = {
