@@ -23,25 +23,49 @@ test.describe('Careers page @smoke', () => {
     expect(await roles.count()).toBeGreaterThan(0)
   })
 
-  test('each role links to jobs.ashbyhq.com', async ({ page }) => {
+  test('clicking a department button scrolls to and activates that section', async ({
+    page
+  }) => {
+    const rolesSection = page.getByTestId('careers-roles')
+    await rolesSection.scrollIntoViewIfNeeded()
+    await expect(rolesSection).toBeVisible()
+
+    const allCount = await page.getByTestId('careers-role-link').count()
+
+    const engineeringButton = page.getByRole('button', {
+      name: 'ENGINEERING',
+      exact: true
+    })
+
+    // RolesSection is hydrated via `client:visible`. Once the button responds
+    // to a click by flipping aria-pressed, Vue is hydrated and the rest of
+    // the locator logic is in effect.
+    await expect(async () => {
+      await engineeringButton.click()
+      await expect(engineeringButton).toHaveAttribute('aria-pressed', 'true', {
+        timeout: 1_000
+      })
+    }).toPass({ timeout: 10_000 })
+
+    const engineeringSection = page.locator('#careers-dept-engineering')
+    await expect(engineeringSection).toBeInViewport()
+
+    expect(await page.getByTestId('careers-role-link').count()).toBe(allCount)
+  })
+})
+
+test.describe('Careers page role links', () => {
+  test('each role links to the Ashby job description page, not the application form', async ({
+    page
+  }) => {
+    await page.goto('/careers')
     const roles = page.getByTestId('careers-role-link')
     const count = await roles.count()
     for (let i = 0; i < count; i++) {
       const href = await roles.nth(i).getAttribute('href')
       expect(href).toMatch(/^https:\/\/jobs\.ashbyhq\.com\//)
+      expect(href).not.toMatch(/\/application\/?$/)
     }
-  })
-
-  test('ENGINEERING category filter narrows the role list', async ({
-    page
-  }) => {
-    const allCount = await page.getByTestId('careers-role-link').count()
-    await page.getByRole('button', { name: 'ENGINEERING', exact: true }).click()
-    const engineeringLocator = page.getByTestId('careers-role-link')
-    await expect(engineeringLocator.first()).toBeVisible()
-    const engineeringCount = await engineeringLocator.count()
-    expect(engineeringCount).toBeLessThanOrEqual(allCount)
-    expect(engineeringCount).toBeGreaterThan(0)
   })
 })
 

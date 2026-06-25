@@ -16,7 +16,9 @@ export interface MissingMediaCandidate {
   /**
    * - `true`  — confirmed missing
    * - `false` — confirmed present
-   * - `undefined` — pending async verification (cloud only)
+   * - `undefined` — pending async verification. Cloud candidates start pending;
+   *   OSS output annotated paths may also be deferred to generated-history
+   *   verification.
    */
   isMissing: boolean | undefined
 }
@@ -25,8 +27,10 @@ export interface MissingMediaCandidate {
 export interface MissingMediaViewModel {
   name: string
   mediaType: MediaType
+  representative: MissingMediaCandidate
   referencingNodes: Array<{
     nodeId: NodeId
+    nodeType?: string
     widgetName: string
   }>
 }

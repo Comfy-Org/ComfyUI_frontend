@@ -21,6 +21,7 @@ function createMember(
     email: 'member1@example.com',
     joinDate: new Date('2025-01-15'),
     role: 'member',
+    isOriginalOwner: false,
     ...overrides
   }
 }
@@ -319,6 +320,13 @@ vi.mock('@/platform/cloud/subscription/constants/tierPricing', () => ({
     FOUNDERS_EDITION: 'founder'
   }
 }))
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({ show: vi.fn() })
+  })
+)
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({

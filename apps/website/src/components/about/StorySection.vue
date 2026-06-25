@@ -16,7 +16,7 @@ const investors = [
 </script>
 
 <template>
-  <section class="px-6 py-24 lg:px-20 lg:py-32">
+  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto text-center">
       <span
         class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"

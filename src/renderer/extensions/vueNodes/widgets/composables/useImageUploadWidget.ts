@@ -83,10 +83,17 @@ export const useImageUploadWidget = () => {
         })
 
         const newValue = allow_batch ? annotated : annotated[0]
+        const oldValue = fileComboWidget.value
 
         // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
         fileComboWidget.callback?.(newValue)
+        node.onWidgetChanged?.(
+          fileComboWidget.name,
+          newValue,
+          oldValue,
+          fileComboWidget
+        )
       }
     })
 

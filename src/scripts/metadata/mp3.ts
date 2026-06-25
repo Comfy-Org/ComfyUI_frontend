@@ -1,3 +1,9 @@
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
+
 export async function getMp3Metadata(file: File) {
   const reader = new FileReader()
   const read_process = new Promise<ArrayBuffer | null>((r) => {
@@ -27,10 +33,23 @@ export async function getMp3Metadata(file: File) {
     header += page
     if (page.match('\u00ff\u00fb')) break
   }
-  let workflow, prompt
+  let workflow: ComfyWorkflowJSON | undefined
+  let prompt: ComfyApiWorkflow | undefined
   let prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
-  if (prompt_s) prompt = JSON.parse(prompt_s)
+  if (prompt_s) {
+    try {
+      prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(prompt_s)
+    } catch (e) {
+      console.error('Failed to parse MP3 prompt metadata', e)
+    }
+  }
   let workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
-  if (workflow_s) workflow = JSON.parse(workflow_s)
+  if (workflow_s) {
+    try {
+      workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow_s)
+    } catch (e) {
+      console.error('Failed to parse MP3 workflow metadata', e)
+    }
+  }
   return { prompt, workflow }
 }

@@ -209,7 +209,7 @@ export function fixBadLinks(
     linkId: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let has = false
+    let has: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasIt = node.inputs?.[slot]?.link === linkId
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -249,7 +249,7 @@ export function fixBadLinks(
     slot: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let hasAny = false
+    let hasAny: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasAny = node.inputs?.[slot]?.link != null
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -368,12 +368,12 @@ export function fixBadLinks(
           logger.log(
             ` > [PATCH] ${targetLog} is not defined, will set to ${link.id}.`
           )
-          let patched = patchTarget('ADD')
+          const patched = patchTarget('ADD')
           if (!patched) {
             logger.log(
               ` > [PATCH] Nvm, ${targetLog} already patched. Removing ${link.id} from ${originLog}.`
             )
-            patched = patchOrigin('REMOVE')
+            patchOrigin('REMOVE')
           }
         } else {
           logger.log(

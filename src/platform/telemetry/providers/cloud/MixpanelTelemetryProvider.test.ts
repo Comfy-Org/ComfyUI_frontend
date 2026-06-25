@@ -17,33 +17,12 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({
-    mode: { value: 'workflow' },
-    isAppMode: { value: false }
-  })
-}))
-
 const topupMocks = vi.hoisted(() => ({
   startTopupTracking: vi.fn(),
   clearTopupTracking: vi.fn(),
   checkForCompletedTopup: vi.fn().mockReturnValue(true)
 }))
 vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
-
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => ({
-    is_template: false,
-    workflow_name: 'untitled',
-    custom_node_count: 0,
-    total_node_count: 0,
-    subgraph_count: 0,
-    has_api_nodes: false,
-    api_node_names: [],
-    has_toolkit_nodes: false,
-    toolkit_node_names: []
-  })
-}))
 
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
@@ -59,10 +38,11 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ExecutionErrorMetadata,
-  ExecutionSuccessMetadata,
+  RunButtonProperties,
   ShareFlowMetadata,
+  ShellLayoutMetadata,
   SurveyResponses,
+  TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
@@ -75,6 +55,10 @@ const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
@@ -167,13 +151,56 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     expect(mockMixpanel.track).not.toHaveBeenCalled()
   })
 
-  it.each([
+  it('tracks enabled funnel events by default', async () => {
+    const provider = new MixpanelTelemetryProvider()
+    await waitForMixpanelInit()
+    mockMixpanel.track.mockClear()
+
+    const templateFilterMetadata: TemplateFilterMetadata = {
+      selected_models: [],
+      selected_use_cases: [],
+      selected_runs_on: [],
+      sort_by: 'default',
+      filtered_count: 1,
+      total_count: 2
+    }
+
+    provider.trackSettingChanged({ setting_id: 'theme' })
+    provider.trackTemplateFilterChanged(templateFilterMetadata)
+    provider.trackUiButtonClicked({
+      button_id: 'sidebar_settings_button_clicked',
+      element_group: 'sidebar'
+    })
+
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.SETTING_CHANGED,
+      { setting_id: 'theme' }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.TEMPLATE_FILTER_CHANGED,
+      templateFilterMetadata
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.UI_BUTTON_CLICKED,
+      {
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      }
+    )
+  })
+
+  it.for<
+    [
+      'opened' | 'requested' | 'completed',
+      (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+    ]
+  >([
     ['opened' as const, TelemetryEvents.USER_EMAIL_VERIFY_OPENED],
     ['requested' as const, TelemetryEvents.USER_EMAIL_VERIFY_REQUESTED],
     ['completed' as const, TelemetryEvents.USER_EMAIL_VERIFY_COMPLETED]
   ])(
     'trackEmailVerification(%s) dispatches %s',
-    async (stage, expectedEvent) => {
+    async ([stage, expectedEvent]) => {
       const provider = new MixpanelTelemetryProvider()
       await waitForMixpanelInit()
       mockMixpanel.track.mockClear()
@@ -184,13 +211,18 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     }
   )
 
-  it.each([
+  it.for<
+    [
+      'modal_opened' | 'subscribe_clicked',
+      (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+    ]
+  >([
     [
       'modal_opened' as const,
       TelemetryEvents.SUBSCRIPTION_REQUIRED_MODAL_OPENED
     ],
     ['subscribe_clicked' as const, TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED]
-  ])('trackSubscription(%s) dispatches %s', async (event, expectedEvent) => {
+  ])('trackSubscription(%s) dispatches %s', async ([event, expectedEvent]) => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
@@ -277,12 +309,24 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     default_view: 'graph'
   }
   const enterLinearMetadata: EnterLinearMetadata = {}
-  const shareFlowMetadata: ShareFlowMetadata = { step: 'dialog_opened' }
-  const executionErrorMetadata: ExecutionErrorMetadata = { jobId: 'job-1' }
-  const executionSuccessMetadata: ExecutionSuccessMetadata = { jobId: 'job-1' }
+  const shareFlowMetadata: ShareFlowMetadata = {
+    step: 'dialog_opened',
+    view_mode: 'graph',
+    is_app_mode: false
+  }
+  const shellLayoutMetadata: ShellLayoutMetadata = {
+    view_mode: 'graph',
+    is_app_mode: false,
+    dock_state: 'docked',
+    actionbar_position: 'Top',
+    active_sidebar_tab: null,
+    right_side_panel_open: false,
+    bottom_panel_open: false,
+    open_workflow_tabs: 1
+  }
   const authMetadata: AuthMetadata = {}
 
-  it.each<
+  it.for<
     [string, Trackable, (typeof TelemetryEvents)[keyof typeof TelemetryEvents]]
   >([
     [
@@ -346,14 +390,9 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       TelemetryEvents.SHARE_FLOW
     ],
     [
-      'trackExecutionError',
-      (p) => p.trackExecutionError(executionErrorMetadata),
-      TelemetryEvents.EXECUTION_ERROR
-    ],
-    [
-      'trackExecutionSuccess',
-      (p) => p.trackExecutionSuccess(executionSuccessMetadata),
-      TelemetryEvents.EXECUTION_SUCCESS
+      'trackShellLayout',
+      (p) => p.trackShellLayout(shellLayoutMetadata),
+      TelemetryEvents.SHELL_LAYOUT
     ],
     [
       'trackAuth',
@@ -365,7 +404,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       (p) => p.trackSignupOpened(),
       TelemetryEvents.USER_SIGN_UP_OPENED
     ]
-  ])('%s dispatches %s', async (_name, invoke, expectedEvent) => {
+  ])('%s dispatches %s', async ([_name, invoke, expectedEvent]) => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
@@ -391,46 +430,76 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     )
   })
 
-  it('trackRunButton populates RunButtonProperties from the execution context', async () => {
+  it('trackRunButton forwards RunButtonProperties', async () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
-    provider.trackRunButton({
+    const properties: RunButtonProperties = {
       subscribe_to_run: true,
-      trigger_source: 'button'
-    })
+      workflow_type: 'custom',
+      workflow_name: 'untitled',
+      custom_node_count: 0,
+      total_node_count: 0,
+      subgraph_count: 0,
+      has_api_nodes: false,
+      api_node_names: [],
+      has_toolkit_nodes: false,
+      toolkit_node_names: [],
+      trigger_source: 'button',
+      view_mode: 'graph',
+      is_app_mode: false,
+      dock_state: 'floating'
+    }
+
+    provider.trackRunButton(properties)
 
     expect(mockMixpanel.track).toHaveBeenCalledWith(
       TelemetryEvents.RUN_BUTTON_CLICKED,
-      expect.objectContaining({
-        subscribe_to_run: true,
-        workflow_type: 'custom',
-        trigger_source: 'button',
-        view_mode: 'workflow',
-        is_app_mode: false
-      })
+      properties
     )
   })
 
-  it('trackWorkflowExecution forwards the latest trigger_source from trackRunButton', async () => {
+  it('omits share_id from existing Mixpanel events', async () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
-    provider.trackRunButton({ trigger_source: 'keybinding' })
-    provider.trackWorkflowExecution()
+    provider.trackAuth({ method: 'google', share_id: 'share-1' })
+    provider.trackWorkflowImported({
+      missing_node_count: 0,
+      missing_node_types: [],
+      open_source: 'shared_url',
+      share_id: 'share-1'
+    })
+    provider.trackShareFlow({
+      step: 'link_copied',
+      source: 'app_mode',
+      view_mode: 'app',
+      is_app_mode: true,
+      share_id: 'share-1'
+    })
 
     expect(mockMixpanel.track).toHaveBeenCalledWith(
-      TelemetryEvents.EXECUTION_START,
-      expect.objectContaining({ trigger_source: 'keybinding' })
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      { method: 'google' }
     )
-
-    mockMixpanel.track.mockClear()
-    provider.trackWorkflowExecution()
     expect(mockMixpanel.track).toHaveBeenCalledWith(
-      TelemetryEvents.EXECUTION_START,
-      expect.objectContaining({ trigger_source: 'unknown' })
+      TelemetryEvents.WORKFLOW_IMPORTED,
+      {
+        missing_node_count: 0,
+        missing_node_types: [],
+        open_source: 'shared_url'
+      }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.SHARE_FLOW,
+      {
+        step: 'link_copied',
+        source: 'app_mode',
+        view_mode: 'app',
+        is_app_mode: true
+      }
     )
   })
 })

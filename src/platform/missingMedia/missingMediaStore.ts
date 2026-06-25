@@ -56,14 +56,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     )
   })
 
-  // Interaction state — persists across component re-mounts
-  const expandState = ref<Record<string, boolean>>({})
-  const uploadState = ref<
-    Record<string, { fileName: string; status: 'uploading' | 'uploaded' }>
-  >({})
-  /** Pending selection: value to apply on confirm. */
-  const pendingSelection = ref<Record<string, string>>({})
-
   let _verificationAbortController: AbortController | null = null
 
   function createVerificationAbortController(): AbortController {
@@ -76,66 +68,24 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaCandidates.value = media.length ? media : null
   }
 
-  function hasMissingMediaOnNode(nodeLocatorId: string): boolean {
-    return missingMediaNodeIds.value.has(nodeLocatorId)
-  }
-
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
     return activeMissingMediaGraphIds.value.has(String(node.id))
   }
 
-  function clearInteractionStateForName(name: string) {
-    delete expandState.value[name]
-    delete uploadState.value[name]
-    delete pendingSelection.value[name]
-  }
-
-  function removeMissingMediaByName(name: string) {
-    if (!missingMediaCandidates.value) return
-    missingMediaCandidates.value = missingMediaCandidates.value.filter(
-      (m) => m.name !== name
-    )
-    clearInteractionStateForName(name)
-    if (!missingMediaCandidates.value.length)
-      missingMediaCandidates.value = null
-  }
-
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
     if (!missingMediaCandidates.value) return
-    const removedNames = new Set(
-      missingMediaCandidates.value
-        .filter(
-          (m) => String(m.nodeId) === nodeId && m.widgetName === widgetName
-        )
-        .map((m) => m.name)
-    )
     missingMediaCandidates.value = missingMediaCandidates.value.filter(
       (m) => !(String(m.nodeId) === nodeId && m.widgetName === widgetName)
     )
-    for (const name of removedNames) {
-      if (!missingMediaCandidates.value.some((m) => m.name === name)) {
-        clearInteractionStateForName(name)
-      }
-    }
     if (!missingMediaCandidates.value.length)
       missingMediaCandidates.value = null
   }
 
   function removeMissingMediaByNodeId(nodeId: string) {
     if (!missingMediaCandidates.value) return
-    const removedNames = new Set(
-      missingMediaCandidates.value
-        .filter((m) => String(m.nodeId) === nodeId)
-        .map((m) => m.name)
-    )
     missingMediaCandidates.value = missingMediaCandidates.value.filter(
       (m) => String(m.nodeId) !== nodeId
     )
-    for (const name of removedNames) {
-      if (!missingMediaCandidates.value.some((m) => m.name === name)) {
-        clearInteractionStateForName(name)
-      }
-    }
     if (!missingMediaCandidates.value.length)
       missingMediaCandidates.value = null
   }
@@ -150,7 +100,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
    */
   function removeMissingMediaByPrefix(prefix: string) {
     if (!missingMediaCandidates.value) return
-    const removedNames = new Set<string>()
     const remaining: MissingMediaCandidate[] = []
     for (const m of missingMediaCandidates.value) {
       // Preserve candidates without a nodeId; they cannot belong to any
@@ -160,19 +109,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
         remaining.push(m)
         continue
       }
-      if (String(m.nodeId).startsWith(prefix)) {
-        removedNames.add(m.name)
-      } else {
+      if (!String(m.nodeId).startsWith(prefix)) {
         remaining.push(m)
       }
     }
-    if (removedNames.size === 0) return
+    if (remaining.length === missingMediaCandidates.value.length) return
     missingMediaCandidates.value = remaining.length ? remaining : null
-    for (const name of removedNames) {
-      if (!remaining.some((m) => m.name === name)) {
-        clearInteractionStateForName(name)
-      }
-    }
   }
 
   function addMissingMedia(media: MissingMediaCandidate[]) {
@@ -193,9 +135,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     _verificationAbortController?.abort()
     _verificationAbortController = null
     missingMediaCandidates.value = null
-    expandState.value = {}
-    uploadState.value = {}
-    pendingSelection.value = {}
   }
 
   return {
@@ -208,18 +147,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
     setMissingMedia,
     addMissingMedia,
-    removeMissingMediaByName,
     removeMissingMediaByWidget,
     removeMissingMediaByNodeId,
     removeMissingMediaByPrefix,
     clearMissingMedia,
     createVerificationAbortController,
 
-    hasMissingMediaOnNode,
-    isContainerWithMissingMedia,
-
-    expandState,
-    uploadState,
-    pendingSelection
+    isContainerWithMissingMedia
   }
 })
