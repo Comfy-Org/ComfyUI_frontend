@@ -114,6 +114,11 @@ export const mergePreservedQueryIntoQuery = (
   return changed ? nextQuery : undefined
 }
 
+export const hasPreservedQuery = (namespace: string): boolean => {
+  if (preservedQueries.has(namespace)) return true
+  return readFromStorage(namespace) !== null
+}
+
 export const clearPreservedQuery = (namespace: string) => {
   if (!preservedQueries.has(namespace)) return
   preservedQueries.delete(namespace)

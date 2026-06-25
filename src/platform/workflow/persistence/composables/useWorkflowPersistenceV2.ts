@@ -17,6 +17,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
+  hasPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
@@ -226,14 +227,7 @@ export function useWorkflowPersistenceV2() {
     if (route.query.template && typeof route.query.template === 'string') {
       return true
     }
-    try {
-      const raw = sessionStorage.getItem('Comfy.PreservedQuery.template')
-      if (!raw) return false
-      const parsed = JSON.parse(raw)
-      return typeof parsed?.template === 'string'
-    } catch {
-      return false
-    }
+    return hasPreservedQuery(TEMPLATE_NAMESPACE)
   }
 
   const loadTemplateFromUrlIfPresent = async (): Promise<boolean> => {
