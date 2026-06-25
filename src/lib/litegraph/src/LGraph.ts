@@ -27,7 +27,7 @@ import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkId, SerialisedLLinkArray } from './LLink'
+import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -143,36 +143,23 @@ export interface GraphAddOptions {
   dragEvent?: MouseEvent
 }
 
-export interface GroupNodeConfigEntry {
-  input?: Record<string, { name?: string; visible?: boolean }>
-  output?: Record<number, { name?: string; visible?: boolean }>
-}
-
-export interface GroupNodeWorkflowData {
-  external: (number | string)[][]
-  links: SerialisedLLinkArray[]
-  nodes: {
-    index?: number
-    type?: string
-    title?: string
-    inputs?: unknown[]
-    outputs?: unknown[]
-    widgets_values?: unknown[]
-  }[]
-  config?: Record<number, GroupNodeConfigEntry>
-}
-
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
-  groupNodes?: Record<string, GroupNodeWorkflowData>
 }
 
 export interface BaseLGraph {
   /** The root graph. */
   readonly rootGraph: LGraph
+}
+
+function fireNodeRemovalLifecycle(node: LGraphNode): void {
+  const graph: LGraph | null = node.graph
+  graph?.events.dispatch('node:before-removed', { node })
+  node.onRemoved?.()
+  graph?.onNodeRemoved?.(node)
 }
 
 /**
@@ -406,8 +393,7 @@ export class LGraph
     // safe clear
     if (this._nodes) {
       for (const _node of this._nodes) {
-        _node.onRemoved?.()
-        this.onNodeRemoved?.(_node)
+        fireNodeRemovalLifecycle(_node)
       }
     }
 
@@ -1066,6 +1052,8 @@ export class LGraph
     // sure? - almost sure is wrong
     this.beforeChange()
 
+    this.events.dispatch('node:before-removed', { node })
+
     const { inputs, outputs } = node
 
     // disconnect inputs
@@ -1101,10 +1089,7 @@ export class LGraph
       )
 
       if (!hasRemainingReferences) {
-        forEachNode(node.subgraph, (innerNode) => {
-          innerNode.onRemoved?.()
-          innerNode.graph?.onNodeRemoved?.(innerNode)
-        })
+        forEachNode(node.subgraph, fireNodeRemovalLifecycle)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1674,15 +1659,7 @@ export class LGraph
     this.canvasAction((c) => c.emitBeforeChange())
 
     try {
-      function extractNodes(item: Positionable): Positionable[] {
-        if (!(item instanceof LGraphNode) || !item.convertToNodes) return [item]
-
-        const innerNodes = item.convertToNodes()
-        for (const innerNode of innerNodes) innerNode.updateArea()
-        return innerNodes
-      }
-      const processedItems = new Set([...items].flatMap(extractNodes))
-      return this._convertToSubgraphImpl(processedItems)
+      return this._convertToSubgraphImpl(items)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()

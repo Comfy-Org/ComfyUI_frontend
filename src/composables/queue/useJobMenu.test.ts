@@ -68,12 +68,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   ComfyWorkflow: class {}
 }))
 
-const interruptMock = vi.fn()
-const deleteItemMock = vi.fn()
+const cancelJobMock = vi.fn()
 vi.mock('@/scripts/api', () => ({
   api: {
-    interrupt: (runningJobId: string | null) => interruptMock(runningJobId),
-    deleteItem: (type: string, id: string) => deleteItemMock(type, id)
+    cancelJob: (jobId: string) => cancelJobMock(jobId)
   }
 }))
 
@@ -197,6 +195,7 @@ describe('useJobMenu', () => {
     }))
     queueStoreMock.update.mockResolvedValue(undefined)
     queueStoreMock.delete.mockResolvedValue(undefined)
+    cancelJobMock.mockResolvedValue(undefined)
     mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
     mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
       task,
@@ -281,29 +280,18 @@ describe('useJobMenu', () => {
     expect(copyToClipboardMock).not.toHaveBeenCalled()
   })
 
-  it.for([
-    ['running', interruptMock, deleteItemMock],
-    ['initialization', interruptMock, deleteItemMock]
-  ])('cancels %s job via interrupt', async ([state]) => {
-    const { cancelJob } = mountJobMenu()
-    setCurrentItem(createJobItem({ state: state as JobListItem['state'] }))
+  it.for([['running'], ['initialization'], ['pending']])(
+    'cancels %s job via the state-agnostic jobs-namespace endpoint',
+    async ([state]) => {
+      const { cancelJob } = mountJobMenu()
+      setCurrentItem(createJobItem({ state: state as JobListItem['state'] }))
 
-    await cancelJob()
+      await cancelJob()
 
-    expect(interruptMock).toHaveBeenCalledWith('job-1')
-    expect(deleteItemMock).not.toHaveBeenCalled()
-    expect(queueStoreMock.update).toHaveBeenCalled()
-  })
-
-  it('cancels pending job via deleteItem', async () => {
-    const { cancelJob } = mountJobMenu()
-    setCurrentItem(createJobItem({ state: 'pending' }))
-
-    await cancelJob()
-
-    expect(deleteItemMock).toHaveBeenCalledWith('queue', 'job-1')
-    expect(queueStoreMock.update).toHaveBeenCalled()
-  })
+      expect(cancelJobMock).toHaveBeenCalledWith('job-1')
+      expect(queueStoreMock.update).toHaveBeenCalled()
+    }
+  )
 
   it('still updates queue for uncancellable states', async () => {
     const { cancelJob } = mountJobMenu()
@@ -311,9 +299,20 @@ describe('useJobMenu', () => {
 
     await cancelJob()
 
-    expect(interruptMock).not.toHaveBeenCalled()
-    expect(deleteItemMock).not.toHaveBeenCalled()
+    expect(cancelJobMock).not.toHaveBeenCalled()
     expect(queueStoreMock.update).toHaveBeenCalled()
+  })
+
+  it('propagates cancel failures from the API', async () => {
+    cancelJobMock.mockRejectedValueOnce(new Error('Failed to cancel job'))
+    const { cancelJob } = mountJobMenu()
+    setCurrentItem(createJobItem({ state: 'running' }))
+
+    await expect(cancelJob()).rejects.toThrow('Failed to cancel job')
+
+    expect(cancelJobMock).toHaveBeenCalledWith('job-1')
+    // Queue refresh is skipped when the cancel request itself fails.
+    expect(queueStoreMock.update).not.toHaveBeenCalled()
   })
 
   it('copies error message from failed job entry', async () => {
@@ -860,7 +859,7 @@ describe('useJobMenu', () => {
     const cancelEntry = findActionEntry(jobMenuEntries.value, 'cancel-job')
     await cancelEntry?.onClick?.()
 
-    expect(deleteItemMock).toHaveBeenCalledWith('queue', 'job-1')
+    expect(cancelJobMock).toHaveBeenCalledWith('job-1')
     expect(queueStoreMock.update).toHaveBeenCalled()
   })
 
