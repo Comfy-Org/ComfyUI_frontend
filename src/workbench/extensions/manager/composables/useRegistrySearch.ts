@@ -33,6 +33,7 @@ export function useRegistrySearch(
   } = options
 
   const isLoading = ref(false)
+  const error = ref<string | null>(null)
   const sortField = ref<string>(initialSortField)
   const searchMode = ref<SearchMode>(initialSearchMode)
   const pageSize = ref(DEFAULT_PAGE_SIZE)
@@ -52,42 +53,50 @@ export function useRegistrySearch(
 
   const updateSearchResults = async (options: { append?: boolean }) => {
     isLoading.value = true
+    error.value = null
     if (!options.append) {
       pageNumber.value = 0
     }
-    const { nodePacks, querySuggestions } = await searchPacks(
-      searchQuery.value,
-      {
-        pageSize: pageSize.value,
-        pageNumber: pageNumber.value,
-        restrictSearchableAttributes: searchAttributes.value
-      }
-    )
-
-    let sortedPacks = nodePacks
-
-    // Results are sorted by the default field to begin with -- so don't manually sort again
-    if (sortField.value && sortField.value !== DEFAULT_SORT_FIELD) {
-      // Get the sort direction from the provider's sortable fields
-      const sortableFields = getSortableFields()
-      const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
-      const direction = fieldConfig?.direction || 'desc'
-
-      sortedPacks = orderBy(
-        nodePacks,
-        [(pack) => getSortValue(pack, sortField.value)],
-        [direction]
+    try {
+      const { nodePacks, querySuggestions } = await searchPacks(
+        searchQuery.value,
+        {
+          pageSize: pageSize.value,
+          pageNumber: pageNumber.value,
+          restrictSearchableAttributes: searchAttributes.value
+        }
       )
-    }
 
-    if (options.append && searchResults.value?.length) {
-      searchResults.value = searchResults.value.concat(sortedPacks)
-    } else {
-      searchResults.value = sortedPacks
+      let sortedPacks = nodePacks
+
+      // Results are sorted by the default field to begin with -- so don't manually sort again
+      if (sortField.value && sortField.value !== DEFAULT_SORT_FIELD) {
+        // Get the sort direction from the provider's sortable fields
+        const sortableFields = getSortableFields()
+        const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
+        const direction = fieldConfig?.direction || 'desc'
+
+        sortedPacks = orderBy(
+          nodePacks,
+          [(pack) => getSortValue(pack, sortField.value)],
+          [direction]
+        )
+      }
+
+      if (options.append && searchResults.value?.length) {
+        searchResults.value = searchResults.value.concat(sortedPacks)
+      } else {
+        searchResults.value = sortedPacks
+      }
+      suggestions.value = querySuggestions
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    } finally {
+      isLoading.value = false
     }
-    suggestions.value = querySuggestions
-    isLoading.value = false
   }
+
+  const retry = () => updateSearchResults({ append: false })
 
   const onQueryChange = () => void updateSearchResults({ append: false })
   const onPageChange = () => {
@@ -108,6 +117,8 @@ export function useRegistrySearch(
 
   return {
     isLoading,
+    error,
+    retry,
     pageNumber,
     pageSize,
     sortField,

@@ -38,8 +38,13 @@ enum ManagerRoute {
   QUEUE_TASK = 'manager/queue/task'
 }
 
+// Without a timeout a hung socket (e.g. no internet, captive portal) never
+// rejects, leaving callers stuck in their loading state indefinitely.
+const REQUEST_TIMEOUT_MS = 10_000
+
 const managerApiClient = axios.create({
   baseURL: api.apiURL('/v2/'),
+  timeout: REQUEST_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -74,14 +79,18 @@ export const useComfyManagerService = () => {
     } else {
       const axiosError = err as AxiosError<{ message: string }>
       const status = axiosError.response?.status
-      if (status && routeSpecificErrors?.[status]) {
+      const backendMessage = axiosError.response?.data?.message
+      // Prefer the backend's message: ComfyUI-Manager returns actionable,
+      // security-aware text (e.g. which security_level/--listen is required)
+      // that is far more useful than our generic per-status fallbacks.
+      if (backendMessage) {
+        message = backendMessage
+      } else if (status && routeSpecificErrors?.[status]) {
         message = routeSpecificErrors[status]
       } else if (status === 404) {
         message = 'Could not connect to ComfyUI-Manager'
       } else {
-        message =
-          axiosError.response?.data?.message ??
-          `${context} failed with status ${status}`
+        message = `${context} failed with status ${status}`
       }
     }
 

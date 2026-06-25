@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
 import Panel from 'primevue/panel'
 import TabMenu from 'primevue/tabmenu'
@@ -40,10 +41,7 @@ const isInProgress = computed(
   () => comfyManagerStore.isProcessingTasks || isRestarting.value
 )
 
-const isTaskInProgress = (index: number) => {
-  const log = focusedLogs.value[index]
-  if (!log) return false
-
+const isTaskInProgress = (taskId: string) => {
   const taskQueue = comfyManagerStore.taskQueue
   if (!taskQueue) return false
 
@@ -52,7 +50,13 @@ const isTaskInProgress = (index: number) => {
     ...(taskQueue.pending_queue || [])
   ]
 
-  return allQueueTasks.some((task) => task.ui_id === log.taskId)
+  return allQueueTasks.some((task) => task.ui_id === taskId)
+}
+
+function taskStatusLabel(taskId: string): string {
+  if (isTaskInProgress(taskId)) return t('g.inProgress')
+  if (comfyManagerStore.isTaskFailed(taskId)) return t('manager.failed')
+  return t('g.completedWithCheckmark')
 }
 
 const completedTasksCount = computed(() => {
@@ -190,12 +194,16 @@ onBeforeUnmount(() => {
               <div class="flex w-full items-center justify-between py-2">
                 <div class="flex flex-col text-sm/normal font-medium">
                   <span>{{ log.taskName }}</span>
-                  <span class="text-muted">
-                    {{
-                      isTaskInProgress(index)
-                        ? t('g.inProgress')
-                        : t('g.completedWithCheckmark')
-                    }}
+                  <span
+                    :class="
+                      cn(
+                        'text-muted',
+                        comfyManagerStore.isTaskFailed(log.taskId) &&
+                          'text-danger'
+                      )
+                    "
+                  >
+                    {{ taskStatusLabel(log.taskId) }}
                   </span>
                 </div>
               </div>
@@ -229,6 +237,17 @@ onBeforeUnmount(() => {
               @scroll="handleScroll"
             >
               <div class="h-full">
+                <div
+                  v-for="(
+                    errorMessage, errorIndex
+                  ) in comfyManagerStore.getTaskErrorMessages(log.taskId)"
+                  :key="`error-${errorIndex}`"
+                  class="text-danger"
+                >
+                  <pre class="wrap-break-word whitespace-pre-wrap">{{
+                    errorMessage
+                  }}</pre>
+                </div>
                 <div
                   v-for="(logLine, logIndex) in log.logs"
                   :key="logIndex"

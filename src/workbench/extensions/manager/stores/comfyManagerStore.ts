@@ -115,6 +115,18 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     { deep: true }
   )
 
+  const isTaskFailed = (taskId: string): boolean =>
+    failedTasksIds.value.includes(taskId)
+
+  // The actionable reason a task failed (e.g. the security_level/--listen
+  // restriction ComfyUI-Manager reports on a blocked install) lives in task
+  // history, not the streamed server logs -- which stay empty when the request
+  // is rejected before the task ever runs. Surface it so the failure isn't silent.
+  const getTaskErrorMessages = (taskId: string): string[] =>
+    isTaskFailed(taskId)
+      ? (taskHistory.value[taskId]?.status?.messages ?? [])
+      : []
+
   const getPackId = (pack: ManagerPackInstalled) => pack.cnr_id || pack.aux_id
 
   const isInstalledPackId = (packName: NodePackId | undefined): boolean =>
@@ -384,6 +396,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     failedTasksIds,
     succeededTasksLogs,
     failedTasksLogs,
+    isTaskFailed,
+    getTaskErrorMessages,
     managerQueue,
 
     // Pack actions

@@ -114,6 +114,8 @@
         v-else-if="displayPacks.length === 0"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
+        :button-label="searchError ? $t('manager.retry') : undefined"
+        @action="() => void retrySearch()"
       />
       <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
@@ -344,6 +346,8 @@ const {
   searchQuery,
   pageNumber,
   isLoading: isSearchLoading,
+  error: searchError,
+  retry: retrySearch,
   searchResults,
   searchMode,
   sortField,
@@ -434,9 +438,15 @@ const isManagerErrorRelevant = computed(() => {
   )
 })
 
+// The registry search failing (e.g. offline) is also a connection error worth
+// surfacing, and unlike the manager-store error it can be retried in place.
+const hasConnectionError = computed(
+  () => isManagerErrorRelevant.value || !!searchError.value
+)
+
 // Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.errorConnecting')
+  if (hasConnectionError.value) return t('manager.errorConnecting')
   if (searchQuery.value) return t('manager.noResultsFound')
 
   const tabId = selectedTab.value?.id
@@ -448,7 +458,7 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
+  if (hasConnectionError.value) return t('manager.tryAgainLater')
   if (searchQuery.value) {
     const baseMessage = t('manager.tryDifferentSearch')
     if (isLegacyManagerSearch.value) {
@@ -475,6 +485,9 @@ const onClickWarningLink = () => {
 }
 
 const isLoading = computed(() => {
+  // A failed search must not read as "still loading" -- otherwise the spinner
+  // runs forever (e.g. offline) instead of showing the error placeholder.
+  if (searchError.value) return false
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
   return isInitialLoad.value

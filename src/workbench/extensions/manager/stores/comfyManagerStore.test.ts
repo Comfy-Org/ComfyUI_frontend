@@ -409,6 +409,51 @@ describe('useComfyManagerStore', () => {
     })
   })
 
+  describe('task failure surfacing', () => {
+    type TaskHistoryItem = ManagerComponents['schemas']['TaskHistoryItem']
+
+    const historyItem = (
+      uiId: string,
+      statusStr: 'success' | 'error' | 'skip',
+      messages: string[]
+    ): TaskHistoryItem => ({
+      ui_id: uiId,
+      client_id: 'client',
+      kind: 'install',
+      result: statusStr === 'success' ? 'success' : 'failed',
+      timestamp: '2024-01-01T00:00:00Z',
+      status: {
+        status_str: statusStr,
+        completed: statusStr === 'success',
+        messages
+      }
+    })
+
+    it('flags an errored task as failed and surfaces its messages', async () => {
+      const store = useComfyManagerStore()
+      const reason =
+        "ERROR: To use this action, '--listen' must be set and security_level must be 'normal-' or lower."
+
+      store.taskHistory = { 'task-1': historyItem('task-1', 'error', [reason]) }
+      await nextTick()
+
+      expect(store.isTaskFailed('task-1')).toBe(true)
+      expect(store.getTaskErrorMessages('task-1')).toEqual([reason])
+    })
+
+    it('does not surface messages for a successful task', async () => {
+      const store = useComfyManagerStore()
+
+      store.taskHistory = {
+        'task-2': historyItem('task-2', 'success', ['Installed successfully'])
+      }
+      await nextTick()
+
+      expect(store.isTaskFailed('task-2')).toBe(false)
+      expect(store.getTaskErrorMessages('task-2')).toEqual([])
+    })
+  })
+
   describe('refreshInstalledList with pack ID normalization', () => {
     it('normalizes pack IDs by removing version suffixes', async () => {
       const mockPacks = {
