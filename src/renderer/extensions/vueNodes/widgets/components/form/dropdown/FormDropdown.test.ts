@@ -57,9 +57,11 @@ const MockFormDropdownInput = {
     '<button ref="triggerButton" class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
-const MockPopover = {
-  name: 'Popover',
+const PassThroughStub = {
   template: '<div><slot /></div>'
+}
+const TriggerStub = {
+  template: '<slot />'
 }
 
 interface MountDropdownOptions {
@@ -94,8 +96,11 @@ function mountDropdown(
       plugins: [PrimeVue, i18n],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        Popover: MockPopover,
-        FormDropdownMenu: MockFormDropdownMenu
+        FormDropdownMenu: MockFormDropdownMenu,
+        PopoverRoot: PassThroughStub,
+        PopoverPortal: PassThroughStub,
+        PopoverContent: PassThroughStub,
+        PopoverTrigger: TriggerStub
       }
     }
   })
