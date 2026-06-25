@@ -25,10 +25,10 @@
       ]
     },
     {
-      "source": "/zh-CN/payment/(.*)",
+      "source": "/:locale/payment/(.*)",
       "headers": [
         {
-          "key": "x-robots-tag",
+          "key": "X-Robots-Tag",
           "value": "noindex"
         }
       ]
