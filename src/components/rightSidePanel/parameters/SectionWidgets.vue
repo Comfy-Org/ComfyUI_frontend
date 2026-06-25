@@ -22,7 +22,6 @@ import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { toNodeId } from '@/types/nodeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -150,7 +149,7 @@ function isWidgetShownOnParents(
   const source = widgetPromotedSource(widgetNode, widget)
   return parents.some((parent) => {
     if (source) {
-      const widgetNodeId = toNodeId(widgetNode.id)
+      const widgetNodeId = widgetNode.id
       const interiorNodeId =
         String(widgetNode.id) === String(parent.id)
           ? source.nodeId
@@ -162,7 +161,7 @@ function isWidgetShownOnParents(
       })
     }
     return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: toNodeId(widgetNode.id),
+      sourceNodeId: widgetNode.id,
       sourceWidgetName: widget.name
     })
   })

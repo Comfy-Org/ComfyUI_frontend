@@ -8,7 +8,6 @@ import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseTog
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
@@ -82,7 +81,7 @@ function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
 const isAllCollapsed = computed({
   get() {
     const normalAllCollapsed = searchedWidgetsSectionDataList.value.every(
-      ({ node }) => isSectionCollapsed(toNodeId(node.id))
+      ({ node }) => isSectionCollapsed(node.id)
     )
     const hasAdvanced = advancedWidgetsSectionDataList.value.length > 0
     return hasAdvanced
@@ -91,7 +90,7 @@ const isAllCollapsed = computed({
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(toNodeId(node.id), collapse)
+      setSectionCollapsed(node.id, collapse)
     }
     advancedCollapsed.value = collapse
   }
@@ -156,7 +155,7 @@ const advancedLabel = computed(() => {
       :node
       :label
       :widgets
-      :collapse="isSectionCollapsed(toNodeId(node.id)) && !isSearching"
+      :collapse="isSectionCollapsed(node.id) && !isSearching"
       :show-locate-button="isMultipleNodesSelected"
       :tooltip="
         isSearching || widgets.length
@@ -164,7 +163,7 @@ const advancedLabel = computed(() => {
           : t('rightSidePanel.inputsNoneTooltip')
       "
       class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(toNodeId(node.id), $event)"
+      @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
   <template v-if="advancedWidgetsSectionDataList.length > 0 && !isSearching">

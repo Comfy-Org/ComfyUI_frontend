@@ -9,7 +9,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
@@ -58,12 +57,12 @@ function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
 const isAllCollapsed = computed({
   get() {
     return searchedWidgetsSectionDataList.value.every(({ node }) =>
-      isSectionCollapsed(toNodeId(node.id))
+      isSectionCollapsed(node.id)
     )
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(toNodeId(node.id), collapse)
+      setSectionCollapsed(node.id, collapse)
     }
   }
 })
@@ -103,7 +102,7 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :collapse="isSectionCollapsed(toNodeId(node.id)) && !isSearching"
+      :collapse="isSectionCollapsed(node.id) && !isSearching"
       :tooltip="
         isSearching || widgets.length
           ? ''
@@ -111,7 +110,7 @@ async function searcher(query: string) {
       "
       show-locate-button
       class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(toNodeId(node.id), $event)"
+      @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
 </template>

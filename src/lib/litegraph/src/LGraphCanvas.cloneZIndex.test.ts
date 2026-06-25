@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -77,7 +76,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 }
 
 function createLayoutEntry(node: LGraphNode, zIndex: number) {
-  const nodeId = toNodeId(node.id)
+  const nodeId = node.id
   const layout: NodeLayout = {
     id: nodeId,
     position: { x: node.pos[0], y: node.pos[1] },
@@ -148,7 +147,7 @@ describe('cloned node z-index in Vue renderer', () => {
     originalNode.size = [200, 100]
     graph.add(originalNode)
 
-    const originalNodeId = toNodeId(originalNode.id)
+    const originalNodeId = originalNode.id
 
     setZIndex(originalNodeId, 5, 0)
 
@@ -161,7 +160,7 @@ describe('cloned node z-index in Vue renderer', () => {
     expect(result!.created.length).toBe(1)
 
     const clonedNode = result!.created[0] as LGraphNode
-    const clonedNodeId = toNodeId(clonedNode.id)
+    const clonedNodeId = clonedNode.id
 
     // The cloned node should have a z-index higher than the original
     const clonedLayout = layoutStore.getNodeLayoutRef(clonedNodeId).value
@@ -174,13 +173,13 @@ describe('cloned node z-index in Vue renderer', () => {
     nodeA.pos = [100, 100]
     nodeA.size = [200, 100]
     graph.add(nodeA)
-    setZIndex(toNodeId(nodeA.id), 3, 0)
+    setZIndex(nodeA.id, 3, 0)
 
     const nodeB = new TestNode()
     nodeB.pos = [400, 100]
     nodeB.size = [200, 100]
     graph.add(nodeB)
-    setZIndex(toNodeId(nodeB.id), 7, 0)
+    setZIndex(nodeB.id, 7, 0)
 
     const result = LGraphCanvas.cloneNodes([nodeA, nodeB])
     expect(result).toBeDefined()
@@ -188,8 +187,8 @@ describe('cloned node z-index in Vue renderer', () => {
 
     const clonedA = result!.created[0] as LGraphNode
     const clonedB = result!.created[1] as LGraphNode
-    const layoutA = layoutStore.getNodeLayoutRef(toNodeId(clonedA.id)).value!
-    const layoutB = layoutStore.getNodeLayoutRef(toNodeId(clonedB.id)).value!
+    const layoutA = layoutStore.getNodeLayoutRef(clonedA.id).value!
+    const layoutB = layoutStore.getNodeLayoutRef(clonedB.id).value!
 
     // Both cloned nodes should be above the highest original (z-index 7)
     expect(layoutA.zIndex).toBeGreaterThan(7)

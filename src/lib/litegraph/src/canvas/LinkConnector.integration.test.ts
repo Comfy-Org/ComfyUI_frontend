@@ -155,17 +155,17 @@ const test = baseTest.extend<TestContext>({
           expect(link.origin_id).not.toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).not.toBe(-1)
           expect(link.target_slot).toBe(-1)
-          const outputFloatingLinks = graph.getNodeById(
-            toNodeId(link.origin_id)
-          )?.outputs[link.origin_slot]._floatingLinks
+          const outputFloatingLinks = graph.getNodeById(link.origin_id)
+            ?.outputs[link.origin_slot]._floatingLinks
           expect(outputFloatingLinks).toBeDefined()
           expect(outputFloatingLinks).toContain(link)
         } else {
           expect(link.origin_id).toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).toBe(-1)
           expect(link.target_slot).not.toBe(-1)
-          const inputFloatingLinks = graph.getNodeById(toNodeId(link.target_id))
-            ?.inputs[link.target_slot]._floatingLinks
+          const inputFloatingLinks = graph.getNodeById(link.target_id)?.inputs[
+            link.target_slot
+          ]._floatingLinks
           expect(inputFloatingLinks).toBeDefined()
           expect(inputFloatingLinks).toContain(link)
         }
@@ -1207,7 +1207,7 @@ describe('LinkConnector Integration', () => {
       const listener = vi.fn()
       connector.listenUntilReset('link-created', listener)
 
-      const node = graph.getNodeById(toNodeId(nodeId))!
+      const node = graph.getNodeById(nodeId)!
       const input = node.inputs[0]
       const reroute = graph.getReroute(rerouteId)!
       const dropEvent = createMockCanvasPointerEvent(
@@ -1238,7 +1238,7 @@ describe('LinkConnector Integration', () => {
       const listener = vi.fn()
       connector.listenUntilReset('link-created', listener)
 
-      const node = graph.getNodeById(toNodeId(nodeId))!
+      const node = graph.getNodeById(nodeId)!
       const reroute = graph.getReroute(rerouteId)!
       const dropEvent = createMockCanvasPointerEvent(node.pos[0], node.pos[1])
 
@@ -1265,7 +1265,7 @@ describe('LinkConnector Integration', () => {
       const listener = vi.fn()
       connector.listenUntilReset('link-created', listener)
 
-      const node = graph.getNodeById(toNodeId(nodeId))!
+      const node = graph.getNodeById(nodeId)!
       const reroute = graph.getReroute(rerouteId)!
       const inputPos = node.getInputPos(0)
       const dropOnInputEvent = createMockCanvasPointerEvent(

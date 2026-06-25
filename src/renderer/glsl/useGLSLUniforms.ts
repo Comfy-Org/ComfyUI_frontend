@@ -11,7 +11,6 @@ import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { hexToInt } from '@/utils/colorUtil'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -94,7 +93,7 @@ export function extractUniformSources(
     if (link.origin_slot >= sourceNode.widgets.length) continue
     const widget = sourceNode.widgets[link.origin_slot]
     const source: UniformSource = {
-      nodeId: toNodeId(sourceNode.id),
+      nodeId: sourceNode.id,
       widgetName: widget.name,
       directValue: () => widget.value
     }
@@ -164,7 +163,7 @@ export function useGLSLUniforms(
       if (!upstreamNode) break
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        toNodeId(upstreamNode.id)
+        upstreamNode.id
       )
       if (
         upstreamWidgets.length === 0 ||
@@ -251,7 +250,7 @@ export function useGLSLUniforms(
 
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        toNodeId(upstreamNode.id)
+        upstreamNode.id
       )
       const curveWidget = upstreamWidgets.find((w) => isCurveData(w.value))
       if (!curveWidget) break

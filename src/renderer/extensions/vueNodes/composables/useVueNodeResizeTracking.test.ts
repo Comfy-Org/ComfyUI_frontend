@@ -71,9 +71,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
     setSource: testState.setSource,
     getNodeLayoutRef: (rawNodeId: NodeId): Ref<NodeLayout | null> =>
-      ref<NodeLayout | null>(
-        testState.nodeLayouts.get(toNodeId(rawNodeId)) ?? null
-      )
+      ref<NodeLayout | null>(testState.nodeLayouts.get(rawNodeId) ?? null)
   }
 }))
 
@@ -143,7 +141,7 @@ function seedNodeLayout(options: {
   const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
   const contentHeight = height - titleHeight
 
-  testState.nodeLayouts.set(toNodeId(nodeId), {
+  testState.nodeLayouts.set(nodeId, {
     id: nodeId,
     position: { x: left, y: top + titleHeight },
     size: { width, height: contentHeight },

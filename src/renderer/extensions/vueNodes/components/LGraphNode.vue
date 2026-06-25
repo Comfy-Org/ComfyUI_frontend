@@ -427,10 +427,12 @@ async function nodeOnPointerdown(event: PointerEvent) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
       const [newNode] = result.created
-      startDrag(event, toNodeId(newNode.id))
+      const newNodeId =
+        typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
+      startDrag(event, newNodeId)
       layoutStore.isDraggingVueNodes.value = true
       await nextTick()
-      bringNodeToFront(toNodeId(newNode.id))
+      bringNodeToFront(newNodeId)
       return
     }
   }

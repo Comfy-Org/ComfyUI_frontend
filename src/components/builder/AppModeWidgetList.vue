@@ -23,7 +23,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
@@ -76,7 +76,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
     if (!matchingWidget) return []
 
     matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = toNodeId(node.id)
+    matchingWidget.nodeId = node.id
 
     return [
       {
@@ -140,7 +140,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: toNodeId(-1), onDragDrop }
+  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })

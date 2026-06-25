@@ -1,7 +1,6 @@
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
 
 import type { MinimapNodeData } from '../types'
 import { AbstractMinimapDataSource } from './AbstractMinimapDataSource'
@@ -25,9 +24,7 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
 
     for (const [nodeId, layout] of allNodes) {
       // Find corresponding LiteGraph node for additional properties
-      const graphNode = this.graph?._nodes?.find(
-        (n) => toNodeId(n.id) === nodeId
-      )
+      const graphNode = this.graph?._nodes?.find((n) => n.id === nodeId)
 
       const executionState =
         nodeProgressStates[createNodeLocatorId(null, nodeId)]?.state ?? null

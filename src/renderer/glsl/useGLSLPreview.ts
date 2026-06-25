@@ -8,7 +8,6 @@ import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
@@ -158,7 +157,7 @@ function createInnerPreview(
 
   const nodeId = computed(() => {
     const id = nodeRef.value?.id
-    return id == null ? undefined : toNodeId(id)
+    return id == null ? undefined : id
   })
 
   const hasExecutionOutput = computed(() => {
@@ -206,7 +205,7 @@ function createInnerPreview(
     const inner = innerGLSLNode
     if (inner) {
       return widgetValueStore.getWidget(
-        widgetId(gId, toNodeId(inner.id), 'fragment_shader')
+        widgetId(gId, inner.id, 'fragment_shader')
       )?.value as string | undefined
     }
 
@@ -288,9 +287,7 @@ function createInnerPreview(
     const gId = graphId.value
     if (!gId) return null
 
-    const sizeModeNodeId = innerGLSLNode
-      ? toNodeId(innerGLSLNode.id)
-      : nodeId.value
+    const sizeModeNodeId = innerGLSLNode ? innerGLSLNode.id : nodeId.value
     if (sizeModeNodeId == null) return null
 
     const sizeMode = widgetValueStore.getWidget(

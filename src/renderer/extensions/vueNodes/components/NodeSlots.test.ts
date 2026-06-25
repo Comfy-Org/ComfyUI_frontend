@@ -285,7 +285,7 @@ describe('NodeSlots.vue', () => {
     const { container } = renderSlots(nodeData)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
-      createNodeExecutionId([toNodeId(nodeData.id)]),
+      createNodeExecutionId([nodeData.id]),
       'model'
     )
     await nextTick()

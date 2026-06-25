@@ -27,7 +27,7 @@ import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID, toNodeId, parseNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -62,7 +62,7 @@ export async function createNode(
     const addedNode = graph.add(newNode) ?? null
 
     if (addedNode) {
-      useNodeZIndex().bringNodeToFront(toNodeId(addedNode.id))
+      useNodeZIndex().bringNodeToFront(addedNode.id)
       graph.change()
     }
     return addedNode

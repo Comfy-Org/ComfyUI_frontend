@@ -1,5 +1,4 @@
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
-import { toNodeId } from '@/types/nodeId'
 import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -179,7 +178,7 @@ export function useMaskEditorLoader() {
         maskLayer,
         paintLayer,
         sourceRef,
-        nodeId: toNodeId(node.id)
+        nodeId: node.id
       }
 
       dataStore.sourceNode = node

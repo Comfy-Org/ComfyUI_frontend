@@ -7,7 +7,6 @@ import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -94,7 +93,7 @@ export function searchWidgetsAndNodes(
   }
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
-    nodeId: toNodeId(item.node.id),
+    nodeId: item.node.id,
     searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
   }))
 

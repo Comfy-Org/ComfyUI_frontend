@@ -620,7 +620,7 @@ describe('useNodePricing', () => {
 
       LiteGraph.vueNodesMode = true
       try {
-        const nodeId = toNodeId(node.id)
+        const nodeId = node.id
         const revBefore = getNodeRevisionRef(nodeId).value
         const tickBefore = pricingRevision.value
 

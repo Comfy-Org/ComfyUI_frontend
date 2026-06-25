@@ -14,7 +14,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { toNodeId } from '@/types/nodeId'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
@@ -83,7 +82,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
       !isWidgetPromotedOnSubgraphNode(node, {
-        sourceNodeId: toNodeId(interiorNode.id),
+        sourceNodeId: interiorNode.id,
         sourceWidgetName: getWidgetName(widget)
       })
   )

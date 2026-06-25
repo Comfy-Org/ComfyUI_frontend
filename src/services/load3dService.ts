@@ -16,7 +16,6 @@ import type {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { Object3D } from 'three'
 
@@ -181,7 +180,7 @@ class Load3dService {
    * Use this for initial viewer creation.
    */
   async getOrCreateViewer(node: LGraphNode) {
-    const nodeId = toNodeId(node.id)
+    const nodeId = node.id
     if (!viewerInstances.has(nodeId)) {
       const useLoad3dViewer = await loadUseLoad3dViewer()
       viewerInstances.set(nodeId, useLoad3dViewer(node))
@@ -199,7 +198,7 @@ class Load3dService {
     node: LGraphNode,
     useLoad3dViewer: T
   ): ReturnType<T> {
-    const nodeId = toNodeId(node.id)
+    const nodeId = node.id
     if (!viewerInstances.has(nodeId)) {
       viewerInstances.set(nodeId, useLoad3dViewer(node))
     }
@@ -208,7 +207,7 @@ class Load3dService {
   }
 
   removeViewer(node: LGraphNode) {
-    const nodeId = toNodeId(node.id)
+    const nodeId = node.id
     const viewer = viewerInstances.get(nodeId)
 
     if (viewer) {

@@ -891,9 +891,9 @@ describe('_removeDuplicateLinks', () => {
 
     expect(graph._links.size).toBe(1)
     const survivingLink = graph._links.values().next().value!
-    const targetNode = graph.getNodeById(toNodeId(survivingLink.target_id))!
+    const targetNode = graph.getNodeById(survivingLink.target_id)!
     expect(targetNode.inputs[0].link).toBe(survivingLink.id)
-    const sourceNode = graph.getNodeById(toNodeId(survivingLink.origin_id))!
+    const sourceNode = graph.getNodeById(survivingLink.origin_id)!
     expect(sourceNode.outputs[0].links).toEqual([survivingLink.id])
   })
 
@@ -905,11 +905,11 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.size).toBe(1)
 
     const link = graph._links.values().next().value!
-    const target = graph.getNodeById(toNodeId(link.target_id))!
+    const target = graph.getNodeById(link.target_id)!
     const linkedInput = target.inputs.find((inp) => inp.link === link.id)
     expect(linkedInput).toBeDefined()
 
-    const source = graph.getNodeById(toNodeId(link.origin_id))!
+    const source = graph.getNodeById(link.origin_id)!
     expect(source.outputs[link.origin_slot].links).toContain(link.id)
   })
 
@@ -921,7 +921,7 @@ describe('_removeDuplicateLinks', () => {
     expect(subgraph._links.size).toBe(1)
 
     const link = subgraph._links.values().next().value!
-    const target = subgraph.getNodeById(toNodeId(link.target_id))!
+    const target = subgraph.getNodeById(link.target_id)!
     expect(target.inputs[0].link).toBe(link.id)
   })
 })

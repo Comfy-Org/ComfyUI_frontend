@@ -477,8 +477,8 @@ describe('SubgraphSerialization - Data Integrity', () => {
     expect(restored.links.size).toBe(2)
 
     for (const [, link] of restored.links) {
-      const originNode = restored.getNodeById(toNodeId(link.origin_id))
-      const targetNode = restored.getNodeById(toNodeId(link.target_id))
+      const originNode = restored.getNodeById(link.origin_id)
+      const targetNode = restored.getNodeById(link.target_id)
       expect(originNode).toBeDefined()
       expect(targetNode).toBeDefined()
       expect(link.origin_slot).toBeGreaterThanOrEqual(0)

@@ -32,7 +32,7 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -249,7 +249,7 @@ function rowDisplayName(row: ActiveRow): string {
 
 function isRowLinked(row: ActiveRow): boolean {
   if (row.kind !== 'promoted') return false
-  if (row.node.id === toNodeId(-1)) return true
+  if (row.node.id === UNASSIGNED_NODE_ID) return true
   const source = promotedRowSource(row)
   return (
     !!activeNode.value &&

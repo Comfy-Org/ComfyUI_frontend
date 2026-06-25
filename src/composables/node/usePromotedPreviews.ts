@@ -6,7 +6,6 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import {
   appendNodeExecutionId,
@@ -116,7 +115,7 @@ export function usePromotedPreviews(
         resolveNestedHost
       )
       const leaf = resolved?.leaf ?? {
-        sourceNodeId: toNodeId(exposure.sourceNodeId),
+        sourceNodeId: exposure.sourceNodeId,
         sourcePreviewName: exposure.sourcePreviewName
       }
       const leafHostLocator =

@@ -10,7 +10,6 @@ import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPrev
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { toNodeId } from '@/types/nodeId'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
@@ -21,7 +20,7 @@ const { nodeIdToNodeLocatorId } = useWorkflowStore()
 
 const existingOutput = computed(() => {
   for (const nodeId of appModeStore.selectedOutputs) {
-    const locatorId = nodeIdToNodeLocatorId(toNodeId(nodeId))
+    const locatorId = nodeIdToNodeLocatorId(nodeId)
     const nodeOutput = nodeOutputStore.nodeOutputs[locatorId]
     if (!nodeOutput) continue
     const results = flattenNodeOutput([nodeId, nodeOutput])

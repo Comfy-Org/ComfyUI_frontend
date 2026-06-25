@@ -21,7 +21,6 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -71,7 +70,7 @@ const widgetComponent = computed(() => {
 
 const isLinked = computed(() => {
   const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(toNodeId(node.id))
+    .nodeManager.value?.vueNodeData.get(node.id)
     ?.widgets?.find((w) => w.name === widget.name)
   return safeWidget?.slotMetadata
     ? !!safeWidget.slotMetadata.linked
@@ -213,7 +212,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
-      :node-id="toNodeId(node.id)"
+      :node-id="node.id"
       :node-type="node.type"
       :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
     />

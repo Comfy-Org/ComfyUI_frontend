@@ -15,7 +15,6 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { toNodeId } from '@/types/nodeId'
 
 export interface SlotPositionContext {
   /** Node's X position in graph coordinates */
@@ -142,7 +141,7 @@ export function getSlotPosition(
   // Only use DOM-registered slot positions when Vue nodes mode is enabled
   if (LiteGraph.vueNodesMode) {
     // Try to get precise position from slot layout (DOM-registered)
-    const nodeId = toNodeId(node.id)
+    const nodeId = node.id
     const slotKey = getSlotKey(nodeId, slotIndex, isInput)
     const slotLayout = layoutStore.getSlotLayout(slotKey)
     if (slotLayout) {

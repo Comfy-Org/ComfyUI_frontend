@@ -238,7 +238,7 @@ describe('nodeIdentification', () => {
       const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
       const localNodeId: NodeId = toNodeId(123)
 
-      const locatorId = createNodeLocatorId(uuid, toNodeId(localNodeId))
+      const locatorId = createNodeLocatorId(uuid, localNodeId)
       const parsed = parseNodeLocatorId(locatorId)
 
       expect(parsed).toBeTruthy()

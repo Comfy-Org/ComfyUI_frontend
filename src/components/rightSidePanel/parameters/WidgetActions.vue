@@ -19,7 +19,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { toNodeId } from '@/types/nodeId'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
@@ -91,7 +90,7 @@ function handleHideInput() {
 
   const source = widgetPromotedSource(node, widget)
   if (source) {
-    const currentNodeId = toNodeId(node.id)
+    const currentNodeId = node.id
     for (const parent of parents) {
       const sourceNodeId =
         String(node.id) === String(parent.id) ? source.nodeId : currentNodeId

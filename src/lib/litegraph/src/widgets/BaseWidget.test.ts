@@ -192,7 +192,7 @@ describe('BaseWidget store integration', () => {
           const graphId = widget.node.graph?.rootGraph.id
           if (!graphId) return defaultValue
           const state = store.getWidget(
-            widgetId(graphId, toNodeId(node.id), 'system_prompt')
+            widgetId(graphId, node.id, 'system_prompt')
           )
           return (state?.value as string) ?? defaultValue
         },
@@ -200,16 +200,16 @@ describe('BaseWidget store integration', () => {
           const graphId = widget.node.graph?.rootGraph.id
           if (!graphId) return
           const state = store.getWidget(
-            widgetId(graphId, toNodeId(node.id), 'system_prompt')
+            widgetId(graphId, node.id, 'system_prompt')
           )
           if (state) state.value = v
         }
       })
 
-      widget.setNodeId(toNodeId(node.id))
+      widget.setNodeId(node.id)
 
       const state = store.getWidget(
-        widgetId(graph.id, toNodeId(node.id), 'system_prompt')
+        widgetId(graph.id, node.id, 'system_prompt')
       )
       expect(state?.value).toBe(defaultValue)
     })

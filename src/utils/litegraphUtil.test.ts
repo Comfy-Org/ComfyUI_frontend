@@ -49,7 +49,7 @@ describe('resolveNode', () => {
     const subgraphNode = subgraph._nodes[0]
 
     // Node should NOT be found directly on root graph
-    expect(rootGraph.getNodeById(toNodeId(subgraphNode.id))).toBeFalsy()
+    expect(rootGraph.getNodeById(subgraphNode.id)).toBeFalsy()
 
     // But resolveNode should find it via subgraph search
     expect(resolveNode(subgraphNode.id, rootGraph)).toBe(subgraphNode)
@@ -122,7 +122,7 @@ describe('createNode', () => {
 
     expect(result).toBe(newNode)
     expect(mockBringNodeToFront).toHaveBeenCalledTimes(1)
-    expect(mockBringNodeToFront).toHaveBeenCalledWith(toNodeId(newNode.id))
+    expect(mockBringNodeToFront).toHaveBeenCalledWith(newNode.id)
     spy.mockRestore()
   })
 

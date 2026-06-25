@@ -77,7 +77,7 @@ function resolvePromotionSource(
 
     if (inputNode.isSubgraphNode()) {
       return {
-        sourceNodeId: toNodeId(inputNode.id),
+        sourceNodeId: inputNode.id,
         sourceWidgetName: targetInput.name
       }
     }
@@ -86,7 +86,7 @@ function resolvePromotionSource(
     if (!targetWidget) continue
 
     return {
-      sourceNodeId: toNodeId(inputNode.id),
+      sourceNodeId: inputNode.id,
       sourceWidgetName: targetWidget.name
     }
   }
@@ -215,7 +215,7 @@ function toPromotionSource(
   widget: IBaseWidget
 ): PromotedWidgetSource {
   return {
-    sourceNodeId: toNodeId(node.id),
+    sourceNodeId: node.id,
     sourceWidgetName: getWidgetName(widget)
   }
 }
@@ -604,7 +604,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
     if (!hostInput?.widgetId && !hostInput?._widget) return false
 
     removedEntries.push({
-      sourceNodeId: toNodeId(subgraphNode.id),
+      sourceNodeId: subgraphNode.id,
       sourceWidgetName: input.name
     })
     return true
@@ -644,7 +644,7 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
         !isWidgetPromotedOnSubgraphNode(
           subgraphNode,
           {
-            sourceNodeId: toNodeId(interiorNode.id),
+            sourceNodeId: interiorNode.id,
             sourceWidgetName: widget.name
           },
           widget

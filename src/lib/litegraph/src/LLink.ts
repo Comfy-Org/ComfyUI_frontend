@@ -360,9 +360,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     } else {
       this.id = o.id
       this.type = o.type
-      this.origin_id = toNodeId(o.origin_id)
+      this.origin_id = o.origin_id
       this.origin_slot = o.origin_slot
-      this.target_id = toNodeId(o.target_id)
+      this.target_id = o.target_id
       this.target_slot = o.target_slot
       this.parentId = o.parentId
     }

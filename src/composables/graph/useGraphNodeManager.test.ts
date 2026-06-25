@@ -16,7 +16,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
 
 describe('Node Reactivity', () => {
   beforeEach(() => {
@@ -69,7 +68,7 @@ describe('Node Reactivity', () => {
     const onValueChange = vi.fn()
 
     graph.trigger('node:slot-links:changed', {
-      nodeId: toNodeId(node.id),
+      nodeId: node.id,
       slotType: NodeSlotType.INPUT
     })
     await nextTick()
@@ -117,7 +116,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(toNodeId(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     expect(widgetData?.slotMetadata).toBeDefined()
@@ -128,7 +127,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(toNodeId(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     // Verify initially linked
@@ -156,7 +155,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(toNodeId(node.id))!
+    const nodeData = vueNodeData.get(node.id)!
 
     // Mimic what processedWidgets does in NodeWidgets.vue:
     // derive disabled from slotMetadata.linked
@@ -205,7 +204,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
       throw new Error('Expected SubgraphInput.connect to produce a link')
 
     const { vueNodeData } = useGraphNodeManager(subgraph)
-    const nodeData = vueNodeData.get(toNodeId(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     expect(widgetData?.slotMetadata?.linked).toBe(true)
@@ -231,7 +230,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     graph.add(subgraphNode)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(toNodeId(subgraphNode.id))
+    const nodeData = vueNodeData.get(subgraphNode.id)
 
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'value')
     expect(widgetData).toBeDefined()
@@ -243,7 +242,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(toNodeId(node.id))!
+    const nodeData = vueNodeData.get(node.id)!
     const widgetData = nodeData.widgets!.find((w) => w.name === 'prompt')!
 
     expect(widgetData.slotMetadata?.linked).toBe(true)
@@ -279,7 +278,7 @@ describe('Subgraph output slot label reactivity', () => {
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = toNodeId(node.id)
+    const nodeId = node.id
     const nodeData = vueNodeData.get(nodeId)
     if (!nodeData?.outputs) throw new Error('Expected output data to exist')
 
@@ -307,7 +306,7 @@ describe('Subgraph output slot label reactivity', () => {
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = toNodeId(node.id)
+    const nodeId = node.id
     const nodeData = vueNodeData.get(nodeId)
     if (!nodeData?.inputs) throw new Error('Expected input data to exist')
 
@@ -370,7 +369,7 @@ describe('Nested promoted widget mapping', () => {
     graph.add(subgraphNodeB)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(toNodeId(subgraphNodeB.id))
+    const nodeData = vueNodeData.get(subgraphNodeB.id)
     const mappedWidget = nodeData?.widgets?.[0]
 
     expect(mappedWidget).toBeDefined()
@@ -407,7 +406,7 @@ describe('Nested promoted widget mapping', () => {
     graph.add(subgraphNode)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(toNodeId(subgraphNode.id))
+    const nodeData = vueNodeData.get(subgraphNode.id)
     const widgets = nodeData?.widgets
 
     expect(widgets).toHaveLength(2)
@@ -453,7 +452,7 @@ describe('Promoted widget sourceExecutionId', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(toNodeId(subgraphNode.id))
+    const nodeData = vueNodeData.get(subgraphNode.id)
     const promotedWidget = nodeData?.widgets?.find(
       (w) => w.name === 'ckpt_input'
     )
@@ -476,7 +475,7 @@ describe('Promoted widget sourceExecutionId', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(toNodeId(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widget = nodeData?.widgets?.find((w) => w.name === 'steps')
 
     expect(widget).toBeDefined()
@@ -715,7 +714,7 @@ describe('Pre-remove vueNodeData drain', () => {
     const node = new LGraphNode('test')
     graph.add(node)
     const { vueNodeData } = useGraphNodeManager(graph)
-    const id = toNodeId(node.id)
+    const id = node.id
 
     expect(vueNodeData.has(id)).toBe(true)
 

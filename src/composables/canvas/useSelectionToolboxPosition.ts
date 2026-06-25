@@ -12,7 +12,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { toNodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
@@ -101,7 +100,7 @@ export function useSelectionToolboxPosition(
       if (item.id == null) continue
 
       if (shouldRenderVueNodes.value && typeof item.id === 'string') {
-        const layout = layoutStore.getNodeLayoutRef(toNodeId(item.id)).value
+        const layout = layoutStore.getNodeLayoutRef(item.id).value
         if (layout) {
           allBounds.push([
             layout.bounds.x,

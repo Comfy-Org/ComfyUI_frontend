@@ -24,7 +24,6 @@ import type {
   WidgetDependency
 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { Expression } from 'jsonata'
 import jsonata from 'jsonata'
@@ -512,7 +511,7 @@ const scheduleEvaluation = (
 
       if (LiteGraph.vueNodesMode) {
         // VueNodes mode: bump per-node revision (only this node re-renders)
-        getNodeRevisionRef(toNodeId(node.id)).value++
+        getNodeRevisionRef(node.id).value++
       }
       pricingTick.value++
     })

@@ -360,7 +360,7 @@ function buildSlotMetadata(
       const link = graphRef.getLink(input.link)
       const originNode = link ? graphRef.getNodeById(link.origin_id) : null
       if (link && originNode) {
-        originNodeId = toNodeId(link.origin_id)
+        originNodeId = link.origin_id
         originOutputName = originNode.outputs?.[link.origin_slot]?.name
       }
     }
@@ -471,7 +471,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const badges = node.badges
 
   return {
-    id: toNodeId(node.id),
+    id: node.id,
     title: typeof node.title === 'string' ? node.title : '',
     type: nodeType,
     mode: node.mode || 0,
@@ -525,7 +525,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const syncWithGraph = () => {
     if (!graph?._nodes) return
 
-    const currentNodes = new Set(graph._nodes.map((n) => toNodeId(n.id)))
+    const currentNodes = new Set(graph._nodes.map((n) => n.id))
 
     // Remove deleted nodes
     for (const id of Array.from(vueNodeData.keys())) {
@@ -537,7 +537,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Add/update existing nodes
     graph._nodes.forEach((node) => {
-      const id = toNodeId(node.id)
+      const id = node.id
 
       // Store non-reactive reference
       nodeRefs.set(id, node)
@@ -555,7 +555,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = toNodeId(node.id)
+    const id = node.id
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
@@ -619,7 +619,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = toNodeId(node.id)
+    const id = node.id
 
     // Remove node from layout store
     setSource(LayoutSource.Canvas)
@@ -672,7 +672,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const beforeNodeRemovedListener = (
       e: CustomEvent<{ node: LGraphNode }>
     ) => {
-      dropNodeReferences(toNodeId(e.detail.node.id))
+      dropNodeReferences(e.detail.node.id)
     }
     graph.events.addEventListener(
       'node:before-removed',

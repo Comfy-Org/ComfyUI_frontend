@@ -563,14 +563,11 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       callback
     })
 
-    useWidgetValueStore().registerWidget(
-      widgetId(GRAPH_ID, toNodeId(NODE_ID), 'seed'),
-      {
-        type: 'combo',
-        value: 0,
-        options: {}
-      }
-    )
+    useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, NODE_ID, 'seed'), {
+      type: 'combo',
+      value: 0,
+      options: {}
+    })
 
     const [processed] = processWidgets([widget])
     processed.updateHandler(42)
@@ -598,20 +595,17 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       nodeId: NODE_ID
     })
 
-    useWidgetValueStore().registerWidget(
-      widgetId(GRAPH_ID, toNodeId(NODE_ID), 'seed'),
-      {
-        type: 'combo',
-        value: 0,
-        options: {}
-      }
-    )
+    useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, NODE_ID, 'seed'), {
+      type: 'combo',
+      value: 0,
+      options: {}
+    })
 
     const [processed] = processWidgets([widget])
     processed.updateHandler(99)
 
     const state = useWidgetValueStore().getWidget(
-      widgetId(GRAPH_ID, toNodeId(NODE_ID), 'seed')
+      widgetId(GRAPH_ID, NODE_ID, 'seed')
     )
     expect(state?.value).toBe(99)
   })
@@ -645,7 +639,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        createNodeExecutionId([toNodeId(NODE_ID)]),
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors[NODE_ID],
         executionErrorStore,
         missingModelStore
@@ -657,7 +651,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        createNodeExecutionId([toNodeId(NODE_ID)]),
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
         missingModelStore

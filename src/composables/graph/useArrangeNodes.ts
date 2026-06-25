@@ -7,7 +7,6 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 export type ArrangeLayout = 'vertical' | 'horizontal' | 'grid'
@@ -41,7 +40,7 @@ const titleHeightOf = (node: LGraphNode): number => {
 const toBox = (node: LGraphNode): NodeBox => {
   const titleHeight = titleHeightOf(node)
   return {
-    id: toNodeId(node.id),
+    id: node.id,
     posX: node.pos[0],
     posY: node.pos[1],
     visualWidth: node.size[0],

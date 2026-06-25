@@ -71,7 +71,7 @@ export function useMinimapGraph(
 
     g.onNodeRemoved = function (node: LGraphNode) {
       originalCallbacks.onNodeRemoved?.call(this, node)
-      nodeStatesCache.delete(toNodeId(node.id))
+      nodeStatesCache.delete(node.id)
       void handleGraphChangedThrottled()
     }
 
