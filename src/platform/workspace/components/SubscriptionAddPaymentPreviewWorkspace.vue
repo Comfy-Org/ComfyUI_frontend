@@ -171,6 +171,7 @@ import {
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -211,9 +212,7 @@ const tierName = computed(() =>
 )
 
 const isYearly = computed(() =>
-  previewData?.new_plan
-    ? previewData.new_plan.duration === 'ANNUAL'
-    : billingCycle === 'yearly'
+  isYearlyCheckout(previewData?.new_plan.duration, billingCycle)
 )
 
 const displayPrice = computed(() => {

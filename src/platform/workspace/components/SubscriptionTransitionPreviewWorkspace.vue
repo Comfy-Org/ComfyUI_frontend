@@ -149,6 +149,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
@@ -172,11 +173,12 @@ function formatTierName(tier: string): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
-  })
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(new Date(dateStr))
 }
 
 function money(usd: number): string {
@@ -195,9 +197,11 @@ function tierMonthlyCredits(tier: string): number {
 }
 
 const isImmediate = computed(() => previewData.is_immediate)
-const newIsYearly = computed(() => previewData.new_plan.duration === 'ANNUAL')
-const currentIsYearly = computed(
-  () => previewData.current_plan?.duration === 'ANNUAL'
+const newIsYearly = computed(() =>
+  isAnnualDuration(previewData.new_plan.duration)
+)
+const currentIsYearly = computed(() =>
+  isAnnualDuration(previewData.current_plan?.duration)
 )
 const isCadenceChange = computed(
   () =>

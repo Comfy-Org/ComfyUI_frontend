@@ -91,20 +91,18 @@ export function mapApiTeamCreditStops(
 }
 
 /**
- * Discounted monthly price for a stop's list `usd`, applying the billing-cycle
+ * Discounted monthly price for a credit stop, applying the billing-cycle
  * discount (yearly = full `discountPercentYearly`; monthly halves it). Shared by
- * the slider display and the checkout confirm step so the two never drift.
- * Falls back to the list price when `usd` is not a known stop.
+ * the slider display and the checkout confirm step so the two never drift, and
+ * it reads the stop's own discount so backend-driven stops are honored.
  */
-export function getDiscountedMonthlyUsd(
-  usd: number,
+export function getStopDiscountedMonthlyUsd(
+  stop: Pick<CreditStop, 'usd' | 'discountPercentYearly'>,
   cycle: 'monthly' | 'yearly'
 ): number {
-  const stop = TEAM_PLAN_CREDIT_STOPS.find((s) => s.usd === usd)
-  if (!stop) return usd
   const percent =
     cycle === 'monthly'
       ? stop.discountPercentYearly / 2
       : stop.discountPercentYearly
-  return Math.round(usd * (1 - percent / 100))
+  return Math.round(stop.usd * (1 - percent / 100))
 }
