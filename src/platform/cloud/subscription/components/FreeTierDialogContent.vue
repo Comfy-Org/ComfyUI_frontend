@@ -102,9 +102,9 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 
 defineProps<{
@@ -116,7 +116,17 @@ defineEmits<{
   upgrade: []
 }>()
 
-const { formattedRenewalDate } = useSubscription()
+const { renewalDate } = useBillingContext()
+
+const formattedRenewalDate = computed(() => {
+  if (!renewalDate.value) return ''
+
+  return new Date(renewalDate.value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+})
 
 const freeTierCredits = computed(() => getTierCredits('free'))
 </script>

@@ -671,6 +671,30 @@ describe('useErrorGroups', () => {
       expect(nodeIds).toEqual(['1', '2', '10'])
     })
 
+    it('marks only nested execution paths as subgraph node cards', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastNodeErrors = {
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        },
+        '1:20': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        }
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.cards).toMatchObject([
+        { nodeId: '1', isSubgraphNode: false },
+        { nodeId: '1:20', isSubgraphNode: true }
+      ])
+    })
     it('sorts cards with subpath nodeIds before higher root IDs', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {

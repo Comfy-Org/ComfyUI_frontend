@@ -13,6 +13,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode
@@ -169,7 +170,7 @@ export function scanNodeModelCandidates(
 function scanAssetWidget(
   node: { type: string },
   widget: IAssetWidget,
-  executionId: string,
+  executionId: NodeExecutionId,
   getDirectory: ((nodeType: string) => string | undefined) | undefined
 ): MissingModelCandidate | null {
   const value = widget.value
@@ -190,7 +191,7 @@ function scanAssetWidget(
 function scanComboWidget(
   node: { type: string },
   widget: IComboWidget,
-  executionId: string,
+  executionId: NodeExecutionId,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory: ((nodeType: string) => string | undefined) | undefined
 ): MissingModelCandidate | null {

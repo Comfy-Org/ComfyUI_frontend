@@ -110,7 +110,7 @@ export function useLayoutSync() {
       if (change.nodeIds.length === 0) return
 
       for (const nodeId of change.nodeIds) {
-        pendingNodeIds.add(nodeId)
+        pendingNodeIds.add(String(nodeId))
       }
       scheduleFlush(change.source, canvas)
     })
