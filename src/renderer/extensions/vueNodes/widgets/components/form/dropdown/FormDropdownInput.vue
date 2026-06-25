@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Loader from '@/components/loader/Loader.vue'
 import { WidgetInputBaseClass } from '../../layout'
 import type { FormDropdownInputProps } from './types'
 
@@ -102,7 +103,12 @@ defineExpose({ focus })
         )
       "
     >
-      <i class="icon-[lucide--folder-search] size-4" aria-hidden="true" />
+      <Loader v-if="isUploading" size="sm" />
+      <i
+        v-else
+        class="icon-[lucide--folder-search] size-4"
+        aria-hidden="true"
+      />
       <input
         type="file"
         class="absolute inset-0 -z-1 opacity-0"

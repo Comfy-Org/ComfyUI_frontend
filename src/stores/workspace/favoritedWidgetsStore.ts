@@ -6,6 +6,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { isNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -84,14 +85,14 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   function parseFavoriteKey(key: string): FavoritedWidgetId | null {
     try {
       const [nodeLocatorId, widgetName] = JSON.parse(key) as [string, string]
-      if (!nodeLocatorId || !widgetName) return null
+      if (!isNodeLocatorId(nodeLocatorId) || !widgetName) return null
       return { nodeLocatorId, widgetName }
     } catch {
       const separatorIndex = key.indexOf(':')
       if (separatorIndex === -1) return null
       const nodeLocatorId = key.slice(0, separatorIndex)
       const widgetName = key.slice(separatorIndex + 1)
-      if (!nodeLocatorId || !widgetName) return null
+      if (!isNodeLocatorId(nodeLocatorId) || !widgetName) return null
       return { nodeLocatorId, widgetName }
     }
   }
@@ -102,8 +103,9 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     if (!id || !id.widgetName) return null
 
     if ('nodeLocatorId' in id && id.nodeLocatorId) {
+      if (!isNodeLocatorId(id.nodeLocatorId)) return null
       return {
-        nodeLocatorId: String(id.nodeLocatorId),
+        nodeLocatorId: id.nodeLocatorId,
         widgetName: String(id.widgetName)
       }
     }

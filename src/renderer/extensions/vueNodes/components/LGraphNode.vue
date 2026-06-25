@@ -51,7 +51,7 @@
         nodeData.mode === LGraphEventMode.ALWAYS &&
         !nodeData.hasErrors
       "
-      :id="nodeData.id"
+      :id="nodeId"
     />
     <div
       v-if="isSelected || executing"
@@ -339,11 +339,13 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-useVueElementTracking(String(nodeData.id), 'node')
+const nodeId = computed(() => String(nodeData.id))
+
+useVueElementTracking(nodeId.value, 'node')
 
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeData.id)
+  return selectedNodeIds.value.has(nodeId.value)
 })
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
@@ -352,7 +354,7 @@ const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const hasExecutionError = computed(
-  () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+  () => executionErrorStore.lastExecutionErrorNodeId === nodeId.value
 )
 
 const hasAnyError = computed((): boolean => {

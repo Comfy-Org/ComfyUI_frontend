@@ -34,6 +34,22 @@ test.describe('Properties panel - Node selection', () => {
       await expect(panel.contentArea.getByText('seed')).toBeVisible()
       await expect(panel.contentArea.getByText('steps')).toBeVisible()
     })
+
+    test(
+      'a linked widget is disabled',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        const seed = panel.contentArea.getByLabel('seed').locator('input')
+        await comfyPage.searchBoxV2.addNode('Int')
+        const intNode = await comfyPage.vueNodes.getFixtureByTitle(/Int/)
+        const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+        await ksampler.select()
+        await expect(seed).toBeEnabled()
+        await intNode.getSlot('INT').dragTo(ksampler.getSlot('seed'))
+        await expect(seed).toBeDisabled()
+      }
+    )
   })
 
   test.describe('Multi-node', () => {

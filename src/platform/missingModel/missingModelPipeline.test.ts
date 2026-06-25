@@ -34,10 +34,6 @@ const { mockHandles } = vi.hoisted(() => {
       executionErrorStore: {
         surfaceMissingModels: vi.fn()
       },
-      modelStore: {
-        loadModelFolders: vi.fn(),
-        getLoadedModelFolder: vi.fn()
-      },
       modelToNodeStore: {
         getCategoryForNodeType: vi.fn()
       },
@@ -49,14 +45,9 @@ const { mockHandles } = vi.hoisted(() => {
         ): MissingModelCandidate[] => []
       ),
       enrichWithEmbeddedMetadata: vi.fn(
-        async (
+        (
           _candidates: readonly MissingModelCandidate[],
-          _graphData: ComfyWorkflowJSON,
-          _checkModelInstalled: (
-            name: string,
-            directory: string
-          ) => Promise<boolean>,
-          _isAssetSupported?: (nodeType: string, widgetName: string) => boolean
+          _graphData: ComfyWorkflowJSON
         ) => state.enrichedCandidates
       ),
       verifyAssetSupportedCandidates: vi.fn(
@@ -104,10 +95,6 @@ vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => mockHandles.executionErrorStore
 }))
 
-vi.mock('@/stores/modelStore', () => ({
-  useModelStore: () => mockHandles.modelStore
-}))
-
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => mockHandles.modelToNodeStore
 }))
@@ -121,16 +108,8 @@ vi.mock('@/platform/missingModel/missingModelScan', () => ({
     mockHandles.scanAllModelCandidates(graph, isAssetSupported, getDirectory),
   enrichWithEmbeddedMetadata: (
     candidates: readonly MissingModelCandidate[],
-    graphData: ComfyWorkflowJSON,
-    checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
-    isAssetSupported?: (nodeType: string, widgetName: string) => boolean
-  ) =>
-    mockHandles.enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      checkModelInstalled,
-      isAssetSupported
-    ),
+    graphData: ComfyWorkflowJSON
+  ) => mockHandles.enrichWithEmbeddedMetadata(candidates, graphData),
   verifyAssetSupportedCandidates: (
     candidates: readonly MissingModelCandidate[],
     signal: AbortSignal
@@ -186,8 +165,6 @@ describe('missingModelPipeline', () => {
     mockHandles.missingModelStore.createVerificationAbortController.mockImplementation(
       () => new AbortController()
     )
-    mockHandles.modelStore.loadModelFolders.mockResolvedValue(undefined)
-    mockHandles.modelStore.getLoadedModelFolder.mockResolvedValue(undefined)
     mockHandles.modelToNodeStore.getCategoryForNodeType.mockReturnValue(
       undefined
     )
@@ -253,9 +230,7 @@ describe('missingModelPipeline', () => {
 
       expect(mockHandles.enrichWithEmbeddedMetadata).toHaveBeenCalledWith(
         expect.any(Array),
-        expect.objectContaining({ models: activeModels }),
-        expect.any(Function),
-        undefined
+        expect.objectContaining({ models: activeModels })
       )
       expect(
         mockHandles.executionErrorStore.surfaceMissingModels
@@ -305,9 +280,7 @@ describe('missingModelPipeline', () => {
               hash_type: 'sha256'
             }
           ]
-        }),
-        expect.any(Function),
-        undefined
+        })
       )
       expect(
         mockHandles.executionErrorStore.surfaceMissingModels
@@ -325,9 +298,7 @@ describe('missingModelPipeline', () => {
 
       expect(mockHandles.enrichWithEmbeddedMetadata).toHaveBeenCalledWith(
         expect.any(Array),
-        graphData,
-        expect.any(Function),
-        undefined
+        graphData
       )
     })
 

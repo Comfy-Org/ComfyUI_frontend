@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -165,7 +166,9 @@ describe('WidgetRange', () => {
       outputsHolder.nodeOutputs = {
         loc1: { histogram_range_w: [1, 2, 3, 4] }
       }
-      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
+      renderWidget(
+        makeWidget({}, { nodeLocatorId: createNodeLocatorId(null, 'loc1') })
+      )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'true'
       )
@@ -175,7 +178,9 @@ describe('WidgetRange', () => {
       outputsHolder.nodeOutputs = {
         loc1: { histogram_range_w: [] }
       }
-      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
+      renderWidget(
+        makeWidget({}, { nodeLocatorId: createNodeLocatorId(null, 'loc1') })
+      )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'false'
       )
