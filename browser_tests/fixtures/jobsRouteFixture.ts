@@ -121,7 +121,7 @@ export function createRouteMockJob({
   }
 }
 
-export class JobsRouteMocker {
+class JobsRouteMocker {
   constructor(private readonly page: Page) {}
 
   async mockJobsHistory(

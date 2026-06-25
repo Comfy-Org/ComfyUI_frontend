@@ -1,4 +1,5 @@
 import type { ResolvedErrorMessage } from '@/platform/errorCatalog/types'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 export interface ErrorItem extends ResolvedErrorMessage {
   /** Raw source/API-compatible message. */
@@ -12,7 +13,7 @@ export interface ErrorItem extends ResolvedErrorMessage {
 export interface ErrorCardData {
   id: string
   title: string
-  nodeId?: string
+  nodeId?: NodeExecutionId
   nodeTitle?: string
   graphNodeId?: string
   isSubgraphNode?: boolean
@@ -24,6 +25,7 @@ interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   groupKey: string
   /** Human-friendly title resolved for UI display. */
   displayTitle: string
+  count: number
   priority: number
 }
 

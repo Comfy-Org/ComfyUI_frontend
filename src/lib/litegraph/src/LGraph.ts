@@ -5,8 +5,8 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -27,7 +27,7 @@ import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkId, SerialisedLLinkArray } from './LLink'
+import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -143,36 +143,23 @@ export interface GraphAddOptions {
   dragEvent?: MouseEvent
 }
 
-export interface GroupNodeConfigEntry {
-  input?: Record<string, { name?: string; visible?: boolean }>
-  output?: Record<number, { name?: string; visible?: boolean }>
-}
-
-export interface GroupNodeWorkflowData {
-  external: (number | string)[][]
-  links: SerialisedLLinkArray[]
-  nodes: {
-    index?: number
-    type?: string
-    title?: string
-    inputs?: unknown[]
-    outputs?: unknown[]
-    widgets_values?: unknown[]
-  }[]
-  config?: Record<number, GroupNodeConfigEntry>
-}
-
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
-  groupNodes?: Record<string, GroupNodeWorkflowData>
 }
 
 export interface BaseLGraph {
   /** The root graph. */
   readonly rootGraph: LGraph
+}
+
+function fireNodeRemovalLifecycle(node: LGraphNode): void {
+  const graph: LGraph | null = node.graph
+  graph?.events.dispatch('node:before-removed', { node })
+  node.onRemoved?.()
+  graph?.onNodeRemoved?.(node)
 }
 
 /**
@@ -406,8 +393,7 @@ export class LGraph
     // safe clear
     if (this._nodes) {
       for (const _node of this._nodes) {
-        _node.onRemoved?.()
-        this.onNodeRemoved?.(_node)
+        fireNodeRemovalLifecycle(_node)
       }
     }
 
@@ -973,7 +959,7 @@ export class LGraph
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
-      node.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++state.lastNodeId
+      node.id = ++state.lastNodeId
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
@@ -981,14 +967,10 @@ export class LGraph
     }
 
     // give him an id
-    if (LiteGraph.use_uuids) {
-      if (node.id == null || node.id == -1) node.id = LiteGraph.uuidv4()
-    } else {
-      if (node.id == null || node.id == -1) {
-        node.id = ++state.lastNodeId
-      } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
-        state.lastNodeId = node.id
-      }
+    if (node.id == null || node.id == -1) {
+      node.id = ++state.lastNodeId
+    } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
+      state.lastNodeId = node.id
     }
 
     // Set ghost flag before registration so VueNodeData picks it up
@@ -1070,6 +1052,8 @@ export class LGraph
     // sure? - almost sure is wrong
     this.beforeChange()
 
+    this.events.dispatch('node:before-removed', { node })
+
     const { inputs, outputs } = node
 
     // disconnect inputs
@@ -1105,10 +1089,7 @@ export class LGraph
       )
 
       if (!hasRemainingReferences) {
-        forEachNode(node.subgraph, (innerNode) => {
-          innerNode.onRemoved?.()
-          innerNode.graph?.onNodeRemoved?.(innerNode)
-        })
+        forEachNode(node.subgraph, fireNodeRemovalLifecycle)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1675,20 +1656,14 @@ export class LGraph
 
     // Record state before conversion for proper undo support
     this.beforeChange()
+    this.canvasAction((c) => c.emitBeforeChange())
 
     try {
-      function extractNodes(item: Positionable): Positionable[] {
-        if (!(item instanceof LGraphNode) || !item.convertToNodes) return [item]
-
-        const innerNodes = item.convertToNodes()
-        for (const innerNode of innerNodes) innerNode.updateArea()
-        return innerNodes
-      }
-      const processedItems = new Set([...items].flatMap(extractNodes))
-      return this._convertToSubgraphImpl(processedItems)
+      return this._convertToSubgraphImpl(items)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
+      this.canvasAction((c) => c.emitAfterChange())
     }
   }
 
@@ -2357,11 +2332,9 @@ export class LGraph
     Required<Pick<SerialisableGraph, 'nodes' | 'groups' | 'extra'>> {
     const { id, revision, config, state } = this
 
-    const nodeList =
-      !LiteGraph.use_uuids && options?.sortNodes
-        ? // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
-          [...this._nodes].sort((a, b) => a.id - b.id)
-        : this._nodes
+    const nodeList = options?.sortNodes
+      ? [...this._nodes].sort((a, b) => Number(a.id) - Number(b.id))
+      : this._nodes
 
     const nodes = nodeList.map((node) => node.serialize())
     const groups = this._groups.map((x) => x.serialize())

@@ -23,6 +23,14 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => mockWorkflowStore
 }))
 
+const mockTrackShareFlow = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackShareFlow: mockTrackShareFlow
+  })
+}))
+
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
 vi.mock('primevue/usetoast', () => ({
@@ -112,7 +120,10 @@ const i18n = createI18n({
         saveButton: 'Save workflow',
         createLinkButton: 'Create link',
         creatingLink: 'Creating link...',
+        copyLink: 'Copy link',
+        linkCopied: 'Copied',
         checkingAssets: 'Checking assets...',
+        shareUrlLabel: 'Share URL',
         successDescription: 'Anyone with this link...',
         hasChangesDescription: 'You have made changes...',
         updateLinkButton: 'Update link',
@@ -373,6 +384,35 @@ describe('ShareWorkflowDialogContent', () => {
       'workflows/test.json',
       initialShareableAssets
     )
+    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+      step: 'link_created',
+      source: 'graph_mode',
+      view_mode: 'graph',
+      is_app_mode: false,
+      share_id: 'test-123'
+    })
+  })
+
+  it('tracks copied share link with share id', async () => {
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'copy-123',
+      shareUrl: 'https://comfy.org/shared/copy-123',
+      publishedAt: new Date('2026-01-15')
+    })
+
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByRole('button', { name: /Copy link/i }))
+
+    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+      step: 'link_copied',
+      source: 'graph_mode',
+      view_mode: 'graph',
+      is_app_mode: false,
+      share_id: 'copy-123'
+    })
   })
 
   it('shows update button when workflow was saved after last publish', async () => {

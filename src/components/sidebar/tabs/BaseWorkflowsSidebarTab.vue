@@ -148,11 +148,9 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
-import ConfirmDialog from 'primevue/confirmdialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -168,6 +166,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -214,6 +213,7 @@ const filteredWorkflows = computed(() => {
     workflow.path.toLocaleLowerCase().includes(lowerQuery)
   )
 })
+useSearchQueryTracking('apps', searchQuery, filteredWorkflows)
 const filteredRoot = computed<TreeNode>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })

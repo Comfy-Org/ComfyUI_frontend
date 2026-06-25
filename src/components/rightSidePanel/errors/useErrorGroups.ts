@@ -16,40 +16,37 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   getNodeByExecutionId,
-  getExecutionIdByNode,
-  getRootParentNode
+  getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
+import { shouldRenderExecutionItemList } from './executionItemList'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type {
-  MissingModelCandidate,
-  MissingModelGroup
-} from '@/platform/missingModel/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
-import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
+import {
+  countMissingModels,
+  groupMissingModelCandidates
+} from '@/platform/missingModel/missingModelGrouping'
 import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
+import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import {
   resolveMissingErrorMessage,
   resolveRunErrorMessage
 } from '@/platform/errorCatalog/errorMessageResolver'
 import {
-  isNodeExecutionId,
-  compareExecutionId
+  compareExecutionId,
+  tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
-const SINGLE_GROUP_KEY = '__single__'
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
-
-/** Sentinel key for grouping non-asset-supported missing models. */
-const UNSUPPORTED = Symbol('unsupported')
 
 export interface MissingPackGroup {
   packId: string | null
@@ -66,6 +63,7 @@ export interface SwapNodeGroup {
 interface GroupEntry {
   type: 'execution'
   displayTitle: string
+  displayMessage?: string
   priority: number
   cards: Map<string, ErrorCardData>
 }
@@ -75,30 +73,25 @@ interface ErrorSearchItem {
   cardIndex: number
   searchableNodeId: string
   searchableNodeTitle: string
+  searchableRawMessage: string
+  searchableRawDetails: string
   searchableMessage: string
   searchableDetails: string
 }
 
-/**
- * Resolve display info for a node by its execution ID.
- * For group node internals, resolves the parent group node's title instead.
- */
-function resolveNodeInfo(nodeId: string) {
+type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
+
+/** Resolve display info for a node by its execution ID. */
+function resolveNodeInfo(nodeId: NodeExecutionId) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
 
-  const parentNode = getRootParentNode(app.rootGraph, nodeId)
-  const isParentGroupNode = parentNode ? isGroupNode(parentNode) : false
-
   return {
-    title: isParentGroupNode
-      ? parentNode?.title || ''
-      : resolveNodeDisplayName(graphNode, {
-          emptyLabel: '',
-          untitledLabel: '',
-          st
-        }),
-    graphNodeId: graphNode ? String(graphNode.id) : undefined,
-    isParentGroupNode
+    title: resolveNodeDisplayName(graphNode, {
+      emptyLabel: '',
+      untitledLabel: '',
+      st
+    }),
+    graphNodeId: graphNode ? String(graphNode.id) : undefined
   }
 }
 
@@ -106,23 +99,27 @@ function getOrCreateGroup(
   groupsMap: Map<string, GroupEntry>,
   groupKey: string,
   displayTitle = groupKey,
-  priority = 1
+  priority = 1,
+  displayMessage?: string
 ): Map<string, ErrorCardData> {
   let entry = groupsMap.get(groupKey)
   if (!entry) {
     entry = {
       type: 'execution',
       displayTitle,
+      displayMessage,
       priority,
       cards: new Map()
     }
     groupsMap.set(groupKey, entry)
+  } else if (!entry.displayMessage && displayMessage) {
+    entry.displayMessage = displayMessage
   }
   return entry.cards
 }
 
 function createErrorCard(
-  nodeId: string,
+  nodeId: NodeExecutionId,
   classType: string,
   idPrefix: string
 ): ErrorCardData {
@@ -133,62 +130,37 @@ function createErrorCard(
     nodeId,
     nodeTitle: nodeInfo.title,
     graphNodeId: nodeInfo.graphNodeId,
-    isSubgraphNode: isNodeExecutionId(nodeId) && !nodeInfo.isParentGroupNode,
+    isSubgraphNode: nodeId.includes(':'),
     errors: []
   }
-}
-
-/**
- * In single-node mode, regroup cards by error message instead of class_type.
- * This lets the user see "what kinds of errors this node has" at a glance.
- */
-function regroupByErrorMessage(
-  groupsMap: Map<string, GroupEntry>
-): Map<string, GroupEntry> {
-  const allCards = Array.from(groupsMap.values()).flatMap((g) =>
-    Array.from(g.cards.values())
-  )
-
-  const cardErrorPairs = allCards.flatMap((card) =>
-    card.errors.map((error) => ({ card, error }))
-  )
-
-  const messageMap = new Map<string, GroupEntry>()
-  for (const { card, error } of cardErrorPairs) {
-    addCardErrorToGroup(messageMap, card, error)
-  }
-
-  return messageMap
-}
-
-function addCardErrorToGroup(
-  messageMap: Map<string, GroupEntry>,
-  card: ErrorCardData,
-  error: ErrorItem
-) {
-  const displayTitle =
-    error.displayTitle ?? error.displayMessage ?? error.message
-  const groupKey = error.catalogId ?? displayTitle
-  const group = getOrCreateGroup(messageMap, groupKey, displayTitle, 1)
-  if (!group.has(card.id)) {
-    group.set(card.id, { ...card, errors: [] })
-  }
-  group.get(card.id)?.errors.push(error)
 }
 
 function compareNodeId(a: ErrorCardData, b: ErrorCardData): number {
   return compareExecutionId(a.nodeId, b.nodeId)
 }
 
+function countExecutionCards(cards: ErrorCardData[]): number {
+  if (shouldRenderExecutionItemList(cards)) {
+    return cards.reduce((count, card) => count + card.errors.length, 0)
+  }
+
+  return cards.length
+}
+
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
   return Array.from(groupsMap.entries())
-    .map(([rawGroupKey, groupData]) => ({
-      type: 'execution' as const,
-      groupKey: `execution:${rawGroupKey}`,
-      displayTitle: groupData.displayTitle,
-      cards: Array.from(groupData.cards.values()).sort(compareNodeId),
-      priority: groupData.priority
-    }))
+    .map(([rawGroupKey, groupData]) => {
+      const cards = Array.from(groupData.cards.values()).sort(compareNodeId)
+      return {
+        type: 'execution' as const,
+        groupKey: `execution:${rawGroupKey}`,
+        displayTitle: groupData.displayTitle,
+        displayMessage: groupData.displayMessage,
+        count: countExecutionCards(cards),
+        cards,
+        priority: groupData.priority
+      }
+    })
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority
       return a.displayTitle.localeCompare(b.displayTitle)
@@ -209,6 +181,8 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
         cardIndex: ci,
         searchableNodeId: card.nodeId ?? '',
         searchableNodeTitle: card.nodeTitle ?? '',
+        searchableRawMessage: card.errors.map((e) => e.message).join(' '),
+        searchableRawDetails: card.errors.map((e) => e.details).join(' '),
         searchableMessage: card.errors
           .map((e) =>
             [e.displayTitle, e.displayMessage, e.message]
@@ -225,9 +199,11 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
 
   const fuseOptions: IFuseOptions<ErrorSearchItem> = {
     keys: [
-      { name: 'searchableNodeId', weight: 0.3 },
-      { name: 'searchableNodeTitle', weight: 0.3 },
-      { name: 'searchableMessage', weight: 0.3 },
+      { name: 'searchableRawMessage', weight: 0.3 },
+      { name: 'searchableNodeId', weight: 0.2 },
+      { name: 'searchableNodeTitle', weight: 0.2 },
+      { name: 'searchableMessage', weight: 0.2 },
+      { name: 'searchableRawDetails', weight: 0.1 },
       { name: 'searchableDetails', weight: 0.1 }
     ],
     threshold: 0.3
@@ -243,11 +219,13 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
   return groups
     .map((group, gi) => {
       if (group.type !== 'execution') return group
+      const cards = group.cards.filter((_: ErrorCardData, ci: number) =>
+        matchedCardKeys.has(`${gi}:${ci}`)
+      )
       return {
         ...group,
-        cards: group.cards.filter((_: ErrorCardData, ci: number) =>
-          matchedCardKeys.has(`${gi}:${ci}`)
-        )
+        cards,
+        count: countExecutionCards(cards)
       }
     })
     .filter((group) => group.type !== 'execution' || group.cards.length > 0)
@@ -270,10 +248,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const item of items) {
       if (!isLGraphNode(item)) continue
       nodeIds.add(String(item.id))
-      if (
-        (item instanceof SubgraphNode || isGroupNode(item)) &&
-        app.rootGraph
-      ) {
+      if (item instanceof SubgraphNode && app.rootGraph) {
         const execId = getExecutionIdByNode(app.rootGraph, item)
         if (execId) containerExecutionIds.add(execId)
       }
@@ -313,7 +288,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return map
   })
 
-  function isErrorInSelection(executionNodeId: string): boolean {
+  function isErrorInSelection(executionNodeId: NodeExecutionId): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 
@@ -330,25 +305,36 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function addNodeErrorToGroup(
     groupsMap: Map<string, GroupEntry>,
-    nodeId: string,
+    nodeId: NodeExecutionId,
     classType: string,
     idPrefix: string,
-    errors: ErrorItem[],
+    error: CataloguedErrorItem,
     filterBySelection = false
   ) {
     if (filterBySelection && !isErrorInSelection(nodeId)) return
-    const groupKey = isSingleNodeSelected.value ? SINGLE_GROUP_KEY : classType
-    const cards = getOrCreateGroup(groupsMap, groupKey, classType, 1)
+    const cards = getOrCreateGroup(
+      groupsMap,
+      error.catalogId,
+      error.displayTitle ?? classType,
+      1,
+      error.displayMessage
+    )
     if (!cards.has(nodeId)) {
       cards.set(nodeId, createErrorCard(nodeId, classType, idPrefix))
     }
     const card = cards.get(nodeId)
     if (!card) return
-    card.errors.push(...errors)
+    card.errors.push(error)
   }
 
-  function processPromptError(groupsMap: Map<string, GroupEntry>) {
-    if (selectedNodeInfo.value.nodeIds || !executionErrorStore.lastPromptError)
+  function processPromptError(
+    groupsMap: Map<string, GroupEntry>,
+    filterBySelection = false
+  ) {
+    if (
+      (filterBySelection && selectedNodeInfo.value.nodeIds) ||
+      !executionErrorStore.lastPromptError
+    )
       return
 
     const error = executionErrorStore.lastPromptError
@@ -362,7 +348,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       groupsMap,
       `prompt:${error.type}`,
       groupDisplayTitle,
-      0
+      0,
+      resolvedDisplay.displayMessage
     )
 
     // Prompt errors are not tied to a node, so they bypass addNodeErrorToGroup.
@@ -384,18 +371,20 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   ) {
     if (!executionErrorStore.lastNodeErrors) return
 
-    for (const [nodeId, nodeError] of Object.entries(
+    for (const [rawNodeId, nodeError] of Object.entries(
       executionErrorStore.lastNodeErrors
     )) {
+      const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
+      if (!nodeId) continue
       const nodeDisplayName =
         resolveNodeInfo(nodeId).title || nodeError.class_type
-      addNodeErrorToGroup(
-        groupsMap,
-        nodeId,
-        nodeError.class_type,
-        'node',
-        nodeError.errors.map((e) => {
-          return {
+      for (const e of nodeError.errors) {
+        addNodeErrorToGroup(
+          groupsMap,
+          nodeId,
+          nodeError.class_type,
+          'node',
+          {
             message: e.message,
             details: e.details ?? undefined,
             ...resolveRunErrorMessage({
@@ -403,10 +392,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
               error: e,
               nodeDisplayName
             })
-          }
-        }),
-        filterBySelection
-      )
+          },
+          filterBySelection
+        )
+      }
     }
   }
 
@@ -417,25 +406,25 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!executionErrorStore.lastExecutionError) return
 
     const e = executionErrorStore.lastExecutionError
+    const nodeId = tryNormalizeNodeExecutionId(e.node_id)
+    if (!nodeId) return
+
     addNodeErrorToGroup(
       groupsMap,
-      String(e.node_id),
+      nodeId,
       e.node_type,
       'exec',
-      [
-        {
-          message: `${e.exception_type}: ${e.exception_message}`,
-          details: e.traceback.join('\n'),
-          isRuntimeError: true,
-          exceptionType: e.exception_type,
-          ...resolveRunErrorMessage({
-            kind: 'execution',
-            error: e,
-            nodeDisplayName:
-              resolveNodeInfo(String(e.node_id)).title || e.node_type
-          })
-        }
-      ],
+      {
+        message: `${e.exception_type}: ${e.exception_message}`,
+        details: e.traceback.join('\n'),
+        isRuntimeError: true,
+        exceptionType: e.exception_type,
+        ...resolveRunErrorMessage({
+          kind: 'execution',
+          error: e,
+          nodeDisplayName: resolveNodeInfo(nodeId).title || e.node_type
+        })
+      },
       filterBySelection
     )
   }
@@ -604,6 +593,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       groups.push({
         type: 'swap_nodes' as const,
         groupKey: 'swap_nodes',
+        count: swapNodeGroups.value.length,
         priority: 0,
         ...resolveMissingErrorMessage({
           kind: 'swap_nodes',
@@ -618,6 +608,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       groups.push({
         type: 'missing_node' as const,
         groupKey: 'missing_node',
+        count: missingPackGroups.value.length,
         priority: 1,
         ...resolveMissingErrorMessage({
           kind: 'missing_node',
@@ -631,60 +622,21 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return groups.sort((a, b) => a.priority - b.priority)
   }
 
-  /** Groups missing models. Asset-supported models group by directory; others go into a separate group.
-   *  Within each group, candidates with the same model name are merged into a single view model. */
   const missingModelGroups = computed<MissingModelGroup[]>(() => {
-    const candidates = missingModelStore.missingModelCandidates
-    if (!candidates?.length) return []
-
-    type GroupKey = string | null | typeof UNSUPPORTED
-    const map = new Map<
-      GroupKey,
-      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
-    >()
-
-    for (const c of candidates) {
-      const groupKey: GroupKey =
-        c.isAssetSupported || !isCloud ? c.directory || null : UNSUPPORTED
-
-      const existing = map.get(groupKey)
-      if (existing) {
-        existing.candidates.push(c)
-      } else {
-        // All candidates in the same directory share the same isAssetSupported
-        // value in practice (a directory is either asset-supported or not).
-        map.set(groupKey, {
-          candidates: [c],
-          isAssetSupported: c.isAssetSupported
-        })
-      }
-    }
-
-    return Array.from(map.entries())
-      .sort(([dirA], [dirB]) => {
-        if (dirA === UNSUPPORTED) return 1
-        if (dirB === UNSUPPORTED) return -1
-        if (dirA === null) return 1
-        if (dirB === null) return -1
-        return dirA.localeCompare(dirB)
-      })
-      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
-        directory: typeof key === 'string' ? key : null,
-        models: groupCandidatesByName(groupCandidates),
-        isAssetSupported
-      }))
+    return groupMissingModelCandidates(
+      missingModelStore.missingModelCandidates,
+      isCloud
+    )
   })
 
   function buildMissingModelGroups(): ErrorGroup[] {
     if (!missingModelGroups.value.length) return []
-    const count = missingModelGroups.value.reduce(
-      (total, group) => total + group.models.length,
-      0
-    )
+    const count = countMissingModels(missingModelGroups.value)
     return [
       {
         type: 'missing_model' as const,
         groupKey: 'missing_model',
+        count,
         priority: 2,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
@@ -704,27 +656,24 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroups(): ErrorGroup[] {
     if (!missingMediaGroups.value.length) return []
-    const totalItems = missingMediaGroups.value.reduce(
-      (count, group) => count + group.items.length,
-      0
-    )
+    const totalRows = countMissingMediaReferences(missingMediaGroups.value)
     return [
       {
         type: 'missing_media' as const,
         groupKey: 'missing_media',
+        count: totalRows,
         priority: 3,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroups.value,
-          count: totalItems,
-          mediaTypes: missingMediaGroups.value.map((group) => group.mediaType),
+          count: totalRows,
           isCloud
         })
       }
     ]
   }
 
-  function isAssetErrorInSelection(executionNodeId: string): boolean {
+  function isAssetErrorInSelection(executionNodeId: NodeExecutionId): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 
@@ -746,45 +695,20 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return false
   }
 
+  function isAssetCandidateInSelection(nodeId: string | number): boolean {
+    const executionNodeId = tryNormalizeNodeExecutionId(nodeId)
+    return executionNodeId ? isAssetErrorInSelection(executionNodeId) : false
+  }
+
   const filteredMissingModelGroups = computed(() => {
     if (!selectedNodeInfo.value.nodeIds) return missingModelGroups.value
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
     if (!filtered.length) return []
-
-    const map = new Map<
-      string | null | typeof UNSUPPORTED,
-      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
-    >()
-    for (const c of filtered) {
-      const groupKey =
-        c.isAssetSupported || !isCloud ? c.directory || null : UNSUPPORTED
-      const existing = map.get(groupKey)
-      if (existing) {
-        existing.candidates.push(c)
-      } else {
-        map.set(groupKey, {
-          candidates: [c],
-          isAssetSupported: c.isAssetSupported
-        })
-      }
-    }
-    return Array.from(map.entries())
-      .sort(([dirA], [dirB]) => {
-        if (dirA === UNSUPPORTED) return 1
-        if (dirB === UNSUPPORTED) return -1
-        if (dirA === null) return 1
-        if (dirB === null) return -1
-        return dirA.localeCompare(dirB)
-      })
-      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
-        directory: typeof key === 'string' ? key : null,
-        models: groupCandidatesByName(groupCandidates),
-        isAssetSupported
-      }))
+    return groupMissingModelCandidates(filtered, isCloud)
   })
 
   const filteredMissingMediaGroups = computed(() => {
@@ -792,7 +716,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
     if (!filtered.length) return []
     return groupCandidatesByMediaType(filtered)
@@ -800,14 +724,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingModelGroupsFiltered(): ErrorGroup[] {
     if (!filteredMissingModelGroups.value.length) return []
-    const count = filteredMissingModelGroups.value.reduce(
-      (total, group) => total + group.models.length,
-      0
-    )
+    const count = countMissingModels(filteredMissingModelGroups.value)
     return [
       {
         type: 'missing_model' as const,
         groupKey: 'missing_model',
+        count,
         priority: 2,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
@@ -821,22 +743,19 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
     if (!filteredMissingMediaGroups.value.length) return []
-    const totalItems = filteredMissingMediaGroups.value.reduce(
-      (count, group) => count + group.items.length,
-      0
+    const totalRows = countMissingMediaReferences(
+      filteredMissingMediaGroups.value
     )
     return [
       {
         type: 'missing_media' as const,
         groupKey: 'missing_media',
+        count: totalRows,
         priority: 3,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: filteredMissingMediaGroups.value,
-          count: totalItems,
-          mediaTypes: filteredMissingMediaGroups.value.map(
-            (group) => group.mediaType
-          ),
+          count: totalRows,
           isCloud
         })
       }
@@ -861,13 +780,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const tabErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
-    processPromptError(groupsMap)
+    processPromptError(groupsMap, true)
     processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
-
-    const executionGroups = isSingleNodeSelected.value
-      ? toSortedGroups(regroupByErrorMessage(groupsMap))
-      : toSortedGroups(groupsMap)
 
     const filterByNode = selectedNodeInfo.value.nodeIds !== null
 
@@ -881,29 +796,13 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       ...(filterByNode
         ? buildMissingMediaGroupsFiltered()
         : buildMissingMediaGroups()),
-      ...executionGroups
+      ...toSortedGroups(groupsMap)
     ]
   })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {
     const query = toValue(searchQuery).trim()
     return searchErrorGroups(tabErrorGroups.value, query)
-  })
-
-  const groupedErrorMessages = computed<string[]>(() => {
-    const messages = new Set<string>()
-    for (const group of allErrorGroups.value) {
-      if (group.type === 'execution') {
-        for (const card of group.cards) {
-          for (const err of card.errors) {
-            messages.add(err.displayMessage ?? err.message)
-          }
-        }
-      } else {
-        messages.add(group.displayMessage ?? group.displayTitle)
-      }
-    }
-    return Array.from(messages)
   })
 
   return {
@@ -914,7 +813,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     isSingleNodeSelected,
     errorNodeCache,
     missingNodeCache,
-    groupedErrorMessages,
     missingPackGroups,
     missingModelGroups,
     missingMediaGroups,

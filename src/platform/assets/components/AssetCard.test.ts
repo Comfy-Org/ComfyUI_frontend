@@ -49,10 +49,10 @@ const ORIGINAL_FILENAME = 'sunset_photo.png'
 function createDisplayAsset(
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem {
-  return {
+  const base = {
     id: 'asset-1',
     name: HASH,
-    asset_hash: HASH,
+    hash: HASH,
     tags: ['input'],
     preview_url: '/preview.png',
     secondaryText: '',
@@ -62,6 +62,7 @@ function createDisplayAsset(
     metadata: { filename: ORIGINAL_FILENAME },
     ...overrides
   }
+  return base
 }
 
 function renderCard(asset: AssetDisplayItem) {
@@ -97,7 +98,7 @@ describe('AssetCard', () => {
   })
 
   describe('FE-228: filename rendering', () => {
-    it('renders the human-readable filename instead of asset_hash when asset.name equals asset_hash', () => {
+    it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()
 
       renderCard(asset)
@@ -130,7 +131,7 @@ describe('AssetCard', () => {
       const asset = createDisplayAsset({
         id: 'model-1',
         name: MODEL_FILENAME,
-        asset_hash: undefined,
+        hash: undefined,
         tags: ['models', 'loras'],
         user_metadata: { name: CURATED_NAME },
         metadata: { filename: MODEL_FILENAME }
@@ -146,7 +147,7 @@ describe('AssetCard', () => {
     it('ignores user_metadata.name that duplicates the hash and falls back to metadata.filename', () => {
       const asset = createDisplayAsset({
         name: HASH,
-        asset_hash: HASH,
+        hash: HASH,
         user_metadata: { name: HASH },
         metadata: { filename: ORIGINAL_FILENAME }
       })

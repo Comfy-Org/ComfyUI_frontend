@@ -8,8 +8,6 @@ import type { Position } from '@e2e/fixtures/types'
 
 const { searchBoxV2 } = TestIds
 
-export type { RootCategoryId }
-
 export class ComfyNodeSearchBoxV2 {
   readonly dialog: Locator
   readonly input: Locator

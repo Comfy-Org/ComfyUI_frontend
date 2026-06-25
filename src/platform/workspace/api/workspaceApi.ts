@@ -31,6 +31,11 @@ export interface Member {
   email: string
   joined_at: string
   role: WorkspaceRole
+  // True when this member is the workspace's original owner/creator
+  // (member.id == workspace.created_by_user_id). Gates the creator-only
+  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // Optional: the cloud OpenAPI does not carry this field yet.
+  is_original_owner?: boolean
 }
 
 interface PaginationInfo {
@@ -113,9 +118,27 @@ export interface Plan {
   seat_summary: PlanSeatSummary
 }
 
+interface TeamCreditStopPrice {
+  list_price_cents: number
+  price_cents: number
+}
+
+interface TeamCreditStop {
+  id: string
+  credits: number
+  monthly: TeamCreditStopPrice
+  yearly: TeamCreditStopPrice
+}
+
+export interface TeamCreditStops {
+  default_stop_index: number
+  stops: TeamCreditStop[]
+}
+
 interface BillingPlansResponse {
   current_plan_slug?: string
   plans: Plan[]
+  team_credit_stops?: TeamCreditStops
 }
 
 type SubscriptionTransitionType =
@@ -133,6 +156,8 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  /** Required for the per-credit Team plan; selects the slider stop. */
+  team_credit_stop_id?: string
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -196,14 +221,24 @@ export interface PreviewSubscribeResponse {
   new_plan: PreviewPlanInfo
 }
 
-type BillingSubscriptionStatus = 'active' | 'scheduled' | 'ended' | 'canceled'
+export type BillingSubscriptionStatus =
+  | 'active'
+  | 'scheduled'
+  | 'ended'
+  | 'canceled'
 
-type BillingStatus =
+export type BillingStatus =
   | 'awaiting_payment_method'
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
   | 'inactive'
+
+export interface CurrentTeamCreditStop {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
 
 export interface BillingStatusResponse {
   is_active: boolean
@@ -215,6 +250,7 @@ export interface BillingStatusResponse {
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
+  team_credit_stop?: CurrentTeamCreditStop
 }
 
 export interface BillingBalanceResponse {
@@ -233,7 +269,7 @@ interface CreateTopupRequest {
 
 type TopupStatus = 'pending' | 'completed' | 'failed'
 
-interface CreateTopupResponse {
+export interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus
@@ -569,7 +605,8 @@ export const workspaceApi = {
   async subscribe(
     planSlug: string,
     returnUrl?: string,
-    cancelUrl?: string
+    cancelUrl?: string,
+    teamCreditStopId?: string
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -578,7 +615,8 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           return_url: returnUrl,
-          cancel_url: cancelUrl
+          cancel_url: cancelUrl,
+          team_credit_stop_id: teamCreditStopId
         } satisfies SubscribeRequest,
         { headers }
       )

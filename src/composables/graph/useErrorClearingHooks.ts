@@ -6,11 +6,9 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -36,6 +34,7 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { appendNodeExecutionId } from '@/types/nodeIdentification'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
@@ -44,24 +43,6 @@ import {
   getNodeByExecutionId,
   isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
-
-function resolvePromotedExecId(
-  rootGraph: LGraph,
-  node: LGraphNode,
-  widget: IBaseWidget,
-  hostExecId: string
-): string {
-  if (!isPromotedWidgetView(widget)) return hostExecId
-  const result = resolveConcretePromotedWidget(
-    node,
-    widget.sourceNodeId,
-    widget.sourceWidgetName
-  )
-  if (result.status === 'resolved' && result.resolved.node) {
-    return getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId
-  }
-  return hostExecId
-}
 
 const hookedNodes = new WeakSet<LGraphNode>()
 
@@ -96,26 +77,20 @@ function installNodeHooks(node: LGraphNode): void {
 
   node.onWidgetChanged = useChainCallback(
     node.onWidgetChanged,
-    // _name is the LiteGraph callback arg; re-derive from the widget
-    // object to handle promoted widgets where sourceWidgetName differs.
     function (_name, newValue, _oldValue, widget) {
       if (!app.rootGraph) return
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
-      const execId = resolvePromotedExecId(
-        app.rootGraph,
-        node,
-        widget,
-        hostExecId
-      )
-      const widgetName = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
-        : widget.name
+      const promotedSource = widgetPromotedSource(node, widget)
+      const executionId = promotedSource
+        ? appendNodeExecutionId(hostExecId, promotedSource.nodeId)
+        : hostExecId
+      const widgetName = promotedSource?.widgetName ?? widget.name
 
       useExecutionErrorStore().clearWidgetRelatedErrors(
-        execId,
-        widget.name,
+        executionId,
+        widgetName,
         widgetName,
         newValue,
         { min: widget.options?.min, max: widget.options?.max }

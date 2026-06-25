@@ -252,6 +252,7 @@ const zSystemStats = z.object({
     python_version: z.string(),
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
+    deploy_environment: z.string().optional(),
     pytorch_version: z.string(),
     required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
@@ -446,7 +447,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
-  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply', 'sparkjs']),
+  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply']),
   'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */

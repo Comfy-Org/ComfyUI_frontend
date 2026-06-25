@@ -124,7 +124,9 @@ describe('useNodePreviewAndDrag', () => {
 
       expect(result.isDragging.value).toBe(true)
       expect(result.isHovered.value).toBe(false)
-      expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, 'native')
+      expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+        mode: 'native'
+      })
       expect(mockDataTransfer.effectAllowed).toBe('copy')
       expect(mockDataTransfer.setData).toHaveBeenCalledWith(
         'application/x-comfy-node',
