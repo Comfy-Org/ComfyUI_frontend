@@ -1,6 +1,6 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef } from 'vue'
+import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -55,6 +55,22 @@ export const useCanvasStore = defineStore('canvas', () => {
     set: (val: boolean) => {
       setMode(val ? 'app' : 'graph')
     }
+  })
+
+  /**
+   * Frame-lagged mirror of {@link linearMode} that drives the view-mode toggle's
+   * segment morph. Lagging by two frames lets a toggle that mounts mid-switch
+   * render the previous mode first, then animate into the new one. It lives in
+   * the store so the value outlives the graph-mode toggle unmounting and the
+   * app-mode toggle mounting in its place during a switch.
+   */
+  const displayLinearMode = ref(linearMode.value)
+  watch(linearMode, (next) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        displayLinearMode.value = next
+      })
+    })
   })
 
   // Set up scale synchronization when canvas is available
@@ -188,6 +204,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     rerouteSelected,
     appScalePercentage,
     linearMode,
+    displayLinearMode,
     updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,

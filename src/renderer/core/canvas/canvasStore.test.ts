@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
@@ -8,9 +9,13 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
+const { appModeState } = vi.hoisted(() => ({
+  appModeState: {} as { isAppMode: Ref<boolean> }
+}))
+
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
-    isAppMode: { value: false },
+    isAppMode: appModeState.isAppMode,
     setMode: vi.fn()
   })
 }))
@@ -43,6 +48,7 @@ describe('useCanvasStore', () => {
   let store: ReturnType<typeof useCanvasStore>
 
   beforeEach(() => {
+    appModeState.isAppMode = ref(false)
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useCanvasStore()
     vi.clearAllMocks()
@@ -128,5 +134,36 @@ describe('useCanvasStore', () => {
     store.selectedItems = [new LGraphGroup()]
 
     expect(store.selectedNodeIds).toHaveLength(0)
+  })
+
+  describe('displayLinearMode', () => {
+    it('lags the view mode by two frames so the toggle can animate the switch', async () => {
+      const rafCallbacks: FrameRequestCallback[] = []
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+        rafCallbacks.push(cb)
+        return rafCallbacks.length
+      })
+      const flushFrames = () => {
+        while (rafCallbacks.length) {
+          for (const cb of rafCallbacks.splice(0)) cb(0)
+        }
+      }
+
+      expect(store.displayLinearMode).toBe(false)
+
+      appModeState.isAppMode.value = true
+      await nextTick()
+
+      // The real mode has flipped, but the displayed mode still lags so a toggle
+      // that mounts now renders the old order before animating to the new one.
+      expect(store.linearMode).toBe(true)
+      expect(store.displayLinearMode).toBe(false)
+
+      flushFrames()
+
+      expect(store.displayLinearMode).toBe(true)
+
+      vi.unstubAllGlobals()
+    })
   })
 })

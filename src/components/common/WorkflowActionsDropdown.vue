@@ -12,10 +12,10 @@ import { useI18n } from 'vue-i18n'
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
-import { useViewModeToggle } from '@/composables/useViewModeToggle'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 type ViewMode = 'graph' | 'app'
@@ -37,7 +37,7 @@ const { source, align = 'start' } = defineProps<{
 const { t } = useI18n()
 const keybindingStore = useKeybindingStore()
 const dropdownOpen = ref(false)
-const { displayLinearMode } = useViewModeToggle()
+const canvasStore = useCanvasStore()
 
 const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
@@ -61,7 +61,7 @@ const segments = computed<ViewModeSegment[]>(() => [
     label: t('breadcrumbsMenu.graph'),
     switchLabel: t('breadcrumbsMenu.enterNodeGraph'),
     switchTooltip: t('breadcrumbsMenu.enterNodeGraph') + toggleShortcut.value,
-    active: !displayLinearMode.value
+    active: !canvasStore.displayLinearMode
   },
   {
     mode: 'app',
@@ -69,7 +69,7 @@ const segments = computed<ViewModeSegment[]>(() => [
     label: t('breadcrumbsMenu.app'),
     switchLabel: t('breadcrumbsMenu.enterAppMode'),
     switchTooltip: t('breadcrumbsMenu.enterAppMode') + toggleShortcut.value,
-    active: displayLinearMode.value
+    active: canvasStore.displayLinearMode
   }
 ])
 
