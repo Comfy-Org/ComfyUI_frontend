@@ -401,12 +401,12 @@ describe('useTemplateUrlLoader', () => {
   })
 
   describe('loading state refs', () => {
-    it('returns readonly refs for isLoading, error, and isReady', () => {
-      const { isLoading, error, isReady } = useTemplateUrlLoader()
+    it('returns readonly refs for isLoading, error, and hasAttempted', () => {
+      const { isLoading, error, hasAttempted } = useTemplateUrlLoader()
 
       expect(isReadonly(isLoading)).toBe(true)
       expect(isReadonly(error)).toBe(true)
-      expect(isReadonly(isReady)).toBe(true)
+      expect(isReadonly(hasAttempted)).toBe(true)
     })
 
     it('transitions refs through success lifecycle', async () => {
@@ -420,76 +420,76 @@ describe('useTemplateUrlLoader', () => {
           })
       )
 
-      const { loadTemplateFromUrl, isLoading, error, isReady } =
+      const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
         useTemplateUrlLoader()
 
       expect(isLoading.value).toBe(false)
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(false)
+      expect(hasAttempted.value).toBe(false)
 
       const loadPromise = loadTemplateFromUrl()
 
       expect(isLoading.value).toBe(true)
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(false)
+      expect(hasAttempted.value).toBe(false)
 
       resolveLoadTemplates?.()
       await loadPromise
 
       expect(isLoading.value).toBe(false)
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(true)
+      expect(hasAttempted.value).toBe(true)
     })
 
-    it('sets isReady after failed template load without setting error', async () => {
+    it('sets hasAttempted after failed template load without setting error', async () => {
       mockQueryParams = { template: 'invalid-template' }
       mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
-      const { loadTemplateFromUrl, isLoading, error, isReady } =
+      const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
         useTemplateUrlLoader()
 
       expect(isLoading.value).toBe(false)
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(false)
+      expect(hasAttempted.value).toBe(false)
 
       await loadTemplateFromUrl()
 
       expect(isLoading.value).toBe(false)
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(true)
+      expect(hasAttempted.value).toBe(true)
     })
 
-    it('sets error and isReady when load throws', async () => {
+    it('sets error and hasAttempted when load throws', async () => {
       mockQueryParams = { template: 'flux_simple' }
       const thrownError = new Error('Network error')
       mockLoadTemplates.mockRejectedValueOnce(thrownError)
 
-      const { loadTemplateFromUrl, isLoading, error, isReady } =
+      const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
         useTemplateUrlLoader()
       const loadPromise = loadTemplateFromUrl()
 
       expect(isLoading.value).toBe(true)
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(false)
+      expect(hasAttempted.value).toBe(false)
 
       await loadPromise
 
       expect(isLoading.value).toBe(false)
       expect(error.value).toBe(thrownError)
-      expect(isReady.value).toBe(true)
+      expect(hasAttempted.value).toBe(true)
     })
 
     it('keeps refs unchanged when template param is missing', async () => {
       mockQueryParams = {}
 
-      const { loadTemplateFromUrl, isLoading, error, isReady } =
+      const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
         useTemplateUrlLoader()
 
       await loadTemplateFromUrl()
 
       expect(isLoading.value).toBe(false)
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(false)
+      expect(hasAttempted.value).toBe(false)
       expect(mockLoadTemplates).not.toHaveBeenCalled()
       expect(mockLoadWorkflowTemplate).not.toHaveBeenCalled()
     })
@@ -505,14 +505,14 @@ describe('useTemplateUrlLoader', () => {
         vi.clearAllMocks()
         mockQueryParams = query
 
-        const { loadTemplateFromUrl, isLoading, error, isReady } =
+        const { loadTemplateFromUrl, isLoading, error, hasAttempted } =
           useTemplateUrlLoader()
 
         await loadTemplateFromUrl()
 
         expect(isLoading.value).toBe(false)
         expect(error.value).toBe(null)
-        expect(isReady.value).toBe(false)
+        expect(hasAttempted.value).toBe(false)
         expect(mockLoadTemplates).not.toHaveBeenCalled()
       }
     })
@@ -522,22 +522,22 @@ describe('useTemplateUrlLoader', () => {
       const thrownError = new Error('Network error')
       mockLoadTemplates.mockRejectedValueOnce(thrownError)
 
-      const { loadTemplateFromUrl, error, isReady } = useTemplateUrlLoader()
+      const { loadTemplateFromUrl, error, hasAttempted } = useTemplateUrlLoader()
 
       await loadTemplateFromUrl()
       expect(error.value).toBe(thrownError)
-      expect(isReady.value).toBe(true)
+      expect(hasAttempted.value).toBe(true)
 
       mockLoadTemplates.mockResolvedValueOnce(true)
       const retryPromise = loadTemplateFromUrl()
 
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(false)
+      expect(hasAttempted.value).toBe(false)
 
       await retryPromise
 
       expect(error.value).toBe(null)
-      expect(isReady.value).toBe(true)
+      expect(hasAttempted.value).toBe(true)
     })
   })
 })

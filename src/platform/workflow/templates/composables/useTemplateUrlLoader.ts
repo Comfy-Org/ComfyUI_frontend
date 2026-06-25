@@ -36,7 +36,7 @@ export function useTemplateUrlLoader() {
 
   const isLoading = ref(false)
   const error = shallowRef<Error | null>(null)
-  const isReady = ref(false)
+  const hasAttempted = ref(false)
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
@@ -71,7 +71,7 @@ export function useTemplateUrlLoader() {
    */
   const loadTemplateFromUrl = async () => {
     error.value = null
-    isReady.value = false
+    hasAttempted.value = false
 
     const templateParam = route.query.template
 
@@ -149,7 +149,7 @@ export function useTemplateUrlLoader() {
       })
     } finally {
       isLoading.value = false
-      isReady.value = true
+      hasAttempted.value = true
       cleanupUrlParams()
       clearPreservedQuery(TEMPLATE_NAMESPACE)
     }
@@ -159,6 +159,6 @@ export function useTemplateUrlLoader() {
     loadTemplateFromUrl,
     isLoading: readonly(isLoading),
     error: readonly(error),
-    isReady: readonly(isReady)
+    hasAttempted: readonly(hasAttempted)
   }
 }
