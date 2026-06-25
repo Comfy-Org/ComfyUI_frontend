@@ -1,6 +1,6 @@
 export interface CreditStop {
-  /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Absent for
-   *  the hardcoded fallback stops until the API contract reaches prod. */
+  /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Present for
+   *  API-sourced stops; absent only for the hardcoded OSS / pre-deploy fallback. */
   id?: string
   /** Monthly subscription price in USD (pre-discount). */
   usd: number
@@ -20,8 +20,8 @@ export interface CreditStop {
 
 /** A selected slider stop, as emitted by the pricing table's team column. */
 export interface TeamPlanSelection {
-  /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Absent for
-   *  the hardcoded fallback stops until the API contract reaches prod. */
+  /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Present for
+   *  API-sourced stops; absent only for the hardcoded OSS / pre-deploy fallback. */
   id?: string
   /** Pre-discount monthly price in USD (the struck-through list price). */
   usd: number
@@ -32,17 +32,14 @@ export interface TeamPlanSelection {
 }
 
 /**
- * Team-plan credit-subscription slider stops.
+ * Team-plan credit-subscription slider stops — OSS / pre-deploy fallback.
  *
- * Hardcoded per Figma DES-197 (Updates to PricingTable dialog): the team-plan
- * credit slider snaps to exactly these 5 fixed breakpoints — the user cannot
- * select a value in between. The `credits` figures equal `usdToCredits(usd)` at
- * the current rate (`CREDITS_PER_USD = 211`); a unit test guards against rate
- * drift silently changing the designed values.
- *
- * TODO(FE-934): once the backend slider contract lands, these stops (and their
- * discount tiers) will come from `GET /api/billing/plans` instead of being
- * hardcoded here.
+ * The live set comes from `GET /api/billing/plans → team_credit_stops` (mapped
+ * via `mapApiTeamCreditStops`); these hardcoded DES-197 breakpoints render only
+ * when the API doesn't supply them. The slider snaps to exactly these 5 fixed
+ * breakpoints — the user cannot select a value in between. The `credits` figures
+ * equal `usdToCredits(usd)` at the current rate (`CREDITS_PER_USD = 211`); a unit
+ * test guards against rate drift silently changing the designed values.
  */
 export const TEAM_PLAN_CREDIT_STOPS: readonly CreditStop[] = [
   { usd: 200, credits: 42_200, discountPercentYearly: 0 },
@@ -91,20 +88,18 @@ export function mapApiTeamCreditStops(
 }
 
 /**
- * Discounted monthly price for a stop's list `usd`, applying the billing-cycle
+ * Discounted monthly price for a credit stop, applying the billing-cycle
  * discount (yearly = full `discountPercentYearly`; monthly halves it). Shared by
- * the slider display and the checkout confirm step so the two never drift.
- * Falls back to the list price when `usd` is not a known stop.
+ * the slider display and the checkout confirm step so the two never drift, and
+ * it reads the stop's own discount so backend-driven stops are honored.
  */
-export function getDiscountedMonthlyUsd(
-  usd: number,
+export function getStopDiscountedMonthlyUsd(
+  stop: Pick<CreditStop, 'usd' | 'discountPercentYearly'>,
   cycle: 'monthly' | 'yearly'
 ): number {
-  const stop = TEAM_PLAN_CREDIT_STOPS.find((s) => s.usd === usd)
-  if (!stop) return usd
   const percent =
     cycle === 'monthly'
       ? stop.discountPercentYearly / 2
       : stop.discountPercentYearly
-  return Math.round(usd * (1 - percent / 100))
+  return Math.round(stop.usd * (1 - percent / 100))
 }

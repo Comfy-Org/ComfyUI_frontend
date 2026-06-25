@@ -93,6 +93,7 @@
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+  <NodeDragPreview />
   <VueNodeSwitchPopup />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
@@ -136,6 +137,7 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
+import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'

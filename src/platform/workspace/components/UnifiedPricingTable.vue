@@ -429,8 +429,8 @@ import type {
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  getDiscountedMonthlyUsd,
   TEAM_PLAN_CREDIT_STOPS,
+  getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -617,21 +617,20 @@ const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 // Team credit stops: backend-sourced when the API supplies them, otherwise the
-// hardcoded DES-197 fallback so OSS / pre-deploy still renders.
-const teamStops = computed(() =>
-  teamCreditStops.value
-    ? mapApiTeamCreditStops(teamCreditStops.value.stops)
+// hardcoded DES-197 fallback so OSS / pre-deploy still renders. Always non-empty
+// so the default/selected stops below are guaranteed defined.
+const teamStops = computed(() => {
+  const apiStops = teamCreditStops.value?.stops
+  return apiStops?.length
+    ? mapApiTeamCreditStops(apiStops)
     : TEAM_PLAN_CREDIT_STOPS
-)
+})
 const teamDefaultStopIndex = computed(
   () =>
     teamCreditStops.value?.default_stop_index ?? DEFAULT_TEAM_PLAN_STOP_INDEX
 )
 const defaultTeamStop = computed(
-  () =>
-    teamStops.value[teamDefaultStopIndex.value] ??
-    teamStops.value[0] ??
-    TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX]
+  () => teamStops.value[teamDefaultStopIndex.value] ?? teamStops.value[0]
 )
 
 const teamUsd = ref<number>(defaultTeamStop.value.usd)
@@ -652,11 +651,16 @@ const teamVideoEstimate = computed(() =>
 // The team's currently-subscribed stop (null when on no team plan). Matched to
 // the slider stops by list price so the current stop can be disabled.
 const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
-const currentTeamStopIndex = computed(() => {
-  const usd = currentTeamCreditStop.value?.stop_usd
-  if (usd == null) return null
-  const i = TEAM_PLAN_CREDIT_STOPS.findIndex((stop) => stop.usd === usd)
-  return i === -1 ? null : i
+
+// `teamUsd` is seeded at mount from the fallback default; when the API stops
+// resolve afterwards with different breakpoints that seed can match no stop,
+// leaving the slider position and the subscribe payload out of sync. Snap to the
+// resolved default — but only while no real stop is pinned (a subscriber's stop
+// is set below; a user's own selection already matches a stop).
+watch(defaultTeamStop, (stop) => {
+  if (currentTeamCreditStop.value) return
+  if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
+  teamUsd.value = stop.usd
 })
 
 // Start the slider on the current stop so an active subscriber sees their plan
@@ -672,12 +676,17 @@ watch(
 
 // The CTA — not the slider stop — reflects the current plan: on the active stop
 // it reads "Current plan" (disabled); a cancelled plan re-subscribes on its
-// stop. Any other stop is locked because the credit stop can't be changed.
-const isTeamCurrentStopSelected = computed(
-  () =>
-    currentTeamStopIndex.value !== null &&
-    TEAM_PLAN_CREDIT_STOPS[currentTeamStopIndex.value]?.usd === teamUsd.value
-)
+// stop. Any other stop is locked because the credit stop can't be changed. The
+// subscribed stop must be one of the available stops for the slider to land on
+// it, so match against `teamStops` rather than the hardcoded fallback.
+const isTeamCurrentStopSelected = computed(() => {
+  const usd = currentTeamCreditStop.value?.stop_usd
+  return (
+    usd != null &&
+    usd === teamUsd.value &&
+    teamStops.value.some((stop) => stop.usd === usd)
+  )
+})
 
 // Yearly and monthly at the same credit stop are distinct plans, so toggling
 // the cycle is a change, not the current plan.
@@ -839,8 +848,8 @@ function handleSubscribeTeam() {
       id: stop.id,
       usd: stop.usd,
       credits: stop.credits,
-      discountedUsd: getDiscountedMonthlyUsd(
-        stop.usd,
+      discountedUsd: getStopDiscountedMonthlyUsd(
+        stop,
         currentBillingCycle.value
       )
     },

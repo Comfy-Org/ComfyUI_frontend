@@ -98,6 +98,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { MAX_WORKSPACE_MEMBERS } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -130,9 +131,12 @@ const tierName = computed(() =>
 
 const displayPrice = computed(() => {
   if (teamPlan) return String(teamPlan.discountedUsd)
-  return previewData?.new_plan
-    ? (previewData.new_plan.price_cents / 100).toFixed(0)
-    : '0'
+  if (!previewData?.new_plan) return '0'
+  const cents = previewData.new_plan.price_cents
+  const monthlyCents = isAnnualDuration(previewData.new_plan.duration)
+    ? cents / 12
+    : cents
+  return (monthlyCents / 100).toFixed(0)
 })
 
 const displayCredits = computed(() =>

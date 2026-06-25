@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   TEAM_PLAN_SLUG_BY_CYCLE,
+  getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
 } from './teamPlanCreditStops'
 
@@ -35,6 +36,35 @@ describe('mapApiTeamCreditStops', () => {
     ])
 
     expect(mapped[0].discountPercentYearly).toBe(0)
+  })
+})
+
+describe('getStopDiscountedMonthlyUsd', () => {
+  it('applies the full yearly discount for the yearly cycle', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 700, discountPercentYearly: 10 },
+        'yearly'
+      )
+    ).toBe(630)
+  })
+
+  it('halves the discount for the monthly cycle', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 700, discountPercentYearly: 10 },
+        'monthly'
+      )
+    ).toBe(665)
+  })
+
+  it('reads the stop discount so backend-driven stops are honored', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 1000, discountPercentYearly: 25 },
+        'yearly'
+      )
+    ).toBe(750)
   })
 })
 
