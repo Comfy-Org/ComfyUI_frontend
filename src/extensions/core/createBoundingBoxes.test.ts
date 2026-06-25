@@ -25,7 +25,6 @@ interface MockWidget {
   name: string
   hidden: boolean
   options: Record<string, unknown>
-  widgetId?: string
 }
 
 function makeNode(connected: boolean, comfyClass = 'CreateBoundingBoxes') {
@@ -36,6 +35,8 @@ function makeNode(connected: boolean, comfyClass = 'CreateBoundingBoxes') {
   ]
   return {
     constructor: { comfyClass },
+    id: 1,
+    graph: { rootGraph: { id: 'test-graph' } },
     size: [100, 100] as [number, number],
     setSize: vi.fn(),
     findInputSlot: () => 0,
@@ -76,7 +77,6 @@ describe('Comfy.CreateBoundingBoxes extension', () => {
   it('writes visibility through the widget value store when present', () => {
     state.widgetState = { options: {} }
     const node = makeNode(true)
-    node.widgets[0].widgetId = 'w-0'
     state.extension!.nodeCreated(node)
     expect(state.widgetState.options.hidden).toBe(true)
   })

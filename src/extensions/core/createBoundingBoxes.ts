@@ -1,5 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { app } from '@/scripts/app'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { useExtensionService } from '@/services/extensionService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -19,14 +19,13 @@ useExtensionService().registerExtension({
     const syncDimensionVisibility = () => {
       const slot = node.findInputSlot('background')
       const hidden = slot >= 0 && node.isInputConnected(slot)
+      const graphId = resolveNodeRootGraphId(node)
       for (const widget of node.widgets ?? []) {
         if (!DIMENSION_WIDGETS.has(widget.name)) continue
         widget.hidden = hidden
-        const state = widgetValueStore.getWidget(
-          app.rootGraph.id,
-          node.id,
-          widget.name
-        )
+        const state = graphId
+          ? widgetValueStore.getWidget(graphId, node.id, widget.name)
+          : undefined
         if (state?.options) state.options.hidden = hidden
         else widget.options.hidden = hidden
       }
