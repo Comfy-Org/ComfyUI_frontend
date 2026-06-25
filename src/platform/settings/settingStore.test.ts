@@ -11,6 +11,16 @@ import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
+const { trackSettingChanged } = vi.hoisted(() => ({
+  trackSettingChanged: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: vi.fn(() => ({
+    trackSettingChanged
+  }))
+}))
+
 // Mock the api
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -398,11 +408,15 @@ describe('useSettingStore', () => {
       expect(onChangeMock).toHaveBeenCalledTimes(2)
       expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
       expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
+      expect(trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'test.setting'
+      })
 
       // Set the same value again, it should not trigger onChange
       await store.set('test.setting', 'newvalue')
       expect(onChangeMock).toHaveBeenCalledTimes(2)
       expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
+      expect(trackSettingChanged).toHaveBeenCalledTimes(1)
 
       // Set a different value, it should trigger onChange
       await store.set('test.setting', 'differentvalue')
@@ -413,6 +427,43 @@ describe('useSettingStore', () => {
         'test.setting',
         'differentvalue'
       )
+      expect(trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'test.setting'
+      })
+      expect(trackSettingChanged).toHaveBeenCalledTimes(2)
+    })
+
+    it('tracks hidden color palette setting changes', async () => {
+      store.addSetting({
+        id: 'Comfy.ColorPalette',
+        name: 'The active color palette id',
+        type: 'hidden',
+        defaultValue: 'dark'
+      })
+
+      await store.set('Comfy.ColorPalette', 'light')
+
+      expect(trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'Comfy.ColorPalette',
+        previous_value: 'dark',
+        new_value: 'light'
+      })
+    })
+
+    it('does not track telemetry when persistence fails', async () => {
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default'
+      })
+      vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('failed'))
+
+      await expect(store.set('test.setting', 'newvalue')).rejects.toThrow(
+        'failed'
+      )
+
+      expect(trackSettingChanged).not.toHaveBeenCalled()
     })
 
     describe('object mutation prevention', () => {
@@ -540,6 +591,12 @@ describe('useSettingStore', () => {
         'Comfy.Release.Status': 'changelog seen'
       })
       expect(api.storeSetting).not.toHaveBeenCalled()
+      expect(trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'Comfy.Release.Version'
+      })
+      expect(trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'Comfy.Release.Status'
+      })
     })
 
     it('should skip unchanged values', async () => {
@@ -566,6 +623,10 @@ describe('useSettingStore', () => {
       expect(api.storeSettings).toHaveBeenCalledWith({
         'Comfy.Release.Status': 'changelog seen'
       })
+      expect(trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'Comfy.Release.Status'
+      })
+      expect(trackSettingChanged).toHaveBeenCalledTimes(1)
     })
 
     it('should not call API when all values are unchanged', async () => {
@@ -581,6 +642,7 @@ describe('useSettingStore', () => {
       await store.setMany({ 'Comfy.Release.Version': 'existing' })
 
       expect(api.storeSettings).not.toHaveBeenCalled()
+      expect(trackSettingChanged).not.toHaveBeenCalled()
     })
   })
 })
