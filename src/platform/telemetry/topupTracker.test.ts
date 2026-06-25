@@ -132,6 +132,28 @@ describe('topupTracker', () => {
       )
     })
 
+    it('should detect completed topup for topup_completed (unified billing feed)', () => {
+      const startTimestamp = Date.now() - 5 * 60 * 1000 // 5 minutes ago
+      mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
+
+      const events: AuditLog[] = [
+        {
+          event_id: 'evt-topup',
+          event_type: 'topup_completed',
+          createdAt: new Date(startTimestamp + 1000).toISOString(),
+          params: {}
+        }
+      ]
+
+      const result = checkForCompletedTopup(events)
+
+      expect(result).toBe(true)
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalledOnce()
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        'pending_topup_timestamp'
+      )
+    })
+
     it('should not detect topup if credit_added event is before tracking started', () => {
       const startTimestamp = Date.now()
       mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())

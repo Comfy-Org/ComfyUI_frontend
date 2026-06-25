@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -31,6 +32,11 @@ export interface Member {
   email: string
   joined_at: string
   role: WorkspaceRole
+  // True when this member is the workspace's original owner/creator
+  // (member.id == workspace.created_by_user_id). Gates the creator-only
+  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // Optional: the cloud OpenAPI does not carry this field yet.
+  is_original_owner?: boolean
 }
 
 interface PaginationInfo {
@@ -151,6 +157,8 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  /** Required for the per-credit Team plan; selects the slider stop. */
+  team_credit_stop_id?: string
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -315,6 +323,9 @@ const workspaceApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
+attachUnifiedRemintInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
@@ -514,7 +525,7 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),
         null,
-        { headers }
+        { headers, __skipUnifiedRemint: true }
       )
       return response.data
     } catch (err) {
@@ -598,7 +609,8 @@ export const workspaceApi = {
   async subscribe(
     planSlug: string,
     returnUrl?: string,
-    cancelUrl?: string
+    cancelUrl?: string,
+    teamCreditStopId?: string
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -607,7 +619,8 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           return_url: returnUrl,
-          cancel_url: cancelUrl
+          cancel_url: cancelUrl,
+          team_credit_stop_id: teamCreditStopId
         } satisfies SubscribeRequest,
         { headers }
       )

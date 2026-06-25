@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
@@ -14,6 +14,10 @@ interface WorkspacePermissions {
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
+  // Creator-only subscription lifecycle: cancel / reactivate / downgrade.
+  // Any owner has `canManageSubscription` (manage payment, top-up, change
+  // commit); only the original owner gets `canManageSubscriptionLifecycle`.
+  canManageSubscriptionLifecycle: boolean
   canTopUp: boolean
 }
 
@@ -22,8 +26,7 @@ interface WorkspaceUIConfig {
   showMembersList: boolean
   showPendingTab: boolean
   showSearch: boolean
-  showDateColumn: boolean
-  showRoleBadge: boolean
+  showRoleColumn: boolean
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
@@ -34,7 +37,8 @@ interface WorkspaceUIConfig {
 
 function getPermissions(
   type: WorkspaceType,
-  role: WorkspaceRole
+  role: WorkspaceRole,
+  isOriginalOwner: boolean
 ): WorkspacePermissions {
   if (type === 'personal') {
     return {
@@ -46,6 +50,8 @@ function getPermissions(
       canLeaveWorkspace: false,
       canAccessWorkspaceMenu: false,
       canManageSubscription: true,
+      // Personal workspace is single-member: the user is the sole owner/creator.
+      canManageSubscriptionLifecycle: true,
       canTopUp: true
     }
   }
@@ -60,6 +66,7 @@ function getPermissions(
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
+      canManageSubscriptionLifecycle: isOriginalOwner,
       canTopUp: true
     }
   }
@@ -74,6 +81,7 @@ function getPermissions(
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
     canManageSubscription: false,
+    canManageSubscriptionLifecycle: false,
     canTopUp: false
   }
 }
@@ -87,8 +95,7 @@ function getUIConfig(
       showMembersList: false,
       showPendingTab: false,
       showSearch: false,
-      showDateColumn: false,
-      showRoleBadge: false,
+      showRoleColumn: false,
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
@@ -103,8 +110,7 @@ function getUIConfig(
       showMembersList: true,
       showPendingTab: true,
       showSearch: true,
-      showDateColumn: true,
-      showRoleBadge: true,
+      showRoleColumn: true,
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
@@ -120,8 +126,7 @@ function getUIConfig(
     showMembersList: true,
     showPendingTab: false,
     showSearch: true,
-    showDateColumn: true,
-    showRoleBadge: true,
+    showRoleColumn: true,
     membersGridCols: 'grid-cols-[1fr_auto]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[1fr_auto]',
@@ -145,8 +150,26 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
+  // The original-owner signal lives on the members-list self-row, so a team
+  // workspace's members must be loaded before its lifecycle gate can resolve.
+  // The store dedupes in-flight/already-loaded requests and logs failures;
+  // until members arrive the getter fails closed.
+  watch(
+    () => store.activeWorkspace?.id,
+    () => {
+      if (store.activeWorkspace?.type === 'team') {
+        void store.ensureMembersLoaded()
+      }
+    },
+    { immediate: true }
+  )
+
   const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(workspaceType.value, workspaceRole.value)
+    getPermissions(
+      workspaceType.value,
+      workspaceRole.value,
+      store.isCurrentUserOriginalOwner
+    )
   )
 
   const uiConfig = computed<WorkspaceUIConfig>(() =>

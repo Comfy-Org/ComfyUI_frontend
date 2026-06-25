@@ -151,8 +151,18 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         cancelUrl
       )
 
-      // Refresh status and balance after subscription
-      await Promise.all([fetchStatus(), fetchBalance()])
+      // Refresh is non-fatal: the subscribe write already succeeded, so a failed
+      // refresh must not reject and prompt a retry of an active subscription.
+      const [statusResult, balanceResult] = await Promise.allSettled([
+        fetchStatus(),
+        fetchBalance()
+      ])
+      if (
+        statusResult.status === 'rejected' ||
+        balanceResult.status === 'rejected'
+      ) {
+        error.value = 'Subscription succeeded, but billing state refresh failed'
+      }
 
       return response
     } catch (err) {

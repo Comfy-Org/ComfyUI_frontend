@@ -8,7 +8,7 @@ export class BaseDialog {
     public readonly page: Page,
     testId?: string
   ) {
-    this.root = testId ? page.getByTestId(testId) : page.locator('.p-dialog')
+    this.root = testId ? page.getByTestId(testId) : page.getByRole('dialog')
     this.closeButton = this.root.getByRole('button', { name: 'Close' })
   }
 
