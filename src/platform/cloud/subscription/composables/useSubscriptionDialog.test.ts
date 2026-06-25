@@ -127,6 +127,21 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
+    it('sizes the unified pricing dialog via the Reka contentClass, not the ignored PrimeVue style', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
+      // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
+      // `style` width is silently ignored and collapses the wide table to the
+      // default md (576px) frame.
+      expect(dialogComponentProps).toHaveProperty('contentClass')
+      expect(dialogComponentProps).not.toHaveProperty('style')
+    })
+
     it('defaults to the personal tab in a personal workspace', () => {
       mockTeamWorkspacesEnabled.value = true
       mockIsInPersonalWorkspace.value = true

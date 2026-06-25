@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { TEAM_PLAN_SLUG_BY_CYCLE } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -234,7 +234,7 @@ export function useSubscriptionCheckout(emit: {
 
     isSubscribing.value = true
     try {
-      const planSlug = TEAM_PLAN_SLUG_BY_CYCLE[selectedBillingCycle.value]
+      const planSlug = getTeamPlanSlug(selectedBillingCycle.value)
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
         billingCycle: selectedBillingCycle.value,

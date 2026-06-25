@@ -703,3 +703,55 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(subgraphNode.has_errors).toBe(true)
   })
 })
+
+describe('Pre-remove vueNodeData drain', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('drops vueNodeData entry before node.onRemoved fires', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    expect(vueNodeData.has(String(node.id))).toBe(true)
+
+    let dataPresentInOnRemoved: boolean | undefined
+    node.onRemoved = () => {
+      dataPresentInOnRemoved = vueNodeData.has(String(node.id))
+    }
+
+    graph.remove(node)
+
+    expect(
+      dataPresentInOnRemoved,
+      'vueNodeData entry must be cleared before node.onRemoved fires so reactive consumers cannot observe the detached node'
+    ).toBe(false)
+  })
+
+  it('clears vueNodeData when LGraph.clear() dispatches node:before-removed for each node', () => {
+    const graph = new LGraph()
+    const nodeA = new LGraphNode('a')
+    const nodeB = new LGraphNode('b')
+    graph.add(nodeA)
+    graph.add(nodeB)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    expect(vueNodeData.size).toBe(2)
+
+    const beforeRemovedSpy = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemovedSpy)
+
+    graph.clear()
+
+    expect(
+      beforeRemovedSpy,
+      'clear() must dispatch node:before-removed so reactive consumers can drop refs before nodes detach'
+    ).toHaveBeenCalledTimes(2)
+    expect(
+      vueNodeData.size,
+      'node:before-removed listener must drain vueNodeData when clear() removes every node'
+    ).toBe(0)
+  })
+})

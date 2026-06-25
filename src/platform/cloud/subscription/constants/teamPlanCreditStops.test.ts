@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  TEAM_PLAN_SLUG_BY_CYCLE,
   getStopDiscountedMonthlyUsd,
+  getTeamPlanSlug,
   mapApiTeamCreditStops
 } from './teamPlanCreditStops'
 
@@ -68,9 +68,9 @@ describe('getStopDiscountedMonthlyUsd', () => {
   })
 })
 
-describe('TEAM_PLAN_SLUG_BY_CYCLE', () => {
+describe('getTeamPlanSlug', () => {
   it('maps the billing cycle to the per-credit team plan slug', () => {
-    expect(TEAM_PLAN_SLUG_BY_CYCLE.monthly).toBe('team_per_credit_monthly')
-    expect(TEAM_PLAN_SLUG_BY_CYCLE.yearly).toBe('team_per_credit_annual')
+    expect(getTeamPlanSlug('monthly')).toBe('team_per_credit_monthly')
+    expect(getTeamPlanSlug('yearly')).toBe('team_per_credit_annual')
   })
 })
