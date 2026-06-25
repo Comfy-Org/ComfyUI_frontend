@@ -184,7 +184,21 @@ describe('GtmTelemetryProvider', () => {
 
     it('pushes run_workflow with trigger_source', () => {
       const provider = createInitializedProvider()
-      provider.trackRunButton({ trigger_source: 'button' })
+      provider.trackRunButton({
+        subscribe_to_run: false,
+        workflow_type: 'custom',
+        workflow_name: 'untitled',
+        custom_node_count: 0,
+        total_node_count: 0,
+        subgraph_count: 0,
+        has_api_nodes: false,
+        api_node_names: [],
+        has_toolkit_nodes: false,
+        toolkit_node_names: [],
+        trigger_source: 'button',
+        view_mode: 'app',
+        is_app_mode: true
+      })
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'run_workflow',
         trigger_source: 'button',

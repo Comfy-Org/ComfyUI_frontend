@@ -48,6 +48,20 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: mockRemoteConfig
 }))
 
+vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+  getExecutionContext: () => ({
+    is_template: false,
+    workflow_name: 'untitled',
+    custom_node_count: 0,
+    total_node_count: 0,
+    subgraph_count: 0,
+    has_api_nodes: false,
+    api_node_names: [],
+    has_toolkit_nodes: false,
+    toolkit_node_names: []
+  })
+}))
+
 vi.mock('posthog-js', () => hoisted.mockPosthog)
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({

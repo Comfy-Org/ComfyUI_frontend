@@ -169,6 +169,7 @@ describe('useLoad3d', () => {
       exportModel: vi.fn().mockResolvedValue(undefined),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getSourceFormat: vi.fn().mockReturnValue(null),
       getCurrentModelCapabilities: vi.fn().mockReturnValue({
         fitToViewer: true,
         requiresMaterialRebuild: false,

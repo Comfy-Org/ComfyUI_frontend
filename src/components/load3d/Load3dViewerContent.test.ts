@@ -59,6 +59,7 @@ function buildViewerStub() {
     canUseGizmo: ref(true),
     canUseLighting: ref(true),
     canExport: ref(true),
+    sourceFormat: ref<string | null>(null),
     materialModes: ref(['original', 'normal', 'wireframe']),
     animations: ref<Array<{ name: string; index: number }>>([]),
     playing: ref(false),

@@ -16,6 +16,7 @@ import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/com
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
+import type { AppMode } from '@/utils/appMode'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -69,8 +70,8 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
-  view_mode?: string
-  is_app_mode?: boolean
+  view_mode: AppMode
+  is_app_mode: boolean
 }
 
 /**
@@ -398,10 +399,7 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
-  trackRunButton?(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void
+  trackRunButton?(properties: RunButtonProperties): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
@@ -493,6 +491,7 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
+  BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',

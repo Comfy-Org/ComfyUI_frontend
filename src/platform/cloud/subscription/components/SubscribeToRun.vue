@@ -22,8 +22,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
 
 const { t } = useI18n()
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -36,10 +36,11 @@ const buttonLabel = computed(() =>
 )
 
 const { showSubscriptionDialog } = useBillingContext()
+const { trackRunButton } = useRunButtonTelemetry()
 
 const handleSubscribeToRun = () => {
   if (isCloud) {
-    useTelemetry()?.trackRunButton({ subscribe_to_run: true })
+    trackRunButton({ subscribe_to_run: true })
   }
 
   showSubscriptionDialog()

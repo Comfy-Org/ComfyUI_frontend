@@ -5,7 +5,6 @@ import type {
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -13,6 +12,7 @@ import type {
   NodeSearchResultMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  RunButtonProperties,
   SettingChangedMetadata,
   ShareFlowMetadata,
   SubscriptionMetadata,
@@ -29,6 +29,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
+import { TelemetryEvents } from '../../types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -152,7 +153,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
-    this.pushEvent('begin_checkout', metadata)
+    this.pushEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackSubscription(
@@ -181,13 +182,12 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
+  trackRunButton(properties: RunButtonProperties): void {
     this.pushEvent('run_workflow', {
-      subscribe_to_run: options?.subscribe_to_run ?? false,
-      trigger_source: options?.trigger_source ?? 'unknown'
+      subscribe_to_run: properties.subscribe_to_run,
+      trigger_source: properties.trigger_source ?? 'unknown',
+      view_mode: properties.view_mode,
+      is_app_mode: properties.is_app_mode
     })
   }
 
