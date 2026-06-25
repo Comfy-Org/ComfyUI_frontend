@@ -13,6 +13,10 @@ import {
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
@@ -83,7 +87,7 @@ describe('getWidgetIdentity', () => {
   it('uses sourceExecutionId for identity when no nodeId', () => {
     const widget = createMockWidget({
       nodeId: undefined,
-      sourceExecutionId: '65:18'
+      sourceExecutionId: createNodeExecutionId([65, 18])
     })
     const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
     expect(dedupeIdentity).toBe('exec:65:18:test_widget:combo')
@@ -131,7 +135,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -147,7 +151,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         nodeErrors,
         executionErrorStore,
         missingModelStore
@@ -158,7 +162,7 @@ describe('hasWidgetError', () => {
   it('returns true via sourceExecutionId when execution store has matching error', () => {
     const widget = createMockWidget({
       name: 'seed',
-      sourceExecutionId: '65:18'
+      sourceExecutionId: createNodeExecutionId([65, 18])
     })
     executionErrorStore.lastNodeErrors = {
       '65:18': {
@@ -177,7 +181,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -191,7 +195,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -210,7 +214,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         nodeErrors,
         executionErrorStore,
         missingModelStore
@@ -221,7 +225,7 @@ describe('hasWidgetError', () => {
   it('matches missing models by the interior source widget name', () => {
     const widget = createMockWidget({
       name: 'display_slot',
-      sourceExecutionId: '65:18',
+      sourceExecutionId: createNodeExecutionId([65, 18]),
       sourceWidgetName: 'ckpt_name'
     })
     const spy = vi
@@ -230,7 +234,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        '1',
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -399,6 +403,37 @@ describe('computeProcessedWidgets borderStyle', () => {
     })
   })
 
+  it('uses widget nodeId for simplified widget locator when present', () => {
+    const widget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: 'inner-node'
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: 'host-node',
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: [],
+        subgraphId: 'subgraph-node'
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result[0].simplified.nodeLocatorId).toBe(
+      createNodeLocatorId('subgraph-node', 'inner-node')
+    )
+  })
   it('deduplication keeps visible widget over hidden duplicate', () => {
     const sharedWidgetId = widgetId(GRAPH_ID, '1', 'text')
     const hiddenWidget = createMockWidget({
@@ -480,7 +515,7 @@ describe('computeProcessedWidgets borderStyle', () => {
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const GRAPH_ID = 'graph-test'
-  const NODE_ID = '1'
+  const NODE_ID = 1
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -591,7 +626,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        NODE_ID,
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors[NODE_ID],
         executionErrorStore,
         missingModelStore
@@ -603,7 +638,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        NODE_ID,
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
         missingModelStore

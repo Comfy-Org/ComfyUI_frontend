@@ -427,7 +427,6 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -453,16 +452,14 @@ onMounted(() => {
 
 // Wrap onClose to track session end
 const onClose = () => {
-  if (isCloud) {
-    const timeSpentSeconds = Math.floor(
-      (Date.now() - sessionStartTime.value) / 1000
-    )
+  const timeSpentSeconds = Math.floor(
+    (Date.now() - sessionStartTime.value) / 1000
+  )
 
-    useTelemetry()?.trackTemplateLibraryClosed({
-      template_selected: templateWasSelected.value,
-      time_spent_seconds: timeSpentSeconds
-    })
-  }
+  useTelemetry()?.trackTemplateLibraryClosed({
+    template_selected: templateWasSelected.value,
+    time_spent_seconds: timeSpentSeconds
+  })
 
   originalOnClose()
 }
