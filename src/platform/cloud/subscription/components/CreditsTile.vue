@@ -50,10 +50,15 @@
             $t('subscription.monthly')
           }}</span>
           <span class="text-muted">
-            {{ $t('subscription.refillsDate', { date: refillsDateShort }) }}
+            {{ refillsLabel }}
           </span>
         </div>
         <div
+          role="progressbar"
+          :aria-valuenow="usage.used"
+          :aria-valuemin="0"
+          :aria-valuemax="monthlyTotalCredits ?? 0"
+          :aria-valuetext="monthlyUsageLabel"
           class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
           <div
@@ -105,13 +110,17 @@
         >
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
-            <i
+            <button
               v-tooltip="{
                 value: $t('subscription.additionalCreditsTooltip'),
                 showDelay: 300
               }"
-              class="icon-[lucide--info] size-4 text-muted"
-            />
+              type="button"
+              :aria-label="$t('subscription.additionalCreditsInfo')"
+              class="flex items-center text-muted"
+            >
+              <i class="icon-[lucide--info] size-4" />
+            </button>
             <span
               v-if="isSpendingAdditional"
               class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
@@ -173,6 +182,7 @@ import { useI18n } from 'vue-i18n'
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
@@ -182,6 +192,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
+import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -189,9 +200,6 @@ const { zeroState = false } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
 }>()
-
-const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
-const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
 const { locale, t } = useI18n()
 
@@ -214,10 +222,9 @@ const {
 } = useSubscriptionCredits()
 const { permissions } = useWorkspaceUI()
 const { showPricingTable } = useSubscriptionDialog()
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
-
-const isYearly = computed(() => subscription.value?.duration === 'ANNUAL')
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
@@ -228,9 +235,7 @@ const tierKey = computed(() => {
 const monthlyTotalCredits = computed<number | null>(() => {
   const teamStop = currentTeamCreditStop.value
   if (teamStop) return teamStop.credits_monthly
-  const credits = getTierCredits(tierKey.value)
-  if (credits === null) return null
-  return isYearly.value ? credits * 12 : credits
+  return getTierCredits(tierKey.value)
 })
 
 const usage = computed(() =>
@@ -245,9 +250,17 @@ const refillsDateShort = computed(() => {
   if (!raw) return ''
   const date = new Date(raw)
   return Number.isNaN(date.getTime())
-    ? raw
+    ? ''
     : date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
 })
+
+const hasRefillsDate = computed(() => refillsDateShort.value !== '')
+
+const refillsLabel = computed(() =>
+  hasRefillsDate.value
+    ? t('subscription.refillsDate', { date: refillsDateShort.value })
+    : t('subscription.refillsNextCycle')
+)
 
 const formatCreditCount = (value: number) =>
   formatCredits({
@@ -279,6 +292,12 @@ const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
+const monthlyUsageLabel = computed(() =>
+  t('subscription.monthlyUsageProgress', {
+    used: usedDisplay.value,
+    total: monthlyTotalDisplay.value
+  })
+)
 
 const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
 const showBar = computed(
@@ -308,26 +327,28 @@ const isSpendingAdditional = computed(
 const emptyStateNotice = computed(() => {
   if (isOutOfCredits.value) {
     return {
-      title: t('subscription.outOfCreditsTitle', {
-        date: refillsDateShort.value
-      }),
+      title: hasRefillsDate.value
+        ? t('subscription.outOfCreditsTitle', { date: refillsDateShort.value })
+        : t('subscription.outOfCreditsTitleNoDate'),
       description: t('subscription.outOfCreditsDescription')
     }
   }
   if (isMonthlyDepleted.value) {
     return {
-      title: t('subscription.monthlyCreditsUsedUpTitle', {
-        date: refillsDateShort.value
-      }),
+      title: hasRefillsDate.value
+        ? t('subscription.monthlyCreditsUsedUpTitle', {
+            date: refillsDateShort.value
+          })
+        : t('subscription.monthlyCreditsUsedUpTitleNoDate'),
       description: t('subscription.monthlyCreditsUsedUpDescription')
     }
   }
   return null
 })
 
-async function handleRefresh() {
+const handleRefresh = wrapWithErrorHandlingAsync(async () => {
   await Promise.all([fetchBalance(), fetchStatus()])
-}
+})
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked()
@@ -338,23 +359,13 @@ function handleUpgradeToAddCredits() {
   showPricingTable()
 }
 
-function handleWindowFocus() {
-  const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
-  if (!timestampStr) return
-
-  const timestamp = parseInt(timestampStr, 10)
-  if (Date.now() - timestamp > TOPUP_EXPIRY_MS) {
-    localStorage.removeItem(PENDING_TOPUP_KEY)
-    return
+async function handleWindowFocus() {
+  if (consumePendingTopup()) {
+    await handleRefresh()
   }
-
-  void handleRefresh()
-  localStorage.removeItem(PENDING_TOPUP_KEY)
 }
 
-useEventListener(window, 'focus', handleWindowFocus)
+useEventListener(window, 'focus', () => void handleWindowFocus())
 
-onMounted(() => {
-  void handleRefresh()
-})
+onMounted(handleRefresh)
 </script>
