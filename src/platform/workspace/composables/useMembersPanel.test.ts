@@ -321,6 +321,13 @@ vi.mock('@/platform/cloud/subscription/constants/tierPricing', () => ({
   }
 }))
 
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({ show: vi.fn() })
+  })
+)
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,

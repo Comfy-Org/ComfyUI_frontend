@@ -20,6 +20,12 @@ import type {
 import { useLegacyBilling } from './useLegacyBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
+// Legacy per-member team plans use a hyphenated `team-{tier}-{cycle}` slug; the
+// new credit-slider plan uses an underscore `team_per_credit_{cycle}` slug and
+// carries a team_credit_stop. The hyphen prefix alone separates the two, so a
+// new sub is never misrouted even before its credit stop is populated.
+const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
+
 /**
  * Unified billing context that selects the billing implementation by build/flag.
  *
@@ -114,11 +120,31 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentPlanSlug)
   )
 
+  const teamCreditStops = computed(() =>
+    toValue(activeContext.value.teamCreditStops)
+  )
+
+  const currentTeamCreditStop = computed(() =>
+    toValue(activeContext.value.currentTeamCreditStop)
+  )
+
   const isActiveSubscription = computed(() =>
     toValue(activeContext.value.isActiveSubscription)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
+
+  const isLegacyTeamPlan = computed(
+    () =>
+      type.value === 'workspace' &&
+      isActiveSubscription.value &&
+      !isFreeTier.value &&
+      currentTeamCreditStop.value === null &&
+      (currentPlanSlug.value
+        ?.toLowerCase()
+        .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
+        false)
+  )
 
   const billingStatus = computed(() =>
     toValue(activeContext.value.billingStatus)
@@ -155,31 +181,28 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
-  // Reinitialize when the workspace or the resolved billing type changes.
-  // type can flip after setup (e.g. when the team-workspaces flag resolves from
-  // authenticated config), which swaps the active backend and needs a fresh init.
+  function resetBillingState() {
+    isInitialized.value = false
+    error.value = null
+  }
+
+  // type can flip after setup when the team-workspaces flag resolves from
+  // authenticated config, swapping the active backend; a fresh init is needed.
+  // The watch fires only when id or type actually changes, so any fire with a
+  // workspace selected warrants a reinit.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
-    async (
-      [newWorkspaceId, newType],
-      [oldWorkspaceId, oldType] = [undefined, undefined]
-    ) => {
+    async ([newWorkspaceId]) => {
       if (!newWorkspaceId) {
-        // No workspace selected - reset state
-        isInitialized.value = false
-        error.value = null
+        resetBillingState()
         return
       }
 
-      if (newWorkspaceId !== oldWorkspaceId || newType !== oldType) {
-        // Workspace or billing type changed - reinitialize
-        isInitialized.value = false
-        try {
-          await initialize()
-        } catch (err) {
-          // Error is already captured in error ref
-          console.error('Failed to initialize billing context:', err)
-        }
+      isInitialized.value = false
+      try {
+        await initialize()
+      } catch (err) {
+        console.error('Failed to initialize billing context:', err)
       }
     },
     { immediate: true }
@@ -257,10 +280,13 @@ function useBillingContextInternal(): BillingContext {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,
     isFreeTier,
+    isLegacyTeamPlan,
     billingStatus,
     subscriptionStatus,
     tier,

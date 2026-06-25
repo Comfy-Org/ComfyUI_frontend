@@ -14,7 +14,8 @@ const mockHandleBackToPricing = vi.fn()
 const mockHandleAddCreditCard = vi.fn()
 const mockHandleConfirmTransition = vi.fn()
 const mockHandleResubscribe = vi.fn()
-const mockCheckoutStep = ref<'pricing' | 'preview'>('pricing')
+const mockHandleSuccessClose = vi.fn()
+const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
@@ -32,7 +33,8 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     handleBackToPricing: mockHandleBackToPricing,
     handleAddCreditCard: mockHandleAddCreditCard,
     handleConfirmTransition: mockHandleConfirmTransition,
-    handleResubscribe: mockHandleResubscribe
+    handleResubscribe: mockHandleResubscribe,
+    handleSuccessClose: mockHandleSuccessClose
   })
 }))
 
@@ -79,6 +81,13 @@ const TransitionPreviewStub = {
   </div>`
 }
 
+const SuccessStub = {
+  name: 'SubscriptionSuccessWorkspace',
+  template: `<div data-testid="success">
+    <button data-testid="success-close-btn" @click="$emit('close')">Done</button>
+  </div>`
+}
+
 function renderComponent(
   props: {
     onClose?: () => void
@@ -102,7 +111,8 @@ function renderComponent(
       stubs: {
         PricingTableWorkspace: PricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: AddPaymentPreviewStub,
-        SubscriptionTransitionPreviewWorkspace: TransitionPreviewStub
+        SubscriptionTransitionPreviewWorkspace: TransitionPreviewStub,
+        SubscriptionSuccessWorkspace: SuccessStub
       }
     }
   })
@@ -214,5 +224,22 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     await user.click(screen.getByLabelText('Back'))
 
     expect(mockHandleBackToPricing).toHaveBeenCalled()
+  })
+
+  it('shows the success screen on the success step', () => {
+    mockCheckoutStep.value = 'success'
+    renderComponent()
+    expect(screen.getByTestId('success')).toBeInTheDocument()
+    expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
+  })
+
+  it('wires the success close event to handleSuccessClose', async () => {
+    const user = userEvent.setup()
+    mockCheckoutStep.value = 'success'
+    renderComponent()
+
+    await user.click(screen.getByTestId('success-close-btn'))
+
+    expect(mockHandleSuccessClose).toHaveBeenCalled()
   })
 })

@@ -1,3 +1,4 @@
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
@@ -16,7 +17,6 @@ import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeS
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
-import { createSharedComposable } from '@vueuse/core'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
@@ -65,17 +65,18 @@ function useNodeDragIndividual() {
     lastPointerY = event.clientY
 
     const selectedNodes = toValue(selectedNodeIds)
+    const nodeIdKey = String(nodeId)
 
     // capture the starting positions of all other selected nodes
     // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
+    const isDraggedNodeInSelection = selectedNodes?.has(nodeIdKey)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
 
       for (const id of selectedNodes) {
         // Skip the current node being dragged
-        if (id === nodeId) continue
+        if (id === nodeIdKey) continue
 
         const nodeLayout = layoutStore.getNodeLayoutRef(id).value
         if (nodeLayout) {
@@ -281,27 +282,29 @@ function useNodeDragIndividual() {
       }
     }
 
+    resetDragState()
+  }
+
+  function resetDragState() {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
     selectedGroups = null
     lastCanvasDelta = null
 
-    // Stop auto-pan
     autoPan?.stop()
     autoPan = null
 
-    // Stop tracking shift key state
     stopShiftSync?.()
     stopShiftSync = null
 
-    // Cancel any pending animation frame
     if (rafId !== null) {
       cancelAnimationFrame(rafId)
       rafId = null
     }
   }
 
+  whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
   return {
     startDrag,
     handleDrag,

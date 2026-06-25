@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -7,8 +8,9 @@ import type { FormDropdownItem, LayoutMode } from './types'
 const VirtualGridStub = {
   name: 'VirtualGrid',
   props: ['items', 'maxColumns', 'itemHeight', 'scrollerHeight'],
+  emits: ['approach-end'],
   template:
-    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" />'
+    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" @click="$emit(\'approach-end\')" />'
 }
 
 function createItem(id: string, name: string): FormDropdownItem {
@@ -91,6 +93,31 @@ describe('FormDropdownMenu', () => {
 
     const virtualGrid = screen.getByTestId('virtual-grid')
     expect(virtualGrid.getAttribute('data-max-columns')).toBe('1')
+  })
+
+  it('forwards approach-end from the virtual grid', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(FormDropdownMenu, {
+      props: defaultProps,
+      global: globalConfig
+    })
+
+    await user.click(screen.getByTestId('virtual-grid'))
+
+    expect(emitted()['approach-end']).toHaveLength(1)
+  })
+
+  it('shows the loading-more row only while loadingMore is set', async () => {
+    const { rerender } = render(FormDropdownMenu, {
+      props: { ...defaultProps, loadingMore: true },
+      global: globalConfig
+    })
+
+    expect(screen.getByTestId('form-dropdown-loading-more')).toBeTruthy()
+
+    await rerender({ ...defaultProps, loadingMore: false })
+
+    expect(screen.queryByTestId('form-dropdown-loading-more')).toBeNull()
   })
 
   it('has data-capture-wheel="true" on the root element', () => {
