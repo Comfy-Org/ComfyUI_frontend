@@ -80,10 +80,10 @@ const isLinked = computed(() => {
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
   const graphId = node.graph?.rootGraph?.id
-  const bareNodeId = stripGraphPrefix(String(node.id))
+  const bareNodeId = stripGraphPrefix(node.id)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
-    : graphId
+    : graphId && bareNodeId
       ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
       : undefined
   const widgetName = widgetState?.name ?? widget.name

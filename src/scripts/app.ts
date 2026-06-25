@@ -2069,14 +2069,15 @@ export class ComfyApp {
 
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
-      const node = app.rootGraph.getNodeById(id)
+      const currentNodeId = toNodeId(isNaN(+id) ? id : +id)
+      const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
 
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(fromId)
+          const fromNode = app.rootGraph.getNodeById(toNodeId(fromId))
           if (!fromNode) continue
 
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1

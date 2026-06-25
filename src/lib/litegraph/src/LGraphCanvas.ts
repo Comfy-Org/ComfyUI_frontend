@@ -22,6 +22,7 @@ import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
+import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
@@ -3774,7 +3775,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this._ghostKeyHandler = null
     }
 
-    const node = this.graph?.getNodeById(nodeId)
+    const parsedNodeId = parseNodeId(nodeId)
+    const node = parsedNodeId ? this.graph?.getNodeById(parsedNodeId) : null
     if (!node) return
 
     if (cancelled) {
@@ -4267,7 +4269,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         connectInputs &&
         LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs
       ) {
-        outNode ??= graph.getNodeById(info.origin_id)
+        const originNodeId = parseNodeId(info.origin_id)
+        outNode ??= originNodeId ? graph.getNodeById(originNodeId) : null
         afterRerouteId ??= info.parentId
       }
 

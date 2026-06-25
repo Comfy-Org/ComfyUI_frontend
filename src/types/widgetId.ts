@@ -1,5 +1,5 @@
 import { nodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 type UUID = string
 
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
@@ -9,7 +9,7 @@ const WIDGET_ID_PATTERN = /^(?<graphId>[^:]+):(?<nodeId>[^:]+):(?<name>[^:]+)$/u
 
 export function widgetId(
   graphId: UUID,
-  localNodeId: SerializedNodeId,
+  localNodeId: NodeId,
   name: string
 ): WidgetId {
   return [

@@ -135,15 +135,17 @@ export function getWidgetIdentity(
     const dedupeIdentity = `${widget.widgetId}:${widget.type}`
     return { dedupeIdentity, renderKey: dedupeIdentity }
   }
-  const hostNodeIdRoot =
-    nodeId !== undefined && nodeId !== ''
-      ? `node:${String(stripGraphPrefix(nodeId))}`
-      : undefined
-  const stableIdentityRoot = widget.nodeId
-    ? `node:${String(stripGraphPrefix(widget.nodeId))}`
+  const hostNodeIdRoot = nodeId ? stripGraphPrefix(nodeId) : null
+  const widgetNodeIdRoot = widget.nodeId
+    ? stripGraphPrefix(widget.nodeId)
+    : null
+  const stableIdentityRoot = widgetNodeIdRoot
+    ? `node:${widgetNodeIdRoot}`
     : widget.sourceExecutionId
       ? `exec:${widget.sourceExecutionId}`
       : hostNodeIdRoot
+        ? `node:${hostNodeIdRoot}`
+        : undefined
 
   const dedupeIdentity = stableIdentityRoot
     ? `${stableIdentityRoot}:${widget.name}:${widget.type}`
@@ -201,15 +203,12 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
+    const widgetNodeId = stripGraphPrefix(widget.nodeId ?? nodeId ?? '')
     const widgetState = widget.widgetId
       ? widgetValueStore.getWidget(widget.widgetId)
-      : graphId
+      : graphId && widgetNodeId
         ? widgetValueStore.getWidget(
-            widgetId(
-              graphId,
-              String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
-              widget.name
-            )
+            widgetId(graphId, widgetNodeId, widget.name)
           )
         : undefined
     const mergedOptions: IWidgetOptions = {
@@ -264,7 +263,7 @@ export function computeProcessedWidgets({
     isVisible: visible,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
+    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId ?? '') ?? ''
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -329,7 +328,7 @@ export function computeProcessedWidgets({
         e,
         widget.name,
         widget.nodeId !== undefined
-          ? String(stripGraphPrefix(widget.nodeId))
+          ? (stripGraphPrefix(widget.nodeId) ?? undefined)
           : undefined
       )
     }

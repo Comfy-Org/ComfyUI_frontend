@@ -8,7 +8,7 @@ import {
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 import {
   createNestedSubgraphs,
@@ -42,7 +42,7 @@ describe('ExecutableNodeDTO Creation', () => {
   it('should create DTO with subgraph path', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Inner Node')
-    node.id = nodeId(42)
+    node.id = toNodeId(42)
     graph.add(node)
     const subgraphPath = ['10', '20'] as const
 
@@ -116,7 +116,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should generate simple ID for root node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Root Node')
-    node.id = nodeId(5)
+    node.id = toNodeId(5)
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
@@ -127,7 +127,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should generate path-based ID for nested node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Nested Node')
-    node.id = nodeId(3)
+    node.id = toNodeId(3)
     graph.add(node)
     const path = ['1', '2'] as const
 
@@ -139,7 +139,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should handle deep nesting paths', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Deep Node')
-    node.id = nodeId(99)
+    node.id = toNodeId(99)
     graph.add(node)
     const path = ['1', '2', '3', '4', '5'] as const
 
@@ -151,11 +151,11 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should handle string and number IDs consistently', () => {
     const graph = new LGraph()
     const node1 = new LGraphNode('Node 1')
-    node1.id = nodeId(10)
+    node1.id = toNodeId(10)
     graph.add(node1)
 
     const node2 = new LGraphNode('Node 2')
-    node2.id = nodeId(20)
+    node2.id = toNodeId(20)
     graph.add(node2)
 
     const dto1 = new ExecutableNodeDTO(node1, ['5'], new Map(), undefined)
@@ -488,7 +488,7 @@ describe('ExecutableNodeDTO Properties', () => {
   it('should provide access to basic properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
-    node.id = nodeId(42)
+    node.id = toNodeId(42)
     node.addInput('input', 'number')
     node.addOutput('output', 'string')
     graph.add(node)
@@ -550,7 +550,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     // Create DTOs
     for (let i = 0; i < 100; i++) {
       const node = new LGraphNode(`Node ${i}`)
-      node.id = nodeId(i)
+      node.id = toNodeId(i)
       graph.add(node)
       const dto = new ExecutableNodeDTO(node, ['parent'], new Map(), undefined)
       nodes.push(dto)
@@ -620,7 +620,7 @@ describe('ExecutableNodeDTO Integration', () => {
   it('should preserve original node properties through DTO', () => {
     const graph = new LGraph()
     const originalNode = new LGraphNode('Original')
-    originalNode.id = nodeId(123)
+    originalNode.id = toNodeId(123)
     originalNode.addInput('test', 'number')
     originalNode.properties = { value: 42 }
     graph.add(originalNode)
@@ -645,7 +645,7 @@ describe('ExecutableNodeDTO Integration', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 99 })
     const innerNode = subgraph.nodes[0]
-    innerNode.id = nodeId(55)
+    innerNode.id = toNodeId(55)
 
     const dto = new ExecutableNodeDTO(
       innerNode,
@@ -670,7 +670,7 @@ describe('ExecutableNodeDTO Scale Testing', () => {
     // Create DTOs to test performance
     for (let i = 0; i < 1000; i++) {
       const node = new LGraphNode(`Node ${i}`)
-      node.id = nodeId(i)
+      node.id = toNodeId(i)
       node.addInput('in', 'number')
       graph.add(node)
 
@@ -693,7 +693,7 @@ describe('ExecutableNodeDTO Scale Testing', () => {
   it('should handle complex path generation correctly', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Deep Node')
-    node.id = nodeId(999)
+    node.id = toNodeId(999)
     graph.add(node)
 
     // Test deterministic path generation behavior

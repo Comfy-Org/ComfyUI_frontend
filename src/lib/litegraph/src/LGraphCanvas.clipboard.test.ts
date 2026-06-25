@@ -14,7 +14,7 @@ import {
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
 import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type {
   ClipboardItems,
   ExportedSubgraph,
@@ -53,7 +53,7 @@ describe('remapClipboardSubgraphNodeIds', () => {
   it('remaps pasted subgraph interior IDs and proxyWidgets references', () => {
     const rootGraph = new LGraph()
     const existingNode = new LGraphNode('existing')
-    existingNode.id = nodeId(1)
+    existingNode.id = toNodeId(1)
     rootGraph.add(existingNode)
 
     const subgraphId = createUuidv4()
@@ -125,7 +125,7 @@ describe('remapClipboardSubgraphNodeIds', () => {
   it('remaps pasted SubgraphNode previewExposures sourceNodeId references', () => {
     const rootGraph = new LGraph()
     const existingNode = new LGraphNode('existing')
-    existingNode.id = nodeId(1)
+    existingNode.id = toNodeId(1)
     rootGraph.add(existingNode)
 
     const subgraphId = createUuidv4()

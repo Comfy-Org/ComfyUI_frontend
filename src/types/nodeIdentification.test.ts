@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import {
   compareExecutionId,
@@ -19,7 +19,10 @@ describe('nodeIdentification', () => {
   describe('NodeLocatorId', () => {
     const validUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const validNodeId = '123'
-    const validNodeLocatorId = createNodeLocatorId(validUuid, validNodeId)
+    const validNodeLocatorId = createNodeLocatorId(
+      validUuid,
+      toNodeId(validNodeId)
+    )
 
     describe('isNodeLocatorId', () => {
       it('should return true for valid NodeLocatorId', () => {
@@ -109,13 +112,13 @@ describe('nodeIdentification', () => {
 
     describe('createNodeLocatorId', () => {
       it('should create NodeLocatorId from components', () => {
-        const result = createNodeLocatorId(validUuid, 123)
+        const result = createNodeLocatorId(validUuid, toNodeId(123))
         expect(result).toBe(validNodeLocatorId)
         expect(isNodeLocatorId(result)).toBe(true)
       })
 
       it('should handle string node IDs', () => {
-        const result = createNodeLocatorId(validUuid, 'node_1')
+        const result = createNodeLocatorId(validUuid, toNodeId('node_1'))
         expect(result).toBe(`${validUuid}:node_1`)
         expect(isNodeLocatorId(result)).toBe(true)
       })
@@ -188,18 +191,26 @@ describe('nodeIdentification', () => {
 
     describe('createNodeExecutionId', () => {
       it('should create execution IDs from node arrays', () => {
-        expect(createNodeExecutionId([123, 456])).toBe('123:456')
-        expect(createNodeExecutionId([123, 456, 789])).toBe('123:456:789')
-        expect(createNodeExecutionId(['node_1', 'node_2'])).toBe(
-          'node_1:node_2'
+        expect(createNodeExecutionId([toNodeId(123), toNodeId(456)])).toBe(
+          '123:456'
         )
-        expect(createNodeExecutionId([123, 'node_2', 456])).toBe(
-          '123:node_2:456'
-        )
+        expect(
+          createNodeExecutionId([toNodeId(123), toNodeId(456), toNodeId(789)])
+        ).toBe('123:456:789')
+        expect(
+          createNodeExecutionId([toNodeId('node_1'), toNodeId('node_2')])
+        ).toBe('node_1:node_2')
+        expect(
+          createNodeExecutionId([
+            toNodeId(123),
+            toNodeId('node_2'),
+            toNodeId(456)
+          ])
+        ).toBe('123:node_2:456')
       })
 
       it('should handle single node ID', () => {
-        const result = createNodeExecutionId([123])
+        const result = createNodeExecutionId([toNodeId(123)])
         expect(result).toBe('123')
         expect(isNodeExecutionId(result)).toBe(true)
       })
@@ -212,12 +223,12 @@ describe('nodeIdentification', () => {
       })
 
       it('should reject empty path segments', () => {
-        expect(() => createNodeExecutionId([''])).toThrow(
+        expect(() => createNodeExecutionId([toNodeId('')])).toThrow(
           'Node ID segment must be non-empty'
         )
-        expect(() => createNodeExecutionId([123, ''])).toThrow(
-          'Node ID segment must be non-empty'
-        )
+        expect(() =>
+          createNodeExecutionId([toNodeId(123), toNodeId('')])
+        ).toThrow('Node ID segment must be non-empty')
       })
     })
   })
@@ -225,9 +236,9 @@ describe('nodeIdentification', () => {
   describe('Integration tests', () => {
     it('should round-trip NodeLocatorId correctly', () => {
       const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-      const localNodeId: NodeId = nodeId(123)
+      const localNodeId: NodeId = toNodeId(123)
 
-      const locatorId = createNodeLocatorId(uuid, localNodeId)
+      const locatorId = createNodeLocatorId(uuid, toNodeId(localNodeId))
       const parsed = parseNodeLocatorId(locatorId)
 
       expect(parsed).toBeTruthy()
@@ -236,7 +247,11 @@ describe('nodeIdentification', () => {
     })
 
     it('should round-trip NodeExecutionId correctly', () => {
-      const nodeIds: NodeId[] = [nodeId(123), nodeId('node_2'), nodeId(456)]
+      const nodeIds: NodeId[] = [
+        toNodeId(123),
+        toNodeId('node_2'),
+        toNodeId(456)
+      ]
 
       const executionId = createNodeExecutionId(nodeIds)
       const parsed = parseNodeExecutionId(executionId)

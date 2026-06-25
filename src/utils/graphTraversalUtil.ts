@@ -11,9 +11,20 @@ import {
   getParentExecutionIds,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
+function requireNodeId(value: SerializedNodeId): NodeId {
+  const parsedNodeId = parseNodeId(value)
+  if (!parsedNodeId) throw new Error('Invalid node ID')
+  return parsedNodeId
+}
+
+function parseNodeIdPath(path: string[]): NodeId[] {
+  return path.map(requireNodeId)
+}
 /**
  * Constructs a locator ID from node data with optional subgraph context.
  *
@@ -24,7 +35,10 @@ export function getLocatorIdFromNodeData(nodeData: {
   id: string | number
   subgraphId?: string | null
 }): NodeLocatorId {
-  return createNodeLocatorId(nodeData.subgraphId ?? null, nodeData.id)
+  return createNodeLocatorId(
+    nodeData.subgraphId ?? null,
+    requireNodeId(nodeData.id)
+  )
 }
 
 /**
@@ -91,7 +105,7 @@ export function traverseSubgraphPath(
   let currentGraph: LGraph | Subgraph = startGraph
 
   for (const nodeId of path) {
-    const node = currentGraph.getNodeById(nodeId)
+    const node = currentGraph.getNodeById(requireNodeId(nodeId))
     if (!node?.isSubgraphNode?.() || !node.subgraph) return null
     currentGraph = node.subgraph
   }
@@ -201,7 +215,7 @@ export function findNodeInHierarchy(
   nodeId: string | number
 ): LGraphNode | null {
   // Check current graph
-  const node = graph.getNodeById(nodeId)
+  const node = graph.getNodeById(requireNodeId(nodeId))
   if (node) return node
 
   // Search in subgraphs
@@ -299,7 +313,7 @@ export function getRootParentNode(
   const parentId = parts[0]
   if (!rootGraph) return null
 
-  return rootGraph.getNodeById(Number(parentId)) || null
+  return rootGraph.getNodeById(requireNodeId(parentId)) || null
 }
 
 /**
@@ -323,7 +337,7 @@ export function getNodeByExecutionId(
 
   // If no subgraph path, it's in the root graph
   if (subgraphPath.length === 0) {
-    return rootGraph.getNodeById(localNodeId) || null
+    return rootGraph.getNodeById(requireNodeId(localNodeId)) || null
   }
 
   // Traverse to the target subgraph
@@ -331,7 +345,7 @@ export function getNodeByExecutionId(
   if (!targetGraph) return null
 
   // Get the node from the target graph
-  return targetGraph.getNodeById(localNodeId) || null
+  return targetGraph.getNodeById(requireNodeId(localNodeId)) || null
 }
 
 /**
@@ -360,7 +374,10 @@ export function getExecutionIdByNode(
   )
   if (parentPath === undefined) return null
 
-  return createNodeExecutionId([...parentPath.split(':'), node.id])
+  return createNodeExecutionId([
+    ...parseNodeIdPath(parentPath.split(':')),
+    node.id
+  ])
 }
 
 /**
@@ -432,12 +449,15 @@ export function getExecutionIdForNodeInGraph(
   nodeId: string | number
 ): NodeExecutionId {
   if (graph === rootGraph || graph.isRootGraph) {
-    return createNodeExecutionId([nodeId])
+    return createNodeExecutionId([requireNodeId(nodeId)])
   }
   const parentPath = findPartialExecutionPathToGraph(graph as LGraph, rootGraph)
   return parentPath !== undefined
-    ? createNodeExecutionId([...parentPath.split(':'), nodeId])
-    : createNodeExecutionId([nodeId])
+    ? createNodeExecutionId([
+        ...parseNodeIdPath(parentPath.split(':')),
+        requireNodeId(nodeId)
+      ])
+    : createNodeExecutionId([requireNodeId(nodeId)])
 }
 
 /**
@@ -457,8 +477,8 @@ export function getExecutionIdFromNodeData(
   const node = getNodeByLocatorId(rootGraph, locatorId)
   return node
     ? (getExecutionIdByNode(rootGraph, node) ??
-        createNodeExecutionId([nodeData.id]))
-    : createNodeExecutionId([nodeData.id])
+        createNodeExecutionId([requireNodeId(nodeData.id)]))
+    : createNodeExecutionId([requireNodeId(nodeData.id)])
 }
 
 /**
@@ -482,7 +502,7 @@ export function getNodeByLocatorId(
 
   // If no subgraph UUID, it's in the root graph
   if (!subgraphUuid) {
-    return rootGraph.getNodeById(localNodeId) || null
+    return rootGraph.getNodeById(requireNodeId(localNodeId)) || null
   }
 
   // Find the subgraph with the matching UUID
@@ -508,7 +528,7 @@ export function executionIdToNodeLocatorId(
 
   if (!nodeIdStr.includes(':')) {
     // It's a top-level node ID
-    return createNodeLocatorId(null, nodeIdStr)
+    return createNodeLocatorId(null, requireNodeId(nodeIdStr))
   }
 
   // It's an execution node ID — resolve subgraph path
@@ -519,7 +539,7 @@ export function executionIdToNodeLocatorId(
   const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
   if (!targetGraph) return undefined
 
-  return createNodeLocatorId(targetGraph.id, localNodeId)
+  return createNodeLocatorId(targetGraph.id, requireNodeId(localNodeId))
 }
 
 /**
@@ -737,10 +757,12 @@ export function getExecutionIdsForSelectedNodes(
   if (parentPath === undefined) return []
 
   const buildExecId = (node: LGraphNode, parentExecutionId: string) => {
-    const nodeId = String(node.id)
     return parentExecutionId
-      ? createNodeExecutionId([...parentExecutionId.split(':'), nodeId])
-      : createNodeExecutionId([nodeId])
+      ? createNodeExecutionId([
+          ...parseNodeIdPath(parentExecutionId.split(':')),
+          node.id
+        ])
+      : createNodeExecutionId([node.id])
   }
   return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
     collector: buildExecId,

@@ -34,7 +34,7 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
@@ -49,7 +49,7 @@ function createMockNode(
   } = {}
 ): LGraphNode {
   const node = createMockLGraphNode({
-    id: nodeId(id),
+    id: toNodeId(id),
     isSubgraphNode: options.isSubgraph ? () => true : undefined,
     subgraph: options.subgraph,
     onExecutionStart: options.callback,
@@ -65,8 +65,7 @@ function createMockGraph(nodes: LGraphNode[]): LGraph {
     _nodes: nodes,
     nodes: nodes,
     isRootGraph: true,
-    getNodeById: (id: string | number) =>
-      nodes.find((n) => String(n.id) === String(id)) || null
+    getNodeById: (id) => nodes.find((n) => String(n.id) === String(id)) || null
   } satisfies Partial<LGraph> as LGraph
 }
 
@@ -82,7 +81,7 @@ function createMockSubgraph(
     nodes: nodes,
     isRootGraph: false,
     rootGraph,
-    getNodeById: (nodeId: string | number) =>
+    getNodeById: (nodeId) =>
       nodes.find((n) => String(n.id) === String(nodeId)) || null
   } satisfies Partial<Subgraph> as Subgraph
   return graph
@@ -819,7 +818,7 @@ describe('graphTraversalUtil', () => {
         const rootGraph = createMockGraph([container])
         expect(
           isMissingCandidateActive(rootGraph, {
-            nodeId: '65:63',
+            nodeId: toNodeId('65:63'),
             isMissing: true
           })
         ).toBe(true)
@@ -832,7 +831,7 @@ describe('graphTraversalUtil', () => {
         const rootGraph = makeBypassedContainer('63')
         expect(
           isMissingCandidateActive(rootGraph, {
-            nodeId: '65:63',
+            nodeId: toNodeId('65:63'),
             isMissing: true
           })
         ).toBe(false)
@@ -842,12 +841,15 @@ describe('graphTraversalUtil', () => {
         const rootGraph = createMockGraph([])
         expect(
           isMissingCandidateActive(rootGraph, {
-            nodeId: '1',
+            nodeId: toNodeId('1'),
             isMissing: undefined
           })
         ).toBe(false)
         expect(
-          isMissingCandidateActive(rootGraph, { nodeId: '1', isMissing: false })
+          isMissingCandidateActive(rootGraph, {
+            nodeId: toNodeId('1'),
+            isMissing: false
+          })
         ).toBe(false)
       })
 

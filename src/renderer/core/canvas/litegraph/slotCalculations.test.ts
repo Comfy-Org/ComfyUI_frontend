@@ -28,7 +28,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -70,7 +70,7 @@ function makeNode(
   }> = {}
 ): LGraphNode {
   return fromPartial<LGraphNode>({
-    id: nodeId(1),
+    id: toNodeId(1),
     pos: [100, 200],
     size: [180, 120],
     flags: { collapsed: overrides.collapsed ?? false },

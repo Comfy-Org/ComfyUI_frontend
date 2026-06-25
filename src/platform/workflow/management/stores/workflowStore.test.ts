@@ -911,26 +911,32 @@ describe('useWorkflowStore', () => {
     describe('nodeLocatorIdToNodeId', () => {
       it('should extract node ID from NodeLocatorId', () => {
         const result = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId(456)
+          )
         )
         expect(result).toBe(toNodeId(456))
       })
 
       it('should handle string node IDs', () => {
         const result = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'node_1')
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId('node_1')
+          )
         )
         expect(result).toBe('node_1')
       })
 
       it('should handle simple node IDs (root graph)', () => {
         const result = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId(null, 123)
+          createNodeLocatorId(null, toNodeId(123))
         )
         expect(result).toBe(toNodeId(123))
 
         const stringResult = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId(null, 'node_1')
+          createNodeLocatorId(null, toNodeId('node_1'))
         )
         expect(stringResult).toBe('node_1')
       })
@@ -943,21 +949,27 @@ describe('useWorkflowStore', () => {
         })
 
         const result = store.nodeLocatorIdToNodeExecutionId(
-          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId(456)
+          )
         )
         expect(result).toBe('123:456')
       })
 
       it('should handle simple node IDs (root graph)', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          createNodeLocatorId(null, 123)
+          createNodeLocatorId(null, toNodeId(123))
         )
         expect(result).toBe('123')
       })
 
       it('should return null for unknown subgraph UUID', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          createNodeLocatorId('unknown-uuid-1234-5678-90ab-cdef12345678', 456)
+          createNodeLocatorId(
+            'unknown-uuid-1234-5678-90ab-cdef12345678',
+            toNodeId(456)
+          )
         )
         expect(result).toBeNull()
       })

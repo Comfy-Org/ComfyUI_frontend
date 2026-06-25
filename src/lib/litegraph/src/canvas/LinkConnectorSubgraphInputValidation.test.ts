@@ -14,7 +14,7 @@ import type {
   NodeInputSlot
 } from '@/lib/litegraph/src/litegraph'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
 import {
@@ -198,7 +198,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       // Create a minimal valid setup
       const subgraph = createTestSubgraph()
       const node = new LGraphNode('TestNode')
-      node.id = nodeId(1)
+      node.id = toNodeId(1)
       node.addInput('test_in', 'number')
       subgraph.add(node)
 

@@ -5,7 +5,7 @@ import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeProperty } from './LGraphNode'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { LinkEndpointNodeId, LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
@@ -163,7 +163,7 @@ export interface ReadonlyLinkNetwork {
   readonly links: ReadonlyMap<LinkId, LLink>
   readonly reroutes: ReadonlyMap<RerouteId, Reroute>
   readonly floatingLinks: ReadonlyMap<LinkId, LLink>
-  getNodeById(id: SerializedNodeId | null | undefined): LGraphNode | null
+  getNodeById(id: LinkEndpointNodeId | null | undefined): LGraphNode | null
   getLink(id: null | undefined): undefined
   getLink(id: LinkId | null | undefined): LLink | undefined
   getReroute(parentId: null | undefined): undefined

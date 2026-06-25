@@ -27,7 +27,11 @@ import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID, nodeId as toNodeId } from '@/types/nodeId'
+import {
+  UNASSIGNED_NODE_ID,
+  nodeId as toNodeId,
+  parseNodeId
+} from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -326,11 +330,12 @@ export function resolveNode(
   nodeId: SerializedNodeId,
   graph: LGraph | null | undefined = app.rootGraph
 ): LGraphNode | undefined {
-  if (!graph) return undefined
-  const found = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!graph || !parsedNodeId) return undefined
+  const found = graph.getNodeById(parsedNodeId)
   if (found) return found
   for (const sg of graph.subgraphs.values()) {
-    const node = sg.getNodeById(nodeId)
+    const node = sg.getNodeById(parsedNodeId)
     if (node) return node
   }
   return undefined
@@ -351,7 +356,10 @@ export function resolveNodeWidget(
     }
   }
 
-  const node = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!parsedNodeId) return []
+
+  const node = graph.getNodeById(parsedNodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {
     const widget = node.widgets?.find((w) => w.name === widgetName)

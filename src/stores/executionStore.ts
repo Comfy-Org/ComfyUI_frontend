@@ -33,6 +33,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -705,7 +706,9 @@ export const useExecutionStore = defineStore('execution', () => {
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
-    const node = canvasStore.canvas?.graph?.getNodeById(currentId)
+    const parsedCurrentId = parseNodeId(currentId)
+    if (!parsedCurrentId) return
+    const node = canvasStore.canvas?.graph?.getNodeById(parsedCurrentId)
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)

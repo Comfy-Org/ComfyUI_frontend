@@ -1150,8 +1150,8 @@ export class LGraph
   /**
    * Returns a node by its id.
    */
-  getNodeById(id: SerializedNodeId | null | undefined): LGraphNode | null {
-    return id != null ? this._nodes_by_id[toNodeId(id)] : null
+  getNodeById(id: LinkEndpointNodeId | null | undefined): LGraphNode | null {
+    return id != null && id !== -1 ? this._nodes_by_id[id] : null
   }
 
   /**
@@ -1643,7 +1643,9 @@ export class LGraph
       const node = this.getNodeById(sampleLink.target_id)
       const keepId = selectSurvivorLink(ids, node)
 
-      purgeOrphanedLinks(ids, keepId, this._links, (id) => this.getNodeById(id))
+      purgeOrphanedLinks(ids, keepId, this._links, (id) =>
+        this.getNodeById(toNodeId(id))
+      )
       repairInputLinks(ids, keepId, node)
     }
   }
@@ -2263,7 +2265,7 @@ export class LGraph
    * @param nodeIds An ordered list of node IDs, from the root graph to the most nested subgraph node
    * @returns An ordered list of nested subgraph nodes.
    */
-  resolveSubgraphIdPath(nodeIds: readonly SerializedNodeId[]): SubgraphNode[] {
+  resolveSubgraphIdPath(nodeIds: readonly NodeId[]): SubgraphNode[] {
     const result: SubgraphNode[] = []
     let currentGraph: GraphOrSubgraph = this.rootGraph
 
@@ -2593,7 +2595,7 @@ export class LGraph
 
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          const node = this.getNodeById(id)
+          const node = this.getNodeById(toNodeId(id))
           node?.configure(nodeData)
 
           if (LiteGraph.alwaysSnapToGrid && node) {

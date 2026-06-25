@@ -8,8 +8,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
   LinearData,
-  LinearInput,
-  LinearOutputNodeId
+  LinearInput
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -25,6 +24,8 @@ import {
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
@@ -55,7 +56,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   const showVueNodeSwitchPopup = ref(false)
 
   const selectedInputs = ref<LinearInput[]>([])
-  const selectedOutputs = ref<LinearOutputNodeId[]>([])
+  const selectedOutputs = ref<NodeId[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
@@ -64,20 +65,33 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
+  function pruneLinearData(data: Partial<LinearData> | undefined): {
+    inputs: LinearInput[]
+    outputs: NodeId[]
+  } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
     if (!rootGraph) {
-      return { inputs: rawInputs, outputs: rawOutputs }
+      return {
+        inputs: rawInputs,
+        outputs: rawOutputs.flatMap((nodeId) => {
+          const parsedNodeId = parseNodeId(nodeId)
+          return parsedNodeId ? [parsedNodeId] : []
+        })
+      }
     }
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
         .filter((entry): entry is LinearInput => entry !== null),
-      outputs: ChangeTracker.isLoadingGraph
-        ? rawOutputs
-        : rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      outputs: rawOutputs.flatMap((nodeId) => {
+        const parsedNodeId = parseNodeId(nodeId)
+        if (!parsedNodeId) return []
+        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+          ? [parsedNodeId]
+          : []
+      })
     }
   }
 
@@ -111,7 +125,10 @@ export const useAppModeStore = defineStore('appMode', () => {
       return buildEntry(widget.widgetId, widgetName, config)
     }
 
-    const directNode = rootGraph.getNodeById?.(storedId)
+    const directNodeId = parseNodeId(storedId)
+    const directNode = directNodeId
+      ? rootGraph.getNodeById?.(directNodeId)
+      : null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)

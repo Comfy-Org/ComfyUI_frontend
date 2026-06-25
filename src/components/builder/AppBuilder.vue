@@ -14,7 +14,7 @@ import type { WidgetId } from '@/types/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import {
   LGraphEventMode,
   TitleMode
@@ -51,7 +51,7 @@ workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const resolvedInputs = useResolvedSelectedInputs()
 
-const outputsWithState = computed<[SerializedNodeId, string][]>(() =>
+const outputsWithState = computed<[NodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
@@ -76,7 +76,7 @@ function getHovered(
   if (widget || node.constructor.nodeData?.output_node) return [node, widget]
 }
 
-function getNodeBounding(nodeId: SerializedNodeId) {
+function getNodeBounding(nodeId: NodeId) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
   const node = app.rootGraph.getNodeById(nodeId)
   if (!node) return
@@ -133,7 +133,7 @@ function handleClick(e: MouseEvent) {
     if (!isSelectOutputsMode.value) return
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
+    const index = appModeStore.selectedOutputs.findIndex((id) => id === node.id)
     if (index === -1) appModeStore.selectedOutputs.push(node.id)
     else appModeStore.selectedOutputs.splice(index, 1)
     return
@@ -150,7 +150,7 @@ function handleClick(e: MouseEvent) {
 
 function nodeToDisplayTuple(
   n: LGraphNode
-): [SerializedNodeId, MaybeRef<BoundStyle> | undefined, boolean] {
+): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
   return [
     n.id,
     getNodeBounding(n.id),
@@ -288,7 +288,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             :title
             :sub-title="String(key)"
             :remove="
-              () => remove(appModeStore.selectedOutputs, (k) => k == key)
+              () => remove(appModeStore.selectedOutputs, (k) => k === key)
             "
           />
         </DraggableList>
@@ -348,7 +348,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                 v-if="isSelected"
                 class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-warning-background p-2"
                 @click.stop="
-                  remove(appModeStore.selectedOutputs, (k) => k == key)
+                  remove(appModeStore.selectedOutputs, (k) => k === key)
                 "
                 @pointerdown.stop
               >

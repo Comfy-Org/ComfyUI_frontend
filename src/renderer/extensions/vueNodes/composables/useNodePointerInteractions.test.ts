@@ -9,6 +9,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 const forwardEventToCanvasMock = vi.fn()
 const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
@@ -75,9 +76,8 @@ vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
 }))
 
 const mockData = await vi.hoisted(async () => {
-  const { nodeId } = await import('@/types/nodeId')
   const fakeNodeLayout: NodeLayout = {
-    id: nodeId('test-node-123'),
+    id: toNodeId('test-node-123'),
     position: { x: 0, y: 0 },
     size: { width: 100, height: 100 },
     zIndex: 1,

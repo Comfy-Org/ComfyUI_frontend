@@ -21,7 +21,7 @@ import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -1132,11 +1132,11 @@ describe('SubgraphWidgetPromotion', () => {
     describe('previewExposures round-trip', () => {
       const CANVAS = '$$canvas-image-preview'
       const exposure12 = {
-        sourceNodeId: nodeId('12'),
+        sourceNodeId: toNodeId('12'),
         sourcePreviewName: CANVAS
       }
       const exposure14 = {
-        sourceNodeId: nodeId('14'),
+        sourceNodeId: toNodeId('14'),
         sourcePreviewName: 'videopreview'
       }
       const serializedExposure12 = {

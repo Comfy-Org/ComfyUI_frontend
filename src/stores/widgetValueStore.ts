@@ -2,14 +2,14 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
 import type { UUID } from '@/utils/uuid'
-import { nodeId } from '@/types/nodeId'
+import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
-export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId {
-  return nodeId(String(scopedId).replace(/^(.*:)+/, ''))
+export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
+  return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {

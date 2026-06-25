@@ -22,7 +22,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -1012,7 +1012,7 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     graph.add(host)
 
     const interiorNode = new LGraphNode('CheckpointLoaderSimple')
-    interiorNode.id = nodeId(1)
+    interiorNode.id = toNodeId(1)
     subgraph.add(interiorNode)
     const input = interiorNode.addInput('ckpt_name', 'COMBO')
     const widget = interiorNode.addWidget(

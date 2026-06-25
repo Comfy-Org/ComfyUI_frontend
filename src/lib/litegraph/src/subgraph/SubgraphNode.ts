@@ -794,7 +794,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
 
     const parentSubgraphNode = this.rootGraph
-      .resolveSubgraphIdPath(subgraphNodePath)
+      .resolveSubgraphIdPath(subgraphNodePath.map(toNodeId))
       .at(-1)
     const subgraphNodeDto = new ExecutableNodeDTO(
       this,

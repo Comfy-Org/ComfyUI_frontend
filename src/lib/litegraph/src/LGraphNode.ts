@@ -844,35 +844,37 @@ export class LGraphNode
     if (this.graph) {
       this.graph.incrementVersion()
     }
-    if (info.id === -1) info.id = this.id
-    else info.id = toNodeId(info.id)
-    for (const j in info) {
+    const configuredInfo: ISerialisedNode = {
+      ...info,
+      id: info.id === -1 ? this.id : toNodeId(info.id)
+    }
+    for (const j in configuredInfo) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
-        for (const k in info.properties) {
-          this.properties[k] = info.properties[k]
-          this.onPropertyChanged?.(k, info.properties[k])
+        for (const k in configuredInfo.properties) {
+          this.properties[k] = configuredInfo.properties[k]
+          this.onPropertyChanged?.(k, configuredInfo.properties[k])
         }
         continue
       }
 
       // @ts-expect-error #594
-      if (info[j] == null) {
+      if (configuredInfo[j] == null) {
         continue
         // @ts-expect-error #594
-      } else if (typeof info[j] == 'object') {
+      } else if (typeof configuredInfo[j] == 'object') {
         // @ts-expect-error #594
         if (this[j]?.configure) {
           // @ts-expect-error #594
-          this[j]?.configure(info[j])
+          this[j]?.configure(configuredInfo[j])
         } else {
           // @ts-expect-error #594
-          this[j] = LiteGraph.cloneObject(info[j], this[j])
+          this[j] = LiteGraph.cloneObject(configuredInfo[j], this[j])
         }
       } else {
         // value
         // @ts-expect-error #594
-        this[j] = info[j]
+        this[j] = configuredInfo[j]
       }
     }
 

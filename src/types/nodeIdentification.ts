@@ -1,5 +1,5 @@
-import { nodeId, parseNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { nodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
 
@@ -31,12 +31,6 @@ export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
 
 function parseNodeIdSegment(part: string): NodeId {
   return nodeId(part)
-}
-
-function requireNodeIdSegment(value: SerializedNodeId): NodeId {
-  const parsed = parseNodeId(value)
-  if (!parsed) throw new Error('Node ID segment must be non-empty')
-  return parsed
 }
 
 function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
@@ -112,14 +106,12 @@ export function parseNodeLocatorId(
  */
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: SerializedNodeId
+  localNodeId: NodeId
 ): NodeLocatorId {
-  const localId = requireNodeIdSegment(localNodeId)
   return (
-    subgraphUuid ? `${subgraphUuid}:${localId}` : localId
+    subgraphUuid ? `${subgraphUuid}:${localNodeId}` : localNodeId
   ) as NodeLocatorId
 }
-
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse
@@ -137,15 +129,16 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @param nodeIds Array of node IDs from root to target
  * @returns A properly formatted NodeExecutionId
  */
-export function createNodeExecutionId<
-  const T extends readonly SerializedNodeId[]
->(nodeIds: T & (T extends readonly [] ? never : unknown)): NodeExecutionId {
+export function createNodeExecutionId<const T extends readonly NodeId[]>(
+  nodeIds: T & (T extends readonly [] ? never : unknown)
+): NodeExecutionId {
   if (nodeIds.length === 0) {
     throw new Error('NodeExecutionId requires at least one node ID')
   }
-  const executionId = nodeExecutionIdFromString(
-    nodeIds.map(requireNodeIdSegment).join(':')
-  )
+  if (nodeIds.some((id) => id.length === 0)) {
+    throw new Error('Node ID segment must be non-empty')
+  }
+  const executionId = nodeExecutionIdFromString(nodeIds.join(':'))
   if (!executionId) throw new Error('Invalid NodeExecutionId components')
   return executionId
 }
@@ -158,9 +151,12 @@ export function tryNormalizeNodeExecutionId(
 
 export function appendNodeExecutionId(
   parentExecutionId: string,
-  childNodeId: SerializedNodeId
+  childNodeId: NodeId
 ): NodeExecutionId {
-  return createNodeExecutionId([...parentExecutionId.split(':'), childNodeId])
+  return createNodeExecutionId([
+    ...parentExecutionId.split(':').map(parseNodeIdSegment),
+    childNodeId
+  ])
 }
 
 /**
@@ -176,7 +172,7 @@ export function getAncestorExecutionIds(
 
   const parts = normalized.split(':')
   return Array.from({ length: parts.length }, (_, i) =>
-    createNodeExecutionId(parts.slice(0, i + 1))
+    createNodeExecutionId(parts.slice(0, i + 1).map(parseNodeIdSegment))
   )
 }
 

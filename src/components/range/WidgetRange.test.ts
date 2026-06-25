@@ -171,7 +171,10 @@ describe('WidgetRange', () => {
         loc1: { histogram_range_w: [1, 2, 3, 4] }
       }
       renderWidget(
-        makeWidget({}, { nodeLocatorId: createNodeLocatorId(null, 'loc1') })
+        makeWidget(
+          {},
+          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
+        )
       )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'true'
@@ -183,7 +186,10 @@ describe('WidgetRange', () => {
         loc1: { histogram_range_w: [] }
       }
       renderWidget(
-        makeWidget({}, { nodeLocatorId: createNodeLocatorId(null, 'loc1') })
+        makeWidget(
+          {},
+          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
+        )
       )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'false'

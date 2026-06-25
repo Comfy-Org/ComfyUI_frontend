@@ -17,7 +17,7 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { nodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
@@ -299,7 +299,7 @@ describe('Graph Clearing and Callbacks', () => {
     })
 
     const widgetValueStore = useWidgetValueStore()
-    const seedWidgetId = widgetId(graphId, '10', 'seed')
+    const seedWidgetId = widgetId(graphId, toNodeId('10'), 'seed')
     widgetValueStore.registerWidget(seedWidgetId, {
       type: 'number',
       value: 1,
@@ -675,7 +675,7 @@ describe('ensureGlobalIdUniqueness', () => {
     subgraph._nodes_by_id[subNodeA.id] = subNodeA
 
     const subNodeB = new DummyNode()
-    subNodeB.id = nodeId(999)
+    subNodeB.id = toNodeId(999)
     subgraph._nodes.push(subNodeB)
     subgraph._nodes_by_id[subNodeB.id] = subNodeB
 
@@ -694,7 +694,7 @@ describe('ensureGlobalIdUniqueness', () => {
     const subgraph = createSubgraphOnGraph(rootGraph)
 
     const subNode = new DummyNode()
-    subNode.id = nodeId(42)
+    subNode.id = toNodeId(42)
     subgraph._nodes.push(subNode)
     subgraph._nodes_by_id[subNode.id] = subNode
 
@@ -872,9 +872,9 @@ describe('_removeDuplicateLinks', () => {
 
     expect(graph._links.size).toBe(1)
     const survivingLink = graph._links.values().next().value!
-    const targetNode = graph.getNodeById(survivingLink.target_id)!
+    const targetNode = graph.getNodeById(toNodeId(survivingLink.target_id))!
     expect(targetNode.inputs[0].link).toBe(survivingLink.id)
-    const sourceNode = graph.getNodeById(survivingLink.origin_id)!
+    const sourceNode = graph.getNodeById(toNodeId(survivingLink.origin_id))!
     expect(sourceNode.outputs[0].links).toEqual([survivingLink.id])
   })
 
@@ -886,11 +886,11 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.size).toBe(1)
 
     const link = graph._links.values().next().value!
-    const target = graph.getNodeById(link.target_id)!
+    const target = graph.getNodeById(toNodeId(link.target_id))!
     const linkedInput = target.inputs.find((inp) => inp.link === link.id)
     expect(linkedInput).toBeDefined()
 
-    const source = graph.getNodeById(link.origin_id)!
+    const source = graph.getNodeById(toNodeId(link.origin_id))!
     expect(source.outputs[link.origin_slot].links).toContain(link.id)
   })
 
@@ -902,7 +902,7 @@ describe('_removeDuplicateLinks', () => {
     expect(subgraph._links.size).toBe(1)
 
     const link = subgraph._links.values().next().value!
-    const target = subgraph.getNodeById(link.target_id)!
+    const target = subgraph.getNodeById(toNodeId(link.target_id))!
     expect(target.inputs[0].link).toBe(link.id)
   })
 })
@@ -1006,7 +1006,7 @@ describe('Subgraph Unpacking', () => {
 
     const firstInstance = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     const secondInstance = createTestSubgraphNode(subgraph, { pos: [300, 100] })
-    secondInstance.id = nodeId(2)
+    secondInstance.id = toNodeId(2)
     rootGraph.add(firstInstance)
     rootGraph.add(secondInstance)
 
@@ -1054,7 +1054,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const id of SHARED_NODE_IDS) {
-      expect(idsA.has(nodeId(id))).toBe(true)
+      expect(idsA.has(toNodeId(id))).toBe(true)
     }
     for (const id of idsA) {
       expect(idsB.has(id)).toBe(false)
@@ -1076,7 +1076,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const widget of graph.subgraphs.get(SUBGRAPH_B)!.widgets) {
-      expect(idsB.has(nodeId(widget.id))).toBe(true)
+      expect(idsB.has(toNodeId(widget.id))).toBe(true)
     }
   })
 
@@ -1090,14 +1090,14 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
     )
 
-    const pw102 = graph.getNodeById(102)?.properties?.proxyWidgets
+    const pw102 = graph.getNodeById(toNodeId(102))?.properties?.proxyWidgets
     expect(Array.isArray(pw102)).toBe(true)
     for (const entry of pw102 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
       expect(idsA.has(String(entry[0]))).toBe(true)
     }
 
-    const pw103 = graph.getNodeById(103)?.properties?.proxyWidgets
+    const pw103 = graph.getNodeById(toNodeId(103))?.properties?.proxyWidgets
     expect(Array.isArray(pw103)).toBe(true)
     for (const entry of pw103 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
@@ -1115,7 +1115,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     const innerNode = graph.subgraphs
       .get(SUBGRAPH_A)!
-      .nodes.find((n) => n.id === nodeId(50))
+      .nodes.find((n) => n.id === toNodeId(50))
     const pw = innerNode?.properties?.proxyWidgets
     expect(Array.isArray(pw)).toBe(true)
     for (const entry of pw as unknown[][]) {
@@ -1178,10 +1178,10 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     graph.configure(structuredClone(uniqueSubgraphNodeIds))
 
     expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(
-      new Set([nodeId(10), nodeId(11), nodeId(12)])
+      new Set([toNodeId(10), toNodeId(11), toNodeId(12)])
     )
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
-      new Set([nodeId(20), nodeId(21), nodeId(22)])
+      new Set([toNodeId(20), toNodeId(21), toNodeId(22)])
     )
   })
 })

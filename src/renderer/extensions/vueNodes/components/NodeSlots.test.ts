@@ -285,7 +285,7 @@ describe('NodeSlots.vue', () => {
     const { container } = renderSlots(nodeData)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
-      createNodeExecutionId([nodeData.id]),
+      createNodeExecutionId([toNodeId(nodeData.id)]),
       'model'
     )
     await nextTick()
@@ -315,7 +315,7 @@ describe('NodeSlots.vue', () => {
     const { container } = renderSlots(nodeData)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
-      createNodeExecutionId([65, 70]),
+      createNodeExecutionId([toNodeId(65), toNodeId(70)]),
       'model'
     )
     await nextTick()
@@ -352,7 +352,7 @@ describe('NodeSlots.vue', () => {
     const { container } = renderSlots(nodeData)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
-      createNodeExecutionId([65, 70, 63]),
+      createNodeExecutionId([toNodeId(65), toNodeId(70), toNodeId(63)]),
       'mask'
     )
     await nextTick()

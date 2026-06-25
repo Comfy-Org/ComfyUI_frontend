@@ -49,7 +49,7 @@ describe('resolveNode', () => {
     const subgraphNode = subgraph._nodes[0]
 
     // Node should NOT be found directly on root graph
-    expect(rootGraph.getNodeById(subgraphNode.id)).toBeFalsy()
+    expect(rootGraph.getNodeById(toNodeId(subgraphNode.id))).toBeFalsy()
 
     // But resolveNode should find it via subgraph search
     expect(resolveNode(subgraphNode.id, rootGraph)).toBe(subgraphNode)
@@ -168,14 +168,14 @@ describe('getWidgetIdForNode', () => {
   it('derives an widgetId for plain POJO widgets bound to a node', () => {
     const node = fakeNode(42)
     expect(getWidgetIdForNode(node, { name: 'legacy_widget' })).toBe(
-      widgetId(graphId, 42, 'legacy_widget')
+      widgetId(graphId, toNodeId(42), 'legacy_widget')
     )
   })
 
   it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
     const node = fakeNode(42)
     expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
-      widgetId(graphId, 42, 'UNKNOWN#1')
+      widgetId(graphId, toNodeId(42), 'UNKNOWN#1')
     )
   })
 

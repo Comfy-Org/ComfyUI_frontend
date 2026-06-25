@@ -1,7 +1,7 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 
 import type {
@@ -15,7 +15,7 @@ import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface NodeBindable {
-  setNodeId(nodeId: SerializedNodeId): void
+  setNodeId(nodeId: NodeId): void
 }
 
 export interface IWidgetOptions<TValues = unknown> {

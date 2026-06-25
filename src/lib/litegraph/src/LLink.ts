@@ -390,7 +390,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param inputIndex The array index of the node input
    * @returns `true` if the target matches, otherwise `false`.
    */
-  hasTarget(nodeId: SerializedNodeId, inputIndex: number): boolean {
+  hasTarget(nodeId: LinkEndpointNodeId, inputIndex: number): boolean {
     return this.target_id === nodeId && this.target_slot === inputIndex
   }
 

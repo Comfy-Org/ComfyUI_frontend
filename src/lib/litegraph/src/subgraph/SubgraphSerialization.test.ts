@@ -17,6 +17,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 
+import { nodeId as toNodeId } from '@/types/nodeId'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -476,8 +477,8 @@ describe('SubgraphSerialization - Data Integrity', () => {
     expect(restored.links.size).toBe(2)
 
     for (const [, link] of restored.links) {
-      const originNode = restored.getNodeById(link.origin_id)
-      const targetNode = restored.getNodeById(link.target_id)
+      const originNode = restored.getNodeById(toNodeId(link.origin_id))
+      const targetNode = restored.getNodeById(toNodeId(link.target_id))
       expect(originNode).toBeDefined()
       expect(targetNode).toBeDefined()
       expect(link.origin_slot).toBeGreaterThanOrEqual(0)
@@ -525,13 +526,15 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const subgraphB = graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!
     const subgraphBIds = new Set(subgraphB.nodes.map((node) => String(node.id)))
 
-    const rootProxyWidgetsA = graph.getNodeById(102)?.properties?.proxyWidgets
+    const rootProxyWidgetsA = graph.getNodeById(toNodeId(102))?.properties
+      ?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
     for (const entry of rootProxyWidgetsA as string[][]) {
       expect(subgraphAIds.has(String(entry[0]))).toBe(true)
     }
 
-    const rootProxyWidgetsB = graph.getNodeById(103)?.properties?.proxyWidgets
+    const rootProxyWidgetsB = graph.getNodeById(toNodeId(103))?.properties
+      ?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
     for (const entry of rootProxyWidgetsB as string[][]) {
       expect(subgraphBIds.has(String(entry[0]))).toBe(true)

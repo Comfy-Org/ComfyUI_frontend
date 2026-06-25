@@ -1,5 +1,6 @@
 import type { LGraphState } from '../LGraph'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -30,14 +31,17 @@ export function deduplicateSubgraphNodeIds(
   const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
 
   const usedNodeIds = new Set(reservedNodeIds)
+  const usedNodeIdKeys = new Set<NodeId>([...reservedNodeIds].map(toNodeId))
   const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
-  const remapBySubgraph = new Map<
-    string,
-    Map<SerializedNodeId, SerializedNodeId>
-  >()
+  const remapBySubgraph = new Map<string, Map<NodeId, SerializedNodeId>>()
 
   for (const subgraph of clonedSubgraphs) {
-    const remappedIds = remapNodeIds(subgraph.nodes ?? [], usedNodeIds, state)
+    const remappedIds = remapNodeIds(
+      subgraph.nodes ?? [],
+      usedNodeIdKeys,
+      usedNodeIds,
+      state
+    )
 
     if (remappedIds.size === 0) continue
     remapBySubgraph.set(subgraph.id, remappedIds)
@@ -65,26 +69,32 @@ export function deduplicateSubgraphNodeIds(
  */
 function remapNodeIds(
   nodes: ISerialisedNode[],
+  usedNodeIdKeys: Set<NodeId>,
   usedNodeIds: Set<number>,
   state: LGraphState
-): Map<SerializedNodeId, SerializedNodeId> {
-  const remappedIds = new Map<SerializedNodeId, SerializedNodeId>()
+): Map<NodeId, SerializedNodeId> {
+  const remappedIds = new Map<NodeId, SerializedNodeId>()
 
   for (const node of nodes) {
     const id = node.id
-    if (typeof id !== 'number') continue
+    const key = toNodeId(id)
+    const numericId = numericSerializedNodeId(id)
 
-    if (usedNodeIds.has(id)) {
+    if (usedNodeIdKeys.has(key)) {
       const newId = findNextAvailableId(usedNodeIds, state)
-      remappedIds.set(id, newId)
+      remappedIds.set(key, newId)
       node.id = newId
-      usedNodeIds.add(newId as number)
+      usedNodeIds.add(newId)
+      usedNodeIdKeys.add(toNodeId(newId))
       console.warn(
         `LiteGraph: duplicate subgraph node ID ${id} remapped to ${newId}`
       )
     } else {
-      usedNodeIds.add(id)
-      if (id > state.lastNodeId) state.lastNodeId = id
+      usedNodeIdKeys.add(key)
+      if (numericId !== null) {
+        usedNodeIds.add(numericId)
+        if (numericId > state.lastNodeId) state.lastNodeId = numericId
+      }
     }
   }
 
@@ -95,10 +105,18 @@ function remapNodeIds(
  * Finds the next unused node ID by incrementing `state.lastNodeId`.
  * Throws if the ID space is exhausted.
  */
+function numericSerializedNodeId(id: SerializedNodeId): number | null {
+  const key = toNodeId(id)
+  const numericId = Number(key)
+  return Number.isInteger(numericId) && String(numericId) === key
+    ? numericId
+    : null
+}
+
 function findNextAvailableId(
   usedNodeIds: Set<number>,
   state: LGraphState
-): SerializedNodeId {
+): number {
   while (true) {
     const nextId = state.lastNodeId + 1
     if (nextId > MAX_NODE_ID) {
@@ -112,13 +130,13 @@ function findNextAvailableId(
 /** Patches origin_id / target_id in serialized links. */
 function patchSerialisedLinks(
   links: SerialisableLLink[],
-  remappedIds: Map<SerializedNodeId, SerializedNodeId>
+  remappedIds: Map<NodeId, SerializedNodeId>
 ): void {
   for (const link of links) {
-    const newOrigin = remappedIds.get(link.origin_id)
+    const newOrigin = remappedIds.get(toNodeId(link.origin_id))
     if (newOrigin !== undefined) link.origin_id = newOrigin
 
-    const newTarget = remappedIds.get(link.target_id)
+    const newTarget = remappedIds.get(toNodeId(link.target_id))
     if (newTarget !== undefined) link.target_id = newTarget
   }
 }
@@ -126,10 +144,10 @@ function patchSerialisedLinks(
 /** Patches promoted widget node references. */
 function patchPromotedWidgets(
   widgets: ExposedWidget[],
-  remappedIds: Map<SerializedNodeId, SerializedNodeId>
+  remappedIds: Map<NodeId, SerializedNodeId>
 ): void {
   for (const widget of widgets) {
-    const newId = remappedIds.get(widget.id)
+    const newId = remappedIds.get(toNodeId(widget.id))
     if (newId !== undefined) widget.id = newId
   }
 }
@@ -195,7 +213,7 @@ export function topologicalSortSubgraphs(
 function patchProxyWidgets(
   rootNodes: ISerialisedNode[],
   subgraphIdSet: Set<string>,
-  remapBySubgraph: Map<string, Map<SerializedNodeId, SerializedNodeId>>
+  remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
 ): void {
   for (const node of rootNodes) {
     if (!subgraphIdSet.has(node.type)) continue
@@ -207,7 +225,7 @@ function patchProxyWidgets(
 
     for (const entry of proxyWidgets) {
       if (!Array.isArray(entry)) continue
-      const oldId = Number(entry[0])
+      const oldId = toNodeId(entry[0])
       const newId = remappedIds.get(oldId)
       if (newId !== undefined) entry[0] = String(newId)
     }

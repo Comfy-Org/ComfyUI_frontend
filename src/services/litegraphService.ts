@@ -61,6 +61,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -947,7 +948,9 @@ export const useLitegraphService = () => {
   }
 
   function goToNode(nodeId: SerializedNodeId) {
-    const graphNode = app.canvas.graph?.getNodeById(nodeId)
+    const parsedNodeId = parseNodeId(nodeId)
+    if (!parsedNodeId) return
+    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
   }
