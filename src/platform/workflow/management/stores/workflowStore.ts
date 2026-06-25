@@ -83,12 +83,9 @@ interface WorkflowStore {
   executionIdToCurrentId: (id: string) => string | undefined
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
   nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
-  nodeExecutionIdToNodeLocatorId: (
-    nodeExecutionId: NodeExecutionId | string
-  ) => NodeLocatorId | null
-  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId | string) => NodeId | null
+  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId) => NodeId
   nodeLocatorIdToNodeExecutionId: (
-    locatorId: NodeLocatorId | string,
+    locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
   ) => NodeExecutionId | null
 }
@@ -580,17 +577,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   const getSubgraphsFromInstanceIds = (
     currentGraph: LGraph | Subgraph,
-    subgraphNodeIds: string[],
-    subgraphs: Subgraph[] = []
-  ): Subgraph[] => {
-    const currentPart = subgraphNodeIds.shift()
-    if (currentPart === undefined) return subgraphs
+    subgraphNodeIds: string[]
+  ): Subgraph[] | undefined => {
+    const [currentPart, ...remainingParts] = subgraphNodeIds
+    if (currentPart === undefined) return []
 
     const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
-    if (subgraph === undefined) throw new Error('Subgraph not found')
+    if (subgraph === undefined) return
 
-    subgraphs.push(subgraph)
-    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
+    const childSubgraphs = getSubgraphsFromInstanceIds(subgraph, remainingParts)
+    return childSubgraphs ? [subgraph, ...childSubgraphs] : undefined
   }
 
   //FIXME: use existing util function
@@ -604,17 +600,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return
     }
 
-    // Parse the execution ID (e.g., "123:456:789")
-    const subgraphNodeIds = id.split(':')
+    const executionPath = parseNodeExecutionId(id)?.map(String)
+    if (!executionPath) return
 
-    // Start from the root graph
-    const graph = comfyApp.rootGraph
+    const nodeId = executionPath.at(-1)
+    if (nodeId === undefined) return
 
-    // If the last subgraph is the active subgraph, return the node ID
-    const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
-    if (subgraphs.at(-1) === subgraph) {
-      return subgraphNodeIds.at(-1)
-    }
+    const subgraphs = getSubgraphsFromInstanceIds(
+      comfyApp.rootGraph,
+      executionPath.slice(0, -1)
+    )
+    if (subgraphs?.at(-1) === subgraph) return nodeId
   }
 
   watch(activeWorkflow, updateActiveGraph)
@@ -632,7 +628,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const targetSubgraph = subgraph ?? activeSubgraph.value
     if (!targetSubgraph) {
       // Node is in the root graph, return the node ID as-is
-      return String(nodeId)
+      return createNodeLocatorId(null, nodeId)
     }
 
     return createNodeLocatorId(targetSubgraph.id, nodeId)
@@ -646,55 +642,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
     if (isSubgraph(node.graph))
       return createNodeLocatorId(node.graph.id, node.id)
-    return String(node.id)
-  }
-
-  /**
-   * Convert an execution ID to a NodeLocatorId
-   * @param nodeExecutionId The execution node ID (e.g., "123:456:789")
-   * @returns The NodeLocatorId or null if conversion fails
-   */
-  const nodeExecutionIdToNodeLocatorId = (
-    nodeExecutionId: NodeExecutionId | string
-  ): NodeLocatorId | null => {
-    // Handle simple node IDs (root graph - no colons)
-    if (!nodeExecutionId.includes(':')) {
-      return nodeExecutionId
-    }
-
-    const parts = parseNodeExecutionId(nodeExecutionId)
-    if (!parts || parts.length === 0) return null
-
-    const nodeId = parts[parts.length - 1]
-    const subgraphNodeIds = parts.slice(0, -1)
-
-    if (subgraphNodeIds.length === 0) {
-      // Node is in root graph, return the node ID as-is
-      return String(nodeId)
-    }
-
-    try {
-      const subgraphs = getSubgraphsFromInstanceIds(
-        comfyApp.rootGraph,
-        subgraphNodeIds.map((id) => String(id))
-      )
-      const immediateSubgraph = subgraphs[subgraphs.length - 1]
-      return createNodeLocatorId(immediateSubgraph.id, nodeId)
-    } catch {
-      return null
-    }
+    return createNodeLocatorId(null, node.id)
   }
 
   /**
    * Extract the node ID from a NodeLocatorId
    * @param locatorId The NodeLocatorId
-   * @returns The local node ID or null if invalid
+   * @returns The local node ID
    */
-  const nodeLocatorIdToNodeId = (
-    locatorId: NodeLocatorId | string
-  ): NodeId | null => {
-    const parsed = parseNodeLocatorId(locatorId)
-    return parsed?.localNodeId ?? null
+  const nodeLocatorIdToNodeId = (locatorId: NodeLocatorId): NodeId => {
+    return parseNodeLocatorId(locatorId)!.localNodeId
   }
 
   /**
@@ -704,7 +661,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The execution ID or null if the node is not accessible from the target context
    */
   const nodeLocatorIdToNodeExecutionId = (
-    locatorId: NodeLocatorId | string,
+    locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
   ): NodeExecutionId | null => {
     const parsed = parseNodeLocatorId(locatorId)
@@ -714,7 +671,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     // If no subgraph UUID, this is a root graph node
     if (!subgraphUuid) {
-      return String(localNodeId)
+      return createNodeExecutionId([localNodeId])
     }
 
     // Find the path from root to the subgraph with this UUID
@@ -751,7 +708,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           comfyApp.rootGraph,
           path.slice(0, idx + 1).map((id) => String(id))
         )
-        return subgraphs[subgraphs.length - 1] === targetSubgraph
+        return subgraphs?.at(-1) === targetSubgraph
       })
     ) {
       return null
@@ -795,7 +752,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     executionIdToCurrentId,
     nodeIdToNodeLocatorId,
     nodeToNodeLocatorId,
-    nodeExecutionIdToNodeLocatorId,
     nodeLocatorIdToNodeId,
     nodeLocatorIdToNodeExecutionId
   }

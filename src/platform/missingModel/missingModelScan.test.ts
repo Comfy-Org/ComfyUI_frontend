@@ -15,8 +15,6 @@ import {
   verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
-import activeSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/activeSubgraphUnmatchedModel.json' with { type: 'json' }
-import bypassedSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/bypassedSubgraphUnmatchedModel.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -671,11 +669,8 @@ function makeCandidate(
   }
 }
 
-const alwaysMissing = async () => false
-const alwaysInstalled = async () => true
-
 describe('enrichWithEmbeddedMetadata', () => {
-  it('enriches existing candidate with url and directory from embedded metadata', async () => {
+  it('enriches existing candidate with url and directory from embedded metadata', () => {
     const candidates = [makeCandidate('model_a.safetensors')]
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
@@ -709,18 +704,14 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
     expect(result[0].url).toBe('https://example.com/model_a')
     expect(result[0].directory).toBe('checkpoints')
     expect(result[0].hash).toBe('abc123')
   })
 
-  it('does not overwrite existing fields on candidate', async () => {
+  it('does not overwrite existing fields on candidate', () => {
     const candidates = [
       makeCandidate('model_a.safetensors', {
         directory: 'existing_dir',
@@ -757,18 +748,13 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
-    // ??= should not overwrite existing values
     expect(result[0].url).toBe('https://existing.com')
     expect(result[0].directory).toBe('existing_dir')
   })
 
-  it('does not mutate the original candidates array', async () => {
+  it('does not mutate the original candidates array', () => {
     const candidates = [makeCandidate('model_a.safetensors')]
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
@@ -801,12 +787,12 @@ describe('enrichWithEmbeddedMetadata', () => {
     })
 
     const originalUrl = candidates[0].url
-    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+    enrichWithEmbeddedMetadata(candidates, graphData)
 
     expect(candidates[0].url).toBe(originalUrl)
   })
 
-  it('adds new candidate for embedded model not found by COMBO scan', async () => {
+  it('does not add a candidate for embedded metadata without a live candidate', () => {
     const candidates: MissingModelCandidate[] = []
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
@@ -838,18 +824,12 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('model_a.safetensors')
-    expect(result[0].isMissing).toBe(true)
+    expect(result).toHaveLength(0)
   })
 
-  it('does not add candidate when model is already installed', async () => {
+  it('does not add a candidate from root metadata without live references', () => {
     const candidates: MissingModelCandidate[] = []
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 0,
@@ -869,117 +849,12 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysInstalled
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
     expect(result).toHaveLength(0)
   })
 
-  it('skips embedded models from muted nodes', async () => {
-    const candidates: MissingModelCandidate[] = []
-    const graphData = fromPartial<ComfyWorkflowJSON>({
-      last_node_id: 1,
-      last_link_id: 0,
-      nodes: [
-        {
-          id: 1,
-          type: 'CheckpointLoaderSimple',
-          pos: [0, 0],
-          size: [100, 100],
-          flags: {},
-          order: 0,
-          mode: 2, // NEVER (muted)
-          properties: {},
-          widgets_values: { ckpt_name: 'model.safetensors' }
-        }
-      ],
-      links: [],
-      groups: [],
-      config: {},
-      extra: {},
-      version: 0.4,
-      models: [
-        {
-          name: 'model.safetensors',
-          url: 'https://example.com/model',
-          directory: 'checkpoints'
-        }
-      ]
-    })
-
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
-
-    expect(result).toHaveLength(0)
-  })
-
-  it('drops workflow-level model entries when only referencing nodes are bypassed (other active nodes present)', async () => {
-    // Regression: a previous `hasActiveNodes` check kept workflow-level
-    // models in a mixed graph if ANY active node existed, even when every
-    // node that actually referenced the model was bypassed. The correct
-    // check drops unmatched workflow-level entries since candidates are
-    // derived from active-node widgets.
-    const candidates: MissingModelCandidate[] = []
-    const graphData = fromPartial<ComfyWorkflowJSON>({
-      last_node_id: 2,
-      last_link_id: 0,
-      nodes: [
-        {
-          id: 1,
-          type: 'CheckpointLoaderSimple',
-          pos: [0, 0],
-          size: [100, 100],
-          flags: {},
-          order: 0,
-          mode: 4, // BYPASS — only node referencing the model
-          properties: {},
-          widgets_values: { ckpt_name: 'model.safetensors' }
-        },
-        {
-          id: 2,
-          type: 'KSampler',
-          pos: [200, 0],
-          size: [100, 100],
-          flags: {},
-          order: 1,
-          mode: 0, // ALWAYS — unrelated active node
-          properties: {},
-          widgets_values: {}
-        }
-      ],
-      links: [],
-      groups: [],
-      config: {},
-      extra: {},
-      version: 0.4,
-      models: [
-        {
-          name: 'model.safetensors',
-          url: 'https://example.com/model',
-          directory: 'checkpoints'
-        }
-      ]
-    })
-
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
-
-    expect(result).toHaveLength(0)
-  })
-
-  it('keeps unmatched node-sourced entries in a mixed graph', async () => {
-    // A node-sourced unmatched entry (sourceNodeType !== '') must survive
-    // the workflow-level filter. This ensures the simplification does not
-    // over-filter legitimate per-node missing models.
+  it('enriches existing candidates from node-sourced metadata', () => {
     const candidates = [
       makeCandidate('node_model.safetensors', { nodeId: '1' })
     ]
@@ -1015,18 +890,14 @@ describe('enrichWithEmbeddedMetadata', () => {
       models: []
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
     expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('node_model.safetensors')
+    expect(result[0].url).toBe('https://example.com/node_model')
   })
 
-  it('skips embedded models from bypassed nodes', async () => {
-    const candidates: MissingModelCandidate[] = []
+  it('does not enrich from muted node metadata', () => {
+    const candidates = [makeCandidate('model.safetensors')]
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
@@ -1038,8 +909,16 @@ describe('enrichWithEmbeddedMetadata', () => {
           size: [100, 100],
           flags: {},
           order: 0,
-          mode: 4, // BYPASS
-          properties: {},
+          mode: 2,
+          properties: {
+            models: [
+              {
+                name: 'model.safetensors',
+                url: 'https://example.com/model',
+                directory: 'checkpoints'
+              }
+            ]
+          },
           widgets_values: { ckpt_name: 'model.safetensors' }
         }
       ],
@@ -1048,58 +927,152 @@ describe('enrichWithEmbeddedMetadata', () => {
       config: {},
       extra: {},
       version: 0.4,
-      models: [
-        {
-          name: 'model.safetensors',
-          url: 'https://example.com/model',
-          directory: 'checkpoints'
-        }
-      ]
+      models: []
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
-    expect(result).toHaveLength(0)
+    expect(result[0].url).toBeUndefined()
   })
 
-  it('drops workflow-level entries when only reference is in a bypassed subgraph interior', async () => {
-    // Interior properties.models references the workflow-level model
-    // but its widget value does not — forcing the workflow-level entry
-    // down the unmatched path where isModelReferencedByActiveNode
-    // decides. Previously the helper ignored the bypassed container.
-    const result = await enrichWithEmbeddedMetadata(
-      [],
-      fromAny<ComfyWorkflowJSON, unknown>(bypassedSubgraphUnmatchedModel),
-      alwaysMissing
-    )
+  it('does not enrich from bypassed node metadata', () => {
+    const candidates = [makeCandidate('model.safetensors')]
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 4,
+          properties: {
+            models: [
+              {
+                name: 'model.safetensors',
+                url: 'https://example.com/model',
+                directory: 'checkpoints'
+              }
+            ]
+          },
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: []
+    })
 
-    expect(result).toHaveLength(0)
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
+
+    expect(result[0].url).toBeUndefined()
   })
 
-  it('keeps workflow-level entries when reference is in an active subgraph interior', async () => {
-    // Positive control for the bypassed case above: identical fixture
-    // with container mode=0 must still surface the unmatched workflow-
-    // level model. Guards against a regression where the ancestor gate
-    // drops every workflow-level entry regardless of context.
-    const result = await enrichWithEmbeddedMetadata(
-      [],
-      fromAny<ComfyWorkflowJSON, unknown>(activeSubgraphUnmatchedModel),
-      alwaysMissing
-    )
+  it.for([
+    { state: 'muted', ancestorMode: 2 },
+    { state: 'bypassed', ancestorMode: 4 }
+  ])(
+    'does not enrich from metadata inside a $state ancestor subgraph',
+    ({ ancestorMode }) => {
+      const candidates = [
+        makeCandidate('shared_model.safetensors', {
+          directory: 'checkpoints'
+        })
+      ]
+      const graphData = fromPartial<ComfyWorkflowJSON>({
+        last_node_id: 2,
+        last_link_id: 0,
+        nodes: [
+          {
+            id: 1,
+            type: 'CheckpointLoaderSimple',
+            pos: [0, 0],
+            size: [100, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {},
+            widgets_values: { ckpt_name: 'shared_model.safetensors' }
+          },
+          {
+            id: 2,
+            type: 'InactiveSubgraph',
+            pos: [200, 0],
+            size: [100, 100],
+            flags: {},
+            order: 1,
+            mode: ancestorMode,
+            properties: {},
+            widgets_values: {}
+          }
+        ],
+        links: [],
+        groups: [],
+        config: {},
+        extra: {},
+        version: 0.4,
+        models: [],
+        definitions: {
+          subgraphs: [
+            {
+              id: 'InactiveSubgraph',
+              name: 'InactiveSubgraph',
+              nodes: [
+                {
+                  id: 10,
+                  type: 'CheckpointLoaderSimple',
+                  pos: [0, 0],
+                  size: [100, 100],
+                  flags: {},
+                  order: 0,
+                  mode: 0,
+                  properties: {
+                    models: [
+                      {
+                        name: 'shared_model.safetensors',
+                        url: 'https://example.com/inactive-branch',
+                        directory: 'checkpoints',
+                        hash: 'inactive-hash',
+                        hash_type: 'sha256'
+                      }
+                    ]
+                  },
+                  widgets_values: {
+                    ckpt_name: 'shared_model.safetensors'
+                  }
+                }
+              ],
+              links: [],
+              groups: [],
+              config: {},
+              extra: {},
+              inputNode: {},
+              outputNode: {}
+            }
+          ]
+        }
+      })
 
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('rare_model.safetensors')
-  })
+      const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
-  it('drops workflow-level entries when interior reference is under a different directory', async () => {
-    // Same name, different directory: the interior's properties.models
-    // entry is not the same asset as the workflow-level entry, so the
-    // fallback helper must not treat it as a reference that keeps the
-    // workflow-level model alive.
+      expect(result[0].url).toBeUndefined()
+      expect(result[0].hash).toBeUndefined()
+      expect(result[0].hashType).toBeUndefined()
+    }
+  )
+
+  it('does not enrich candidates from different-directory metadata', () => {
+    const candidates = [
+      makeCandidate('collide_model.safetensors', {
+        directory: 'checkpoints'
+      })
+    ]
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
@@ -1132,43 +1105,19 @@ describe('enrichWithEmbeddedMetadata', () => {
         {
           name: 'collide_model.safetensors',
           url: 'https://example.com/collide',
-          directory: 'checkpoints'
+          directory: 'loras'
         }
       ]
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      [],
-      graphData,
-      alwaysMissing
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
-    expect(result).toHaveLength(0)
+    expect(result[0].url).toBeUndefined()
   })
 })
 
 describe('OSS missing model detection (non-Cloud path)', () => {
-  it('scanAllModelCandidates returns empty array when not called (simulating isCloud === false guard)', () => {
-    // In the app, when isCloud is false, scanAllModelCandidates is not called
-    // and an empty array is used instead. This test verifies the OSS path
-    // starts with an empty candidates list.
-    const isCloud = false
-    const graph = makeGraph([
-      makeNode(1, 'CheckpointLoaderSimple', [
-        makeComboWidget('ckpt_name', 'missing_model.safetensors', [])
-      ])
-    ])
-
-    const modelCandidates = isCloud
-      ? scanAllModelCandidates(graph, noAssetSupport)
-      : []
-
-    expect(modelCandidates).toEqual([])
-  })
-
-  it('enrichWithEmbeddedMetadata detects missing embedded models without prior COMBO scan (OSS dialog path)', async () => {
-    // OSS path: candidates start empty, enrichWithEmbeddedMetadata adds
-    // missing embedded models so the dialog can show them.
+  it('does not detect embedded models without prior candidate scan', () => {
     const candidates: MissingModelCandidate[] = []
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 2,
@@ -1216,67 +1165,15 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       ]
     })
 
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
-    expect(result).toHaveLength(2)
-    expect(result.every((c) => c.isMissing === true)).toBe(true)
-    expect(result.map((c) => c.name)).toEqual([
-      'sd_xl_base_1.0.safetensors',
-      'detail_enhancer.safetensors'
-    ])
+    expect(result).toHaveLength(0)
   })
 
-  it('enrichWithEmbeddedMetadata sets isMissing=true when isAssetSupported is not provided (OSS)', async () => {
-    // When isAssetSupported is omitted (OSS), unmatched embedded models
-    // should have isMissing=true (not undefined), enabling the dialog.
-    const candidates: MissingModelCandidate[] = []
-    const graphData = fromPartial<ComfyWorkflowJSON>({
-      last_node_id: 1,
-      last_link_id: 0,
-      nodes: [
-        {
-          id: 1,
-          type: 'CheckpointLoaderSimple',
-          pos: [0, 0],
-          size: [100, 100],
-          flags: {},
-          order: 0,
-          mode: 0,
-          properties: {},
-          widgets_values: { ckpt_name: 'missing_model.safetensors' }
-        }
-      ],
-      links: [],
-      groups: [],
-      config: {},
-      extra: {},
-      version: 0.4,
-      models: [
-        {
-          name: 'missing_model.safetensors',
-          url: 'https://example.com/model',
-          directory: 'checkpoints'
-        }
-      ]
-    })
-
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing
-    )
-
-    expect(result).toHaveLength(1)
-    expect(result[0].isMissing).toBe(true)
-    expect(result[0].isAssetSupported).toBe(false)
-  })
-
-  it('enrichWithEmbeddedMetadata correctly filters for dialog: only isMissing=true with url', async () => {
-    const candidates: MissingModelCandidate[] = []
+  it('enriches live OSS candidates for dialog filtering', () => {
+    const candidates: MissingModelCandidate[] = [
+      makeCandidate('missing_model.safetensors')
+    ]
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
@@ -1312,63 +1209,12 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       ]
     })
 
-    const selectiveInstallCheck = async (name: string) =>
-      name === 'installed_model.safetensors'
-
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      selectiveInstallCheck
-    )
+    const result = enrichWithEmbeddedMetadata(candidates, graphData)
 
     const dialogModels = result.filter((c) => c.isMissing === true && c.url)
     expect(dialogModels).toHaveLength(1)
     expect(dialogModels[0].name).toBe('missing_model.safetensors')
     expect(dialogModels[0].url).toBe('https://example.com/model')
-  })
-
-  it('enrichWithEmbeddedMetadata with isAssetSupported leaves isMissing undefined for asset-supported models (Cloud path)', async () => {
-    const candidates: MissingModelCandidate[] = []
-    const graphData = fromPartial<ComfyWorkflowJSON>({
-      last_node_id: 1,
-      last_link_id: 0,
-      nodes: [
-        {
-          id: 1,
-          type: 'CheckpointLoaderSimple',
-          pos: [0, 0],
-          size: [100, 100],
-          flags: {},
-          order: 0,
-          mode: 0,
-          properties: {},
-          widgets_values: { ckpt_name: 'model.safetensors' }
-        }
-      ],
-      links: [],
-      groups: [],
-      config: {},
-      extra: {},
-      version: 0.4,
-      models: [
-        {
-          name: 'model.safetensors',
-          url: 'https://example.com/model',
-          directory: 'checkpoints'
-        }
-      ]
-    })
-
-    const result = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      alwaysMissing,
-      () => true
-    )
-
-    expect(result).toHaveLength(1)
-    expect(result[0].isMissing).toBeUndefined()
-    expect(result[0].isAssetSupported).toBe(true)
   })
 })
 

@@ -871,6 +871,7 @@
     "LORA_MODEL": "МОДЕЛЬ_LORA",
     "LOSS_MAP": "КАРТА_ПОТЕРЬ",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "LUMA_REF",
     "MASK": "МАСКА",
     "MESH": "СЕТКА",
@@ -3845,7 +3846,7 @@
     "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
     "yearly": "Ежегодно",
     "yearlyCreditsLabel": "Годовые кредиты",
-    "yearlyDiscount": "СКИДКА 20%",
+    "saveYearly": "Экономия 20%",
     "yourPlanIncludes": "Ваш план включает:"
   },
   "tabMenu": {
@@ -3978,6 +3979,7 @@
     "fileTooLarge": "Файл слишком большой ({size} МБ). Максимально поддерживаемый размер — {maxSize} МБ",
     "fileUploadFailed": "Не удалось загрузить файл",
     "interrupted": "Выполнение было прервано",
+    "invalidTemplateData": "Не удалось загрузить шаблон узла: неверные данные",
     "legacyMaskEditorDeprecated": "Устаревший редактор масок будет скоро удалён.",
     "migrateToLitegraphReroute": "Узлы перенаправления будут удалены в будущих версиях. Нажмите, чтобы перейти на litegraph-native reroute.",
     "missingModelVerificationFailed": "Не удалось проверить отсутствующие модели. Некоторые модели могут не отображаться на вкладке Ошибки.",

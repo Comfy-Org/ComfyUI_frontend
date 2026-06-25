@@ -1,26 +1,21 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import type { CurrentTeamCreditStop } from '@/platform/workspace/api/workspaceApi'
 
-type Balance = {
-  amountMicros: number
-  cloudCreditBalanceMicros?: number
-  prepaidBalanceMicros?: number
+type Balance = Pick<
+  BalanceInfo,
+  'amountMicros' | 'cloudCreditBalanceMicros' | 'prepaidBalanceMicros'
+>
+type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
+  tier: SubscriptionInfo['tier'] | 'TEAM'
 }
-type Subscription = {
-  tier: string | null
-  duration: string | null
-  renewalDate: string | null
-}
-type TeamStop = {
-  id: string
-  credits_monthly: number
-  stop_usd: number
-}
+type TeamStop = CurrentTeamCreditStop
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -34,7 +29,24 @@ const state = vi.hoisted(() => ({
   fetchStatus: vi.fn(),
   showPricingTable: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
-  trackAddApiCreditButtonClicked: vi.fn()
+  trackAddApiCreditButtonClicked: vi.fn(),
+  toastErrorHandler: vi.fn()
+}))
+
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => ({
+    wrapWithErrorHandlingAsync:
+      <TArgs extends unknown[], TReturn>(
+        action: (...args: TArgs) => Promise<TReturn> | TReturn
+      ) =>
+      async (...args: TArgs): Promise<TReturn | undefined> => {
+        try {
+          return await action(...args)
+        } catch (e) {
+          state.toastErrorHandler(e)
+        }
+      }
+  })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -86,16 +98,22 @@ const i18n = createI18n({
         refreshCredits: 'Refresh credits',
         monthly: 'Monthly',
         refillsDate: 'Refills {date}',
+        refillsNextCycle: 'Refills next cycle',
         creditsUsed: '{used} used',
         creditsLeftOfTotal: '{remaining} left of {total}',
+        monthlyUsageProgress: '{used} of {total} monthly credits used',
+        additionalCreditsInfo: 'About additional credits',
+        additionalCreditsTooltip: 'Credits you add on top of your plan.',
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
+        monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
         monthlyCreditsUsedUpDescription:
           "You're now spending additional credits.",
         outOfCreditsTitle: "You're out of credits. Credits refill {date}",
+        outOfCreditsTitleNoDate: "You're out of credits",
         outOfCreditsDescription: 'Add more credits to continue generating.',
         addCredits: 'Add credits',
         upgradeToAddCredits: 'Upgrade to add credits'
@@ -193,6 +211,45 @@ describe('CreditsTile', () => {
     // Monthly total is the stop's raw monthly grant, not the tier fallback,
     // and is not multiplied by 12 for annual billing.
     expect(container.textContent).toContain('422 left of 527,500')
+  })
+
+  it('uses the per-month nominal grant for an annual personal tier', () => {
+    state.isActiveSubscription = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
+    const { container } = renderTile()
+    // Annual billing still grants the monthly nominal (21,100), not 12x.
+    expect(container.textContent).toContain('422 left of 21,100')
+    expect(container.textContent).not.toContain('253,200')
+  })
+
+  it('falls back to a dateless refills label when renewal date is missing', () => {
+    activeProSubscription()
+    state.subscription = { tier: 'PRO', duration: 'MONTHLY', renewalDate: null }
+    const { container } = renderTile()
+    expect(container.textContent).toContain('Refills next cycle')
+    expect(container.textContent).not.toContain('Refills Feb')
+  })
+
+  it('uses a dateless out-of-credits notice when renewal date is invalid', () => {
+    activeProSubscription()
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'MONTHLY',
+      renewalDate: 'not-a-date'
+    }
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain("You're out of credits")
+    expect(container.textContent).not.toContain('Credits refill')
   })
 
   it('hides the breakdown and forces zeros in the zero state', () => {
@@ -302,5 +359,15 @@ describe('CreditsTile', () => {
     )
     expect(state.fetchBalance).toHaveBeenCalledTimes(2)
     expect(state.fetchStatus).toHaveBeenCalledTimes(2)
+  })
+
+  it('surfaces a failure toast when a refresh rejects', async () => {
+    activeProSubscription()
+    const failure = new Error('network down')
+    state.fetchBalance.mockRejectedValueOnce(failure)
+    renderTile()
+    await waitFor(() =>
+      expect(state.toastErrorHandler).toHaveBeenCalledWith(failure)
+    )
   })
 })

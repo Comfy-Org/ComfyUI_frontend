@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -224,6 +225,32 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.fetchStatus()).rejects.toThrow('boom')
       expect(billing.error.value).toBe('boom')
     })
+
+    it('surfaces a team credit stop from the status response', async () => {
+      const teamStop = {
+        id: 'team_2500',
+        credits_monthly: 527_500,
+        stop_usd: 2500
+      }
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        team_credit_stop: teamStop
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.currentTeamCreditStop.value).toEqual(teamStop)
+    })
+
+    it('yields a null team credit stop when status omits one', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.currentTeamCreditStop.value).toBeNull()
+    })
   })
 
   describe('fetchBalance / computed balance', () => {
@@ -285,6 +312,27 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(billing.isFreeTier.value).toBe(false)
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('returns the successful response when the post-subscribe refresh fails', async () => {
+      mockWorkspaceApi.subscribe.mockResolvedValue({
+        billing_op_id: 'op-1',
+        status: 'subscribed'
+      })
+      mockWorkspaceApi.getBillingStatus.mockRejectedValue(
+        new Error('refresh down')
+      )
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+
+      await expect(billing.subscribe('pro')).resolves.toStrictEqual({
+        billing_op_id: 'op-1',
+        status: 'subscribed'
+      })
+      expect(billing.error.value).toBe(
+        'Subscription succeeded, but billing state refresh failed'
+      )
     })
 
     it('propagates error and records message when subscribe fails', async () => {

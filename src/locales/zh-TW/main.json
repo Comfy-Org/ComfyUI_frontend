@@ -871,6 +871,7 @@
     "LORA_MODEL": "LoRA模型",
     "LOSS_MAP": "損失圖",
     "LUMA_CONCEPTS": "LUMA 概念",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "LUMA 參考",
     "MASK": "遮罩",
     "MESH": "網格",
@@ -3845,7 +3846,7 @@
     "workspaceNotSubscribed": "此工作區尚未訂閱",
     "yearly": "每年",
     "yearlyCreditsLabel": "年度總點數",
-    "yearlyDiscount": "八折優惠",
+    "saveYearly": "節省 20%",
     "yourPlanIncludes": "您的方案包含："
   },
   "tabMenu": {
@@ -3978,6 +3979,7 @@
     "fileTooLarge": "檔案過大（{size} MB）。最大支援大小為 {maxSize} MB",
     "fileUploadFailed": "檔案上傳失敗",
     "interrupted": "執行已被中斷",
+    "invalidTemplateData": "載入節點範本失敗：資料無效",
     "legacyMaskEditorDeprecated": "舊版遮罩編輯器即將淘汰並很快移除。",
     "migrateToLitegraphReroute": "重導節點將於未來版本移除。點擊以遷移至 litegraph 原生重導。",
     "missingModelVerificationFailed": "驗證缺少的模型失敗。部分模型可能不會顯示在錯誤標籤頁中。",

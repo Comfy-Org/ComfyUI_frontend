@@ -54,7 +54,12 @@ async function mockCloudBoot(page: Page) {
       })
     )
   )
-  await page.route('**/api/settings', (r) => r.fulfill(jsonRoute({})))
+  // Non-empty settings with a completed tutorial keep the cloud app from
+  // booting as a new user, whose Workflow Templates dialog would otherwise
+  // auto-open and intercept the Settings click behind its modal backdrop.
+  await page.route('**/api/settings', (r) =>
+    r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
+  )
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))

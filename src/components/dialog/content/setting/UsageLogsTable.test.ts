@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
 
+import type * as DistributionTypes from '@/platform/distribution/types'
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
@@ -36,6 +37,23 @@ vi.mock('@/services/customerEventsService', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => null
+}))
+
+const mockFlags = vi.hoisted(() => ({ teamWorkspacesEnabled: false }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFlags })
+}))
+
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionTypes>()),
+  isCloud: true
+}))
+
+const mockWorkspaceApi = vi.hoisted(() => ({
+  getBillingEvents: vi.fn()
+}))
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: mockWorkspaceApi
 }))
 
 const i18n = createI18n({
@@ -118,6 +136,8 @@ describe('UsageLogsTable', () => {
     vi.clearAllMocks()
 
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
+    mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
+    mockFlags.teamWorkspacesEnabled = false
     mockCustomerEventsService.formatEventType.mockImplementation(
       (type: string) => {
         switch (type) {
@@ -317,6 +337,20 @@ describe('UsageLogsTable', () => {
         page: 1,
         limit: 7
       })
+    })
+  })
+
+  describe('billing events source', () => {
+    it('uses workspaceApi.getBillingEvents when teamWorkspacesEnabled is on', async () => {
+      mockFlags.teamWorkspacesEnabled = true
+
+      await renderLoaded()
+
+      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledWith({
+        page: 1,
+        limit: 7
+      })
+      expect(mockCustomerEventsService.getMyEvents).not.toHaveBeenCalled()
     })
   })
 
