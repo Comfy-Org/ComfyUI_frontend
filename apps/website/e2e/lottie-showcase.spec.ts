@@ -91,18 +91,19 @@ test.describe('ProductShowcase - desktop Lottie layout @interaction', () => {
   test('all three scene wrappers are in DOM (v-show, not v-if)', async ({
     page
   }) => {
-    await scrollToShowcase(page)
-    // Inside the desktop Lottie column there are 3 absolute-inset-0 wrappers,
-    // one per feature, all mounted simultaneously.
-    const wrappers = page.locator(
+    const section = await scrollToShowcase(page)
+    // Scope to the inner ink container of the desktop Lottie column
+    const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]').first()
+    const wrappers = inkContainer.locator(
       'div[class*="absolute"][class*="inset-0"][class*="transition-opacity"]'
     )
     await expect(wrappers).toHaveCount(3)
   })
 
   test('only the active scene wrapper is opaque', async ({ page }) => {
-    await scrollToShowcase(page)
-    const wrappers = page.locator(
+    const section = await scrollToShowcase(page)
+    const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]').first()
+    const wrappers = inkContainer.locator(
       'div[class*="absolute"][class*="inset-0"][class*="transition-opacity"]'
     )
     await expect(wrappers.nth(0)).toHaveClass(/opacity-100/)
@@ -113,11 +114,12 @@ test.describe('ProductShowcase - desktop Lottie layout @interaction', () => {
   test('clicking second accordion updates the active scene wrapper', async ({
     page
   }) => {
-    await scrollToShowcase(page)
+    const section = await scrollToShowcase(page)
     const secondBtn = page.getByRole('button', { name: /App mode/i }).first()
     await secondBtn.click()
 
-    const wrappers = page.locator(
+    const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]').first()
+    const wrappers = inkContainer.locator(
       'div[class*="absolute"][class*="inset-0"][class*="transition-opacity"]'
     )
     await expect(wrappers.nth(0)).toHaveClass(/opacity-0/)
@@ -134,12 +136,10 @@ test.describe('ProductShowcase - mobile Lottie layout @mobile', () => {
   test('desktop Lottie column is absent from DOM on mobile', async ({
     page
   }) => {
-    await scrollToShowcase(page)
-    // v-if="!isMobile" — the desktop aspect-ratio container should not exist
-    const desktopWrappers = page.locator(
-      'div[class*="absolute"][class*="inset-0"][class*="transition-opacity"]'
-    )
-    await expect(desktopWrappers).toHaveCount(0)
+    const section = await scrollToShowcase(page)
+    // v-if="!isMobile" — the desktop ink container should not exist in the section
+    const inkContainer = section.locator('div[class*="bg-primary-comfy-ink"]')
+    await expect(inkContainer).toHaveCount(0)
   })
 
   test('only one mobile Lottie slot is mounted at a time', async ({ page }) => {
