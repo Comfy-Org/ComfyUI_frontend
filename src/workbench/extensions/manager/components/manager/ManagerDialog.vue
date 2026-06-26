@@ -114,8 +114,10 @@
         v-else-if="displayPacks.length === 0"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
-        :button-label="searchError ? $t('manager.retry') : undefined"
-        @action="() => void retrySearch()"
+        :button-label="
+          connectionError?.kind === 'search' ? $t('manager.retry') : undefined
+        "
+        @action="onEmptyStateAction"
       />
       <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
@@ -438,11 +440,20 @@ const isManagerErrorRelevant = computed(() => {
   )
 })
 
-// The registry search failing (e.g. offline) is also a connection error worth
-// surfacing, and unlike the manager-store error it can be retried in place.
-const hasConnectionError = computed(
-  () => isManagerErrorRelevant.value || !!searchError.value
-)
+// One source of truth for the empty-state error so the title/message/button and
+// retry action can never disagree. A search error is retryable in place; a
+// manager-store error is not, so only the former exposes a retry.
+type ConnectionError = { kind: 'search' } | { kind: 'manager' }
+const connectionError = computed<ConnectionError | null>(() => {
+  if (searchError.value) return { kind: 'search' }
+  if (isManagerErrorRelevant.value) return { kind: 'manager' }
+  return null
+})
+const hasConnectionError = computed(() => connectionError.value !== null)
+
+const onEmptyStateAction = () => {
+  if (connectionError.value?.kind === 'search') void retrySearch()
+}
 
 // Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
@@ -485,11 +496,9 @@ const onClickWarningLink = () => {
 }
 
 const isLoading = computed(() => {
-  // A failed search must not read as "still loading" -- otherwise the spinner
-  // runs forever (e.g. offline) instead of showing the error placeholder.
+  if (isTabLoading.value) return true
   if (searchError.value) return false
   if (isSearchLoading.value) return searchResults.value.length === 0
-  if (isTabLoading.value) return true
   return isInitialLoad.value
 })
 

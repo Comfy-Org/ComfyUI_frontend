@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d } from '@/i18n'
+import { createApiClient } from '@/services/apiClient'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -23,11 +24,8 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
-const customerApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
-  headers: {
-    'Content-Type': 'application/json'
-  }
+const customerApiClient = createApiClient({
+  baseURL: getComfyApiBaseUrl()
 })
 
 export const useCustomerEventsService = () => {

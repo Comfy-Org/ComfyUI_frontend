@@ -96,10 +96,11 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     const successTasksIds = []
     const failTasksIds = []
     for (const task of Object.values(taskHistory.value)) {
-      if (task.status?.status_str === 'success') {
-        successTasksIds.push(task.ui_id)
-      } else {
+      // Only 'error' is a failure; 'skip' (and 'success') are not.
+      if (task.status?.status_str === 'error') {
         failTasksIds.push(task.ui_id)
+      } else {
+        successTasksIds.push(task.ui_id)
       }
     }
     succeededTasksIds.value = successTasksIds

@@ -452,6 +452,19 @@ describe('useComfyManagerStore', () => {
       expect(store.isTaskFailed('task-2')).toBe(false)
       expect(store.getTaskErrorMessages('task-2')).toEqual([])
     })
+
+    it('does not treat a skipped task as a failure', async () => {
+      const store = useComfyManagerStore()
+
+      store.taskHistory = {
+        'task-3': historyItem('task-3', 'skip', ['Already installed'])
+      }
+      await nextTick()
+
+      expect(store.isTaskFailed('task-3')).toBe(false)
+      expect(store.failedTasksIds).not.toContain('task-3')
+      expect(store.getTaskErrorMessages('task-3')).toEqual([])
+    })
   })
 
   describe('refreshInstalledList with pack ID normalization', () => {

@@ -2,21 +2,14 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref } from 'vue'
 
+import { createApiClient } from '@/services/apiClient'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 const API_BASE_URL = 'https://api.comfy.org'
 
-// Without a timeout a hung socket (e.g. no internet, captive portal) never
-// rejects, leaving callers stuck in their loading state indefinitely.
-const REQUEST_TIMEOUT_MS = 10_000
-
-const registryApiClient = axios.create({
+const registryApiClient = createApiClient({
   baseURL: API_BASE_URL,
-  timeout: REQUEST_TIMEOUT_MS,
-  headers: {
-    'Content-Type': 'application/json'
-  },
   paramsSerializer: {
     // Disables PHP-style notation (e.g. param[]=value) in favor of repeated params (e.g. param=value1&param=value2)
     indexes: null

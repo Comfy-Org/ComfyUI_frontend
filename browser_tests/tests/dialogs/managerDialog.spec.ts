@@ -1,3 +1,4 @@
+import type { Route } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
@@ -427,5 +428,74 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     const nodesOption = comfyPage.page.getByRole('option', { name: 'Nodes' })
     await expect(nodesOption).toBeVisible()
     await nodesOption.click()
+  })
+
+  test('Offline search shows a retryable connection error, not an endless spinner', async ({
+    comfyPage
+  }) => {
+    const failSearch = async (route: Route) => route.abort()
+    await comfyPage.page.route('**/*.algolia.net/**', failSearch)
+    await comfyPage.page.route('**/*.algolianet.com/**', failSearch)
+    await comfyPage.page.route('**/api.comfy.org/nodes/search**', failSearch)
+    await comfyPage.page.route(
+      (url) => url.hostname === 'api.comfy.org' && url.pathname === '/nodes',
+      failSearch
+    )
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    // The error placeholder only renders once isLoading is false, so its
+    // visibility proves the spinner did not run forever.
+    await expect(
+      dialog.getByText('Error connecting to the Comfy Node Registry.')
+    ).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Try Again' })
+    ).toBeVisible()
+  })
+
+  test('Retrying after the registry recovers loads results', async ({
+    comfyPage
+  }) => {
+    let online = false
+    const registryListResponse = {
+      total: 3,
+      nodes: [MOCK_PACK_A, MOCK_PACK_B, MOCK_PACK_C],
+      page: 1,
+      limit: 64,
+      totalPages: 1
+    }
+
+    const algoliaRoute = async (route: Route) => {
+      if (online) await route.fulfill({ json: MOCK_ALGOLIA_RESPONSE })
+      else await route.abort()
+    }
+    const registryRoute = async (route: Route) => {
+      if (online) await route.fulfill({ json: registryListResponse })
+      else await route.abort()
+    }
+    await comfyPage.page.route('**/*.algolia.net/**', algoliaRoute)
+    await comfyPage.page.route('**/*.algolianet.com/**', algoliaRoute)
+    await comfyPage.page.route('**/api.comfy.org/nodes/search**', registryRoute)
+    await comfyPage.page.route(
+      (url) => url.hostname === 'api.comfy.org' && url.pathname === '/nodes',
+      registryRoute
+    )
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    const retryButton = dialog.getByRole('button', { name: 'Try Again' })
+    await expect(retryButton).toBeVisible()
+
+    online = true
+    await retryButton.click()
+
+    await expect(dialog.getByText('Test Pack A')).toBeVisible()
   })
 })

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
+import { createApiClient } from '@/services/apiClient'
 import { api } from '@/scripts/api'
 import { isAbortError } from '@/utils/typeGuardUtil'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -18,6 +19,8 @@ type QueueTaskItem = components['schemas']['QueueTaskItem']
 
 const GENERIC_SECURITY_ERR_MSG =
   'Forbidden: A security error has occurred. Please check the terminal logs'
+
+const CONNECTION_ERR_MSG = 'Could not connect to ComfyUI-Manager'
 
 /**
  * API routes for ComfyUI Manager
@@ -38,16 +41,16 @@ enum ManagerRoute {
   QUEUE_TASK = 'manager/queue/task'
 }
 
-// Without a timeout a hung socket (e.g. no internet, captive portal) never
-// rejects, leaving callers stuck in their loading state indefinitely.
-const REQUEST_TIMEOUT_MS = 10_000
+// Reads/polls should fail fast so the UI can show an error instead of hanging.
+const READ_TIMEOUT_MS = 10_000
+// Synchronous POSTs (reboot, update_comfyui, update_all, bulk) can legitimately
+// run long, so the client uses a generous ceiling and reads opt into the
+// shorter timeout per-request.
+const REQUEST_TIMEOUT_MS = 60_000
 
-const managerApiClient = axios.create({
+const managerApiClient = createApiClient({
   baseURL: api.apiURL('/v2/'),
-  timeout: REQUEST_TIMEOUT_MS,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  timeout: REQUEST_TIMEOUT_MS
 })
 
 /**
@@ -80,15 +83,18 @@ export const useComfyManagerService = () => {
       const axiosError = err as AxiosError<{ message: string }>
       const status = axiosError.response?.status
       const backendMessage = axiosError.response?.data?.message
-      // Prefer the backend's message: ComfyUI-Manager returns actionable,
-      // security-aware text (e.g. which security_level/--listen is required)
-      // that is far more useful than our generic per-status fallbacks.
-      if (backendMessage) {
+      if (!axiosError.response) {
+        // Timeout/offline has no status; avoid "failed with status undefined".
+        message = CONNECTION_ERR_MSG
+      } else if (status === 403 && backendMessage) {
+        // Backend security text is more actionable than our curated 403 strings.
         message = backendMessage
       } else if (status && routeSpecificErrors?.[status]) {
         message = routeSpecificErrors[status]
       } else if (status === 404) {
-        message = 'Could not connect to ComfyUI-Manager'
+        message = CONNECTION_ERR_MSG
+      } else if (backendMessage) {
+        message = backendMessage
       } else {
         message = `${context} failed with status ${status}`
       }
@@ -147,7 +153,8 @@ export const useComfyManagerService = () => {
       () =>
         managerApiClient.get(ManagerRoute.QUEUE_STATUS, {
           params: client_id ? { client_id } : undefined,
-          signal
+          signal,
+          timeout: READ_TIMEOUT_MS
         }),
       { errorContext }
     )
@@ -157,7 +164,11 @@ export const useComfyManagerService = () => {
     const errorContext = 'Fetching installed packs'
 
     return executeRequest<InstalledPacksResponse>(
-      () => managerApiClient.get(ManagerRoute.LIST_INSTALLED, { signal }),
+      () =>
+        managerApiClient.get(ManagerRoute.LIST_INSTALLED, {
+          signal,
+          timeout: READ_TIMEOUT_MS
+        }),
       { errorContext }
     )
   }
@@ -166,7 +177,11 @@ export const useComfyManagerService = () => {
     const errorContext = 'Fetching import failure information'
 
     return executeRequest<Record<string, unknown>>(
-      () => managerApiClient.get(ManagerRoute.IMPORT_FAIL_INFO, { signal }),
+      () =>
+        managerApiClient.get(ManagerRoute.IMPORT_FAIL_INFO, {
+          signal,
+          timeout: READ_TIMEOUT_MS
+        }),
       { errorContext }
     )
   }
@@ -325,7 +340,11 @@ export const useComfyManagerService = () => {
     const errorContext = 'Checking if user set Manager to use the legacy UI'
 
     return executeRequest<{ is_legacy_manager_ui: boolean }>(
-      () => managerApiClient.get(ManagerRoute.IS_LEGACY_MANAGER_UI, { signal }),
+      () =>
+        managerApiClient.get(ManagerRoute.IS_LEGACY_MANAGER_UI, {
+          signal,
+          timeout: READ_TIMEOUT_MS
+        }),
       { errorContext }
     )
   }
@@ -345,7 +364,8 @@ export const useComfyManagerService = () => {
       () =>
         managerApiClient.get(ManagerRoute.TASK_HISTORY, {
           params: options,
-          signal
+          signal,
+          timeout: READ_TIMEOUT_MS
         }),
       { errorContext }
     )

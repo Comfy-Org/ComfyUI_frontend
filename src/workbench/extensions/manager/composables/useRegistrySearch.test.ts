@@ -36,7 +36,6 @@ describe('useRegistrySearch', () => {
     const { isLoading, error, retry } = useRegistrySearch()
     await retry()
 
-    // The bug: without try/finally, isLoading stayed true forever -> infinite spinner.
     expect(isLoading.value).toBe(false)
     expect(error.value).toBe('All search providers failed')
   })

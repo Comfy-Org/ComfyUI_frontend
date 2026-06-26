@@ -33,6 +33,20 @@ function axiosError(status: number, data?: { message: string }) {
   return { isAxiosError: true, response: { status, data } }
 }
 
+function axiosNoResponse(code = 'ECONNABORTED') {
+  return { isAxiosError: true, code, message: 'timeout of 10000ms exceeded' }
+}
+
+function installSomePack(service: ReturnType<typeof useComfyManagerService>) {
+  return service.installPack({
+    id: 'some-pack',
+    version: '1.0.0',
+    selected_version: '1.0.0',
+    mode: 'remote',
+    channel: 'default'
+  })
+}
+
 describe('useComfyManagerService error messages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -61,14 +75,31 @@ describe('useComfyManagerService error messages', () => {
     mockClient.post.mockRejectedValue(axiosError(403))
 
     const service = useComfyManagerService()
-    await service.installPack({
-      id: 'some-pack',
-      version: '1.0.0',
-      selected_version: '1.0.0',
-      mode: 'remote',
-      channel: 'default'
-    })
+    await installSomePack(service)
 
     expect(service.error.value).toContain('security error has occurred')
+  })
+
+  it('reports a connection error on a timeout instead of "status undefined"', async () => {
+    mockClient.post.mockRejectedValue(axiosNoResponse())
+
+    const service = useComfyManagerService()
+    await installSomePack(service)
+
+    expect(service.error.value).toBe('Could not connect to ComfyUI-Manager')
+    expect(service.error.value).not.toContain('undefined')
+  })
+
+  it('keeps the curated route error over a backend body on non-security statuses', async () => {
+    mockClient.post.mockRejectedValue(
+      axiosError(401, { message: 'raw backend text' })
+    )
+
+    const service = useComfyManagerService()
+    await service.updateAllPacks()
+
+    expect(service.error.value).toBe(
+      'Unauthorized: ComfyUI-Manager job queue is busy'
+    )
   })
 })
