@@ -25,7 +25,7 @@ function renderStep(
       stubs: {
         ToggleGroup: {
           template:
-            '<div><button data-testid="type-image" @click="$emit(\'update:modelValue\', \'image\')" /><button data-testid="type-video" @click="$emit(\'update:modelValue\', \'video\')" /><slot /></div>'
+            '<div><button data-testid="type-image" @click="$emit(\'update:modelValue\', \'image\')" /><button data-testid="type-video" @click="$emit(\'update:modelValue\', \'video\')" /><button data-testid="type-comparison" @click="$emit(\'update:modelValue\', \'imageComparison\')" /><slot /></div>'
         },
         ToggleGroupItem: { template: '<div><slot /></div>', props: ['value'] },
         Button: {
@@ -91,6 +91,32 @@ describe('ComfyHubThumbnailStep', () => {
     // toggling back restores the preview.
     expect(onUpdateThumbnailFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
+  })
+
+  it('keeps restored comparison URLs when switching away from the comparison type', async () => {
+    const user = userEvent.setup()
+    const onUpdateThumbnailUrl = vi.fn()
+    const onUpdateComparisonAfterUrl = vi.fn()
+    const onUpdateThumbnailType = vi.fn()
+    renderStep(
+      {
+        thumbnailType: 'imageComparison',
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        comparisonAfterUrl: 'https://cdn.example.com/after.png',
+        existingThumbnailType: 'imageComparison'
+      },
+      {
+        'onUpdate:thumbnailUrl': onUpdateThumbnailUrl,
+        'onUpdate:comparisonAfterUrl': onUpdateComparisonAfterUrl,
+        'onUpdate:thumbnailType': onUpdateThumbnailType
+      }
+    )
+
+    await user.click(screen.getByTestId('type-image'))
+
+    expect(onUpdateThumbnailType).toHaveBeenCalledWith('image')
+    expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
+    expect(onUpdateComparisonAfterUrl).not.toHaveBeenCalled()
   })
 
   it('renders a restored GIF thumbnail as an image, not a video', () => {
