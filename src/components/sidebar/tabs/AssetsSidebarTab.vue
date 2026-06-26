@@ -1,7 +1,14 @@
 <template>
   <SidebarTabTemplate
+    ref="assetPanelComponentRef"
+    data-testid="assets-marquee-surface"
+    tabindex="-1"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+    class="relative focus:outline-none"
     v-bind="$attrs"
+    @click.capture="handleAssetPanelClickCapture"
+    @dragstart.capture="handleAssetPanelDragStartCapture"
+    @pointerdown.capture="handleMarqueePointerDown"
   >
     <template #alt-title>
       <div
@@ -125,6 +132,14 @@
       />
     </template>
   </SidebarTabTemplate>
+  <Teleport to="body">
+    <div
+      v-if="isMarqueeSelecting"
+      data-testid="assets-marquee-selection"
+      class="pointer-events-none fixed z-9999 rounded-lg border-2 border-primary-background bg-primary-background/30"
+      :style="marqueeStyle"
+    />
+  </Teleport>
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -164,8 +179,10 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -182,6 +199,7 @@ import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBa
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
+import { useAssetMarqueeSelection } from '@/platform/assets/composables/useAssetMarqueeSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -259,7 +277,10 @@ const outputAssets = useAssetsApi('output')
 // Asset selection
 const {
   isSelected,
+  selectedIds,
   handleAssetClick,
+  selectAll,
+  setSelectedIds,
   hasSelection,
   clearSelection,
   getSelectedAssets,
@@ -287,6 +308,13 @@ const mediaAssets = computed(() => currentAssets.value.media.value)
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
+const assetPanelComponentRef = ref<ComponentPublicInstance>()
+const assetPanelRef = ref<HTMLElement | null>(null)
+
+watchEffect(() => {
+  const element = assetPanelComponentRef.value?.$el
+  assetPanelRef.value = element instanceof HTMLElement ? element : null
+})
 
 const DEFAULT_SKELETON_COUNT = 6
 const skeletonCount = computed(() =>
@@ -366,6 +394,23 @@ const showEmptyState = computed(
   () =>
     !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
 )
+
+const {
+  isMarqueeSelecting,
+  marqueeStyle,
+  handleAssetPanelClickCapture,
+  handleAssetPanelDragStartCapture,
+  handleMarqueePointerDown
+} = useAssetMarqueeSelection({
+  assetPanelRef,
+  isListView,
+  showLoadingState,
+  showEmptyState,
+  visibleAssets,
+  selectedIds,
+  selectAll,
+  setSelectedIds
+})
 
 watch(visibleAssets, (newAssets) => {
   // Alternative: keep hidden selections and surface them in UI; for now prune

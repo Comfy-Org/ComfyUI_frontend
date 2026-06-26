@@ -93,12 +93,24 @@ export function useAssetSelection() {
    * Select all assets in the current view
    */
   function selectAll(allAssets: AssetItem[]) {
+    if (allAssets.length === 0) {
+      selectionStore.clearSelection()
+      return
+    }
+
     const allIds = allAssets.map((a) => a.id)
     selectionStore.setSelection(allIds)
-    if (allAssets.length > 0) {
-      const lastIndex = allAssets.length - 1
-      setAnchor(lastIndex, allAssets[lastIndex].id)
-    }
+    const lastIndex = allAssets.length - 1
+    setAnchor(lastIndex, allAssets[lastIndex].id)
+  }
+
+  function setSelectedIds(ids: string[], allAssets: AssetItem[]) {
+    selectionStore.setSelection(ids)
+    const selected = new Set(ids)
+    const anchorIndex = allAssets.findLastIndex((asset) =>
+      selected.has(asset.id)
+    )
+    setAnchor(anchorIndex, anchorIndex >= 0 ? allAssets[anchorIndex].id : null)
   }
 
   /**
@@ -182,6 +194,7 @@ export function useAssetSelection() {
     // Selection actions
     handleAssetClick,
     selectAll,
+    setSelectedIds,
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
     reconcileSelection,

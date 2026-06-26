@@ -1,5 +1,19 @@
+import { clamp } from 'es-toolkit'
+
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
+
+export type RectEdges = {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+export type Point = {
+  x: number
+  y: number
+}
 
 /**
  * Linearly maps a value from [min, max] to [0, 1].
@@ -137,4 +151,38 @@ export function anyItemOverlapsRect(
     if (overlaps) return true
   }
   return false
+}
+
+export function clampRectToBounds(
+  rect: RectEdges,
+  bounds: RectEdges
+): RectEdges {
+  return {
+    left: clamp(rect.left, bounds.left, bounds.right),
+    top: clamp(rect.top, bounds.top, bounds.bottom),
+    right: clamp(rect.right, bounds.left, bounds.right),
+    bottom: clamp(rect.bottom, bounds.top, bounds.bottom)
+  }
+}
+
+export function getRectFromPoints(start: Point, end: Point): RectEdges {
+  return {
+    left: Math.min(start.x, end.x),
+    top: Math.min(start.y, end.y),
+    right: Math.max(start.x, end.x),
+    bottom: Math.max(start.y, end.y)
+  }
+}
+
+export function hasRectArea(rect: RectEdges): boolean {
+  return rect.left < rect.right && rect.top < rect.bottom
+}
+
+export function rectsIntersect(first: RectEdges, second: RectEdges): boolean {
+  return !(
+    first.right < second.left ||
+    first.left > second.right ||
+    first.bottom < second.top ||
+    first.top > second.bottom
+  )
 }

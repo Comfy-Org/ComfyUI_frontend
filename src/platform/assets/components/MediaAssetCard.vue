@@ -20,6 +20,7 @@
           : 'hover:bg-modal-card-background-hovered/20'
       )
     "
+    :data-asset-id="asset?.id"
     :data-selected="selected"
     :draggable="true"
     @click.stop="$emit('click')"
@@ -316,6 +317,11 @@ const handleOutputCountClick = () => {
   emit('output-count-click')
 }
 function dragStart(e: DragEvent) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    return
+  }
+
   if (!asset?.preview_url) return
 
   const { dataTransfer } = e
