@@ -1849,6 +1849,7 @@ const translations = {
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
+  'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
@@ -4928,6 +4929,70 @@ const translations = {
   'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
     'zh-CN': '阅读联盟计划条款'
+  },
+
+  // Launches page (/launches) — head metadata
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.page.title': {
+    en: 'ComfyUI Live Demo & Q&A — June 29 Launch Livestream',
+    'zh-CN': 'ComfyUI 直播演示与问答 — 6 月 29 日发布直播'
+  },
+  'launches.page.description': {
+    en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',
+    'zh-CN':
+      '6 月 29 日加入 ComfyUI 直播，观看实操产品演示并参与实时问答。了解桌面、云端和社区的最新内容，并获得解答。'
+  },
+
+  // Launches page (/launches) — hero section
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.hero.title': {
+    en: 'Everything new in ComfyUI',
+    'zh-CN': 'ComfyUI 全新内容'
+  },
+  'launches.hero.primary': {
+    en: 'Download Desktop',
+    'zh-CN': '下载桌面版'
+  },
+  'launches.hero.secondary': {
+    en: 'Launch Cloud',
+    'zh-CN': '启动云端'
+  },
+  'launches.hero.visualAlt': {
+    en: 'Comfy',
+    'zh-CN': 'Comfy'
+  },
+
+  // Launches page (/launches) — subscribe banner
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.banner.text': {
+    en: 'Join the live stream. Get answers in real time.',
+    'zh-CN': '加入直播，实时获得解答。'
+  },
+  'launches.banner.cta': {
+    en: 'Join livestream',
+    'zh-CN': '加入直播'
+  },
+
+  // Launches page (/launches) — closing CTA
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.cta.heading': {
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
+  },
+  'launches.cta.primary': {
+    en: 'Open Comfy Cloud',
+    'zh-CN': '打开 Comfy Cloud'
+  },
+  'launches.cta.secondary': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
+  // Launches page (/launches) — launches grid
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.section.title': {
+    en: 'Latest Launches',
+    'zh-CN': '最新发布'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

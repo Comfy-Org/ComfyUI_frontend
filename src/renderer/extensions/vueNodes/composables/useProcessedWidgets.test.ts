@@ -222,7 +222,7 @@ describe('hasWidgetError', () => {
     ).toBe(true)
   })
 
-  it('matches missing models by the interior source widget name', () => {
+  it('matches missing models by the host widget name', () => {
     const widget = createMockWidget({
       name: 'display_slot',
       sourceExecutionId: createNodeExecutionId([65, 18]),
@@ -240,7 +240,7 @@ describe('hasWidgetError', () => {
         missingModelStore
       )
     ).toBe(true)
-    expect(spy).toHaveBeenCalledWith('65:18', 'ckpt_name')
+    expect(spy).toHaveBeenCalledWith('1', 'display_slot')
   })
 })
 
@@ -595,6 +595,36 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       widgetId(GRAPH_ID, NODE_ID, 'seed')
     )
     expect(state?.value).toBe(99)
+  })
+
+  it('clears promoted missing models through the host widget identity', () => {
+    const widget = createMockWidget({
+      name: 'display_slot',
+      nodeId: NODE_ID,
+      sourceExecutionId: createNodeExecutionId([65, 18]),
+      sourceWidgetName: 'ckpt_name'
+    })
+
+    const executionErrorStore = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(executionErrorStore, 'clearWidgetRelatedErrors')
+
+    const [processed] = processWidgets([widget])
+    processed.updateHandler('real_model.safetensors')
+
+    expect(clearSpy).toHaveBeenCalledWith(
+      createNodeExecutionId([65, 18]),
+      'ckpt_name',
+      'ckpt_name',
+      'real_model.safetensors',
+      { min: undefined, max: undefined }
+    )
+    expect(clearSpy).toHaveBeenCalledWith(
+      createNodeExecutionId([NODE_ID]),
+      'display_slot',
+      'display_slot',
+      'real_model.safetensors',
+      { min: undefined, max: undefined }
+    )
   })
 
   it('clears execution errors on update', () => {
