@@ -6,6 +6,7 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -35,6 +36,7 @@ import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { appendNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -54,6 +56,23 @@ type OriginalCallbacks = {
 }
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
+
+function getPromotedWidgetExecutionId(
+  hostExecId: NodeExecutionId,
+  promotedSource: PromotedSource | undefined
+): NodeExecutionId | null {
+  if (!promotedSource) return hostExecId
+
+  return appendNodeExecutionId(hostExecId, promotedSource.nodeId)
+}
+
+function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
+  if (!app.rootGraph) return String(nodeId)
+
+  return (
+    getExecutionIdForNodeInGraph(app.rootGraph, graph, nodeId) ?? String(nodeId)
+  )
+}
 
 function installNodeHooks(node: LGraphNode): void {
   if (hookedNodes.has(node)) return
@@ -85,9 +104,12 @@ function installNodeHooks(node: LGraphNode): void {
       if (!hostExecId) return
 
       const promotedSource = widgetPromotedSource(node, widget)
-      const executionId = promotedSource
-        ? appendNodeExecutionId(hostExecId, promotedSource.nodeId)
-        : hostExecId
+      const executionId = getPromotedWidgetExecutionId(
+        hostExecId,
+        promotedSource
+      )
+      if (!executionId) return
+
       const widgetName = promotedSource?.widgetName ?? widget.name
 
       useExecutionErrorStore().clearWidgetRelatedErrors(
@@ -397,9 +419,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors
     // are keyed; without this, removal falls back to the local ID and
     // misses subgraph entries.
-    const execId = app.rootGraph
-      ? getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id)
-      : String(node.id)
+    const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)

@@ -88,6 +88,16 @@ function createMockSubgraph(
 }
 
 describe('graphTraversalUtil', () => {
+  describe('invalid raw node IDs', () => {
+    it('returns null instead of throwing', () => {
+      const graph = createMockGraph([])
+
+      expect(findNodeInHierarchy(graph, '')).toBeNull()
+      expect(getExecutionIdForNodeInGraph(graph, graph, '')).toBeNull()
+      expect(getExecutionIdFromNodeData(graph, { id: '' })).toBeNull()
+    })
+  })
+
   describe('Pure utility functions', () => {
     describe('parseExecutionId', () => {
       it('should parse simple execution ID', () => {

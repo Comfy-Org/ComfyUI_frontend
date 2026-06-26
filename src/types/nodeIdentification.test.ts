@@ -42,6 +42,7 @@ describe('nodeIdentification', () => {
         expect(isNodeLocatorId(':123')).toBe(false) // Empty UUID
         expect(isNodeLocatorId(`${validUuid}:`)).toBe(false) // Empty node ID
         expect(isNodeLocatorId(`${validUuid}:123:456`)).toBe(false) // Too many parts
+        expect(isNodeLocatorId(`${validUuid}:node:1`)).toBe(false)
         expect(isNodeLocatorId(123)).toBe(false) // Not a string
         expect(isNodeLocatorId(null)).toBe(false)
         expect(isNodeLocatorId(undefined)).toBe(false)
@@ -74,6 +75,9 @@ describe('nodeIdentification', () => {
 
     describe('parseNodeLocatorId', () => {
       it('should parse valid NodeLocatorId', () => {
+        expect(validNodeLocatorId).not.toBeNull()
+        if (!validNodeLocatorId) return
+
         const result = parseNodeLocatorId(validNodeLocatorId)
         expect(result).toEqual({
           subgraphUuid: validUuid,
@@ -106,6 +110,7 @@ describe('nodeIdentification', () => {
 
       it('should return null for invalid formats', () => {
         expect(parseNodeLocatorId('123:456')).toBeNull() // No UUID in first part
+        expect(parseNodeLocatorId(`${validUuid}:node:1`)).toBeNull()
         expect(parseNodeLocatorId('')).toBeNull()
       })
     })
@@ -123,13 +128,9 @@ describe('nodeIdentification', () => {
         expect(isNodeLocatorId(result)).toBe(true)
       })
 
-      it('should reject node ID segments with separators', () => {
-        expect(() =>
-          createNodeLocatorId(validUuid, toNodeId('node:1'))
-        ).toThrow('Node ID segment cannot contain ":"')
-        expect(() => createNodeLocatorId(null, toNodeId('node:1'))).toThrow(
-          'Node ID segment cannot contain ":"'
-        )
+      it('should return null for node ID segments with separators', () => {
+        expect(createNodeLocatorId(validUuid, toNodeId('node:1'))).toBeNull()
+        expect(createNodeLocatorId(null, toNodeId('node:1'))).toBeNull()
       })
     })
   })
@@ -224,26 +225,20 @@ describe('nodeIdentification', () => {
         expect(isNodeExecutionId(result)).toBe(true)
       })
 
-      it('should reject an empty array', () => {
+      it('should return null for an empty array', () => {
         const emptyNodeIds: NodeId[] = []
-        expect(() => createNodeExecutionId(emptyNodeIds)).toThrow(
-          'NodeExecutionId requires at least one node ID'
-        )
+        expect(createNodeExecutionId(emptyNodeIds)).toBeNull()
       })
 
-      it('should reject empty path segments', () => {
-        expect(() => createNodeExecutionId([toNodeId('')])).toThrow(
-          'Node ID segment must be non-empty'
-        )
-        expect(() =>
-          createNodeExecutionId([toNodeId(123), toNodeId('')])
-        ).toThrow('Node ID segment must be non-empty')
+      it('should return null for empty path segments', () => {
+        expect(createNodeExecutionId([toNodeId('')])).toBeNull()
+        expect(createNodeExecutionId([toNodeId(123), toNodeId('')])).toBeNull()
       })
 
-      it('should reject path segments with separators', () => {
-        expect(() =>
+      it('should return null for path segments with separators', () => {
+        expect(
           createNodeExecutionId([toNodeId(123), toNodeId('node:1')])
-        ).toThrow('Node ID segment cannot contain ":"')
+        ).toBeNull()
       })
     })
   })
@@ -254,8 +249,10 @@ describe('nodeIdentification', () => {
       const localNodeId: NodeId = toNodeId(123)
 
       const locatorId = createNodeLocatorId(uuid, localNodeId)
-      const parsed = parseNodeLocatorId(locatorId)
+      expect(locatorId).not.toBeNull()
+      if (!locatorId) return
 
+      const parsed = parseNodeLocatorId(locatorId)
       expect(parsed).toBeTruthy()
       expect(parsed!.subgraphUuid).toBe(uuid)
       expect(parsed!.localNodeId).toBe(localNodeId)
@@ -269,8 +266,10 @@ describe('nodeIdentification', () => {
       ]
 
       const executionId = createNodeExecutionId(nodeIds)
-      const parsed = parseNodeExecutionId(executionId)
+      expect(executionId).not.toBeNull()
+      if (!executionId) return
 
+      const parsed = parseNodeExecutionId(executionId)
       expect(parsed).toEqual(nodeIds)
     })
   })

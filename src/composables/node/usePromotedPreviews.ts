@@ -50,6 +50,8 @@ export function usePromotedPreviews(
       leafHost.subgraph.id,
       leafSourceNodeId
     )
+    if (!locatorId) return undefined
+
     const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
     const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
     const reactiveExecutionOutputs =
@@ -124,10 +126,16 @@ export function usePromotedPreviews(
       const interiorNode = leafHost.subgraph.getNodeById(leaf.sourceNodeId)
       if (!interiorNode) return []
 
+      const leafExecutionId = appendNodeExecutionId(
+        leafHostLocator,
+        leaf.sourceNodeId
+      )
+      if (!leafExecutionId) return []
+
       const urls = readReactivePreviewUrls(
         leafHost,
         leaf.sourceNodeId,
-        appendNodeExecutionId(leafHostLocator, leaf.sourceNodeId),
+        leafExecutionId,
         interiorNode
       )
       if (!urls?.length) return []

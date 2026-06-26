@@ -71,7 +71,10 @@ const filteredInputs = computed(() => [
 ])
 
 function inputHasError(input: INodeSlot): boolean {
-  return executionErrorStore.slotHasError(nodeLocatorId.value, input.name)
+  const locatorId = nodeLocatorId.value
+  if (!locatorId) return false
+
+  return executionErrorStore.slotHasError(locatorId, input.name)
 }
 
 const unifiedWrapperClass = computed((): string =>

@@ -34,7 +34,7 @@ import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -162,6 +162,27 @@ export function getWidgetIdentity(
   return { dedupeIdentity, renderKey }
 }
 
+function getProcessedNodeExecutionId(
+  isGraphReady: boolean,
+  rootGraph: LGraph | null,
+  nodeData: VueNodeData
+): NodeExecutionId | null {
+  if (!isGraphReady || !rootGraph) return createNodeExecutionId([nodeData.id])
+
+  return getExecutionIdFromNodeData(rootGraph, nodeData)
+}
+
+function getWidgetNodeLocatorId(
+  nodeData: VueNodeData,
+  bareWidgetId: NodeId | null
+): NodeLocatorId | undefined {
+  if (!bareWidgetId) return undefined
+
+  return (
+    createNodeLocatorId(nodeData.subgraphId ?? null, bareWidgetId) ?? undefined
+  )
+}
+
 export function isWidgetVisible(
   options: IWidgetOptions,
   showAdvanced: boolean,
@@ -186,10 +207,12 @@ export function computeProcessedWidgets({
   const missingModelStore = useMissingModelStore()
   const widgetValueStore = useWidgetValueStore()
 
-  const nodeExecId =
-    isGraphReady && rootGraph
-      ? getExecutionIdFromNodeData(rootGraph, nodeData)
-      : createNodeExecutionId([nodeData.id])
+  const nodeExecId = getProcessedNodeExecutionId(
+    isGraphReady,
+    rootGraph,
+    nodeData
+  )
+  if (!nodeExecId) return []
 
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
 
@@ -296,9 +319,7 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = bareWidgetId
-      ? createNodeLocatorId(nodeData.subgraphId ?? null, bareWidgetId)
-      : undefined
+    const nodeLocatorId = getWidgetNodeLocatorId(nodeData, bareWidgetId)
 
     const simplified: SimplifiedWidget = {
       name: widgetState?.name ?? widget.name,
