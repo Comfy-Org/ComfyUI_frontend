@@ -94,6 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
    * otherwise run.
    */
   let customerRecovery: Promise<void> | null = null
+  let customerRecoveryUid: string | undefined
   const isFetchingBalance = ref(false)
 
   // Balance state
@@ -165,6 +166,7 @@ export const useAuthStore = defineStore('auth', () => {
     // the previous account's memoized recovery and stay stuck on 409s.
     customerCreated.value = false
     customerRecovery = null
+    customerRecoveryUid = undefined
   })
 
   // Listen for token refresh events
@@ -392,16 +394,19 @@ export const useAuthStore = defineStore('auth', () => {
    * request can retry, e.g. after a transient network failure.
    */
   const recoverMissingCustomer = (): Promise<void> => {
-    if (customerRecovery === null) {
+    const sessionUserId = currentUser.value?.uid
+    if (customerRecovery === null || customerRecoveryUid !== sessionUserId) {
       const thisRecovery: Promise<void> = createCustomer()
         .then(() => undefined)
         .catch((error: unknown) => {
           if (customerRecovery === thisRecovery) {
             customerRecovery = null
+            customerRecoveryUid = undefined
           }
           throw error
         })
       customerRecovery = thisRecovery
+      customerRecoveryUid = sessionUserId
     }
     return customerRecovery
   }
