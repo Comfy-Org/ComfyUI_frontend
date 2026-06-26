@@ -6,6 +6,8 @@ import {
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
+import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { api } from '@/scripts/api'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -484,7 +486,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Show version updates',
     tooltip: 'Show updates for new models, and major new features.',
     type: 'boolean',
-    defaultValue: true
+    defaultValue: () =>
+      api.getServerFeature(ServerFeatureFlag.SHOW_VERSION_UPDATES, true)
   },
   {
     id: 'Comfy.ConfirmClear',
