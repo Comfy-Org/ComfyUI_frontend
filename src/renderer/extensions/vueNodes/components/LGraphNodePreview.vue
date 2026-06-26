@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -58,8 +58,8 @@ const {
 
 const widgetStore = useWidgetStore()
 
-// Convert nodeDef into VueNodeData
-const nodeData = computed<VueNodeData>(() => {
+// Convert nodeDef into NodeDataState
+const nodeData = computed<NodeDataState>(() => {
   const widgets = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
     .map(([name, input]) => {

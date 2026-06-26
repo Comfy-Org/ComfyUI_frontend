@@ -1,4 +1,4 @@
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import type {
   INodeInputSlot,
   IWidgetLocator
@@ -25,9 +25,9 @@ function makeFakeInputSlot(
   }
 }
 
-function makeFakeNodeData(inputs: INodeInputSlot[]): VueNodeData {
-  const nodeData: Partial<VueNodeData> = { inputs }
-  return nodeData as VueNodeData
+function makeFakeNodeData(inputs: INodeInputSlot[]): NodeDataState {
+  const nodeData: Partial<NodeDataState> = { inputs }
+  return nodeData as NodeDataState
 }
 
 describe('nodeDataUtils', () => {

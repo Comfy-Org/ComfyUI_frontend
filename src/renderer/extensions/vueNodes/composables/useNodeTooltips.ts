@@ -5,7 +5,7 @@ import type {
 import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type { SafeWidgetData } from '@/types/nodeData'
 import { st, stRaw } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

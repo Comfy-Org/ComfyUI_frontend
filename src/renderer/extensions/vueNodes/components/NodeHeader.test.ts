@@ -10,7 +10,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -19,7 +19,9 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
+const makeNodeData = (
+  overrides: Partial<NodeDataState> = {}
+): NodeDataState => ({
   id: toNodeId('1'),
   title: 'KSampler',
   type: 'KSampler',

@@ -9,10 +9,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-import type {
-  SafeWidgetData,
-  VueNodeData
-} from '@/composables/graph/useGraphNodeManager'
+import type { SafeWidgetData, NodeDataState } from '@/types/nodeData'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -69,7 +66,7 @@ describe('NodeWidgets', () => {
     nodeType: string = 'TestNode',
     widgets: SafeWidgetData[] = [],
     id: NodeId = toNodeId(1)
-  ): VueNodeData => ({
+  ): NodeDataState => ({
     id,
     type: nodeType,
     widgets,
@@ -81,7 +78,7 @@ describe('NodeWidgets', () => {
     outputs: []
   })
 
-  function renderComponent(nodeData?: VueNodeData, setupStores?: () => void) {
+  function renderComponent(nodeData?: NodeDataState, setupStores?: () => void) {
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
     setupStores?.()

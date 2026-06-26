@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type { SafeWidgetData } from '@/types/nodeData'
 import {
   computeProcessedWidgets,
   getWidgetIdentity,

@@ -259,7 +259,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -326,7 +326,7 @@ import NodeWidgets from './NodeWidgets.vue'
 
 // Extended props for main node component
 interface LGraphNodeProps {
-  nodeData: VueNodeData
+  nodeData: NodeDataState
   error?: string | null
 }
 
@@ -730,7 +730,7 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
-// TODO: Surface subgraph info more cleanly in VueNodeData instead of
+// TODO: Surface subgraph info more cleanly in NodeDataState instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 

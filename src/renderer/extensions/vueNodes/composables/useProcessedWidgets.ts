@@ -4,9 +4,9 @@ import type { Component } from 'vue'
 
 import type {
   SafeWidgetData,
-  VueNodeData,
+  NodeDataState,
   WidgetSlotMetadata
-} from '@/composables/graph/useGraphNodeManager'
+} from '@/types/nodeData'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
@@ -79,7 +79,7 @@ interface WidgetUiCallbacks {
 }
 
 interface ComputeProcessedWidgetsOptions {
-  nodeData: VueNodeData | undefined
+  nodeData: NodeDataState | undefined
   graphId: string | undefined
   showAdvanced: boolean
   isGraphReady: boolean
@@ -172,7 +172,7 @@ export function getWidgetIdentity(
 function getProcessedNodeExecutionId(
   isGraphReady: boolean,
   rootGraph: LGraph | null,
-  nodeData: VueNodeData
+  nodeData: NodeDataState
 ): NodeExecutionId | null {
   if (!isGraphReady || !rootGraph) return createNodeExecutionId([nodeData.id])
 
@@ -180,7 +180,7 @@ function getProcessedNodeExecutionId(
 }
 
 function getWidgetNodeLocatorId(
-  nodeData: VueNodeData,
+  nodeData: NodeDataState,
   bareWidgetId: NodeId | null
 ): NodeLocatorId | undefined {
   if (!bareWidgetId) return undefined
@@ -399,7 +399,7 @@ export function computeProcessedWidgets({
 }
 
 export function useProcessedWidgets(
-  nodeDataGetter: () => VueNodeData | undefined
+  nodeDataGetter: () => NodeDataState | undefined
 ) {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()

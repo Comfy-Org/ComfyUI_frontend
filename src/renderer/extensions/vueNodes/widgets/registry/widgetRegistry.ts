@@ -4,7 +4,7 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type { SafeWidgetData } from '@/types/nodeData'
 
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')

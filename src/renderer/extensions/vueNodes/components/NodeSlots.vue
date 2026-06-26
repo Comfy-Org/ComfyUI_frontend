@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
@@ -53,7 +53,7 @@ import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
-  nodeData: VueNodeData
+  nodeData: NodeDataState
   unified?: boolean
 }
 

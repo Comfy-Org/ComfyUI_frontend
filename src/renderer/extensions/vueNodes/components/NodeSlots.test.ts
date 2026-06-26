@@ -8,7 +8,7 @@ import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
@@ -29,7 +29,9 @@ import NodeSlots from './NodeSlots.vue'
 
 const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
+const makeNodeData = (
+  overrides: Partial<NodeDataState> = {}
+): NodeDataState => ({
   id: toNodeId('123'),
   title: 'Test Node',
   type: 'TestType',
@@ -128,7 +130,7 @@ function createTrackingStub(
 }
 
 function renderSlots(
-  nodeData: VueNodeData,
+  nodeData: NodeDataState,
   stubs: SlotComponentStubs = defaultSlotStubs
 ) {
   return render(NodeSlots, {
@@ -141,7 +143,7 @@ function renderSlots(
 }
 
 function renderSlotsWithTracking(
-  nodeData: VueNodeData,
+  nodeData: NodeDataState,
   mountCounts: Map<string, number>,
   trackingTarget: 'InputSlot' | 'OutputSlot'
 ) {

@@ -8,7 +8,7 @@ import {
   shouldRenderAsVue,
   FOR_TESTING
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type { SafeWidgetData } from '@/types/nodeData'
 
 const {
   WidgetButton,

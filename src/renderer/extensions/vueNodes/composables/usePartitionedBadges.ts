@@ -1,7 +1,7 @@
 import { trim } from 'es-toolkit'
 import { computed, toValue } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -105,7 +105,7 @@ function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
   walk(wrapper.subgraph.nodes)
 }
 
-export function usePartitionedBadges(nodeData: VueNodeData) {
+export function usePartitionedBadges(nodeData: NodeDataState) {
   // Use per-node pricing revision to re-compute badges only when this node's pricing updates
   const {
     getRelevantWidgetNames,

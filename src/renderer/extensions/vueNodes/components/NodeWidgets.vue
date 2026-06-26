@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { onErrorCaptured, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataState } from '@/types/nodeData'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -96,7 +96,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
-  nodeData?: VueNodeData
+  nodeData?: NodeDataState
 }
 
 const { nodeData } = defineProps<NodeWidgetsProps>()
