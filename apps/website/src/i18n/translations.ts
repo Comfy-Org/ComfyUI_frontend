@@ -1189,27 +1189,72 @@ const translations = {
   'buildWhat.row2a': { en: "DOESN'T EXIST", 'zh-CN': '尚不存在的' },
   'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物' },
 
-  // PriceSection
-  'pricing.title': { en: 'Pricing', 'zh-CN': '价格' },
+  // PricingSection
+  'pricing.title': { en: 'Choose a plan', 'zh-CN': '价格' },
   'pricing.subtitle': {
     en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
+  'pricing.period.monthly': { en: 'Monthly', 'zh-CN': '按月' },
+  'pricing.period.yearly': {
+    en: 'Yearly (Up to 20% off)',
+    'zh-CN': '按年（最高 20% 优惠）'
+  },
+  'pricing.period.billedMonthly': { en: 'Billed monthly', 'zh-CN': '按月计费' },
+  'pricing.period.billedYearly': {
+    en: '{total} billed yearly',
+    'zh-CN': '按年计费 {total}'
+  },
+  'pricing.savePercent': {
+    en: 'Save {pct}% ({amount})',
+    'zh-CN': '节省 {pct}%（{amount}）'
+  },
+  'pricing.team.videosEstimate': {
+    en: 'Generates ~{count} 5s videos*',
+    'zh-CN': '约可生成 {count} 个 5 秒视频*'
+  },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
+  'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+
+  'pricing.feature.shortRuntime': {
+    en: '30 minute max workflow runtime',
+    'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'pricing.feature.addCredits': {
+    en: 'Add more credits anytime',
+    'zh-CN': '可随时增加积分'
+  },
+  'pricing.feature.importModels': {
+    en: 'Import your own models',
+    'zh-CN': '导入你自己的模型'
+  },
+  'pricing.feature.longRuntime': {
+    en: 'Longer workflow runtime (up to 1 hr)',
+    'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+  'pricing.feature.inviteMembers': {
+    en: 'Invite members',
+    'zh-CN': '邀请成员'
+  },
+  'pricing.feature.concurrentWorkflows': {
+    en: 'Members can run workflows concurrently',
+    'zh-CN': '成员可并行运行工作流'
+  },
+  'pricing.feature.sharedCreditPool': {
+    en: 'Shared credit pool for all members',
+    'zh-CN': '所有成员共享积分池'
+  },
+  'pricing.feature.roleBasedPermissions': {
+    en: 'Role-based permissions',
+    'zh-CN': '基于角色的权限'
+  },
 
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
-  'pricing.plan.free.summary': {
-    en: "Explore Comfy's possibilities",
-    'zh-CN': '探索 Comfy 的可能性'
-  },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
-  'pricing.plan.free.credits': {
-    en: 'Includes 400 monthly credits',
-    'zh-CN': '每月包含 400 积分'
-  },
+  'pricing.plan.free.credits': { en: '400', 'zh-CN': '400' },
   'pricing.plan.free.estimate': {
-    en: '~35 5s videos*',
+    en: 'Generates ~35 5s videos*',
     'zh-CN': '约可生成 35 个 5 秒视频*'
   },
   'pricing.plan.free.cta': { en: 'START FREE', 'zh-CN': '免费开始' },
@@ -1223,113 +1268,88 @@ const translations = {
   },
 
   'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },
-  'pricing.plan.standard.summary': {
-    en: 'For individuals creating workflows',
-    'zh-CN': '面向个人工作流创作者'
-  },
   'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
-  'pricing.plan.standard.credits': {
-    en: 'Includes 4,200 monthly credits with top-ups available',
-    'zh-CN': '每月包含 4,200 积分，并支持充值'
-  },
+  'pricing.plan.standard.yearlyPrice': { en: '$16', 'zh-CN': '$16' },
+  'pricing.plan.standard.yearlyTotal': { en: '$192', 'zh-CN': '$192' },
+  'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
   'pricing.plan.standard.estimate': {
-    en: '~380 5s videos*',
+    en: 'Generates ~380 5s videos*',
     'zh-CN': '约可生成 380 个 5 秒视频*'
   },
   'pricing.plan.standard.cta': {
     en: 'SUBSCRIBE TO STANDARD',
     'zh-CN': '订阅标准版'
   },
-  'pricing.plan.standard.featureIntro': {
-    en: 'Everything in Free, plus:',
-    'zh-CN': '包含免费版全部能力，另加：'
-  },
-  'pricing.plan.standard.feature1': {
-    en: '30-minute max runtime per workflow',
-    'zh-CN': '单个工作流最长运行 30 分钟'
-  },
-  'pricing.plan.standard.feature2': {
-    en: 'Add more credits anytime',
-    'zh-CN': '可随时增加积分'
-  },
-  'pricing.plan.standard.feature3': {
-    en: 'Run 1 workflow concurrently (via API)',
-    'zh-CN': '通过 API 并发运行 1 个工作流'
-  },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
-  'pricing.plan.creator.summary': {
-    en: 'Small teams building fine-tuned, repeatable workflows',
-    'zh-CN': '小团队构建精细调优、可复用的工作流'
-  },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
-  'pricing.plan.creator.credits': {
-    en: 'Includes 7,400 monthly credits with top-ups available',
-    'zh-CN': '每月包含 7,400 积分，并支持充值'
-  },
+  'pricing.plan.creator.yearlyPrice': { en: '$28', 'zh-CN': '$28' },
+  'pricing.plan.creator.yearlyTotal': { en: '$336', 'zh-CN': '$336' },
+  'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
   'pricing.plan.creator.estimate': {
-    en: '~670 5s videos*',
+    en: 'Generates ~670 5s videos*',
     'zh-CN': '约可生成 670 个 5 秒视频*'
   },
   'pricing.plan.creator.cta': {
     en: 'SUBSCRIBE TO CREATOR',
     'zh-CN': '订阅创作者版'
   },
-  'pricing.plan.creator.featureIntro': {
-    en: 'Everything in Standard, plus:',
-    'zh-CN': '包含标准版全部能力，另加：'
-  },
-  'pricing.plan.creator.feature1': {
-    en: 'Import your own LoRAs',
-    'zh-CN': '导入你自己的 LoRA'
-  },
-  'pricing.plan.creator.feature2': {
-    en: 'Run up to 3 workflows concurrently (via API)',
-    'zh-CN': '通过 API 最多并发运行 3 个工作流'
-  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
-  'pricing.plan.pro.summary': {
-    en: 'For growing teams running Comfy in production',
-    'zh-CN': '面向在生产环境使用 Comfy 的成长型团队'
-  },
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
-  'pricing.plan.pro.credits': {
-    en: 'Includes 21,100 monthly credits with top-ups available',
-    'zh-CN': '每月包含 21,100 积分，并支持充值'
-  },
+  'pricing.plan.pro.yearlyPrice': { en: '$80', 'zh-CN': '$80' },
+  'pricing.plan.pro.yearlyTotal': { en: '$960', 'zh-CN': '$960' },
+  'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
   'pricing.plan.pro.estimate': {
-    en: '~1,915 5s videos*',
+    en: 'Generates ~1,915 5s videos*',
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
-  'pricing.plan.pro.featureIntro': {
-    en: 'Everything in Creator, plus:',
-    'zh-CN': '包含创作者版全部能力，另加：'
+
+  'pricing.plan.team.label': { en: 'TEAM', 'zh-CN': '团队版' },
+  'pricing.plan.team.cta': {
+    en: 'SUBSCRIBE TO TEAM',
+    'zh-CN': '订阅团队版'
   },
-  'pricing.plan.pro.feature1': {
-    en: 'Longer workflow runtime (up to 1 hour)',
-    'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  'pricing.plan.team.everythingInProPlus': {
+    en: 'Everything in Pro, plus:',
+    'zh-CN': '包含专业版的全部功能，另加：'
   },
-  'pricing.plan.pro.feature2': {
-    en: 'Run up to 5 workflows concurrently (via API)',
-    'zh-CN': '通过 API 最多并发运行 5 个工作流'
+  'pricing.team.description': {
+    en: 'Built for teams collaborating on workflows together.',
+    'zh-CN': '为协作开发工作流的团队打造。'
+  },
+  'pricing.plan.team.comingSoon': {
+    en: 'Coming soon...',
+    'zh-CN': '即将推出…'
+  },
+  'pricing.plan.team.sharedWorkflowsAndAssets': {
+    en: 'Shared workflows & assets',
+    'zh-CN': '共享工作流与资产'
+  },
+  'pricing.plan.team.projects': {
+    en: 'Projects',
+    'zh-CN': '项目'
+  },
+  'pricing.plan.feature.status.coming': {
+    en: 'Coming soon',
+    'zh-CN': '即将推出'
+  },
+  'pricing.plan.feature.status.included': {
+    en: 'Included',
+    'zh-CN': '已包含'
+  },
+  'pricing.plan.feature.status.notIncluded': {
+    en: 'Not included',
+    'zh-CN': '未包含'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
-  'pricing.enterprise.heading': {
-    en: 'Looking for Enterprise Solutions?',
-    'zh-CN': '在寻找企业级解决方案？'
-  },
   'pricing.enterprise.description': {
-    en: 'For teams running Comfy in production, and at scale.',
-    'zh-CN': '面向在生产环境和规模化场景中运行 Comfy 的团队。'
+    en: 'Need more members? Looking for more flexibility or custom features?',
+    'zh-CN': '需要更多成员？想要更多灵活性或定制功能？'
   },
-  'pricing.enterprise.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
-  'pricing.enterprise.featureIntro': {
-    en: 'Everything in Pro, plus:',
-    'zh-CN': '包含专业版全部能力，另加：'
-  },
+  'pricing.enterprise.cta': { en: 'Contact Us', 'zh-CN': '联系我们' },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'
@@ -1357,6 +1377,10 @@ const translations = {
     en: "What's included\nin the Comfy plan",
     'zh-CN': 'Comfy 计划\n包含哪些内容'
   },
+  'pricing.included.comingSoon': {
+    en: '(coming soon)',
+    'zh-CN': '（即将推出）'
+  },
   'pricing.included.feature1.title': {
     en: 'Machine Setup',
     'zh-CN': '机器配置'
@@ -1370,9 +1394,9 @@ const translations = {
     'zh-CN': '单个任务时限'
   },
   'pricing.included.feature2.description': {
-    en: 'On our Standard and Creator plans, each workflow has a maximum run time of 30 minutes. On the Pro plan, the limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
+    en: 'Each workflow run has a maximum duration of 30 minutes. On the Pro plan, the time limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
     'zh-CN':
-      'Standard 和 Creator 计划下，每个工作流最长运行时间为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
+      '每个工作流运行的最长时长为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
   },
   'pricing.included.feature3.title': {
     en: 'Usage',
@@ -1397,9 +1421,9 @@ const translations = {
     'zh-CN': '随时加购积分'
   },
   'pricing.included.feature5.description': {
-    en: 'Purchase additional credits at any time. Top-up credits are valid for 1 year from the date of purchase and do not roll over with your monthly plan.',
+    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
     'zh-CN':
-      '可随时购买额外积分。充值积分自购买之日起 1 年内有效，且不会随月度计划结转。'
+      '可随时购买额外积分。未使用的充值积分将自动顺延至下个月，最长可保留 1 年。'
   },
   'pricing.included.feature6.title': {
     en: 'Pre-installed models',
@@ -1416,16 +1440,16 @@ const translations = {
   'pricing.included.feature7.description': {
     en: "Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. We're expanding support regularly based on demand and compatibility.",
     'zh-CN':
-      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点，并根据需求和兼容性持续扩展支持范围。'
+      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点。我们会根据需求和兼容性持续扩展支持范围。'
   },
   'pricing.included.feature8.title': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and Comfy Desktop. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across <strong>Comfy Cloud and local ComfyUI</strong>. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和 Comfy 桌面版间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 <strong>Comfy Cloud 和本地 ComfyUI</strong> 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -1445,21 +1469,17 @@ const translations = {
       'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
   },
   'pricing.included.feature11.title': {
-    en: 'Run Workflows via API',
-    'zh-CN': '通过 API 运行工作流'
-  },
-  'pricing.included.feature11.description': {
-    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines. For higher rate limits, reach out to <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
-    'zh-CN':
-      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
-  },
-  'pricing.included.feature12.title': {
     en: 'Parallel job execution',
     'zh-CN': '并行任务执行'
   },
-  'pricing.included.feature12.description': {
+  'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
+  },
+
+  'pricing.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
   },
 
   // VideoPlayer

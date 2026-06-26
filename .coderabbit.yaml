@@ -15,6 +15,11 @@ reviews:
       - github-actions[bot]
   pre_merge_checks:
     override_requested_reviewers_only: true
+    # Explicitly disable the built-in docstring coverage check, which is
+    # enabled via organization-level settings. This repo opts out at the
+    # repo level without affecting other org repos.
+    docstrings:
+      mode: 'off'
     custom_checks:
       - name: End-to-end regression coverage for fixes
         mode: error

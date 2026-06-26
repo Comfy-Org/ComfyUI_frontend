@@ -1,7 +1,13 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+
+const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
+  vi.fn((nodeLocatorId: string) => nodeLocatorId)
+)
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => `translated:${key}`),
@@ -10,6 +16,12 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+  })
 }))
 
 import { useMissingModelStore } from './missingModelStore'
@@ -39,6 +51,9 @@ describe('missingModelStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.restoreAllMocks()
+    mockNodeLocatorIdToNodeExecutionId.mockImplementation(
+      (nodeLocatorId: string) => nodeLocatorId
+    )
   })
 
   describe('setMissingModels', () => {
@@ -146,7 +161,9 @@ describe('missingModelStore', () => {
         makeModelCandidate('model_a.safetensors', { nodeId: '5' })
       ])
 
-      expect(store.hasMissingModelOnNode('5')).toBe(true)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 5))).toBe(
+        true
+      )
     })
 
     it('returns false when node has no missing model', () => {
@@ -155,12 +172,30 @@ describe('missingModelStore', () => {
         makeModelCandidate('model_a.safetensors', { nodeId: '5' })
       ])
 
-      expect(store.hasMissingModelOnNode('99')).toBe(false)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 99))).toBe(
+        false
+      )
     })
 
     it('returns false when no models are missing', () => {
       const store = useMissingModelStore()
-      expect(store.hasMissingModelOnNode('1')).toBe(false)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 1))).toBe(
+        false
+      )
+    })
+
+    it('compares subgraph locators against missing model execution IDs', () => {
+      const store = useMissingModelStore()
+      const locatorId = createNodeLocatorId(
+        '11111111-1111-1111-1111-111111111111',
+        63
+      )
+      mockNodeLocatorIdToNodeExecutionId.mockReturnValueOnce('65:70:63')
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '65:70:63' })
+      ])
+
+      expect(store.hasMissingModelOnNode(locatorId)).toBe(true)
     })
   })
 

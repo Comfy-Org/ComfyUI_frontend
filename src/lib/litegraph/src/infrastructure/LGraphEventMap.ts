@@ -1,5 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -49,6 +49,13 @@ export interface LGraphEventMap {
   'open-subgraph': {
     subgraph: Subgraph
     closingGraph: LGraph | Subgraph
+  }
+
+  /**
+   * Fires on the owning graph before per-node teardown begins
+   */
+  'node:before-removed': {
+    node: LGraphNode
   }
 
   'node:property:changed': {

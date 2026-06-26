@@ -1,60 +1,81 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { cn } from '@comfyorg/tailwind-utils'
+import { Check, Clock, X } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
 
+type PlanFeatureType = 'checked' | 'coming'
+
 interface PlanFeature {
   text: TranslationKey
+  type?: PlanFeatureType
+  included?: boolean
 }
 
-const {
-  features,
-  featureIntroKey,
-  nextUpKey,
-  andMoreKey,
-  nextUpClass = 'text-primary-comfy-canvas/80 mt-4 text-sm',
-  andMoreClass = 'text-primary-comfy-canvas mt-4 text-sm',
-  listGap = 'space-y-2',
-  introMargin = 'mb-3',
-  locale = 'en'
-} = defineProps<{
+export interface PlanFeatureGroup {
+  titleKey?: TranslationKey
   features: PlanFeature[]
-  featureIntroKey?: TranslationKey
-  nextUpKey?: TranslationKey
-  andMoreKey?: TranslationKey
-  nextUpClass?: string
-  andMoreClass?: string
-  listGap?: string
-  introMargin?: string
+}
+
+const { locale = 'en' } = defineProps<{
+  features: PlanFeatureGroup[]
   locale?: Locale
 }>()
 </script>
 
 <template>
-  <p
-    v-if="featureIntroKey"
-    :class="cn('text-primary-comfy-canvas text-sm font-semibold', introMargin)"
-  >
-    {{ t(featureIntroKey, locale) }}
-  </p>
-  <ul :class="listGap">
-    <li
-      v-for="feature in features"
-      :key="feature.text"
-      class="flex items-start gap-2"
+  <div class="flex flex-col gap-5">
+    <div
+      v-for="(group, groupIndex) in features"
+      :key="group.titleKey ?? groupIndex"
+      class="flex flex-col gap-2"
     >
-      <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-      <span class="text-primary-comfy-canvas text-sm">
-        {{ t(feature.text, locale) }}
-      </span>
-    </li>
-  </ul>
-  <p v-if="nextUpKey" :class="nextUpClass">
-    {{ t(nextUpKey, locale) }}
-  </p>
-  <p v-if="andMoreKey" :class="andMoreClass">
-    {{ t(andMoreKey, locale) }}
-  </p>
+      <p v-if="group.titleKey" class="text-sm text-primary-comfy-canvas">
+        {{ t(group.titleKey, locale) }}
+      </p>
+      <ul class="space-y-2">
+        <li
+          v-for="feature in group.features"
+          :key="feature.text"
+          class="flex items-start gap-2"
+        >
+          <Clock
+            v-if="feature.type === 'coming'"
+            class="text-primary-warm-gray mt-0.5 size-4 shrink-0"
+            aria-hidden="true"
+          />
+          <Check
+            v-else-if="feature.included !== false"
+            class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
+            aria-hidden="true"
+          />
+          <X
+            v-else
+            class="mt-0.5 size-4 shrink-0 text-primary-comfy-canvas/40"
+            aria-hidden="true"
+          />
+          <span class="sr-only">
+            {{
+              feature.type === 'coming'
+                ? t('pricing.plan.feature.status.coming', locale)
+                : feature.included === false
+                  ? t('pricing.plan.feature.status.notIncluded', locale)
+                  : t('pricing.plan.feature.status.included', locale)
+            }}:
+          </span>
+          <span
+            class="ppformula-text-center text-sm"
+            :class="
+              feature.type === 'coming' || feature.included === false
+                ? 'text-primary-warm-gray'
+                : 'text-primary-warm-white'
+            "
+          >
+            {{ t(feature.text, locale) }}
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
 </template>
