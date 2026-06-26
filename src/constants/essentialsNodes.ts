@@ -14,7 +14,8 @@ export const ESSENTIALS_ICON_OVERRIDES: Record<string, string> = {
   ImageCrop: 'icon-s1.3-[lucide--crop]',
   VideoCrop: 'icon-s1.3-[lucide--crop]',
   KlingLipSyncAudioToVideoNode: 'icon-s1.3-[lucide--mic-vocal]',
-  WebcamCapture: 'icon-s1.3-[lucide--camera]'
+  WebcamCapture: 'icon-s1.3-[lucide--camera]',
+  ComfySwitchNode: 'icon-s1.3-[lucide--merge]'
 }
 
 export const ESSENTIALS_CATEGORIES = [
@@ -44,7 +45,8 @@ export const ESSENTIALS_NODES: Record<EssentialsCategory, readonly string[]> = {
     'SaveVideo',
     'SaveGLB',
     'PrimitiveStringMultiline',
-    'PreviewImage'
+    'PreviewImage',
+    'ComfySwitchNode'
   ],
   'text generation': ['OpenAIChatNode'],
   'image generation': [
