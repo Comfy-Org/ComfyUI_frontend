@@ -516,6 +516,24 @@ describe('PostHogTelemetryProvider', () => {
       )
       expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
     })
+
+    it('does not stamp the person property when the closed event is disabled', async () => {
+      hoisted.refs.remoteConfig.value = {
+        telemetry_disabled_events: [TelemetryEvents.CANCELLATION_FLOW_CLOSED]
+      }
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackCancellationFlowClosed({ outcome: 'reconsidered' })
+
+      expect(hoisted.mockCapture).not.toHaveBeenCalledWith(
+        TelemetryEvents.CANCELLATION_FLOW_CLOSED,
+        expect.anything()
+      )
+      expect(hoisted.mockPeopleSet).not.toHaveBeenCalledWith({
+        cancellation_reconsidered_at: expect.any(String)
+      })
+    })
   })
 
   describe('disabled events', () => {

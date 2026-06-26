@@ -547,6 +547,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
     if (metadata.outcome !== 'reconsidered') return
     if (!this.posthog || !this.isEnabled) return
+    if (this.disabledEvents.has(TelemetryEvents.CANCELLATION_FLOW_CLOSED))
+      return
     try {
       this.posthog.people.set({
         cancellation_reconsidered_at: new Date().toISOString()
