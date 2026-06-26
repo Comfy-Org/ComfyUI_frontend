@@ -22,15 +22,6 @@
       </span>
       <div class="flex shrink-0 items-center">
         <Button
-          v-if="card.isSubgraphNode"
-          variant="secondary"
-          size="sm"
-          class="shrink-0 focus-visible:ring-inset"
-          @click.stop="handleEnterSubgraph"
-        >
-          {{ t('rightSidePanel.enterSubgraph') }}
-        </Button>
-        <Button
           v-if="hasRuntimeError"
           variant="textonly"
           size="icon-sm"
@@ -202,7 +193,6 @@ const { card, compact = false } = defineProps<{
 
 const emit = defineEmits<{
   locateNode: [nodeId: string]
-  enterSubgraph: [nodeId: string]
   copyToClipboard: [text: string]
 }>()
 
@@ -230,12 +220,6 @@ function toggleRuntimeDetails() {
 function handleLocateNode() {
   if (card.nodeId) {
     emit('locateNode', card.nodeId)
-  }
-}
-
-function handleEnterSubgraph() {
-  if (card.nodeId) {
-    emit('enterSubgraph', card.nodeId)
   }
 }
 

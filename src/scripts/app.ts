@@ -61,6 +61,8 @@ import {
   ComponentWidgetImpl,
   DOMWidgetImpl
 } from '@/scripts/domWidget'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -75,6 +77,10 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import {
+  getAncestorExecutionIds,
+  tryNormalizeNodeExecutionId
+} from '@/types/nodeIdentification'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -770,7 +776,10 @@ export class ComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       const nodeOutputStore = useNodeOutputStore()
-      const executionId = String(detail.display_node || detail.node)
+      const executionId = tryNormalizeNodeExecutionId(
+        detail.display_node || detail.node
+      )
+      if (!executionId) return
 
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
         merge: detail.merge
@@ -787,20 +796,13 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      // Check if this is an auth-related error or credits-related error
-      if (
-        detail.exception_message?.includes(
-          'Unauthorized: Please login first to use this node.'
-        )
-      ) {
-        useDialogService().showApiNodesSignInDialog([detail.node_type])
-      } else if (
-        detail.exception_message?.includes(
-          'Payment Required: Please add credits to your account to use this node.'
-        )
-      ) {
-        useDialogService().showTopUpCreditsDialog({
-          isInsufficientCredits: true
+      const precondition = resolveAccountPrecondition({
+        exceptionType: detail.exception_type ?? '',
+        exceptionMessage: detail.exception_message ?? ''
+      })
+      if (precondition) {
+        useAccountPreconditionDialog().open(precondition, {
+          nodeType: detail.node_type
         })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
@@ -815,16 +817,17 @@ export class ComfyApp {
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
+      const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
+      if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       // Ensure clean up if `executing` event is missed.
-      revokePreviewsByExecutionId(displayNodeId)
+      revokePreviewsByExecutionId(displayNodeExecutionId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
-      const nodeParents = displayNodeId.split(':')
-      for (let i = 1; i <= nodeParents.length; i++) {
-        setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
-          blobUrl
-        ])
+      for (const executionId of getAncestorExecutionIds(
+        displayNodeExecutionId
+      )) {
+        setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
       releaseSharedObjectUrl(blobUrl)
     })
@@ -1697,6 +1700,24 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            const preconditionResponseError =
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object'
+                ? error.response.error
+                : undefined
+            const promptPrecondition = preconditionResponseError
+              ? resolveAccountPrecondition({
+                  exceptionType: preconditionResponseError.type,
+                  exceptionMessage: preconditionResponseError.message
+                })
+              : undefined
+            // Account preconditions (sign-in, subscription, credits) open their
+            // own modal and must stay out of the error panel and error count.
+            if (promptPrecondition) {
+              useAccountPreconditionDialog().open(promptPrecondition)
+              console.error(error)
+              break
+            }
             if (
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&

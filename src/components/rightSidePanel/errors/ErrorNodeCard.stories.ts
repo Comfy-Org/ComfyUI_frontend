@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',
@@ -23,9 +24,8 @@ type Story = StoryObj<typeof meta>
 const singleErrorCard: ErrorCardData = {
   id: 'node-10',
   title: 'CLIPTextEncode',
-  nodeId: '10',
+  nodeId: createNodeExecutionId([10]),
   nodeTitle: 'CLIP Text Encode (Prompt)',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'Required input "text" is missing.',
@@ -37,9 +37,8 @@ const singleErrorCard: ErrorCardData = {
 const multipleErrorsCard: ErrorCardData = {
   id: 'node-24',
   title: 'VAEDecode',
-  nodeId: '24',
+  nodeId: createNodeExecutionId([24]),
   nodeTitle: 'VAE Decode',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'Required input "samples" is missing.',
@@ -55,9 +54,8 @@ const multipleErrorsCard: ErrorCardData = {
 const runtimeErrorCard: ErrorCardData = {
   id: 'exec-45',
   title: 'KSampler',
-  nodeId: '45',
+  nodeId: createNodeExecutionId([45]),
   nodeTitle: 'KSampler',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'OutOfMemoryError: CUDA out of memory. Tried to allocate 1.2GB.',
@@ -68,20 +66,6 @@ const runtimeErrorCard: ErrorCardData = {
         'RuntimeError: CUDA out of memory.'
       ].join('\n'),
       isRuntimeError: true
-    }
-  ]
-}
-
-const subgraphErrorCard: ErrorCardData = {
-  id: 'node-3:15',
-  title: 'KSampler',
-  nodeId: '3:15',
-  nodeTitle: 'Nested KSampler',
-  isSubgraphNode: true,
-  errors: [
-    {
-      message: 'Latent input is required.',
-      details: ''
     }
   ]
 }
@@ -100,13 +84,6 @@ const promptOnlyCard: ErrorCardData = {
 export const SingleValidationError: Story = {
   args: {
     card: singleErrorCard
-  }
-}
-
-/** Subgraph node error — shows "Enter subgraph" button */
-export const WithEnterSubgraphButton: Story = {
-  args: {
-    card: subgraphErrorCard
   }
 }
 

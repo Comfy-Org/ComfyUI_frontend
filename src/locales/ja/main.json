@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "お使いのAPIトークンにはこのリソースへのアクセス権がありません。トークンの権限を確認してください。",
     "errorUserTokenInvalid": "保存されているAPIトークンが無効または期限切れです。設定でトークンを更新してください。",
     "failedToCreateNode": "ノードの作成に失敗しました。再試行するか、詳細はコンソールをご確認ください。",
+    "failedToSetModelValue": "ノードは追加されましたが、モデルを自動設定できませんでした。詳細はコンソールをご確認ください。",
     "fileFormats": "ファイル形式",
     "fileName": "ファイル名",
     "fileSize": "ファイルサイズ",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？",
       "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
       "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。",
-      "generic": "サインイン中に問題が発生しました。もう一度お試しください。"
+      "generic": "サインイン中に問題が発生しました。もう一度お試しください。",
+      "signupBlocked": "現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。"
     },
     "login": {
       "andText": "および",
@@ -345,6 +347,17 @@
     "width": "幅",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "すべてクリア",
+    "clickRegionToEdit": "編集する領域をクリックしてください。",
+    "colors": "カラーパレット",
+    "descLabel": "説明",
+    "descPlaceholder": "この領域の説明",
+    "textLabel": "テキスト",
+    "textPlaceholder": "表示するテキスト（そのまま）",
+    "typeObj": "obj",
+    "typeText": "テキスト"
   },
   "breadcrumbsMenu": {
     "app": "アプリ",
@@ -755,6 +768,13 @@
     "creditsAvailable": "利用可能なクレジット",
     "details": "詳細",
     "eventType": "イベントタイプ",
+    "eventTypes": {
+      "accountCreated": "アカウント作成",
+      "apiNodeUsage": "パートナーノード利用",
+      "apiUsage": "API利用",
+      "creditAdded": "クレジット追加",
+      "gpuUsage": "GPU利用"
+    },
     "faqs": "よくある質問",
     "invoiceHistory": "請求履歴",
     "lastUpdated": "最終更新",
@@ -811,6 +831,7 @@
   },
   "dataTypes": {
     "*": "*",
+    "ARRAY": "配列",
     "AUDIO": "オーディオ",
     "AUDIO_ENCODER": "オーディオエンコーダ",
     "AUDIO_ENCODER_OUTPUT": "オーディオエンコーダ出力",
@@ -818,11 +839,13 @@
     "BACKGROUND_REMOVAL": "背景除去",
     "BOOLEAN": "ブール",
     "BOUNDING_BOX": "バウンディングボックス",
+    "BOUNDING_BOXES": "バウンディングボックス",
     "CAMERA_CONTROL": "カメラコントロール",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
     "COLOR": "カラー",
+    "COLORS": "色",
     "COMBO": "コンボ",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -832,6 +855,7 @@
     "CURVE": "カーブ",
     "DA3_GEOMETRY": "DA3_GEOMETRY",
     "DA3_MODEL": "DA3_MODEL",
+    "DICT": "辞書",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FACE_DETECTION_MODEL": "顔検出モデル",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
@@ -871,6 +895,7 @@
     "LORA_MODEL": "LoRAモデル",
     "LOSS_MAP": "損失マップ",
     "LUMA_CONCEPTS": "Lumaコンセプト",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "Luma参照",
     "MASK": "マスク",
     "MESH": "メッシュ",
@@ -1828,6 +1853,35 @@
     "zoomIn": "拡大",
     "zoomOptions": "ズームオプション",
     "zoomOut": "縮小"
+  },
+  "hdrViewer": {
+    "channel": "チャンネル",
+    "channels": {
+      "a": "アルファ",
+      "b": "B",
+      "g": "G",
+      "luminance": "輝度",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "クリップ警告",
+    "dither": "ディザ",
+    "exposure": "露出",
+    "failedToLoad": "HDR画像の読み込みに失敗しました",
+    "fitView": "フィット",
+    "hdrImage": "HDR画像",
+    "histogram": "ヒストグラム",
+    "inf": "Inf",
+    "max": "最大",
+    "mean": "平均",
+    "min": "最小",
+    "nan": "NaN",
+    "normalizeExposure": "自動露出",
+    "openInHdrViewer": "HDRビューアで開く",
+    "resolution": "解像度",
+    "sourceGamut": "ソースガマット",
+    "stdDev": "標準偏差",
+    "title": "HDRビューア"
   },
   "help": {
     "helpCenterMenu": "ヘルプセンターメニュー",
@@ -2956,6 +3010,10 @@
     "uploadError": "ペインター画像のアップロードに失敗しました: {status} - {statusText}",
     "width": "幅"
   },
+  "palette": {
+    "addColor": "色を追加",
+    "swatchTitle": "クリックで編集 · ドラッグで並べ替え · 右クリックで削除"
+  },
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
     "downloadingModel": "モデルをダウンロード中...",
@@ -3040,7 +3098,6 @@
     "color": "ノードカラー",
     "editSubgraph": "サブグラフを編集",
     "editTitle": "タイトルを編集",
-    "enterSubgraph": "サブグラフに入る",
     "errorHelp": "詳細なヘルプについては、{github} または {support} をご利用ください",
     "errorHelpGithub": "GitHub イシューを提出",
     "errorHelpSupport": "サポートに連絡",
@@ -3660,6 +3717,10 @@
     "addApiCredits": "APIクレジットを追加",
     "addCredits": "クレジットを追加",
     "addCreditsLabel": "いつでもクレジット追加可能",
+    "additionalCredits": "追加クレジット",
+    "additionalCreditsInUse": "使用中",
+    "additionalCreditsInfo": "追加クレジットについて",
+    "additionalCreditsTooltip": "プランに追加して購入したクレジット。月間クレジットがなくなった後に使用されます。購入から1年後に有効期限が切れます。",
     "benefits": {
       "benefit1": "パートナーノード用月間クレジット — 必要に応じて追加購入可能",
       "benefit1FreeTier": "毎月のクレジット増加、いつでもチャージ可能",
@@ -3681,7 +3742,6 @@
       "keepSubscription": "サブスクリプションを維持する",
       "title": "サブスクリプションのキャンセル"
     },
-    "cancelSubscription": "サブスクリプションをキャンセル",
     "cancelSuccess": "サブスクリプションが正常にキャンセルされました",
     "canceled": "キャンセル済み",
     "canceledCard": {
@@ -3694,13 +3754,36 @@
     "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",
     "contactUs": "お問い合わせ",
     "creditSliderSave": "{percent}%（{amount}）を節約",
+    "creditsLeftOfTotal": "{total} 中 {remaining} 残り",
     "creditsRemainingThisMonth": "今月残りのクレジット",
     "creditsRemainingThisYear": "今年残りのクレジット",
+    "creditsUsed": "{used} 使用済み",
     "creditsYouveAdded": "追加したクレジット",
     "currentPlan": "現在のプラン",
     "customLoRAsLabel": "独自のLoRAをインポート",
     "description": "あなたに最適なプランを選択してください",
     "descriptionWorkspace": "ワークスペースに最適なプランを選択してください",
+    "downgrade": {
+      "body": "このワークスペースの他のメンバーはすぐに削除されます。",
+      "confirm": "プランを変更",
+      "confirmationPhrase": "理解しました",
+      "confirmationPrompt": "確認のため「{phrase}」と入力してください。",
+      "failed": "プランの変更に失敗しました",
+      "failedAfterMemberRemoval": "チームメンバーは削除されましたが、プランの変更が完了しませんでした。再度お試しいただくか、サポートまでご連絡ください。",
+      "memberRemovalFailed": "{email} をチームから削除できませんでした。一部のメンバーはすでに削除されている可能性があり、プランは変更されませんでした。",
+      "notAllowed": "このプラン変更は利用できません",
+      "paymentMethodRequired": "プランを変更するにはお支払い方法が必要です",
+      "paymentPageBlocked": "お支払いページを開けませんでした。再度お試しください。",
+      "title": "{plan}プランに変更しますか？"
+    },
+    "enterprise": {
+      "cta": "詳細を見る",
+      "flexibility": "より柔軟な対応やカスタム機能をご希望ですか？",
+      "name": "エンタープライズ",
+      "needMoreMembers": "さらに多くのメンバーが必要ですか？",
+      "reachOut": "ぜひご連絡ください。お打ち合わせを調整いたします。"
+    },
+    "everythingInPlus": "{plan}のすべて、さらに：",
     "expiresDate": "{date} に期限切れ",
     "freeTier": {
       "description": "無料プランには、Comfy Cloudをお試しいただける毎月{credits}クレジットが含まれています。",
@@ -3747,45 +3830,91 @@
     "messageSupport": "サポートに連絡",
     "monthly": "月額",
     "monthlyBonusDescription": "月間クレジットボーナス",
+    "monthlyCredits": "月間クレジット",
     "monthlyCreditsInfo": "これらのクレジットは毎月リフレッシュされ、繰り越しはできません",
     "monthlyCreditsLabel": "月間クレジット",
     "monthlyCreditsPerMemberLabel": "月間クレジット / メンバー",
     "monthlyCreditsRollover": "これらのクレジットは翌月に繰り越されます",
+    "monthlyCreditsUsedUpDescription": "現在、追加クレジットが消費されています。",
+    "monthlyCreditsUsedUpTitle": "月間クレジットが使い切られました。{date}に補充されます",
+    "monthlyCreditsUsedUpTitleNoDate": "月間クレジットが使い切られました",
+    "monthlyUsageProgress": "月間クレジット {total} 中 {used} 使用済み",
     "mostPopular": "最も人気",
     "needTeamWorkspace": "チームワークスペースが必要ですか？",
     "nextBillingCycle": "次の請求サイクル",
     "nextMonthInvoice": "翌月の請求書",
+    "outOfCreditsDescription": "生成を続けるにはクレジットを追加してください。",
+    "outOfCreditsTitle": "クレジットがありません。{date}に補充されます",
+    "outOfCreditsTitleNoDate": "クレジットがありません",
     "partnerNodesBalance": "\"パートナーノード\" クレジット残高",
     "partnerNodesCredits": "パートナーノードクレジット",
     "partnerNodesDescription": "商用/独自モデルの実行用",
     "perMonth": "USD / 月",
+    "personalHeader": "個人プランは個人利用専用です。{action}",
+    "personalHeaderAction": "チームメンバーを追加するには、チームプランにご加入ください。",
     "personalWorkspace": "個人ワークスペース",
+    "planScope": {
+      "personal": "個人向け",
+      "team": "チーム向け"
+    },
     "plansAndPricing": "プランと価格",
     "plansForWorkspace": "{workspace} のプラン",
     "prepaidCreditsInfo": "別途購入した有効期限のないクレジット",
     "prepaidDescription": "プリペイドクレジット",
     "preview": {
       "addCreditCard": "クレジットカードを追加",
+      "afterThat": "その後",
       "backToAllPlans": "すべてのプランに戻る",
+      "billedEachMonth": "毎月{amount}請求されます。いつでもキャンセル可能です。",
+      "commitment": "契約期間",
       "confirm": "確認",
+      "confirmChange": "変更を確認",
+      "confirmChangeTitle": "予定されている変更を確認",
       "confirmPayment": "お支払いを確認",
       "confirmPlanChange": "プラン変更を確認",
+      "confirmUpgradeCta": "アップグレードを確認",
+      "confirmUpgradeTitle": "アップグレードの確認",
+      "creditFromCurrent": "現在の{plan}からのクレジット",
+      "creditsRefillMonthlyTo": "クレジットは毎月{amount}に補充されます",
+      "creditsRefillTo": "クレジットが補充されます：",
+      "creditsYoullGetToday": "本日付与されるクレジット",
+      "currentMonthly": "月間プラン",
       "eachMonthCreditsRefill": "毎月クレジットが補充されます",
+      "eachYearCreditsRefill": "毎年クレジットが補充されます",
       "ends": "{date}に終了",
+      "everyMonthStarting": "毎月{date}から開始",
       "hideFeatures": "機能を隠す",
+      "newMonthlySubscription": "新しい月間サブスクリプション",
       "nextPaymentDue": "次回のお支払いは{date}です。いつでもキャンセルできます。",
+      "paymentPopupBlocked": "支払いページを開けませんでした。ポップアップを許可して再試行してください。",
       "perMember": "/ メンバー",
       "privacyPolicy": "プライバシーポリシー",
       "proratedCharge": "{plan}の按分請求",
       "proratedRefund": "{plan}の按分返金",
+      "refillReplacesNote": "月間補充を置き換えます。既存の残高は保持されます。",
       "showMoreFeatures": "さらに機能を表示",
       "starting": "{date}から開始",
       "startingToday": "本日から開始",
+      "startsOn": "{date}に開始",
+      "stayOnUntil": "{date}まで{plan}が継続されます。",
+      "subscribeToPlan": "{plan}に加入",
+      "switchToPlan": "{plan}に切り替え",
+      "switchesToday": "本日の切り替え",
       "terms": "利用規約",
       "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
-      "totalDueToday": "本日のお支払い合計"
+      "totalDueToday": "本日のお支払い合計",
+      "yearlySubscription": "年間サブスクリプション",
+      "youllBeCharged": "ご請求額："
     },
+    "pricingBlurb": "*このテンプレートに基づきます。{seeDetails}。{questions}や{enterpriseDiscussions}についてはお問い合わせください。詳細な料金については{clickHere}。",
+    "pricingBlurbClickHere": "こちらをクリック",
+    "pricingBlurbEnterprise": "エンタープライズのご相談",
+    "pricingBlurbQuestions": "ご質問",
+    "pricingBlurbSeeDetails": "詳細を見る",
+    "refillsDate": "{date}に補充",
+    "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",
+    "remaining": "残り",
     "renewsDate": "{date} に更新",
     "required": {
       "pollingFailed": "サブスクリプションの有効化に失敗しました",
@@ -3798,7 +3927,10 @@
     "resubscribe": "再購読する",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
+    "saveYearly": "20%お得",
+    "saveYearlyUpTo": "最大20%お得",
     "soloUseOnly": "個人利用のみ",
+    "subscribeFailed": "購読に失敗しました",
     "subscribeForMore": "アップグレード",
     "subscribeNow": "今すぐ購読",
     "subscribeTo": "{plan}に登録",
@@ -3806,10 +3938,38 @@
     "subscribeToRun": "購読する",
     "subscribeToRunFull": "実行を購読",
     "subscriptionRequiredMessage": "クラウドでワークフローを実行するにはメンバーにサブスクリプションが必要です",
+    "success": {
+      "allSet": "準備が整いました",
+      "inviteEmailsPlaceholder": "カンマ区切りでメールアドレスを入力",
+      "inviteSubtext": "設定から後で招待することもできます",
+      "inviteTitle": "チームを招待",
+      "planUpdated": "プランが正常に更新されました。",
+      "receiptEmailed": "領収書をメールで送信しました。",
+      "sendInvites": "招待を送信"
+    },
+    "teamHeader": "コラボレーションを希望するチーム向け。さらに多くのメンバーが必要ですか？{learnMore}（エンタープライズについて）。",
+    "teamHeaderLearnMore": "詳細はこちら",
+    "teamPlan": {
+      "changePlan": "プランを変更",
+      "comingSoonLabel": "近日公開：",
+      "cta": "チーム年間プランに加入",
+      "ctaMonthly": "チーム月間プランに加入",
+      "currentPlan": "現在のプラン",
+      "detailsTitle": "詳細",
+      "name": "チームプラン",
+      "perkConcurrentRuns": "メンバーはワークフローを同時に実行可能",
+      "perkInviteMembers": "チームメンバーを招待",
+      "perkProjectAssets": "プロジェクト・アセット管理",
+      "perkRolePermissions": "ロールベースの権限管理",
+      "perkSharedPool": "全メンバーで共有するクレジットプール",
+      "tagline": "月間クレジット数を自由に選択。多くのクレジットでさらに割引。",
+      "unavailable": "このチームプランは現在ご利用いただけません。"
+    },
     "teamWorkspace": "チームワークスペース",
     "tierNameYearly": "{name} 年間",
     "tiers": {
       "creator": {
+        "feature1": "独自モデルのインポート",
         "name": "クリエイター"
       },
       "founder": {
@@ -3819,9 +3979,12 @@
         "name": "無料"
       },
       "pro": {
+        "feature1": "より長いワークフロー実行時間（最大1時間）",
         "name": "プロ"
       },
       "standard": {
+        "feature1": "最大30分のワークフロー実行時間",
+        "feature2": "いつでもクレジットを追加可能",
         "name": "スタンダード"
       }
     },
@@ -3834,6 +3997,8 @@
     "upgradeToAddCredits": "クレジット追加のためアップグレード",
     "usdPerMonth": "USD / 月",
     "usdPerMonthPerMember": "USD / 月 / メンバー",
+    "usedAfterMonthly": "月間クレジットがなくなった後に使用",
+    "videoEstimate": "約{count}本の5秒動画を生成*",
     "videoEstimateExplanation": "これらの見積もりは、Wan 2.2 画像から動画テンプレートのデフォルト設定（5秒、640x640、16fps、4ステップサンプリング）に基づいています。",
     "videoEstimateHelp": "このテンプレートの詳細",
     "videoEstimateLabel": "Wan 2.2 画像から動画テンプレートで生成される約5秒動画数",
@@ -3843,10 +4008,10 @@
     "viewMoreDetails": "詳細を表示",
     "viewMoreDetailsPlans": "プランと価格の詳細を見る",
     "viewUsageHistory": "利用履歴を表示",
+    "whatsIncluded": "含まれる内容：",
     "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
     "yearlyCreditsLabel": "年間合計クレジット",
-    "yearlyDiscount": "20%割引",
     "yourPlanIncludes": "ご利用プランに含まれるもの:"
   },
   "tabMenu": {
@@ -3979,6 +4144,7 @@
     "fileTooLarge": "ファイルが大きすぎます（{size} MB）。サポートされている最大サイズは{maxSize} MBです",
     "fileUploadFailed": "ファイルのアップロードに失敗しました",
     "interrupted": "実行が中断されました",
+    "invalidTemplateData": "ノードテンプレートの読み込みに失敗しました：無効なデータです",
     "legacyMaskEditorDeprecated": "従来のマスクエディタは非推奨となり、まもなく削除されます。",
     "migrateToLitegraphReroute": "将来のバージョンではRerouteノードが削除されます。litegraph-native rerouteに移行するにはクリックしてください。",
     "missingModelVerificationFailed": "不足しているモデルの検証に失敗しました。一部のモデルはエラータブに表示されない場合があります。",
@@ -4136,6 +4302,19 @@
     }
   },
   "workspacePanel": {
+    "changeRoleDialog": {
+      "demoteConfirm": "メンバーに降格",
+      "demoteMessage": "管理者権限が失われます。",
+      "demoteTitle": "{name} をメンバーに降格しますか？",
+      "error": "役割の更新に失敗しました",
+      "promoteConfirm": "オーナーにする",
+      "promoteIntro": "次のことができるようになります：",
+      "promotePermissionCredits": "追加クレジットの付与",
+      "promotePermissionManage": "メンバー、支払い方法、ワークスペース設定の管理",
+      "promotePermissionRoles": "他のオーナーの昇格・降格（ワークスペース作成者を除く）",
+      "promoteTitle": "{name} をオーナーにしますか？",
+      "success": "役割が更新されました"
+    },
     "createWorkspaceDialog": {
       "create": "作成",
       "message": "ワークスペースはメンバーでクレジットプールを共有できます。作成後、あなたがオーナーになります。",
@@ -4160,17 +4339,11 @@
     "inviteLimitReached": "メンバーの上限50人に達しました",
     "inviteMember": "メンバーを招待",
     "inviteMemberDialog": {
-      "createLink": "リンクを作成",
-      "linkCopied": "コピーしました",
-      "linkCopyFailed": "コピーに失敗しました",
-      "linkStep": {
-        "copyLink": "リンクをコピー",
-        "done": "完了",
-        "message": "相手のアカウントがこのメールアドレスを使用していることを確認してください。",
-        "title": "このリンクを相手に送信してください"
-      },
-      "message": "共有可能な招待リンクを作成して送信してください",
+      "failedCount": "{count} 件の招待を送信できませんでした。再試行してください。",
+      "invalidEmailCount": "{count} 件の無効なメールアドレス",
+      "invitedMessage": "{emails} に招待を送信しました",
       "placeholder": "招待する人のメールアドレスを入力",
+      "seatLimitReached": "最大 {count} 名のチームメンバーを招待できます。",
       "title": "このワークスペースに人を招待"
     },
     "inviteUpsellDialog": {
@@ -4178,8 +4351,7 @@
       "messageSingleSeat": "Standardプランにはワークスペースオーナー1名分のシートが含まれています。追加メンバーを招待するには、Creatorプラン以上にアップグレードして複数シートを有効にしてください。",
       "titleNotSubscribed": "メンバーを招待するにはサブスクリプションが必要です",
       "titleSingleSeat": "現在のプランは1名のみ対応しています",
-      "upgradeToCreator": "Creatorにアップグレード",
-      "viewPlans": "プランを見る"
+      "upgradeToTeam": "チームにアップグレード"
     },
     "leaveDialog": {
       "leave": "退出",
@@ -4188,30 +4360,35 @@
     },
     "members": {
       "actions": {
-        "copyLink": "招待リンクをコピー",
+        "cancelInvite": "招待をキャンセル",
+        "changeRole": "役割を変更",
         "removeMember": "メンバーを削除",
-        "revokeInvite": "招待を取り消す"
+        "resendInvite": "招待を再送信"
       },
       "columns": {
         "expiryDate": "有効期限",
         "inviteDate": "招待日",
-        "joinDate": "参加日"
+        "role": "役割"
       },
-      "createNewWorkspace": "新しいワークスペースを作成してください。",
+      "contactUs": "お問い合わせ",
+      "header": "メンバー",
       "membersCount": "{count}/50人のメンバー",
+      "needMoreMembers": "さらにメンバーが必要ですか？",
       "noInvites": "保留中の招待はありません",
       "noMembers": "メンバーがいません",
       "pendingInvitesCount": "{count}件の招待保留中",
-      "personalWorkspaceMessage": "現在、個人用ワークスペースには他のメンバーを招待できません。メンバーを追加するには、",
+      "reactivateTeam": "チームを再有効化",
+      "searchPlaceholder": "検索...",
       "tabs": {
         "active": "アクティブ",
         "pendingCount": "保留中（{count}）"
       },
-      "upsellBannerSubscribe": "このワークスペースにチームメンバーを招待するには、Creatorプラン以上のご契約が必要です。",
-      "upsellBannerUpgrade": "追加のチームメンバーを招待するには、Creatorプラン以上にアップグレードしてください。",
-      "viewPlans": "プランを見る"
+      "upgradeToTeam": "チームにアップグレード",
+      "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。",
+      "upsellBannerReactivate": "さらにメンバーを追加するには、プランを再有効化してください。"
     },
     "menu": {
+      "creatorCannotLeave": "ワークスペースの作成者は、自分が作成したワークスペースを退出できません",
       "deleteWorkspace": "ワークスペースを削除",
       "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
       "editWorkspace": "ワークスペースの詳細を編集",
@@ -4240,6 +4417,8 @@
       "failedToFetchWorkspaces": "ワークスペースの読み込みに失敗しました",
       "failedToLeaveWorkspace": "ワークスペースの退出に失敗しました",
       "failedToUpdateWorkspace": "ワークスペースの更新に失敗しました",
+      "inviteResendFailed": "招待の再送信に失敗しました",
+      "inviteResent": "招待を再送信しました",
       "workspaceCreated": {
         "message": "プランに加入し、チームメイトを招待して、コラボレーションを始めましょう。",
         "subscribe": "プランに加入",
