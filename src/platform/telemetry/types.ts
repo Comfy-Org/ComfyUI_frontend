@@ -309,6 +309,7 @@ export interface SearchQueryMetadata {
  */
 export type NodeAddSource =
   | 'sidebar_drag'
+  | 'asset_browser'
   | 'search_modal'
   | 'paste'
   | 'programmatic'
@@ -463,6 +464,11 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   ecommerce: EcommerceMetadata
 }
 
+export interface WorkspaceInviteMetadata extends Record<string, unknown> {
+  source: 'post_upgrade_success' | 'settings_members'
+  count: number
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -486,6 +492,7 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
+  trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
   trackRunButton?(properties: RunButtonProperties): void
 
   // Credit top-up tracking (composition with internal utilities)
@@ -589,6 +596,7 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
+  WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey

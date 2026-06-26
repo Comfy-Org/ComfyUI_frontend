@@ -2,6 +2,8 @@ import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidge
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 type PromotedWidgetResolutionFailure =
   | 'invalid-host'
@@ -25,6 +27,7 @@ function traversePromotedWidgetChain(
   let currentHost = hostNode
   let currentNodeId = nodeId
   let currentWidgetName = widgetName
+  const nodePath: string[] = []
 
   for (let depth = 0; depth < MAX_PROMOTED_WIDGET_CHAIN_DEPTH; depth++) {
     const key = `${currentNodeId}:${currentWidgetName}`
@@ -39,6 +42,7 @@ function traversePromotedWidgetChain(
     if (!sourceNode) {
       return { status: 'failure', failure: 'missing-node' }
     }
+    nodePath.push(String(sourceNode.id))
 
     if (sourceNode.isSubgraphNode()) {
       const target = resolveSubgraphInputTarget(sourceNode, currentWidgetName)
@@ -60,7 +64,7 @@ function traversePromotedWidgetChain(
 
     return {
       status: 'resolved',
-      resolved: { node: sourceNode, widget: sourceWidget }
+      resolved: { node: sourceNode, nodePath, widget: sourceWidget }
     }
   }
 
@@ -76,4 +80,13 @@ export function resolveConcretePromotedWidget(
     return { status: 'failure', failure: 'invalid-host' }
   }
   return traversePromotedWidgetChain(hostNode, nodeId, widgetName)
+}
+
+export function buildPromotedSourceExecutionId(
+  hostExecutionId: string,
+  nodePath: readonly string[]
+): NodeExecutionId | undefined {
+  return nodePath.length
+    ? createNodeExecutionId([...hostExecutionId.split(':'), ...nodePath])
+    : undefined
 }
