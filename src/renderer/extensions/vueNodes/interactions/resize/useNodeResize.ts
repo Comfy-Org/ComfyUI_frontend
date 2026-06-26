@@ -63,31 +63,14 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const resizeFloorElement = nodeElement.querySelector<HTMLElement>(
-      '[data-resize-min-height]'
-    )
-
     const measureMinContentHeight = (candidateWidth: number) => {
-      const resizeFloor =
-        Number(resizeFloorElement?.dataset.resizeMinHeight) || 0
       const savedWidth = nodeElement.style.getPropertyValue('--node-width')
       const savedHeight = nodeElement.style.getPropertyValue('--node-height')
-      const savedFloor = resizeFloorElement?.style.minHeight
-      if (resizeFloorElement && resizeFloor > 0) {
-        resizeFloorElement.style.setProperty('min-height', `${resizeFloor}px`)
-      }
-      let measured: number
-      try {
-        nodeElement.style.setProperty('--node-width', `${candidateWidth}px`)
-        nodeElement.style.setProperty('--node-height', '0px')
-        measured = nodeElement.getBoundingClientRect().height
-      } finally {
-        nodeElement.style.setProperty('--node-height', savedHeight || '')
-        nodeElement.style.setProperty('--node-width', savedWidth || '')
-        if (resizeFloorElement) {
-          resizeFloorElement.style.setProperty('min-height', savedFloor ?? '')
-        }
-      }
+      nodeElement.style.setProperty('--node-width', `${candidateWidth}px`)
+      nodeElement.style.setProperty('--node-height', '0px')
+      const measured = nodeElement.getBoundingClientRect().height
+      nodeElement.style.setProperty('--node-height', savedHeight || '')
+      nodeElement.style.setProperty('--node-width', savedWidth || '')
       const currentScale = transformState.camera.z || 1
       return measured / currentScale
     }

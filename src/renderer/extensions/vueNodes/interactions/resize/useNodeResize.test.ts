@@ -80,15 +80,7 @@ function createMockNodeElement(
   element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
     const nodeHeight = element.style.getPropertyValue('--node-height')
-    const resizeFloorElement = element.querySelector<HTMLElement>(
-      '[data-resize-min-height]'
-    )
-    const resizeMinHeight =
-      Number.parseFloat(resizeFloorElement?.style.minHeight ?? '') || 0
-    const h =
-      nodeHeight === '0px'
-        ? Math.max(minContentHeight, resizeMinHeight)
-        : height
+    const h = nodeHeight === '0px' ? minContentHeight : height
     return {
       width,
       height: h,
@@ -216,35 +208,6 @@ describe('useNodeResize', () => {
 
       const payload: ResizeCallbackPayload = callback.mock.calls[0][0]
       expect(payload.size.width).toBe(MIN_NODE_WIDTH)
-    })
-
-    it('clamps height to resize-only minimum and restores preview style', () => {
-      const preview = document.createElement('div')
-      preview.dataset.resizeMinHeight = '260'
-      nodeElement.appendChild(preview)
-
-      startResizeAt(getStartResize(), handle, 'SE')
-      simulateMove(0, -300)
-
-      const payload: ResizeCallbackPayload = callback.mock.calls[0][0]
-      expect(payload.size.height).toBe(260)
-      expect(preview.style.minHeight).toBe('')
-    })
-
-    it('uses the latest resize-only minimum during active resize', () => {
-      const preview = document.createElement('div')
-      preview.dataset.resizeMinHeight = '260'
-      nodeElement.appendChild(preview)
-
-      startResizeAt(getStartResize(), handle, 'SE')
-      simulateMove(0, -300)
-      expect(callback.mock.calls.at(-1)![0].size.height).toBe(260)
-
-      preview.dataset.resizeMinHeight = '320'
-      simulateMove(0, -300)
-
-      expect(callback.mock.calls.at(-1)![0].size.height).toBe(320)
-      expect(preview.style.minHeight).toBe('')
     })
   })
 
