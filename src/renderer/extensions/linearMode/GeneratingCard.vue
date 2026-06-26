@@ -12,12 +12,10 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 
 // depth: recency rank, 0 = newest. total: number of cards in the fan.
-// src: a pre-decoded image to display; video/other render straight from card.
-const { card, depth, total, src } = defineProps<{
+const { card, depth, total } = defineProps<{
   card: InProgressItem
   depth: number
   total: number
-  src?: string
 }>()
 
 // Skip the drop-in entrance entirely when the user prefers reduced motion.
@@ -30,6 +28,20 @@ onMounted(() => {
 const mediaType = computed(() =>
   card.state === 'image' && card.output ? getMediaType(card.output) : 'images'
 )
+
+// The still image to show (latent preview, then final image output). Video and
+// other media render from card.output directly.
+const imageSrc = computed(() => {
+  if (card.state === 'latent') return card.latentPreviewUrl
+  if (card.state === 'image' && card.output && mediaType.value === 'images')
+    return card.output.url
+  return undefined
+})
+
+// Fade the image in once loaded so it never paints half-formed. A later src
+// (latent -> final) swaps in place: the browser keeps the prior frame until the
+// new one is ready, so it stays loaded.
+const loaded = ref(false)
 
 const layout = computed(() => computeFanLayout(depth, total))
 
@@ -58,7 +70,19 @@ const innerStyle = computed(() => {
       class="gen-card absolute top-1/2 left-1/2 size-[min(46cqh,300px)] overflow-hidden rounded-2xl bg-secondary-background shadow-[0_24px_60px_-12px_rgba(0,0,0,0.65)] ring-1 ring-border-subtle transition-[transform,opacity] duration-620 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
       :style="innerStyle"
     >
-      <img v-if="src" :src="src" alt="" class="size-full object-cover" />
+      <img
+        v-if="imageSrc"
+        :src="imageSrc"
+        alt=""
+        :class="
+          cn(
+            'size-full object-cover',
+            loaded ? 'opacity-100' : 'opacity-0',
+            reducedMotion !== 'reduce' && 'transition-opacity duration-300'
+          )
+        "
+        @load="loaded = true"
+      />
       <template v-else-if="mediaType === 'video' && card.output">
         <video
           class="size-full object-cover"
