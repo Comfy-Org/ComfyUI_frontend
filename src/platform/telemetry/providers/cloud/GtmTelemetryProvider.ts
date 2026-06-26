@@ -27,7 +27,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -180,6 +181,12 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       'subscription_success',
       metadata ? { ...metadata } : undefined
     )
+  }
+
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    // GA4 names must be bare snake_case; the TelemetryEvents enum carries an
+    // `app:` prefix for Mixpanel/PostHog that dataLayer would forward verbatim.
+    this.pushEvent('workspace_invite_sent', metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

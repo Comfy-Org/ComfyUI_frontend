@@ -131,7 +131,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // slot-layout pipeline and skip bounds processing entirely.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
     if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
+      scheduleSlotLayoutSync(widgetsGridParentNodeId)
       continue
     }
 
@@ -259,7 +259,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // After node bounds are updated, refresh slot cached offsets and layouts
   if (nodesNeedingSlotResync.size > 0) {
     for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsFromDOM(nodeId)
+      syncNodeSlotLayoutsFromDOM(String(nodeId))
     }
   }
 })

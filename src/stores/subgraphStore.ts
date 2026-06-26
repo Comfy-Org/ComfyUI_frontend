@@ -28,6 +28,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
+import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -179,7 +180,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
   }
   const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
-  const typePrefix = 'SubgraphBlueprint.'
   const subgraphDefCache = ref<Map<string, ComfyNodeDefImpl>>(new Map())
   const canvasStore = useCanvasStore()
   const subgraphBlueprints = computed(() => [
@@ -304,7 +304,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       input: { required: inputs },
       output: subgraphNode.outputs.map((o) => `${o.type}`),
       output_name: subgraphNode.outputs.map((o) => o.name),
-      name: typePrefix + name,
+      name: BLUEPRINT_TYPE_PREFIX + name,
       display_name: name,
       description,
       category,
@@ -379,7 +379,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     })
   }
   async function editBlueprint(nodeType: string) {
-    const name = nodeType.slice(typePrefix.length)
+    const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
@@ -390,14 +390,14 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       canvas.setGraph(canvas.graph.nodes[0].subgraph)
   }
   function getBlueprint(nodeType: string): ComfyWorkflowJSON {
-    const name = nodeType.slice(typePrefix.length)
+    const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
     return structuredClone(subgraphCache[name].changeTracker.initialState)
   }
   async function deleteBlueprint(nodeType: string) {
-    const name = nodeType.slice(typePrefix.length)
+    const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
     if (!(name in subgraphCache)) throw new Error('not yet loaded')
 
     if (isGlobalBlueprint(name)) {
@@ -435,8 +435,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
 
   function isUserBlueprint(nodeType?: string): boolean {
-    if (!nodeType?.startsWith(typePrefix)) return false
-    const name = nodeType.slice(typePrefix.length)
+    if (!nodeType?.startsWith(BLUEPRINT_TYPE_PREFIX)) return false
+    const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
     return name in subgraphCache && !isGlobalBlueprint(name)
   }
 
@@ -449,7 +449,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     isSubgraphBlueprint,
     isUserBlueprint,
     publishSubgraph,
-    subgraphBlueprints,
-    typePrefix
+    subgraphBlueprints
   }
 })

@@ -56,12 +56,16 @@ class ComfyPropertiesPanel {
   readonly panelTitle: Locator
   readonly searchBox: Locator
   readonly titleEditor: TitleEditor
+  readonly toggleButton: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.titleEditor = new TitleEditor(this.root)
+    this.toggleButton = page.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
   }
 }
 
