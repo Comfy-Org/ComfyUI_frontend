@@ -3,7 +3,7 @@ import { join } from 'path'
 
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 
-export interface PerfReport {
+interface PerfReport {
   timestamp: string
   gitSha: string
   branch: string

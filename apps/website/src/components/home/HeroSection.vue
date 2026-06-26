@@ -15,7 +15,7 @@ const { loaded: logoLoaded } = useHeroLogo(logoContainer)
 
 <template>
   <section
-    class="relative flex min-h-auto flex-col lg:flex-row lg:items-center"
+    class="max-w-9xl relative mx-auto flex min-h-auto flex-col lg:flex-row lg:items-center"
   >
     <div
       ref="logoContainer"

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import { computed, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
+import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
+import { isCloud } from '@/platform/distribution/types'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -47,14 +49,13 @@ const modelValue = defineModel<string | undefined>({
 
 const { t } = useI18n()
 
-const outputMediaAssets = useMediaAssets('output')
+const outputMediaAssets = isCloud
+  ? useFlatOutputAssets()
+  : useAssetsApi('output')
 
-const transformCompatProps = useTransformCompatOverlayProps()
-
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
+const combinedProps = computed(() =>
+  filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
+)
 
 const getAssetData = () => {
   const nodeType: string | undefined =
@@ -150,6 +151,23 @@ function handleIsOpenUpdate(isOpen: boolean) {
     void outputMediaAssets.refresh()
   }
 }
+
+const handleApproachEnd = useDebounceFn(async () => {
+  if (
+    outputMediaAssets.hasMore.value &&
+    !outputMediaAssets.loading.value &&
+    !outputMediaAssets.isLoadingMore.value
+  ) {
+    await outputMediaAssets.loadMore()
+  }
+}, 300)
+
+const isUploading = ref(false)
+async function updateFiles(files: File[]) {
+  isUploading.value = true
+  await handleFilesUpdate(files)
+  isUploading.value = false
+}
 </script>
 
 <template>
@@ -171,11 +189,14 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :is-uploading
       v-bind="combinedProps"
+      :loading-more="outputMediaAssets.isLoadingMore.value"
       class="w-full"
       @update:selected="updateSelectedItems"
-      @update:files="handleFilesUpdate"
+      @update:files="updateFiles"
       @update:is-open="handleIsOpenUpdate"
+      @approach-end="handleApproachEnd"
     />
   </WidgetLayoutField>
 </template>

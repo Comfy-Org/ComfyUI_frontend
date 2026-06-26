@@ -6,6 +6,7 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  createNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
   parseNodeLocatorId
@@ -22,10 +23,8 @@ import { isSubgraphIoNode } from './typeGuardUtil'
 export function getLocatorIdFromNodeData(nodeData: {
   id: string | number
   subgraphId?: string | null
-}): string {
-  return nodeData.subgraphId
-    ? `${nodeData.subgraphId}:${String(nodeData.id)}`
-    : String(nodeData.id)
+}): NodeLocatorId {
+  return createNodeLocatorId(nodeData.subgraphId ?? null, nodeData.id)
 }
 
 /**
@@ -352,7 +351,7 @@ export function getExecutionIdByNode(
   if (!node.graph) return null
 
   if (node.graph === rootGraph || node.graph.isRootGraph) {
-    return String(node.id)
+    return createNodeExecutionId([node.id])
   }
 
   const parentPath = findPartialExecutionPathToGraph(
@@ -361,7 +360,7 @@ export function getExecutionIdByNode(
   )
   if (parentPath === undefined) return null
 
-  return `${parentPath}:${node.id}`
+  return createNodeExecutionId([...parentPath.split(':'), node.id])
 }
 
 /**
@@ -396,6 +395,41 @@ export function isAncestorPathActive(
   return true
 }
 
+export function isExecutionPathActive(
+  rootGraph: LGraph | null | undefined,
+  executionId: string
+): boolean {
+  if (!rootGraph) return true
+  const node = getNodeByExecutionId(rootGraph, executionId)
+  if (!node) return false
+  if (
+    node.mode === LGraphEventMode.NEVER ||
+    node.mode === LGraphEventMode.BYPASS
+  ) {
+    return false
+  }
+  return isAncestorPathActive(rootGraph, executionId)
+}
+
+function getCandidateActivityExecutionId(candidate: {
+  nodeId?: string | number | null | undefined
+  sourceExecutionId?: string | number | null | undefined
+}): string | null {
+  const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+  return executionId == null ? null : String(executionId)
+}
+
+export function isCandidateScopeActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: {
+    nodeId?: string | number | null | undefined
+    sourceExecutionId?: string | number | null | undefined
+  }
+): boolean {
+  const executionId = getCandidateActivityExecutionId(candidate)
+  return executionId == null || isExecutionPathActive(rootGraph, executionId)
+}
+
 /**
  * Predicate used after async verification resolves: a missing-asset
  * candidate is surfaceable when it is confirmed missing and its
@@ -408,12 +442,12 @@ export function isMissingCandidateActive(
   rootGraph: LGraph | null | undefined,
   candidate: {
     nodeId?: string | number | null | undefined
+    sourceExecutionId?: string | number | null | undefined
     isMissing?: boolean | undefined
   }
 ): boolean {
   if (candidate.isMissing !== true) return false
-  if (candidate.nodeId == null) return true
-  return isAncestorPathActive(rootGraph, String(candidate.nodeId))
+  return isCandidateScopeActive(rootGraph, candidate)
 }
 
 /**
@@ -431,10 +465,14 @@ export function getExecutionIdForNodeInGraph(
   rootGraph: LGraph,
   graph: LGraph | Subgraph,
   nodeId: string | number
-): string {
-  if (graph === rootGraph || graph.isRootGraph) return String(nodeId)
+): NodeExecutionId {
+  if (graph === rootGraph || graph.isRootGraph) {
+    return createNodeExecutionId([nodeId])
+  }
   const parentPath = findPartialExecutionPathToGraph(graph as LGraph, rootGraph)
-  return parentPath !== undefined ? `${parentPath}:${nodeId}` : String(nodeId)
+  return parentPath !== undefined
+    ? createNodeExecutionId([...parentPath.split(':'), nodeId])
+    : createNodeExecutionId([nodeId])
 }
 
 /**
@@ -449,12 +487,13 @@ export function getExecutionIdForNodeInGraph(
 export function getExecutionIdFromNodeData(
   rootGraph: LGraph,
   nodeData: { id: string | number; subgraphId?: string | null }
-): string {
+): NodeExecutionId {
   const locatorId = getLocatorIdFromNodeData(nodeData)
   const node = getNodeByLocatorId(rootGraph, locatorId)
   return node
-    ? (getExecutionIdByNode(rootGraph, node) ?? String(nodeData.id))
-    : String(nodeData.id)
+    ? (getExecutionIdByNode(rootGraph, node) ??
+        createNodeExecutionId([nodeData.id]))
+    : createNodeExecutionId([nodeData.id])
 }
 
 /**
@@ -467,7 +506,7 @@ export function getExecutionIdFromNodeData(
  */
 export function getNodeByLocatorId(
   rootGraph: LGraph,
-  locatorId: NodeLocatorId | string
+  locatorId: string
 ): LGraphNode | null {
   if (!rootGraph) return null
 
@@ -504,7 +543,7 @@ export function executionIdToNodeLocatorId(
 
   if (!nodeIdStr.includes(':')) {
     // It's a top-level node ID
-    return nodeIdStr
+    return createNodeLocatorId(null, nodeIdStr)
   }
 
   // It's an execution node ID — resolve subgraph path
@@ -734,7 +773,9 @@ export function getExecutionIdsForSelectedNodes(
 
   const buildExecId = (node: LGraphNode, parentExecutionId: string) => {
     const nodeId = String(node.id)
-    return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
+    return parentExecutionId
+      ? createNodeExecutionId([...parentExecutionId.split(':'), nodeId])
+      : createNodeExecutionId([nodeId])
   }
   return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
     collector: buildExecId,

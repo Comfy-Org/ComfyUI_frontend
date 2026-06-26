@@ -1,5 +1,8 @@
 <template>
-  <SidebarTabTemplate :title="$t('queue.jobHistory')">
+  <SidebarTabTemplate
+    data-testid="job-history-sidebar"
+    :title="$t('queue.jobHistory')"
+  >
     <template #alt-title>
       <div class="ml-auto flex shrink-0 items-center">
         <JobHistoryActionsMenu @clear-history="onClearHistory" />
@@ -186,7 +189,9 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
         modelUrl: previewOutput.url || ''
       },
       dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
+        renderer: 'reka',
+        size: 'full',
+        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })

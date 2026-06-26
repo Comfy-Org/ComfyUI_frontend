@@ -85,7 +85,7 @@ describe('resolveSubgraphInputTarget', () => {
     })
   })
 
-  test('returns undefined for non-widget input on nested SubgraphNode', () => {
+  test('resolves non-widget input on nested SubgraphNode to immediate child target', () => {
     const { outerSubgraph, outerSubgraphNode } = createOuterSubgraphSetup([
       'audio'
     ])
@@ -93,28 +93,41 @@ describe('resolveSubgraphInputTarget', () => {
 
     const result = resolveSubgraphInputTarget(outerSubgraphNode, 'audio')
 
-    expect(result).toBeUndefined()
+    expect(result).toMatchObject({
+      nodeId: '819',
+      widgetName: 'audio'
+    })
   })
 
-  test('resolves widget inputs but not non-widget inputs on the same nested SubgraphNode', () => {
+  test('resolves both widget and non-widget inputs on nested SubgraphNodes', () => {
     const { outerSubgraph, outerSubgraphNode } = createOuterSubgraphSetup([
       'width',
       'audio'
     ])
-    addLinkedNestedSubgraphNode(outerSubgraph, 'width', 'width', {
-      widget: 'width'
-    })
-    addLinkedNestedSubgraphNode(outerSubgraph, 'audio', 'audio')
+    const { innerSubgraphNode: widthChild } = addLinkedNestedSubgraphNode(
+      outerSubgraph,
+      'width',
+      'width',
+      { widget: 'width' }
+    )
+    const { innerSubgraphNode: audioChild } = addLinkedNestedSubgraphNode(
+      outerSubgraph,
+      'audio',
+      'audio'
+    )
 
     expect(
       resolveSubgraphInputTarget(outerSubgraphNode, 'width')
     ).toMatchObject({
-      nodeId: '819',
+      nodeId: String(widthChild.id),
       widgetName: 'width'
     })
     expect(
       resolveSubgraphInputTarget(outerSubgraphNode, 'audio')
-    ).toBeUndefined()
+    ).toMatchObject({
+      nodeId: String(audioChild.id),
+      widgetName: 'audio'
+    })
   })
 
   test('returns target for widget-backed input on plain interior node', () => {
@@ -199,7 +212,10 @@ describe('resolveSubgraphInputTarget', () => {
     })
     expect(
       resolveSubgraphInputTarget(outerSubgraphNode, 'audio')
-    ).toBeUndefined()
+    ).toMatchObject({
+      nodeId: '820',
+      widgetName: 'audio'
+    })
   })
 
   test('three-level nesting returns immediate child target, not deepest', () => {

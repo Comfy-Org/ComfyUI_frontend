@@ -472,7 +472,9 @@ describe('SelectionToolbox', () => {
       const forwardEventToCanvasSpy = vi.fn()
       mockCanvasInteractions.mockReturnValue({
         handleWheel: vi.fn(),
-        handlePointer: vi.fn(),
+        handlePointerDown: vi.fn(),
+        handlePointerMove: vi.fn(),
+        handlePointerUp: vi.fn(),
         forwardEventToCanvas: forwardEventToCanvasSpy,
         shouldHandleNodePointerEvents: { value: true } as ReturnType<
           typeof useCanvasInteractions

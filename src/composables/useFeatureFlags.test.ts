@@ -220,4 +220,63 @@ describe('useFeatureFlags', () => {
       expect(flags.teamWorkspacesEnabled).toBe(true)
     })
   })
+
+  describe('signupTurnstileMode', () => {
+    afterEach(() => {
+      localStorage.clear()
+    })
+
+    it('falls back to the server feature flag with default off', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.SIGNUP_TURNSTILE) return 'enforce'
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.signupTurnstileMode).toBe('enforce')
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SIGNUP_TURNSTILE,
+        'off'
+      )
+    })
+
+    it('lets a dev override beat the server value', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue('off')
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.SIGNUP_TURNSTILE}`,
+        '"shadow"'
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.signupTurnstileMode).toBe('shadow')
+    })
+  })
+
+  describe('unifiedCloudAuthEnabled', () => {
+    afterEach(() => {
+      localStorage.clear()
+    })
+
+    it('reads the unified_cloud_auth server feature when set', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.unifiedCloudAuthEnabled).toBe(true)
+    })
+
+    it('lets a dev override beat the server value', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      localStorage.setItem('ff:unified_cloud_auth', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.unifiedCloudAuthEnabled).toBe(true)
+    })
+  })
 })

@@ -139,13 +139,13 @@ for PR in ${CONFLICT_PRS[@]}; do
   # ───────────────────────────────────────────────────────────────────────
 
   # Per-PR validation BEFORE push (catches issues earlier than wave verification).
-  # Guard each targeted command against empty file lists — running `pnpm test:unit -- run`
-  # with no arg matchers would run the full suite, and `pnpm exec eslint` with no args errors.
+  # Guard each targeted command against empty file lists — running `pnpm test:unit`
+  # with no path filter would run the full suite, and `pnpm exec eslint` with no args errors.
   pnpm typecheck
 
   mapfile -t TEST_FILES < <(git diff --name-only HEAD~1 | grep -E '\.test\.ts$' || true)
   if [ ${#TEST_FILES[@]} -gt 0 ]; then
-    pnpm test:unit -- run "${TEST_FILES[@]}"
+    pnpm test:unit "${TEST_FILES[@]}"
   else
     echo "No changed test files — skipping targeted unit tests"
   fi
@@ -368,7 +368,7 @@ Cherry-picked from upstream merge commit `SHORT_SHA`.
 ## Validation
 
 - `pnpm typecheck` ✅
-- `pnpm test:unit -- run <targeted suites>` ✅ (N/N passing)
+- `pnpm test:unit <targeted suites>` ✅ (N/N passing)
 - `pnpm exec eslint <changed files>` ✅ (0 errors)
 - `pnpm exec oxfmt --check` ✅ (clean)
 

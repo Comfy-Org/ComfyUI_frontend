@@ -14,7 +14,7 @@ const reasons: TranslationKey[] = [
 </script>
 
 <template>
-  <section class="px-6 py-24 lg:px-20 lg:py-32">
+  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
     <WireNodeLayout :reasons right-card-padding="p-6" :locale="locale">
       <template #right-card>
         <img
