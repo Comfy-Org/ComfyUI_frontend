@@ -543,7 +543,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       store.setExposures(rootGraphId, hostLocator, [])
       return
     }
-    const legacyKey = createNodeLocatorId(rootGraphId, this.id)
+    const legacyKey = createNodeLocatorId(null, this.id)
     const legacy = store.getExposures(rootGraphId, legacyKey)
     if (legacy.length) {
       store.setExposures(rootGraphId, hostLocator, [...legacy])
