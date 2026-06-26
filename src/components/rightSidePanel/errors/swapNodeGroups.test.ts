@@ -27,6 +27,8 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
+  te: vi.fn(() => false),
+  t: vi.fn((key: string) => key),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
@@ -42,10 +44,6 @@ vi.mock('@/utils/nodeTitleUtil', () => ({
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => false)
-}))
-
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
 }))
 
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -84,8 +82,7 @@ describe('swapNodeGroups computed', () => {
     useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
 
     const searchQuery = ref('')
-    const t = (key: string) => key
-    const { swapNodeGroups } = useErrorGroups(searchQuery, t)
+    const { swapNodeGroups } = useErrorGroups(searchQuery)
     return swapNodeGroups
   }
 

@@ -41,7 +41,6 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <!-- Selection/Execution Outline Overlay -->
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -49,7 +48,7 @@
         nodeData.mode === LGraphEventMode.ALWAYS &&
         !nodeData.hasErrors
       "
-      :id="nodeData.id"
+      :id="nodeId"
     />
     <div
       v-if="isSelected || executing"
@@ -58,14 +57,13 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
-          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
+          hasAnyError ? 'inset-[-7px]' : 'inset-[-3px]',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
         )
       "
     />
-    <!-- Root Border Overlay -->
     <div
       :class="
         cn(
@@ -137,7 +135,6 @@
 
       <template v-else-if="!isCollapsed">
         <div class="relative">
-          <!-- Progress bar for executing state -->
           <div
             v-if="executing && progress !== undefined"
             :class="
@@ -177,9 +174,8 @@
               :media="preview"
             />
           </div>
-          <!-- Live mid-execution preview images -->
           <LivePreview
-            v-if="shouldShowPreviewImg"
+            v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
           />
           <NodeBadges
@@ -216,6 +212,7 @@
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
         role="button"
+        :data-corner="handle.corner"
         :aria-label="t(handle.i18nKey)"
         :class="
           cn(
@@ -343,11 +340,13 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-useVueElementTracking(String(nodeData.id), 'node')
+const nodeId = computed(() => String(nodeData.id))
+
+useVueElementTracking(nodeId.value, 'node')
 
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeData.id)
+  return selectedNodeIds.value.has(nodeId.value)
 })
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
@@ -356,7 +355,7 @@ const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const hasExecutionError = computed(
-  () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+  () => executionErrorStore.lastExecutionErrorNodeId === nodeId.value
 )
 
 const hasAnyError = computed((): boolean => {
@@ -677,7 +676,8 @@ const handleToggleAdvanced = () => {
 
 const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'graph_node_open_subgraph_clicked'
+    button_id: 'graph_node_open_subgraph_clicked',
+    element_group: 'graph_node'
   })
   const graph = app.rootGraph
   if (!graph) {
@@ -783,6 +783,8 @@ const nodeMedia = computed(() => {
 
   if (!node || !newOutputs?.images?.length || node.hideOutputImages)
     return undefined
+
+  if (node instanceof SubgraphNode) return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined

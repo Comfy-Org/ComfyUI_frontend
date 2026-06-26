@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
@@ -12,10 +13,11 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
@@ -67,8 +69,35 @@ describe('useWorkflowStore', () => {
     return await store.syncWorkflows()
   }
 
+  const saveV2Draft = (
+    path: string,
+    options: {
+      data?: string
+      name?: string
+      isTemporary?: boolean
+    } = {}
+  ) => {
+    const draftStore = useWorkflowDraftStoreV2()
+    draftStore.saveDraft(path, options.data ?? '{"dirty":true}', {
+      name: options.name ?? path.split('/').at(-1) ?? path,
+      isTemporary: options.isTemporary ?? false
+    })
+    return draftStore
+  }
+
+  const enableWorkflowPersistence = () => {
+    useSettingStore().settingsById['Comfy.Workflow.Persist'] = {
+      id: 'Comfy.Workflow.Persist',
+      name: 'Persist workflow state',
+      type: 'boolean',
+      defaultValue: true
+    }
+  }
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    localStorage.clear()
+    sessionStorage.clear()
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
     vi.clearAllMocks()
@@ -81,6 +110,11 @@ describe('useWorkflowStore', () => {
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200
     } as Response)
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
   })
 
   describe('syncWorkflows', () => {
@@ -267,6 +301,67 @@ describe('useWorkflowStore', () => {
       expect(workflow.isModified).toBe(false)
     })
 
+    it('should prefer a persisted V2 draft when loading a remote workflow', async () => {
+      enableWorkflowPersistence()
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = {
+        ...(draftGraph.extra ?? {}),
+        draftMarker: 'v2'
+      }
+
+      saveV2Draft(workflow.path, {
+        data: JSON.stringify(draftGraph),
+        name: 'a.json'
+      })
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.draftMarker).toBe('v2')
+      expect(workflow.isModified).toBe(true)
+    })
+
+    it('should discard a stale V2 draft when the remote workflow is newer', async () => {
+      enableWorkflowPersistence()
+      const remoteModifiedAt = Date.now() + 60_000
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: remoteModifiedAt, size: 1 }
+      ])
+
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = {
+        ...(draftGraph.extra ?? {}),
+        draftMarker: 'stale-v2'
+      }
+      const draftStore = saveV2Draft(workflow.path, {
+        data: JSON.stringify(draftGraph),
+        name: 'a.json'
+      })
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.draftMarker).toBeUndefined()
+      expect(workflow.isModified).toBe(false)
+      expect(draftStore.getDraft(workflow.path)).toBeNull()
+    })
+
     it('should load and open a remote workflow', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
 
@@ -410,6 +505,28 @@ describe('useWorkflowStore', () => {
       // Check that bookmark was transferred
       expect(bookmarkStore.isBookmarked(newPath)).toBe(true)
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
+    })
+
+    it('should move V2 draft when renaming workflow', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          ;(this as typeof workflow).path = args[0] as string
+          return this as typeof workflow
+        }
+      )
+
+      await store.renameWorkflow(workflow, newPath)
+
+      expect(draftStore.getDraft(oldPath)).toBeNull()
+      expect(draftStore.getDraft(newPath)?.name).toBe('renamed.json')
     })
 
     it('should rename workflow without affecting bookmarks if not bookmarked', async () => {
@@ -771,79 +888,73 @@ describe('useWorkflowStore', () => {
       })
     })
 
-    describe('nodeExecutionIdToNodeLocatorId', () => {
-      it('should convert execution ID to NodeLocatorId', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123:456')
-        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+    describe('executionIdToCurrentId', () => {
+      it('should convert an execution ID to the active subgraph node ID', () => {
+        const result = store.executionIdToCurrentId('123:456')
+        expect(result).toBe('456')
       })
 
-      it('should return simple node ID for root level nodes', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123')
-        expect(result).toBe('123')
+      it('should return undefined for execution IDs outside the active subgraph', () => {
+        expect(() => store.executionIdToCurrentId('999:456')).not.toThrow()
+        expect(store.executionIdToCurrentId('999:456')).toBeUndefined()
       })
 
-      it('should return null for invalid execution IDs', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('999:456')
-        expect(result).toBeNull()
+      it('should return undefined for malformed execution IDs', () => {
+        expect(() => store.executionIdToCurrentId('123::456')).not.toThrow()
+        expect(store.executionIdToCurrentId('123::456')).toBeUndefined()
       })
     })
-
     describe('nodeLocatorIdToNodeId', () => {
       it('should extract node ID from NodeLocatorId', () => {
         const result = store.nodeLocatorIdToNodeId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
         )
         expect(result).toBe(456)
       })
 
       it('should handle string node IDs', () => {
         const result = store.nodeLocatorIdToNodeId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:node_1'
+          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'node_1')
         )
         expect(result).toBe('node_1')
       })
 
       it('should handle simple node IDs (root graph)', () => {
-        const result = store.nodeLocatorIdToNodeId('123')
+        const result = store.nodeLocatorIdToNodeId(
+          createNodeLocatorId(null, 123)
+        )
         expect(result).toBe(123)
 
-        const stringResult = store.nodeLocatorIdToNodeId('node_1')
+        const stringResult = store.nodeLocatorIdToNodeId(
+          createNodeLocatorId(null, 'node_1')
+        )
         expect(stringResult).toBe('node_1')
-      })
-
-      it('should return null for invalid NodeLocatorId', () => {
-        const result = store.nodeLocatorIdToNodeId('invalid:format')
-        expect(result).toBeNull()
       })
     })
 
     describe('nodeLocatorIdToNodeExecutionId', () => {
       it('should convert NodeLocatorId to execution ID', () => {
-        // Need to mock isSubgraph to identify our mockSubgraph
         vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
           return obj === store.activeSubgraph
         })
 
         const result = store.nodeLocatorIdToNodeExecutionId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
         )
         expect(result).toBe('123:456')
       })
 
       it('should handle simple node IDs (root graph)', () => {
-        const result = store.nodeLocatorIdToNodeExecutionId('123')
+        const result = store.nodeLocatorIdToNodeExecutionId(
+          createNodeLocatorId(null, 123)
+        )
         expect(result).toBe('123')
       })
 
       it('should return null for unknown subgraph UUID', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          'unknown-uuid-1234-5678-90ab-cdef12345678:456'
+          createNodeLocatorId('unknown-uuid-1234-5678-90ab-cdef12345678', 456)
         )
-        expect(result).toBeNull()
-      })
-
-      it('should return null for invalid NodeLocatorId', () => {
-        const result = store.nodeLocatorIdToNodeExecutionId('invalid:format')
         expect(result).toBeNull()
       })
     })
@@ -940,38 +1051,30 @@ describe('useWorkflowStore', () => {
 
   describe('closeWorkflow draft cleanup', () => {
     it('should remove draft for persisted workflows on close', async () => {
-      const draftStore = useWorkflowDraftStore()
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
-
-      draftStore.saveDraft('workflows/a.json', {
-        data: '{"dirty":true}',
-        updatedAt: Date.now(),
+      const draftStore = saveV2Draft('workflows/a.json', {
         name: 'a.json',
         isTemporary: false
       })
-      expect(draftStore.getDraft('workflows/a.json')).toBeDefined()
+      expect(draftStore.getDraft('workflows/a.json')).toBeTruthy()
 
       await store.closeWorkflow(workflow)
 
-      expect(draftStore.getDraft('workflows/a.json')).toBeUndefined()
+      expect(draftStore.getDraft('workflows/a.json')).toBeNull()
     })
 
     it('should remove draft for temporary workflows on close', async () => {
-      const draftStore = useWorkflowDraftStore()
       const workflow = store.createTemporary('temp.json')
-
-      draftStore.saveDraft(workflow.path, {
-        data: '{"dirty":true}',
-        updatedAt: Date.now(),
+      const draftStore = saveV2Draft(workflow.path, {
         name: 'temp.json',
         isTemporary: true
       })
-      expect(draftStore.getDraft(workflow.path)).toBeDefined()
+      expect(draftStore.getDraft(workflow.path)).toBeTruthy()
 
       await store.closeWorkflow(workflow)
 
-      expect(draftStore.getDraft(workflow.path)).toBeUndefined()
+      expect(draftStore.getDraft(workflow.path)).toBeNull()
     })
   })
 })

@@ -63,9 +63,9 @@
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
-    @pointerdown.capture="forwardPanEvent"
-    @pointerup.capture="forwardPanEvent"
-    @pointermove.capture="forwardPanEvent"
+    @pointerdown.capture="forwardPointerDownPanEvent"
+    @pointerup.capture="forwardPointerUpPanEvent"
+    @pointermove.capture="forwardPointerMovePanEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
@@ -93,6 +93,7 @@
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+  <NodeDragPreview />
   <VueNodeSwitchPopup />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
@@ -120,7 +121,11 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import {
+  isMiddleButtonEvent,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -132,6 +137,7 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
+import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
@@ -141,6 +147,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
@@ -188,10 +195,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
-import { isCloud } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
-import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
+import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
 const { t } = useI18n()
 const emit = defineEmits<{
@@ -450,16 +454,14 @@ useEventListener(
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
-const { flags } = useFeatureFlags()
-// Set up URL loaders during setup phase so useRoute/useRouter work correctly
-const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
-const createWorkspaceUrlLoader = isCloud ? useCreateWorkspaceUrlLoader() : null
+const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
+useGroupContextMenu()
 useCopy()
 usePaste()
 useWorkflowAutoSave()
@@ -541,49 +543,28 @@ onMounted(async () => {
     }
 
     vueNodeLifecycle.setupEmptyGraphListener()
+
+    // Load color palette
+    colorPaletteStore.customPalettes = settingStore.get(
+      'Comfy.CustomColorPalettes'
+    )
+
+    // Restore saved workflow and workflow tabs state
+    await workflowPersistence.initializeWorkflow()
+    await workflowPersistence.restoreWorkflowTabsState()
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
   } finally {
     workspaceStore.spinner = false
   }
+  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
   )
 
-  // Load color palette
-  colorPaletteStore.customPalettes = settingStore.get(
-    'Comfy.CustomColorPalettes'
-  )
-
-  // Restore saved workflow and workflow tabs state
-  await workflowPersistence.initializeWorkflow()
-  await workflowPersistence.restoreWorkflowTabsState()
-
-  const sharedWorkflowLoadStatus =
-    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-
-  // Load template from URL if present
-  if (sharedWorkflowLoadStatus === 'not-present') {
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
-  }
-
-  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
-  // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
-  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
-    await inviteUrlLoader.loadInviteFromUrl()
-  }
-
-  // Open create workspace dialog from URL if present (e.g., ?create_workspace=1)
-  if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {
-    try {
-      await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
-    } catch (error) {
-      console.error(
-        '[GraphCanvas] Failed to load create workspace from URL:',
-        error
-      )
-    }
-  }
+  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing)
+  await runUrlActionLoaders()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
@@ -599,8 +580,23 @@ onUnmounted(() => {
   cleanupErrorHooks = null
   vueNodeLifecycle.cleanup()
 })
-function forwardPanEvent(e: PointerEvent) {
-  if (!isMiddlePointerInput(e)) return
+function forwardPointerDownPanEvent(e: PointerEvent) {
+  forwardPanEvent(e, isMiddlePointerInput)
+}
+
+function forwardPointerMovePanEvent(e: PointerEvent) {
+  forwardPanEvent(e, isMiddleButtonHeld)
+}
+
+function forwardPointerUpPanEvent(e: PointerEvent) {
+  forwardPanEvent(e, isMiddleButtonEvent)
+}
+
+function forwardPanEvent(
+  e: PointerEvent,
+  isMiddleInput: (event: PointerEvent) => boolean
+) {
+  if (!isMiddleInput(e)) return
   if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 

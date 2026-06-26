@@ -87,6 +87,14 @@ export const capturePreservedQuery = (
   writeToStorage(namespace, payload)
 }
 
+export function getPreservedQueryParam(
+  namespace: string,
+  key: string
+): string | undefined {
+  hydratePreservedQuery(namespace)
+  return preservedQueries.get(namespace)?.[key]
+}
+
 export const mergePreservedQueryIntoQuery = (
   namespace: string,
   query?: LocationQueryRaw

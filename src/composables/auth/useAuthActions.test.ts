@@ -1,3 +1,4 @@
+import { FirebaseError } from 'firebase/app'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -26,9 +27,20 @@ const mockDialogService = vi.hoisted(() => ({
   confirm: vi.fn()
 }))
 
+const mockToastErrorHandler = vi.hoisted(() => vi.fn())
+
+const knownAuthErrorCodes = new Set([
+  'auth/invalid-credential',
+  'auth/email-already-in-use'
+])
+
 vi.mock('@/i18n', () => ({
   t: (key: string, values?: { workflow?: string }) =>
-    values?.workflow ? `${key}:${values.workflow}` : key
+    values?.workflow ? `${key}:${values.workflow}` : key,
+  st: (key: string, fallback: string) => {
+    const code = key.replace('auth.errors.', '')
+    return knownAuthErrorCodes.has(code) ? key : fallback
+  }
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -72,7 +84,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
     wrapWithErrorHandlingAsync: <TArgs extends unknown[], TReturn>(
       action: (...args: TArgs) => Promise<TReturn> | TReturn
     ) => action,
-    toastErrorHandler: vi.fn()
+    toastErrorHandler: mockToastErrorHandler
   })
 }))
 
@@ -191,5 +203,82 @@ describe('useAuthActions.logout', () => {
         denyLabel: 'auth.signOut.signOutAnyway'
       })
     )
+  })
+})
+
+describe('useAuthActions.reportError', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('shows the friendly message for a known Firebase auth code', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(new FirebaseError('auth/invalid-credential', 'raw firebase'))
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.auth/invalid-credential'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it('shows the signupBlocked message when the error carries the signup_blocked token', () => {
+    const { reportError } = useAuthActions()
+
+    // The backend wraps the rejection in a generic code; we match the token in
+    // the message, so it must win over the auth.errors.${code} fallback.
+    reportError(
+      new FirebaseError(
+        'auth/internal-error',
+        'Account creation is temporarily unavailable. (ref: signup_blocked)'
+      )
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.signupBlocked'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it('matches the signup_blocked token case-insensitively', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(
+      new FirebaseError('auth/internal-error', 'rejected: SIGNUP_BLOCKED')
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.signupBlocked'
+    })
+  })
+
+  it('shows the generic fallback for an unknown Firebase auth code', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(new FirebaseError('auth/some-new-code', 'raw firebase'))
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.generic'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it('delegates non-Firebase errors to toastErrorHandler', () => {
+    const { reportError } = useAuthActions()
+    const networkError = new TypeError('Failed to fetch')
+
+    reportError(networkError)
+
+    expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
+    expect(mockToastStore.add).not.toHaveBeenCalled()
   })
 })

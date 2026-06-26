@@ -1,6 +1,30 @@
 type Locale = 'en' | 'zh-CN'
 
 const translations = {
+  // Tags (global, reusable across sections)
+  'tags.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'tags.imageToVideo': {
+    en: 'Image To Video',
+    'zh-CN': '图像生成视频'
+  },
+
+  // CTAs (global, reusable across sections)
+  'cta.tryWorkflow': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+  'cta.watchNow': {
+    en: 'Watch Now',
+    'zh-CN': '立即观看'
+  },
+  'cta.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
+
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
@@ -108,8 +132,8 @@ const translations = {
     'zh-CN': '下载或注册'
   },
   'getStarted.step1.downloadLocal': {
-    en: 'Download Local',
-    'zh-CN': '下载本地版'
+    en: 'Download Desktop',
+    'zh-CN': '下载桌面版'
   },
   'getStarted.step1.launchCloud': {
     en: 'Launch Cloud',
@@ -158,16 +182,16 @@ const translations = {
     'zh-CN': '掌控每个模型、每个节点、每个步骤、每个输出。'
   },
   'products.local.title': {
-    en: 'Comfy\nLocal',
-    'zh-CN': 'Comfy\n本地版'
+    en: 'Comfy\nDesktop',
+    'zh-CN': 'Comfy\n桌面版'
   },
   'products.local.description': {
     en: 'Run ComfyUI on your own hardware.',
     'zh-CN': '在您自己的硬件上运行 ComfyUI。'
   },
   'products.local.cta': {
-    en: 'SEE LOCAL FEATURES',
-    'zh-CN': '查看本地版属性'
+    en: 'SEE DESKTOP FEATURES',
+    'zh-CN': '查看桌面版属性'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -589,8 +613,8 @@ const translations = {
       '是的。基于 GPL-3.0 免费开源。没有功能限制、没有试用期、没有附加条件。'
   },
   'download.faq.4.q': {
-    en: 'Why would I pay for Comfy Cloud if Local is free?',
-    'zh-CN': '既然本地版免费，为什么还要付费使用 Comfy Cloud？'
+    en: 'Why would I pay for Comfy Cloud if Desktop is free?',
+    'zh-CN': '既然桌面版免费，为什么还要付费使用 Comfy Cloud？'
   },
   'download.faq.4.a': {
     en: 'Your machine or ours. Cloud gives you powerful GPUs on demand, pre-loaded models, end-to-end security and infrastructure out of the box and partner models cleared for commercial use.',
@@ -607,8 +631,8 @@ const translations = {
       'Desktop：一键安装，自动更新。Portable：独立构建，可从任意文件夹运行。CLI：从 GitHub 克隆，完全开发者控制，适合想自定义环境或参与上游贡献的开发者。'
   },
   'download.faq.6.q': {
-    en: 'Can I use my local workflows in Comfy Cloud?',
-    'zh-CN': '我可以在 Comfy Cloud 中使用本地工作流吗？'
+    en: 'Can I use my Desktop workflows in Comfy Cloud?',
+    'zh-CN': '我可以在 Comfy Cloud 中使用桌面工作流吗？'
   },
   'download.faq.6.a': {
     en: 'Yes — same file, same results. No conversion, no rework.',
@@ -649,8 +673,8 @@ const translations = {
     'zh-CN': '专业人士为何\n选择'
   },
   'download.reason.headingHighlight': {
-    en: 'Local',
-    'zh-CN': '本地版'
+    en: 'Desktop',
+    'zh-CN': '桌面版'
   },
   'download.reason.1.title': {
     en: 'Unlimited\nCustomization',
@@ -699,8 +723,8 @@ const translations = {
     'zh-CN': '完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。'
   },
   'download.hero.downloadLocal': {
-    en: 'DOWNLOAD LOCAL',
-    'zh-CN': '下载本地版'
+    en: 'DOWNLOAD DESKTOP',
+    'zh-CN': '下载桌面版'
   },
   'download.hero.installGithub': {
     en: 'INSTALL FROM GITHUB',
@@ -1041,18 +1065,18 @@ const translations = {
     'zh-CN': 'Cloud 与本地运行 ComfyUI 有什么区别？'
   },
   'cloud.faq.2.a': {
-    en: 'Cloud runs on powerful remote GPUs and is accessible from any device. Local runs entirely on your computer, giving you full control and offline use.',
+    en: 'Cloud runs on powerful remote GPUs and is accessible from any device. Comfy Desktop runs entirely on your computer, giving you full control and offline use.',
     'zh-CN':
-      'Cloud 在强大的远程 GPU 上运行，可从任何设备访问。本地版完全在您的电脑上运行，提供完全控制和离线使用。'
+      'Cloud 在强大的远程 GPU 上运行，可从任何设备访问。Comfy 桌面版完全在您的电脑上运行，提供完全控制和离线使用。'
   },
   'cloud.faq.3.q': {
-    en: 'Which version should I choose, Comfy Cloud or local ComfyUI (self-hosted)?',
-    'zh-CN': '我应该选择 Comfy Cloud 还是本地 ComfyUI（自托管）？'
+    en: 'Which version should I choose, Comfy Cloud or Comfy Desktop?',
+    'zh-CN': '我应该选择 Comfy Cloud 还是 Comfy 桌面版？'
   },
   'cloud.faq.3.a': {
-    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
+    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nComfy Desktop is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
     'zh-CN':
-      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
+      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\nComfy 桌面版可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
   },
   'cloud.faq.4.q': {
     en: 'Do I need a GPU or a strong computer to use Comfy Cloud?',
@@ -1075,9 +1099,9 @@ const translations = {
     'zh-CN': '我可以在 Comfy Cloud 上使用现有的工作流吗？'
   },
   'cloud.faq.6.a': {
-    en: 'Yes, your workflows work across Local and Cloud. Just note that only the most popular custom nodes are supported for now, but more will be added soon.',
+    en: 'Yes, your workflows work across Desktop and Cloud. Just note that only the most popular custom nodes are supported for now, but more will be added soon.',
     'zh-CN':
-      '可以，您的工作流在本地和云端都能使用。请注意，目前仅支持最热门的自定义节点，但很快会添加更多。'
+      '可以，您的工作流在桌面版和云端都能使用。请注意，目前仅支持最热门的自定义节点，但很快会添加更多。'
   },
   'cloud.faq.7.q': {
     en: 'Are all ComfyUI extensions and custom nodes supported?',
@@ -1129,9 +1153,9 @@ const translations = {
     'zh-CN': '合作伙伴节点积分和我的 Cloud 订阅有什么区别？'
   },
   'cloud.faq.12.a': {
-    en: 'Comfy Cloud has a credit system that is used for both Partner nodes (formerly API nodes) and running workflows on cloud.\n1. Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Local/Self-Hosted ComfyUI. Each node has its own usage cost, determined by the API provider, and we directly match their pricing.\n2. Running workflows on cloud: Exclusive to Comfy Cloud, you get a set amount of credits per month, with the amount differing based on your plan. More credits can be topped up anytime. Credits are only used up for GPU time while workflows are running — not while editing or building them. No idle costs, no setup, and no infrastructure to manage.',
+    en: 'Comfy Cloud has a credit system that is used for both Partner nodes (formerly API nodes) and running workflows on cloud.\n1. Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Comfy Desktop. Each node has its own usage cost, determined by the API provider, and we directly match their pricing.\n2. Running workflows on cloud: Exclusive to Comfy Cloud, you get a set amount of credits per month, with the amount differing based on your plan. More credits can be topped up anytime. Credits are only used up for GPU time while workflows are running — not while editing or building them. No idle costs, no setup, and no infrastructure to manage.',
     'zh-CN':
-      'Comfy Cloud 有一个积分系统，用于合作伙伴节点（原 API 节点）和在云端运行工作流。\n1. 合作伙伴节点（按需付费）：这些节点（原称 API 节点）通过 API 调用运行第三方模型，可在 Comfy Cloud 和本地/自托管 ComfyUI 上使用。每个节点有其自身的使用成本，由 API 提供商决定，我们直接匹配他们的定价。\n2. 在云端运行工作流：Comfy Cloud 专属，您每月获得一定数量的积分，数量根据您的计划而不同。积分可随时充值。积分仅在工作流运行时用于 GPU 时间——编辑或构建时不消耗。无闲置成本，无需设置，无需管理基础设施。'
+      'Comfy Cloud 有一个积分系统，用于合作伙伴节点（原 API 节点）和在云端运行工作流。\n1. 合作伙伴节点（按需付费）：这些节点（原称 API 节点）通过 API 调用运行第三方模型，可在 Comfy Cloud 和 Comfy 桌面版上使用。每个节点有其自身的使用成本，由 API 提供商决定，我们直接匹配他们的定价。\n2. 在云端运行工作流：Comfy Cloud 专属，您每月获得一定数量的积分，数量根据您的计划而不同。积分可随时充值。积分仅在工作流运行时用于 GPU 时间——编辑或构建时不消耗。无闲置成本，无需设置，无需管理基础设施。'
   },
   'cloud.faq.13.q': {
     en: 'Can I cancel my subscription?',
@@ -1228,6 +1252,10 @@ const translations = {
     en: 'Add more credits anytime',
     'zh-CN': '可随时增加积分'
   },
+  'pricing.plan.standard.feature3': {
+    en: 'Run 1 workflow concurrently (via API)',
+    'zh-CN': '通过 API 并发运行 1 个工作流'
+  },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.summary': {
@@ -1256,8 +1284,8 @@ const translations = {
     'zh-CN': '导入你自己的 LoRA'
   },
   'pricing.plan.creator.feature2': {
-    en: '3 concurrent API jobs',
-    'zh-CN': '3 个并发 API 任务'
+    en: 'Run up to 3 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 3 个工作流'
   },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
@@ -1284,8 +1312,8 @@ const translations = {
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
   },
   'pricing.plan.pro.feature2': {
-    en: '5 concurrent API jobs',
-    'zh-CN': '5 个并发 API 任务'
+    en: 'Run up to 5 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 5 个工作流'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
@@ -1369,9 +1397,9 @@ const translations = {
     'zh-CN': '随时加购积分'
   },
   'pricing.included.feature5.description': {
-    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
+    en: 'Purchase additional credits at any time. Top-up credits are valid for 1 year from the date of purchase and do not roll over with your monthly plan.',
     'zh-CN':
-      '可随时购买额外积分。未使用的充值积分自动结转至下月，最长保留 1 年。'
+      '可随时购买额外积分。充值积分自购买之日起 1 年内有效，且不会随月度计划结转。'
   },
   'pricing.included.feature6.title': {
     en: 'Pre-installed models',
@@ -1395,9 +1423,9 @@ const translations = {
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and Comfy Desktop. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和本地 ComfyUI 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和 Comfy 桌面版间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -1417,10 +1445,19 @@ const translations = {
       'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
   },
   'pricing.included.feature11.title': {
+    en: 'Run Workflows via API',
+    'zh-CN': '通过 API 运行工作流'
+  },
+  'pricing.included.feature11.description': {
+    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines. For higher rate limits, reach out to <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
+    'zh-CN':
+      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
+  },
+  'pricing.included.feature12.title': {
     en: 'Parallel job execution',
     'zh-CN': '并行任务执行'
   },
-  'pricing.included.feature11.description': {
+  'pricing.included.feature12.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
   },
@@ -1434,6 +1471,62 @@ const translations = {
   'player.unmute': { en: 'Unmute', 'zh-CN': '取消静音' },
   'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
   'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
+
+  // LearningHeroSection
+  'learning.heroTitle.before': { en: 'Learn', 'zh-CN': '学习' },
+  'learning.heroTitle.after': { en: '.', 'zh-CN': '。' },
+  'learning.heroTitle.line2': {
+    en: 'Build what doesn’t exist yet.',
+    'zh-CN': '构建尚未存在之物。'
+  },
+
+  // LearningFeaturedWorkflowSection
+  'learning.featured.title': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'learning.featured.author': {
+    en: 'by Doug Hogan',
+    'zh-CN': '作者：Doug Hogan'
+  },
+  'learning.featured.description': {
+    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
+    'zh-CN':
+      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+  },
+  'learning.featured.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
+
+  // LearningTutorialsSection
+  'learning.tutorials.heading': {
+    en: 'Featured Demos',
+    'zh-CN': '精选演示'
+  },
+  'learning.tutorials.titlePrefix': {
+    en: 'Learn how to:',
+    'zh-CN': '学习如何：'
+  },
+
+  // LearningCallToActionSection
+  'learning.cta.heading': {
+    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
+    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
+  },
+  'learning.cta.contactSales': {
+    en: 'Contact Sales',
+    'zh-CN': '联系销售'
+  },
+
+  // LearningEventsSection
+  'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
+  'learning.events.description': {
+    en: 'Check out our upcoming live streams and community meetings. We’re always open to your questions, ideas, and conversations.',
+    'zh-CN':
+      '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
+  },
+  'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
@@ -1458,9 +1551,9 @@ const translations = {
   // ContactSection
   'gallery.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'gallery.contact.heading': {
-    en: 'Built something cool with ComfyUI? <a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community.',
+    en: 'Built something cool with ComfyUI?<br> <a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community.',
     'zh-CN':
-      '用 ComfyUI 创作了很酷的作品？<a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。'
+      '用 ComfyUI 创作了很酷的作品？<br><a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。'
   },
 
   // AboutHeroSection
@@ -1471,9 +1564,13 @@ const translations = {
   },
   'about.hero.body': {
     en: 'The team behind Comfy is small, intense, and building what we intend to be our life\u2019s work.',
-    'zh-CN': 'Comfy 背后的团队规模虽小，但充满热情，致力于打造我们毕生的事业。'
+    'zh-CN':
+      'Comfy \u80cc\u540e\u7684\u56e2\u961f\u89c4\u6a21\u867d\u5c0f\uff0c\u4f46\u5145\u6ee1\u70ed\u60c5\uff0c\u81f4\u529b\u4e8e\u6253\u9020\u6211\u4eec\u6bd5\u751f\u7684\u4e8b\u4e1a\u3002'
   },
-  'about.hero.cta': { en: 'SEE OPEN ROLES', 'zh-CN': '查看开放职位' },
+  'about.hero.cta': {
+    en: 'SEE OPEN ROLES',
+    'zh-CN': '\u67e5\u770b\u5f00\u653e\u804c\u4f4d'
+  },
 
   // AboutStorySection
   'about.story.label': { en: 'OUR STORY', 'zh-CN': '我们的故事' },
@@ -1734,7 +1831,7 @@ const translations = {
   'nav.community': { en: 'Community', 'zh-CN': '社区' },
   'nav.resources': { en: 'Resources', 'zh-CN': '资源' },
   'nav.company': { en: 'Company', 'zh-CN': '公司' },
-  'nav.comfyLocal': { en: 'Comfy Local', 'zh-CN': 'Comfy 本地版' },
+  'nav.comfyLocal': { en: 'Comfy Desktop', 'zh-CN': 'Comfy 桌面版' },
   'nav.comfyCloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
   'nav.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'nav.comfyEnterprise': {
@@ -1743,6 +1840,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
+  'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
@@ -1751,12 +1849,72 @@ const translations = {
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
-  'nav.downloadLocal': { en: 'DOWNLOAD LOCAL', 'zh-CN': '下载本地版' },
+  'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
+  'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
+  'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
+  'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
+  'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
+  'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
+  'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
+  'nav.close': { en: 'Close', 'zh-CN': '关闭' },
+  'nav.mobileMenuDescription': {
+    en: 'Site navigation and quick links',
+    'zh-CN': '网站导航和快速链接'
+  },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
+  // Column headers used in HeaderMainDesktop dropdowns
+  'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
+  'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
+  'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
+  'nav.colMore': { en: 'More', 'zh-CN': '更多' },
+  // Dropdown items not yet covered above
+  'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },
+  'nav.x': { en: 'X', 'zh-CN': 'X' },
+  'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
+  'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
+  'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  // Featured dropdown cards — keys are keyed by parent nav item, not card content,
+  // so the copy can be swapped without renaming the key.
+  'nav.featuredProductsTitle': {
+    en: 'New Release: Seedance 2.0',
+    'zh-CN': '全新发布：Seedance 2.0'
+  },
+  'nav.featuredProductsAlt': {
+    en: 'Seedance 2.0 release feature image',
+    'zh-CN': 'Seedance 2.0 发布精选图片'
+  },
+  'nav.featuredProductsCtaAria': {
+    en: 'Try the Seedance 2.0 workflow',
+    'zh-CN': '试用 Seedance 2.0 工作流'
+  },
+  'nav.featuredCommunityTitle': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'nav.featuredCommunityAlt': {
+    en: 'Sky Replacement workflow demo image',
+    'zh-CN': '天空替换工作流演示图片'
+  },
+  'nav.featuredCommunityCtaAria': {
+    en: 'Watch the Sky Replacement demo',
+    'zh-CN': '观看天空替换演示'
+  },
+  'nav.featuredCompanyTitle': {
+    en: 'Customer story: Black Math',
+    'zh-CN': '客户故事：Black Math'
+  },
+  'nav.featuredCompanyAlt': {
+    en: 'Black Math customer story image',
+    'zh-CN': 'Black Math 客户故事图片'
+  },
+  'nav.featuredCompanyCtaAria': {
+    en: 'Watch the Black Math customer story',
+    'zh-CN': '观看 Black Math 客户故事'
+  },
 
   // SiteFooter
   'footer.tagline': {
@@ -1773,7 +1931,12 @@ const translations = {
   'footer.support': { en: 'Support', 'zh-CN': '支持' },
   'footer.sales': { en: 'Sales', 'zh-CN': '销售' },
   'footer.press': { en: 'Press', 'zh-CN': '媒体' },
+  'footer.cloudStatus': { en: 'Cloud Status', 'zh-CN': '云端状态' },
   'footer.blog': { en: 'Blog', 'zh-CN': '博客' },
+  'footer.affiliateProgram': {
+    en: 'Affiliate Program',
+    'zh-CN': 'Affiliate Program'
+  },
   'footer.location': {
     en: 'San Francisco, USA',
     'zh-CN': '美国旧金山'
@@ -1797,8 +1960,9 @@ const translations = {
       '如果我们的网站包含指向第三方网站和服务的链接，请注意这些网站和服务有自己的隐私政策。在访问任何第三方内容的链接后，您应阅读其发布的关于如何收集和使用个人信息的隐私政策信息。本隐私政策不适用于您离开我们网站后的任何活动。'
   },
   'privacy.intro.block.3': {
-    en: 'This policy is effective as of April 18, 2025.',
-    'zh-CN': '本政策自 2025 年 4 月 18 日起生效。'
+    en: 'This policy is effective as of April 18, 2025. For information specific to Comfy Desktop (the local install application), including named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights, see our <a href="/privacy/desktop" class="text-white underline">Desktop Privacy Policy</a>.',
+    'zh-CN':
+      '本政策自 2025 年 4 月 18 日起生效。有关 Comfy Desktop（本地安装应用程序）的具体信息，包括指定的数据处理方、GDPR/UK GDPR 下的合法依据、保留期限以及您的权利，请参阅我们的<a href="/zh-CN/privacy/desktop" class="text-white underline">Desktop 隐私政策</a>。'
   },
   'privacy.information-we-collect.label': {
     en: 'INFORMATION',
@@ -2048,270 +2212,953 @@ const translations = {
       '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>'
   },
 
+  // ── Desktop Privacy Policy ────────────────────────────────────────
+  'desktop_privacy.intro.label': { en: 'OVERVIEW', 'zh-CN': 'OVERVIEW' },
+  'desktop_privacy.intro.block.0': {
+    en: 'Effective 3 June 2026. Applies to the Comfy Desktop application.',
+    'zh-CN': 'Effective 3 June 2026. Applies to the Comfy Desktop application.'
+  },
+  'desktop_privacy.intro.block.1': {
+    en: 'This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy.',
+    'zh-CN':
+      'This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy.'
+  },
+
+  'desktop_privacy.controller.label': {
+    en: 'CONTROLLER',
+    'zh-CN': 'CONTROLLER'
+  },
+  'desktop_privacy.controller.title': {
+    en: 'Controller',
+    'zh-CN': 'Controller'
+  },
+  'desktop_privacy.controller.block.0': {
+    en: 'Comfy Organization Inc ("Comfy Org", "we", "us") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      'Comfy Organization Inc ("Comfy Org", "we", "us") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
+  },
+
+  'desktop_privacy.data.label': {
+    en: 'DATA WE PROCESS',
+    'zh-CN': 'DATA WE PROCESS'
+  },
+  'desktop_privacy.data.title': {
+    en: 'Personal data we process',
+    'zh-CN': 'Personal data we process'
+  },
+  'desktop_privacy.data.block.0': {
+    en: 'If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:',
+    'zh-CN':
+      'If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:'
+  },
+  'desktop_privacy.data.block.1': {
+    en: 'Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.',
+    'zh-CN':
+      'Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.'
+  },
+  'desktop_privacy.data.block.2': {
+    en: 'Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).',
+    'zh-CN':
+      'Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).'
+  },
+  'desktop_privacy.data.block.3': {
+    en: 'We do not process:',
+    'zh-CN': 'We do not process:'
+  },
+  'desktop_privacy.data.block.4': {
+    en: 'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application',
+    'zh-CN':
+      'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application'
+  },
+  'desktop_privacy.data.block.5': {
+    en: 'Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us.',
+    'zh-CN':
+      'Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us.'
+  },
+
+  'desktop_privacy.purposes.label': { en: 'PURPOSES', 'zh-CN': 'PURPOSES' },
+  'desktop_privacy.purposes.title': {
+    en: 'Purposes and lawful bases',
+    'zh-CN': 'Purposes and lawful bases'
+  },
+  'desktop_privacy.purposes.block.0': {
+    en: 'We process personal data on the following lawful bases under GDPR and UK GDPR:',
+    'zh-CN':
+      'We process personal data on the following lawful bases under GDPR and UK GDPR:'
+  },
+  'desktop_privacy.purposes.block.1': {
+    en: 'Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).',
+    'zh-CN':
+      'Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).'
+  },
+  'desktop_privacy.purposes.block.2': {
+    en: 'Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      'Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
+  },
+  'desktop_privacy.purposes.block.3': {
+    en: 'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising.',
+    'zh-CN':
+      'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising.'
+  },
+
+  'desktop_privacy.processors.label': {
+    en: 'RECIPIENTS',
+    'zh-CN': 'RECIPIENTS'
+  },
+  'desktop_privacy.processors.title': {
+    en: 'Recipients',
+    'zh-CN': 'Recipients'
+  },
+  'desktop_privacy.processors.block.0': {
+    en: 'We engage the following processors under Data Processing Agreements:',
+    'zh-CN':
+      'We engage the following processors under Data Processing Agreements:'
+  },
+  'desktop_privacy.processors.block.1': {
+    en: 'PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)',
+    'zh-CN':
+      'PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)'
+  },
+
+  'desktop_privacy.transfers.label': { en: 'TRANSFERS', 'zh-CN': 'TRANSFERS' },
+  'desktop_privacy.transfers.title': {
+    en: 'International transfers',
+    'zh-CN': 'International transfers'
+  },
+  'desktop_privacy.transfers.block.0': {
+    en: 'Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR.',
+    'zh-CN':
+      'Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR.'
+  },
+
+  'desktop_privacy.retention.label': { en: 'RETENTION', 'zh-CN': 'RETENTION' },
+  'desktop_privacy.retention.title': { en: 'Retention', 'zh-CN': 'Retention' },
+  'desktop_privacy.retention.block.0': {
+    en: 'Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application.',
+    'zh-CN':
+      'Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application.'
+  },
+
+  'desktop_privacy.rights.label': { en: 'YOUR RIGHTS', 'zh-CN': 'YOUR RIGHTS' },
+  'desktop_privacy.rights.title': { en: 'Your rights', 'zh-CN': 'Your rights' },
+  'desktop_privacy.rights.block.0': {
+    en: 'If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.',
+    'zh-CN':
+      'If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.'
+  },
+  'desktop_privacy.rights.block.1': {
+    en: 'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.',
+    'zh-CN':
+      'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.'
+  },
+  'desktop_privacy.rights.block.2': {
+    en: "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency.",
+    'zh-CN':
+      "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency."
+  },
+  'desktop_privacy.rights.block.3': {
+    en: 'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days.',
+    'zh-CN':
+      'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days.'
+  },
+
+  'desktop_privacy.children.label': { en: 'CHILDREN', 'zh-CN': 'CHILDREN' },
+  'desktop_privacy.children.title': { en: 'Children', 'zh-CN': 'Children' },
+  'desktop_privacy.children.block.0': {
+    en: 'Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age.',
+    'zh-CN':
+      'Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age.'
+  },
+
+  'desktop_privacy.changes.label': { en: 'CHANGES', 'zh-CN': 'CHANGES' },
+  'desktop_privacy.changes.title': { en: 'Changes', 'zh-CN': 'Changes' },
+  'desktop_privacy.changes.block.0': {
+    en: 'We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision.',
+    'zh-CN':
+      'We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision.'
+  },
+
+  'desktop_privacy.contact.label': { en: 'CONTACT', 'zh-CN': 'CONTACT' },
+  'desktop_privacy.contact.title': { en: 'Contact', 'zh-CN': 'Contact' },
+  'desktop_privacy.contact.block.0': {
+    en: 'For any privacy enquiry, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      'For any privacy enquiry, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
+  },
+
   // ── Terms of Service ──────────────────────────────────────────────
-  'tos.intro.label': { en: 'INTRO', 'zh-CN': '简介' },
+  'tos.effectiveDateLabel': {
+    en: 'Effective Date',
+    'zh-CN': 'Effective Date'
+  },
+  'tos.effectiveDate': {
+    en: 'May 13, 2026',
+    'zh-CN': 'May 13, 2026'
+  },
+
+  'tos.intro.label': { en: 'INTRO', 'zh-CN': 'INTRO' },
   'tos.intro.block.0': {
-    en: 'Welcome to the ComfyUI offering, provided by Comfy Organization, Inc.',
-    'zh-CN': '欢迎使用由 Comfy Organization, Inc. 提供的 ComfyUI 产品。'
+    en: 'These Comfy Terms of Service (the “Agreement”) are made available by Comfy Organization, Inc., a Delaware corporation (“Comfy”) and set forth your rights and obligations when accessing the Comfy Products (as defined below).',
+    'zh-CN':
+      'These Comfy Terms of Service (the “Agreement”) are made available by Comfy Organization, Inc., a Delaware corporation (“Comfy”) and set forth your rights and obligations when accessing the Comfy Products (as defined below).'
   },
   'tos.intro.block.1': {
-    en: 'Please read these Terms of Service (these "Terms") carefully, as they constitute a legally binding agreement between Comfy Organization, Inc., a Delaware corporation ("Comfy Org," "We," "Us," or "Our"), and an end-user ("You" and "Your") and apply to Your use of the Services (as defined below). In case You are subscribing to the Services as a representative of or on behalf of an entity (e.g., Your employer, the "Client" or "Entity"), Your acceptance of these Terms also binds the Client or Entity, and any reference in these Terms to "You" shall also mean the "Client" or "Entity" and its affiliates.',
+    en: 'The Agreement is entered into by and between Comfy and the entity or person accessing the Comfy Products (“Customer” or “you”). If you are accessing or using the Comfy Products on behalf of your company, you represent that you are authorized to enter into the Agreement on behalf of your company.',
     'zh-CN':
-      '请仔细阅读本服务条款（以下简称"条款"），因为它们构成 Comfy Organization, Inc.（一家特拉华州公司，以下简称"Comfy Org"、"我们"）与最终用户（"您"）之间具有法律约束力的协议，并适用于您对服务（定义见下文）的使用。如果您以实体（例如您的雇主，即"客户"或"实体"）的代表身份或代表其订阅服务，您对本条款的接受也约束该客户或实体，本条款中对"您"的任何引用也应指"客户"或"实体"及其关联方。'
+      'The Agreement is entered into by and between Comfy and the entity or person accessing the Comfy Products (“Customer” or “you”). If you are accessing or using the Comfy Products on behalf of your company, you represent that you are authorized to enter into the Agreement on behalf of your company.'
   },
   'tos.intro.block.2': {
-    en: 'You hereby agree to accept these Terms by (a) either using the Services, or (b) by opening an account under a username. BEFORE YOU DO EITHER OF THOSE, PLEASE READ THESE TERMS CAREFULLY. IF YOU DO NOT WANT TO AGREE TO THESE TERMS, YOU MUST NOT USE THE SERVICES OR SET UP AN ACCOUNT.',
+    en: 'PLEASE REVIEW THESE TERMS OF SERVICE CAREFULLY. ONCE ACCEPTED, THE TERMS AND CONDITIONS OF THE AGREEMENT WILL BECOME A BINDING LEGAL COMMITMENT BETWEEN YOU AND COMFY. IF YOU DO NOT AGREE TO BE BOUND BY THESE TERMS OF SERVICE, YOU SHOULD NOT ACCEPT THESE TERMS OF SERVICE AND MAY NOT USE THE PLATFORM.',
     'zh-CN':
-      '您特此同意通过以下方式接受本条款：(a) 使用服务，或 (b) 以用户名开设账户。在您执行上述任何操作之前，请仔细阅读本条款。如果您不同意本条款，则不得使用服务或设置账户。'
+      'PLEASE REVIEW THESE TERMS OF SERVICE CAREFULLY. ONCE ACCEPTED, THE TERMS AND CONDITIONS OF THE AGREEMENT WILL BECOME A BINDING LEGAL COMMITMENT BETWEEN YOU AND COMFY. IF YOU DO NOT AGREE TO BE BOUND BY THESE TERMS OF SERVICE, YOU SHOULD NOT ACCEPT THESE TERMS OF SERVICE AND MAY NOT USE THE PLATFORM.'
   },
-  'tos.intro.block.3': {
-    en: 'You also agree to abide by other Comfy Org rules and policies, including our Privacy Policy https://www.comfy.org/privacy-policy (which explains what information we collect from You and how we protect it) that are expressly incorporated into and are a part of these Terms. Please read them carefully.',
-    'zh-CN':
-      '您还同意遵守 Comfy Org 的其他规则和政策，包括我们的隐私政策 https://www.comfy.org/privacy-policy（该政策说明了我们从您处收集的信息以及如何保护这些信息），这些规则和政策明确纳入本条款并构成其组成部分。请仔细阅读。'
-  },
-  'tos.intro.block.4': {
-    en: 'Once you accept these Terms You are bound by them until they are terminated. See Section 10 (Term and Termination).',
-    'zh-CN':
-      '一旦您接受本条款，您将受其约束，直至条款终止。请参阅第 10 条（期限和终止）。'
-  },
-  'tos.intro.block.5': {
-    en: 'By accessing or using the Software or Services in any way, You represent that (1) You have read, understand, and hereby agree to be bound by these Terms, (2) You are of legal age to form a binding contract with Comfy Org, and (3) You have the authority to enter into these Terms personally or on behalf of the Client Entity. If You do not agree to be bound by, or cannot conform with, these Terms, You may not use the Services. You will be legally and financially responsible for all actions using or accessing the Services, including the actions of anyone You allow to access Your Account.',
-    'zh-CN':
-      '通过以任何方式访问或使用软件或服务，您声明：(1) 您已阅读、理解并特此同意受本条款的约束，(2) 您已达到与 Comfy Org 签订具有约束力的合同的法定年龄，(3) 您有权以个人身份或代表客户实体签订本条款。如果您不同意受本条款约束或无法遵守本条款，则不得使用服务。您将对使用或访问服务的所有行为承担法律和财务责任，包括您允许访问您账户的任何人的行为。'
-  },
-  'tos.intro.block.6': {
-    en: 'IF YOU ACCEPT THESE TERMS, YOU AND COMFY ORG AGREE TO RESOLVE DISPUTES IN BINDING, INDIVIDUAL ARBITRATION AND GIVE UP THE RIGHT TO GO TO COURT INDIVIDUALLY OR AS PART OF A CLASS ACTION.',
-    'zh-CN':
-      '如果您接受本条款，您和 COMFY ORG 同意通过具有约束力的个人仲裁解决争议，并放弃以个人身份或作为集体诉讼一部分提起诉讼的权利。'
-  },
-  'tos.definitions.label': { en: 'DEFINITIONS', 'zh-CN': '定义' },
-  'tos.definitions.title': { en: '1. Definitions', 'zh-CN': '1. 定义' },
+
+  'tos.definitions.label': { en: 'DEFINITIONS', 'zh-CN': 'DEFINITIONS' },
+  'tos.definitions.title': { en: '1. Definitions', 'zh-CN': '1. Definitions' },
   'tos.definitions.block.0': {
-    en: '"Business User" mean an entity or individual using the Software or Services primarily for business, commercial, or professional purposes.',
+    en: '“Affiliates” means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.',
     'zh-CN':
-      '"商业用户"指主要出于商业、贸易或专业目的使用软件或服务的实体或个人。'
+      '“Affiliates” means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.'
   },
   'tos.definitions.block.1': {
-    en: '"ComfyUI Branding" means the names, logos, and associated trademarks owned or in progress of being owned by Comfy Org, Inc.',
+    en: '“Applicable Laws” means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.',
     'zh-CN':
-      '"ComfyUI 品牌"指 Comfy Org, Inc. 拥有或正在申请拥有的名称、标志和相关商标。'
+      '“Applicable Laws” means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.'
   },
   'tos.definitions.block.2': {
-    en: '"ComfyUI Software" or "Software" means the open-source software product named "ComfyUI," including its desktop applications, source code, and user interface elements.',
+    en: '“Comfy API” means the application programming interface and related developer tools made available by Comfy that allow you to access and execute visual AI workflows programmatically as production endpoints from within your own applications or systems.',
     'zh-CN':
-      '"ComfyUI 软件"或"软件"指名为"ComfyUI"的开源软件产品，包括其桌面应用程序、源代码和用户界面元素。'
+      '“Comfy API” means the application programming interface and related developer tools made available by Comfy that allow you to access and execute visual AI workflows programmatically as production endpoints from within your own applications or systems.'
   },
   'tos.definitions.block.3': {
-    en: '"Customer Data" means any data, content, information, prompts, or workflows that You submit, upload, transmit, or process through the Software or Services.',
+    en: '“Comfy Branding” means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.',
     'zh-CN':
-      '"客户数据"指您通过软件或服务提交、上传、传输或处理的任何数据、内容、信息、提示词或工作流。'
+      '“Comfy Branding” means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.'
   },
   'tos.definitions.block.4': {
-    en: '"Consumer User" means an individual using the Software or Services primarily for personal, family, or household purposes.',
-    'zh-CN': '"消费者用户"指主要出于个人、家庭或家用目的使用软件或服务的个人。'
+    en: '“Comfy Cloud” means the cloud-based hosting environment made available by Comfy that allows you to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.',
+    'zh-CN':
+      '“Comfy Cloud” means the cloud-based hosting environment made available by Comfy that allows you to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.'
   },
   'tos.definitions.block.5': {
-    en: '"Intellectual Property Rights" means all (i) patents, patent disclosures, and inventions (whether patentable or not), (ii) trademarks, (iii) copyrights and copyrightable works (including computer programs), and rights in data and databases, and (iv) all other intellectual property rights, in each case whether registered or unregistered and including all applications for, and renewals or extensions of, such rights, and all similar or equivalent rights or forms of protection in any part of the world.',
+    en: '“Comfy Enterprise” means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.',
     'zh-CN':
-      '"知识产权"指所有 (i) 专利、专利披露和发明（无论是否可获得专利），(ii) 商标，(iii) 版权和可受版权保护的作品（包括计算机程序）以及数据和数据库权利，(iv) 所有其他知识产权，在每种情况下无论已注册或未注册，包括所有此类权利的申请、续展或延期，以及世界任何地区的所有类似或等同的权利或保护形式。'
+      '“Comfy Enterprise” means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.'
   },
   'tos.definitions.block.6': {
-    en: '"Open Source License" means the specific open-source license(s) governing the ComfyUI Software, primarily the GNU General Public License v3 (GPLv3) for its UI elements and potentially other components.',
+    en: '“Comfy OSS” means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href="https://github.com/Comfy-Org" class="text-white underline">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under these Terms of Service or in connection with any commercial product or offering.',
     'zh-CN':
-      '"开源许可证"指管辖 ComfyUI 软件的特定开源许可证，主要是用于其 UI 元素的 GNU 通用公共许可证第 3 版 (GPLv3) 以及可能适用于其他组件的许可证。'
+      '“Comfy OSS” means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href="https://github.com/Comfy-Org" class="text-white underline">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under these Terms of Service or in connection with any commercial product or offering.'
   },
   'tos.definitions.block.7': {
-    en: '"Providers" means certain third-party service providers utilized by Comfy Org for certain functionality, including hosting and payment processing.',
+    en: '“Comfy Products” means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to you under these Terms of Service, excluding any Comfy OSS.',
     'zh-CN':
-      '"提供商"指 Comfy Org 用于某些功能的特定第三方服务提供商，包括托管和支付处理。'
+      '“Comfy Products” means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to you under these Terms of Service, excluding any Comfy OSS.'
   },
   'tos.definitions.block.8': {
-    en: '"Services" means all current and future commercial and auxiliary services provided by Comfy Org in connection with the ComfyUI Software, including but not limited to:',
+    en: '“Customer Data” means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.',
     'zh-CN':
-      '"服务"指 Comfy Org 与 ComfyUI 软件相关的所有当前和未来的商业及辅助服务，包括但不限于：'
+      '“Customer Data” means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.'
   },
   'tos.definitions.block.9': {
-    en: 'Commercial services:',
-    'zh-CN': '商业服务：'
+    en: '“Open Source License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.',
+    'zh-CN':
+      '“Open Source License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.'
   },
   'tos.definitions.block.10': {
-    en: 'Comfy Cloud — paid and fully managed cloud based ComfyUI hosted in our data centers\nAPI Nodes — paid integrations with third-party API services available within ComfyUI\nSupport, Training, Consulting — paid services related to ComfyUI',
+    en: '“Operational Metadata” means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.',
     'zh-CN':
-      'Comfy Cloud——付费的、完全托管的、基于云的 ComfyUI，托管在我们的数据中心\nAPI 节点——ComfyUI 中可用的与第三方 API 服务的付费集成\n支持、培训、咨询——与 ComfyUI 相关的付费服务'
+      '“Operational Metadata” means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.'
   },
   'tos.definitions.block.11': {
-    en: 'Open source services:',
-    'zh-CN': '开源服务：'
+    en: '“Order Form” means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement.',
+    'zh-CN':
+      '“Order Form” means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement.'
   },
   'tos.definitions.block.12': {
-    en: 'Custom Node Registry — marketplace of custom nodes freely available to ComfyUI users\nAny other hosted experiences or tools offered by Comfy Org.',
+    en: '“User” means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement.',
     'zh-CN':
-      '自定义节点 Registry——ComfyUI 用户免费使用的自定义节点市场\nComfy Org 提供的任何其他托管体验或工具。'
+      '“User” means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement.'
   },
-  'tos.license.label': { en: 'LICENSE', 'zh-CN': '许可' },
-  'tos.license.title': {
-    en: '2. ComfyUI Software License',
-    'zh-CN': '2. ComfyUI 软件许可'
+
+  'tos.comfy-products.label': {
+    en: 'COMFY PRODUCTS',
+    'zh-CN': 'COMFY PRODUCTS'
   },
-  'tos.license.block.0': {
-    en: 'Open Source Nature. The ComfyUI Software itself is open-source and distributed under the terms of the GNU General Public License v3 (GPLv3), or other specific open-source licenses for particular components, as applicable. Your rights to use, modify, and distribute the ComfyUI Software are governed by the respective Open Source Licenses.',
+  'tos.comfy-products.title': {
+    en: '2. Comfy Products',
+    'zh-CN': '2. Comfy Products'
+  },
+  'tos.comfy-products.block.0.heading': {
+    en: 'Right to Access and Use Comfy Products.',
+    'zh-CN': 'Right to Access and Use Comfy Products.'
+  },
+  'tos.comfy-products.block.1': {
+    en: 'Subject to your compliance with all of the terms and conditions of this Agreement, Comfy grants you and your Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for your internal business purposes.',
     'zh-CN':
-      '开源性质。ComfyUI 软件本身是开源的，根据 GNU 通用公共许可证第 3 版 (GPLv3) 或其他适用于特定组件的开源许可证的条款进行分发。您使用、修改和分发 ComfyUI 软件的权利受相应开源许可证的约束。'
+      'Subject to your compliance with all of the terms and conditions of this Agreement, Comfy grants you and your Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for your internal business purposes.'
   },
-  'tos.license.block.1': {
-    en: 'No Charge for Software. Comfy Org explicitly acknowledges that we do not charge for the ComfyUI Software itself. The fees outlined in these Terms are solely for the Services we provide around the Software, such as hosting, compute, and additional functionalities.',
+  'tos.comfy-products.block.2.heading': {
+    en: 'Customer Data.',
+    'zh-CN': 'Customer Data.'
+  },
+  'tos.comfy-products.block.3': {
+    en: 'As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.',
     'zh-CN':
-      '软件免费。Comfy Org 明确承认我们不对 ComfyUI 软件本身收费。本条款中列出的费用仅用于我们围绕软件提供的服务，例如托管、计算和附加功能。'
+      'As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.'
   },
-  'tos.license.block.2': {
-    en: 'Service Updates. You understand that the Software is evolving, and features and benefits You receive upon Your initial use may change. You acknowledge and agree that Comfy Org may update the Software with or without notifying You, including adding or removing features, products, or functionalities.',
+  'tos.comfy-products.block.4.heading': {
+    en: 'No AI Training.',
+    'zh-CN': 'No AI Training.'
+  },
+  'tos.comfy-products.block.5': {
+    en: 'Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.',
     'zh-CN':
-      '服务更新。您理解软件在不断发展，您初次使用时获得的功能和优势可能会发生变化。您承认并同意 Comfy Org 可能会在通知或不通知您的情况下更新软件，包括添加或删除功能、产品或特性。'
+      'Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.'
   },
-  'tos.using-services.label': { en: 'USAGE', 'zh-CN': '使用服务' },
-  'tos.using-services.title': {
-    en: '3. Using the Services',
-    'zh-CN': '3. 使用服务'
+  'tos.comfy-products.block.6.heading': {
+    en: 'Comfy OSS.',
+    'zh-CN': 'Comfy OSS.'
   },
-  'tos.using-services.block.0': {
-    en: 'Open Source Nature. The ComfyUI Software itself is open-source and distributed under the terms of the GNU General Public License v3 (GPLv3), or other specific open-source licenses for particular components, as applicable. Your rights to use, modify, and distribute the ComfyUI Software are governed by the respective Open Source Licenses.',
+  'tos.comfy-products.block.7': {
+    en: 'You may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.',
     'zh-CN':
-      '开源性质。ComfyUI 软件本身是开源的，根据 GNU 通用公共许可证第 3 版 (GPLv3) 或其他适用于特定组件的开源许可证的条款进行分发。您使用、修改和分发 ComfyUI 软件的权利受相应开源许可证的约束。'
+      'You may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.'
   },
-  'tos.using-services.block.1': {
-    en: 'No Charge for Software. Comfy Org explicitly acknowledges that we do not charge for the ComfyUI Software itself. The fees outlined in these Terms are solely for the Services we provide around the Software, such as hosting, compute, and additional functionalities.',
+  'tos.comfy-products.block.8.heading': {
+    en: 'Partner Nodes.',
+    'zh-CN': 'Partner Nodes.'
+  },
+  'tos.comfy-products.block.9': {
+    en: 'Certain features of the Comfy Products allow you to access third-party AI model providers (“Partner Nodes”) through Comfy. When you use a Partner Node, Comfy proxies your request to the applicable third-party provider, transmitting the information necessary to fulfill your request, including prompts, images, models, and parameters. Comfy does not transmit your identity or account information to third-party providers in connection with Partner Node requests. Your use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.',
     'zh-CN':
-      '软件免费。Comfy Org 明确承认我们不对 ComfyUI 软件本身收费。本条款中列出的费用仅用于我们围绕软件提供的服务，例如托管、计算和附加功能。'
+      'Certain features of the Comfy Products allow you to access third-party AI model providers (“Partner Nodes”) through Comfy. When you use a Partner Node, Comfy proxies your request to the applicable third-party provider, transmitting the information necessary to fulfill your request, including prompts, images, models, and parameters. Comfy does not transmit your identity or account information to third-party providers in connection with Partner Node requests. Your use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.'
   },
-  'tos.using-services.block.2': {
-    en: 'Service Updates. You understand that the Software is evolving, and features and benefits You receive upon Your initial use may change. You acknowledge and agree that Comfy Org may update the Software with or without notifying You, including adding or removing features, products, or functionalities.',
+  'tos.comfy-products.block.10.heading': {
+    en: 'Modification of Comfy Products.',
+    'zh-CN': 'Modification of Comfy Products.'
+  },
+  'tos.comfy-products.block.11': {
+    en: 'Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.',
     'zh-CN':
-      '服务更新。您理解软件在不断发展，您初次使用时获得的功能和优势可能会发生变化。您承认并同意 Comfy Org 可能会在通知或不通知您的情况下更新软件，包括添加或删除功能、产品或特性。'
+      'Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.'
   },
-  'tos.responsibilities.label': { en: 'RESPONSIBILITIES', 'zh-CN': '您的责任' },
-  'tos.responsibilities.title': {
-    en: '4. Your Responsibilities',
-    'zh-CN': '4. 您的责任'
+  'tos.comfy-products.block.12.heading': {
+    en: 'Data Retention and Deletion.',
+    'zh-CN': 'Data Retention and Deletion.'
   },
-  'tos.responsibilities.block.0': {
-    en: 'You are responsible for your use of the Services and any content you create, share, or distribute through them. You agree to use the Services in a manner that is lawful, respectful, and consistent with these Terms. You are solely responsible for maintaining the security of your account credentials.',
+  'tos.comfy-products.block.13': {
+    en: 'Comfy retains Customer Data for as long as your account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href="https://docs.comfy.org/support/data-retention" class="text-white underline">docs.comfy.org/support/data-retention</a>, as updated from time to time. You may request deletion of your account and associated Customer Data by contacting Comfy at <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify your personal information from its primary systems within a reasonable time. You acknowledge that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from your use of the Comfy Products may be retained indefinitely.',
     'zh-CN':
-      '您应对使用服务以及通过服务创建、共享或分发的任何内容负责。您同意以合法、尊重他人且符合本条款的方式使用服务。您全权负责维护账户凭据的安全。'
+      'Comfy retains Customer Data for as long as your account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href="https://docs.comfy.org/support/data-retention" class="text-white underline">docs.comfy.org/support/data-retention</a>, as updated from time to time. You may request deletion of your account and associated Customer Data by contacting Comfy at <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify your personal information from its primary systems within a reasonable time. You acknowledge that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from your use of the Comfy Products may be retained indefinitely.'
   },
-  'tos.restrictions.label': { en: 'RESTRICTIONS', 'zh-CN': '限制' },
-  'tos.restrictions.title': {
-    en: '5. Use Restrictions',
-    'zh-CN': '5. 使用限制'
+
+  'tos.customer-responsibilities.label': {
+    en: 'RESPONSIBILITIES',
+    'zh-CN': 'RESPONSIBILITIES'
   },
-  'tos.restrictions.block.0': {
-    en: 'You agree not to misuse the Services. This includes, but is not limited to:',
-    'zh-CN': '您同意不滥用服务，包括但不限于：'
+  'tos.customer-responsibilities.title': {
+    en: '3. Customer Responsibilities',
+    'zh-CN': '3. Customer Responsibilities'
   },
-  'tos.restrictions.block.1': {
-    en: 'Attempting to gain unauthorized access to any part of the Services\nUsing the Services to distribute malware, viruses, or harmful code\nInterfering with or disrupting the integrity or performance of the Services\nScraping, crawling, or using automated means to access the Services without permission\nPublishing custom nodes or workflows that contain malicious code or violate third-party rights',
+  'tos.customer-responsibilities.block.0.heading': {
+    en: 'Registration.',
+    'zh-CN': 'Registration.'
+  },
+  'tos.customer-responsibilities.block.1': {
+    en: 'In order to access and use the Comfy Products, you may be required to register an account by providing us with your email and other information requested in our registration form. You agree to provide us with complete and accurate registration information. You may not attempt to impersonate another person in registration. If you are registering on behalf of an organization, you warrant that you are authorized to agree to this Agreement on their behalf. You agree to be responsible for the security of your account. You accept that you are solely responsible for all activities that take place through your account, and that failure to limit access to your devices or systems may permit unauthorized use by third parties.',
     'zh-CN':
-      '试图未经授权访问服务的任何部分\n利用服务传播恶意软件、病毒或有害代码\n干扰或破坏服务的完整性或性能\n未经许可使用自动化手段抓取或爬取服务\n发布包含恶意代码或侵犯第三方权利的自定义节点或工作流'
+      'In order to access and use the Comfy Products, you may be required to register an account by providing us with your email and other information requested in our registration form. You agree to provide us with complete and accurate registration information. You may not attempt to impersonate another person in registration. If you are registering on behalf of an organization, you warrant that you are authorized to agree to this Agreement on their behalf. You agree to be responsible for the security of your account. You accept that you are solely responsible for all activities that take place through your account, and that failure to limit access to your devices or systems may permit unauthorized use by third parties.'
   },
-  'tos.accounts.label': { en: 'ACCOUNTS', 'zh-CN': '账户' },
-  'tos.accounts.title': {
-    en: '6. Accounts and User Information',
-    'zh-CN': '6. 账户和用户信息'
+  'tos.customer-responsibilities.block.2.heading': {
+    en: 'General Technology Restrictions.',
+    'zh-CN': 'General Technology Restrictions.'
   },
-  'tos.accounts.block.0': {
-    en: 'Certain features of the Services may require you to create an account. You agree to provide accurate and complete information when creating your account and to keep this information up to date. You are responsible for all activity that occurs under your account. We reserve the right to suspend or terminate accounts that violate these Terms.',
+  'tos.customer-responsibilities.block.3': {
+    en: 'You agree that you will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.',
     'zh-CN':
-      '服务的某些功能可能要求您创建账户。您同意在创建账户时提供准确、完整的信息，并及时更新。您对账户下发生的所有活动负责。我们保留暂停或终止违反本条款的账户的权利。'
+      'You agree that you will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.'
   },
-  'tos.ip.label': { en: 'IP RIGHTS', 'zh-CN': '知识产权' },
-  'tos.ip.title': {
-    en: '7. Intellectual Property Rights',
-    'zh-CN': '7. 知识产权'
+  'tos.customer-responsibilities.block.4.heading': {
+    en: 'Acceptable Use; Prohibited Customer Data.',
+    'zh-CN': 'Acceptable Use; Prohibited Customer Data.'
   },
-  'tos.ip.block.0': {
-    en: 'The Services, excluding open-source components, are owned by Comfy and are protected by intellectual property laws. The Comfy name, logo, and branding are trademarks of Comfy Org, Inc. You retain ownership of any User Content you create. By submitting User Content to the Services, you grant Comfy a non-exclusive, worldwide, royalty-free license to host, display, and distribute such content as necessary to operate the Services.',
+  'tos.customer-responsibilities.block.5': {
+    en: 'Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group.',
     'zh-CN':
-      '除开源组件外，服务归 Comfy 所有并受知识产权法保护。Comfy 名称、标志和品牌是 Comfy Org, Inc. 的商标。您保留您创建的任何用户内容的所有权。向服务提交用户内容即表示您授予 Comfy 一项非排他性、全球性、免版税的许可，以在运营服务所需的范围内托管、展示和分发此类内容。'
+      'Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group.'
   },
-  'tos.distribution.label': { en: 'DISTRIBUTION', 'zh-CN': '分发' },
-  'tos.distribution.title': {
-    en: '8. Model and Workflow Distribution',
-    'zh-CN': '8. 模型和工作流分发'
+
+  'tos.payment.label': { en: 'PAYMENT', 'zh-CN': 'PAYMENT' },
+  'tos.payment.title': { en: '4. Payment', 'zh-CN': '4. Payment' },
+  'tos.payment.block.0.heading': {
+    en: 'Plans; Fees; Free Tier.',
+    'zh-CN': 'Plans; Fees; Free Tier.'
   },
-  'tos.distribution.block.0': {
-    en: 'When you distribute models, workflows, or custom nodes through the Registry or Services, you represent that you have the right to distribute such content and that it does not infringe any third-party rights. You are responsible for specifying an appropriate license for any content you distribute. Comfy does not claim ownership of content distributed through the Registry.',
+  'tos.payment.block.1': {
+    en: 'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.',
     'zh-CN':
-      '当您通过 Registry 或服务分发模型、工作流或自定义节点时，您声明您有权分发此类内容且其不侵犯任何第三方权利。您有责任为分发的内容指定适当的许可证。Comfy 不主张对通过 Registry 分发的内容的所有权。'
+      'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.'
   },
-  'tos.fees.label': { en: 'FEES', 'zh-CN': '费用' },
-  'tos.fees.title': { en: '9. Fees and Payment', 'zh-CN': '9. 费用和付款' },
-  'tos.fees.block.0': {
-    en: 'Certain Services may be offered for a fee. If you choose to use paid features, you agree to pay all applicable fees as described at the time of purchase. Fees are non-refundable except as required by law or as expressly stated in these Terms. Comfy reserves the right to change pricing with reasonable notice.',
+  'tos.payment.block.2.heading': {
+    en: 'Self-Serve Credit Card Billing.',
+    'zh-CN': 'Self-Serve Credit Card Billing.'
+  },
+  'tos.payment.block.3': {
+    en: 'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method.',
     'zh-CN':
-      '某些服务可能需要付费。如果您选择使用付费功能，则同意支付购买时所述的所有适用费用。除法律要求或本条款明确规定外，费用不予退还。Comfy 保留在合理通知后变更定价的权利。'
+      'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method.'
   },
-  'tos.termination.label': { en: 'TERMINATION', 'zh-CN': '终止' },
-  'tos.termination.title': {
-    en: '10. Term and Termination',
-    'zh-CN': '10. 期限和终止'
+  'tos.payment.block.4.heading': {
+    en: 'Invoiced Billing.',
+    'zh-CN': 'Invoiced Billing.'
   },
-  'tos.termination.block.0': {
-    en: 'These Terms remain in effect while you use the Services. You may stop using the Services at any time. Comfy may suspend or terminate your access to the Services at any time, with or without cause and with or without notice. Upon termination, your right to use the Services will immediately cease. Sections that by their nature should survive termination will continue to apply.',
+  'tos.payment.block.5': {
+    en: 'If Comfy approves invoiced billing for Customer, Comfy will invoice Customer in accordance with the applicable Order Form, and Customer will pay all undisputed amounts within thirty (30) days of the invoice date. Any purchase Order Forms are for administrative convenience only and will not modify this Agreement. Customer will notify Comfy in writing of any good-faith dispute regarding an invoice within thirty (30) days of the invoice date and will timely pay all undisputed amounts while the parties work to resolve the dispute.',
     'zh-CN':
-      '在您使用服务期间，本条款持续有效。您可随时停止使用服务。Comfy 可随时暂停或终止您对服务的访问，无论是否有原因，也无论是否事先通知。终止后，您使用服务的权利将立即终止。按其性质应在终止后继续有效的条款将继续适用。'
+      'If Comfy approves invoiced billing for Customer, Comfy will invoice Customer in accordance with the applicable Order Form, and Customer will pay all undisputed amounts within thirty (30) days of the invoice date. Any purchase Order Forms are for administrative convenience only and will not modify this Agreement. Customer will notify Comfy in writing of any good-faith dispute regarding an invoice within thirty (30) days of the invoice date and will timely pay all undisputed amounts while the parties work to resolve the dispute.'
   },
-  'tos.warranties.label': { en: 'WARRANTIES', 'zh-CN': '免责' },
-  'tos.warranties.title': {
-    en: '11. Disclaimer of Warranties',
-    'zh-CN': '11. 免责声明'
+  'tos.payment.block.6.heading': {
+    en: 'Prepaid Credits.',
+    'zh-CN': 'Prepaid Credits.'
   },
-  'tos.warranties.block.0': {
-    en: 'THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. COMFY DOES NOT WARRANT THAT THE SERVICES WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE.',
+  'tos.payment.block.7': {
+    en: 'Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.',
     'zh-CN':
-      '服务按"现状"和"可用"基础提供，不附带任何形式的明示或暗示保证，包括但不限于对适销性、特定用途适用性和非侵权性的暗示保证。Comfy 不保证服务将不间断、无错误或安全。'
+      'Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.'
   },
-  'tos.liability.label': { en: 'LIABILITY', 'zh-CN': '责任限制' },
+  'tos.payment.block.8.heading': {
+    en: 'Taxes; Price Changes; No Refunds.',
+    'zh-CN': 'Taxes; Price Changes; No Refunds.'
+  },
+  'tos.payment.block.9': {
+    en: 'Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law. Comfy may change fees or introduce new fees upon prior notice (including by posting to the pricing page or in-product notice), effective as of the next billing period or as otherwise stated in the notice. Except as required by law or expressly stated in the Order Forms, all fees are non-cancellable and non-refundable.',
+    'zh-CN':
+      'Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law. Comfy may change fees or introduce new fees upon prior notice (including by posting to the pricing page or in-product notice), effective as of the next billing period or as otherwise stated in the notice. Except as required by law or expressly stated in the Order Forms, all fees are non-cancellable and non-refundable.'
+  },
+  'tos.payment.block.10.heading': {
+    en: 'Late Payments; Suspension.',
+    'zh-CN': 'Late Payments; Suspension.'
+  },
+  'tos.payment.block.11': {
+    en: 'Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws.',
+    'zh-CN':
+      'Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws.'
+  },
+
+  'tos.term-termination.label': {
+    en: 'TERM; TERMINATION',
+    'zh-CN': 'TERM; TERMINATION'
+  },
+  'tos.term-termination.title': {
+    en: '5. Term; Termination',
+    'zh-CN': '5. Term; Termination'
+  },
+  'tos.term-termination.block.0.heading': {
+    en: 'Termination of Agreement.',
+    'zh-CN': 'Termination of Agreement.'
+  },
+  'tos.term-termination.block.1': {
+    en: 'You may stop using the Comfy Products at any time with or without notice. This Agreement will remain in effect until terminated in accordance with this Section. Either party may terminate this Agreement for convenience upon written notice to the other; provided, however, that to the extent the parties have entered into one or more executed Order Forms with a stated term, such Order Form will remain in effect for its stated term unless earlier terminated in accordance with its terms or this Agreement, and termination of this Agreement will not, by itself, terminate any then-effective Order Form.',
+    'zh-CN':
+      'You may stop using the Comfy Products at any time with or without notice. This Agreement will remain in effect until terminated in accordance with this Section. Either party may terminate this Agreement for convenience upon written notice to the other; provided, however, that to the extent the parties have entered into one or more executed Order Forms with a stated term, such Order Form will remain in effect for its stated term unless earlier terminated in accordance with its terms or this Agreement, and termination of this Agreement will not, by itself, terminate any then-effective Order Form.'
+  },
+  'tos.term-termination.block.2.heading': {
+    en: 'Effect of Termination.',
+    'zh-CN': 'Effect of Termination.'
+  },
+  'tos.term-termination.block.3': {
+    en: 'Upon any termination or expiration of an Order Form (or this Agreement, if no Order Form is then in effect), Customer will promptly cease all use of the Comfy Products under the terminated arrangement and, if applicable, any continued use must be pursuant to a then-effective Order Form or other written authorization from Comfy. Comfy may suspend or terminate Customer’s access to the Comfy Products, or discontinue the Comfy Products or any portion or feature thereof, at any time; provided that Comfy will not terminate an unexpired Order Form for convenience unless the applicable Order Form expressly permits it, and any suspension or termination may be implemented immediately if Comfy reasonably determines that Customer’s use poses a security risk, violates this Agreement, or materially degrades the Comfy Products. Except as expressly set forth in an Order Form, Comfy will have no liability or other obligation to Customer arising out of or relating to any termination, suspension, or discontinuance under this Section.',
+    'zh-CN':
+      'Upon any termination or expiration of an Order Form (or this Agreement, if no Order Form is then in effect), Customer will promptly cease all use of the Comfy Products under the terminated arrangement and, if applicable, any continued use must be pursuant to a then-effective Order Form or other written authorization from Comfy. Comfy may suspend or terminate Customer’s access to the Comfy Products, or discontinue the Comfy Products or any portion or feature thereof, at any time; provided that Comfy will not terminate an unexpired Order Form for convenience unless the applicable Order Form expressly permits it, and any suspension or termination may be implemented immediately if Comfy reasonably determines that Customer’s use poses a security risk, violates this Agreement, or materially degrades the Comfy Products. Except as expressly set forth in an Order Form, Comfy will have no liability or other obligation to Customer arising out of or relating to any termination, suspension, or discontinuance under this Section.'
+  },
+  'tos.term-termination.block.4.heading': {
+    en: 'Survival.',
+    'zh-CN': 'Survival.'
+  },
+  'tos.term-termination.block.5': {
+    en: 'Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers.',
+    'zh-CN':
+      'Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers.'
+  },
+
+  'tos.confidentiality.label': {
+    en: 'CONFIDENTIALITY',
+    'zh-CN': 'CONFIDENTIALITY'
+  },
+  'tos.confidentiality.title': {
+    en: '6. Confidentiality',
+    'zh-CN': '6. Confidentiality'
+  },
+  'tos.confidentiality.block.0.heading': {
+    en: 'Definition of Confidential Information.',
+    'zh-CN': 'Definition of Confidential Information.'
+  },
+  'tos.confidentiality.block.1': {
+    en: '“Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.',
+    'zh-CN':
+      '“Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.'
+  },
+  'tos.confidentiality.block.2.heading': {
+    en: 'Protection of Confidential Information.',
+    'zh-CN': 'Protection of Confidential Information.'
+  },
+  'tos.confidentiality.block.3': {
+    en: 'The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.',
+    'zh-CN':
+      'The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.'
+  },
+  'tos.confidentiality.block.4.heading': {
+    en: 'Compelled Disclosure.',
+    'zh-CN': 'Compelled Disclosure.'
+  },
+  'tos.confidentiality.block.5': {
+    en: 'The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.',
+    'zh-CN':
+      'The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.'
+  },
+  'tos.confidentiality.block.6.heading': {
+    en: 'Data Security.',
+    'zh-CN': 'Data Security.'
+  },
+  'tos.confidentiality.block.7': {
+    en: 'Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure.',
+    'zh-CN':
+      'Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure.'
+  },
+
+  'tos.proprietary-rights.label': {
+    en: 'PROPRIETARY RIGHTS',
+    'zh-CN': 'PROPRIETARY RIGHTS'
+  },
+  'tos.proprietary-rights.title': {
+    en: '7. Proprietary Rights',
+    'zh-CN': '7. Proprietary Rights'
+  },
+  'tos.proprietary-rights.block.0.heading': {
+    en: 'Reservation of Rights.',
+    'zh-CN': 'Reservation of Rights.'
+  },
+  'tos.proprietary-rights.block.1': {
+    en: 'Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.',
+    'zh-CN':
+      'Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.'
+  },
+  'tos.proprietary-rights.block.2.heading': {
+    en: 'Feedback.',
+    'zh-CN': 'Feedback.'
+  },
+  'tos.proprietary-rights.block.3': {
+    en: 'You may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding your experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and you hereby grant Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.',
+    'zh-CN':
+      'You may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding your experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and you hereby grant Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.'
+  },
+  'tos.proprietary-rights.block.4.heading': {
+    en: 'Operational Metadata.',
+    'zh-CN': 'Operational Metadata.'
+  },
+  'tos.proprietary-rights.block.5': {
+    en: 'Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information.',
+    'zh-CN':
+      'Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information.'
+  },
+
+  'tos.disclaimer.label': { en: 'DISCLAIMER', 'zh-CN': 'DISCLAIMER' },
+  'tos.disclaimer.title': { en: '8. Disclaimer', 'zh-CN': '8. Disclaimer' },
+  'tos.disclaimer.block.0': {
+    en: 'THE Comfy Products AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. Comfy DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE Comfy Products (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. YOU AGREE AND ACKNOWLEDGE THAT YOUR USE OF ANY OUTPUT PROVIDED BY THE Comfy Products IS AT YOUR OWN RISK.',
+    'zh-CN':
+      'THE Comfy Products AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. Comfy DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE Comfy Products (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. YOU AGREE AND ACKNOWLEDGE THAT YOUR USE OF ANY OUTPUT PROVIDED BY THE Comfy Products IS AT YOUR OWN RISK.'
+  },
+  'tos.disclaimer.block.1': {
+    en: 'Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. in no event will Comfy be liable for any damages or losses arising from or related to Customer’s use of or reliance on the OUTPUT, including any decisions made or actions taken based on the OUTPUT.',
+    'zh-CN':
+      'Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. in no event will Comfy be liable for any damages or losses arising from or related to Customer’s use of or reliance on the OUTPUT, including any decisions made or actions taken based on the OUTPUT.'
+  },
+
+  'tos.liability.label': { en: 'LIABILITY', 'zh-CN': 'LIABILITY' },
   'tos.liability.title': {
-    en: '12. Limitation of Liability',
-    'zh-CN': '12. 责任限制'
+    en: '9. Limitation of Liability',
+    'zh-CN': '9. Limitation of Liability'
   },
   'tos.liability.block.0': {
-    en: "TO THE MAXIMUM EXTENT PERMITTED BY LAW, COMFY SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES RESULTING FROM YOUR USE OF THE SERVICES. COMFY'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNTS PAID BY YOU TO COMFY IN THE TWELVE MONTHS PRECEDING THE CLAIM.",
+    en: 'WHEN PERMITTED BY LAW, COMFY, AND COMFY’S SUPPLIERS AND DISTRIBUTORS, WILL NOT BE RESPONSIBLE FOR LOST PROFITS, REVENUES, OR DATA; FINANCIAL LOSSES; OR INDIRECT, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES. TO THE EXTENT PERMITTED BY LAW, THE TOTAL LIABILITY OF Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, FOR ANY CLAIM UNDER THIS AGREEMENT, INCLUDING FOR ANY IMPLIED WARRANTIES, IS LIMITED TO THE GREATER OF (A) ONE THOUSAND DOLLARS ($1,000); AND (B) THE AMOUNTS PAID OR PAYABLE BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE DATE OF THE CLAIM. IN ALL CASES, Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, WILL NOT BE LIABLE FOR ANY EXPENSE, LOSS, OR DAMAGE THAT IS NOT REASONABLY FORESEEABLE.',
     'zh-CN':
-      '在法律允许的最大范围内，Comfy 不对任何间接、附带、特殊、后果性或惩罚性损害，或任何利润或收入损失（无论是直接还是间接产生的），或任何数据、使用、商誉或其他无形损失承担责任。Comfy 的总责任不超过您在索赔前十二个月内向 Comfy 支付的金额。'
+      'WHEN PERMITTED BY LAW, COMFY, AND COMFY’S SUPPLIERS AND DISTRIBUTORS, WILL NOT BE RESPONSIBLE FOR LOST PROFITS, REVENUES, OR DATA; FINANCIAL LOSSES; OR INDIRECT, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES. TO THE EXTENT PERMITTED BY LAW, THE TOTAL LIABILITY OF Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, FOR ANY CLAIM UNDER THIS AGREEMENT, INCLUDING FOR ANY IMPLIED WARRANTIES, IS LIMITED TO THE GREATER OF (A) ONE THOUSAND DOLLARS ($1,000); AND (B) THE AMOUNTS PAID OR PAYABLE BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE DATE OF THE CLAIM. IN ALL CASES, Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, WILL NOT BE LIABLE FOR ANY EXPENSE, LOSS, OR DAMAGE THAT IS NOT REASONABLY FORESEEABLE.'
   },
-  'tos.indemnification.label': { en: 'INDEMNIFICATION', 'zh-CN': '赔偿' },
+
+  'tos.indemnification.label': {
+    en: 'INDEMNIFICATION',
+    'zh-CN': 'INDEMNIFICATION'
+  },
   'tos.indemnification.title': {
-    en: '13. Indemnification',
-    'zh-CN': '13. 赔偿'
+    en: '10. Indemnification',
+    'zh-CN': '10. Indemnification'
   },
   'tos.indemnification.block.0': {
-    en: 'You agree to indemnify, defend, and hold harmless Comfy, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses arising out of or in any way connected with your access to or use of the Services, your User Content, or your violation of these Terms.',
+    en: 'You agree to defend, indemnify, and hold harmless Comfy Organization, Inc. and its officers, directors, employees, contractors, and agents from and against any and all third-party claims, demands, actions, suits, or proceedings, and any resulting losses, damages, liabilities, costs, and expenses (including reasonable attorneys’ fees) to the extent resulting from your Customer Data or your breach of this Agreement. You must not settle any claim without Comfy’s prior written consent if the settlement would require Comfy to (a) admit fault, (b) pay any damages or other amounts, or (c) take or refrain from taking any action. Comfy may participate in a claim through counsel of its own choosing at its own expense, and you and Comfy will reasonably cooperate on the defense of any such claim.',
     'zh-CN':
-      '您同意赔偿、辩护并使 Comfy 及其管理人员、董事、员工和代理人免受因您访问或使用服务、您的用户内容或您违反本条款而产生的或与之相关的任何索赔、责任、损害、损失和费用。'
+      'You agree to defend, indemnify, and hold harmless Comfy Organization, Inc. and its officers, directors, employees, contractors, and agents from and against any and all third-party claims, demands, actions, suits, or proceedings, and any resulting losses, damages, liabilities, costs, and expenses (including reasonable attorneys’ fees) to the extent resulting from your Customer Data or your breach of this Agreement. You must not settle any claim without Comfy’s prior written consent if the settlement would require Comfy to (a) admit fault, (b) pay any damages or other amounts, or (c) take or refrain from taking any action. Comfy may participate in a claim through counsel of its own choosing at its own expense, and you and Comfy will reasonably cooperate on the defense of any such claim.'
   },
-  'tos.governing-law.label': { en: 'GOVERNING LAW', 'zh-CN': '适用法律' },
-  'tos.governing-law.title': {
-    en: '14. Governing Law and Dispute Resolution',
-    'zh-CN': '14. 适用法律和争议解决'
+
+  'tos.dispute-resolution.label': {
+    en: 'DISPUTE RESOLUTION',
+    'zh-CN': 'DISPUTE RESOLUTION'
   },
-  'tos.governing-law.block.0': {
-    en: 'These Terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict of laws principles. Any disputes arising under these Terms shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association, except that either party may seek injunctive relief in any court of competent jurisdiction.',
+  'tos.dispute-resolution.title': {
+    en: '11. Governing Law and Dispute Resolution',
+    'zh-CN': '11. Governing Law and Dispute Resolution'
+  },
+  'tos.dispute-resolution.block.0.heading': {
+    en: 'Governing Law.',
+    'zh-CN': 'Governing Law.'
+  },
+  'tos.dispute-resolution.block.1': {
+    en: 'This Agreement and any dispute, claim, or controversy arising out of or relating to this Agreement, the Comfy Products, or the parties’ relationship (each, a “Dispute”), shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of laws principles that would result in the application of the laws of any other jurisdiction.',
     'zh-CN':
-      '本条款受特拉华州法律管辖并据其解释，不适用其冲突法原则。因本条款引起的任何争议应根据美国仲裁协会的规则通过有约束力的仲裁解决，但任何一方均可在有管辖权的法院寻求禁令救济。'
+      'This Agreement and any dispute, claim, or controversy arising out of or relating to this Agreement, the Comfy Products, or the parties’ relationship (each, a “Dispute”), shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of laws principles that would result in the application of the laws of any other jurisdiction.'
   },
-  'tos.miscellaneous.label': { en: 'MISCELLANEOUS', 'zh-CN': '其他' },
-  'tos.miscellaneous.title': { en: '15. Miscellaneous', 'zh-CN': '15. 其他' },
-  'tos.miscellaneous.block.0': {
-    en: 'These Terms constitute the entire agreement between you and Comfy regarding the Services. If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in effect. Our failure to enforce any right or provision of these Terms will not be considered a waiver. We may assign our rights under these Terms. You may not assign your rights without our prior written consent.',
+  'tos.dispute-resolution.block.2.heading': {
+    en: 'Binding Arbitration; JAMS.',
+    'zh-CN': 'Binding Arbitration; JAMS.'
+  },
+  'tos.dispute-resolution.block.3': {
+    en: 'Except as expressly set forth in Section 11(c) (Exceptions; Injunctive Relief), any Dispute shall be finally resolved by binding arbitration administered by JAMS in accordance with the JAMS Comprehensive Arbitration Rules and Procedures (or, if applicable, the JAMS Streamlined Arbitration Rules and Procedures), as in effect at the time the arbitration is commenced. The arbitration shall be seated in San Francisco, California, and conducted in English before one (1) arbitrator. Judgment on the award rendered by the arbitrator may be entered in any court of competent jurisdiction.',
     'zh-CN':
-      '本条款构成您与 Comfy 之间关于服务的完整协议。如果本条款的任何条款被认定为不可执行，其余条款将继续有效。我们未能执行本条款的任何权利或条款不构成放弃。我们可以转让本条款下的权利。未经我们事先书面同意，您不得转让您的权利。'
+      'Except as expressly set forth in Section 11(c) (Exceptions; Injunctive Relief), any Dispute shall be finally resolved by binding arbitration administered by JAMS in accordance with the JAMS Comprehensive Arbitration Rules and Procedures (or, if applicable, the JAMS Streamlined Arbitration Rules and Procedures), as in effect at the time the arbitration is commenced. The arbitration shall be seated in San Francisco, California, and conducted in English before one (1) arbitrator. Judgment on the award rendered by the arbitrator may be entered in any court of competent jurisdiction.'
   },
-  'tos.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
-  'tos.contact.title': { en: 'Contact Us', 'zh-CN': '联系我们' },
+  'tos.dispute-resolution.block.4.heading': {
+    en: 'Exceptions; Injunctive Relief.',
+    'zh-CN': 'Exceptions; Injunctive Relief.'
+  },
+  'tos.dispute-resolution.block.5': {
+    en: 'Notwithstanding anything to the contrary, either party may seek temporary, preliminary, or permanent injunctive relief (or other equitable relief) in any court of competent jurisdiction located in San Francisco, CA to prevent or enjoin actual or threatened misuse, infringement, or misappropriation of its intellectual property rights, confidential information, or proprietary rights, without the necessity of posting bond or proving actual damages to the extent permitted by Applicable Law. In addition, either party may bring an individual claim in small claims court in San Francisco, CA, if the claim qualifies.',
+    'zh-CN':
+      'Notwithstanding anything to the contrary, either party may seek temporary, preliminary, or permanent injunctive relief (or other equitable relief) in any court of competent jurisdiction located in San Francisco, CA to prevent or enjoin actual or threatened misuse, infringement, or misappropriation of its intellectual property rights, confidential information, or proprietary rights, without the necessity of posting bond or proving actual damages to the extent permitted by Applicable Law. In addition, either party may bring an individual claim in small claims court in San Francisco, CA, if the claim qualifies.'
+  },
+  'tos.dispute-resolution.block.6.heading': {
+    en: 'Class Action Waiver.',
+    'zh-CN': 'Class Action Waiver.'
+  },
+  'tos.dispute-resolution.block.7': {
+    en: 'To the fullest extent permitted by Applicable Law, the parties agree that any Dispute will be brought and resolved on an individual basis only, and not as a plaintiff or class member in any purported class, collective, consolidated, coordinated, or representative action or proceeding. The arbitrator may not consolidate claims or preside over any form of representative or class proceeding.',
+    'zh-CN':
+      'To the fullest extent permitted by Applicable Law, the parties agree that any Dispute will be brought and resolved on an individual basis only, and not as a plaintiff or class member in any purported class, collective, consolidated, coordinated, or representative action or proceeding. The arbitrator may not consolidate claims or preside over any form of representative or class proceeding.'
+  },
+  'tos.dispute-resolution.block.8.heading': {
+    en: 'Waiver of Jury Trial.',
+    'zh-CN': 'Waiver of Jury Trial.'
+  },
+  'tos.dispute-resolution.block.9': {
+    en: 'To the fullest extent permitted by Applicable Law, each party hereby knowingly and irrevocably waives any right to a trial by jury in any action, proceeding, or counterclaim arising out of or relating to this Agreement or the Comfy Products.',
+    'zh-CN':
+      'To the fullest extent permitted by Applicable Law, each party hereby knowingly and irrevocably waives any right to a trial by jury in any action, proceeding, or counterclaim arising out of or relating to this Agreement or the Comfy Products.'
+  },
+  'tos.dispute-resolution.block.10.heading': {
+    en: 'Exclusive Forum for Court Proceedings.',
+    'zh-CN': 'Exclusive Forum for Court Proceedings.'
+  },
+  'tos.dispute-resolution.block.11': {
+    en: 'To the extent any Dispute is not subject to arbitration under this Agreement, the parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum.',
+    'zh-CN':
+      'To the extent any Dispute is not subject to arbitration under this Agreement, the parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum.'
+  },
+  'tos.dispute-resolution.block.12.heading': {
+    en: 'Confidentiality.',
+    'zh-CN': 'Confidentiality.'
+  },
+  'tos.dispute-resolution.block.13': {
+    en: 'The arbitration, including the existence of the arbitration, all materials submitted, and all testimony and awards, shall be confidential and may not be disclosed except as necessary to conduct the arbitration, to enforce an award, or as required by Applicable Law.',
+    'zh-CN':
+      'The arbitration, including the existence of the arbitration, all materials submitted, and all testimony and awards, shall be confidential and may not be disclosed except as necessary to conduct the arbitration, to enforce an award, or as required by Applicable Law.'
+  },
+  'tos.dispute-resolution.block.14.heading': {
+    en: 'Time Limit.',
+    'zh-CN': 'Time Limit.'
+  },
+  'tos.dispute-resolution.block.15': {
+    en: 'To the fullest extent permitted by Applicable Law, any Dispute must be brought by you within one (1) year after the claim or cause of action first arose, or it is permanently barred.',
+    'zh-CN':
+      'To the fullest extent permitted by Applicable Law, any Dispute must be brought by you within one (1) year after the claim or cause of action first arose, or it is permanently barred.'
+  },
+
+  'tos.miscellaneous.label': { en: 'MISCELLANEOUS', 'zh-CN': 'MISCELLANEOUS' },
+  'tos.miscellaneous.title': {
+    en: '12. Miscellaneous',
+    'zh-CN': '12. Miscellaneous'
+  },
+  'tos.miscellaneous.block.0.heading': {
+    en: 'Export Compliance.',
+    'zh-CN': 'Export Compliance.'
+  },
+  'tos.miscellaneous.block.1': {
+    en: 'You will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in providing and using the Comfy Products.',
+    'zh-CN':
+      'You will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in providing and using the Comfy Products.'
+  },
+  'tos.miscellaneous.block.2.heading': {
+    en: 'Publicity.',
+    'zh-CN': 'Publicity.'
+  },
+  'tos.miscellaneous.block.3': {
+    en: 'You agree that Comfy may refer to your name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use your name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without your prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.',
+    'zh-CN':
+      'You agree that Comfy may refer to your name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use your name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without your prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.'
+  },
+  'tos.miscellaneous.block.4.heading': {
+    en: 'Third-Party Infrastructure.',
+    'zh-CN': 'Third-Party Infrastructure.'
+  },
+  'tos.miscellaneous.block.5': {
+    en: 'Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.',
+    'zh-CN':
+      'Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.'
+  },
+  'tos.miscellaneous.block.6.heading': {
+    en: 'Assignment; Delegation.',
+    'zh-CN': 'Assignment; Delegation.'
+  },
+  'tos.miscellaneous.block.7': {
+    en: 'Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.',
+    'zh-CN':
+      'Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.'
+  },
+  'tos.miscellaneous.block.8.heading': {
+    en: 'Amendment; Waiver.',
+    'zh-CN': 'Amendment; Waiver.'
+  },
+  'tos.miscellaneous.block.9': {
+    en: 'Comfy reserves the right in its sole discretion and at any time and for any reason to modify this Agreement. Any modifications to this Agreement shall become effective upon the date of posting. Your continued use of, or access to, the Comfy Products after an update goes into effect will constitute acceptance of the update. If you do not agree with an update, you may stop using the Comfy Products or terminate this Agreement. No waiver by either party of any breach or default hereunder shall be deemed to be a waiver of any preceding or subsequent breach or default. Any such waiver will apply only to the specific provision and under the specific circumstances for which it was given, and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.',
+    'zh-CN':
+      'Comfy reserves the right in its sole discretion and at any time and for any reason to modify this Agreement. Any modifications to this Agreement shall become effective upon the date of posting. Your continued use of, or access to, the Comfy Products after an update goes into effect will constitute acceptance of the update. If you do not agree with an update, you may stop using the Comfy Products or terminate this Agreement. No waiver by either party of any breach or default hereunder shall be deemed to be a waiver of any preceding or subsequent breach or default. Any such waiver will apply only to the specific provision and under the specific circumstances for which it was given, and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.'
+  },
+  'tos.miscellaneous.block.10.heading': {
+    en: 'Relationship.',
+    'zh-CN': 'Relationship.'
+  },
+  'tos.miscellaneous.block.11': {
+    en: 'Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.',
+    'zh-CN':
+      'Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.'
+  },
+  'tos.miscellaneous.block.12.heading': {
+    en: 'Unenforceability.',
+    'zh-CN': 'Unenforceability.'
+  },
+  'tos.miscellaneous.block.13': {
+    en: 'If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.',
+    'zh-CN':
+      'If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.'
+  },
+  'tos.miscellaneous.block.14.heading': {
+    en: 'Notices.',
+    'zh-CN': 'Notices.'
+  },
+  'tos.miscellaneous.block.15': {
+    en: 'Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: 201 Spear Street, Ste 17, San Francisco, CA 94105.',
+    'zh-CN':
+      'Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: 201 Spear Street, Ste 17, San Francisco, CA 94105.'
+  },
+  'tos.miscellaneous.block.16.heading': {
+    en: 'Entire Agreement.',
+    'zh-CN': 'Entire Agreement.'
+  },
+  'tos.miscellaneous.block.17': {
+    en: 'This Agreement comprises the entire agreement between you and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement.',
+    'zh-CN':
+      'This Agreement comprises the entire agreement between you and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement.'
+  },
+
+  'tos.contact.label': { en: 'CONTACT', 'zh-CN': 'CONTACT' },
+  'tos.contact.title': { en: '13. Contact Us', 'zh-CN': '13. Contact Us' },
   'tos.contact.block.0': {
-    en: 'If you have questions about these Terms, please contact us at <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>.',
+    en: 'If you have any questions regarding this Agreement or the Comfy Products, please contact us at: <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>.',
     'zh-CN':
-      '如果您对本条款有任何疑问，请通过 <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a> 与我们联系。'
+      'If you have any questions regarding this Agreement or the Comfy Products, please contact us at: <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>.'
+  },
+
+  // ── Affiliate Program Terms ───────────────────────────────────────
+  // Legal-reviewed copy — ENGLISH ONLY. There is no /zh-CN/affiliates/terms
+  // route, and the `'zh-CN'` values below intentionally duplicate `en`
+  // verbatim only to satisfy the translations dictionary's required
+  // Record<Locale, string> shape. Do NOT translate these into Chinese:
+  // shipping an unreviewed translation as the active terms exposes us to
+  // liability from the translation diverging from the legal-approved
+  // English source. If a translated terms page is ever needed, add a
+  // separate `/affiliates/terms/<locale>` route only after legal signs
+  // off on that specific translation as the authoritative version.
+  'affiliate-terms.effective-date': {
+    en: 'May 16, 2026',
+    'zh-CN': 'May 16, 2026'
+  },
+  'affiliate-terms.1-program-overview.label': {
+    en: 'PROGRAM',
+    'zh-CN': 'PROGRAM'
+  },
+  'affiliate-terms.1-program-overview.title': {
+    en: '1. Program Overview',
+    'zh-CN': '1. Program Overview'
+  },
+  'affiliate-terms.1-program-overview.block.0': {
+    en: 'The <a href="https://comfy.org" class="text-white underline">Comfy.org</a> Affiliate Program ("<strong>Program</strong>") allows approved participants ("<strong>Affiliates</strong>") to earn commissions by referring new paying customers to Comfy Cloud. By participating in this program, you agree to these terms.',
+    'zh-CN':
+      'The <a href="https://comfy.org" class="text-white underline">Comfy.org</a> Affiliate Program ("<strong>Program</strong>") allows approved participants ("<strong>Affiliates</strong>") to earn commissions by referring new paying customers to Comfy Cloud. By participating in this program, you agree to these terms.'
+  },
+  'affiliate-terms.2-eligible-products.label': {
+    en: 'PRODUCTS',
+    'zh-CN': 'PRODUCTS'
+  },
+  'affiliate-terms.2-eligible-products.title': {
+    en: '2. Eligible Products',
+    'zh-CN': '2. Eligible Products'
+  },
+  'affiliate-terms.2-eligible-products.block.0': {
+    en: 'Commissions are earned on Comfy Cloud paid subscription plans only. The following are excluded from commission eligibility: free tier signups (unless they later convert to paid), one-time credit purchases, enterprise contracts negotiated directly with Comfy sales, and API-only usage billed outside of standard subscription plans.',
+    'zh-CN':
+      'Commissions are earned on Comfy Cloud paid subscription plans only. The following are excluded from commission eligibility: free tier signups (unless they later convert to paid), one-time credit purchases, enterprise contracts negotiated directly with Comfy sales, and API-only usage billed outside of standard subscription plans.'
+  },
+  'affiliate-terms.3-commission-structure.label': {
+    en: 'COMMISSION',
+    'zh-CN': 'COMMISSION'
+  },
+  'affiliate-terms.3-commission-structure.title': {
+    en: '3. Commission Structure',
+    'zh-CN': '3. Commission Structure'
+  },
+  'affiliate-terms.3-commission-structure.block.0': {
+    en: 'Commission rate: 30% recurring on the net subscription amount received by Comfy.org\nCommission duration: 3 months from the referred customer\u2019s first paid subscription\nCookie/attribution window: 60 days from the referral click\nMinimum payout threshold: $100\nPayout schedule: Monthly, within the first 10 business days of each month after the receipt of applicable payment by Comfy from its referred customer\nPayout method: Via the affiliate tracking platform (Stripe Express or PayPal)\nCommission cessation: To the extent a referred customer\u2019s subscription is canceled, in whole or in part, the affiliate shall correspondingly cease to receive commission payments, even within the 3-month commission window. Refunded or charged-back transactions are not eligible for commission, and any commission previously paid for such transactions will be deducted from future payouts (see Section 4).',
+    'zh-CN':
+      'Commission rate: 30% recurring on the net subscription amount received by Comfy.org\nCommission duration: 3 months from the referred customer\u2019s first paid subscription\nCookie/attribution window: 60 days from the referral click\nMinimum payout threshold: $100\nPayout schedule: Monthly, within the first 10 business days of each month after the receipt of applicable payment by Comfy from its referred customer\nPayout method: Via the affiliate tracking platform (Stripe Express or PayPal)\nCommission cessation: To the extent a referred customer\u2019s subscription is canceled, in whole or in part, the affiliate shall correspondingly cease to receive commission payments, even within the 3-month commission window. Refunded or charged-back transactions are not eligible for commission, and any commission previously paid for such transactions will be deducted from future payouts (see Section 4).'
+  },
+  'affiliate-terms.4-attribution-rules.label': {
+    en: 'ATTRIBUTION',
+    'zh-CN': 'ATTRIBUTION'
+  },
+  'affiliate-terms.4-attribution-rules.title': {
+    en: '4. Attribution Rules',
+    'zh-CN': '4. Attribution Rules'
+  },
+  'affiliate-terms.4-attribution-rules.block.0': {
+    en: 'Commissions are attributed on a last-click basis within the 60-day cookie window\nIf a referred customer cancels and re-subscribes within 60 days, the original affiliate retains attribution\nIf a referred customer upgrades their plan, commission is calculated on the upgraded amount\nIf a referred customer downgrades their plan, commission adjusts to the new plan amount\nRefunded transactions are not eligible for commission\nAny commission paid on refunded transactions will be deducted from future payouts to you',
+    'zh-CN':
+      'Commissions are attributed on a last-click basis within the 60-day cookie window\nIf a referred customer cancels and re-subscribes within 60 days, the original affiliate retains attribution\nIf a referred customer upgrades their plan, commission is calculated on the upgraded amount\nIf a referred customer downgrades their plan, commission adjusts to the new plan amount\nRefunded transactions are not eligible for commission\nAny commission paid on refunded transactions will be deducted from future payouts to you'
+  },
+  'affiliate-terms.5-prohibited-activities.label': {
+    en: 'PROHIBITED',
+    'zh-CN': 'PROHIBITED'
+  },
+  'affiliate-terms.5-prohibited-activities.title': {
+    en: '5. Prohibited Activities',
+    'zh-CN': '5. Prohibited Activities'
+  },
+  'affiliate-terms.5-prohibited-activities.block.0': {
+    en: 'Affiliates must NOT:',
+    'zh-CN': 'Affiliates must NOT:'
+  },
+  'affiliate-terms.5-prohibited-activities.block.1': {
+    en: '<strong>Self-refer</strong>: Use your own affiliate link to purchase or receive discounts on your own account\n<strong>Bid on branded keywords</strong>: Run paid search campaigns (Google Ads, Bing Ads, etc.) targeting "ComfyUI," "Comfy.org," "Comfy Cloud," or any misspellings or variations thereof\n<strong>Misrepresent</strong>: Impersonate Comfy.org, claim to be an employee, or create assets that could be confused with official Comfy.org materials\n<strong>Spam</strong>: Send unsolicited bulk emails, messages, or engage in any form of spam promotion\n<strong>Cookie stuff</strong>: Use hidden iframes, pop-unders, or any technical means to set cookies without genuine user intent\n<strong>Incentivize clicks</strong>: Offer monetary rewards, points, or other incentives solely for clicking your affiliate link (content recommendations are fine)\n<strong>Use misleading claims</strong>: Make false or exaggerated claims about Comfy.org products, pricing, or features\n<strong>Promote on prohibited content</strong>: Place affiliate links on sites containing illegal content, hate speech, or adult content\n<strong>Contrary to laws</strong>: Place affiliate links in any market that is prohibited as a region under the laws of the United States of America.',
+    'zh-CN':
+      '<strong>Self-refer</strong>: Use your own affiliate link to purchase or receive discounts on your own account\n<strong>Bid on branded keywords</strong>: Run paid search campaigns (Google Ads, Bing Ads, etc.) targeting "ComfyUI," "Comfy.org," "Comfy Cloud," or any misspellings or variations thereof\n<strong>Misrepresent</strong>: Impersonate Comfy.org, claim to be an employee, or create assets that could be confused with official Comfy.org materials\n<strong>Spam</strong>: Send unsolicited bulk emails, messages, or engage in any form of spam promotion\n<strong>Cookie stuff</strong>: Use hidden iframes, pop-unders, or any technical means to set cookies without genuine user intent\n<strong>Incentivize clicks</strong>: Offer monetary rewards, points, or other incentives solely for clicking your affiliate link (content recommendations are fine)\n<strong>Use misleading claims</strong>: Make false or exaggerated claims about Comfy.org products, pricing, or features\n<strong>Promote on prohibited content</strong>: Place affiliate links on sites containing illegal content, hate speech, or adult content\n<strong>Contrary to laws</strong>: Place affiliate links in any market that is prohibited as a region under the laws of the United States of America.'
+  },
+  'affiliate-terms.6-content-guidelines.label': {
+    en: 'CONTENT & IP',
+    'zh-CN': 'CONTENT & IP'
+  },
+  'affiliate-terms.6-content-guidelines.title': {
+    en: '6. Content Guidelines and Intellectual Property Rights',
+    'zh-CN': '6. Content Guidelines and Intellectual Property Rights'
+  },
+  'affiliate-terms.6-content-guidelines.block.0': {
+    en: 'Affiliates must clearly disclose the affiliate relationship in accordance with FTC guidelines (US) and equivalent regulations in their jurisdiction\nRecommended disclosure: "This page contains affiliate links. I may earn a commission if you sign up through my link."\nAffiliates may use Comfy.org logos and brand assets only as provided in the official affiliate asset kit, and may not modify them\nComfy.org retains all rights, including in any of its intellectual property apart from the limited use rights granted herein',
+    'zh-CN':
+      'Affiliates must clearly disclose the affiliate relationship in accordance with FTC guidelines (US) and equivalent regulations in their jurisdiction\nRecommended disclosure: "This page contains affiliate links. I may earn a commission if you sign up through my link."\nAffiliates may use Comfy.org logos and brand assets only as provided in the official affiliate asset kit, and may not modify them\nComfy.org retains all rights, including in any of its intellectual property apart from the limited use rights granted herein'
+  },
+  'affiliate-terms.7-termination.label': {
+    en: 'TERMINATION',
+    'zh-CN': 'TERMINATION'
+  },
+  'affiliate-terms.7-termination.title': {
+    en: '7. Termination',
+    'zh-CN': '7. Termination'
+  },
+  'affiliate-terms.7-termination.block.0': {
+    en: 'Either party may terminate the affiliate relationship at any time with 14 days\u2019 prior written notice\nComfy.org reserves the right to immediately terminate and withhold commissions if an affiliate violates any of the prohibited activities listed above\nUpon termination, any unpaid commissions above the minimum threshold will be paid in the next regular payout cycle\nCommissions on referred customers will cease at the time of termination, even if within the 3-month commission window',
+    'zh-CN':
+      'Either party may terminate the affiliate relationship at any time with 14 days\u2019 prior written notice\nComfy.org reserves the right to immediately terminate and withhold commissions if an affiliate violates any of the prohibited activities listed above\nUpon termination, any unpaid commissions above the minimum threshold will be paid in the next regular payout cycle\nCommissions on referred customers will cease at the time of termination, even if within the 3-month commission window'
+  },
+  'affiliate-terms.8-program-modifications.label': {
+    en: 'MODIFICATIONS',
+    'zh-CN': 'MODIFICATIONS'
+  },
+  'affiliate-terms.8-program-modifications.title': {
+    en: '8. Program Modifications',
+    'zh-CN': '8. Program Modifications'
+  },
+  'affiliate-terms.8-program-modifications.block.0': {
+    en: 'Comfy.org reserves the right to modify these terms, commission rates, or program structure with 30 days notice to active affiliates\nContinued participation after notice constitutes acceptance of modified terms',
+    'zh-CN':
+      'Comfy.org reserves the right to modify these terms, commission rates, or program structure with 30 days notice to active affiliates\nContinued participation after notice constitutes acceptance of modified terms'
+  },
+  'affiliate-terms.9-indemnification.label': {
+    en: 'LIABILITY',
+    'zh-CN': 'LIABILITY'
+  },
+  'affiliate-terms.9-indemnification.title': {
+    en: '9. Indemnification and Limitation of Liability',
+    'zh-CN': '9. Indemnification and Limitation of Liability'
+  },
+  'affiliate-terms.9-indemnification.block.0': {
+    en: 'You will indemnify Comfy.org from any third party claim arising out of your breach of these terms.\nComfy.org\u2019s liability to any affiliate shall not (i) exceed the total commissions paid to that affiliate in the preceding 12 months, and (ii) include any indirect, consequential, punitive or any other type of special damages.\nComfy.org is not responsible for tracking failures caused by user browser settings, ad blockers, or VPNs, though we employ server-side tracking to minimize these issues',
+    'zh-CN':
+      'You will indemnify Comfy.org from any third party claim arising out of your breach of these terms.\nComfy.org\u2019s liability to any affiliate shall not (i) exceed the total commissions paid to that affiliate in the preceding 12 months, and (ii) include any indirect, consequential, punitive or any other type of special damages.\nComfy.org is not responsible for tracking failures caused by user browser settings, ad blockers, or VPNs, though we employ server-side tracking to minimize these issues'
+  },
+  'affiliate-terms.10-governing-law.label': {
+    en: 'GOVERNING LAW',
+    'zh-CN': 'GOVERNING LAW'
+  },
+  'affiliate-terms.10-governing-law.title': {
+    en: '10. Governing Law',
+    'zh-CN': '10. Governing Law'
+  },
+  'affiliate-terms.10-governing-law.block.0': {
+    en: 'These terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to conflict of law principles. All disputes arising under this Agreement shall be resolved exclusively in the state or federal courts in the State of Delaware.',
+    'zh-CN':
+      'These terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to conflict of law principles. All disputes arising under this Agreement shall be resolved exclusively in the state or federal courts in the State of Delaware.'
+  },
+  'affiliate-terms.11-miscellaneous.label': {
+    en: 'MISCELLANEOUS',
+    'zh-CN': 'MISCELLANEOUS'
+  },
+  'affiliate-terms.11-miscellaneous.title': {
+    en: '11. Miscellaneous',
+    'zh-CN': '11. Miscellaneous'
+  },
+  'affiliate-terms.11-miscellaneous.block.0': {
+    en: '<strong>(a) Entire Agreement.</strong> These terms constitutes the sole and entire agreement (including the attached schedules and exhibits) of the Parties with respect to the subject matter of these terms, and supersedes all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, with respect to the subject matter. <strong>(b) Relationship of Parties.</strong> Each party is an independent contractor with regard to these terms. Nothing contained in These terms shall be construed as creating any agency, partnership, joint venture, or other form of joint enterprise, employment, or fiduciary relationship between the Parties. Neither party, by virtue of these terms, will have any right, power, or authority to act or create an obligation, express or implied, on behalf of the other party. <strong>(c) Assignment.</strong> Neither party shall assign any of its rights or delegate any of its obligations hereunder without the prior written consent of the other party, which consent shall not be unreasonably withheld, conditioned or delayed. <strong>(d) Severability.</strong> If any term or provision of these terms is invalid, illegal, or unenforceable in any jurisdiction, such invalidity, illegality, or unenforceability shall not affect any other term or provision of these terms or invalidate or render unenforceable such term or provision in any other jurisdiction. Upon a determination that any term or provision is invalid, illegal or unenforceable, the Parties hereto shall negotiate in good faith to modify these terms to effect the original intent of the Parties as closely as possible in order that the transactions contemplated hereby be consummated as originally contemplated to the greatest extent possible. <strong>(e) Waiver.</strong> No waiver by either party of any of the provisions hereof shall be effective unless explicitly set forth in writing and signed by the party so waiving. <strong>(f) Notice.</strong> Each party shall deliver all notices, requests, consents, claims, demands, waivers, and other communications under these terms in writing to the email utilized for the primary contact for the other party. <strong>(g) Cumulative Remedies.</strong> All rights and remedies provided in these terms are cumulative and not exclusive, and the exercise by a party of any right or remedy does not preclude the exercise of any other rights or remedies that may now or subsequently be available at Law, in equity, by statute, in any other agreement between the Parties or otherwise. <strong>(h) No Third-Party Beneficiaries.</strong> These terms benefits solely the Parties to these terms and their respective permitted successors and assigns and nothing in these terms, express or implied, confers on any other person or entity any legal or equitable right, benefit, or remedy of any nature whatsoever under or by reason of these terms.',
+    'zh-CN':
+      '<strong>(a) Entire Agreement.</strong> These terms constitutes the sole and entire agreement (including the attached schedules and exhibits) of the Parties with respect to the subject matter of these terms, and supersedes all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, with respect to the subject matter. <strong>(b) Relationship of Parties.</strong> Each party is an independent contractor with regard to these terms. Nothing contained in These terms shall be construed as creating any agency, partnership, joint venture, or other form of joint enterprise, employment, or fiduciary relationship between the Parties. Neither party, by virtue of these terms, will have any right, power, or authority to act or create an obligation, express or implied, on behalf of the other party. <strong>(c) Assignment.</strong> Neither party shall assign any of its rights or delegate any of its obligations hereunder without the prior written consent of the other party, which consent shall not be unreasonably withheld, conditioned or delayed. <strong>(d) Severability.</strong> If any term or provision of these terms is invalid, illegal, or unenforceable in any jurisdiction, such invalidity, illegality, or unenforceability shall not affect any other term or provision of these terms or invalidate or render unenforceable such term or provision in any other jurisdiction. Upon a determination that any term or provision is invalid, illegal or unenforceable, the Parties hereto shall negotiate in good faith to modify these terms to effect the original intent of the Parties as closely as possible in order that the transactions contemplated hereby be consummated as originally contemplated to the greatest extent possible. <strong>(e) Waiver.</strong> No waiver by either party of any of the provisions hereof shall be effective unless explicitly set forth in writing and signed by the party so waiving. <strong>(f) Notice.</strong> Each party shall deliver all notices, requests, consents, claims, demands, waivers, and other communications under these terms in writing to the email utilized for the primary contact for the other party. <strong>(g) Cumulative Remedies.</strong> All rights and remedies provided in these terms are cumulative and not exclusive, and the exercise by a party of any right or remedy does not preclude the exercise of any other rights or remedies that may now or subsequently be available at Law, in equity, by statute, in any other agreement between the Parties or otherwise. <strong>(h) No Third-Party Beneficiaries.</strong> These terms benefits solely the Parties to these terms and their respective permitted successors and assigns and nothing in these terms, express or implied, confers on any other person or entity any legal or equitable right, benefit, or remedy of any nature whatsoever under or by reason of these terms.'
+  },
+
+  'affiliate-terms.page.title': {
+    en: 'Affiliate Terms — Comfy',
+    'zh-CN': 'Affiliate Terms — Comfy'
+  },
+  'affiliate-terms.page.description': {
+    en: 'Comfy.org Affiliate Program Terms and Conditions.',
+    'zh-CN': 'Comfy.org Affiliate Program Terms and Conditions.'
+  },
+  'affiliate-terms.page.heading': {
+    en: 'Affiliate Terms',
+    'zh-CN': 'Affiliate Terms'
+  },
+  'affiliate-terms.page.tocLabel': {
+    en: 'On this page',
+    'zh-CN': '本页内容'
+  },
+  'affiliate-terms.page.effectiveDateLabel': {
+    en: 'Effective Date',
+    'zh-CN': '生效日期'
   },
 
   // Customers page
@@ -3868,6 +4715,80 @@ const translations = {
     'zh-CN': '支持的模型'
   },
 
+  // Models list page (/models)
+  'models.list.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'models.list.heroCta': {
+    en: 'Try {name} Now',
+    'zh-CN': '立即试用 {name}'
+  },
+  'models.list.creations.title': {
+    en: '{name} Image and Video Creations',
+    'zh-CN': '{name} 图像与视频创作'
+  },
+  'models.list.creations.cta': {
+    en: 'Explore Workflows',
+    'zh-CN': '探索工作流'
+  },
+  'models.list.heroTitle.before': {
+    en: '{name} in',
+    'zh-CN': ''
+  },
+  'models.list.heroTitle.after': {
+    en: '',
+    'zh-CN': ' 中的 {name}'
+  },
+  'models.list.heroSubtitle': {
+    en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
+    'zh-CN':
+      '从开源扩散模型到合作伙伴 API，涵盖每一个主流模型，并附带可直接运行的社区工作流模板。'
+  },
+  'models.list.card.workflows': {
+    en: '{count} workflows',
+    'zh-CN': '{count} 个工作流'
+  },
+  'models.list.contact.label': {
+    en: 'COMFY HUB',
+    'zh-CN': 'COMFY HUB'
+  },
+  'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
+  'models.showcase.heading': {
+    en: 'Run the world’s\nleading AI models',
+    'zh-CN': '运行全球领先的\nAI 模型'
+  },
+  'models.showcase.subtitle': {
+    en: 'New models are added as they launch.',
+    'zh-CN': '新模型发布后会第一时间上线。'
+  },
+  'models.showcase.cta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
+  },
+  'models.showcase.card.grokImagine': {
+    en: 'Grok Imagine',
+    'zh-CN': 'Grok Imagine'
+  },
+  'models.showcase.card.nanoBananaPro': {
+    en: 'Nano Banana Pro',
+    'zh-CN': 'Nano Banana Pro'
+  },
+  'models.showcase.card.ltx23': {
+    en: 'LTX 2.3',
+    'zh-CN': 'LTX 2.3'
+  },
+  'models.showcase.card.qwenAdvancedEdit': {
+    en: 'Advanced image\nediting with Qwen',
+    'zh-CN': '使用 Qwen 进行\n高级图像编辑'
+  },
+  'models.showcase.card.wan22TextToVideo': {
+    en: 'Wan 2.2\ntext to video',
+    'zh-CN': 'Wan 2.2\n文字转视频'
+  },
+  'models.list.contact.heading': {
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
+    'zh-CN':
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Hub</a> 查看最新工作流。'
+  },
+
   // Payment status pages
   'payment.success.label': {
     en: 'PAYMENT',
@@ -3909,10 +4830,175 @@ const translations = {
   'payment.failed.secondaryCta': {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
+  },
+
+  // AffiliateHeroSection
+  'affiliate.hero.label': { en: 'AFFILIATE', 'zh-CN': '联盟' },
+  'affiliate.hero.headingHighlight': {
+    en: 'Earn 30%',
+    'zh-CN': '赚取 30%'
+  },
+  'affiliate.hero.headingMuted': {
+    en: 'recurring commission for 3 months.',
+    'zh-CN': '持续返佣 3 个月。'
+  },
+  'affiliate.hero.feature1': {
+    en: '30% recurring commission for 3 months',
+    'zh-CN': '30% 持续佣金，连续 3 个月'
+  },
+  'affiliate.hero.feature2': {
+    en: '60-day cookie window',
+    'zh-CN': '60 天 Cookie 窗口'
+  },
+  'affiliate.hero.feature3': {
+    en: '$100 minimum payout',
+    'zh-CN': '$100 起付'
+  },
+  'affiliate.hero.feature4': {
+    en: 'Monthly payouts',
+    'zh-CN': '每月结算'
+  },
+  'affiliate.hero.apply': { en: 'APPLY NOW', 'zh-CN': '立即申请' },
+  'affiliate.hero.imageAlt': {
+    en: 'Comfy affiliate program',
+    'zh-CN': 'Comfy 联盟计划'
+  },
+
+  // AffiliateAudienceSection
+  'affiliate.audience.heading': {
+    en: "Who we're looking for",
+    'zh-CN': '我们在寻找谁'
+  },
+  'affiliate.audience.subheading': {
+    en: 'If you are...',
+    'zh-CN': '如果您是……'
+  },
+
+  // AffiliateHowItWorksSection
+  'affiliate.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '运作方式'
+  },
+
+  // AffiliateBenefitsSection
+  'affiliate.benefits.heading': {
+    en: 'Why ComfyUI for affiliate creators',
+    'zh-CN': '为什么联盟创作者选择 ComfyUI'
+  },
+
+  // AffiliateBrandAssetsSection
+  'affiliate.assets.heading': {
+    en: 'Brand logos for your content',
+    'zh-CN': '可用于您内容的品牌 Logo'
+  },
+  'affiliate.assets.subheading': {
+    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
+    'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
+  },
+  'affiliate.assets.downloadLabel': {
+    en: 'Download zip',
+    'zh-CN': '下载压缩包'
+  },
+
+  // AffiliateFAQSection
+  'affiliate.faq.heading': {
+    en: 'Frequently asked questions',
+    'zh-CN': '常见问题'
+  },
+
+  // Affiliate page (/affiliates) — head metadata
+  'affiliate.page.title': {
+    en: 'Comfy.org Affiliate Program — Become a Partner',
+    'zh-CN': 'Comfy.org 联盟计划 — 成为合作伙伴'
+  },
+  'affiliate.page.description': {
+    en: 'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.',
+    'zh-CN':
+      '为您推荐的每个 Comfy Cloud 订阅赚取 30% 持续佣金，连续 3 个月。立即申请成为 Comfy 合作伙伴。'
+  },
+
+  // AffiliateCtaSection
+  'affiliate.cta.heading': {
+    en: 'Ready to start earning?',
+    'zh-CN': '准备好开始赚取佣金了吗？'
+  },
+  'affiliate.cta.apply': {
+    en: 'APPLY NOW',
+    'zh-CN': '立即申请'
+  },
+  'affiliate.cta.termsLabel': {
+    en: 'Read the affiliate program terms',
+    'zh-CN': '阅读联盟计划条款'
+  },
+
+  // Launches page (/launches) — head metadata
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.page.title': {
+    en: 'ComfyUI Live Demo & Q&A — June 29 Launch Livestream',
+    'zh-CN': 'ComfyUI 直播演示与问答 — 6 月 29 日发布直播'
+  },
+  'launches.page.description': {
+    en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',
+    'zh-CN':
+      '6 月 29 日加入 ComfyUI 直播，观看实操产品演示并参与实时问答。了解桌面、云端和社区的最新内容，并获得解答。'
+  },
+
+  // Launches page (/launches) — hero section
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.hero.title': {
+    en: 'Everything new in ComfyUI',
+    'zh-CN': 'ComfyUI 全新内容'
+  },
+  'launches.hero.primary': {
+    en: 'Download Desktop',
+    'zh-CN': '下载桌面版'
+  },
+  'launches.hero.secondary': {
+    en: 'Launch Cloud',
+    'zh-CN': '启动云端'
+  },
+  'launches.hero.visualAlt': {
+    en: 'Comfy',
+    'zh-CN': 'Comfy'
+  },
+
+  // Launches page (/launches) — subscribe banner
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.banner.text': {
+    en: 'Join the live stream. Get answers in real time.',
+    'zh-CN': '加入直播，实时获得解答。'
+  },
+  'launches.banner.cta': {
+    en: 'Join livestream',
+    'zh-CN': '加入直播'
+  },
+
+  // Launches page (/launches) — closing CTA
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.cta.heading': {
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
+  },
+  'launches.cta.primary': {
+    en: 'Open Comfy Cloud',
+    'zh-CN': '打开 Comfy Cloud'
+  },
+  'launches.cta.secondary': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
+  // Launches page (/launches) — launches grid
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.section.title': {
+    en: 'Latest Launches',
+    'zh-CN': '最新发布'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
+
+type LocalizedText = Record<Locale, string>
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
@@ -3924,4 +5010,4 @@ export function hasKey(key: string): boolean {
   return key in translations
 }
 
-export type { Locale, TranslationKey }
+export type { Locale, LocalizedText, TranslationKey }
