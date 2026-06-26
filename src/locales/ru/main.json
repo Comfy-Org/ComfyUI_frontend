@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "Ваш API-токен не имеет доступа к этому ресурсу. Проверьте права доступа токена.",
     "errorUserTokenInvalid": "Ваш сохранённый API-токен недействителен или истёк. Обновите токен в настройках.",
     "failedToCreateNode": "Не удалось создать узел. Попробуйте ещё раз или проверьте консоль для подробностей.",
+    "failedToSetModelValue": "Узел добавлен, но его модель не удалось установить автоматически. Проверьте консоль для подробностей.",
     "fileFormats": "Форматы файлов",
     "fileName": "Имя файла",
     "fileSize": "Размер файла",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
       "auth/weak-password": "Пароль слишком слабый. Пожалуйста, используйте более надежный пароль длиной не менее 6 символов.",
       "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз.",
-      "generic": "Произошла ошибка при входе в систему. Пожалуйста, попробуйте еще раз."
+      "generic": "Произошла ошибка при входе в систему. Пожалуйста, попробуйте еще раз.",
+      "signupBlocked": "Сейчас не удалось создать ваш аккаунт. Пожалуйста, попробуйте позже. Если проблема повторяется, напишите на support@comfy.org."
     },
     "login": {
       "andText": "и",
@@ -323,6 +325,11 @@
       "signUpWithGithub": "Зарегистрироваться через Github",
       "signUpWithGoogle": "Зарегистрироваться через Google",
       "title": "Создать аккаунт"
+    },
+    "turnstile": {
+      "expired": "Срок действия проверки истек. Пожалуйста, выполните проверку снова.",
+      "failed": "Проверка не пройдена. Пожалуйста, попробуйте еще раз.",
+      "submitBlockedHint": "Завершите проверку выше, чтобы включить регистрацию."
     }
   },
   "batch": {
@@ -345,6 +352,17 @@
     "width": "Ширина",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "Очистить всё",
+    "clickRegionToEdit": "Кликните по области для редактирования.",
+    "colors": "палитра_цветов",
+    "descLabel": "описание",
+    "descPlaceholder": "описание этой области",
+    "textLabel": "Текст",
+    "textPlaceholder": "текст для отображения (дословно)",
+    "typeObj": "объект",
+    "typeText": "текст"
   },
   "breadcrumbsMenu": {
     "app": "Приложение",
@@ -755,6 +773,13 @@
     "creditsAvailable": "Доступно кредитов",
     "details": "Детали",
     "eventType": "Тип события",
+    "eventTypes": {
+      "accountCreated": "Аккаунт создан",
+      "apiNodeUsage": "Использование партнерского узла",
+      "apiUsage": "Использование API",
+      "creditAdded": "Кредиты добавлены",
+      "gpuUsage": "Использование GPU"
+    },
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",
     "lastUpdated": "Последнее обновление",
@@ -811,6 +836,7 @@
   },
   "dataTypes": {
     "*": "*",
+    "ARRAY": "Массив",
     "AUDIO": "АУДИО",
     "AUDIO_ENCODER": "АУДИО_КОДЕР",
     "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
@@ -818,11 +844,13 @@
     "BACKGROUND_REMOVAL": "УДАЛЕНИЕ_ФОНА",
     "BOOLEAN": "БУЛЕВО",
     "BOUNDING_BOX": "BOUNDING_BOX",
+    "BOUNDING_BOXES": "Границы",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
     "COLOR": "ЦВЕТ",
+    "COLORS": "Цвета",
     "COMBO": "КОМБО",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -832,6 +860,7 @@
     "CURVE": "КРИВАЯ",
     "DA3_GEOMETRY": "DA3_GEOMETRY",
     "DA3_MODEL": "DA3_MODEL",
+    "DICT": "Словарь",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
@@ -1829,6 +1858,35 @@
     "zoomIn": "Увеличить",
     "zoomOptions": "Параметры масштабирования",
     "zoomOut": "Уменьшить"
+  },
+  "hdrViewer": {
+    "channel": "Канал",
+    "channels": {
+      "a": "Альфа",
+      "b": "B",
+      "g": "G",
+      "luminance": "Яркость",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "Предупреждения о клиппинге",
+    "dither": "Дизеринг",
+    "exposure": "Экспозиция",
+    "failedToLoad": "Не удалось загрузить HDR изображение",
+    "fitView": "Вписать",
+    "hdrImage": "HDR изображение",
+    "histogram": "Гистограмма",
+    "inf": "Беск.",
+    "max": "Макс.",
+    "mean": "Среднее",
+    "min": "Мин.",
+    "nan": "NaN",
+    "normalizeExposure": "Автоэкспозиция",
+    "openInHdrViewer": "Открыть в HDR просмотрщике",
+    "resolution": "Разрешение",
+    "sourceGamut": "Исходный цветовой охват",
+    "stdDev": "Ст. отклонение",
+    "title": "HDR Просмотрщик"
   },
   "help": {
     "helpCenterMenu": "Меню справочного центра",
@@ -2957,6 +3015,10 @@
     "uploadError": "Не удалось загрузить изображение: {status} - {statusText}",
     "width": "Ширина"
   },
+  "palette": {
+    "addColor": "Добавить цвет",
+    "swatchTitle": "Клик — редактировать · перетащить — изменить порядок · ПКМ — удалить"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Все загрузки завершены",
     "downloadingModel": "Загрузка модели...",
@@ -3041,7 +3103,6 @@
     "color": "Цвет узла",
     "editSubgraph": "Редактировать подграф",
     "editTitle": "Редактировать название",
-    "enterSubgraph": "Войти в подграф",
     "errorHelp": "Для получения дополнительной помощи {github} или {support}",
     "errorHelpGithub": "создайте issue на GitHub",
     "errorHelpSupport": "свяжитесь с нашей поддержкой",
@@ -3661,6 +3722,10 @@
     "addApiCredits": "Пополнить API-кредиты",
     "addCredits": "Добавить кредиты",
     "addCreditsLabel": "Добавляйте кредиты в любое время",
+    "additionalCredits": "Дополнительные кредиты",
+    "additionalCreditsInUse": "Используются",
+    "additionalCreditsInfo": "О дополнительных кредитах",
+    "additionalCreditsTooltip": "Кредиты, которые вы добавляете сверх вашего плана. Используются после окончания месячных кредитов. Каждый истекает через год после покупки.",
     "benefits": {
       "benefit1": "Ежемесячные кредиты для Партнёрских узлов — пополняйте по необходимости",
       "benefit1FreeTier": "Больше кредитов в месяц, пополнение в любое время",
@@ -3682,27 +3747,55 @@
       "keepSubscription": "Сохранить подписку",
       "title": "Отмена подписки"
     },
-    "cancelSubscription": "Отменить подписку",
+    "cancelPlan": "Отменить тариф",
     "cancelSuccess": "Подписка успешно отменена",
     "canceled": "Отменено",
     "canceledCard": {
       "description": "С вас больше не будет взиматься плата. Ваши функции останутся активными до {date}.",
       "title": "Ваша подписка отменена"
     },
+    "changePlan": "Сменить тариф",
     "changeTo": "Перейти на {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Логотип Comfy Cloud",
     "contactOwnerToSubscribe": "Свяжитесь с владельцем рабочего пространства для оформления подписки",
     "contactUs": "Связаться с нами",
     "creditSliderSave": "Сохранить {percent}% ({amount})",
+    "creditsLeftOfTotal": "Осталось {remaining} из {total}",
     "creditsRemainingThisMonth": "Кредитов осталось в этом месяце",
     "creditsRemainingThisYear": "Кредитов осталось в этом году",
+    "creditsUsed": "Использовано: {used}",
     "creditsYouveAdded": "Добавленные вами кредиты",
     "currentPlan": "Текущий план",
     "customLoRAsLabel": "Импортируйте свои LoRA",
     "description": "Выберите лучший план для себя",
     "descriptionWorkspace": "Выберите лучший тариф для вашего рабочего пространства",
+    "downgrade": {
+      "body": "Все остальные участники этой рабочей области будут немедленно удалены.",
+      "confirm": "Сменить тариф",
+      "confirmationPhrase": "Я понимаю",
+      "confirmationPrompt": "Введите «{phrase}» для подтверждения.",
+      "failed": "Не удалось сменить тариф",
+      "failedAfterMemberRemoval": "Участники команды были удалены, но смена тарифа не завершена — попробуйте еще раз или обратитесь в поддержку",
+      "memberRemovalFailed": "Не удалось удалить {email} из команды — некоторые участники могли быть уже удалены, и ваш тариф не был изменён",
+      "notAllowed": "Смена этого тарифа недоступна",
+      "paymentMethodRequired": "Для смены тарифа требуется способ оплаты",
+      "paymentPageBlocked": "Не удалось открыть страницу оплаты — попробуйте еще раз",
+      "title": "Перейти на тариф {plan}?"
+    },
+    "endsOnDate": "Заканчивается {date}",
+    "enterprise": {
+      "cta": "Узнать больше",
+      "flexibility": "Нужна большая гибкость или индивидуальные функции?",
+      "name": "Корпоративный тариф",
+      "needMoreMembers": "Нужно больше участников?",
+      "reachOut": "Свяжитесь с нами, чтобы назначить встречу."
+    },
+    "everythingInPlus": "Всё в {plan}, плюс:",
     "expiresDate": "Истекает {date}",
+    "freePerks": {
+      "maxRuntime": "Максимальное время выполнения: {duration}"
+    },
     "freeTier": {
       "description": "Ваш бесплатный тариф включает {credits} кредитов каждый месяц для использования Comfy Cloud.",
       "descriptionGeneric": "Ваш бесплатный тариф включает ежемесячный лимит кредитов для использования Comfy Cloud.",
@@ -3730,7 +3823,7 @@
     "inviteUpTo": "Пригласить до",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
-    "managePayment": "Управление оплатой",
+    "manageBilling": "Управление оплатой",
     "managePlan": "Управление планом",
     "manageSubscription": "Управление подпиской",
     "maxDuration": {
@@ -3744,50 +3837,99 @@
     "maxMembersLabel": "Макс. участников",
     "member": "участник",
     "memberCount": "{count} участник | {count} участников",
-    "membersLabel": "До {count} участников",
     "messageSupport": "Написать в поддержку",
     "monthly": "Ежемесячно",
     "monthlyBonusDescription": "Ежемесячный бонус кредитов",
+    "monthlyCredits": "кредитов в месяц",
     "monthlyCreditsInfo": "Эти кредиты обновляются ежемесячно и не переносятся",
     "monthlyCreditsLabel": "Ежемесячные кредиты",
     "monthlyCreditsPerMemberLabel": "Ежемесячные кредиты / участник",
     "monthlyCreditsRollover": "Эти кредиты переносятся на следующий месяц",
+    "monthlyCreditsUsedUpDescription": "Теперь используются дополнительные кредиты.",
+    "monthlyCreditsUsedUpTitle": "Ежемесячные кредиты израсходованы. Пополнение {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "Ежемесячные кредиты израсходованы",
+    "monthlyUsageProgress": "Использовано {used} из {total} ежемесячных кредитов",
     "mostPopular": "Самый популярный",
     "needTeamWorkspace": "Нужно командное рабочее пространство?",
     "nextBillingCycle": "следующий платёжный цикл",
-    "nextMonthInvoice": "Счет на следующий месяц",
+    "outOfCreditsDescription": "Добавьте кредиты, чтобы продолжить генерацию.",
+    "outOfCreditsTitle": "Кредиты закончились. Пополнение {date}",
+    "outOfCreditsTitleNoDate": "Кредиты закончились",
     "partnerNodesBalance": "Баланс кредитов \"Партнёрских узлов\"",
     "partnerNodesCredits": "Кредиты партнёрских узлов",
     "partnerNodesDescription": "Для запуска коммерческих/проприетарных моделей",
+    "partnerNodesPricingTable": "Таблица цен на Partner Nodes",
     "perMonth": "USD / месяц",
+    "personalHeader": "Личные тарифы предназначены только для индивидуального использования. {action}",
+    "personalHeaderAction": "Чтобы добавить участников, оформите командный тариф.",
     "personalWorkspace": "Личное рабочее пространство",
+    "planLoadError": "Не удалось загрузить детали вашего тарифа.",
+    "planLoadErrorRetry": "Попробовать снова",
+    "planScope": {
+      "personal": "Для личного использования",
+      "team": "Для команд"
+    },
     "plansAndPricing": "Планы и цены",
     "plansForWorkspace": "Тарифы для {workspace}",
     "prepaidCreditsInfo": "Кредиты, приобретённые отдельно и не имеющие срока действия",
     "prepaidDescription": "Предоплаченные кредиты",
     "preview": {
       "addCreditCard": "Добавить банковскую карту",
+      "afterThat": "После этого",
       "backToAllPlans": "Назад ко всем тарифам",
+      "billedEachMonth": "{amount} списывается каждый месяц. Можно отменить в любое время.",
+      "commitment": "обязательство",
       "confirm": "Подтвердить",
+      "confirmChange": "Подтвердить изменение",
+      "confirmChangeTitle": "Проверьте запланированное изменение",
       "confirmPayment": "Подтвердите оплату",
       "confirmPlanChange": "Подтвердите смену тарифа",
+      "confirmUpgradeCta": "Подтвердить обновление",
+      "confirmUpgradeTitle": "Подтвердите обновление",
+      "creditFromCurrent": "Кредит с текущего {plan}",
+      "creditsRefillMonthlyTo": "Кредиты пополняются ежемесячно до",
+      "creditsRefillTo": "Кредиты пополняются до",
+      "creditsYoullGetToday": "Кредиты, которые вы получите сегодня",
+      "currentMonthly": "месячный план",
       "eachMonthCreditsRefill": "Ежемесячное пополнение кредитов до",
+      "eachYearCreditsRefill": "Каждый год кредиты пополняются до",
       "ends": "Заканчивается {date}",
+      "everyMonthStarting": "Каждый месяц начиная с {date}",
       "hideFeatures": "Скрыть функции",
+      "newMonthlySubscription": "Новая месячная подписка",
       "nextPaymentDue": "Следующий платеж {date}. Отменить можно в любое время.",
+      "paymentPopupBlocked": "Не удалось открыть страницу оплаты — разрешите всплывающие окна и попробуйте снова.",
       "perMember": "/ участник",
       "privacyPolicy": "Политика конфиденциальности",
       "proratedCharge": "Пропорциональная оплата за {plan}",
       "proratedRefund": "Пропорциональный возврат за {plan}",
+      "refillReplacesNote": "Заменяет ваше ежемесячное пополнение. Текущий баланс сохраняется.",
       "showMoreFeatures": "Показать больше функций",
       "starting": "Начинается {date}",
       "startingToday": "Начинается сегодня",
+      "startsOn": "Начинается {date}",
+      "stayOnUntil": "Вы останетесь на {plan} до {date}.",
+      "subscribeToPlan": "Подписаться на {plan}",
+      "switchToPlan": "Перейти на {plan}",
+      "switchesToday": "Переключений сегодня",
       "terms": "Условия",
       "termsAgreement": "Продолжая, вы соглашаетесь с {terms} и {privacy} Comfy Org.",
-      "totalDueToday": "Итого к оплате сегодня"
+      "totalDueToday": "Итого к оплате сегодня",
+      "yearlySubscription": "Годовая подписка",
+      "youllBeCharged": "С вас будет списано"
     },
+    "pricingBlurb": "*Основано на этом шаблоне, {seeDetails}. Свяжитесь с нами по {questions} или для {enterpriseDiscussions}. Для подробной информации о ценах {clickHere}.",
+    "pricingBlurbClickHere": "нажмите здесь",
+    "pricingBlurbEnterprise": "корпоративным обсуждениям",
+    "pricingBlurbQuestions": "вопросам",
+    "pricingBlurbSeeDetails": "подробнее",
+    "reactivatePlan": "Возобновить тариф",
+    "refillsDate": "Пополнение {date}",
+    "refillsNextCycle": "Пополнение в следующем цикле",
     "refreshCredits": "Обновить кредиты",
+    "remaining": "осталось",
     "renewsDate": "Обновляется {date}",
+    "renewsOnDate": "Продлевается {date}",
     "required": {
       "pollingFailed": "Не удалось активировать подписку",
       "pollingSuccess": "Подписка успешно активирована!",
@@ -3799,7 +3941,11 @@
     "resubscribe": "Возобновить подписку",
     "resubscribeSuccess": "Подписка успешно возобновлена",
     "resubscribeTo": "Возобновить подписку на {plan}",
+    "saveYearly": "Экономия 20%",
+    "saveYearlyUpTo": "Экономьте до 20%",
     "soloUseOnly": "Только для индивидуального использования",
+    "subscribe": "Подписаться",
+    "subscribeFailed": "Не удалось подписаться",
     "subscribeForMore": "Обновить",
     "subscribeNow": "Подписаться сейчас",
     "subscribeTo": "Подписаться на {plan}",
@@ -3807,10 +3953,46 @@
     "subscribeToRun": "Подписаться",
     "subscribeToRunFull": "Подписаться для запуска",
     "subscriptionRequiredMessage": "Для запуска рабочих процессов в облаке участникам требуется подписка",
+    "success": {
+      "allSet": "Всё готово",
+      "inviteEmailsPlaceholder": "Введите email-адреса через запятую",
+      "inviteSubtext": "Вы также можете пригласить людей позже в Настройках",
+      "inviteTitle": "Пригласить команду",
+      "planUpdated": "Ваш тариф успешно обновлён.",
+      "receiptEmailed": "Квитанция отправлена на вашу электронную почту.",
+      "sendInvites": "Отправить приглашения"
+    },
+    "teamHeader": "Для команд, желающих сотрудничать. Нужно больше участников? {learnMore} о корпоративных возможностях.",
+    "teamHeaderLearnMore": "Узнать больше",
+    "teamPerks": {
+      "concurrentRuns": "Участники могут запускать рабочие процессы одновременно",
+      "inviteMembers": "Приглашение участников",
+      "rolePermissions": "Разрешения на основе ролей",
+      "sharedCreditPool": "Общий кредитный пул для всех участников"
+    },
+    "teamPlan": {
+      "changePlan": "Сменить тариф",
+      "comingSoonLabel": "Скоро появится:",
+      "cta": "Оформить командную годовую подписку",
+      "ctaMonthly": "Оформить командную месячную подписку",
+      "currentPlan": "Текущий тариф",
+      "detailsTitle": "Детали",
+      "name": "Командный тариф",
+      "perkConcurrentRuns": "Участники могут запускать рабочие процессы одновременно",
+      "perkInviteMembers": "Приглашайте участников команды",
+      "perkProjectAssets": "Управление проектами и ресурсами",
+      "perkRolePermissions": "Ролевые разрешения",
+      "perkSharedPool": "Общий пул кредитов для всех участников",
+      "tagline": "Выберите собственную ежемесячную подписку на кредиты. Чем больше кредитов — тем больше скидка.",
+      "unavailable": "Этот командный план сейчас недоступен."
+    },
+    "teamPlanIncludes": "Ваш тариф включает всё из {plan}, а также:",
+    "teamPlanName": "Команда",
     "teamWorkspace": "Командное рабочее пространство",
     "tierNameYearly": "{name} Ежегодно",
     "tiers": {
       "creator": {
+        "feature1": "Импортируйте собственные модели",
         "name": "Creator"
       },
       "founder": {
@@ -3820,9 +4002,12 @@
         "name": "Бесплатно"
       },
       "pro": {
+        "feature1": "Более длительное выполнение рабочего процесса (до 1 часа)",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "Максимальное время выполнения рабочего процесса — 30 минут",
+        "feature2": "Добавляйте кредиты в любое время",
         "name": "Standard"
       }
     },
@@ -3835,6 +4020,8 @@
     "upgradeToAddCredits": "Обновите, чтобы добавить кредиты",
     "usdPerMonth": "USD / мес",
     "usdPerMonthPerMember": "USD / мес / участник",
+    "usedAfterMonthly": "Используются после окончания месячных",
+    "videoEstimate": "Генерирует ~{count} 5-секундных видео*",
     "videoEstimateExplanation": "Эти оценки основаны на шаблоне Wan 2.2 Image-to-Video с настройками по умолчанию (5 секунд, 640x640, 16 кадров/с, 4 шага семплирования).",
     "videoEstimateHelp": "Подробнее об этом шаблоне",
     "videoEstimateLabel": "Примерное количество 5-секундных видео, созданных с помощью шаблона Wan 2.2 Image-to-Video",
@@ -3844,10 +4031,10 @@
     "viewMoreDetails": "Подробнее",
     "viewMoreDetailsPlans": "Подробнее о планах и ценах",
     "viewUsageHistory": "История использования",
+    "whatsIncluded": "Что входит:",
     "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
     "yearly": "Ежегодно",
     "yearlyCreditsLabel": "Годовые кредиты",
-    "saveYearly": "Экономия 20%",
     "yourPlanIncludes": "Ваш план включает:"
   },
   "tabMenu": {
@@ -4138,6 +4325,19 @@
     }
   },
   "workspacePanel": {
+    "changeRoleDialog": {
+      "demoteConfirm": "Понизить до участника",
+      "demoteMessage": "Он(а) потеряет права администратора.",
+      "demoteTitle": "Понизить {name} до участника?",
+      "error": "Не удалось обновить роль",
+      "promoteConfirm": "Сделать владельцем",
+      "promoteIntro": "Он(а) сможет:",
+      "promotePermissionCredits": "Добавлять дополнительные кредиты",
+      "promotePermissionManage": "Управлять участниками, способами оплаты и настройками рабочей области",
+      "promotePermissionRoles": "Повышать и понижать других владельцев (кроме создателя рабочей области).",
+      "promoteTitle": "Сделать {name} владельцем?",
+      "success": "Роль обновлена"
+    },
     "createWorkspaceDialog": {
       "create": "Создать",
       "message": "Рабочие пространства позволяют участникам использовать общий пул кредитов. После создания вы станете владельцем.",
@@ -4162,17 +4362,11 @@
     "inviteLimitReached": "Достигнут лимит в 50 участников",
     "inviteMember": "Пригласить участника",
     "inviteMemberDialog": {
-      "createLink": "Создать ссылку",
-      "linkCopied": "Скопировано",
-      "linkCopyFailed": "Не удалось скопировать ссылку",
-      "linkStep": {
-        "copyLink": "Скопировать ссылку",
-        "done": "Готово",
-        "message": "Убедитесь, что его аккаунт использует этот email.",
-        "title": "Отправьте эту ссылку человеку"
-      },
-      "message": "Создайте ссылку-приглашение для отправки человеку",
+      "failedCount": "Не удалось отправить {count} приглашение. Попробуйте еще раз. | Не удалось отправить {count} приглашения. Попробуйте еще раз. | Не удалось отправить {count} приглашений. Попробуйте еще раз.",
+      "invalidEmailCount": "{count} некорректный адрес электронной почты | {count} некорректных адреса электронной почты | {count} некорректных адресов электронной почты",
+      "invitedMessage": "Приглашение отправлено на {emails} | Приглашения отправлены на {emails}",
       "placeholder": "Введите email человека",
+      "seatLimitReached": "Вы можете пригласить до {count} участника. | Вы можете пригласить до {count} участников.",
       "title": "Пригласить человека в это рабочее пространство"
     },
     "inviteUpsellDialog": {
@@ -4180,8 +4374,7 @@
       "messageSingleSeat": "Тариф Standard включает одно место для владельца рабочего пространства. Чтобы пригласить дополнительных участников, обновите тариф до Creator или выше для открытия нескольких мест.",
       "titleNotSubscribed": "Для приглашения участников требуется подписка",
       "titleSingleSeat": "Ваш текущий тариф поддерживает только одно место",
-      "upgradeToCreator": "Обновить до Creator",
-      "viewPlans": "Посмотреть тарифы"
+      "upgradeToTeam": "Обновить до Team"
     },
     "leaveDialog": {
       "leave": "Покинуть",
@@ -4190,30 +4383,35 @@
     },
     "members": {
       "actions": {
-        "copyLink": "Скопировать ссылку приглашения",
+        "cancelInvite": "Отменить приглашение",
+        "changeRole": "Изменить роль",
         "removeMember": "Удалить участника",
-        "revokeInvite": "Отозвать приглашение"
+        "resendInvite": "Повторно отправить приглашение"
       },
       "columns": {
         "expiryDate": "Дата истечения",
         "inviteDate": "Дата приглашения",
-        "joinDate": "Дата вступления"
+        "role": "Роль"
       },
-      "createNewWorkspace": "создайте новое.",
+      "contactUs": "Связаться с нами",
+      "header": "Участники",
       "membersCount": "{count}/50 участников",
+      "needMoreMembers": "Нужно больше участников?",
       "noInvites": "Нет ожидающих приглашений",
       "noMembers": "Нет участников",
       "pendingInvitesCount": "{count} ожидающее приглашение | {count} ожидающих приглашений",
-      "personalWorkspaceMessage": "Вы не можете приглашать других участников в ваше личное рабочее пространство. Чтобы добавить участников,",
+      "reactivateTeam": "Активировать Team",
+      "searchPlaceholder": "Поиск...",
       "tabs": {
         "active": "Активные",
         "pendingCount": "Ожидают ({count})"
       },
-      "upsellBannerSubscribe": "Оформите подписку на тариф Creator или выше, чтобы пригласить участников в это рабочее пространство.",
-      "upsellBannerUpgrade": "Обновите тариф до Creator или выше, чтобы пригласить дополнительных участников.",
-      "viewPlans": "Посмотреть тарифы"
+      "upgradeToTeam": "Обновить до Team",
+      "upsellBanner": "Чтобы добавить участников, обновите ваш тарифный план.",
+      "upsellBannerReactivate": "Чтобы добавить больше участников, активируйте ваш тарифный план."
     },
     "menu": {
+      "creatorCannotLeave": "Создатель рабочей области не может покинуть созданную им рабочую область",
       "deleteWorkspace": "Удалить рабочее пространство",
       "deleteWorkspaceDisabledTooltip": "Сначала отмените активную подписку рабочего пространства",
       "editWorkspace": "Редактировать детали рабочего пространства",
@@ -4242,6 +4440,8 @@
       "failedToFetchWorkspaces": "Не удалось загрузить рабочие пространства",
       "failedToLeaveWorkspace": "Не удалось покинуть рабочее пространство",
       "failedToUpdateWorkspace": "Не удалось обновить рабочее пространство",
+      "inviteResendFailed": "Не удалось повторно отправить приглашение",
+      "inviteResent": "Приглашение повторно отправлено",
       "workspaceCreated": {
         "message": "Оформите подписку, пригласите коллег и начните совместную работу.",
         "subscribe": "Оформить подписку",
