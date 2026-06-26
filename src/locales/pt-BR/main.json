@@ -92,6 +92,7 @@
     "errorUserTokenAccessDenied": "Seu token de API não tem acesso a este recurso. Verifique as permissões do seu token.",
     "errorUserTokenInvalid": "Seu token de API armazenado é inválido ou expirou. Atualize seu token nas configurações.",
     "failedToCreateNode": "Falha ao criar o nó. Por favor, tente novamente ou verifique o console para mais detalhes.",
+    "failedToSetModelValue": "Nó adicionado, mas seu modelo não pôde ser definido automaticamente. Verifique o console para mais detalhes.",
     "fileFormats": "Formatos de arquivo",
     "fileName": "Nome do arquivo",
     "fileSize": "Tamanho do arquivo",
@@ -241,7 +242,8 @@
       "auth/user-not-found": "Nenhuma conta encontrada com este e-mail. Gostaria de criar uma nova conta?",
       "auth/weak-password": "A senha é muito fraca. Use uma senha mais forte com pelo menos 6 caracteres.",
       "auth/wrong-password": "A senha que você digitou está incorreta. Por favor, tente novamente.",
-      "generic": "Algo deu errado ao fazer login. Por favor, tente novamente."
+      "generic": "Algo deu errado ao fazer login. Por favor, tente novamente.",
+      "signupBlocked": "Não foi possível criar sua conta agora. Por favor, tente novamente mais tarde. Se o problema persistir, envie um e-mail para support@comfy.org."
     },
     "login": {
       "andText": "e",
@@ -345,6 +347,17 @@
     "width": "Largura",
     "x": "X",
     "y": "Y"
+  },
+  "boundingBoxes": {
+    "clearAll": "Limpar tudo",
+    "clickRegionToEdit": "Clique em uma região para editar.",
+    "colors": "paleta_de_cores",
+    "descLabel": "descrição",
+    "descPlaceholder": "descrição desta região",
+    "textLabel": "Texto",
+    "textPlaceholder": "texto a ser exibido (literal)",
+    "typeObj": "obj",
+    "typeText": "texto"
   },
   "breadcrumbsMenu": {
     "app": "App",
@@ -755,6 +768,13 @@
     "creditsAvailable": "Créditos disponíveis",
     "details": "Detalhes",
     "eventType": "Tipo de evento",
+    "eventTypes": {
+      "accountCreated": "Conta criada",
+      "apiNodeUsage": "Uso de Node Parceiro",
+      "apiUsage": "Uso da API",
+      "creditAdded": "Créditos adicionados",
+      "gpuUsage": "Uso de GPU"
+    },
     "faqs": "Perguntas frequentes",
     "invoiceHistory": "Histórico de faturas",
     "lastUpdated": "Última atualização",
@@ -811,6 +831,7 @@
   },
   "dataTypes": {
     "*": "*",
+    "ARRAY": "ARRAY",
     "AUDIO": "ÁUDIO",
     "AUDIO_ENCODER": "CODIFICADOR DE ÁUDIO",
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
@@ -818,11 +839,13 @@
     "BACKGROUND_REMOVAL": "REMOÇÃO_DE_FUNDO",
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "BOUNDING_BOX",
+    "BOUNDING_BOXES": "BOUNDING_BOXES",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
     "CLIP_VISION_OUTPUT": "saída de clip visão",
     "COLOR": "COR",
+    "COLORS": "CORES",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -832,6 +855,7 @@
     "CURVE": "CURVA",
     "DA3_GEOMETRY": "DA3_GEOMETRY",
     "DA3_MODEL": "DA3_MODEL",
+    "DICT": "DICIONÁRIO",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FACE_DETECTION_MODEL": "MODELO_DE_DETECÇÃO_DE_FACE",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
@@ -1829,6 +1853,35 @@
     "zoomIn": "Aproximar",
     "zoomOptions": "Opções de Zoom",
     "zoomOut": "Afastar"
+  },
+  "hdrViewer": {
+    "channel": "Canal",
+    "channels": {
+      "a": "Alfa",
+      "b": "B",
+      "g": "G",
+      "luminance": "Luminância",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "Avisos de recorte",
+    "dither": "Dithering",
+    "exposure": "Exposição",
+    "failedToLoad": "Falha ao carregar a imagem HDR",
+    "fitView": "Ajustar",
+    "hdrImage": "Imagem HDR",
+    "histogram": "Histograma",
+    "inf": "Inf",
+    "max": "Máx",
+    "mean": "Média",
+    "min": "Mín",
+    "nan": "NaN",
+    "normalizeExposure": "Exposição automática",
+    "openInHdrViewer": "Abrir no Visualizador HDR",
+    "resolution": "Resolução",
+    "sourceGamut": "Gama de origem",
+    "stdDev": "Desvio padrão",
+    "title": "Visualizador HDR"
   },
   "help": {
     "helpCenterMenu": "Menu do Centro de Ajuda",
@@ -2957,6 +3010,10 @@
     "uploadError": "Falha ao enviar imagem do painter: {status} - {statusText}",
     "width": "Largura"
   },
+  "palette": {
+    "addColor": "Adicionar cor",
+    "swatchTitle": "Clique para editar · arraste para reordenar · clique direito para remover"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
     "downloadingModel": "Baixando modelo...",
@@ -3041,7 +3098,6 @@
     "color": "Cor do nó",
     "editSubgraph": "Editar subgrafo",
     "editTitle": "Editar título",
-    "enterSubgraph": "Entrar no subgrafo",
     "errorHelp": "Para mais ajuda, {github} ou {support}",
     "errorHelpGithub": "enviar um issue no GitHub",
     "errorHelpSupport": "contatar nosso suporte",
@@ -3673,6 +3729,10 @@
     "addApiCredits": "Adicionar créditos de API",
     "addCredits": "Adicionar créditos",
     "addCreditsLabel": "Adicione mais créditos quando quiser",
+    "additionalCredits": "Créditos adicionais",
+    "additionalCreditsInUse": "Em uso",
+    "additionalCreditsInfo": "Sobre créditos adicionais",
+    "additionalCreditsTooltip": "Créditos que você adiciona além do seu plano. Usados após o término dos créditos mensais. Cada um expira um ano após a compra.",
     "benefits": {
       "benefit1": "$10 em créditos mensais para Partner Nodes — recarregue quando necessário",
       "benefit1FreeTier": "Mais créditos mensais, recarregue a qualquer momento",
@@ -3706,13 +3766,36 @@
     "contactOwnerToSubscribe": "Entre em contato com o proprietário do espaço de trabalho para assinar",
     "contactUs": "Fale conosco",
     "creditSliderSave": "Economize {percent}% ({amount})",
+    "creditsLeftOfTotal": "{remaining} de {total} restantes",
     "creditsRemainingThisMonth": "Créditos restantes neste mês",
     "creditsRemainingThisYear": "Créditos restantes neste ano",
+    "creditsUsed": "{used} usados",
     "creditsYouveAdded": "Créditos que você adicionou",
     "currentPlan": "Plano Atual",
     "customLoRAsLabel": "Importe seus próprios LoRAs",
     "description": "Escolha o melhor plano para você",
     "descriptionWorkspace": "Escolha o melhor plano para seu workspace",
+    "downgrade": {
+      "body": "Todos os outros membros deste workspace serão removidos imediatamente.",
+      "confirm": "Mudar plano",
+      "confirmationPhrase": "Eu entendo",
+      "confirmationPrompt": "Digite \"{phrase}\" para confirmar.",
+      "failed": "Falha ao mudar o plano",
+      "failedAfterMemberRemoval": "Os membros da equipe foram removidos, mas a alteração do plano não foi concluída — tente novamente ou entre em contato com o suporte",
+      "memberRemovalFailed": "Não foi possível remover {email} da equipe — alguns membros podem já ter sido removidos e seu plano não foi alterado",
+      "notAllowed": "Esta alteração de plano não está disponível",
+      "paymentMethodRequired": "É necessário um método de pagamento para mudar de plano",
+      "paymentPageBlocked": "Não foi possível abrir a página de pagamento — tente novamente",
+      "title": "Mudar para o plano {plan}?"
+    },
+    "enterprise": {
+      "cta": "Saiba mais",
+      "flexibility": "Procurando mais flexibilidade ou recursos personalizados?",
+      "name": "Enterprise",
+      "needMoreMembers": "Precisa de mais membros?",
+      "reachOut": "Entre em contato conosco e vamos agendar uma conversa."
+    },
+    "everythingInPlus": "Tudo do {plan}, além de:",
     "expiresDate": "Expira em {date}",
     "freeTier": {
       "description": "Seu plano gratuito inclui {credits} créditos por mês para testar o Comfy Cloud.",
@@ -3759,45 +3842,91 @@
     "messageSupport": "Falar com o suporte",
     "monthly": "Mensal",
     "monthlyBonusDescription": "Bônus mensal de créditos",
+    "monthlyCredits": "créditos mensais",
     "monthlyCreditsInfo": "Esses créditos são renovados mensalmente e não acumulam",
     "monthlyCreditsLabel": "Créditos mensais",
     "monthlyCreditsPerMemberLabel": "Créditos mensais / membro",
     "monthlyCreditsRollover": "Esses créditos serão transferidos para o próximo mês",
+    "monthlyCreditsUsedUpDescription": "Agora você está usando créditos adicionais.",
+    "monthlyCreditsUsedUpTitle": "Créditos mensais esgotados. Recarga em {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "Créditos mensais esgotados",
+    "monthlyUsageProgress": "{used} de {total} créditos mensais usados",
     "mostPopular": "Mais popular",
     "needTeamWorkspace": "Precisa de um espaço de trabalho em equipe?",
     "nextBillingCycle": "próximo ciclo de cobrança",
     "nextMonthInvoice": "Fatura do próximo mês",
+    "outOfCreditsDescription": "Adicione mais créditos para continuar gerando.",
+    "outOfCreditsTitle": "Você está sem créditos. Recarga em {date}",
+    "outOfCreditsTitleNoDate": "Você está sem créditos",
     "partnerNodesBalance": "Saldo de Créditos \"Partner Nodes\"",
     "partnerNodesCredits": "Preços dos Partner Nodes",
     "partnerNodesDescription": "Para executar modelos comerciais/proprietários",
     "perMonth": "/ mês",
+    "personalHeader": "Planos pessoais são apenas para uso individual. {action}",
+    "personalHeaderAction": "Para adicionar colegas, assine o plano de equipe.",
     "personalWorkspace": "Espaço de Trabalho Pessoal",
+    "planScope": {
+      "personal": "Para uso pessoal",
+      "team": "Para equipes"
+    },
     "plansAndPricing": "Planos e preços",
     "plansForWorkspace": "Planos para {workspace}",
     "prepaidCreditsInfo": "Créditos pré-pagos expiram após 1 ano da data de compra.",
     "prepaidDescription": "Créditos pré-pagos",
     "preview": {
       "addCreditCard": "Adicionar cartão de crédito",
+      "afterThat": "Depois disso",
       "backToAllPlans": "Voltar para todos os planos",
+      "billedEachMonth": "{amount} cobrados a cada mês. Cancele a qualquer momento.",
+      "commitment": "compromisso",
       "confirm": "Confirmar",
+      "confirmChange": "Confirmar alteração",
+      "confirmChangeTitle": "Revise sua alteração agendada",
       "confirmPayment": "Confirme seu pagamento",
       "confirmPlanChange": "Confirme a alteração do plano",
+      "confirmUpgradeCta": "Confirmar atualização",
+      "confirmUpgradeTitle": "Confirme sua atualização",
+      "creditFromCurrent": "Crédito do {plan} atual",
+      "creditsRefillMonthlyTo": "Créditos recarregam mensalmente para",
+      "creditsRefillTo": "Créditos recarregados para",
+      "creditsYoullGetToday": "Créditos que você receberá hoje",
+      "currentMonthly": "plano mensal",
       "eachMonthCreditsRefill": "A cada mês os créditos são recarregados para",
+      "eachYearCreditsRefill": "A cada ano, os créditos recarregam para",
       "ends": "Termina em {date}",
+      "everyMonthStarting": "Todo mês a partir de {date}",
       "hideFeatures": "Ocultar recursos",
+      "newMonthlySubscription": "Nova assinatura mensal",
       "nextPaymentDue": "Próximo pagamento em {date}. Cancele a qualquer momento.",
+      "paymentPopupBlocked": "Não foi possível abrir a página de pagamento — permita pop-ups e tente novamente.",
       "perMember": "/ membro",
       "privacyPolicy": "Política de Privacidade",
       "proratedCharge": "Cobrança proporcional para {plan}",
       "proratedRefund": "Reembolso proporcional para {plan}",
+      "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
       "showMoreFeatures": "Mostrar mais recursos",
       "starting": "Começando em {date}",
       "startingToday": "Começando hoje",
+      "startsOn": "Começa em {date}",
+      "stayOnUntil": "Você permanecerá no {plan} até {date}.",
+      "subscribeToPlan": "Assinar {plan}",
+      "switchToPlan": "Mudar para {plan}",
+      "switchesToday": "Trocas hoje",
       "terms": "Termos",
       "termsAgreement": "Ao continuar, você concorda com os {terms} e {privacy} da Comfy Org.",
-      "totalDueToday": "Total devido hoje"
+      "totalDueToday": "Total devido hoje",
+      "yearlySubscription": "Assinatura anual",
+      "youllBeCharged": "Você será cobrado"
     },
+    "pricingBlurb": "*Baseado neste template, {seeDetails}. Entre em contato para {questions} ou {enterpriseDiscussions}. Para mais detalhes sobre preços, {clickHere}.",
+    "pricingBlurbClickHere": "clique aqui",
+    "pricingBlurbEnterprise": "discussões enterprise",
+    "pricingBlurbQuestions": "dúvidas",
+    "pricingBlurbSeeDetails": "ver detalhes",
+    "refillsDate": "Recargas em {date}",
+    "refillsNextCycle": "Recargas no próximo ciclo",
     "refreshCredits": "Atualizar créditos",
+    "remaining": "restante",
     "renewsDate": "Renova em {date}",
     "required": {
       "pollingFailed": "Falha ao ativar a assinatura",
@@ -3810,7 +3939,10 @@
     "resubscribe": "Reassinar",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
     "resubscribeTo": "Reassinar {plan}",
+    "saveYearly": "Economize 20%",
+    "saveYearlyUpTo": "Economize até 20%",
     "soloUseOnly": "Apenas para uso individual",
+    "subscribeFailed": "Falha ao assinar",
     "subscribeForMore": "Fazer upgrade",
     "subscribeNow": "Assine Agora",
     "subscribeTo": "Assinar {plan}",
@@ -3818,10 +3950,38 @@
     "subscribeToRun": "Assinar",
     "subscribeToRunFull": "Assine para Executar",
     "subscriptionRequiredMessage": "Uma assinatura é necessária para que os membros executem fluxos de trabalho na Nuvem",
+    "success": {
+      "allSet": "Tudo pronto",
+      "inviteEmailsPlaceholder": "Digite os e-mails separados por vírgula",
+      "inviteSubtext": "Você também pode convidar pessoas depois em Configurações",
+      "inviteTitle": "Convide sua equipe",
+      "planUpdated": "Seu plano foi atualizado com sucesso.",
+      "receiptEmailed": "Um recibo foi enviado para seu e-mail.",
+      "sendInvites": "Enviar convites"
+    },
+    "teamHeader": "Para equipes que desejam colaborar. Precisa de mais membros? {learnMore} sobre enterprise.",
+    "teamHeaderLearnMore": "Saiba mais",
+    "teamPlan": {
+      "changePlan": "Mudar plano",
+      "comingSoonLabel": "Em breve:",
+      "cta": "Assinar Equipe Anual",
+      "ctaMonthly": "Assinar Equipe Mensal",
+      "currentPlan": "Plano atual",
+      "detailsTitle": "Detalhes",
+      "name": "Plano Equipe",
+      "perkConcurrentRuns": "Membros podem executar workflows simultaneamente",
+      "perkInviteMembers": "Convide membros da equipe",
+      "perkProjectAssets": "Gestão de projetos e ativos",
+      "perkRolePermissions": "Permissões baseadas em função",
+      "perkSharedPool": "Pool de créditos compartilhado para todos os membros",
+      "tagline": "Escolha sua própria assinatura mensal de créditos. Obtenha um desconto maior com uma assinatura de mais créditos.",
+      "unavailable": "Este plano de equipe não está disponível no momento."
+    },
     "teamWorkspace": "Espaço de Trabalho em Equipe",
     "tierNameYearly": "{name} Anual",
     "tiers": {
       "creator": {
+        "feature1": "Importe seus próprios modelos",
         "name": "Criador"
       },
       "founder": {
@@ -3831,9 +3991,12 @@
         "name": "Gratuito"
       },
       "pro": {
+        "feature1": "Tempo de execução do workflow mais longo (até 1 hora)",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "Tempo máximo de execução do workflow: 30 minutos",
+        "feature2": "Adicione mais créditos a qualquer momento",
         "name": "Padrão"
       }
     },
@@ -3846,6 +4009,8 @@
     "upgradeToAddCredits": "Faça upgrade para adicionar créditos",
     "usdPerMonth": "USD / mês",
     "usdPerMonthPerMember": "USD / mês / membro",
+    "usedAfterMonthly": "Usado após o término dos créditos mensais",
+    "videoEstimate": "Gera aproximadamente {count} vídeos de 5s*",
     "videoEstimateExplanation": "Essas estimativas são baseadas no template Wan 2.2 Image-to-Video usando as configurações padrão (5 segundos, 640x640, 16fps, amostragem de 4 etapas).",
     "videoEstimateHelp": "Mais detalhes sobre este template",
     "videoEstimateLabel": "Quantidade aprox. de vídeos de 5s gerados com o template Wan 2.2 Image-to-Video",
@@ -3855,10 +4020,10 @@
     "viewMoreDetails": "Ver mais detalhes",
     "viewMoreDetailsPlans": "Veja mais detalhes sobre planos e preços",
     "viewUsageHistory": "Ver histórico de uso",
+    "whatsIncluded": "O que está incluído:",
     "workspaceNotSubscribed": "Este espaço de trabalho não possui uma assinatura",
     "yearly": "Anual",
     "yearlyCreditsLabel": "Total de créditos anuais",
-    "saveYearly": "Economize 20%",
     "yourPlanIncludes": "Seu plano inclui:"
   },
   "tabMenu": {
@@ -4149,6 +4314,19 @@
     }
   },
   "workspacePanel": {
+    "changeRoleDialog": {
+      "demoteConfirm": "Rebaixar para membro",
+      "demoteMessage": "Ele(a) perderá acesso de administrador.",
+      "demoteTitle": "Rebaixar {name} para membro?",
+      "error": "Falha ao atualizar função",
+      "promoteConfirm": "Tornar proprietário",
+      "promoteIntro": "Ele(a) poderá:",
+      "promotePermissionCredits": "Adicionar créditos adicionais",
+      "promotePermissionManage": "Gerenciar membros, métodos de pagamento e configurações do workspace",
+      "promotePermissionRoles": "Promover e rebaixar outros proprietários (exceto o criador do workspace).",
+      "promoteTitle": "Tornar {name} proprietário?",
+      "success": "Função atualizada"
+    },
     "createWorkspaceDialog": {
       "create": "Criar",
       "message": "Espaços de trabalho permitem que membros compartilhem um único saldo de créditos. Você se tornará o proprietário após criar este.",
@@ -4173,17 +4351,11 @@
     "inviteLimitReached": "Você atingiu o limite máximo de 50 membros",
     "inviteMember": "Convidar membro",
     "inviteMemberDialog": {
-      "createLink": "Criar link",
-      "linkCopied": "Copiado",
-      "linkCopyFailed": "Falha ao copiar link",
-      "linkStep": {
-        "copyLink": "Copiar link",
-        "done": "Concluído",
-        "message": "Certifique-se de que a conta dela usa este e-mail.",
-        "title": "Envie este link para a pessoa"
-      },
-      "message": "Crie um link de convite compartilhável para enviar a alguém",
+      "failedCount": "Não foi possível enviar {count} convite. Tente novamente. | Não foi possível enviar {count} convites. Tente novamente.",
+      "invalidEmailCount": "{count} endereço de e-mail inválido | {count} endereços de e-mail inválidos",
+      "invitedMessage": "Um convite foi enviado para {emails} | Convites foram enviados para {emails}",
       "placeholder": "Digite o e-mail da pessoa",
+      "seatLimitReached": "Você pode convidar até {count} colega de equipe. | Você pode convidar até {count} colegas de equipe.",
       "title": "Convidar uma pessoa para este workspace"
     },
     "inviteUpsellDialog": {
@@ -4191,8 +4363,7 @@
       "messageSingleSeat": "O plano Standard inclui um usuário para o proprietário do workspace. Para convidar membros adicionais, faça upgrade para o plano Creator ou superior para liberar múltiplos usuários.",
       "titleNotSubscribed": "É necessária uma assinatura para convidar membros",
       "titleSingleSeat": "Seu plano atual suporta apenas um usuário",
-      "upgradeToCreator": "Fazer upgrade para Creator",
-      "viewPlans": "Ver planos"
+      "upgradeToTeam": "Fazer upgrade para Team"
     },
     "leaveDialog": {
       "leave": "Sair",
@@ -4201,30 +4372,35 @@
     },
     "members": {
       "actions": {
-        "copyLink": "Copiar link do convite",
+        "cancelInvite": "Cancelar convite",
+        "changeRole": "Alterar função",
         "removeMember": "Remover membro",
-        "revokeInvite": "Revogar convite"
+        "resendInvite": "Reenviar convite"
       },
       "columns": {
         "expiryDate": "Data de expiração",
         "inviteDate": "Data do convite",
-        "joinDate": "Data de entrada"
+        "role": "Função"
       },
-      "createNewWorkspace": "crie um novo.",
+      "contactUs": "Fale conosco",
+      "header": "Membros",
       "membersCount": "{count}/50 Membros",
+      "needMoreMembers": "Precisa de mais membros?",
       "noInvites": "Nenhum convite pendente",
       "noMembers": "Nenhum membro",
       "pendingInvitesCount": "{count} convite pendente | {count} convites pendentes",
-      "personalWorkspaceMessage": "No momento, você não pode convidar outros membros para seu workspace pessoal. Para adicionar membros a um workspace,",
+      "reactivateTeam": "Reativar Team",
+      "searchPlaceholder": "Pesquisar...",
       "tabs": {
         "active": "Ativo",
         "pendingCount": "Pendente ({count})"
       },
-      "upsellBannerSubscribe": "Assine o plano Creator ou superior para convidar membros da equipe para este workspace.",
-      "upsellBannerUpgrade": "Faça upgrade para o plano Creator ou superior para convidar membros adicionais da equipe.",
-      "viewPlans": "Ver planos"
+      "upgradeToTeam": "Fazer upgrade para Team",
+      "upsellBanner": "Para adicionar colegas de equipe, faça upgrade do seu plano.",
+      "upsellBannerReactivate": "Para adicionar mais colegas de equipe, reative seu plano."
     },
     "menu": {
+      "creatorCannotLeave": "O criador do workspace não pode sair do workspace que criou",
       "deleteWorkspace": "Excluir espaço de trabalho",
       "deleteWorkspaceDisabledTooltip": "Cancele a assinatura ativa do seu espaço de trabalho primeiro",
       "editWorkspace": "Editar detalhes do espaço de trabalho",
@@ -4253,6 +4429,8 @@
       "failedToFetchWorkspaces": "Falha ao carregar workspaces",
       "failedToLeaveWorkspace": "Falha ao sair do espaço de trabalho",
       "failedToUpdateWorkspace": "Falha ao atualizar o espaço de trabalho",
+      "inviteResendFailed": "Falha ao reenviar convite",
+      "inviteResent": "Convite reenviado",
       "workspaceCreated": {
         "message": "Assine um plano, convide colegas e comece a colaborar.",
         "subscribe": "Assinar",
