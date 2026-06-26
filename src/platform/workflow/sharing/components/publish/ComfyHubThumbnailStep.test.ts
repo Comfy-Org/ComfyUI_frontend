@@ -136,4 +136,44 @@ describe('ComfyHubThumbnailStep', () => {
     expect(srcs).toContain('https://cdn.example.com/before.png')
     expect(srcs).toContain('https://cdn.example.com/after.png')
   })
+
+  it('clears the existing thumbnail type when a restored image is removed', async () => {
+    const user = userEvent.setup()
+    const onUpdateExistingThumbnailType = vi.fn()
+    const onUpdateThumbnailUrl = vi.fn()
+    renderStep(
+      {
+        thumbnailType: 'image',
+        thumbnailUrl: 'https://cdn.example.com/thumb.png',
+        existingThumbnailType: 'image'
+      },
+      {
+        'onUpdate:existingThumbnailType': onUpdateExistingThumbnailType,
+        'onUpdate:thumbnailUrl': onUpdateThumbnailUrl
+      }
+    )
+
+    await user.click(screen.getByTestId('clear-button'))
+
+    expect(onUpdateExistingThumbnailType).toHaveBeenCalledWith(null)
+    expect(onUpdateThumbnailUrl).toHaveBeenCalledWith(null)
+  })
+
+  it('clears the existing thumbnail type when a restored comparison is removed', async () => {
+    const user = userEvent.setup()
+    const onUpdateExistingThumbnailType = vi.fn()
+    renderStep(
+      {
+        thumbnailType: 'imageComparison',
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        comparisonAfterUrl: 'https://cdn.example.com/after.png',
+        existingThumbnailType: 'imageComparison'
+      },
+      { 'onUpdate:existingThumbnailType': onUpdateExistingThumbnailType }
+    )
+
+    await user.click(screen.getByTestId('clear-button'))
+
+    expect(onUpdateExistingThumbnailType).toHaveBeenCalledWith(null)
+  })
 })
