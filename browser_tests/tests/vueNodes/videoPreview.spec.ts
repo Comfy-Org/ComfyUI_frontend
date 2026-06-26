@@ -359,9 +359,9 @@ test.describe(
         }
 
         await expect(loadVideo.navigationDots).toHaveCount(2)
-        await loadVideo.navigationDots.nth(0).click()
+        await loadVideo.navigationDots.nth(0).press('Enter')
         await expect.poll(() => loadVideo.videoSrc()).toContain(file1)
-        await loadVideo.navigationDots.nth(1).click()
+        await loadVideo.navigationDots.nth(1).press('Enter')
         await expect.poll(() => loadVideo.videoSrc()).toContain(file2)
       })
 
