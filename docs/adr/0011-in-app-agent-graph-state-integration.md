@@ -27,7 +27,7 @@ This decision builds directly on:
 ### Forces at play
 
 1. **A second writer.** Until now the only writer to a workflow is the local user. The agent
-   introduces a second, remote writer to the *same* graph. We need conflict handling, not
+   introduces a second, remote writer to the _same_ graph. We need conflict handling, not
    last-write-wins.
 2. **The backend is server-authoritative.** The cloud backend (`Comfy-Org/cloud` PR #4432)
    introduces a mutable server-side **`workflow_draft`** (full save-format JSON + integer
@@ -35,10 +35,10 @@ This decision builds directly on:
    browser as a **full-document replace** over an existing **Redis-PubSub → WebSocket** bridge
    (`channel:ws:{workspaceId}:u:{userId}`). Inbound chat turns go through ingest `/api/agent/*`.
 3. **The frontend is moving toward decentralized CRDT.** Per ADR-0003 / #4661 the end-state is
-   per-graph rooms with mutation relay and CRDT merge — *not* server-authoritative full-document
+   per-graph rooms with mutation relay and CRDT merge — _not_ server-authoritative full-document
    replace. The V0 backend model and the FE end-state are different shapes.
-4. **Timeline.** V0 ships in ~3 weeks. The CRDT migration of the *data-model* class of state
-   (node existence, widget values) is still in progress; only the *layout* class is fully on the
+4. **Timeline.** V0 ships in ~3 weeks. The CRDT migration of the _data-model_ class of state
+   (node existence, widget values) is still in progress; only the _layout_ class is fully on the
    Yjs store today. A true per-mutation CRDT sync for the agent is not ready for V0.
 5. **No throwaway work.** Whatever we ship for V0 must be a strict subset of the #4661 end-state.
 
@@ -57,12 +57,12 @@ writes as **full-document replaces guarded by `version`**, and frames the whole 
 
 ### Graph-state model
 
-| State class | Source of truth (V0) | Synced to agent? |
-| --- | --- | --- |
-| Save-format **data model** (nodes, links, widgets, groups) | server `workflow_draft.content` | read + write |
-| **Layout** (positions/sizes/reroutes) | within `content`; mirrors Yjs `layoutStore` (ADR-0003) | within content |
-| **Selection** (selected node ids) | browser, sent per turn | per-turn input |
-| **Viewport** (zoom/pan/cursor) | browser only | never |
+| State class                                                | Source of truth (V0)                                   | Synced to agent? |
+| ---------------------------------------------------------- | ------------------------------------------------------ | ---------------- |
+| Save-format **data model** (nodes, links, widgets, groups) | server `workflow_draft.content`                        | read + write     |
+| **Layout** (positions/sizes/reroutes)                      | within `content`; mirrors Yjs `layoutStore` (ADR-0003) | within content   |
+| **Selection** (selected node ids)                          | browser, sent per turn                                 | per-turn input   |
+| **Viewport** (zoom/pan/cursor)                             | browser only                                           | never            |
 
 - Each `workflow_draft` is a **room**. V0 has up to two writers: the human (via autosave-to-draft)
   and the agent. The browser keeps a draft's tab **alive in memory** while connected so agent
@@ -87,7 +87,7 @@ browser:
   existing `loadGraphData` path) and adopt `version` as the tab's new base.
 - **Conflict** (user edited the graph during the agent's turn) surfaces a dialog rather than
   silently clobbering. We explicitly reject **graph-locking** as the primary mechanism: a
-  lost/duplicated backend message could leave the graph *permanently* locked. A presentational
+  lost/duplicated backend message could leave the graph _permanently_ locked. A presentational
   "agent editing…" hint MAY be driven by the optional backend edit-turn lease, but it is never on
   the correctness path.
 - The agent can also target a **new tab** (`target: "new_tab"`) for unrelated requests — a
