@@ -1,6 +1,7 @@
 <template>
   <NotificationPopup
     v-if="appModeStore.showVueNodeSwitchPopup"
+    data-testid="linear-vue-node-switch-popup"
     :title="$t('appBuilder.vueNodeSwitch.title')"
     show-close
     position="bottom-left"
@@ -15,6 +16,7 @@
         <input
           v-model="dontShowAgain"
           type="checkbox"
+          data-testid="linear-vue-node-switch-dont-show-again"
           class="accent-primary-background"
         />
         {{ $t('appBuilder.vueNodeSwitch.dontShowAgain') }}
@@ -25,6 +27,7 @@
       <Button
         variant="secondary"
         size="lg"
+        data-testid="linear-vue-node-switch-dismiss"
         class="font-normal"
         @click="dismiss"
       >

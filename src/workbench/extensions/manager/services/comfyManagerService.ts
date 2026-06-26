@@ -126,7 +126,7 @@ export const useComfyManagerService = () => {
     }
 
     return executeRequest<null>(
-      () => managerApiClient.get(ManagerRoute.START_QUEUE, { signal }),
+      () => managerApiClient.post(ManagerRoute.START_QUEUE, null, { signal }),
       { errorContext, routeSpecificErrors }
     )
   }
@@ -265,7 +265,7 @@ export const useComfyManagerService = () => {
 
     return executeRequest<null>(
       () =>
-        managerApiClient.get(ManagerRoute.UPDATE_ALL, {
+        managerApiClient.post(ManagerRoute.UPDATE_ALL, null, {
           params: queryParams,
           signal
         }),
@@ -292,7 +292,7 @@ export const useComfyManagerService = () => {
 
     return executeRequest<null>(
       () =>
-        managerApiClient.get(ManagerRoute.UPDATE_COMFYUI, {
+        managerApiClient.post(ManagerRoute.UPDATE_COMFYUI, null, {
           params: queryParams,
           signal
         }),
@@ -307,7 +307,7 @@ export const useComfyManagerService = () => {
     }
 
     return executeRequest<null>(
-      () => managerApiClient.get(ManagerRoute.REBOOT, { signal }),
+      () => managerApiClient.post(ManagerRoute.REBOOT, null, { signal }),
       { errorContext, routeSpecificErrors }
     )
   }

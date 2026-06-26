@@ -11,6 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { commonType } from '@/lib/litegraph/src/utils/type'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -22,6 +23,8 @@ import {
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 const INLINE_INPUTS = false
 
@@ -74,6 +77,7 @@ function dynamicComboWidget(
   widgetName?: string
 ) {
   const { addNodeInput } = useLitegraphService()
+  const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
   const inputData = parseResult.data
@@ -96,7 +100,10 @@ function dynamicComboWidget(
     const newSpec = value ? options[value] : undefined
 
     const removedInputs = remove(node.inputs, isInGroup)
-    for (const widget of remove(node.widgets, isInGroup)) widget.onRemove?.()
+    for (const widget of remove(node.widgets, isInGroup)) {
+      widget.onRemove?.()
+      if (widget.widgetId) deleteWidget(widget.widgetId)
+    }
 
     if (!newSpec) return
 
@@ -185,11 +192,20 @@ function dynamicComboWidget(
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
+  const getState = () => {
+    const graphId = resolveNodeRootGraphId(node)
+    if (!graphId) return undefined
+    return useWidgetValueStore().getWidget(
+      widgetId(graphId, node.id, widget.name)
+    )
+  }
   Object.defineProperty(widget, 'value', {
     get() {
-      return widgetValue
+      return getState()?.value ?? widgetValue
     },
     set(value) {
+      const state = getState()
+      if (state) state.value = value
       widgetValue = value
       updateWidgets(value)
     }
@@ -321,6 +337,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return
+        this.outputs[idx] = shallowReactive(this.outputs[idx])
         changeOutputType(this, output, outputType)
       })
       app.canvas?.setDirty(true, true)
@@ -460,7 +477,10 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const { min = 1, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const autogrowGroup = node.comfyDynamic.autogrow[groupName]
+  if (!autogrowGroup) return
+
+  const { min = 1, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
@@ -511,7 +531,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       lastInput
     )
   }
-  const removalChecks = groupInputs.slice((min - 1) * stride)
+  const removalChecks = groupInputs.slice(min * stride)
   let i
   for (i = removalChecks.length - stride; i >= 0; i -= stride) {
     if (removalChecks.slice(i, i + stride).some((inp) => inp.link)) break
@@ -597,6 +617,6 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
     prefix,
     inputSpecs: inputsV2
   }
-  for (let i = 0; i === 0 || i < min; i++)
+  for (let i = 0; i === 0 || i < min + 1; i++)
     addAutogrowGroup(i, inputSpecV2.name, node)
 }

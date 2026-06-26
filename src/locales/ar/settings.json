@@ -199,7 +199,6 @@
     "name": "محرك PLY",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "اختر المحرك لتحميل ملفات PLY. \"threejs\" يستخدم محمل Three.js PLY الأصلي (الأفضل لملفات الشبكة). \"fastply\" يستخدم محملًا محسنًا لملفات PLY السحابية النقطية بنسق ASCII. \"sparkjs\" يستخدم Spark.js لملفات PLY الخاصة بتقنية Gaussian Splatting ثلاثية الأبعاد."
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "لايت جراف (قديم)",
       "v1 (legacy)": "الإصدار 1 (قديم)"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "العُقَد المضافة تتبع المؤشر",
+    "tooltip": "عند التفعيل، تتبع العُقَد المضافة من مربع البحث المؤشر حتى يتم النقر لوضعها. ينطبق فقط على التنفيذ الافتراضي."
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "معاينة العقدة",

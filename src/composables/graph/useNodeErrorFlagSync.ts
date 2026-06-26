@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -32,7 +33,8 @@ function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
 function reconcileNodeErrorFlags(
   rootGraph: LGraph,
   nodeErrors: Record<string, NodeError> | null,
-  missingModelExecIds: Set<string>
+  missingModelExecIds: Set<string>,
+  missingMediaExecIds: Set<string> = new Set()
 ): void {
   // Collect nodes and slot info that should be flagged
   // Includes both error-owning nodes and their ancestor containers
@@ -64,6 +66,11 @@ function reconcileNodeErrorFlags(
     if (node) flaggedNodes.add(node)
   }
 
+  for (const execId of missingMediaExecIds) {
+    const node = getNodeByExecutionId(rootGraph, execId)
+    if (node) flaggedNodes.add(node)
+  }
+
   forEachNode(rootGraph, (node) => {
     setNodeHasErrors(node, flaggedNodes.has(node))
 
@@ -78,7 +85,8 @@ function reconcileNodeErrorFlags(
 
 export function useNodeErrorFlagSync(
   lastNodeErrors: Ref<Record<string, NodeError> | null>,
-  missingModelStore: ReturnType<typeof useMissingModelStore>
+  missingModelStore: ReturnType<typeof useMissingModelStore>,
+  missingMediaStore: ReturnType<typeof useMissingMediaStore>
 ): () => void {
   const settingStore = useSettingStore()
   const showErrorsTab = computed(() =>
@@ -89,12 +97,13 @@ export function useNodeErrorFlagSync(
     [
       lastNodeErrors,
       () => missingModelStore.missingModelNodeIds,
+      () => missingMediaStore.missingMediaNodeIds,
       showErrorsTab
     ],
     () => {
       if (!app.isGraphReady) return
-      // Legacy (LGraphNode) only: suppress missing-model error flags when
-      // the Errors tab is hidden, since legacy nodes lack the per-widget
+      // Legacy (LGraphNode) only: suppress missing-model/media error flags
+      // when the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
       reconcileNodeErrorFlags(
@@ -102,6 +111,9 @@ export function useNodeErrorFlagSync(
         lastNodeErrors.value,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds
+          : new Set(),
+        showErrorsTab.value
+          ? missingMediaStore.missingMediaAncestorExecutionIds
           : new Set()
       )
     },

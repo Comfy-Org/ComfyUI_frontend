@@ -1,6 +1,6 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 
@@ -21,17 +21,23 @@ vi.mock('@/components/common/LazyImage.vue', () => ({
   }
 }))
 
-vi.mock('@vueuse/core', () => ({
-  useMouseInElement: () => ({
-    elementX: ref(50),
-    elementWidth: ref(100),
-    isOutside: ref(false)
-  })
-}))
+const mockRect = (el: HTMLElement, width: number) => {
+  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+    left: 0,
+    top: 0,
+    right: width,
+    bottom: 100,
+    width,
+    height: 100,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  } as DOMRect)
+}
 
 describe('CompareSliderThumbnail', () => {
-  const mountThumbnail = (props = {}) => {
-    return mount(CompareSliderThumbnail, {
+  const renderThumbnail = (props = {}) => {
+    return render(CompareSliderThumbnail, {
       props: {
         baseImageSrc: '/base-image.jpg',
         overlayImageSrc: '/overlay-image.jpg',
@@ -43,42 +49,75 @@ describe('CompareSliderThumbnail', () => {
   }
 
   it('renders both base and overlay images', () => {
-    const wrapper = mountThumbnail()
-    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
-    expect(lazyImages.length).toBe(2)
-    expect(lazyImages[0].props('src')).toBe('/base-image.jpg')
-    expect(lazyImages[1].props('src')).toBe('/overlay-image.jpg')
+    renderThumbnail()
+    const images = screen.getAllByRole('img')
+    expect(images).toHaveLength(2)
+    expect(images[0]).toHaveAttribute('src', '/base-image.jpg')
+    expect(images[1]).toHaveAttribute('src', '/overlay-image.jpg')
   })
 
   it('applies correct alt text to both images', () => {
-    const wrapper = mountThumbnail({ alt: 'Custom Alt Text' })
-    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
-    expect(lazyImages[0].props('alt')).toBe('Custom Alt Text')
-    expect(lazyImages[1].props('alt')).toBe('Custom Alt Text')
+    renderThumbnail({ alt: 'Custom Alt Text' })
+    const images = screen.getAllByRole('img')
+    expect(images[0]).toHaveAttribute('alt', 'Custom Alt Text')
+    expect(images[1]).toHaveAttribute('alt', 'Custom Alt Text')
   })
 
   it('applies clip-path style to overlay image', () => {
-    const wrapper = mountThumbnail()
-    const overlayLazyImage = wrapper.findAllComponents({ name: 'LazyImage' })[1]
-    const imageStyle = overlayLazyImage.props('imageStyle')
-    expect(imageStyle.clipPath).toContain('inset')
+    renderThumbnail()
+    const images = screen.getAllByRole('img')
+    expect(images[1].style.clipPath).toContain('inset')
   })
 
   it('renders slider divider', () => {
-    const wrapper = mountThumbnail()
-    const divider = wrapper.find('.bg-white\\/30')
-    expect(divider.exists()).toBe(true)
+    renderThumbnail()
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider).toBeDefined()
   })
 
   it('positions slider based on default value', () => {
-    const wrapper = mountThumbnail()
-    const divider = wrapper.find('.bg-white\\/30')
-    expect(divider.attributes('style')).toContain('left: 50%')
+    renderThumbnail()
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('50%')
   })
 
-  it('passes isHovered prop to BaseThumbnail', () => {
-    const wrapper = mountThumbnail({ isHovered: true })
-    const baseThumbnail = wrapper.findComponent({ name: 'BaseThumbnail' })
-    expect(baseThumbnail.props('isHovered')).toBe(true)
+  it('updates slider position on mousemove', async () => {
+    renderThumbnail()
+    const container = screen.getByTestId('compare-slider-container')
+    mockRect(container, 200)
+
+    const user = userEvent.setup()
+    await user.pointer({ target: container, coords: { clientX: 50 } })
+
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('25%')
+  })
+
+  it('clamps slider position to [0, 100] when pointer overshoots', async () => {
+    renderThumbnail()
+    const container = screen.getByTestId('compare-slider-container')
+    mockRect(container, 200)
+
+    const user = userEvent.setup()
+
+    await user.pointer({ target: container, coords: { clientX: -10 } })
+    let divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('0%')
+
+    await user.pointer({ target: container, coords: { clientX: 250 } })
+    divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('100%')
+  })
+
+  it('ignores mousemove when container has zero width', async () => {
+    renderThumbnail()
+    const container = screen.getByTestId('compare-slider-container')
+    mockRect(container, 0)
+
+    const user = userEvent.setup()
+    await user.pointer({ target: container, coords: { clientX: 50 } })
+
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('50%')
   })
 })

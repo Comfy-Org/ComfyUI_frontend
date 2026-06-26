@@ -100,9 +100,9 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
-const authStore = useFirebaseAuthStore()
+const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
 const comfyPlatformBaseUrl = computed(() =>

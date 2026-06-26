@@ -13,6 +13,7 @@
       </h2>
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
         <i class="icon-[lucide--x] size-6" />
@@ -52,7 +53,7 @@
     <!-- Amount (USD) / Credits -->
     <div class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
@@ -156,7 +157,7 @@ import { useI18n } from 'vue-i18n'
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -164,14 +165,14 @@ import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean
 }>()
 
 const { t } = useI18n()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()

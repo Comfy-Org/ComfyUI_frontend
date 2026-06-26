@@ -173,7 +173,7 @@ describe('useAssetBrowserDialog', () => {
 
       const dialogCall = mockShowDialog.mock.calls[0][0]
       expect(dialogCall.props.nodeType).toBe('CheckpointLoaderSimple')
-      expect(dialogCall.props.assets).toBeUndefined()
+      expect(dialogCall.props.overrideAssets).toBeUndefined()
     })
   })
 })

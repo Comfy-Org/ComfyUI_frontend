@@ -1,20 +1,25 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
+  LGraphGroup,
   LGraphNode,
   LiteGraph,
   LLink,
-  Reroute
+  Reroute,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { usePromotionStore } from '@/stores/promotionStore'
+import type { UUID } from '@/utils/uuid'
+import { zeroUuid } from '@/utils/uuid'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import {
+  createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
@@ -279,23 +284,22 @@ describe('Graph Clearing and Callbacks', () => {
     expect(graph.nodes.length).toBe(0)
   })
 
-  test('clear() removes graph-scoped promotion and widget-value state', () => {
+  test('clear() removes graph-scoped preview and widget-value state', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     const graph = new LGraph()
     const graphId = 'graph-clear-cleanup' as UUID
     graph.id = graphId
 
-    const promotionStore = usePromotionStore()
-    promotionStore.promote(graphId, 1 as NodeId, {
+    const previewExposureStore = usePreviewExposureStore()
+    previewExposureStore.addExposure(graphId, `${graphId}:1`, {
       sourceNodeId: '10',
-      sourceWidgetName: 'seed'
+      sourcePreviewName: '$$canvas-image-preview'
     })
 
     const widgetValueStore = useWidgetValueStore()
-    widgetValueStore.registerWidget(graphId, {
-      nodeId: '10' as NodeId,
-      name: 'seed',
+    const seedWidgetId = widgetId(graphId, '10' as NodeId, 'seed')
+    widgetValueStore.registerWidget(seedWidgetId, {
       type: 'number',
       value: 1,
       options: {},
@@ -304,27 +308,109 @@ describe('Graph Clearing and Callbacks', () => {
       disabled: undefined
     })
 
-    expect(
-      promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: '10',
-        sourceWidgetName: 'seed'
-      })
-    ).toBe(true)
-    expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
+    expect(widgetValueStore.getWidget(seedWidgetId)).toEqual(
       expect.objectContaining({ value: 1 })
     )
+    expect(
+      previewExposureStore.getExposures(graphId, `${graphId}:1`)
+    ).toHaveLength(1)
 
     graph.clear()
 
-    expect(
-      promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: '10',
-        sourceWidgetName: 'seed'
+    expect(widgetValueStore.getWidget(seedWidgetId)).toBeUndefined()
+    expect(previewExposureStore.getExposures(graphId, `${graphId}:1`)).toEqual(
+      []
+    )
+  })
+})
+
+describe('node:before-removed event', () => {
+  it('fires node:before-removed for a successful node removal', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const events: { node: LGraphNode; graphAtDispatch: unknown }[] = []
+    graph.events.addEventListener('node:before-removed', (e) => {
+      events.push({
+        node: e.detail.node,
+        graphAtDispatch: e.detail.node.graph
       })
-    ).toBe(false)
-    expect(
-      widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
-    ).toBeUndefined()
+    })
+
+    graph.remove(node)
+
+    expect(events).toHaveLength(1)
+    expect(events[0].node).toBe(node)
+    expect(events[0].graphAtDispatch).toBe(graph)
+    expect(node.graph).toBeNull()
+  })
+
+  it('does not fire node:before-removed for a node not in the graph', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+
+    const fired = vi.fn()
+    graph.events.addEventListener('node:before-removed', fired)
+
+    graph.remove(node)
+
+    expect(fired).not.toHaveBeenCalled()
+  })
+
+  it('does not fire node:before-removed when removing an LGraphGroup', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('test-group')
+    graph.add(group)
+
+    const fired = vi.fn()
+    graph.events.addEventListener('node:before-removed', fired)
+
+    graph.remove(group)
+
+    expect(fired).not.toHaveBeenCalled()
+  })
+
+  it('does not fire node:before-removed when ignore_remove is set', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.ignore_remove = true
+
+    const fired = vi.fn()
+    graph.events.addEventListener('node:before-removed', fired)
+
+    graph.remove(node)
+
+    expect(fired).not.toHaveBeenCalled()
+    expect(graph.nodes).toContain(node)
+  })
+
+  it('fires node:before-removed before node.onRemoved and detach', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const order: string[] = []
+    graph.events.addEventListener('node:before-removed', () => {
+      order.push(
+        `before-removed(graph=${node.graph === graph ? 'set' : 'null'})`
+      )
+    })
+    node.onRemoved = () => {
+      order.push(`onRemoved(graph=${node.graph === graph ? 'set' : 'null'})`)
+    }
+    graph.onNodeRemoved = (n) => {
+      order.push(`onNodeRemoved(graph=${n.graph === null ? 'null' : 'set'})`)
+    }
+
+    graph.remove(node)
+
+    expect(order).toEqual([
+      'before-removed(graph=set)',
+      'onRemoved(graph=set)',
+      'onNodeRemoved(graph=null)'
+    ])
   })
 })
 
@@ -380,6 +466,53 @@ describe('Subgraph Definition Garbage Collection', () => {
     expect(graphRemovedNodeIds.size).toBe(2)
   })
 
+  it('subgraph-definition GC dispatches node:before-removed on the inner subgraph for each inner node', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 2)
+
+    const dispatched: { node: LGraphNode; graphAtDispatch: unknown }[] = []
+    subgraph.events.addEventListener('node:before-removed', (e) => {
+      dispatched.push({
+        node: e.detail.node,
+        graphAtDispatch: e.detail.node.graph
+      })
+    })
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(dispatched.map((e) => e.node)).toEqual(innerNodes)
+    for (const entry of dispatched) {
+      expect(entry.graphAtDispatch).toBe(subgraph)
+    }
+  })
+
+  it('subgraph-definition GC dispatches node:before-removed before each inner node onRemoved', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)
+    const innerNode = innerNodes[0]
+
+    const order: string[] = []
+    subgraph.events.addEventListener('node:before-removed', () => {
+      order.push('before-removed')
+    })
+    innerNode.onRemoved = () => {
+      order.push('onRemoved')
+    }
+    subgraph.onNodeRemoved = () => {
+      order.push('onNodeRemoved')
+    }
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(order).toEqual(['before-removed', 'onRemoved', 'onNodeRemoved'])
+  })
+
   it('subgraph definition is removed when SubgraphNode is removed', () => {
     const rootGraph = new LGraph()
     const { subgraph } = createSubgraphWithNodes(rootGraph, 1)
@@ -393,6 +526,52 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+  })
+})
+
+describe('beforeChange deprecated onBeforeChange shim', () => {
+  beforeEach(() => {
+    LiteGraph.onDeprecationWarning = []
+    LiteGraph.alwaysRepeatWarnings = true
+  })
+
+  afterEach(() => {
+    LiteGraph.alwaysRepeatWarnings = false
+  })
+
+  it('still invokes a listener assigned to onBeforeChange', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const onBeforeChange = vi.fn()
+    graph.onBeforeChange = onBeforeChange
+
+    graph.beforeChange(node)
+
+    expect(onBeforeChange).toHaveBeenCalledWith(graph, node)
+  })
+
+  it('warns that onBeforeChange is deprecated when used', () => {
+    const graph = new LGraph()
+    const deprecationCallback = vi.fn()
+    LiteGraph.onDeprecationWarning = [deprecationCallback]
+    graph.onBeforeChange = vi.fn()
+
+    graph.beforeChange()
+
+    expect(deprecationCallback).toHaveBeenCalledWith(
+      expect.stringContaining('LGraph.onBeforeChange is deprecated'),
+      undefined
+    )
+  })
+
+  it('does not warn when no listener is assigned', () => {
+    const graph = new LGraph()
+    const deprecationCallback = vi.fn()
+    LiteGraph.onDeprecationWarning = [deprecationCallback]
+
+    graph.beforeChange()
+
+    expect(deprecationCallback).not.toHaveBeenCalled()
   })
 })
 
@@ -990,6 +1169,48 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     }
   })
 
+  it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
+    const subgraph = createTestSubgraph()
+    const sourceHost = createTestSubgraphNode(subgraph)
+    sourceHost.graph!.add(sourceHost)
+    sourceHost.properties.proxyWidgets = [['9999', 'seed']]
+    const serialized = sourceHost.rootGraph.serialize()
+    const instanceData = sourceHost.serialize()
+
+    const previous = LGraph.proxyWidgetMigrationFlush
+    LGraph.proxyWidgetMigrationFlush = undefined
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    LiteGraph.registerNodeType(
+      subgraph.id,
+      class TestSubgraphNode extends SubgraphNode {
+        constructor() {
+          super(new LGraph(), subgraph, instanceData)
+        }
+      }
+    )
+    try {
+      const graph = new LGraph()
+      graph.configure(serialized)
+
+      const migrationCall = warn.mock.calls.find(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('Legacy proxyWidgets were not migrated')
+      )
+      expect(migrationCall).toBeDefined()
+      expect(migrationCall![1]).toEqual(
+        expect.objectContaining({
+          hostNodeId: expect.any(Number),
+          proxyWidgets: expect.anything()
+        })
+      )
+    } finally {
+      LGraph.proxyWidgetMigrationFlush = previous
+      LiteGraph.unregisterNodeType(subgraph.id)
+      warn.mockRestore()
+    }
+  })
+
   it('throws when node ID space is exhausted', () => {
     expect(() => {
       const graph = new LGraph()
@@ -1003,5 +1224,27 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
+  })
+})
+
+describe('Zero UUID handling in configure', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia())
+  })
+
+  it('rejects zeroUuid for root graphs and assigns a new ID', () => {
+    const graph = new LGraph()
+    const data = graph.serialize()
+    data.id = zeroUuid
+    graph.configure(data)
+    expect(graph.id).not.toBe(zeroUuid)
+  })
+
+  it('preserves zeroUuid for subgraphs', () => {
+    const graph = new LGraph()
+    const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
+    const subgraph = graph.createSubgraph(subgraphData)
+    subgraph.configure(subgraphData)
+    expect(subgraph.id).toBe(zeroUuid)
   })
 })

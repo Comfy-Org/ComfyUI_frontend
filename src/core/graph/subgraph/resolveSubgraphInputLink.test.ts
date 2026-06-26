@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -101,14 +102,14 @@ describe('resolveSubgraphInputLink', () => {
     vi.spyOn(subgraph, 'getLink').mockImplementation((linkId) => {
       if (typeof linkId !== 'number') return originalGetLink(linkId)
       if (linkId === stale.linkId) {
-        return {
+        return fromPartial<ReturnType<typeof subgraph.getLink>>({
           resolve: () => ({
             inputNode: {
               inputs: undefined,
               getWidgetFromSlot: () => ({ name: 'ignored' })
             }
           })
-        } as unknown as ReturnType<typeof subgraph.getLink>
+        })
       }
 
       return originalGetLink(linkId)

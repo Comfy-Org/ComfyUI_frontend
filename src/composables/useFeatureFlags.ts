@@ -2,6 +2,7 @@ import { computed, reactive, readonly } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
@@ -26,7 +27,10 @@ export enum ServerFeatureFlag {
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
-  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled'
+  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  SHOW_SIGNIN_BUTTON = 'show_signin_button',
+  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  SIGNUP_TURNSTILE = 'signup_turnstile'
 }
 
 /**
@@ -106,7 +110,8 @@ export function useFeatureFlags() {
       if (override !== undefined) return override
 
       if (!isCloud) return false
-      if (!isAuthenticatedConfigLoaded.value) return false
+      if (!isAuthenticatedConfigLoaded.value)
+        return cachedTeamWorkspacesEnabled.value ?? false
 
       return (
         remoteConfig.value.team_workspaces_enabled ??
@@ -155,6 +160,26 @@ export function useFeatureFlags() {
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
         remoteConfig.value.comfyhub_profile_gate_enabled,
         false
+      )
+    },
+    get showSignInButton(): boolean | undefined {
+      return api.getServerFeature<boolean | undefined>(
+        ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
+        undefined
+      )
+    },
+    get unifiedCloudAuthEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
+        remoteConfig.value.unified_cloud_auth,
+        false
+      )
+    },
+    get signupTurnstileMode() {
+      return resolveFlag(
+        ServerFeatureFlag.SIGNUP_TURNSTILE,
+        remoteConfig.value.signup_turnstile,
+        'off'
       )
     }
   })

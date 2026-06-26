@@ -1,12 +1,10 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
     // Enable the essentials feature flag via the reactive serverFeatureFlags ref.
     // In production, this flag comes via WebSocket or remoteConfig (cloud only).
     // The localhost test server has neither, so we set it directly.
@@ -35,76 +33,33 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
     })
   })
 
-  test('Node library opens via sidebar', async ({ comfyPage }) => {
-    const tabButton = comfyPage.page.locator('.node-library-tab-button')
-    await tabButton.click()
-
-    const sidebarContent = comfyPage.page.locator(
-      '.comfy-vue-side-bar-container'
-    )
-    await expect(sidebarContent).toBeVisible()
-  })
-
-  test('Essentials tab is visible in node library', async ({ comfyPage }) => {
-    const tabButton = comfyPage.page.locator('.node-library-tab-button')
-    await tabButton.click()
-
-    const essentialsTab = comfyPage.page.getByRole('tab', {
-      name: /essentials/i
-    })
-    await expect(essentialsTab).toBeVisible()
-  })
-
-  test('Clicking essentials tab shows essential node cards', async ({
-    comfyPage
-  }) => {
-    const tabButton = comfyPage.page.locator('.node-library-tab-button')
-    await tabButton.click()
-
-    const essentialsTab = comfyPage.page.getByRole('tab', {
-      name: /essentials/i
-    })
-    await essentialsTab.click()
-
-    const essentialCards = comfyPage.page.locator('[data-node-name]')
-    await expect(essentialCards.first()).toBeVisible()
-  })
-
   test('Essential node cards have node names', async ({ comfyPage }) => {
-    const tabButton = comfyPage.page.locator('.node-library-tab-button')
-    await tabButton.click()
-
-    const essentialsTab = comfyPage.page.getByRole('tab', {
-      name: /essentials/i
-    })
-    await essentialsTab.click()
+    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
+    const tab = comfyPage.menu.nodeLibraryTabV2
+    await tab.open()
+    await tab.essentialsTab.click()
 
     const firstCard = comfyPage.page.locator('[data-node-name]').first()
     await expect(firstCard).toBeVisible()
 
-    const nodeName = await firstCard.getAttribute('data-node-name')
-    expect(nodeName).toBeTruthy()
-    expect(nodeName!.length).toBeGreaterThan(0)
+    await expect(firstCard).toHaveAttribute('data-node-name', /.+/)
   })
 
   test('Node library can switch between all and essentials tabs', async ({
     comfyPage
   }) => {
-    const tabButton = comfyPage.page.locator('.node-library-tab-button')
-    await tabButton.click()
+    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
+    const tab = comfyPage.menu.nodeLibraryTabV2
+    await tab.open()
+    await tab.allTab.click()
 
-    const essentialsTab = comfyPage.page.getByRole('tab', {
-      name: /essentials/i
-    })
-    const allNodesTab = comfyPage.page.getByRole('tab', { name: /^all$/i })
-
-    await essentialsTab.click()
-    await expect(essentialsTab).toHaveAttribute('aria-selected', 'true')
+    await tab.essentialsTab.click()
+    await expect(tab.essentialsTab).toHaveAttribute('aria-selected', 'true')
     const essentialCards = comfyPage.page.locator('[data-node-name]')
     await expect(essentialCards.first()).toBeVisible()
 
-    await allNodesTab.click()
-    await expect(allNodesTab).toHaveAttribute('aria-selected', 'true')
-    await expect(essentialsTab).toHaveAttribute('aria-selected', 'false')
+    await tab.allTab.click()
+    await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
+    await expect(tab.essentialsTab).toHaveAttribute('aria-selected', 'false')
   })
 })

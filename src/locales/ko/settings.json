@@ -199,7 +199,6 @@
     "name": "PLY 엔진",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "PLY 파일을 불러올 엔진을 선택합니다. \"threejs\"는 네이티브 Three.js PLYLoader를 사용하며(메시 PLY 파일에 적합), \"fastply\"는 ASCII 포인트 클라우드 PLY 파일에 최적화된 로더를 사용합니다. \"sparkjs\"는 3D Gaussian Splatting PLY 파일에 Spark.js를 사용합니다."
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "litegraph (구버전)",
       "v1 (legacy)": "v1 (legacy)"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "추가된 노드가 커서를 따라감",
+    "tooltip": "활성화하면, 검색 상자에서 추가된 노드가 클릭하여 배치할 때까지 커서를 따라갑니다. 기본 구현에만 적용됩니다."
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "노드 미리보기",

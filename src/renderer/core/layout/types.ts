@@ -6,6 +6,8 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
+import type { NodeId as WorkflowNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
@@ -37,7 +39,7 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
-export type NodeId = string
+export type NodeId = WorkflowNodeId
 export type LinkId = number
 export type RerouteId = number
 

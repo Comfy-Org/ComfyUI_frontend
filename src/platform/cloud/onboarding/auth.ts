@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/vue'
 import { isEmpty } from 'es-toolkit/compat'
 
 import { api } from '@/scripts/api'
+import { toError } from '@/utils/errorUtil'
 
 interface UserCloudStatus {
   status: 'active'
@@ -80,7 +81,7 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
   } catch (error) {
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to get user:')) {
-      captureApiError(error as Error, '/user', 'network_error')
+      captureApiError(toError(error), '/user', 'network_error')
     }
     throw error
   }
@@ -94,24 +95,30 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
         'Content-Type': 'application/json'
       }
     })
+    // 404 = the survey key was never stored = genuinely not completed. Only
+    // reachable after a successful authenticated read (a stale token returns
+    // 401, never 404), so it can't be a transient-auth false signal.
+    if (response.status === 404) {
+      return false
+    }
     if (!response.ok) {
-      // Not an error case - survey not completed is a valid state
+      // Other non-ok (401/403/5xx): treat as completed so a transient failure
+      // never bounces a working user to /cloud/survey.
       Sentry.addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
-        level: 'info',
+        level: 'warning',
         data: {
           status: response.status,
           endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
         }
       })
-      return false
+      return true
     }
     const data = await response.json()
-    // Check if data exists and is not empty
     return !isEmpty(data.value)
   } catch (error) {
-    // Network error - still capture it as it's not thrown from above
+    // Network/parse failure: same fail-safe policy as a non-ok response.
     Sentry.captureException(error, {
       tags: {
         api_endpoint: '/settings/{key}',
@@ -123,7 +130,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       },
       level: 'warning'
     })
-    return false
+    return true
   }
 }
 
@@ -176,7 +183,7 @@ export async function submitSurvey(
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to submit survey:')) {
       captureApiError(
-        error as Error,
+        toError(error),
         '/settings',
         'network_error',
         undefined,

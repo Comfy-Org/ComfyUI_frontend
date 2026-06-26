@@ -136,9 +136,16 @@ export function fixBadLinks(
         return false
       }
       const linkIdToSet = op === 'REMOVE' ? null : linkId
+      const inputSlot = node.inputs?.[slot]
+      if (fix && !inputSlot) {
+        logger.log(
+          ` > Cannot patch ${node.id}.inputs[${slot}] because the input slot is missing.`
+        )
+        return false
+      }
       patchedNode['inputs']![slot] = linkIdToSet
       if (fix) {
-        // node.inputs[slot]!.link = linkIdToSet;
+        inputSlot!.link = linkIdToSet
       }
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}
@@ -202,7 +209,7 @@ export function fixBadLinks(
     linkId: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let has = false
+    let has: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasIt = node.inputs?.[slot]?.link === linkId
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -242,7 +249,7 @@ export function fixBadLinks(
     slot: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let hasAny = false
+    let hasAny: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasAny = node.inputs?.[slot]?.link != null
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -361,12 +368,12 @@ export function fixBadLinks(
           logger.log(
             ` > [PATCH] ${targetLog} is not defined, will set to ${link.id}.`
           )
-          let patched = patchTarget('ADD')
+          const patched = patchTarget('ADD')
           if (!patched) {
             logger.log(
               ` > [PATCH] Nvm, ${targetLog} already patched. Removing ${link.id} from ${originLog}.`
             )
-            patched = patchOrigin('REMOVE')
+            patchOrigin('REMOVE')
           }
         } else {
           logger.log(
@@ -461,18 +468,17 @@ export function fixBadLinks(
     } stale link removals.`
   )
 
-  let hasBadLinks: boolean = !!(
-    data.patchedNodes.length || data.deletedLinks.length
-  )
+  const hasChanges = !!(data.patchedNodes.length || data.deletedLinks.length)
+  let hasBadLinks: boolean = hasChanges
   // If we're fixing, then let's run it again to see if there are no more bad links.
-  if (fix && !silent) {
+  if (fix) {
     const rerun = fixBadLinks(graph, { fix: false, silent: true })
     hasBadLinks = rerun.hasBadLinks
   }
 
   return {
     hasBadLinks,
-    fixed: !!hasBadLinks && fix,
+    fixed: fix && hasChanges && !hasBadLinks,
     graph,
     patched: data.patchedNodes.length,
     deleted: data.deletedLinks.length

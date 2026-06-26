@@ -2,7 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { useTemplateRef } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
@@ -14,7 +14,12 @@ const inputRef = useTemplateRef<HTMLInputElement>('inputEl')
 
 defineExpose({
   focus: () => inputRef.value?.focus(),
-  select: () => inputRef.value?.select()
+  select: () => inputRef.value?.select(),
+  blur: () => inputRef.value?.blur(),
+  setSelectionRange: (start: number, end: number) =>
+    inputRef.value?.setSelectionRange(start, end),
+  selectAll: () =>
+    inputRef.value?.setSelectionRange(0, inputRef.value.value.length)
 })
 </script>
 

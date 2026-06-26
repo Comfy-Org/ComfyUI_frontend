@@ -4,7 +4,7 @@ import type { Component } from 'vue'
 
 import OverlayIcon from '@/components/common/OverlayIcon.vue'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   items,
@@ -44,7 +44,7 @@ const {
       <span class="flex-1">{{ item.label }}</span>
       <span
         v-if="item.badge"
-        class="ml-3 flex items-center gap-1 rounded-full bg-(--primary-background) px-1.5 py-0.5 text-xxs text-base-foreground uppercase"
+        class="ml-3 flex items-center gap-1 rounded-full bg-(--primary-background) px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
       >
         {{ item.badge }}
       </span>

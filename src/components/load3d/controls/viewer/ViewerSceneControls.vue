@@ -1,15 +1,21 @@
 <template>
   <div class="space-y-4">
-    <div v-if="!hasBackgroundImage">
+    <div v-if="!hasBackgroundImage" class="flex flex-col gap-2">
       <label>
         {{ $t('load3d.backgroundColor') }}
       </label>
-      <input v-model="backgroundColor" type="color" class="w-full" />
+      <input v-model="backgroundColor" type="color" class="h-8 w-full" />
     </div>
 
-    <div>
-      <Checkbox v-model="showGrid" input-id="showGrid" binary name="showGrid" />
-      <label for="showGrid" class="pl-2">
+    <div class="flex items-center gap-2">
+      <input
+        id="showGrid"
+        v-model="showGrid"
+        type="checkbox"
+        name="showGrid"
+        class="size-4 cursor-pointer accent-node-component-surface-highlight"
+      />
+      <label for="showGrid" class="cursor-pointer">
         {{ $t('load3d.showGrid') }}
       </label>
     </div>
@@ -58,7 +64,6 @@
 </template>
 
 <script setup lang="ts">
-import Checkbox from 'primevue/checkbox'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

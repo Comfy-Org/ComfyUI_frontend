@@ -1,11 +1,16 @@
 import { computed, ref } from 'vue'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type {
+  BillingStatus,
+  BillingSubscriptionStatus,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import type {
   BalanceInfo,
@@ -24,8 +29,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isActiveSubscription: legacyIsActiveSubscription,
     subscriptionTier,
     subscriptionDuration,
-    formattedRenewalDate,
-    formattedEndDate,
+    subscriptionStatus: legacySubscriptionStatus,
     isCancelled,
     fetchStatus: legacyFetchStatus,
     manageSubscription: legacyManageSubscription,
@@ -33,7 +37,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
 
-  const firebaseAuthStore = useFirebaseAuthStore()
+  const authStore = useAuthStore()
+  const authActions = useAuthActions()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -52,15 +57,15 @@ export function useLegacyBilling(): BillingState & BillingActions {
       tier: subscriptionTier.value,
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
-      renewalDate: formattedRenewalDate.value || null,
-      endDate: formattedEndDate.value || null,
+      renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
+      endDate: legacySubscriptionStatus.value?.end_date ?? null,
       isCancelled: isCancelled.value,
-      hasFunds: (firebaseAuthStore.balance?.amount_micros ?? 0) > 0
+      hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
     }
   })
 
   const balance = computed<BalanceInfo | null>(() => {
-    const legacyBalance = firebaseAuthStore.balance
+    const legacyBalance = authStore.balance
     if (!legacyBalance) return null
 
     return {
@@ -75,9 +80,23 @@ export function useLegacyBilling(): BillingState & BillingActions {
     }
   })
 
+  // Legacy has no coarse billing_status concept (workspace-only).
+  const billingStatus = computed<BillingStatus | null>(() => null)
+  const subscriptionStatus = computed<BillingSubscriptionStatus | null>(() => {
+    if (isCancelled.value) return 'canceled'
+    if (legacyIsActiveSubscription.value) return 'active'
+    return null
+  })
+  const tier = computed(() => subscriptionTier.value)
+  const renewalDate = computed(
+    () => legacySubscriptionStatus.value?.renewal_date ?? null
+  )
+
   // Legacy billing doesn't have workspace-style plans
   const plans = computed(() => [])
   const currentPlanSlug = computed(() => null)
+  const teamCreditStops = computed(() => null)
+  const currentTeamCreditStop = computed(() => null)
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -118,7 +137,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      await firebaseAuthStore.fetchBalance()
+      await authStore.fetchBalance()
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch balance'
@@ -130,15 +149,15 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   async function subscribe(
     _planSlug: string,
-    _returnUrl?: string,
-    _cancelUrl?: string
+    _options?: SubscribeOptions
   ): Promise<SubscribeResponse | void> {
     // Legacy billing uses Stripe checkout flow via useSubscription
     await legacySubscribe()
   }
 
   async function previewSubscribe(
-    _planSlug: string
+    _planSlug: string,
+    _options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
     // Legacy billing doesn't support preview - returns null
     return null
@@ -150,6 +169,16 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   async function cancelSubscription(): Promise<void> {
     await legacyManageSubscription()
+  }
+
+  async function resubscribe(): Promise<void> {
+    // Legacy has no resubscribe endpoint; resubscribing is a fresh checkout.
+    await legacySubscribe()
+  }
+
+  async function topup(amountCents: number): Promise<void> {
+    // Facade standardizes on cents; legacy /customers/credit takes dollars.
+    await authActions.purchaseCredits(amountCents / 100)
   }
 
   async function fetchPlans(): Promise<void> {
@@ -175,10 +204,16 @@ export function useLegacyBilling(): BillingState & BillingActions {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,
     isFreeTier,
+    billingStatus,
+    subscriptionStatus,
+    tier,
+    renewalDate,
 
     // Actions
     initialize,
@@ -188,6 +223,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     previewSubscribe,
     manageSubscription,
     cancelSubscription,
+    resubscribe,
+    topup,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

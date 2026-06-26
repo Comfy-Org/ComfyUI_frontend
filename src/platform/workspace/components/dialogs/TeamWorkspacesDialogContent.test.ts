@@ -1,9 +1,15 @@
-import { flushPromises, mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
+import { render } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { nextTick } from 'vue'
 
 import TeamWorkspacesDialogContent from './TeamWorkspacesDialogContent.vue'
+
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 const mockCloseDialog = vi.fn()
 const mockToastAdd = vi.fn()
@@ -71,14 +77,14 @@ const i18n = createI18n({
 const ButtonStub = {
   name: 'Button',
   template:
-    '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+    '<button :disabled="disabled" :data-loading="loading" @click="$emit(\'click\')"><slot /></button>',
   props: ['disabled', 'loading', 'variant', 'size']
 }
 
 function mountComponent(props: Record<string, unknown> = {}) {
-  return mount(TeamWorkspacesDialogContent, {
+  const user = userEvent.setup()
+  const { container } = render(TeamWorkspacesDialogContent, {
     props,
-    shallow: true,
     global: {
       plugins: [i18n],
       stubs: {
@@ -87,10 +93,14 @@ function mountComponent(props: Record<string, unknown> = {}) {
       }
     }
   })
+  return { container, user }
 }
 
-function findCreateButton(wrapper: ReturnType<typeof mountComponent>) {
-  return wrapper.findComponent(ButtonStub)
+function findCreateButton(container: Element): HTMLButtonElement {
+  const buttons = container.querySelectorAll('button')
+  return Array.from(buttons).find(
+    (btn) => !btn.closest('header') && !btn.closest('li')
+  ) as HTMLButtonElement
 }
 
 function setOwnedWorkspaces() {
@@ -123,35 +133,37 @@ describe('TeamWorkspacesDialogContent', () => {
   describe('workspace listing', () => {
     it('displays only owned workspaces', () => {
       setOwnedWorkspaces()
-      const wrapper = mountComponent()
-      const items = wrapper.findAll('li')
+      const { container } = mountComponent()
+      const items = container.querySelectorAll('li')
       expect(items).toHaveLength(1)
-      expect(wrapper.text()).toContain('Team Alpha')
-      expect(wrapper.text()).not.toContain('Team Beta')
+      expect(container.textContent).toContain('Team Alpha')
+      expect(container.textContent).not.toContain('Team Beta')
     })
 
     it('shows tier label for subscribed workspaces', () => {
       setOwnedWorkspaces()
-      const wrapper = mountComponent()
-      expect(wrapper.text()).toContain('Pro')
+      const { container } = mountComponent()
+      expect(container.textContent).toContain('Pro')
     })
 
     it('hides workspace list section when no owned workspaces', () => {
-      const wrapper = mountComponent()
-      expect(wrapper.findAll('li')).toHaveLength(0)
+      const { container } = mountComponent()
+      expect(container.querySelectorAll('li')).toHaveLength(0)
     })
 
     it('shows create-only subtitle when no owned workspaces', () => {
-      const wrapper = mountComponent()
-      const subtitle = wrapper.find('header p')
-      expect(subtitle.text()).toBe('teamWorkspacesDialog.subtitleNoWorkspaces')
+      const { container } = mountComponent()
+      const subtitle = container.querySelector('header p')
+      expect(subtitle?.textContent).toBe(
+        'teamWorkspacesDialog.subtitleNoWorkspaces'
+      )
     })
 
     it('shows switch-or-create subtitle when owned workspaces exist', () => {
       setOwnedWorkspaces()
-      const wrapper = mountComponent()
-      const subtitle = wrapper.find('header p')
-      expect(subtitle.text()).toBe('teamWorkspacesDialog.subtitle')
+      const { container } = mountComponent()
+      const subtitle = container.querySelector('header p')
+      expect(subtitle?.textContent).toBe('teamWorkspacesDialog.subtitle')
     })
   })
 
@@ -159,10 +171,10 @@ describe('TeamWorkspacesDialogContent', () => {
     it('calls switchWorkspace with workspace id and closes dialog on success', async () => {
       mockSwitchWorkspace.mockResolvedValue(true)
       setOwnedWorkspaces()
-      const wrapper = mountComponent()
+      const { container, user } = mountComponent()
 
-      const switchButton = wrapper.find('li button')
-      await switchButton.trigger('click')
+      const switchButton = container.querySelector('li button')!
+      await user.click(switchButton)
       await flushPromises()
 
       expect(mockSwitchWorkspace).toHaveBeenCalledWith('ws-1')
@@ -174,10 +186,10 @@ describe('TeamWorkspacesDialogContent', () => {
     it('shows error toast and keeps dialog open when switch fails', async () => {
       mockSwitchWorkspace.mockRejectedValue(new Error('Network error'))
       setOwnedWorkspaces()
-      const wrapper = mountComponent()
+      const { container, user } = mountComponent()
 
-      const switchButton = wrapper.find('li button')
-      await switchButton.trigger('click')
+      const switchButton = container.querySelector('li button')!
+      await user.click(switchButton)
       await flushPromises()
 
       expect(mockCloseDialog).not.toHaveBeenCalled()
@@ -192,55 +204,68 @@ describe('TeamWorkspacesDialogContent', () => {
 
   describe('name validation', () => {
     it('disables create button for empty name', () => {
-      const wrapper = mountComponent()
-      expect(findCreateButton(wrapper).props('disabled')).toBe(true)
+      const { container } = mountComponent()
+      expect(findCreateButton(container)).toBeDisabled()
     })
 
     it('enables create button for valid name', async () => {
-      const wrapper = mountComponent()
-      const input = wrapper.find('#workspace-name-input')
-      await input.setValue('My Team')
+      const { container, user } = mountComponent()
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, 'My Team')
       await nextTick()
 
-      expect(findCreateButton(wrapper).props('disabled')).toBe(false)
+      expect(findCreateButton(container)).not.toBeDisabled()
     })
 
     it('disables create button for name with special characters', async () => {
-      const wrapper = mountComponent()
-      const input = wrapper.find('#workspace-name-input')
-      await input.setValue('!@#$%')
+      const { container, user } = mountComponent()
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, '!@#$%')
       await nextTick()
 
-      expect(findCreateButton(wrapper).props('disabled')).toBe(true)
+      expect(findCreateButton(container)).toBeDisabled()
     })
 
     it('disables create button for name exceeding 50 characters', async () => {
-      const wrapper = mountComponent()
-      const input = wrapper.find('#workspace-name-input')
-      await input.setValue('a'.repeat(51))
+      const { container, user } = mountComponent()
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, 'a'.repeat(51))
       await nextTick()
 
-      expect(findCreateButton(wrapper).props('disabled')).toBe(true)
+      expect(findCreateButton(container)).toBeDisabled()
     })
   })
 
   describe('workspace creation', () => {
     async function typeAndCreate(
-      wrapper: ReturnType<typeof mountComponent>,
+      container: Element,
+      user: ReturnType<typeof userEvent.setup>,
       name: string
     ) {
-      await wrapper.find('#workspace-name-input').setValue(name)
-      await nextTick()
-      findCreateButton(wrapper).vm.$emit('click')
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, name)
+      await user.click(findCreateButton(container))
       await flushPromises()
     }
 
     it('calls createWorkspace and onConfirm on success', async () => {
       mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
       const onConfirm = vi.fn()
-      const wrapper = mountComponent({ onConfirm })
+      const { container, user } = mountComponent({ onConfirm })
 
-      await typeAndCreate(wrapper, 'New Team')
+      await typeAndCreate(container, user, 'New Team')
 
       expect(mockCreateWorkspace).toHaveBeenCalledWith('New Team')
       expect(onConfirm).toHaveBeenCalledWith('New Team')
@@ -251,9 +276,9 @@ describe('TeamWorkspacesDialogContent', () => {
 
     it('shows error toast when creation fails', async () => {
       mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
-      const wrapper = mountComponent()
+      const { container, user } = mountComponent()
 
-      await typeAndCreate(wrapper, 'New Team')
+      await typeAndCreate(container, user, 'New Team')
 
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -267,9 +292,9 @@ describe('TeamWorkspacesDialogContent', () => {
     it('shows separate toast when onConfirm fails but still closes dialog', async () => {
       mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
       const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
-      const wrapper = mountComponent({ onConfirm })
+      const { container, user } = mountComponent({ onConfirm })
 
-      await typeAndCreate(wrapper, 'New Team')
+      await typeAndCreate(container, user, 'New Team')
 
       expect(mockCreateWorkspace).toHaveBeenCalledWith('New Team')
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -286,27 +311,46 @@ describe('TeamWorkspacesDialogContent', () => {
     it('does not call onConfirm when createWorkspace fails', async () => {
       mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
       const onConfirm = vi.fn()
-      const wrapper = mountComponent({ onConfirm })
+      const { container, user } = mountComponent({ onConfirm })
 
-      await typeAndCreate(wrapper, 'New Team')
+      await typeAndCreate(container, user, 'New Team')
 
       expect(onConfirm).not.toHaveBeenCalled()
     })
 
     it('does not call createWorkspace when name is invalid', async () => {
-      const wrapper = mountComponent()
-      findCreateButton(wrapper).vm.$emit('click')
+      const { container, user } = mountComponent()
+      await user.click(findCreateButton(container))
       await nextTick()
 
       expect(mockCreateWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('resets loading state after createWorkspace fails', async () => {
+      mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
+      const { container, user } = mountComponent()
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(findCreateButton(container).dataset.loading).toBe('false')
+    })
+
+    it('resets loading state after onConfirm fails', async () => {
+      mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
+      const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
+      const { container, user } = mountComponent({ onConfirm })
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(findCreateButton(container).dataset.loading).toBe('false')
     })
   })
 
   describe('close button', () => {
     it('closes dialog on close button click', async () => {
-      const wrapper = mountComponent()
-      const closeBtn = wrapper.find('header button')
-      await closeBtn.trigger('click')
+      const { container, user } = mountComponent()
+      const closeBtn = container.querySelector('header button')!
+      await user.click(closeBtn)
 
       expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'

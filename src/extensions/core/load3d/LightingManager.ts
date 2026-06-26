@@ -10,6 +10,7 @@ export class LightingManager implements LightingManagerInterface {
   currentIntensity: number = 3
   private scene: THREE.Scene
   private eventManager: EventManagerInterface
+  private lightMultipliers = new Map<THREE.Light, number>()
 
   constructor(scene: THREE.Scene, eventManager: EventManagerInterface) {
     this.scene = scene
@@ -25,58 +26,52 @@ export class LightingManager implements LightingManagerInterface {
       this.scene.remove(light)
     })
     this.lights = []
+    this.lightMultipliers.clear()
   }
 
   setupLights(): void {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
-    this.scene.add(ambientLight)
-    this.lights.push(ambientLight)
+    const addLight = (light: THREE.Light, multiplier: number) => {
+      this.scene.add(light)
+      this.lights.push(light)
+      this.lightMultipliers.set(light, multiplier)
+    }
+
+    addLight(new THREE.AmbientLight(0xffffff, 0.5), 0.5)
 
     const mainLight = new THREE.DirectionalLight(0xffffff, 0.8)
     mainLight.position.set(0, 10, 10)
-    this.scene.add(mainLight)
-    this.lights.push(mainLight)
+    addLight(mainLight, 0.8)
 
     const backLight = new THREE.DirectionalLight(0xffffff, 0.5)
     backLight.position.set(0, 10, -10)
-    this.scene.add(backLight)
-    this.lights.push(backLight)
+    addLight(backLight, 0.5)
 
     const leftFillLight = new THREE.DirectionalLight(0xffffff, 0.3)
     leftFillLight.position.set(-10, 0, 0)
-    this.scene.add(leftFillLight)
-    this.lights.push(leftFillLight)
+    addLight(leftFillLight, 0.3)
 
     const rightFillLight = new THREE.DirectionalLight(0xffffff, 0.3)
     rightFillLight.position.set(10, 0, 0)
-    this.scene.add(rightFillLight)
-    this.lights.push(rightFillLight)
+    addLight(rightFillLight, 0.3)
 
     const bottomLight = new THREE.DirectionalLight(0xffffff, 0.2)
     bottomLight.position.set(0, -10, 0)
-    this.scene.add(bottomLight)
-    this.lights.push(bottomLight)
+    addLight(bottomLight, 0.2)
   }
 
   setLightIntensity(intensity: number): void {
     this.currentIntensity = intensity
     this.lights.forEach((light) => {
-      if (light instanceof THREE.DirectionalLight) {
-        if (light === this.lights[1]) {
-          light.intensity = intensity * 0.8
-        } else if (light === this.lights[2]) {
-          light.intensity = intensity * 0.5
-        } else if (light === this.lights[5]) {
-          light.intensity = intensity * 0.2
-        } else {
-          light.intensity = intensity * 0.3
-        }
-      } else if (light instanceof THREE.AmbientLight) {
-        light.intensity = intensity * 0.5
-      }
+      light.intensity = intensity * (this.lightMultipliers.get(light) ?? 1)
     })
 
     this.eventManager.emitEvent('lightIntensityChange', intensity)
+  }
+
+  setHDRIMode(hdriActive: boolean): void {
+    this.lights.forEach((light) => {
+      light.visible = !hdriActive
+    })
   }
 
   reset(): void {}

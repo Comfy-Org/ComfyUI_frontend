@@ -1,14 +1,14 @@
-import { flushPromises, shallowMount } from '@vue/test-utils'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { render } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'
 import { i18n } from '@/i18n'
 
-/**
- * Verifies that SettingItem emits telemetry when its value changes
- * and suppresses telemetry when the value remains the same.
- */
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 const trackSettingChanged = vi.fn()
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
@@ -25,22 +25,29 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-/**
- * Minimal stub for FormItem that allows emitting `update:form-value`.
- */
-const FormItemUpdateStub = {
-  template: '<div />',
-  emits: ['update:form-value'],
-  props: ['id', 'item', 'formValue']
-}
+let emitFormValue: ((value: unknown) => void) | null = null
+
+const FormItemUpdateStub = defineComponent({
+  props: {
+    id: { type: String, default: '' },
+    item: { type: Object, default: undefined },
+    formValue: { type: [String, Number, Boolean, Object], default: undefined }
+  },
+  setup(_, { emit }) {
+    emitFormValue = (value: unknown) => emit('update:form-value', value)
+    return {}
+  },
+  template: '<div data-testid="form-item-stub" />'
+})
 
 describe('SettingItem (telemetry UI tracking)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    emitFormValue = null
   })
 
-  const mountComponent = (setting: SettingParams) => {
-    return shallowMount(SettingItem, {
+  function renderComponent(setting: SettingParams) {
+    return render(SettingItem, {
       global: {
         plugins: [i18n],
         stubs: {
@@ -65,11 +72,9 @@ describe('SettingItem (telemetry UI tracking)', () => {
     mockGet.mockReturnValueOnce('default').mockReturnValueOnce('normalized')
     mockSet.mockResolvedValue(undefined)
 
-    const wrapper = mountComponent(settingParams)
+    renderComponent(settingParams)
 
-    const newValue = 'newvalue'
-    const formItem = wrapper.findComponent(FormItemUpdateStub)
-    formItem.vm.$emit('update:form-value', newValue)
+    emitFormValue!('newvalue')
 
     await flushPromises()
 
@@ -94,11 +99,9 @@ describe('SettingItem (telemetry UI tracking)', () => {
     mockGet.mockReturnValueOnce('same').mockReturnValueOnce('same')
     mockSet.mockResolvedValue(undefined)
 
-    const wrapper = mountComponent(settingParams)
+    renderComponent(settingParams)
 
-    const unchangedValue = 'same'
-    const formItem = wrapper.findComponent(FormItemUpdateStub)
-    formItem.vm.$emit('update:form-value', unchangedValue)
+    emitFormValue!('same')
 
     await flushPromises()
 

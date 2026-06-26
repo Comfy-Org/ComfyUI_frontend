@@ -125,7 +125,7 @@ const applyColor = (colorOption: ColorOption | null) => {
   canvasStore.canvas?.setDirty(true, true)
   currentColorOption.value = canvasColorOption
   showColorPicker.value = false
-  workflowStore.activeWorkflow?.changeTracker.checkState()
+  workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)

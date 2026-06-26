@@ -157,31 +157,6 @@ describe('useNodePointerInteractions', () => {
     expect(startDrag).toHaveBeenCalledWith(leftClickEvent, 'test-node-123')
   })
 
-  it.skip('should call onNodeSelect on pointer down', async () => {
-    const { handleNodeSelect } = useNodeEventHandlers()
-
-    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
-
-    // Selection should happen on pointer down
-    const downEvent = createPointerEvent('pointerdown', {
-      clientX: 100,
-      clientY: 100
-    })
-    pointerHandlers.onPointerdown(downEvent)
-
-    expect(handleNodeSelect).toHaveBeenCalledWith(downEvent, 'test-node-123')
-
-    vi.mocked(handleNodeSelect).mockClear()
-
-    // Even if we drag, selection already happened on pointer down
-    pointerHandlers.onPointerup(
-      createPointerEvent('pointerup', { clientX: 200, clientY: 200 })
-    )
-
-    // onNodeSelect should not be called again on pointer up
-    expect(handleNodeSelect).not.toHaveBeenCalled()
-  })
-
   it('should handle drag termination via cancel and context menu', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
 
@@ -293,6 +268,27 @@ describe('useNodePointerInteractions', () => {
 
     // Selection should still only have been called once
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not start drag on shift+move when pointerdown was stopped by a child', async () => {
+    const { handleNodeSelect } = useNodeEventHandlers()
+    const { startDrag } = useNodeDrag()
+
+    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        shiftKey: true,
+        buttons: 1,
+        clientX: 200,
+        clientY: 200
+      })
+    )
+
+    await nextTick()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleNodeSelect).not.toHaveBeenCalled()
   })
 
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {

@@ -1,7 +1,9 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 // Mock dependencies
 vi.mock('@/i18n', () => ({
@@ -46,7 +48,7 @@ describe('executionErrorStore — node error operations', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = null
       // Should not error
-      store.clearSimpleNodeErrors('123', 'widgetName')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'widgetName')
       expect(store.lastNodeErrors).toBeNull()
     })
 
@@ -67,7 +69,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // Should be entirely removed (empty object becomes null)
       expect(store.lastNodeErrors).toBeNull()
@@ -96,7 +98,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // otherSlot error should still exist
       expect(store.lastNodeErrors).not.toBeNull()
@@ -123,7 +125,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('999', 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([999]), 'testSlot')
 
       // Original error should remain untouched
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
@@ -152,7 +154,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // Mixed simple+complex: not all are simple, so none are cleared
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
@@ -187,7 +189,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('123', 'steps')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'steps')
 
       // Node 123 cleared, node 456 remains
       expect(store.lastNodeErrors?.['123']).toBeUndefined()
@@ -217,7 +219,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('123')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]))
 
       expect(store.lastNodeErrors).toBeNull()
     })
@@ -245,7 +247,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('123')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]))
 
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
     })
@@ -267,7 +269,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // Error should remain
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
@@ -293,9 +295,15 @@ describe('executionErrorStore — node error operations', () => {
       }
 
       // Valid value (5 < 10)
-      store.clearWidgetRelatedErrors('123', 'testWidget', 'testWidget', 5, {
-        max: 10
-      })
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([123]),
+        'testWidget',
+        'testWidget',
+        5,
+        {
+          max: 10
+        }
+      )
 
       expect(store.lastNodeErrors).toBeNull()
     })
@@ -317,7 +325,12 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearWidgetRelatedErrors('123', 'sampler', 'sampler', 'euler_a')
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([123]),
+        'sampler',
+        'sampler',
+        'euler_a'
+      )
 
       expect(store.lastNodeErrors).toBeNull()
     })
@@ -340,13 +353,155 @@ describe('executionErrorStore — node error operations', () => {
       }
 
       // Invalid value (15 > 10)
-      store.clearWidgetRelatedErrors('123', 'testWidget', 'testWidget', 15, {
-        max: 10
-      })
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([123]),
+        'testWidget',
+        'testWidget',
+        15,
+        {
+          max: 10
+        }
+      )
 
       expect(store.lastNodeErrors).not.toBeNull()
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
     })
+  })
+})
+
+describe('surfaceMissingModels — silent option', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockShowErrorsTab.value = true
+  })
+
+  it('opens error overlay when silent is not specified and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels([
+      fromAny({
+        name: 'model.safetensors',
+        nodeId: '1',
+        nodeType: 'Loader',
+        widgetName: 'ckpt',
+        isMissing: true,
+        isAssetSupported: false
+      })
+    ])
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('opens error overlay when silent is false and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels(
+      [
+        fromAny({
+          name: 'model.safetensors',
+          nodeId: '1',
+          nodeType: 'Loader',
+          widgetName: 'ckpt',
+          isMissing: true,
+          isAssetSupported: false
+        })
+      ],
+      { silent: false }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('does NOT open error overlay when silent is true', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels(
+      [
+        fromAny({
+          name: 'model.safetensors',
+          nodeId: '1',
+          nodeType: 'Loader',
+          widgetName: 'ckpt',
+          isMissing: true,
+          isAssetSupported: false
+        })
+      ],
+      { silent: true }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('does NOT open error overlay for empty models even without silent', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels([])
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+})
+
+describe('surfaceMissingMedia — silent option', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockShowErrorsTab.value = true
+  })
+
+  it('opens error overlay when silent is not specified and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia([
+      fromAny({
+        name: 'photo.png',
+        nodeId: '1',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        isMissing: true
+      })
+    ])
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('opens error overlay when silent is false and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia(
+      [
+        fromAny({
+          name: 'photo.png',
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          isMissing: true
+        })
+      ],
+      { silent: false }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('does NOT open error overlay when silent is true', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia(
+      [
+        fromAny({
+          name: 'photo.png',
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          isMissing: true
+        })
+      ],
+      { silent: true }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('does NOT open error overlay for empty media even without silent', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia([])
+
+    expect(store.isErrorOverlayOpen).toBe(false)
   })
 })
 
@@ -391,9 +546,9 @@ describe('clearAllErrors', () => {
         class_type: 'Test'
       }
     }
-    missingNodesStore.setMissingNodeTypes([
-      { type: 'MissingNode', hint: '' }
-    ] as unknown as MissingNodeType[])
+    missingNodesStore.setMissingNodeTypes(
+      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
+    )
     executionErrorStore.showErrorOverlay()
 
     executionErrorStore.clearAllErrors()

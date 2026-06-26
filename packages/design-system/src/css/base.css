@@ -5,42 +5,4 @@
  */
 
 @import './fonts.css';
-
-@theme {
-  /* Font Families */
-  --font-inter: 'Inter', sans-serif;
-
-  /* Palette Colors */
-  --color-charcoal-100: #55565e;
-  --color-charcoal-200: #494a50;
-  --color-charcoal-300: #3c3d42;
-  --color-charcoal-400: #313235;
-  --color-charcoal-500: #2d2e32;
-  --color-charcoal-600: #262729;
-  --color-charcoal-700: #202121;
-  --color-charcoal-800: #171718;
-
-  --color-neutral-550: #636363;
-
-  --color-ash-300: #bbbbbb;
-  --color-ash-500: #828282;
-  --color-ash-800: #444444;
-
-  --color-smoke-100: #f3f3f3;
-  --color-smoke-200: #e9e9e9;
-  --color-smoke-300: #e1e1e1;
-  --color-smoke-400: #d9d9d9;
-  --color-smoke-500: #c5c5c5;
-  --color-smoke-600: #b4b4b4;
-  --color-smoke-700: #a0a0a0;
-  --color-smoke-800: #8a8a8a;
-
-  --color-white: #ffffff;
-  --color-black: #000000;
-
-  /* Brand Colors */
-  --color-electric-400: #f0ff41;
-  --color-sapphire-700: #172dd7;
-  --color-brand-yellow: var(--color-electric-400);
-  --color-brand-blue: var(--color-sapphire-700);
-}
+@import './_palette.css';

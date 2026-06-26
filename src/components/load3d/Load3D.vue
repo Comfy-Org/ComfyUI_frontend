@@ -4,8 +4,6 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @pointerdown.stop
-    @pointermove.stop
-    @pointerup.stop
   >
     <Load3DScene
       v-if="node"
@@ -22,11 +20,20 @@
         v-model:model-config="modelConfig"
         v-model:camera-config="cameraConfig"
         v-model:light-config="lightConfig"
-        :is-splat-model="isSplatModel"
-        :is-ply-model="isPlyModel"
+        :can-use-gizmo="canUseGizmo"
+        :can-use-lighting="canUseLighting"
+        :can-export="canExport"
+        :can-use-hdri="canUseHdri"
+        :can-use-background-image="canUseBackgroundImage"
+        :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
+        :source-format="sourceFormat"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
+        @update-hdri-file="handleHDRIFileUpdate"
+        @toggle-gizmo="handleToggleGizmo"
+        @set-gizmo-mode="handleSetGizmoMode"
+        @reset-gizmo-transform="handleResetGizmoTransform"
       />
       <AnimationControls
         v-if="animations && animations.length > 0"
@@ -40,21 +47,49 @@
       />
     </div>
     <div
-      v-if="enable3DViewer && node"
-      class="pointer-events-auto absolute top-12 right-2 z-20"
+      class="pointer-events-auto absolute top-12 right-2 z-20 flex flex-col gap-2"
     >
-      <ViewerControls :node="node as LGraphNode" />
-    </div>
+      <div
+        v-if="canFitToViewer || canCenterCameraOnModel"
+        class="flex flex-col rounded-lg bg-backdrop/30"
+      >
+        <Button
+          v-if="canFitToViewer"
+          v-tooltip.left="{
+            value: $t('load3d.fitToViewer'),
+            showDelay: 300
+          }"
+          size="icon"
+          variant="textonly"
+          class="rounded-full"
+          :aria-label="$t('load3d.fitToViewer')"
+          @click="handleFitToViewer"
+        >
+          <i class="pi pi-window-maximize text-lg text-base-foreground" />
+        </Button>
+        <Button
+          v-if="canCenterCameraOnModel"
+          v-tooltip.left="{
+            value: $t('load3d.centerCameraOnModel'),
+            showDelay: 300
+          }"
+          size="icon"
+          variant="textonly"
+          class="rounded-full"
+          :aria-label="$t('load3d.centerCameraOnModel')"
+          @click="handleCenterCameraOnModel"
+        >
+          <i class="pi pi-compass text-lg text-base-foreground" />
+        </Button>
+      </div>
 
-    <div
-      v-if="!isPreview"
-      class="pointer-events-auto absolute right-2 z-20"
-      :class="{
-        'top-12': !enable3DViewer,
-        'top-24': enable3DViewer
-      }"
-    >
+      <ViewerControls
+        v-if="enable3DViewer && node"
+        :node="node as LGraphNode"
+      />
+
       <RecordingControls
+        v-if="canUseRecording && !isPreview"
         v-model:is-recording="isRecording"
         v-model:has-recording="hasRecording"
         v-model:recording-duration="recordingDuration"
@@ -76,6 +111,7 @@ import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -84,9 +120,18 @@ import { resolveNode } from '@/utils/litegraphUtil'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const props = defineProps<{
+const {
+  widget,
+  nodeId,
+  canUseRecording = true,
+  canUseHdri = true,
+  canUseBackgroundImage = true
+} = defineProps<{
   widget: ComponentWidget<string[]> | SimplifiedWidget
   nodeId?: NodeId
+  canUseRecording?: boolean
+  canUseHdri?: boolean
+  canUseBackgroundImage?: boolean
 }>()
 
 function isComponentWidget(
@@ -97,11 +142,11 @@ function isComponentWidget(
 
 const node = ref<LGraphNode | null>(null)
 
-if (isComponentWidget(props.widget)) {
-  node.value = props.widget.node
-} else if (props.nodeId) {
+if (isComponentWidget(widget)) {
+  node.value = widget.node
+} else if (nodeId) {
   onMounted(() => {
-    node.value = resolveNode(props.nodeId!) ?? null
+    node.value = resolveNode(nodeId) ?? null
   })
 }
 
@@ -115,9 +160,14 @@ const {
   // other state
   isRecording,
   isPreview,
-  isSplatModel,
-  isPlyModel,
+  canFitToViewer,
+  canCenterCameraOnModel,
+  canUseGizmo,
+  canUseLighting,
+  canExport,
+  materialModes,
   hasSkeleton,
+  sourceFormat,
   hasRecording,
   recordingDuration,
   animations,
@@ -139,8 +189,14 @@ const {
   handleClearRecording,
   handleSeek,
   handleBackgroundImageUpdate,
+  handleHDRIFileUpdate,
   handleExportModel,
   handleModelDrop,
+  handleToggleGizmo,
+  handleSetGizmoMode,
+  handleResetGizmoTransform,
+  handleFitToViewer,
+  handleCenterCameraOnModel,
   cleanup
 } = useLoad3d(node as Ref<LGraphNode | null>)
 

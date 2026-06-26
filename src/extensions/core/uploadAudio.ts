@@ -20,6 +20,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import { type NodeLocatorId } from '@/types'
+import { widgetId } from '@/types/widgetId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
@@ -38,6 +39,7 @@ function updateUIWidget(
 }
 
 async function uploadFile(
+  node: LGraphNode,
   audioWidget: IStringWidget,
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
   file: File,
@@ -67,6 +69,7 @@ async function uploadFile(
       }
 
       if (updateNode) {
+        const oldValue = audioWidget.value
         updateUIWidget(
           audioUIWidget,
           api.apiURL(getResourceURL(...splitFilePath(path)))
@@ -75,6 +78,7 @@ async function uploadFile(
         audioWidget.value = path
         // Manually trigger the callback to update VueNodes
         audioWidget.callback?.(path)
+        node.onWidgetChanged?.(audioWidget.name, path, oldValue, audioWidget)
       }
       return true
     } else {
@@ -102,7 +106,8 @@ app.registerExtension({
         'SaveAudio',
         'PreviewAudio',
         'SaveAudioMP3',
-        'SaveAudioOpus'
+        'SaveAudioOpus',
+        'SaveAudioAdvanced'
       ].includes(
         // @ts-expect-error fixme ts strict error
         nodeType.prototype.comfyClass
@@ -123,6 +128,7 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
+        audioUIWidget.options.serialize = false
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 
@@ -148,16 +154,16 @@ app.registerExtension({
 
         audioUIWidget.options.getValue = () =>
           (useWidgetValueStore().getWidget(
-            resolveNodeRootGraphId(node, app.rootGraph.id),
-            node.id,
-            inputName
+            widgetId(
+              resolveNodeRootGraphId(node, app.rootGraph.id),
+              node.id,
+              inputName
+            )
           )?.value as string) ?? ''
         audioUIWidget.options.setValue = (v) => {
           const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
-            graphId,
-            node.id,
-            inputName
+            widgetId(graphId, node.id, inputName)
           )
           if (widgetState) widgetState.value = v
         }
@@ -234,10 +240,19 @@ app.registerExtension({
         }
 
         const handleUpload = async (files: File[]) => {
-          if (files?.length) {
-            const previousValue = audioWidget.value
-            audioWidget.value = files[0].name
+          if (!files?.length) return files
+
+          if (node.isUploading) {
+            useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+            return []
+          }
+
+          node.isUploading = true
+          const previousValue = audioWidget.value
+          audioWidget.value = files[0].name
+          try {
             const success = await uploadFile(
+              node,
               audioWidget,
               audioUIWidget,
               files[0],
@@ -246,6 +261,9 @@ app.registerExtension({
             if (!success) {
               audioWidget.value = previousValue
             }
+          } finally {
+            node.isUploading = false
+            node.graph?.setDirtyCanvas(true)
           }
           return files
         }

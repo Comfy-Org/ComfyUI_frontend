@@ -20,7 +20,7 @@ export class SliderWidget
    */
   override drawWidget(
     ctx: CanvasRenderingContext2D,
-    { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
+    { width, showText = true }: DrawWidgetOptions
   ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
@@ -43,7 +43,7 @@ export class SliderWidget
 
     // Draw outline if not disabled
     if (showText && !this.computedDisabled) {
-      ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+      ctx.strokeStyle = this.getOutlineColor()
       ctx.strokeRect(margin, y, width - margin * 2, height)
     }
 

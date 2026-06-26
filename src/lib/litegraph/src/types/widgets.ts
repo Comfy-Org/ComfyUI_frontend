@@ -1,5 +1,7 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
+import type { BoundingBox } from '@/types/boundingBoxes'
+import type { WidgetId } from '@/types/widgetId'
 
 import type {
   CanvasColour,
@@ -139,6 +141,9 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | IRangeWidget
+  | IBoundingBoxesWidget
+  | IColorsWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -341,6 +346,43 @@ export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   value: string
 }
 
+export interface IBoundingBoxesWidget extends IBaseWidget<
+  BoundingBox[],
+  'boundingboxes'
+> {
+  type: 'boundingboxes'
+  value: BoundingBox[]
+}
+
+export interface IColorsWidget extends IBaseWidget<string[], 'colors'> {
+  type: 'colors'
+  value: string[]
+}
+
+export interface RangeValue {
+  min: number
+  max: number
+  midpoint?: number
+}
+
+export interface IWidgetRangeOptions extends IWidgetOptions {
+  display?: 'plain' | 'gradient' | 'histogram'
+  gradient_stops?: ColorStop[]
+  show_midpoint?: boolean
+  midpoint_scale?: 'linear' | 'gamma'
+  value_min?: number
+  value_max?: number
+}
+
+export interface IRangeWidget extends IBaseWidget<
+  RangeValue,
+  'range',
+  IWidgetRangeOptions
+> {
+  type: 'range'
+  value: RangeValue
+}
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
@@ -348,6 +390,14 @@ export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
  */
 export type TWidgetType = IWidget['type']
 export type TWidgetValue = IWidget['value']
+
+export function isWidgetValue(value: unknown): value is TWidgetValue {
+  if (value === undefined) return true
+  if (typeof value === 'string') return true
+  if (typeof value === 'number') return true
+  if (typeof value === 'boolean') return true
+  return value !== null && typeof value === 'object'
+}
 
 /**
  * The base type for all widgets.  Should not be implemented directly.
@@ -364,6 +414,8 @@ export interface IBaseWidget<
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
+
+  readonly widgetId?: WidgetId
 
   name: string
   options: TOptions

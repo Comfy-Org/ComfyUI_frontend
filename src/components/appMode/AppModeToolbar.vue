@@ -15,7 +15,7 @@ import {
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()

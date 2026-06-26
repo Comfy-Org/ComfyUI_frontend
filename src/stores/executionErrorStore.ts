@@ -4,7 +4,9 @@ import { computed, ref } from 'vue'
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -34,6 +36,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const canvasStore = useCanvasStore()
   const missingModelStore = useMissingModelStore()
   const missingNodesStore = useMissingNodesErrorStore()
+  const missingMediaStore = useMissingMediaStore()
 
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
@@ -49,7 +52,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state. Called at execution start and workflow changes.
+  /** Clear all error state.
    *  Missing model state is intentionally preserved here to avoid wiping
    *  in-progress model repairs (importTaskIds, URL inputs, etc.).
    *  Missing models are cleared separately during workflow load/clean paths. */
@@ -61,6 +64,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
+  function clearExecutionStartErrors() {
+    lastExecutionError.value = null
+    lastPromptError.value = null
+    if (
+      !lastNodeErrors.value ||
+      Object.keys(lastNodeErrors.value).length === 0
+    ) {
+      isErrorOverlayOpen.value = false
+    }
+  }
+
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
     lastPromptError.value = null
@@ -70,7 +84,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Removes a node's errors if they consist entirely of simple, auto-resolvable
    * types. When `slotName` is provided, only errors for that slot are checked.
    */
-  function clearSimpleNodeErrors(executionId: string, slotName?: string): void {
+  function clearSimpleNodeErrors(
+    executionId: NodeExecutionId,
+    slotName?: string
+  ): void {
     if (!lastNodeErrors.value) return
     const nodeError = lastNodeErrors.value[executionId]
     if (!nodeError) return
@@ -117,7 +134,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * (asset system vs objectInfo) making runtime validation non-trivial.
    */
   function clearSlotErrorsWithRangeCheck(
-    executionId: string,
+    executionId: NodeExecutionId,
     widgetName: string,
     newValue: unknown,
     options?: { min?: number; max?: number }
@@ -138,13 +155,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Clears both validation errors and missing model state for a widget.
    *
    * @param errorInputName Name matched against `error.extra_info.input_name`.
-   *   For promoted subgraph widgets this is the subgraph input slot name
-   *   (`widget.slotName`), which differs from the interior widget name.
-   * @param widgetName The actual widget name, used for missing model lookup.
-   *   At the legacy canvas call site both names are identical (`widget.name`).
+   * @param widgetName Widget name used for missing model/media lookup.
    */
   function clearWidgetRelatedErrors(
-    executionId: string,
+    executionId: NodeExecutionId,
     errorInputName: string,
     widgetName: string,
     newValue: unknown,
@@ -157,13 +171,33 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       options
     )
     missingModelStore.removeMissingModelByWidget(executionId, widgetName)
+    missingMediaStore.removeMissingMediaByWidget(executionId, widgetName)
   }
 
-  /** Set missing models and open the error overlay if the Errors tab is enabled. */
-  function surfaceMissingModels(models: MissingModelCandidate[]) {
+  /** Set missing models and optionally open the error overlay. */
+  function surfaceMissingModels(
+    models: MissingModelCandidate[],
+    options?: { silent?: boolean }
+  ) {
     missingModelStore.setMissingModels(models)
     if (
+      !options?.silent &&
       models.length &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
+    }
+  }
+
+  /** Set missing media and optionally open the error overlay. */
+  function surfaceMissingMedia(
+    media: MissingMediaCandidate[],
+    options?: { silent?: boolean }
+  ) {
+    missingMediaStore.setMissingMedia(media)
+    if (
+      !options?.silent &&
+      media.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
       showErrorOverlay()
@@ -197,7 +231,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       hasPromptError.value ||
       hasNodeError.value ||
       missingNodesStore.hasMissingNodes ||
-      missingModelStore.hasMissingModels
+      missingModelStore.hasMissingModels ||
+      missingMediaStore.hasMissingMedia
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -233,7 +268,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       nodeErrorCount.value +
       executionErrorCount.value +
       missingNodesStore.missingNodeCount +
-      missingModelStore.missingModelCount
+      missingModelStore.missingModelCount +
+      missingMediaStore.missingMediaCount
   )
 
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
@@ -326,7 +362,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(lastNodeErrors, missingModelStore)
+  useNodeErrorFlagSync(lastNodeErrors, missingModelStore, missingMediaStore)
 
   return {
     // Raw state
@@ -336,6 +372,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Clearing
     clearAllErrors,
+    clearExecutionStartErrors,
     clearPromptError,
 
     // Overlay UI
@@ -359,6 +396,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Missing model coordination (delegates to missingModelStore)
     surfaceMissingModels,
+
+    // Missing media coordination (delegates to missingMediaStore)
+    surfaceMissingMedia,
 
     // Lookup helpers
     getNodeErrors,

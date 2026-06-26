@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Confirm dialog text wrapping', { tag: ['@mobile'] }, () => {
   test('@mobile confirm dialog buttons are visible with long unbreakable text', async ({
@@ -18,15 +18,13 @@ test.describe('Confirm dialog text wrapping', { tag: ['@mobile'] }, () => {
         .catch(() => {})
     }, longFilename)
 
-    const dialog = comfyPage.page.getByRole('dialog')
-    await expect(dialog).toBeVisible()
+    const { root, confirm, reject } = comfyPage.confirmDialog
+    await expect(root).toBeVisible()
 
-    const confirmButton = dialog.getByRole('button', { name: 'Confirm' })
-    await expect(confirmButton).toBeVisible()
-    await expect(confirmButton).toBeInViewport()
+    await expect(confirm).toBeVisible()
+    await expect(confirm).toBeInViewport()
 
-    const cancelButton = dialog.getByRole('button', { name: 'Cancel' })
-    await expect(cancelButton).toBeVisible()
-    await expect(cancelButton).toBeInViewport()
+    await expect(reject).toBeVisible()
+    await expect(reject).toBeInViewport()
   })
 })

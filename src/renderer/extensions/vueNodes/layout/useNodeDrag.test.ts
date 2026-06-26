@@ -1,12 +1,20 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
+
 import type { NodeLayout } from '@/renderer/core/layout/types'
 
+// TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
+// of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
 const testState = vi.hoisted(() => {
+  // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
+  // be used here. This local identity function serves the same purpose
+  // (runtime no-op cast) until the test is rewritten to use real stores.
+  const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: null as unknown as Ref<Set<string>>,
-    selectedItems: null as unknown as Ref<unknown[]>,
+    selectedNodeIds: placeholder<Ref<Set<string>>>(null),
+    selectedItems: placeholder<Ref<unknown[]>>(null),
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       setSource: vi.fn(),
@@ -105,7 +113,8 @@ vi.mock('@/utils/litegraphUtil', () => ({
 }))
 
 vi.mock('@vueuse/core', () => ({
-  createSharedComposable: (fn: () => unknown) => fn
+  createSharedComposable: (fn: () => unknown) => fn,
+  whenever: vi.fn()
 }))
 
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -114,12 +123,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
   const target = document.createElement('div')
   target.hasPointerCapture = vi.fn(() => false)
   target.setPointerCapture = vi.fn()
-  return {
-    clientX,
-    clientY,
-    target,
-    pointerId: 1
-  } as unknown as PointerEvent
+  return fromPartial<PointerEvent>({ clientX, clientY, target, pointerId: 1 })
 }
 
 describe('useNodeDrag', () => {
@@ -294,6 +298,7 @@ describe('useNodeDrag auto-pan', () => {
     const drag = useNodeDrag()
 
     drag.startDrag(pointerEvent(750, 300), '1')
+    drag.handleDrag(pointerEvent(760, 300), '1')
     testState.mutationFns.batchMoveNodes.mockClear()
 
     testState.mockDs.offset[0] -= 5
@@ -306,20 +311,46 @@ describe('useNodeDrag auto-pan', () => {
     expect(nodeIds).toContain('2')
   })
 
-  it('updates auto-pan pointer on handleDrag', () => {
+  it('starts auto-pan on handleDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), '1')
 
     drag.handleDrag(pointerEvent(790, 300), '1')
 
-    expect(
-      testState.capturedAutoPanInstance.current!.updatePointer
-    ).toHaveBeenCalledWith(790, 300)
+    const autoPan = testState.capturedAutoPanInstance.current
+    if (!autoPan) throw new Error('Auto-pan controller was not created')
+    expect(autoPan.start).toHaveBeenCalledTimes(1)
+    expect(autoPan.updatePointer).toHaveBeenCalledWith(790, 300)
+  })
+
+  it('reuses auto-pan controller across handleDrag calls', () => {
+    const drag = useNodeDrag()
+    drag.startDrag(pointerEvent(400, 300), '1')
+
+    drag.handleDrag(pointerEvent(790, 300), '1')
+    const autoPan = testState.capturedAutoPanInstance.current
+    if (!autoPan) throw new Error('Auto-pan controller was not created')
+
+    testState.requestAnimationFrameCallback?.(0)
+    drag.handleDrag(pointerEvent(795, 305), '1')
+
+    expect(testState.capturedAutoPanInstance.current).toBe(autoPan)
+    expect(autoPan.start).toHaveBeenCalledTimes(1)
+    expect(autoPan.updatePointer).toHaveBeenLastCalledWith(795, 305)
+  })
+
+  it('does not start auto-pan before handleDrag', () => {
+    const drag = useNodeDrag()
+
+    drag.startDrag(pointerEvent(790, 300), '1')
+
+    expect(testState.capturedAutoPanInstance.current).toBeNull()
   })
 
   it('stops auto-pan on endDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), '1')
+    drag.handleDrag(pointerEvent(400, 300), '1')
     expect(testState.capturedAutoPanInstance.current).not.toBeNull()
 
     drag.endDrag(pointerEvent(400, 300), '1')
@@ -330,6 +361,7 @@ describe('useNodeDrag auto-pan', () => {
   it('does not move nodes if onPan fires after endDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), '1')
+    drag.handleDrag(pointerEvent(400, 300), '1')
     const onPan = testState.capturedOnPan.current!
 
     drag.endDrag(pointerEvent(400, 300), '1')

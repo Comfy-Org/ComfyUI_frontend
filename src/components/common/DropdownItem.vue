@@ -11,6 +11,8 @@ import {
 import { useI18n } from 'vue-i18n'
 import { toValue } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 const { t } = useI18n()
 
 defineOptions({
@@ -50,16 +52,32 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
   </DropdownMenuSub>
   <DropdownMenuItem
     v-else
-    :class="itemClass"
+    v-tooltip="
+      item.tooltip ? { value: String(item.tooltip), showDelay: 0 } : undefined
+    "
+    :class="
+      cn(
+        itemClass,
+        String(item.class ?? ''),
+        Boolean(item.tooltip) && toValue(item.disabled) && 'pointer-events-auto'
+      )
+    "
+    v-bind="
+      'checked' in item
+        ? { role: 'menuitemradio', 'aria-checked': Boolean(item.checked) }
+        : {}
+    "
     :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >
-    <i class="size-5 shrink-0" :class="item.icon" />
+    <!-- Items declaring an icon key (even empty) keep the slot so labels align
+         within icon-bearing menus; icon-less menus render labels flush-left. -->
+    <i v-if="'icon' in item" class="size-5 shrink-0" :class="item.icon" />
     <div class="mr-auto truncate" v-text="item.label" />
     <i v-if="item.checked" class="icon-[lucide--check] shrink-0" />
     <div
       v-else-if="item.new"
-      class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-xxs leading-none font-bold"
+      class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-2xs leading-none font-bold"
       v-text="t('contextMenu.new')"
     />
   </DropdownMenuItem>

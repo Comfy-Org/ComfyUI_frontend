@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const {
   capturedOnPan,
@@ -205,7 +206,7 @@ function pointerEvent(
   clientY: number,
   pointerId = 1
 ): PointerEvent {
-  return {
+  return fromPartial<PointerEvent>({
     clientX,
     clientY,
     button: 0,
@@ -217,7 +218,7 @@ function pointerEvent(
     target: document.createElement('div'),
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
-  } as unknown as PointerEvent
+  })
 }
 
 function startDrag() {

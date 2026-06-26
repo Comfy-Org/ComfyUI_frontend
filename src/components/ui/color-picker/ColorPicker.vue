@@ -9,12 +9,13 @@ import { computed, ref, watch } from 'vue'
 
 import type { HSVA } from '@/utils/colorUtil'
 import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
 defineProps<{
   class?: string
+  disabled?: boolean
 }>()
 
 const modelValue = defineModel<string>({ default: '#000000' })
@@ -66,9 +67,10 @@ const isOpen = ref(false)
     <PopoverTrigger as-child>
       <button
         type="button"
+        :disabled="$props.disabled"
         :class="
           cn(
-            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-node-component-surface pr-2 outline-none hover:bg-component-node-widget-background-hovered',
+            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-component-node-widget-background pr-2 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-not-allowed disabled:opacity-50',
             isOpen && 'border-node-stroke',
             $props.class
           )
@@ -91,7 +93,7 @@ const isOpen = ref(false)
           </div>
         </div>
         <div
-          class="flex flex-1 items-center justify-between pl-1 text-xs text-node-component-slot-text"
+          class="flex flex-1 items-center justify-between pl-1 text-xs text-component-node-foreground"
         >
           <template v-if="displayMode === 'hex'">
             <span>{{ displayHex }}</span>

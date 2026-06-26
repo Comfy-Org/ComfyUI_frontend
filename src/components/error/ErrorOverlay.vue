@@ -6,97 +6,79 @@
   >
     <div v-if="isVisible" class="pointer-events-none flex w-full justify-end">
       <div
-        role="alert"
-        aria-live="assertive"
+        role="status"
         data-testid="error-overlay"
-        class="pointer-events-auto flex w-80 min-w-72 flex-col overflow-hidden rounded-lg border border-interface-stroke bg-comfy-menu-bg shadow-interface transition-colors duration-200 ease-in-out"
+        class="pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default border-l-destructive-background bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out"
       >
-        <!-- Header -->
-        <div class="flex h-12 items-center gap-2 px-4">
-          <span class="flex-1 text-sm font-bold text-destructive-background">
-            {{ errorCountLabel }}
+        <div class="flex w-full items-start gap-2 pr-8">
+          <i
+            class="mt-0.5 icon-[lucide--circle-x] size-4 shrink-0 text-destructive-background"
+          />
+          <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+            {{ overlayTitle }}
           </span>
-          <Button
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('g.close')"
-            @click="dismiss"
+        </div>
+
+        <div
+          class="flex w-full items-start gap-2 pr-8"
+          data-testid="error-overlay-messages"
+        >
+          <span class="size-4 shrink-0" aria-hidden="true" />
+          <p
+            class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
-            <i class="icon-[lucide--x] block size-5 leading-none" />
-          </Button>
+            {{ overlayMessage }}
+          </p>
         </div>
 
-        <!-- Body -->
-        <div class="px-4 pb-3">
-          <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
-            <li
-              v-for="(message, idx) in groupedErrorMessages"
-              :key="idx"
-              class="flex min-w-0 items-baseline gap-2 text-sm/snug text-muted-foreground"
-            >
-              <span
-                class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground"
-              />
-              <span class="line-clamp-3 wrap-break-word whitespace-pre-wrap">{{
-                message
-              }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-end gap-4 px-4 py-3">
-          <Button variant="muted-textonly" size="unset" @click="dismiss">
-            {{ t('g.dismiss') }}
-          </Button>
+        <div class="flex w-full items-center justify-end pt-2">
           <Button
             variant="secondary"
-            size="lg"
+            size="unset"
+            class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
             data-testid="error-overlay-see-errors"
             @click="seeErrors"
           >
             {{
-              appMode ? t('linearMode.error.goto') : t('errorOverlay.seeErrors')
+              appMode
+                ? t('linearMode.error.goto')
+                : t('errorOverlay.viewDetails')
             }}
           </Button>
         </div>
+
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="absolute top-2 right-2 size-6 rounded-sm"
+          data-testid="error-overlay-dismiss"
+          :aria-label="t('g.close')"
+          @click="dismiss"
+        >
+          <i class="icon-[lucide--x] block size-4 leading-none" />
+        </Button>
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 
-defineProps<{ appMode?: boolean }>()
+const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const canvasStore = useCanvasStore()
 
-const { totalErrorCount, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
-const { groupedErrorMessages } = useErrorGroups(ref(''), t)
-
-const errorCountLabel = computed(() =>
-  t(
-    'errorOverlay.errorCount',
-    { count: totalErrorCount.value },
-    totalErrorCount.value
-  )
-)
-
-const isVisible = computed(
-  () => isErrorOverlayOpen.value && totalErrorCount.value > 0
-)
+const { isVisible, overlayMessage, overlayTitle } = useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()

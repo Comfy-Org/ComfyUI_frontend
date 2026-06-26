@@ -76,11 +76,11 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 
 const { t } = useI18n()
 const router = useRouter()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 
 const email = ref('')
 const loading = ref(false)
@@ -124,5 +124,11 @@ const handleSubmit = async () => {
   border: none !important;
   box-shadow: none !important;
   background: #2d2e32 !important;
+  color: var(--color-primary-comfy-canvas) !important;
+  caret-color: var(--color-primary-comfy-canvas);
+}
+
+:deep(.p-inputtext::placeholder) {
+  color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5);
 }
 </style>

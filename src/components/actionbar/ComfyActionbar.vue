@@ -115,18 +115,13 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton'
 
-const {
-  topMenuContainer,
-  queueOverlayExpanded = false,
-  hasAnyError = false
-} = defineProps<{
+const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
   topMenuContainer?: HTMLElement | null
   queueOverlayExpanded?: boolean
-  hasAnyError?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -227,7 +222,8 @@ watch(visible, async (newVisible) => {
  */
 useEventListener(dragHandleRef, 'mousedown', () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'actionbar_run_handle_drag_start'
+    button_id: 'actionbar_run_handle_drag_start',
+    element_group: 'actionbar'
   })
 })
 
@@ -440,12 +436,7 @@ const panelClass = computed(() =>
     isDragging.value && 'pointer-events-none select-none',
     isDocked.value
       ? 'static border-none bg-transparent p-0'
-      : [
-          'fixed shadow-interface',
-          hasAnyError
-            ? 'border-destructive-background-hover'
-            : 'border-interface-stroke'
-        ]
+      : ['fixed shadow-interface', 'border-interface-stroke']
   )
 )
 </script>
