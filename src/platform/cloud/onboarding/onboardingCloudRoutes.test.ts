@@ -40,6 +40,22 @@ describe('cloudOnboardingRoutes', () => {
     )
     expect(consentRoute?.meta?.requiresAuth).toBeFalsy()
   })
+
+  it('lazily resolves the /oauth layout and consent view components', async () => {
+    const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
+    const consentRoute = oauthLayout?.children?.find(
+      (c) => c.name === 'cloud-oauth-consent'
+    )
+    const layoutLoader = oauthLayout?.component
+    const consentLoader = consentRoute?.component
+    expect(typeof layoutLoader).toBe('function')
+    expect(typeof consentLoader).toBe('function')
+
+    const layoutModule = await (layoutLoader as () => Promise<unknown>)()
+    const consentModule = await (consentLoader as () => Promise<unknown>)()
+    expect(layoutModule).toHaveProperty('default')
+    expect(consentModule).toHaveProperty('default')
+  })
 })
 
 describe('oauthConsentRedirect', () => {
