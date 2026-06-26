@@ -461,19 +461,17 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNodeAfter).toBeVisible()
 
+      const subgraphNodeId = toNodeId(19)
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(
-            ([toNodeId]) => {
-              const node = window.app!.canvas.graph!.getNodeById(toNodeId(19))
-              if (!node) return null
-              const widget = node.widgets?.find((entry: { name: string }) =>
-                entry.name.includes('seed')
-              )
-              return widget?.label || widget?.name || null
-            },
-            [toNodeId]
-          )
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.canvas.graph!.getNodeById(nodeId)
+            if (!node) return null
+            const widget = node.widgets?.find((entry: { name: string }) =>
+              entry.name.includes('seed')
+            )
+            return widget?.label || widget?.name || null
+          }, subgraphNodeId)
         )
         .toBe(RENAMED_LABEL)
 

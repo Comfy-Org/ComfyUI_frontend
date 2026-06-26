@@ -15,6 +15,8 @@ test.describe(
     test('displays color picker button and allows color selection', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+
       const loadCheckpointNode = comfyPage.page
         .locator('[data-node-id]')
         .filter({

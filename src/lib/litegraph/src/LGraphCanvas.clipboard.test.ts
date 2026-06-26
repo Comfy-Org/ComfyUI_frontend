@@ -240,6 +240,63 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     return new LGraphCanvas(el, graph, { skip_render: true })
   }
 
+  function registerClipboardNodeType(type: string): void {
+    class ClipboardNode extends LGraphNode {
+      constructor() {
+        super('Clipboard Node')
+        this.addInput('input', '*')
+        this.addOutput('output', '*')
+      }
+    }
+    LiteGraph.registerNodeType(type, ClipboardNode)
+    registeredTypesToCleanup.push(type)
+  }
+
+  it('reconnects pasted inputs when clipboard node IDs differ from link endpoint types', () => {
+    const nodeType = 'test/clipboard-node-id-normalization'
+    registerClipboardNodeType(nodeType)
+
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    const source = LiteGraph.createNode(nodeType)!
+    source.id = toNodeId(1)
+    rootGraph.add(source)
+
+    const target = LiteGraph.createNode(nodeType)!
+    target.id = toNodeId(2)
+    rootGraph.add(target)
+    source.connect(0, target, 0)
+
+    const copied = canvas._serializeItems([target])
+    expect(copied.nodes?.[0]?.id).toBe(2)
+    expect(copied.links?.[0]?.origin_id).toBe(1)
+    expect(copied.links?.[0]?.target_id).toBe(2)
+
+    const copiedTarget = copied.nodes?.[0]
+    if (!copiedTarget) throw new Error('Expected copied target node')
+    copiedTarget.id = '2'
+
+    const result = canvas._deserializeItems(copied, {
+      connectInputs: true,
+      position: [300, 300]
+    })
+
+    const pastedTarget = result?.nodes.get(2)
+    if (!pastedTarget) throw new Error('Expected pasted target node')
+
+    const pastedInputLinkId = pastedTarget.inputs[0].link
+    expect(pastedInputLinkId).not.toBeNull()
+
+    if (pastedInputLinkId == null) {
+      throw new Error('Expected pasted input link')
+    }
+
+    const pastedInputLink = rootGraph._links.get(pastedInputLinkId)
+    expect(pastedInputLink?.origin_id).toBe(source.id)
+    expect(pastedInputLink?.target_id).toBe(pastedTarget.id)
+  })
+
   it('clears legacy proxyWidgets on a pasted SubgraphNode and applies host widget values', () => {
     LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
       flushProxyWidgetMigration({

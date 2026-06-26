@@ -22,7 +22,7 @@ import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, serializeNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
@@ -4038,7 +4038,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const cloned = item.clone()?.serialize()
         if (!cloned) continue
 
-        cloned.id = item.id
+        cloned.id = serializeNodeId(item.id)
         serialisable.nodes.push(cloned)
 
         // Links
@@ -4220,7 +4220,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         continue
       }
 
-      nodes.set(info.id, node)
+      nodes.set(serializeNodeId(info.id), node)
       info.id = -1
 
       graph.add(node)
@@ -4259,7 +4259,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Links
     for (const info of parsed.links) {
       // Find the copied node / reroute ID
-      let outNode: LGraphNode | null | undefined = nodes.get(info.origin_id)
+      let outNode: LGraphNode | null | undefined = nodes.get(
+        serializeNodeId(info.origin_id)
+      )
       let afterRerouteId: number | undefined
       if (info.parentId != null)
         afterRerouteId = reroutes.get(info.parentId)?.id
@@ -4274,7 +4276,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         afterRerouteId ??= info.parentId
       }
 
-      const inNode = nodes.get(info.target_id)
+      const inNode = nodes.get(serializeNodeId(info.target_id))
       if (inNode) {
         const link = outNode?.connect(
           info.origin_slot,
