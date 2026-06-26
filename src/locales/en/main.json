@@ -3900,7 +3900,13 @@
       "downloadAll": "Download all",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
-      "refreshFailed": "Failed to refresh missing models. Please try again."
+      "refreshFailed": "Failed to refresh missing models. Please try again.",
+      "placeFileIn": "Place this file in:",
+      "remoteServerNotice": "This ComfyUI is running on a remote server. Transfer the file there (for example with scp or your cloud provider's upload), then place it in:",
+      "copyPath": "Copy path",
+      "moreFolders": "+{count} more folder | +{count} more folders",
+      "hideExtraFolders": "Hide extra folders",
+      "afterDownloadInstruction": "When the download finishes, move the file to the folder above, then click Refresh at the top of this panel."
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"

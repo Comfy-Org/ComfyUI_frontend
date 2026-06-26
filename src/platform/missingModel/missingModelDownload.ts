@@ -62,6 +62,33 @@ export function toBrowsableUrl(url: string): string {
   return url
 }
 
+const LOOPBACK_HOSTS: ReadonlySet<string> = new Set([
+  'localhost',
+  '127.0.0.1',
+  '::1'
+])
+
+/**
+ * Whether the Download action results in a plain browser download (file lands
+ * in the user's downloads, not auto-placed). True only for the web build with
+ * no auto-placing desktop bridge — in that case the user must move the file
+ * into the model folder themselves, so we surface the destination path.
+ */
+export function usesBrowserDownload(): boolean {
+  const bridge = window.__comfyDesktop2
+  if (bridge?.downloadModel && !bridge.isRemote()) return false
+  return !isDesktop
+}
+
+/**
+ * Whether ComfyUI is being served from the same machine as the browser. When
+ * false, the model folder path is on a remote server the user can't reach by
+ * moving a local download, so the destination guidance changes accordingly.
+ */
+export function isLocalHost(): boolean {
+  return LOOPBACK_HOSTS.has(window.location.hostname)
+}
+
 export function isModelDownloadable(model: ModelWithUrl): boolean {
   if (WHITE_LISTED_URLS.has(model.url)) return true
   if (!ALLOWED_SOURCES.some((source) => model.url.startsWith(source)))

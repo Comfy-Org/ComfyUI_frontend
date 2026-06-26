@@ -16,6 +16,7 @@ import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 const mockShowUploadDialog = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockDownloadModel = vi.hoisted(() => vi.fn())
@@ -70,6 +71,9 @@ vi.mock('@/utils/graphTraversalUtil', async () => {
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
+  },
+  get isDesktop() {
+    return mockIsDesktop.value
   }
 }))
 

@@ -144,6 +144,13 @@
       </Button>
     </div>
 
+    <MissingModelDestination
+      v-if="showDestination && directory"
+      :directory="directory"
+      :download-triggered="downloadTriggered"
+      :class="cn('mt-0.5', hasMultipleReferences && 'pl-5')"
+    />
+
     <TransitionCollapse>
       <ul
         v-if="showReferenceList"
@@ -187,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -209,8 +216,10 @@ import {
   downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
-  toBrowsableUrl
+  toBrowsableUrl,
+  usesBrowserDownload
 } from '@/platform/missingModel/missingModelDownload'
+import MissingModelDestination from '@/platform/missingModel/components/MissingModelDestination.vue'
 import { formatSize } from '@/utils/formatUtil'
 
 const {
@@ -303,6 +312,14 @@ const downloadable = computed(() => {
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
 
+const downloadTriggered = ref(false)
+const showDestination = computed(
+  () =>
+    showDownloadAction.value &&
+    !isUnknownCategory.value &&
+    usesBrowserDownload()
+)
+
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
 
@@ -368,6 +385,7 @@ onMounted(() => {
 function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
+    downloadTriggered.value = true
     downloadModel(
       { name: rep.name, url: rep.url, directory: rep.directory },
       store.folderPaths
