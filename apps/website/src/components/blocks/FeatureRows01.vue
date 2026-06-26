@@ -1,20 +1,43 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { Locale } from '../../i18n/translations'
 import GlassCard from '../common/GlassCard.vue'
 import SectionHeader from '../common/SectionHeader.vue'
+import VideoPlayer from '../common/VideoPlayer.vue'
+import type { VideoTrack } from '../common/VideoPlayer.vue'
+
+type RowMedia =
+  | { type: 'image'; src: string; alt?: string }
+  | {
+      type: 'video'
+      src: string
+      // <video> has no native alt; used as the player's accessible label.
+      alt?: string
+      poster?: string
+      tracks?: readonly VideoTrack[]
+      autoplay?: boolean
+      loop?: boolean
+      minimal?: boolean
+      hideControls?: boolean
+    }
 
 export interface FeatureRow {
   id: string
   title: string
   description: string
-  image: string
-  imageAlt?: string
+  media: RowMedia
 }
 
-defineProps<{
+const {
+  heading,
+  eyebrow,
+  locale = 'en',
+  rows
+} = defineProps<{
   heading: string
   eyebrow?: string
+  locale?: Locale
   rows: readonly FeatureRow[]
 }>()
 </script>
@@ -48,18 +71,35 @@ defineProps<{
           </p>
         </div>
 
-        <!-- Image -->
+        <!-- Media: image or video -->
         <div
           :class="
-            cn('order-1 lg:w-1/2', i % 2 === 0 ? 'lg:order-2' : 'lg:order-1')
+            cn(
+              'order-1 flex lg:w-1/2',
+              i % 2 === 0 ? 'lg:order-2' : 'lg:order-1'
+            )
           "
         >
           <img
-            :src="row.image"
-            :alt="row.imageAlt ?? row.title"
+            v-if="row.media.type === 'image'"
+            :src="row.media.src"
+            :alt="row.media.alt ?? row.title"
             loading="lazy"
             decoding="async"
             class="aspect-4/3 w-full rounded-4xl object-cover"
+          />
+          <VideoPlayer
+            v-else
+            :locale="locale"
+            :aria-label="row.media.alt"
+            :src="row.media.src"
+            :poster="row.media.poster"
+            :tracks="row.media.tracks"
+            :autoplay="row.media.autoplay"
+            :loop="row.media.loop"
+            :minimal="row.media.minimal"
+            :hide-controls="row.media.hideControls"
+            class="w-full"
           />
         </div>
       </GlassCard>

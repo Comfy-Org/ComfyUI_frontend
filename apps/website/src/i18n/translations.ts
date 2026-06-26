@@ -1969,6 +1969,10 @@ const translations = {
     'zh-CN':
       '生成图像、视频、音频、3D 内容，放大分辨率或移除背景。添加或删除图像元素，以任意规模创建或修改任何视觉、音频或 3D 资产。'
   },
+  'mcp.tools.1.alt': {
+    en: 'Comfy MCP generating images, video, audio, and 3D assets from a single prompt',
+    'zh-CN': 'Comfy MCP 通过单个提示生成图像、视频、音频和 3D 资产'
+  },
   'mcp.tools.2.title': {
     en: 'Search the ecosystem',
     'zh-CN': '搜索生态系统'
@@ -1985,6 +1989,10 @@ const translations = {
     en: 'Turn any ComfyUI workflow into a callable tool. The full power of the engine, driven by your agent.',
     'zh-CN':
       '将任何 ComfyUI 工作流转换为可调用的工具。由你的智能体驱动完整的引擎能力。'
+  },
+  'mcp.tools.3.alt': {
+    en: 'Comfy MCP running a ComfyUI workflow as a callable tool from a chat',
+    'zh-CN': 'Comfy MCP 在对话中将 ComfyUI 工作流作为可调用工具运行'
   },
 
   // MCP – HowItWorksSection
