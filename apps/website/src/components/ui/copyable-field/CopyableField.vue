@@ -8,6 +8,10 @@ import { useClipboard } from '@vueuse/core'
 const { value } = defineProps<{ value: string }>()
 
 const { copy, copied } = useClipboard({ copiedDuring: 2000 })
+
+function handleCopy() {
+  void copy(value)
+}
 </script>
 
 <template>
@@ -21,7 +25,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
       type="button"
       :aria-label="copied ? 'Copied' : 'Copy'"
       class="text-primary-warm-gray shrink-0 cursor-pointer transition-colors hover:text-primary-comfy-canvas"
-      @click="copy(value)"
+      @click="handleCopy"
     >
       <component :is="copied ? Check : Copy" class="size-4" />
     </button>

@@ -1842,9 +1842,13 @@ const translations = {
     'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
   },
   'mcp.hero.subtitle': {
-    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can attend the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
     'zh-CN':
       'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'mcp.hero.demoPrompt': {
+    en: "match this frame's palette, make the hero key art",
+    'zh-CN': '匹配这一帧的配色，生成主视觉关键画面'
   },
   'mcp.hero.viewDocs': {
     en: 'VIEW DOCS',
@@ -1890,10 +1894,6 @@ const translations = {
   'mcp.setup.step2.description': {
     en: 'Name it Comfy Cloud and paste the URL',
     'zh-CN': '将其命名为 Comfy Cloud 并粘贴 URL'
-  },
-  'mcp.setup.step2.urlPlaceholder': {
-    en: 'https://cloud.comfy.org/mcp',
-    'zh-CN': 'https://cloud.comfy.org/mcp'
   },
   'mcp.setup.step3.label': { en: 'STEP 3', 'zh-CN': '第 3 步' },
   'mcp.setup.step3.title': {

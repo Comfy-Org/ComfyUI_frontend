@@ -21,7 +21,7 @@ const ctas = mcpCtas(locale)
     :secondary-cta="ctas.docs"
   >
     <template #media>
-      <ComfyMcpDemo />
+      <ComfyMcpDemo :locale="locale" />
     </template>
   </HeroSplit01>
 </template>

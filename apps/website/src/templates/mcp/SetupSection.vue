@@ -30,7 +30,7 @@ const cards: FeatureCard[] = [
     description: t('mcp.setup.step2.description', locale),
     action: {
       type: 'code',
-      value: t('mcp.setup.step2.urlPlaceholder', locale)
+      value: externalLinks.mcpServer
     }
   },
   {

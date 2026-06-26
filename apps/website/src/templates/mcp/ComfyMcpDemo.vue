@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-const PROMPT = "match this frame's palette, make the hero key art"
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const PROMPT = t('mcp.hero.demoPrompt', locale)
 
 const cards = [
   {
@@ -110,9 +115,7 @@ onUnmounted(() => {
         {{ displayedPrompt
         }}<span
           class="bg-primary-comfy-yellow ml-0.5 inline-block h-[22px] w-2 translate-y-0.5"
-          :class="
-            promptDone ? 'animate-[cursor-blink_1s_step-end_infinite]' : ''
-          "
+          :class="promptDone ? 'animate-cursor-blink' : ''"
         />
       </p>
 
@@ -187,35 +190,3 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-@keyframes cursor-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-
-.card-slide-enter-active {
-  transition:
-    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    opacity 0.4s ease;
-}
-
-.card-slide-enter-from {
-  transform: translateX(56px);
-  opacity: 0;
-}
-
-.card-slide-leave-active {
-  transition: opacity 0.2s ease;
-  position: absolute;
-}
-
-.card-slide-leave-to {
-  opacity: 0;
-}
-</style>
