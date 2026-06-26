@@ -545,16 +545,33 @@ describe('useMembersPanel', () => {
       )
     })
 
-    it('shows a cooldown toast when the resend is rate limited (429)', async () => {
+    it('shows only the cooldown toast with retry detail when rate limited (429)', async () => {
       mockResendInvite.mockRejectedValue(
         new WorkspaceApiError('Too Many Requests', 429, undefined, 30)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          summary: 'workspacePanel.toast.inviteResendCooldown',
+          detail: 'workspacePanel.toast.inviteResendCooldownDetail'
+        })
+      )
+    })
+
+    it('omits the cooldown detail when the 429 carries no Retry-After', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('Too Many Requests', 429)
       )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'warn',
-          summary: 'workspacePanel.toast.inviteResendCooldown'
+          summary: 'workspacePanel.toast.inviteResendCooldown',
+          detail: undefined
         })
       )
     })

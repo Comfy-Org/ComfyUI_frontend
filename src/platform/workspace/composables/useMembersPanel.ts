@@ -251,15 +251,18 @@ export function useMembersPanel() {
       })
     } catch (err) {
       if (err instanceof WorkspaceApiError && err.status === 429) {
+        const retryAfter = err.retryAfter
         toast.add({
           severity: 'warn',
           summary: t('workspacePanel.toast.inviteResendCooldown'),
-          detail: err.retryAfter
-            ? t('workspacePanel.toast.inviteResendCooldownDetail', {
-                seconds: err.retryAfter
-              })
+          detail: retryAfter
+            ? t(
+                'workspacePanel.toast.inviteResendCooldownDetail',
+                { seconds: retryAfter },
+                retryAfter
+              )
             : undefined,
-          life: 3000
+          life: Math.min((retryAfter ?? 5) * 1000, 10000)
         })
         return
       }

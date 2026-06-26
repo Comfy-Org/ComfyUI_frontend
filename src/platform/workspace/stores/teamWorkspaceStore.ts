@@ -681,7 +681,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       )
       const current = activeWorkspace.value
       if (current) {
-        updateActiveWorkspace({
+        updateWorkspace(current.id, {
           pendingInvites: current.pendingInvites.map((i) =>
             i.id === inviteId ? refreshed : i
           )
