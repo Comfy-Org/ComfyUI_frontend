@@ -133,10 +133,16 @@ const downloadAllLabel = computed(() => {
   return total > 0 ? `${base} (${formatSize(total)})` : base
 })
 
+// Browsers drop rapid back-to-back programmatic downloads, so a single
+// "Download all" click only ever started one file. Stagger them instead.
+const DOWNLOAD_ALL_STAGGER_MS = 700
+
 function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
-  }
+  downloadableModels.value.forEach((model, index) => {
+    window.setTimeout(() => {
+      downloadModel(model, missingModelStore.folderPaths)
+    }, index * DOWNLOAD_ALL_STAGGER_MS)
+  })
 }
 
 function getModelRowKey(

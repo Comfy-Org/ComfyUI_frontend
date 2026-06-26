@@ -3906,7 +3906,7 @@
       "copyPath": "Copy path",
       "moreFolders": "+{count} more folder | +{count} more folders",
       "hideExtraFolders": "Hide extra folders",
-      "afterDownloadInstruction": "When the download finishes, move the file to the folder above, then click Refresh at the top of this panel."
+      "afterDownloadInstruction": "Once downloaded, move it here and Refresh."
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"

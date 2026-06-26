@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
 import type {
   MissingModelGroup,
   MissingModelViewModel
@@ -42,6 +43,14 @@ vi.mock('@/platform/distribution/types', () => ({
     return mockIsCloud.value
   }
 }))
+
+const mockDownloadModel = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/missingModel/missingModelDownload', async () => {
+  const actual = await vi.importActual<typeof MissingModelDownload>(
+    '@/platform/missingModel/missingModelDownload'
+  )
+  return { ...actual, downloadModel: mockDownloadModel }
+})
 
 import MissingModelCard from './MissingModelCard.vue'
 
@@ -257,10 +266,39 @@ describe('MissingModelCard', () => {
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    mockDownloadModel.mockClear()
   })
 
   afterEach(() => {
     mockIsCloud.value = true
+  })
+
+  it('staggers Download all so every model downloads, not just the first', async () => {
+    vi.useFakeTimers()
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      mountCard({
+        missingModelGroups: [
+          makeGroup({
+            withDownloadUrls: true,
+            modelNames: ['a.safetensors', 'b.safetensors', 'c.safetensors']
+          })
+        ]
+      })
+
+      await user.click(screen.getByRole('button', { name: /Download all/ }))
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockDownloadModel).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(700)
+      expect(mockDownloadModel).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(700)
+      expect(mockDownloadModel).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {

@@ -103,8 +103,6 @@ describe('MissingModelDestination', () => {
 
     renderDestination({ directory: 'loras', downloadTriggered: true })
 
-    expect(
-      screen.getByText(/move the file to the folder above/i)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/move it here and refresh/i)).toBeInTheDocument()
   })
 })
