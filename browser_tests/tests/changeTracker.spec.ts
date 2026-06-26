@@ -335,4 +335,26 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await expect(input).toHaveValue('512')
     }
   )
+
+  test(
+    'Does not restore invalid navigation stack',
+    { tag: ['@vue-nodes', '@subgraph'] },
+    async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      const convertToSubgraph = (nodeTitle: string) =>
+        comfyPage.contextMenu
+          .openFor(comfyPage.vueNodes.getNodeByTitle(nodeTitle))
+          .then((menu) => menu.clickMenuItem('Convert to Subgraph'))
+
+      await test.step('setup nested subgraph', async () => {
+        await convertToSubgraph('Empty Latent')
+        await convertToSubgraph('New Subgraph')
+        await comfyPage.vueNodes.enterSubgraph()
+      })
+
+      //Spurious undo states may exist. Repeat until valid
+
+      expect(true).toBe(false)
+    }
+  )
 })
