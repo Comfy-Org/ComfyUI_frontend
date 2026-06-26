@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -81,7 +78,7 @@ const tooltipPt = {
 </script>
 
 <template>
-  <DropdownMenuRoot
+  <DropdownMenu
     v-model:open="dropdownOpen"
     :modal="false"
     @update:open="handleOpen"
@@ -145,15 +142,14 @@ const tooltipPt = {
         </DropdownMenuTrigger>
       </div>
     </slot>
-    <DropdownMenuPortal>
-      <DropdownMenuContent
-        :align
-        :side-offset="5"
-        :collision-padding="10"
-        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
-      >
-        <WorkflowActionsList :items="menuItems" />
-      </DropdownMenuContent>
-    </DropdownMenuPortal>
-  </DropdownMenuRoot>
+    <DropdownMenuContent
+      size="lg"
+      :align
+      :side-offset="5"
+      :collision-padding="10"
+      class="z-1000"
+    >
+      <WorkflowActionsList :items="menuItems" />
+    </DropdownMenuContent>
+  </DropdownMenu>
 </template>

@@ -1,8 +1,6 @@
 <!-- A popover that shows current user information and actions -->
 <template>
-  <div
-    class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <div class="current-user-popover w-full">
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
@@ -130,94 +128,66 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <DropdownMenuSeparator />
 
-    <!-- Plans & Pricing (PERSONAL and OWNER only) -->
-    <div
+    <DropdownMenuItem
       v-if="showPlansAndPricing"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
-      @click="handleOpenPlansAndPricing"
+      @select="handleOpenPlansAndPricing"
     >
-      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.plansAndPricing')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--receipt-text]" /></template>
+      {{ $t('subscription.plansAndPricing') }}
+    </DropdownMenuItem>
 
-    <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
-    <div
+    <DropdownMenuItem
       v-if="showManagePlan"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @select="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.managePlan')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--file-text]" /></template>
+      {{ $t('subscription.managePlan') }}
+    </DropdownMenuItem>
 
-    <!-- Partner Nodes Pricing (always shown) -->
-    <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+    <DropdownMenuItem
       data-testid="partner-nodes-menu-item"
-      @click="handleOpenPartnerNodesInfo"
+      @select="handleOpenPartnerNodesInfo"
     >
-      <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.partnerNodesCredits')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--tag]" /></template>
+      {{ $t('subscription.partnerNodesCredits') }}
+    </DropdownMenuItem>
 
-    <Divider class="mx-0 my-2" />
+    <DropdownMenuSeparator />
 
-    <!-- Workspace Settings (always shown) -->
-    <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+    <DropdownMenuItem
       data-testid="workspace-settings-menu-item"
-      @click="handleOpenWorkspaceSettings"
+      @select="handleOpenWorkspaceSettings"
     >
-      <i class="icon-[lucide--users] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('userSettings.workspaceSettings')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--users]" /></template>
+      {{ $t('userSettings.workspaceSettings') }}
+    </DropdownMenuItem>
 
-    <!-- Account Settings (always shown) -->
-    <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+    <DropdownMenuItem
       data-testid="user-settings-menu-item"
-      @click="handleOpenUserSettings"
+      @select="handleOpenUserSettings"
     >
-      <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('userSettings.accountSettings')
-      }}</span>
-    </div>
+      <template #icon><i class="icon-[lucide--settings-2]" /></template>
+      {{ $t('userSettings.accountSettings') }}
+    </DropdownMenuItem>
 
-    <Divider class="mx-0 my-2" />
+    <DropdownMenuSeparator />
 
-    <!-- Logout (always shown) -->
-    <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
-      data-testid="logout-menu-item"
-      @click="handleLogout"
-    >
-      <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('auth.signOut.signOut')
-      }}</span>
-    </div>
+    <DropdownMenuItem data-testid="logout-menu-item" @select="handleLogout">
+      <template #icon><i class="icon-[lucide--log-out]" /></template>
+      {{ $t('auth.signOut.signOut') }}
+    </DropdownMenuItem>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -225,6 +195,8 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -370,9 +342,7 @@ const toggleWorkspaceSwitcher = () => {
   isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
 }
 
-const refreshBalance = () => {
+onMounted(() => {
   void fetchBalance()
-}
-
-defineExpose({ refreshBalance })
+})
 </script>

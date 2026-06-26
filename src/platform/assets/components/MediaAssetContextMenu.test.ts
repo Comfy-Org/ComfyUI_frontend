@@ -1,8 +1,7 @@
-import { render } from '@testing-library/vue'
-import type { MenuItem } from 'primevue/menuitem'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PropType } from 'vue'
-import { defineComponent, nextTick, onMounted, ref } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -42,61 +41,11 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => mediaAssetActions
 }))
 
-const capturedMenu = vi.hoisted(() => ({ model: [] as MenuItem[] }))
-
-const contextMenuStub = defineComponent({
-  name: 'ContextMenu',
-  props: {
-    pt: {
-      type: Object,
-      default: undefined
-    },
-    model: {
-      type: Array as PropType<MenuItem[]>,
-      default: () => []
-    }
-  },
-  emits: ['hide'],
-  data() {
-    return {
-      visible: false
-    }
-  },
-  watch: {
-    model: {
-      immediate: true,
-      handler(items: MenuItem[]) {
-        capturedMenu.model = items
-      }
-    }
-  },
-  methods: {
-    show() {
-      this.visible = true
-    },
-    hide() {
-      this.visible = false
-      this.$emit('hide')
-    }
-  },
-  template: `
-    <div
-      v-if="visible"
-      class="context-menu-stub"
-      v-bind="pt?.root"
-    />
-  `
-})
-
 const asset: AssetItem = {
   id: 'asset-1',
   name: 'image.png',
   tags: [],
   user_metadata: {}
-}
-
-const buttonStub = {
-  template: '<div class="button-stub"><slot /></div>'
 }
 
 interface MediaAssetContextMenuExposed {
@@ -107,7 +56,7 @@ let capturedRef: MediaAssetContextMenuExposed | null = null
 
 function mountComponent() {
   const onHide = vi.fn()
-  const { container, unmount } = render(
+  const { unmount } = render(
     defineComponent({
       components: { MediaAssetContextMenu },
       setup() {
@@ -119,80 +68,50 @@ function mountComponent() {
       },
       template:
         '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
-    }),
-    {
-      global: {
-        stubs: {
-          ContextMenu: contextMenuStub,
-          Button: buttonStub
-        }
-      }
-    }
+    })
   )
-  return { container, unmount, onHide }
+  return { unmount, onHide }
 }
 
-async function showMenu(container: Element): Promise<HTMLElement> {
-  const event = new MouseEvent('contextmenu', { bubbles: true })
+async function openMenu() {
+  const event = new MouseEvent('contextmenu', {
+    bubbles: true,
+    clientX: 0,
+    clientY: 0
+  })
   capturedRef!.show(event)
-  await nextTick()
-  // eslint-disable-next-line testing-library/no-container
-  return container.querySelector('.context-menu-stub') as HTMLElement
+  return await screen.findByRole('menu')
 }
 
 afterEach(() => {
   vi.clearAllMocks()
   capturedRef = null
-  capturedMenu.model = []
   document.body.innerHTML = ''
 })
 
-type MenuItemWithCommand = MenuItem & {
-  command: NonNullable<MenuItem['command']>
-}
-
-function findDownloadMenuItem(): MenuItemWithCommand {
-  const downloadItem = capturedMenu.model.find(
-    (item) => item.label === 'mediaAsset.actions.download'
-  )
-  if (!downloadItem?.command) {
-    throw new Error('Download menu item or command was not registered')
-  }
-  return downloadItem as MenuItemWithCommand
-}
-
 describe('MediaAssetContextMenu', () => {
-  it('dismisses outside pointerdown using the rendered root id', async () => {
-    const { container, unmount, onHide } = mountComponent()
-    const outside = document.createElement('div')
-    document.body.append(outside)
+  it('emits hide when menu closes', async () => {
+    const user = userEvent.setup()
+    const { unmount, onHide } = mountComponent()
 
-    const menu = await showMenu(container)
-    const menuId = menu.id
+    await openMenu()
+    await user.keyboard('{Escape}')
 
-    expect(menuId).not.toBe('')
-    // eslint-disable-next-line testing-library/no-node-access
-    expect(document.getElementById(menuId)).toBe(menu)
-
-    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-    await nextTick()
-
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.context-menu-stub')).toBeNull()
-    expect(onHide).toHaveBeenCalledOnce()
+    expect(onHide).toHaveBeenCalled()
 
     unmount()
   })
 
-  it('routes Download through downloadAssets so multi-output jobs zip', async () => {
-    const { container, unmount } = mountComponent()
-    await showMenu(container)
+  it('routes Download through downloadAssets', async () => {
+    const user = userEvent.setup()
+    const { unmount } = mountComponent()
 
-    const downloadItem = findDownloadMenuItem()
-    downloadItem.command({
-      originalEvent: new MouseEvent('click'),
-      item: downloadItem
-    })
+    await openMenu()
+    await user.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.download'
+      })
+    )
 
     expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
 

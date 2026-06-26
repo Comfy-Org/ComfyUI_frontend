@@ -11,8 +11,8 @@
       class="flex shrink-0 items-center gap-2"
       :class="{ 'ml-2': !showSearch }"
     >
-      <Popover :show-arrow="false">
-        <template #button>
+      <DropdownMenu :modal="false">
+        <DropdownMenuTrigger as-child>
           <Button
             v-tooltip.top="filterTooltipConfig"
             variant="secondary"
@@ -25,43 +25,26 @@
               class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
             />
           </Button>
-        </template>
-        <template #default="{ close }">
-          <div class="flex min-w-48 flex-col items-stretch">
-            <Button
-              class="w-full justify-between"
-              variant="textonly"
-              size="md"
-              @click="onSelectWorkflowFilter('all', close)"
-            >
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
-              }}</span>
-              <i
-                v-if="selectedWorkflowFilter === 'all'"
-                class="icon-[lucide--check] size-4"
-              />
-            </Button>
-            <div class="mx-2 mt-1 h-px" />
-            <Button
-              class="w-full justify-between"
-              variant="textonly"
-              size="md"
-              @click="onSelectWorkflowFilter('current', close)"
-            >
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
-              }}</span>
-              <i
-                v-if="selectedWorkflowFilter === 'current'"
-                class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
-              />
-            </Button>
-          </div>
-        </template>
-      </Popover>
-      <Popover :show-arrow="false">
-        <template #button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent size="lg" align="end" :side-offset="4">
+          <DropdownMenuItem @select="onSelectWorkflowFilter('all')">
+            {{ t('sideToolbar.queueProgressOverlay.filterAllWorkflows') }}
+            <i
+              v-if="selectedWorkflowFilter === 'all'"
+              class="ml-auto icon-[lucide--check] size-3.5"
+            />
+          </DropdownMenuItem>
+          <DropdownMenuItem @select="onSelectWorkflowFilter('current')">
+            {{ t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow') }}
+            <i
+              v-if="selectedWorkflowFilter === 'current'"
+              class="ml-auto icon-[lucide--check] size-3.5"
+            />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DropdownMenu :modal="false">
+        <DropdownMenuTrigger as-child>
           <Button
             v-tooltip.top="sortTooltipConfig"
             variant="secondary"
@@ -74,30 +57,21 @@
               class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
             />
           </Button>
-        </template>
-        <template #default="{ close }">
-          <div class="flex min-w-48 flex-col items-stretch">
-            <template v-for="(mode, index) in jobSortModes" :key="mode">
-              <Button
-                class="w-full justify-between"
-                variant="textonly"
-                size="md"
-                @click="onSelectSortMode(mode, close)"
-              >
-                <span>{{ sortLabel(mode) }}</span>
-                <i
-                  v-if="selectedSortMode === mode"
-                  class="icon-[lucide--check] size-4 text-text-secondary"
-                />
-              </Button>
-              <div
-                v-if="index < jobSortModes.length - 1"
-                class="mx-2 mt-1 h-px"
-              />
-            </template>
-          </div>
-        </template>
-      </Popover>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent size="lg" align="end" :side-offset="4">
+          <DropdownMenuItem
+            v-for="mode in jobSortModes"
+            :key="mode"
+            @select="onSelectSortMode(mode)"
+          >
+            {{ sortLabel(mode) }}
+            <i
+              v-if="selectedSortMode === mode"
+              class="ml-auto icon-[lucide--check] size-3.5"
+            />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button
         v-if="showAssetsAction"
         v-tooltip.top="showAssetsTooltipConfig"
@@ -117,8 +91,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -164,27 +141,14 @@ const searchPlaceholderText = computed(
   () => searchPlaceholder ?? t('sideToolbar.queueProgressOverlay.searchJobs')
 )
 
-const selectWorkflowFilter = (value: 'all' | 'current') => {
+const onSelectWorkflowFilter = (value: 'all' | 'current') => {
+  trackFeatureUsed()
   selectedWorkflowFilter.value = value
 }
 
-const onSelectWorkflowFilter = (
-  value: 'all' | 'current',
-  close: () => void
-) => {
+const onSelectSortMode = (value: JobSortMode) => {
   trackFeatureUsed()
-  selectWorkflowFilter(value)
-  close()
-}
-
-const selectSortMode = (value: JobSortMode) => {
   selectedSortMode.value = value
-}
-
-const onSelectSortMode = (value: JobSortMode, close: () => void) => {
-  trackFeatureUsed()
-  selectSortMode(value)
-  close()
 }
 
 const onSearchQueryUpdate = (value: string | undefined) => {

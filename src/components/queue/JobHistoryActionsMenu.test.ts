@@ -1,29 +1,49 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import type { Slots } from 'vue'
+import { h } from 'vue'
 
 import { i18n } from '@/i18n'
 
-const popoverCloseSpy = vi.fn()
-
-vi.mock('@/components/ui/Popover.vue', () => {
-  const PopoverStub = defineComponent({
-    name: 'Popover',
-    setup(_, { slots }) {
-      return () =>
-        h('div', [
-          slots.button?.(),
-          slots.default?.({
-            close: () => {
-              popoverCloseSpy()
-            }
-          })
-        ])
+vi.mock('@/components/ui/dropdown-menu/DropdownMenu.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', slots.default?.())
+}))
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuTrigger.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', slots.default?.())
+}))
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuContent.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', slots.default?.())
+}))
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
+  default: (
+    _: unknown,
+    {
+      slots,
+      emit,
+      attrs
+    }: {
+      slots: Slots
+      emit: (e: string) => void
+      attrs: Record<string, unknown>
     }
-  })
-  return { default: PopoverStub }
-})
+  ) =>
+    h(
+      'button',
+      {
+        ...attrs,
+        type: 'button',
+        onClick: () => emit('select')
+      },
+      [slots.icon?.(), slots.default?.()]
+    )
+}))
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuSeparator.vue', () => ({
+  default: () => h('hr')
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
@@ -65,7 +85,6 @@ const renderMenu = () =>
 describe('JobHistoryActionsMenu', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    popoverCloseSpy.mockClear()
     mockSetSetting.mockClear()
     mockSetMany.mockClear()
     mockSidebarTabStore.activeSidebarTabId = null
@@ -102,7 +121,6 @@ describe('JobHistoryActionsMenu', () => {
 
     await user.click(screen.getByTestId('docked-job-history-action'))
 
-    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
     expect(mockSetMany).not.toHaveBeenCalled()
@@ -123,7 +141,6 @@ describe('JobHistoryActionsMenu', () => {
 
     await user.click(screen.getByTestId('clear-history-action'))
 
-    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(clearHistorySpy).toHaveBeenCalledOnce()
   })
 })

@@ -1,14 +1,5 @@
 <template>
   <div>
-    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
-
-    <!-- Backdrop -->
-    <div
-      v-if="hasActivePopup"
-      class="fixed inset-0 z-1200"
-      @click="hideModal"
-    ></div>
-
     <ButtonGroup
       role="toolbar"
       :aria-label="t('graphCanvasMenu.canvasToolbar')"
@@ -35,20 +26,29 @@
         <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
       </Button>
 
-      <Button
-        v-tooltip.top="t('zoomControls.label')"
-        variant="secondary"
-        :class="zoomButtonClass"
-        :aria-label="t('zoomControls.label')"
-        data-testid="zoom-controls-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="toggleModal"
-      >
-        <span class="inline-flex items-center gap-1 px-2 text-xs">
-          <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
-        </span>
-      </Button>
+      <DropdownMenu v-model:open="isModalVisible" :modal="false">
+        <DropdownMenuTrigger as-child>
+          <Button
+            v-tooltip.top="t('zoomControls.label')"
+            variant="secondary"
+            :class="zoomButtonClass"
+            :aria-label="t('zoomControls.label')"
+            data-testid="zoom-controls-button"
+            :style="stringifiedMinimapStyles.buttonStyles"
+          >
+            <span class="inline-flex items-center gap-1 px-2 text-xs">
+              <span>{{ canvasStore.appScalePercentage }}%</span>
+              <i
+                class="icon-[lucide--chevron-down] size-4"
+                aria-hidden="true"
+              />
+            </span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent size="lg" align="end" :side-offset="8">
+          <ZoomControlsModal />
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div class="h-[27px] w-px self-center bg-node-divider" />
 
@@ -92,6 +92,9 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -112,8 +115,7 @@ const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
 const minimap = useMinimap()
 
-const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
-  useZoomControls()
+const { isModalVisible } = useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
   const buttonGroupKeys = ['borderRadius']

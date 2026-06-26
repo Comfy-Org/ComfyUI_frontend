@@ -1,7 +1,8 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import type { Slots } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -14,38 +15,51 @@ import type {
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import type { LayoutMode, SortOption } from './types'
 
+vi.mock('@/components/ui/dropdown-menu/DropdownMenu.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', { 'data-testid': 'dropdown-menu' }, slots.default?.())
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuTrigger.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', { 'data-testid': 'dropdown-menu-trigger' }, slots.default?.())
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuContent.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', { 'data-testid': 'dropdown-menu-content' }, slots.default?.())
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
+  default: (
+    _: unknown,
+    { slots, emit }: { slots: Slots; emit: (e: string, ev: Event) => void }
+  ) =>
+    h(
+      'button',
+      {
+        type: 'button',
+        onClick: (event: Event) => emit('select', event)
+      },
+      [slots.icon?.(), slots.default?.()]
+    )
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuSeparator.vue', () => ({
+  default: () => h('hr')
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
 })
 
-const popoverHide = vi.fn()
-
 const ButtonStub = defineComponent({
   inheritAttrs: false,
   template: '<button v-bind="$attrs" type="button"><slot /></button>'
 })
 
-const PopoverStub = defineComponent({
-  inheritAttrs: false,
-  data() {
-    return { open: false }
-  },
-  methods: {
-    toggle() {
-      this.open = !this.open
-    },
-    hide() {
-      popoverHide()
-      this.open = false
-    }
-  },
-  template: '<div data-testid="popover-body" v-if="open"><slot /></div>'
-})
-
-// Synthetic fixtures: the component is prop-driven, so we deliberately
-// avoid mirroring production data (which can silently drift).
 const sortOptions: SortOption[] = [
   { id: 'sort-a', name: 'Sort A', sorter: ({ items }) => [...items] },
   { id: 'sort-b', name: 'Sort B', sorter: ({ items }) => [...items] }
@@ -126,7 +140,7 @@ function renderMenu(props: MenuProps = {}) {
   const utils = render(Harness, {
     global: {
       plugins: [i18n],
-      stubs: { Button: ButtonStub, Popover: PopoverStub }
+      stubs: { Button: ButtonStub }
     }
   })
   return {
@@ -140,18 +154,7 @@ function renderMenu(props: MenuProps = {}) {
   }
 }
 
-type TestUser = ReturnType<typeof userEvent.setup>
-
-async function openPopover(user: TestUser, triggerName: string) {
-  await user.click(screen.getByRole('button', { name: triggerName }))
-  return screen.getByTestId('popover-body')
-}
-
 describe('FormDropdownMenuActions', () => {
-  beforeEach(() => {
-    popoverHide.mockClear()
-  })
-
   describe('Search', () => {
     it('binds search input to v-model on initial render', () => {
       renderMenu({ searchQuery: 'seed' })
@@ -185,39 +188,21 @@ describe('FormDropdownMenuActions', () => {
     })
   })
 
-  describe('Sort popover', () => {
-    it('is closed by default', () => {
+  describe('Sort menu', () => {
+    it('renders sort options', () => {
       renderMenu()
-      expect(screen.queryByTestId('popover-body')).toBeNull()
-    })
-
-    it('opens the options list after the sort trigger is clicked', async () => {
-      const { user } = renderMenu()
-      const body = await openPopover(user, 'Sort by')
-      expect(
-        within(body).getByRole('button', { name: 'Sort A' })
-      ).toBeInTheDocument()
-      expect(
-        within(body).getByRole('button', { name: 'Sort B' })
-      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Sort A' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Sort B' })).toBeInTheDocument()
     })
 
     it('updates sortSelected when a sort option is clicked', async () => {
       const { sortSelected, user } = renderMenu({ sortSelected: 'sort-a' })
-      const body = await openPopover(user, 'Sort by')
-      await user.click(within(body).getByRole('button', { name: 'Sort B' }))
+      await user.click(screen.getByRole('button', { name: 'Sort B' }))
       expect(sortSelected.value).toBe('sort-b')
-    })
-
-    it('calls popover hide() after a sort option is selected', async () => {
-      const { user } = renderMenu({ sortSelected: 'sort-a' })
-      const body = await openPopover(user, 'Sort by')
-      await user.click(within(body).getByRole('button', { name: 'Sort B' }))
-      expect(popoverHide).toHaveBeenCalled()
     })
   })
 
-  describe('Ownership popover', () => {
+  describe('Ownership menu', () => {
     it('is hidden when showOwnershipFilter is false', () => {
       renderMenu({ showOwnershipFilter: false })
       expect(screen.queryByLabelText('Ownership')).toBeNull()
@@ -238,23 +223,12 @@ describe('FormDropdownMenuActions', () => {
         showOwnershipFilter: true,
         ownershipSelected: 'all'
       })
-      const body = await openPopover(user, 'Ownership')
-      await user.click(within(body).getByRole('button', { name: 'Mine' }))
+      await user.click(screen.getByRole('button', { name: 'Mine' }))
       expect(ownershipSelected.value).toBe('my-models')
-    })
-
-    it('calls popover hide() after an ownership option is selected', async () => {
-      const { user } = renderMenu({
-        showOwnershipFilter: true,
-        ownershipSelected: 'all'
-      })
-      const body = await openPopover(user, 'Ownership')
-      await user.click(within(body).getByRole('button', { name: 'Mine' }))
-      expect(popoverHide).toHaveBeenCalled()
     })
   })
 
-  describe('Base model popover', () => {
+  describe('Base model menu', () => {
     it('is hidden when showBaseModelFilter is false', () => {
       renderMenu({ showBaseModelFilter: false })
       expect(screen.queryByLabelText('Base model')).toBeNull()
@@ -274,8 +248,7 @@ describe('FormDropdownMenuActions', () => {
       const { baseModelSelected, user } = renderMenu({
         showBaseModelFilter: true
       })
-      const body = await openPopover(user, 'Base model')
-      await user.click(within(body).getByRole('button', { name: 'Model A' }))
+      await user.click(screen.getByRole('button', { name: 'Model A' }))
       expect(baseModelSelected.value).toEqual(new Set(['model-a']))
     })
 
@@ -284,8 +257,7 @@ describe('FormDropdownMenuActions', () => {
         showBaseModelFilter: true,
         baseModelSelected: new Set(['model-a', 'model-b'])
       })
-      const body = await openPopover(user, 'Base model')
-      await user.click(within(body).getByRole('button', { name: 'Model A' }))
+      await user.click(screen.getByRole('button', { name: 'Model A' }))
       expect(baseModelSelected.value).toEqual(new Set(['model-b']))
     })
 
@@ -294,8 +266,7 @@ describe('FormDropdownMenuActions', () => {
         showBaseModelFilter: true,
         baseModelSelected: new Set(['model-a'])
       })
-      const body = await openPopover(user, 'Base model')
-      await user.click(within(body).getByRole('button', { name: 'Model B' }))
+      await user.click(screen.getByRole('button', { name: 'Model B' }))
       expect(baseModelSelected.value).toEqual(new Set(['model-a', 'model-b']))
     })
 
@@ -304,10 +275,7 @@ describe('FormDropdownMenuActions', () => {
         showBaseModelFilter: true,
         baseModelSelected: new Set(['model-a', 'model-b'])
       })
-      const body = await openPopover(user, 'Base model')
-      await user.click(
-        within(body).getByRole('button', { name: 'Clear Filters' })
-      )
+      await user.click(screen.getByRole('button', { name: 'Clear Filters' }))
       expect(baseModelSelected.value.size).toBe(0)
     })
   })

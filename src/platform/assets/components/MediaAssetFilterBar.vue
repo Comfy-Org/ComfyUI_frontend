@@ -10,27 +10,22 @@
     <template #actions>
       <MediaAssetFilterButton
         v-if="isCloud"
-        v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
+        :tooltip="$t('assetBrowser.filterBy')"
       >
-        <template #default="{ close }">
-          <MediaAssetFilterMenu
-            :media-type-filters
-            :close
-            @update:media-type-filters="handleMediaTypeFiltersChange"
-          />
-        </template>
+        <MediaAssetFilterMenu
+          :media-type-filters
+          @update:media-type-filters="handleMediaTypeFiltersChange"
+        />
       </MediaAssetFilterButton>
       <MediaAssetSettingsButton
-        v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+        :tooltip="$t('sideToolbar.mediaAssets.viewSettings')"
       >
-        <template #default>
-          <MediaAssetSettingsMenu
-            v-model:view-mode="viewMode"
-            v-model:sort-by="sortBy"
-            :show-sort-options="isCloud"
-            :show-generation-time-sort
-          />
-        </template>
+        <MediaAssetSettingsMenu
+          v-model:view-mode="viewMode"
+          v-model:sort-by="sortBy"
+          :show-sort-options="isCloud"
+          :show-generation-time-sort
+        />
       </MediaAssetSettingsButton>
     </template>
   </SidebarTopArea>

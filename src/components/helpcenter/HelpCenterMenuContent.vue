@@ -6,7 +6,7 @@
   >
     <!-- Main Menu Items -->
     <div class="w-full">
-      <nav class="flex w-full flex-col gap-2" role="menubar">
+      <nav class="flex w-full flex-col" role="menubar">
         <button
           v-for="menuItem in menuItems"
           v-show="menuItem.visible !== false"
@@ -645,8 +645,9 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
   border: 1px solid var(--interface-menu-stroke);
-  padding: 12px 8px;
+  padding: 4px;
   position: relative;
+  font-family: var(--font-inter);
 }
 
 .help-menu-item {
@@ -654,21 +655,20 @@ onBeforeUnmount(() => {
   align-items: center;
   width: 100%;
   height: 32px;
-  min-height: 24px;
-  padding: 8px;
+  padding: 4px 8px;
   gap: 8px;
   background: transparent;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-  font-size: 0.9rem;
-  color: var(--text-primary);
+  font-size: 0.875rem;
+  color: var(--base-foreground);
   text-align: left;
 }
 
 .help-menu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--secondary-background);
 }
 
 .help-menu-item:focus,
@@ -688,7 +688,7 @@ onBeforeUnmount(() => {
   width: 16px;
   height: 16px;
   font-size: 16px;
-  color: var(--text-primary);
+  color: var(--muted-foreground);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -698,7 +698,7 @@ onBeforeUnmount(() => {
 .help-menu-icon svg {
   width: 16px;
   height: 16px;
-  color: var(--text-primary);
+  color: inherit;
 }
 
 .menu-red-dot {

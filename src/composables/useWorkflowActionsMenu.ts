@@ -111,7 +111,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'rename',
       label: t('g.rename'),
-      icon: 'pi pi-pencil',
+      icon: 'icon-[lucide--pencil-line]',
       command: async () => {
         await ensureWorkflowActive(targetWorkflow.value)
         startRename()
@@ -122,7 +122,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'duplicate',
       label: t('breadcrumbsMenu.duplicate'),
-      icon: 'pi pi-copy',
+      icon: 'icon-[lucide--copy]',
       command: async () => {
         if (workflow) {
           await workflowService.duplicateWorkflow(workflow)
@@ -136,7 +136,7 @@ export function useWorkflowActionsMenu(
       label: isBookmarked
         ? t('tabMenu.removeFromBookmarks')
         : t('tabMenu.addToBookmarks'),
-      icon: 'pi pi-bookmark' + (isBookmarked ? '-fill' : ''),
+      icon: 'icon-[lucide--bookmark]' + (isBookmarked ? ' fill-current' : ''),
       command: async () => {
         if (workflow?.path) {
           await bookmarkStore.toggleBookmarked(workflow.path)
@@ -149,7 +149,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'save',
       label: t('menuLabels.Save'),
-      icon: 'pi pi-save',
+      icon: 'icon-[lucide--save]',
       command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.SaveWorkflow')
@@ -161,7 +161,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'save-as',
       label: t('menuLabels.Save As'),
-      icon: 'pi pi-save',
+      icon: 'icon-[lucide--save]',
       command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.SaveWorkflowAs')
@@ -172,7 +172,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'export',
       label: t('menuLabels.Export'),
-      icon: 'pi pi-download',
+      icon: 'icon-[lucide--download]',
       command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ExportWorkflow')
@@ -184,7 +184,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'export-api',
       label: t('menuLabels.Export (API)'),
-      icon: 'pi pi-download',
+      icon: 'icon-[lucide--download]',
       command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ExportWorkflowAPI')
@@ -252,7 +252,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'clear-workflow',
       label: t('breadcrumbsMenu.clearWorkflow'),
-      icon: 'pi pi-trash',
+      icon: 'icon-[lucide--trash-2]',
       command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ClearWorkflow')
@@ -263,7 +263,7 @@ export function useWorkflowActionsMenu(
     addItem({
       id: 'publish',
       label: t('subgraphStore.publish'),
-      icon: 'pi pi-upload',
+      icon: 'icon-[lucide--upload]',
       command: async () => {
         if (workflow) {
           await workflowService.saveWorkflowAs(workflow)
@@ -278,7 +278,7 @@ export function useWorkflowActionsMenu(
       label: isBlueprint
         ? t('breadcrumbsMenu.deleteBlueprint')
         : t('breadcrumbsMenu.deleteWorkflow'),
-      icon: 'pi pi-times',
+      icon: 'icon-[lucide--x]',
       command: async () => {
         if (workflow) {
           await workflowService.deleteWorkflow(workflow)

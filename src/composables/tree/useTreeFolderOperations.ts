@@ -46,7 +46,7 @@ export function useTreeFolderOperations<T>(
       label: '',
       leaf: false,
       children: [],
-      icon: 'pi pi-folder',
+      icon: 'icon-[lucide--folder]',
       type: 'folder',
       totalLeaves: 0,
       badgeText: '',
@@ -61,7 +61,7 @@ export function useTreeFolderOperations<T>(
   ): MenuItem => {
     return {
       label: t('g.newFolder'),
-      icon: 'pi pi-folder-plus',
+      icon: 'icon-[lucide--folder-plus]',
       command: () => {
         if (targetNode) addFolderCommand(targetNode)
       },

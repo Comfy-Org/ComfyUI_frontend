@@ -232,6 +232,7 @@
       </ContextMenuTrigger>
       <ContextMenuPortal>
         <ContextMenuContent
+          size="lg"
           :style="keybindingOverlayContentStyle"
           class="z-1800 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
         >

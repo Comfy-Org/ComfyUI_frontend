@@ -73,7 +73,39 @@
             }}
           </span>
         </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        <DropdownMenu v-model:open="queueContextMenuOpen" :modal="false">
+          <DropdownMenuTrigger as-child>
+            <button
+              type="button"
+              aria-hidden="true"
+              tabindex="-1"
+              class="pointer-events-none fixed size-0 opacity-0"
+              :style="{
+                left: `${queueContextMenuAnchor.x}px`,
+                top: `${queueContextMenuAnchor.y}px`
+              }"
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            size="lg"
+            align="start"
+            :side-offset="0"
+            :collision-padding="8"
+          >
+            <DropdownMenuItem
+              v-for="(menuItem, idx) in queueContextMenuItems"
+              :key="idx"
+              :disabled="menuItem.disabled"
+              :class="menuItemDestructiveClasses"
+              @select="() => menuItem.command?.()"
+            >
+              <template v-if="menuItem.icon" #icon>
+                <i :class="menuItem.icon" />
+              </template>
+              {{ menuItem.label }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </Panel>
 
@@ -97,8 +129,6 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
@@ -107,6 +137,11 @@ import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
+import { menuItemDestructiveClasses } from '@/components/ui/menu.styles'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -384,12 +419,18 @@ const activeJobsLabel = computed(() => {
     count
   )
 })
-const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
-const queueContextMenuItems = computed<MenuItem[]>(() => [
+type QueueMenuItem = {
+  label: string
+  icon?: string
+  disabled?: boolean
+  command?: () => void
+}
+const queueContextMenuOpen = ref(false)
+const queueContextMenuAnchor = ref({ x: 0, y: 0 })
+const queueContextMenuItems = computed<QueueMenuItem[]>(() => [
   {
     label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x] text-destructive-background',
-    class: '*:text-destructive-background',
+    icon: 'icon-[lucide--list-x]',
     disabled: queueStore.pendingTasks.length === 0,
     command: () => {
       void handleClearQueue()
@@ -409,7 +450,8 @@ const toggleQueueOverlay = () => {
   commandStore.execute('Comfy.Queue.ToggleOverlay')
 }
 const showQueueContextMenu = (event: MouseEvent) => {
-  queueContextMenu.value?.show(event)
+  queueContextMenuAnchor.value = { x: event.clientX, y: event.clientY }
+  queueContextMenuOpen.value = true
 }
 const handleClearQueue = async () => {
   const pendingJobIds = queueStore.pendingTasks

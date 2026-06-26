@@ -1,97 +1,66 @@
-<template>
-  <div class="relative inline-flex items-center">
-    <Button
-      size="icon"
-      variant="secondary"
-      v-bind="$attrs"
-      @click="popover?.toggle"
-    >
-      <i
-        :class="
-          cn(
-            !isVertical
-              ? 'icon-[lucide--ellipsis]'
-              : 'icon-[lucide--more-vertical]',
-            'text-sm'
-          )
-        "
-      />
-    </Button>
-
-    <Popover
-      ref="popover"
-      append-to="body"
-      auto-z-index
-      dismissable
-      close-on-escape
-      unstyled
-      :base-z-index="1000"
-      :pt="{
-        root: {
-          class: cn('absolute z-50')
-        },
-        content: {
-          class: cn(
-            'mt-1 rounded-lg',
-            'bg-secondary-background text-base-foreground',
-            'shadow-lg'
-          )
-        }
-      }"
-      @show="
-        () => {
-          isOpen = true
-          $emit('menuOpened')
-        }
-      "
-      @hide="
-        () => {
-          isOpen = false
-          $emit('menuClosed')
-        }
-      "
-    >
-      <div
-        class="flex min-w-40 flex-col gap-2 p-2"
-        data-testid="more-menu-content"
-      >
-        <slot :close="hide" />
-      </div>
-    </Popover>
-  </div>
-</template>
-
 <script setup lang="ts">
-import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
 })
 
-interface MoreButtonProps {
+const { isVertical = false } = defineProps<{
   isVertical?: boolean
-}
+}>()
 
-const { isVertical = false } = defineProps<MoreButtonProps>()
-
-defineEmits<{
+const emit = defineEmits<{
   menuOpened: []
   menuClosed: []
 }>()
 
 const isOpen = ref(false)
-const popover = ref<InstanceType<typeof Popover>>()
 
-function hide() {
-  popover.value?.hide()
+function onOpenChange(open: boolean) {
+  isOpen.value = open
+  if (open) emit('menuOpened')
+  else emit('menuClosed')
 }
 
-defineExpose({
-  hide,
-  isOpen
-})
+function close() {
+  isOpen.value = false
+}
+
+defineExpose({ hide: close, isOpen })
 </script>
+
+<template>
+  <DropdownMenu
+    v-model:open="isOpen"
+    :modal="false"
+    @update:open="onOpenChange"
+  >
+    <DropdownMenuTrigger as-child>
+      <Button size="icon" variant="secondary" v-bind="$attrs">
+        <i
+          :class="
+            cn(
+              !isVertical
+                ? 'icon-[lucide--ellipsis]'
+                : 'icon-[lucide--more-vertical]'
+            )
+          "
+        />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent
+      size="lg"
+      align="end"
+      :side-offset="4"
+      data-testid="more-menu-content"
+    >
+      <slot :close="close" />
+    </DropdownMenuContent>
+  </DropdownMenu>
+</template>

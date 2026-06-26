@@ -22,30 +22,14 @@
           <span>{{ $t('g.upload') }}</span>
         </Button>
         <MoreButton>
-          <template #default="{ close }">
-            <Button
-              variant="secondary"
-              @click="
-                () => {
-                  close()
-                }
-              "
-            >
-              <i class="icon-[lucide--download]" />
-              <span>{{ $t('g.settings') }}</span>
-            </Button>
-            <Button
-              variant="primary"
-              @click="
-                () => {
-                  close()
-                }
-              "
-            >
-              <i class="icon-[lucide--scroll]" />
-              <span>{{ $t('g.profile') }}</span>
-            </Button>
-          </template>
+          <DropdownMenuItem>
+            <template #icon><i class="icon-[lucide--download]" /></template>
+            {{ $t('g.settings') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <template #icon><i class="icon-[lucide--scroll]" /></template>
+            {{ $t('g.profile') }}
+          </DropdownMenuItem>
         </MoreButton>
       </div>
     </template>
@@ -134,6 +118,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'

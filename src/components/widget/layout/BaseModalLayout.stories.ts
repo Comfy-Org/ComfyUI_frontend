@@ -3,6 +3,7 @@ import { computed, provide, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -73,6 +74,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     SingleSelect,
     Button,
     MoreButton,
+    DropdownMenuItem,
     CardContainer,
     CardTop,
     CardBottom,
@@ -203,27 +205,14 @@ const createStoryTemplate = (args: StoryArgs) => ({
             </Button>
 
             <MoreButton>
-              <template #default="{ close }">
-                <Button
-                  variant="secondary"
-                  label="Settings"
-                  @click="() => { close() }"
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--download] size-3" />
-                  </template>
-                </Button>
-
-                <Button
-                  variant="primary"
-                  label="Profile"
-                  @click="() => { close() }"
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--scroll] size-3" />
-                  </template>
-                </Button>
-              </template>
+              <DropdownMenuItem>
+                <template #icon><i class="icon-[lucide--download]" /></template>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <template #icon><i class="icon-[lucide--scroll]" /></template>
+                Profile
+              </DropdownMenuItem>
             </MoreButton>
           </div>
         </template>
@@ -326,23 +315,14 @@ const createStoryTemplate = (args: StoryArgs) => ({
             </Button>
 
             <MoreButton>
-              <template #default="{ close }">
-                <Button
-                  variant="secondary"
-                  @click="() => { close() }"
-                >
-                    <i class="icon-[lucide--download] size-3" />
-                    <span>Settings</span>
-                </Button>
-
-                <Button
-                  variant="primary"
-                  @click="() => { close() }"
-                >
-                    <i class="icon-[lucide--scroll] size-3" />
-                    <span>Profile</span>
-                </Button>
-              </template>
+              <DropdownMenuItem>
+                <template #icon><i class="icon-[lucide--download]" /></template>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <template #icon><i class="icon-[lucide--scroll]" /></template>
+                Profile
+              </DropdownMenuItem>
             </MoreButton>
           </div>
         </template>

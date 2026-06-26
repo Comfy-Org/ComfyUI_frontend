@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import type { Slots } from 'vue'
+import { h } from 'vue'
 
 import MediaAssetFilterMenu from '@/platform/assets/components/MediaAssetFilterMenu.vue'
 
@@ -8,6 +10,42 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
+}))
+
+// Mock matches DropdownMenuCheckboxItem's accessibility contract:
+// role=menuitemcheckbox, aria-checked, and update:checked on activation
+// (click + Enter/Space). Reka portals real content outside the testing-
+// library container in happy-dom, so the real component can't be exercised
+// here without an integration-style harness — see story / e2e for that.
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue', () => ({
+  default: (
+    props: { checked?: boolean },
+    {
+      slots,
+      emit
+    }: {
+      slots: Slots
+      emit: (e: string, value?: boolean) => void
+    }
+  ) => {
+    const toggle = () => emit('update:checked', !props.checked)
+    return h(
+      'div',
+      {
+        role: 'menuitemcheckbox',
+        tabindex: 0,
+        'aria-checked': props.checked ? 'true' : 'false',
+        onClick: toggle,
+        onKeydown: (event: KeyboardEvent) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            toggle()
+          }
+        }
+      },
+      slots.default?.()
+    )
+  }
 }))
 
 function renderMenu(mediaTypeFilters: string[] = []) {
@@ -34,14 +72,14 @@ const labelByType: Record<string, string> = {
 }
 
 function getCheckbox(type: keyof typeof labelByType): HTMLElement {
-  return screen.getByRole('checkbox', { name: labelByType[type] })
+  return screen.getByRole('menuitemcheckbox', { name: labelByType[type] })
 }
 
 describe('MediaAssetFilterMenu', () => {
   it('renders all four media-type checkboxes', () => {
     renderMenu()
 
-    const checkboxes = screen.getAllByRole('checkbox')
+    const checkboxes = screen.getAllByRole('menuitemcheckbox')
     expect(checkboxes).toHaveLength(4)
     for (const type of Object.keys(labelByType)) {
       expect(getCheckbox(type)).toBeTruthy()

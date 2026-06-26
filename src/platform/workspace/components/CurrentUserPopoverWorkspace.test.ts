@@ -2,8 +2,37 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, ref } from 'vue'
+import type { Slots } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuItem.vue', () => ({
+  default: (
+    _: unknown,
+    {
+      slots,
+      emit,
+      attrs
+    }: {
+      slots: Slots
+      emit: (e: string) => void
+      attrs: Record<string, unknown>
+    }
+  ) =>
+    h(
+      'button',
+      {
+        ...attrs,
+        type: 'button',
+        onClick: () => emit('select')
+      },
+      [slots.icon?.(), slots.default?.()]
+    )
+}))
+
+vi.mock('@/components/ui/dropdown-menu/DropdownMenuSeparator.vue', () => ({
+  default: () => h('hr')
+}))
 
 import enMessages from '@/locales/en/main.json'
 

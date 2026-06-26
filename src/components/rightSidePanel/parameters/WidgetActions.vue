@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
-import Button from '@/components/ui/button/Button.vue'
+import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   demotePromotedInput,
@@ -125,82 +125,45 @@ function handleResetToDefault() {
     data-testid="widget-actions-menu-button"
     class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
   >
-    <template #default="{ close }">
-      <Button
-        variant="textonly"
-        size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
-        @click="
-          () => {
-            handleRename()
-            close()
-          }
-        "
-      >
-        <i class="icon-[lucide--edit] size-4" />
-        <span>{{ t('g.rename') }}</span>
-      </Button>
+    <DropdownMenuItem @select="handleRename">
+      <template #icon><i class="icon-[lucide--edit]" /></template>
+      {{ t('g.rename') }}
+    </DropdownMenuItem>
 
-      <Button
-        v-if="canToggleVisibility"
-        variant="textonly"
-        size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
-        @click="
-          () => {
-            if (isShownOnParents) handleHideInput()
-            else handleShowInput()
-            close()
-          }
-        "
-      >
-        <template v-if="isShownOnParents">
-          <i class="icon-[lucide--eye-off] size-4" />
-          <span>{{ t('rightSidePanel.hideInput') }}</span>
-        </template>
-        <template v-else>
-          <i class="icon-[lucide--eye] size-4" />
-          <span>{{ t('rightSidePanel.showInput') }}</span>
-        </template>
-      </Button>
+    <DropdownMenuItem
+      v-if="canToggleVisibility"
+      @select="isShownOnParents ? handleHideInput() : handleShowInput()"
+    >
+      <template #icon>
+        <i
+          :class="
+            isShownOnParents ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'
+          "
+        />
+      </template>
+      {{
+        isShownOnParents
+          ? t('rightSidePanel.hideInput')
+          : t('rightSidePanel.showInput')
+      }}
+    </DropdownMenuItem>
 
-      <Button
-        variant="textonly"
-        size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
-        @click="
-          () => {
-            handleToggleFavorite()
-            close()
-          }
-        "
-      >
-        <template v-if="isFavorited">
-          <i class="icon-[lucide--star] size-4" />
-          <span>{{ t('rightSidePanel.removeFavorite') }}</span>
-        </template>
-        <template v-else>
-          <i class="icon-[lucide--star] size-4" />
-          <span>{{ t('rightSidePanel.addFavorite') }}</span>
-        </template>
-      </Button>
+    <DropdownMenuItem @select="handleToggleFavorite">
+      <template #icon><i class="icon-[lucide--star]" /></template>
+      {{
+        isFavorited
+          ? t('rightSidePanel.removeFavorite')
+          : t('rightSidePanel.addFavorite')
+      }}
+    </DropdownMenuItem>
 
-      <Button
-        v-if="hasDefault"
-        variant="textonly"
-        size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
-        :disabled="isCurrentValueDefault"
-        @click="
-          () => {
-            handleResetToDefault()
-            close()
-          }
-        "
-      >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
-        <span>{{ t('rightSidePanel.resetToDefault') }}</span>
-      </Button>
-    </template>
+    <DropdownMenuItem
+      v-if="hasDefault"
+      :disabled="isCurrentValueDefault"
+      @select="handleResetToDefault"
+    >
+      <template #icon><i class="icon-[lucide--rotate-ccw]" /></template>
+      {{ t('rightSidePanel.resetToDefault') }}
+    </DropdownMenuItem>
   </MoreButton>
 </template>

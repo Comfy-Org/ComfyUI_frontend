@@ -90,6 +90,7 @@
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
+                size="lg"
                 align="end"
                 :side-offset="4"
                 class="z-1001 min-w-36 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
