@@ -7,7 +7,7 @@ import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/wo
  * Strips dangerous HTML entity characters from node names.
  */
 export function sanitizeNodeName(string: string) {
-  let entityMap = {
+  const entityMap = {
     '&': '',
     '<': '',
     '>': '',
