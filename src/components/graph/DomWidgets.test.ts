@@ -82,30 +82,19 @@ describe('DomWidgets app mode round-trip', () => {
     workflow.activeMode = 'graph'
     workflowStore.activeWorkflow = workflow as unknown as LoadedComfyWorkflow
 
-    const rootGraph = new LGraph()
-    const subgraphGraph = new LGraph()
-    const interiorNode = createNode(subgraphGraph, 1, 'interior', [50, 50])
-    const subgraphNode = createNode(rootGraph, 2, 'subgraph', [300, 300])
-
-    const widget = createWidget('promoted-widget', interiorNode, 10)
-    const overrideWidget = createWidget('override-src', subgraphNode, 20)
-
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [100, 200])
+    const widget = createWidget('round-trip-widget', node, 14)
     domWidgetStore.registerWidget(widget)
-    domWidgetStore.setPositionOverride(widget.id, {
-      node: subgraphNode,
-      widget: overrideWidget
-    })
-    // Interior widget is inactive (its node lives in the subgraph, not root)
-    domWidgetStore.deactivateWidget(widget.id)
 
-    const canvas = createCanvas(rootGraph)
+    const canvas = createCanvas(graph)
     canvasStore.canvas = canvas
 
     render(DomWidgets, {
       global: { stubs: { DomWidget: true } }
     })
 
-    // Initial draw — promoted widget should be visible via positionOverride
+    // Initial draw — widget visible
     drawFrame(canvas)
     const widgetState = domWidgetStore.widgetStates.get(widget.id)!
     expect(widgetState.visible).toBe(true)

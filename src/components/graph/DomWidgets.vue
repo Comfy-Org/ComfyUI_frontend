@@ -78,7 +78,7 @@ whenever(
 
 // When returning from app mode, the canvas was hidden (v-show) so
 // updateWidgets() hasn't run — widgetState.visible is stale.
-// Run it immediately so promoted widgets with positionOverride are
-// correctly marked visible before DomWidget tries to mount elements.
+// Run it immediately so widgets are correctly marked visible before
+// DomWidget tries to mount elements.
 whenever(() => !canvasStore.linearMode, updateWidgets)
 </script>
