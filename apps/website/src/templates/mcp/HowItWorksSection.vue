@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import FeatureGrid02 from '../../components/blocks/FeatureGrid02.vue'
+import type { FeatureStep } from '../../components/blocks/FeatureGrid02.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { mcpCtas } from './ctas'
@@ -10,7 +11,7 @@ const ctas = mcpCtas(locale)
 
 const stepNumbers = [1, 2, 3] as const
 
-const steps = stepNumbers.map((n) => ({
+const steps: FeatureStep[] = stepNumbers.map((n) => ({
   id: String(n),
   number: t(`mcp.howItWorks.step${n}.number`, locale),
   title: t(`mcp.howItWorks.step${n}.title`, locale),

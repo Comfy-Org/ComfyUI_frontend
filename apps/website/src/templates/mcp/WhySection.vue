@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
+import type { Reason } from '../../components/blocks/ReasonsSplit01.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -7,7 +8,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const reasonNumbers = [1, 2, 3, 4] as const
 
-const reasons = reasonNumbers.map((n) => ({
+const reasons: Reason[] = reasonNumbers.map((n) => ({
   id: String(n),
   title: t(`mcp.why.${n}.title`, locale),
   description: t(`mcp.why.${n}.description`, locale)
