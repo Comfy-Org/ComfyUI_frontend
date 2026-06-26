@@ -1215,6 +1215,19 @@ describe('useAuthStore', () => {
       expect(countCustomerPosts()).toBe(0)
     })
 
+    it('should not provision when /customers/ is not the root path segment', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/foo/customers/bar'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
     it('should re-provision after the auth state changes to a different session', async () => {
       mockFetch.mockImplementation((url: string, init?: RequestInit) => {
         if (url.endsWith('/customers') && init?.method === 'POST') {
@@ -1232,6 +1245,33 @@ describe('useAuthStore', () => {
       // from the previous account must not short-circuit the new one.
       authStateCallback(null)
       authStateCallback(mockUser)
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(2)
+    })
+
+    it('re-provisions when the active uid changes without an auth-state reset', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(1)
+
+      // A uid change that did not pass through onAuthStateChanged (which would
+      // otherwise clear the memo) must still start a fresh recovery rather than
+      // reuse the previous account's settled one.
+      store.currentUser = {
+        ...mockUser,
+        uid: 'different-uid'
+      } as Partial<User> as User
 
       await store.fetchWithCustomerRecovery(
         'https://api.test/customers/balance'
