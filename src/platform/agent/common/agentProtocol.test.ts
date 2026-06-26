@@ -14,7 +14,11 @@ describe('parseAgentEvent', () => {
       version: 8,
       baseVersion: 7
     })
-    expect(event).toMatchObject({ type: 'draft_patch', workflowId: 'wf1', version: 8 })
+    expect(event).toMatchObject({
+      type: 'draft_patch',
+      workflowId: 'wf1',
+      version: 8
+    })
   })
 
   it('decodes a tool call and drops absent optional fields', () => {
@@ -39,7 +43,9 @@ describe('parseAgentEvent', () => {
   })
 
   it('rejects a payload missing the base identifiers', () => {
-    expect(parseAgentEvent({ type: 'agent_message_delta', delta: 'hi' })).toBeNull()
+    expect(
+      parseAgentEvent({ type: 'agent_message_delta', delta: 'hi' })
+    ).toBeNull()
   })
 
   it('rejects a draft_patch with a malformed version', () => {

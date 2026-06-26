@@ -34,7 +34,11 @@ describe('useAgentDraftSync', () => {
     const outcome = sync.handlePatch(patch({ baseVersion: 7, version: 8 }))
 
     expect(outcome).toBe('applied')
-    expect(ports.applyToTab).toHaveBeenCalledWith('wf1', { nodes: ['ksampler'] }, 8)
+    expect(ports.applyToTab).toHaveBeenCalledWith(
+      'wf1',
+      { nodes: ['ksampler'] },
+      8
+    )
     expect(sync.baseVersions.value.get('wf1')).toBe(8)
     expect(sync.pendingConflict.value).toBeNull()
   })
@@ -49,7 +53,10 @@ describe('useAgentDraftSync', () => {
 
     expect(outcome).toBe('conflict')
     expect(ports.applyToTab).not.toHaveBeenCalled()
-    expect(sync.pendingConflict.value).toMatchObject({ workflowId: 'wf1', version: 9 })
+    expect(sync.pendingConflict.value).toMatchObject({
+      workflowId: 'wf1',
+      version: 9
+    })
   })
 
   it('ignores a stale patch', () => {
@@ -91,7 +98,11 @@ describe('useAgentDraftSync', () => {
       const { ports, sync } = setupConflict()
       sync.resolveConflict('accept-agent')
 
-      expect(ports.applyToTab).toHaveBeenCalledWith('wf1', { nodes: ['ksampler'] }, 9)
+      expect(ports.applyToTab).toHaveBeenCalledWith(
+        'wf1',
+        { nodes: ['ksampler'] },
+        9
+      )
       expect(sync.baseVersions.value.get('wf1')).toBe(9)
       expect(sync.pendingConflict.value).toBeNull()
     })
@@ -110,7 +121,11 @@ describe('useAgentDraftSync', () => {
       const { ports, sync } = setupConflict()
       sync.resolveConflict('new-tab')
 
-      expect(ports.openInNewTab).toHaveBeenCalledWith('wf1', { nodes: ['ksampler'] }, 9)
+      expect(ports.openInNewTab).toHaveBeenCalledWith(
+        'wf1',
+        { nodes: ['ksampler'] },
+        9
+      )
       expect(ports.applyToTab).not.toHaveBeenCalled()
       expect(sync.pendingConflict.value).toBeNull()
     })

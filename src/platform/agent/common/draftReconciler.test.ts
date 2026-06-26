@@ -34,7 +34,10 @@ describe('reconcileDraftPatch', () => {
   })
 
   it('ignores an older duplicate patch', () => {
-    const result = reconcileDraftPatch(patch({ baseVersion: 5, version: 6 }), 10)
+    const result = reconcileDraftPatch(
+      patch({ baseVersion: 5, version: 6 }),
+      10
+    )
     expect(result).toEqual({ kind: 'stale' })
   })
 })

@@ -117,7 +117,9 @@ function parseToolCall(raw: WithBase): AgentToolCallEvent | null {
     toolCallId: raw.toolCallId,
     toolName: raw.toolName,
     status: raw.status,
-    ...(typeof raw.durationMs === 'number' ? { durationMs: raw.durationMs } : {}),
+    ...(typeof raw.durationMs === 'number'
+      ? { durationMs: raw.durationMs }
+      : {}),
     ...(typeof raw.errorCode === 'string' ? { errorCode: raw.errorCode } : {})
   }
 }

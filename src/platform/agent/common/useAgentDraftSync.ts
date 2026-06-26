@@ -22,7 +22,11 @@ import type { ConflictResolution } from './draftReconciler'
 import { reconcileDraftPatch } from './draftReconciler'
 
 export interface AgentDraftPorts {
-  applyToTab(workflowId: WorkflowId, content: WorkflowGraph, version: number): void
+  applyToTab(
+    workflowId: WorkflowId,
+    content: WorkflowGraph,
+    version: number
+  ): void
   openInNewTab(
     workflowId: WorkflowId,
     content: WorkflowGraph,
@@ -94,7 +98,11 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
 
     switch (decision) {
       case 'accept-agent':
-        ports.applyToTab(conflict.workflowId, conflict.content, conflict.version)
+        ports.applyToTab(
+          conflict.workflowId,
+          conflict.content,
+          conflict.version
+        )
         baseVersions.value.set(conflict.workflowId, conflict.version)
         break
       case 'keep-mine':
