@@ -7,7 +7,7 @@
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
       :data-resize-min-height="minimumFrameHeight"
       tabindex="0"
       role="region"
