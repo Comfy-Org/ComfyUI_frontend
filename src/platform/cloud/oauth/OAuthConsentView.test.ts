@@ -43,7 +43,6 @@ const i18n = createI18n({
           workspaceLabel: 'Your Workspaces',
           detailsHeader: 'Details',
           permissionsHeader: 'Permissions',
-          workspaceHelp: 'Permissions apply to this workspace only.',
           redirectNotice: "You'll be redirected to",
           appTypeNative: 'Native app',
           appTypeWeb: 'Web app',

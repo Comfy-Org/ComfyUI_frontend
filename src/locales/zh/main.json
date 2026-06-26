@@ -2914,7 +2914,6 @@
       "sessionErrorToastSummary": "无法继续 OAuth 登录",
       "subtitle": "登录 {resource} 以继续",
       "title": "{client} 请求访问权限",
-      "workspaceHelp": "权限仅适用于此工作区。",
       "workspaceLabel": "工作区"
     },
     "scopes": {

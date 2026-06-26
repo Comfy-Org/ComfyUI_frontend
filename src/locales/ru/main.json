@@ -2914,7 +2914,6 @@
       "sessionErrorToastSummary": "Не удалось продолжить вход через OAuth",
       "subtitle": "Войдите в {resource}, чтобы продолжить",
       "title": "{client} запрашивает доступ",
-      "workspaceHelp": "Разрешения применяются только к этому рабочему пространству.",
       "workspaceLabel": "Рабочее пространство"
     },
     "scopes": {

@@ -2914,7 +2914,6 @@
       "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
       "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
       "title": "{client} erişim istiyor",
-      "workspaceHelp": "İzinler yalnızca bu çalışma alanı için geçerlidir.",
       "workspaceLabel": "Çalışma Alanı"
     },
     "scopes": {

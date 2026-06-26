@@ -2914,7 +2914,6 @@
       "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
       "subtitle": "続行するには{resource}にサインインしてください",
       "title": "{client} がアクセスを要求しています",
-      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
       "workspaceLabel": "ワークスペース"
     },
     "scopes": {
