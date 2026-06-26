@@ -1868,7 +1868,7 @@ const translations = {
     'zh-CN': '启动应用或打开 claude.ai，前往"设置 > 连接"'
   },
   'mcp.setup.step1.cta': {
-    en: 'SETTINGS > CONNECTIONS',
+    en: 'SETTINGS → CONNECTIONS',
     'zh-CN': '设置 > 连接'
   },
   'mcp.setup.step2.label': { en: 'STEP 2', 'zh-CN': '第 2 步' },
