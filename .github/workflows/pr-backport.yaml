@@ -273,32 +273,49 @@ jobs:
               continue
             fi
 
-            # Create backport branch
-            git checkout -b "${BACKPORT_BRANCH}" "origin/${TARGET_BRANCH}"
+            # Create backport branch. A failure here (e.g. dirty state left
+            # by a prior target) must not abort the loop and skip remaining
+            # targets, so fall back to a clean checkout and record the error.
+            if ! git checkout -B "${BACKPORT_BRANCH}" "origin/${TARGET_BRANCH}"; then
+              echo "::error::Failed to create branch ${BACKPORT_BRANCH} for ${TARGET_BRANCH}"
+              FAILED="${FAILED}${TARGET_BRANCH}:branch-create-failed "
+              git checkout main || git checkout -f main
+              echo "::endgroup::"
+              continue
+            fi
 
             # Try cherry-pick
             if git cherry-pick "${MERGE_COMMIT}"; then
               if [ "$REMOTE_BACKPORT_EXISTS" = true ]; then
-                git push --force-with-lease origin "${BACKPORT_BRANCH}"
+                PUSH_CMD=(git push --force-with-lease origin "${BACKPORT_BRANCH}")
               else
-                git push origin "${BACKPORT_BRANCH}"
+                PUSH_CMD=(git push origin "${BACKPORT_BRANCH}")
               fi
-              echo "${BACKPORT_BRANCH}" >> "$CREATED_BRANCHES_FILE"
-              SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
-              echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
+
+              # A push failure for one target must not abort the loop and
+              # prevent remaining targets from being attempted.
+              if "${PUSH_CMD[@]}"; then
+                echo "${BACKPORT_BRANCH}" >> "$CREATED_BRANCHES_FILE"
+                SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
+                echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
+              else
+                echo "::error::Failed to push ${BACKPORT_BRANCH} for ${TARGET_BRANCH}"
+                FAILED="${FAILED}${TARGET_BRANCH}:push-failed "
+              fi
+
               # Return to main (keep the branch, we need it for PR)
-              git checkout main
+              git checkout main || git checkout -f main
             else
               # Get conflict info
               CONFLICTS=$(git diff --name-only --diff-filter=U | tr '\n' ',')
-              git cherry-pick --abort
+              git cherry-pick --abort || true
 
               echo "::error::Cherry-pick failed due to conflicts"
               FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
 
               # Clean up the failed branch
-              git checkout main
-              git branch -D "${BACKPORT_BRANCH}"
+              git checkout main || git checkout -f main
+              git branch -D "${BACKPORT_BRANCH}" || true
             fi
 
             echo "::endgroup::"
@@ -419,6 +436,12 @@ jobs:
 
             elif [ "${reason}" = "already-exists" ]; then
               gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
+
+            elif [ "${reason}" = "branch-create-failed" ]; then
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport to \`${target}\` failed: could not create the backport branch. Please retry or backport manually."
+
+            elif [ "${reason}" = "push-failed" ]; then
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport to \`${target}\` cherry-picked cleanly but the push failed. Please retry or push the backport branch manually."
 
             elif [ "${reason}" = "conflicts" ]; then
               CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
