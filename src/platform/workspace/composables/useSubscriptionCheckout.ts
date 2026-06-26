@@ -11,7 +11,6 @@ import type {
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 type CheckoutStep = 'pricing' | 'preview'
@@ -35,8 +34,14 @@ export function useSubscriptionCheckout(emit: {
 }) {
   const { t } = useI18n()
   const toast = useToast()
-  const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
-    useBillingContext()
+  const {
+    subscribe,
+    previewSubscribe,
+    plans,
+    fetchStatus,
+    fetchBalance,
+    resubscribe
+  } = useBillingContext()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
 
@@ -170,13 +175,12 @@ export function useSubscriptionCheckout(emit: {
   async function handleResubscribe() {
     isResubscribing.value = true
     try {
-      await workspaceApi.resubscribe()
+      await resubscribe()
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
         life: 5000
       })
-      await Promise.all([fetchStatus(), fetchBalance()])
       emit('close', true)
     } catch (error) {
       const message =
