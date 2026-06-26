@@ -230,6 +230,22 @@ describe('useNodeResize', () => {
       expect(payload.size.height).toBe(260)
       expect(preview.style.minHeight).toBe('')
     })
+
+    it('uses the latest resize-only minimum during active resize', () => {
+      const preview = document.createElement('div')
+      preview.dataset.resizeMinHeight = '260'
+      nodeElement.appendChild(preview)
+
+      startResizeAt(getStartResize(), handle, 'SE')
+      simulateMove(0, -300)
+      expect(callback.mock.calls.at(-1)![0].size.height).toBe(260)
+
+      preview.dataset.resizeMinHeight = '320'
+      simulateMove(0, -300)
+
+      expect(callback.mock.calls.at(-1)![0].size.height).toBe(320)
+      expect(preview.style.minHeight).toBe('')
+    })
   })
 
   describe('NE corner', () => {

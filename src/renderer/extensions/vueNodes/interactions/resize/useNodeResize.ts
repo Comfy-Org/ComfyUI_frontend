@@ -66,9 +66,10 @@ export function useNodeResize(
     const resizeFloorElement = nodeElement.querySelector<HTMLElement>(
       '[data-resize-min-height]'
     )
-    const resizeFloor = Number(resizeFloorElement?.dataset.resizeMinHeight) || 0
 
     const measureMinContentHeight = (candidateWidth: number) => {
+      const resizeFloor =
+        Number(resizeFloorElement?.dataset.resizeMinHeight) || 0
       const savedWidth = nodeElement.style.getPropertyValue('--node-width')
       const savedHeight = nodeElement.style.getPropertyValue('--node-height')
       const savedFloor = resizeFloorElement?.style.minHeight
