@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import {
+  clampRectToBounds,
   computeUnionBounds,
   denormalize,
+  getRectFromPoints,
   gcd,
+  hasRectArea,
   lcm,
-  normalize
+  normalize,
+  rectsIntersect
 } from '@/utils/mathUtil'
 
 describe('mathUtil', () => {
@@ -135,6 +139,50 @@ describe('mathUtil', () => {
       expect(result!.y).toBe(0)
       expect(result!.width).toBe(325)
       expect(result!.height).toBe(242)
+    })
+  })
+
+  describe('clampRectToBounds', () => {
+    const bounds = { left: 0, top: 0, right: 100, bottom: 100 }
+
+    it('clamps rectangle edges to the provided bounds', () => {
+      expect(
+        clampRectToBounds(
+          { left: -20, top: 10, right: 130, bottom: 90 },
+          bounds
+        )
+      ).toEqual({ left: 0, top: 10, right: 100, bottom: 90 })
+    })
+  })
+
+  describe('rect helpers', () => {
+    it('builds ordered rect edges from unordered points', () => {
+      expect(getRectFromPoints({ x: 30, y: 10 }, { x: 5, y: 40 })).toEqual({
+        left: 5,
+        top: 10,
+        right: 30,
+        bottom: 40
+      })
+    })
+
+    it('detects positive-area rects', () => {
+      expect(hasRectArea({ left: 0, top: 0, right: 1, bottom: 1 })).toBe(true)
+      expect(hasRectArea({ left: 0, top: 0, right: 0, bottom: 1 })).toBe(false)
+    })
+
+    it('detects intersecting rects', () => {
+      expect(
+        rectsIntersect(
+          { left: 0, top: 0, right: 10, bottom: 10 },
+          { left: 5, top: 5, right: 15, bottom: 15 }
+        )
+      ).toBe(true)
+      expect(
+        rectsIntersect(
+          { left: 0, top: 0, right: 10, bottom: 10 },
+          { left: 20, top: 20, right: 30, bottom: 30 }
+        )
+      ).toBe(false)
     })
   })
 })

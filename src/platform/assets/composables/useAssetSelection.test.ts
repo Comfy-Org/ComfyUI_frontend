@@ -246,6 +246,46 @@ describe('useAssetSelection', () => {
       selectAll(assets)
       expect(selectedCount.value).toBe(5)
     })
+
+    it('clears selection when selecting all from an empty view', () => {
+      const selection = useAssetSelection()
+      const store = useAssetSelectionStore()
+      const assets = createMockAssets(1)
+
+      selection.handleAssetClick(assets[0], 0, assets)
+      selection.selectAll([])
+
+      expect(store.selectedAssetIds.size).toBe(0)
+      expect(store.lastSelectedIndex).toBe(-1)
+      expect(store.lastSelectedAssetId).toBeNull()
+    })
+  })
+
+  describe('setSelectedIds', () => {
+    it('replaces selection and anchors on the last selected visible asset', () => {
+      const selection = useAssetSelection()
+      const store = useAssetSelectionStore()
+      const assets = createMockAssets(4)
+
+      selection.setSelectedIds(['asset-1', 'asset-3'], assets)
+
+      expect(Array.from(store.selectedAssetIds)).toEqual(['asset-1', 'asset-3'])
+      expect(store.lastSelectedIndex).toBe(3)
+      expect(store.lastSelectedAssetId).toBe('asset-3')
+    })
+
+    it('clears the anchor when replacing selection with no visible assets', () => {
+      const selection = useAssetSelection()
+      const store = useAssetSelectionStore()
+      const assets = createMockAssets(2)
+
+      selection.setSelectedIds(['asset-1'], assets)
+      selection.setSelectedIds([], assets)
+
+      expect(store.selectedAssetIds.size).toBe(0)
+      expect(store.lastSelectedIndex).toBe(-1)
+      expect(store.lastSelectedAssetId).toBeNull()
+    })
   })
 
   describe('clearSelection', () => {

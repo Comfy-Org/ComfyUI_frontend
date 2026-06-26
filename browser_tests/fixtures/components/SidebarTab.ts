@@ -308,6 +308,8 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Asset cards ---
   public readonly assetCards: Locator
   public readonly selectedCards: Locator
+  public readonly marqueeSurface: Locator
+  public readonly marqueeSelection: Locator
 
   // --- List view items ---
   public readonly listViewItems: Locator
@@ -349,6 +351,8 @@ export class AssetsSidebarTab extends SidebarTab {
       .getByRole('button')
       .and(page.locator('[data-selected]'))
     this.selectedCards = page.locator('[data-selected="true"]')
+    this.marqueeSurface = page.getByTestId('assets-marquee-surface')
+    this.marqueeSelection = page.getByTestId('assets-marquee-selection')
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
