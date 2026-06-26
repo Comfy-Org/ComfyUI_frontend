@@ -1,7 +1,17 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
+
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+
+const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
+  vi.fn((nodeLocatorId: string) => nodeLocatorId)
+)
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => `translated:${key}`),
@@ -12,6 +22,12 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+  })
+}))
+
 import { useMissingModelStore } from './missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
@@ -20,6 +36,7 @@ function makeModelCandidate(
   name: string,
   opts: {
     nodeId?: string | number
+    sourceExecutionId?: NodeExecutionId
     nodeType?: string
     widgetName?: string
     isAssetSupported?: boolean
@@ -28,6 +45,9 @@ function makeModelCandidate(
   return {
     name,
     nodeId: opts.nodeId ?? '1',
+    ...(opts.sourceExecutionId !== undefined && {
+      sourceExecutionId: opts.sourceExecutionId
+    }),
     nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,
@@ -39,6 +59,9 @@ describe('missingModelStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.restoreAllMocks()
+    mockNodeLocatorIdToNodeExecutionId.mockImplementation(
+      (nodeLocatorId: string) => nodeLocatorId
+    )
   })
 
   describe('setMissingModels', () => {
@@ -146,7 +169,9 @@ describe('missingModelStore', () => {
         makeModelCandidate('model_a.safetensors', { nodeId: '5' })
       ])
 
-      expect(store.hasMissingModelOnNode('5')).toBe(true)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 5))).toBe(
+        true
+      )
     })
 
     it('returns false when node has no missing model', () => {
@@ -155,12 +180,30 @@ describe('missingModelStore', () => {
         makeModelCandidate('model_a.safetensors', { nodeId: '5' })
       ])
 
-      expect(store.hasMissingModelOnNode('99')).toBe(false)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 99))).toBe(
+        false
+      )
     })
 
     it('returns false when no models are missing', () => {
       const store = useMissingModelStore()
-      expect(store.hasMissingModelOnNode('1')).toBe(false)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 1))).toBe(
+        false
+      )
+    })
+
+    it('compares subgraph locators against missing model execution IDs', () => {
+      const store = useMissingModelStore()
+      const locatorId = createNodeLocatorId(
+        '11111111-1111-1111-1111-111111111111',
+        63
+      )
+      mockNodeLocatorIdToNodeExecutionId.mockReturnValueOnce('65:70:63')
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '65:70:63' })
+      ])
+
+      expect(store.hasMissingModelOnNode(locatorId)).toBe(true)
     })
   })
 
@@ -529,6 +572,38 @@ describe('missingModelStore', () => {
       expect(store.selectedLibraryModel['shared.safetensors']).toBe(
         'shared-replacement'
       )
+    })
+  })
+
+  describe('removeMissingModelsBySourceScope', () => {
+    it('removes host-keyed candidates whose source path is in the scope', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', {
+          nodeId: '65',
+          sourceExecutionId: createNodeExecutionId([65, 77, 42])
+        }),
+        makeModelCandidate('b.safetensors', {
+          nodeId: '80',
+          sourceExecutionId: createNodeExecutionId([80, 77, 42])
+        })
+      ])
+
+      store.removeMissingModelsBySourceScope('65:77')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].name).toBe('b.safetensors')
+    })
+
+    it('does not remove candidates by host nodeId alone', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65' })
+      ])
+
+      store.removeMissingModelsBySourceScope('65')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
     })
   })
 })

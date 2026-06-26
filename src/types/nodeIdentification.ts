@@ -1,5 +1,7 @@
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
+
 /**
  * A globally unique identifier for nodes that maintains consistency across
  * multiple instances of the same subgraph.
@@ -15,7 +17,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
  * Unlike execution IDs which change based on the instance path,
  * NodeLocatorId remains the same for all instances of a particular node.
  */
-export type NodeLocatorId = string
+export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
 
 /**
  * An execution identifier representing a node's position in nested subgraphs.
@@ -24,7 +26,17 @@ export type NodeLocatorId = string
  * Format: Colon-separated path of node IDs
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
  */
-export type NodeExecutionId = string
+export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
+
+function parseNodeIdSegment(part: string): NodeId {
+  return isNaN(Number(part)) ? part : Number(part)
+}
+
+function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
+  return NODE_EXECUTION_ID_PATTERN.test(value)
+    ? (value as NodeExecutionId)
+    : null
+}
 
 /**
  * Type guard to check if a value is a NodeLocatorId
@@ -55,9 +67,7 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
  * Type guard to check if a value is a NodeExecutionId
  */
 export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
-  if (typeof value !== 'string') return false
-  // Must contain at least one colon to be an execution ID
-  return value.includes(':')
+  return typeof value === 'string' && nodeExecutionIdFromString(value) !== null
 }
 
 /**
@@ -76,14 +86,14 @@ export function parseNodeLocatorId(
     // Simple node ID (root graph)
     return {
       subgraphUuid: null,
-      localNodeId: isNaN(Number(id)) ? id : Number(id)
+      localNodeId: parseNodeIdSegment(id)
     }
   }
 
   const [subgraphUuid, localNodeId] = parts
   return {
     subgraphUuid,
-    localNodeId: isNaN(Number(localNodeId)) ? localNodeId : Number(localNodeId)
+    localNodeId: parseNodeIdSegment(localNodeId)
   }
 }
 
@@ -94,10 +104,12 @@ export function parseNodeLocatorId(
  * @returns A properly formatted NodeLocatorId
  */
 export function createNodeLocatorId(
-  subgraphUuid: string,
+  subgraphUuid: string | null,
   localNodeId: NodeId
 ): NodeLocatorId {
-  return `${subgraphUuid}:${localNodeId}`
+  return (
+    subgraphUuid ? `${subgraphUuid}:${localNodeId}` : String(localNodeId)
+  ) as NodeLocatorId
 }
 
 /**
@@ -106,11 +118,10 @@ export function createNodeLocatorId(
  * @returns Array of node IDs from root to target, or null if not an execution ID
  */
 export function parseNodeExecutionId(id: string): NodeId[] | null {
-  if (!isNodeExecutionId(id)) return null
+  const executionId = tryNormalizeNodeExecutionId(id)
+  if (!executionId) return null
 
-  return id
-    .split(':')
-    .map((part) => (isNaN(Number(part)) ? part : Number(part)))
+  return executionId.split(':').map(parseNodeIdSegment)
 }
 
 /**
@@ -118,8 +129,26 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @param nodeIds Array of node IDs from root to target
  * @returns A properly formatted NodeExecutionId
  */
-export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
-  return nodeIds.join(':')
+export function createNodeExecutionId<const T extends readonly NodeId[]>(
+  nodeIds: T & (T extends readonly [] ? never : unknown)
+): NodeExecutionId {
+  if (nodeIds.length === 0) {
+    throw new Error('NodeExecutionId requires at least one node ID')
+  }
+  return nodeIds.map(String).join(':') as NodeExecutionId
+}
+
+export function tryNormalizeNodeExecutionId(
+  value: string | number
+): NodeExecutionId | null {
+  return nodeExecutionIdFromString(String(value))
+}
+
+export function appendNodeExecutionId(
+  parentExecutionId: string,
+  childNodeId: NodeId
+): NodeExecutionId {
+  return createNodeExecutionId([...parentExecutionId.split(':'), childNodeId])
 }
 
 /**
@@ -128,11 +157,14 @@ export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
  * Example: "65:70:63" → ["65", "65:70", "65:70:63"]
  */
 export function getAncestorExecutionIds(
-  executionId: string | NodeExecutionId
+  executionId: string
 ): NodeExecutionId[] {
-  const parts = executionId.split(':')
+  const normalized = tryNormalizeNodeExecutionId(executionId)
+  if (!normalized) return []
+
+  const parts = normalized.split(':')
   return Array.from({ length: parts.length }, (_, i) =>
-    parts.slice(0, i + 1).join(':')
+    createNodeExecutionId(parts.slice(0, i + 1))
   )
 }
 
@@ -141,9 +173,7 @@ export function getAncestorExecutionIds(
  *
  * Example: "65:70:63" → ["65", "65:70"]
  */
-export function getParentExecutionIds(
-  executionId: string | NodeExecutionId
-): NodeExecutionId[] {
+export function getParentExecutionIds(executionId: string): NodeExecutionId[] {
   return getAncestorExecutionIds(executionId).slice(0, -1)
 }
 

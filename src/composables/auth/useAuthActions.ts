@@ -199,8 +199,8 @@ export const useAuthActions = () => {
   )
 
   const signUpWithEmail = wrapWithErrorHandlingAsync(
-    async (email: string, password: string) => {
-      return await authStore.register(email, password)
+    async (email: string, password: string, turnstileToken?: string) => {
+      return await authStore.register(email, password, turnstileToken)
     },
     reportError
   )

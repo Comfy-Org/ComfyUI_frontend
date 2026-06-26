@@ -829,6 +829,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (this._lowQualityZoomThreshold > 0) {
         this._isLowQuality = scale < this._lowQualityZoomThreshold
       }
+      this.setDirty(true, true)
     }
 
     // Initialize link renderer if graph is available
@@ -8640,8 +8641,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       disabled: !(node.removable !== false && !node.block_delete),
       callback: LGraphCanvas.onMenuNodeRemove
     })
-
-    node.graph?.onGetNodeMenuOptions?.(options, node)
 
     return options
   }

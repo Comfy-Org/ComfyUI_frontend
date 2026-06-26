@@ -17,6 +17,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
@@ -887,79 +888,73 @@ describe('useWorkflowStore', () => {
       })
     })
 
-    describe('nodeExecutionIdToNodeLocatorId', () => {
-      it('should convert execution ID to NodeLocatorId', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123:456')
-        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+    describe('executionIdToCurrentId', () => {
+      it('should convert an execution ID to the active subgraph node ID', () => {
+        const result = store.executionIdToCurrentId('123:456')
+        expect(result).toBe('456')
       })
 
-      it('should return simple node ID for root level nodes', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123')
-        expect(result).toBe('123')
+      it('should return undefined for execution IDs outside the active subgraph', () => {
+        expect(() => store.executionIdToCurrentId('999:456')).not.toThrow()
+        expect(store.executionIdToCurrentId('999:456')).toBeUndefined()
       })
 
-      it('should return null for invalid execution IDs', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('999:456')
-        expect(result).toBeNull()
+      it('should return undefined for malformed execution IDs', () => {
+        expect(() => store.executionIdToCurrentId('123::456')).not.toThrow()
+        expect(store.executionIdToCurrentId('123::456')).toBeUndefined()
       })
     })
-
     describe('nodeLocatorIdToNodeId', () => {
       it('should extract node ID from NodeLocatorId', () => {
         const result = store.nodeLocatorIdToNodeId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
         )
         expect(result).toBe(456)
       })
 
       it('should handle string node IDs', () => {
         const result = store.nodeLocatorIdToNodeId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:node_1'
+          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'node_1')
         )
         expect(result).toBe('node_1')
       })
 
       it('should handle simple node IDs (root graph)', () => {
-        const result = store.nodeLocatorIdToNodeId('123')
+        const result = store.nodeLocatorIdToNodeId(
+          createNodeLocatorId(null, 123)
+        )
         expect(result).toBe(123)
 
-        const stringResult = store.nodeLocatorIdToNodeId('node_1')
+        const stringResult = store.nodeLocatorIdToNodeId(
+          createNodeLocatorId(null, 'node_1')
+        )
         expect(stringResult).toBe('node_1')
-      })
-
-      it('should return null for invalid NodeLocatorId', () => {
-        const result = store.nodeLocatorIdToNodeId('invalid:format')
-        expect(result).toBeNull()
       })
     })
 
     describe('nodeLocatorIdToNodeExecutionId', () => {
       it('should convert NodeLocatorId to execution ID', () => {
-        // Need to mock isSubgraph to identify our mockSubgraph
         vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
           return obj === store.activeSubgraph
         })
 
         const result = store.nodeLocatorIdToNodeExecutionId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
         )
         expect(result).toBe('123:456')
       })
 
       it('should handle simple node IDs (root graph)', () => {
-        const result = store.nodeLocatorIdToNodeExecutionId('123')
+        const result = store.nodeLocatorIdToNodeExecutionId(
+          createNodeLocatorId(null, 123)
+        )
         expect(result).toBe('123')
       })
 
       it('should return null for unknown subgraph UUID', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          'unknown-uuid-1234-5678-90ab-cdef12345678:456'
+          createNodeLocatorId('unknown-uuid-1234-5678-90ab-cdef12345678', 456)
         )
-        expect(result).toBeNull()
-      })
-
-      it('should return null for invalid NodeLocatorId', () => {
-        const result = store.nodeLocatorIdToNodeExecutionId('invalid:format')
         expect(result).toBeNull()
       })
     })

@@ -91,10 +91,7 @@
     v-if="showPreview && item.value.type === 'node' && item.value.data"
     to="body"
   >
-    <div
-      :ref="(el) => (previewRef = el as HTMLElement)"
-      :style="nodePreviewStyle"
-    >
+    <div ref="previewRef" :style="nodePreviewStyle">
       <NodePreviewCard :node-def="item.value.data as ComfyNodeDefImpl" />
     </div>
   </Teleport>
@@ -103,7 +100,7 @@
 <script setup lang="ts">
 import type { FlattenedItem } from 'reka-ui'
 import { TreeItem } from 'reka-ui'
-import { computed, inject } from 'vue'
+import { computed, inject, useTemplateRef } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
@@ -136,6 +133,7 @@ const emit = defineEmits<{
 const contextMenuNode = inject(InjectKeyContextMenuNode)
 const nodeBookmarkStore = useNodeBookmarkStore()
 const subgraphStore = useSubgraphStore()
+const previewRef = useTemplateRef('previewRef')
 
 const nodeDef = computed(() => item.value.data)
 
@@ -168,14 +166,13 @@ const editBlueprint = async () => {
 }
 
 const {
-  previewRef,
   showPreview,
   nodePreviewStyle,
   handleMouseEnter: baseHandleMouseEnter,
   handleMouseLeave,
   handleDragStart: baseHandleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef)
+} = useNodePreviewAndDrag(nodeDef, previewRef)
 
 const rowStyle = computed(() => ({
   paddingLeft: `${8 + (item.level - 1) * 24}px`
