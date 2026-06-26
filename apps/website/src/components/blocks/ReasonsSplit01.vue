@@ -8,7 +8,6 @@ export interface Reason {
 const { highlightClass = 'text-white' } = defineProps<{
   heading: string
   headingHighlight?: string
-  headingSuffix?: string
   highlightClass?: string
   subtitle?: string
   reasons: readonly Reason[]
@@ -17,7 +16,7 @@ const { highlightClass = 'text-white' } = defineProps<{
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col gap-4 px-4 py-24 lg:flex-row lg:gap-16 lg:px-20 lg:py-40"
+    class="max-w-9xl mx-auto flex flex-col gap-4 px-6 py-16 lg:flex-row lg:gap-16 lg:py-24"
   >
     <!-- Left heading -->
     <div
@@ -29,8 +28,7 @@ const { highlightClass = 'text-white' } = defineProps<{
         {{ heading
         }}<span v-if="headingHighlight" :class="highlightClass">{{
           headingHighlight
-        }}</span
-        ><template v-if="headingSuffix">{{ headingSuffix }}</template>
+        }}</span>
       </h2>
       <p v-if="subtitle" class="mt-6 text-sm text-primary-comfy-canvas/70">
         {{ subtitle }}
