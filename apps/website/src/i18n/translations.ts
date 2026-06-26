@@ -2021,70 +2021,72 @@ const translations = {
     'zh-CN': '支持哪些客户端？'
   },
   'mcp.faq.1.a': {
-    en: 'Claude Code and Claude Desktop today, both supporting sign-in with your Comfy account. Support for more MCP-compatible clients is coming.',
+    en: 'Claude Code and Claude Desktop today, both signing in with OAuth. Support for more clients is coming.',
     'zh-CN':
-      '目前支持 Claude Code 和 Claude Desktop，均支持使用 Comfy 账户登录。更多 MCP 兼容客户端的支持即将推出。'
+      '目前支持 Claude Code 和 Claude Desktop，均通过 OAuth 登录。更多客户端的支持即将推出。'
   },
   'mcp.faq.2.q': {
     en: 'Do I need an API key?',
     'zh-CN': '我需要 API 密钥吗？'
   },
   'mcp.faq.2.a': {
-    en: 'No. You authenticate with your Comfy account via OAuth. No API keys to copy or manage.',
+    en: 'Not for Claude Code or Claude Desktop. They use OAuth. An API key is only needed for headless or CI setups with no browser.',
     'zh-CN':
-      '不需要。你通过 OAuth 使用 Comfy 账户进行身份验证。无需复制或管理 API 密钥。'
+      'Claude Code 和 Claude Desktop 不需要，它们使用 OAuth。仅在没有浏览器的无头或 CI 环境中才需要 API 密钥。'
   },
   'mcp.faq.3.q': {
     en: 'Do the slash commands work in Claude Desktop?',
     'zh-CN': '斜杠命令在 Claude Desktop 中可以使用吗？'
   },
   'mcp.faq.3.a': {
-    en: "Yes. Once connected, Comfy's tools are available as slash commands directly in Claude Desktop.",
+    en: 'No. They ship in the Claude Code plugin. Desktop connects to the same MCP server, so the tools work; just ask in plain language.',
     'zh-CN':
-      '可以。连接后，Comfy 的工具可在 Claude Desktop 中作为斜杠命令直接使用。'
+      '不可以。斜杠命令包含在 Claude Code 插件中。Claude Desktop 连接的是同一个 MCP 服务器，因此工具可以正常使用；直接用自然语言提问即可。'
   },
   'mcp.faq.4.q': {
     en: "The sign-in didn't open a browser.",
     'zh-CN': '登录时没有打开浏览器。'
   },
   'mcp.faq.4.a': {
-    en: 'Copy the authorization URL from the terminal output and paste it into your browser manually to complete the OAuth flow.',
-    'zh-CN': '从终端输出中复制授权 URL，手动粘贴到浏览器中以完成 OAuth 流程。'
+    en: 'In Claude Code, run /mcp, select comfy-cloud, and choose Authenticate. In Claude Desktop, reopen the connector from Customize → Connectors.',
+    'zh-CN':
+      '在 Claude Code 中，运行 /mcp，选择 comfy-cloud，然后选择 Authenticate（授权）。在 Claude Desktop 中，从“自定义 → 连接器”重新打开该连接器。'
   },
   'mcp.faq.5.q': {
     en: 'How do I connect in Claude Code?',
     'zh-CN': '如何在 Claude Code 中连接？'
   },
   'mcp.faq.5.a': {
-    en: 'Run `claude mcp add https://cloud.comfy.org/mcp` in your terminal. Claude Code will prompt you to authorize with your Comfy account.',
+    en: 'Add the marketplace and install the comfy-cloud plugin, then run /mcp → comfy-cloud → Authenticate. It adds the connection and slash commands in one step.',
     'zh-CN':
-      '在终端中运行 `claude mcp add https://cloud.comfy.org/mcp`。Claude Code 将提示你使用 Comfy 账户进行授权。'
+      '添加插件市场并安装 comfy-cloud 插件，然后运行 /mcp → comfy-cloud → Authenticate（授权）。一步即可添加连接和斜杠命令。'
   },
   'mcp.faq.6.q': {
     en: "What's the server URL for Claude Desktop?",
     'zh-CN': 'Claude Desktop 的服务器 URL 是什么？'
   },
   'mcp.faq.6.a': {
-    en: 'The MCP server URL is https://cloud.comfy.org/mcp. Add it as a custom connector in Claude Desktop under Settings > Connections.',
+    en: 'Add a custom connector in Customize → Connectors pointing to https://cloud.comfy.org/mcp, then sign in when prompted.',
     'zh-CN':
-      'MCP 服务器 URL 为 https://cloud.comfy.org/mcp。在 Claude Desktop 的"设置 > 连接"中将其添加为自定义连接器。'
+      '在“自定义 → 连接器”中添加一个指向 https://cloud.comfy.org/mcp 的自定义连接器，然后在提示时登录。'
   },
   'mcp.faq.7.q': {
     en: 'What can my agent do once connected?',
     'zh-CN': '连接后我的智能体能做什么？'
   },
   'mcp.faq.7.a': {
-    en: 'Generate images, video, audio, and 3D assets. Search models and workflow templates. Run any ComfyUI workflow as a callable tool and retrieve the output.',
+    en: 'Generate images, video, audio, and 3D; search models, nodes, and templates; and run ComfyUI workflows, all from a chat.',
     'zh-CN':
-      '生成图像、视频、音频和 3D 资产。搜索模型和工作流模板。将任何 ComfyUI 工作流作为可调用工具运行并获取输出。'
+      '生成图像、视频、音频和 3D；搜索模型、节点和模板；并运行 ComfyUI 工作流——全部在对话中完成。'
   },
   'mcp.faq.8.q': {
     en: 'Is it generally available?',
     'zh-CN': '现已正式发布了吗？'
   },
   'mcp.faq.8.a': {
-    en: 'Yes. Comfy MCP is available to all Comfy Cloud users today.',
-    'zh-CN': '是的。Comfy MCP 现已向所有 Comfy Cloud 用户开放。'
+    en: "Comfy Cloud MCP is in closed beta, invite only. Join the waitlist if you don't have access yet.",
+    'zh-CN':
+      'Comfy Cloud MCP 目前处于封闭测试阶段，仅限受邀使用。如果你还没有访问权限，请加入候补名单。'
   },
 
   // SiteNav
