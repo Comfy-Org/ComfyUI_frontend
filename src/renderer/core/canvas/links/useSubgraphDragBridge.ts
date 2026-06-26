@@ -288,7 +288,7 @@ export function useSubgraphDragBridge() {
         candidate.layout.type === 'input'
       )
       const entry = slotRegistry
-        .getNode(candidate.layout.nodeId)
+        .getNode(String(candidate.layout.nodeId))
         ?.slots.get(key)
       const groupEl = entry?.el?.parentElement
       if (groupEl) {
