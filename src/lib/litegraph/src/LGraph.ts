@@ -38,7 +38,6 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   HasBoundingRect,
-  IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
@@ -56,6 +55,7 @@ import {
   createBounds,
   snapPoint
 } from './measure'
+import { warnDeprecated } from './utils/feedback'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -153,6 +153,13 @@ export interface LGraphExtra extends Dictionary<unknown> {
 export interface BaseLGraph {
   /** The root graph. */
   readonly rootGraph: LGraph
+}
+
+function fireNodeRemovalLifecycle(node: LGraphNode): void {
+  const graph: LGraph | null = node.graph
+  graph?.events.dispatch('node:before-removed', { node })
+  node.onRemoved?.()
+  graph?.onNodeRemoved?.(node)
 }
 
 /**
@@ -324,16 +331,16 @@ export class LGraph
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
   onTrigger?: LGraphTriggerHandler
+  /**
+   * @deprecated Assign a listener to {@link LGraphCanvas.onBeforeChange} instead.
+   * This graph-level hook will be removed in a future version.
+   */
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
-  onGetNodeMenuOptions?(
-    options: (IContextMenuValue<unknown> | null)[],
-    node: LGraphNode
-  ): void
 
   // @ts-expect-error - Private property type needs fixing
   private _input_nodes?: LGraphNode[]
@@ -386,8 +393,7 @@ export class LGraph
     // safe clear
     if (this._nodes) {
       for (const _node of this._nodes) {
-        _node.onRemoved?.()
-        this.onNodeRemoved?.(_node)
+        fireNodeRemovalLifecycle(_node)
       }
     }
 
@@ -1046,6 +1052,8 @@ export class LGraph
     // sure? - almost sure is wrong
     this.beforeChange()
 
+    this.events.dispatch('node:before-removed', { node })
+
     const { inputs, outputs } = node
 
     // disconnect inputs
@@ -1081,10 +1089,7 @@ export class LGraph
       )
 
       if (!hasRemainingReferences) {
-        forEachNode(node.subgraph, (innerNode) => {
-          innerNode.onRemoved?.()
-          innerNode.graph?.onNodeRemoved?.(innerNode)
-        })
+        forEachNode(node.subgraph, fireNodeRemovalLifecycle)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1352,7 +1357,12 @@ export class LGraph
 
   // used for undo, called before any change is made to the graph
   beforeChange(info?: LGraphNode): void {
-    this.onBeforeChange?.(this, info)
+    if (this.onBeforeChange) {
+      warnDeprecated(
+        'LGraph.onBeforeChange is deprecated and will be removed in a future version. Assign a listener to LGraphCanvas.onBeforeChange instead.'
+      )
+      this.onBeforeChange(this, info)
+    }
     this.canvasAction((c) => c.onBeforeChange?.(this))
   }
 

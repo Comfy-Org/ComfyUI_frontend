@@ -128,6 +128,7 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
+        audioUIWidget.options.serialize = false
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 

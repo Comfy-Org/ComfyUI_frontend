@@ -2,6 +2,7 @@ import { isCloud, isNightly } from '@/platform/distribution/types'
 
 import './clipspace'
 import './contextMenuFilter'
+import './createBoundingBoxes'
 import './customWidgets'
 import './dynamicPrompts'
 import './editAttention'
