@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-
-import { t } from '../../../i18n/translations'
-import GlassCard from '../../common/GlassCard.vue'
-import SectionHeader from '../../common/SectionHeader.vue'
+import GlassCard from '../../components/common/GlassCard.vue'
+import SectionHeader from '../../components/common/SectionHeader.vue'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 

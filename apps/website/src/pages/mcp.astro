@@ -1,12 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import ProductCardsSection from '../components/product/mcp/ProductCardsSection.vue'
-import HeroSection from '../components/product/mcp/HeroSection.vue'
-import SetupStepsSection from '../components/product/mcp/SetupStepsSection.vue'
-import WhyBuildSection from '../components/product/mcp/WhyBuildSection.vue'
-import ToolsSection from '../components/product/mcp/ToolsSection.vue'
-import HowItWorksSection from '../components/product/mcp/HowItWorksSection.vue'
-import FAQSection from '../components/product/mcp/FAQSection.vue'
+import ProductCardsSection from '../components/common/ProductCardsSection.vue'
+import HeroSection from '../templates/mcp/HeroSection.vue'
+import SetupSection from '../templates/mcp/SetupSection.vue'
+import WhySection from '../templates/mcp/WhySection.vue'
+import ToolsSection from '../templates/mcp/ToolsSection.vue'
+import HowItWorksSection from '../templates/mcp/HowItWorksSection.vue'
+import FAQSection from '../templates/mcp/FAQSection.vue'
 ---
 
 <BaseLayout
@@ -22,11 +22,11 @@ import FAQSection from '../components/product/mcp/FAQSection.vue'
     'mcp image generation',
   ]}
 >
-  <HeroSection client:load />
-  <SetupStepsSection />
-  <WhyBuildSection />
-  <ToolsSection />
-  <HowItWorksSection />
-  <ProductCardsSection />
-  <FAQSection />
+  <HeroSection locale="en" client:load />
+  <SetupSection locale="en" />
+  <WhySection locale="en" />
+  <ToolsSection locale="en" />
+  <HowItWorksSection locale="en" />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+  <FAQSection locale="en" />
 </BaseLayout>

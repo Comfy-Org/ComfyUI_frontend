@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-
-import { externalLinks, getRoutes } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
-import BrandButton from '../../common/BrandButton.vue'
+import BrandButton from '../../components/common/BrandButton.vue'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+import { mcpCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const routes = getRoutes(locale)
+const ctas = mcpCtas(locale)
 
 const steps = [
   {
@@ -77,20 +76,21 @@ const steps = [
       class="mt-12 flex flex-col items-center gap-4 lg:flex-row lg:justify-center"
     >
       <BrandButton
-        :href="externalLinks.docsMcp"
+        :href="ctas.docs.href"
+        :target="ctas.docs.target"
         variant="outline"
         size="lg"
         class="w-full text-center lg:w-auto lg:min-w-48"
       >
-        {{ t('mcp.hero.viewDocs', locale) }}
+        {{ ctas.docs.label }}
       </BrandButton>
       <BrandButton
-        :href="routes.cloud"
+        :href="ctas.runWorkflow.href"
         variant="solid"
         size="lg"
         class="w-full text-center lg:w-auto lg:min-w-48"
       >
-        {{ t('mcp.hero.runWorkflow', locale) }}
+        {{ ctas.runWorkflow.label }}
       </BrandButton>
     </div>
   </section>
