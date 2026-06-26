@@ -33,6 +33,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -487,7 +488,8 @@ export const useExecutionStore = defineStore('execution', () => {
         // here intentionally. That way, we don't clear the preview every time a new node
         // within an expanded graph starts executing.
         const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(nodeId)
+        const executionId = tryNormalizeNodeExecutionId(nodeId)
+        if (executionId) revokePreviewsByExecutionId(executionId)
       }
     }
 
@@ -788,7 +790,7 @@ export const useExecutionStore = defineStore('execution', () => {
    * @returns The execution ID or null if conversion fails
    */
   const nodeLocatorIdToExecutionId = (
-    locatorId: NodeLocatorId | string
+    locatorId: NodeLocatorId
   ): string | null => {
     const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
     return executionId

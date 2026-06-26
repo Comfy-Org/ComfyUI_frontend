@@ -5,7 +5,9 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useAuthStore } from '@/stores/authStore'
@@ -93,6 +95,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
   // Legacy billing doesn't have workspace-style plans
   const plans = computed(() => [])
   const currentPlanSlug = computed(() => null)
+  const teamCreditStops = computed(() => null)
+  const currentTeamCreditStop = computed(() => null)
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -145,15 +149,15 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   async function subscribe(
     _planSlug: string,
-    _returnUrl?: string,
-    _cancelUrl?: string
+    _options?: SubscribeOptions
   ): Promise<SubscribeResponse | void> {
     // Legacy billing uses Stripe checkout flow via useSubscription
     await legacySubscribe()
   }
 
   async function previewSubscribe(
-    _planSlug: string
+    _planSlug: string,
+    _options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
     // Legacy billing doesn't support preview - returns null
     return null
@@ -200,6 +204,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,

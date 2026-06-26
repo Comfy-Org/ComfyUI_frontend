@@ -28,7 +28,6 @@ export interface WorkspaceMember {
 export interface PendingInvite {
   id: string
   email: string
-  token: string
   inviteDate: Date
   expiryDate: Date
 }
@@ -60,7 +59,6 @@ function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
   return {
     id: invite.id,
     email: invite.email,
-    token: invite.token,
     inviteDate: new Date(invite.invited_at),
     expiryDate: new Date(invite.expires_at)
   }
@@ -106,7 +104,7 @@ function setLastWorkspaceId(workspaceId: string): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-const MAX_WORKSPACE_MEMBERS = 50
+export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
@@ -149,16 +147,28 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.members ?? []
   )
 
-  // True when the current user is the active workspace's original owner,
-  // resolved from the self-row of the loaded members list. Matches by email
-  // (the stable current-user join key; member.id is a cloud user id, not the
-  // Firebase uid). Fails closed when members are not loaded or no self-row
-  // matches, so lifecycle gating stays hidden until the real signal arrives.
+  // The active workspace's original owner (creator). Prefers the
+  // `is_original_owner` flag; without it, falls back to the earliest-joined
+  // owner — never a plain member, who must stay role-changeable.
+  const originalOwnerId = computed<string | null>(() => {
+    const flagged = members.value.find((m) => m.isOriginalOwner)
+    if (flagged) return flagged.id
+    const owners = members.value.filter((m) => m.role === 'owner')
+    if (owners.length === 0) return null
+    return owners.reduce((earliest, m) =>
+      m.joinDate < earliest.joinDate ? m : earliest
+    ).id
+  })
+
+  // True when the current user is that original owner. Single-sourced from
+  // `originalOwnerId` so the two creator signals can never disagree. Matches the
+  // self-row by email (the stable current-user join key; member.id is a cloud
+  // user id, not the Firebase uid) and fails closed until members load.
   const isCurrentUserOriginalOwner = computed(() => {
     const email = useCurrentUser().userEmail.value?.toLowerCase()
     if (!email) return false
     const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
-    return selfRow?.isOriginalOwner ?? false
+    return !!selfRow && selfRow.id === originalOwnerId.value
   })
 
   const pendingInvites = computed<PendingInvite[]>(
@@ -566,6 +576,30 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Change a member's role in the current workspace.
+   */
+  async function changeMemberRole(
+    userId: string,
+    role: WorkspaceMember['role']
+  ): Promise<void> {
+    if (userId === originalOwnerId.value) {
+      throw new Error("Cannot change the workspace creator's role")
+    }
+    // Only the role changes; merge it onto the existing row rather than trusting
+    // the PATCH response to echo a full Member (a 204/partial body would
+    // otherwise drop joined_at / is_original_owner).
+    await workspaceApi.updateMemberRole(userId, role)
+    const current = activeWorkspace.value
+    if (current) {
+      updateActiveWorkspace({
+        members: current.members.map((m) =>
+          m.id === userId ? { ...m, role } : m
+        )
+      })
+    }
+  }
+
+  /**
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
@@ -608,6 +642,40 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
+  const resendingInviteIds = new Set<string>()
+
+  /**
+   * Resend a pending invite by issuing a fresh one before revoking the old.
+   * Create-first so a failed resend never destroys the original invite. If the
+   * revoke fails, the store is resynced (so the leftover original surfaces) and
+   * the error is rethrown so the caller can report the partial failure rather
+   * than show success over two live invites for the same email.
+   */
+  async function resendInvite(inviteId: string): Promise<PendingInvite> {
+    if (resendingInviteIds.has(inviteId)) {
+      throw new Error('Invite resend already in progress')
+    }
+    const invite = activeWorkspace.value?.pendingInvites.find(
+      (i) => i.id === inviteId
+    )
+    if (!invite) {
+      throw new Error('Invite not found')
+    }
+    resendingInviteIds.add(inviteId)
+    try {
+      const newInvite = await createInvite(invite.email)
+      try {
+        await revokeInvite(inviteId)
+      } catch (error) {
+        await fetchPendingInvites()
+        throw error
+      }
+      return newInvite
+    } finally {
+      resendingInviteIds.delete(inviteId)
+    }
+  }
+
   /**
    * Accept a workspace invite.
    * Returns workspace info so UI can offer "View Workspace" button.
@@ -624,44 +692,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       workspaceId: response.workspace_id,
       workspaceName: response.workspace_name
     }
-  }
-
-  function buildInviteLink(token: string): string {
-    const baseUrl = window.location.origin
-    return `${baseUrl}?invite=${encodeURIComponent(token)}`
-  }
-
-  /**
-   * Get the invite link for a pending invite.
-   */
-  function getInviteLink(inviteId: string): string | null {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    return invite ? buildInviteLink(invite.token) : null
-  }
-
-  /**
-   * Create an invite link for a given email.
-   */
-  async function createInviteLink(email: string): Promise<string> {
-    const invite = await createInvite(email)
-    return buildInviteLink(invite.token)
-  }
-
-  /**
-   * Copy an invite link to clipboard.
-   */
-  async function copyInviteLink(inviteId: string): Promise<string> {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    if (!invite) {
-      throw new Error('Invite not found')
-    }
-    const inviteLink = buildInviteLink(invite.token)
-    await navigator.clipboard.writeText(inviteLink)
-    return inviteLink
   }
 
   //TODO: when billing lands update this
@@ -699,6 +729,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     members,
     isCurrentUserOriginalOwner,
     pendingInvites,
+    originalOwnerId,
     totalMemberSlots,
     isInviteLimitReached,
     workspaceId,
@@ -723,15 +754,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     fetchMembers,
     ensureMembersLoaded,
     removeMember,
+    changeMemberRole,
 
     // Invite Actions
     fetchPendingInvites,
     createInvite,
     revokeInvite,
+    resendInvite,
     acceptInvite,
-    getInviteLink,
-    createInviteLink,
-    copyInviteLink,
 
     // Subscription
     subscribeWorkspace,
