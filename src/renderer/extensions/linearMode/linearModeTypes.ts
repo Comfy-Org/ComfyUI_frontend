@@ -4,6 +4,8 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 export interface InProgressItem {
   id: string
   jobId: string
+  /** Monotonic arrival order, assigned at creation. Used to order the fan. */
+  seq: number
   state: 'skeleton' | 'latent' | 'image'
   latentPreviewUrl?: string
   output?: ResultItemImpl
@@ -14,7 +16,6 @@ export interface OutputSelection {
   output?: ResultItemImpl
   canShowPreview: boolean
   latentPreviewUrl?: string
-  showSkeleton?: boolean
 }
 
 export type SelectionValue =

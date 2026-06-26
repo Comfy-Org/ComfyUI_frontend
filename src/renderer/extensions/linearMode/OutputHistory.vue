@@ -123,7 +123,7 @@ function doEmit() {
       (i) => i.id === sel.itemId
     )
     if (!item || item.state === 'skeleton') {
-      emit('updateSelection', { canShowPreview: true, showSkeleton: true })
+      emit('updateSelection', { canShowPreview: true })
     } else if (item.state === 'latent') {
       emit('updateSelection', {
         canShowPreview: true,
@@ -298,10 +298,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 })
 </script>
 <template>
-  <div
-    role="group"
-    class="flex h-21 min-w-0 items-start justify-center px-4 py-3 pb-4"
-  >
+  <div role="group" class="flex h-21 min-w-0 items-start px-4 py-3 pb-4">
     <div
       v-if="queueCount > 0 || hasActiveContent"
       class="flex h-15 shrink-0 items-start gap-0.5"
@@ -347,7 +344,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     <article
       ref="outputsRef"
       data-testid="linear-outputs"
-      class="min-w-0 overflow-x-auto overflow-y-clip"
+      class="min-w-0 flex-1 overflow-x-auto overflow-y-clip contain-[inline-size]"
     >
       <div class="flex h-15 w-fit items-start gap-0.5">
         <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
