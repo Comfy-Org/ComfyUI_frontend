@@ -178,9 +178,13 @@ test.describe('Launches landing — desktop @smoke', () => {
     const cards = dropsSection(page, 'en').locator('[data-slot="card"]')
     await expect(cards).toHaveCount(drops.length)
 
-    const firstWidth = (await cards.nth(0).boundingBox())?.width ?? 0
-    const fifthWidth = (await cards.nth(4).boundingBox())?.width ?? 0
-    expect(firstWidth).toBeGreaterThan(fifthWidth)
+    await expect
+      .poll(async () => {
+        const firstWidth = (await cards.nth(0).boundingBox())?.width ?? 0
+        const fifthWidth = (await cards.nth(4).boundingBox())?.width ?? 0
+        return firstWidth - fifthWidth
+      })
+      .toBeGreaterThan(0)
   })
 })
 
@@ -194,12 +198,19 @@ test.describe('Launches landing — mobile @mobile', () => {
 
     const viewport = page.viewportSize()
     expect(viewport, 'viewport size').not.toBeNull()
-    const firstBox = await cards.nth(0).boundingBox()
-    const secondBox = await cards.nth(1).boundingBox()
-    expect(firstBox, 'first card bounding box').not.toBeNull()
-    expect(secondBox, 'second card bounding box').not.toBeNull()
-    expect(firstBox!.width).toBeGreaterThanOrEqual(viewport!.width * 0.7)
-    expect(secondBox!.y).toBeGreaterThanOrEqual(firstBox!.y + firstBox!.height)
+
+    await expect
+      .poll(async () => (await cards.nth(0).boundingBox())?.width ?? 0)
+      .toBeGreaterThanOrEqual(viewport!.width * 0.7)
+
+    await expect
+      .poll(async () => {
+        const firstBox = await cards.nth(0).boundingBox()
+        const secondBox = await cards.nth(1).boundingBox()
+        if (!firstBox || !secondBox) return false
+        return secondBox.y >= firstBox.y + firstBox.height
+      })
+      .toBe(true)
   })
 
   test('closing CTA heading stays within viewport width', async ({ page }) => {

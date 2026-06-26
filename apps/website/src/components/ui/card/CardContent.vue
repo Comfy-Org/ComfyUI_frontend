@@ -8,7 +8,7 @@ const { class: className } = defineProps<{
 </script>
 
 <template>
-  <div data-slot="card-content" :class="cn(className)">
+  <div data-slot="card-content" :class="cn('px-6', className)">
     <slot />
   </div>
 </template>

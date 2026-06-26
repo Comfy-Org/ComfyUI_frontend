@@ -13,7 +13,7 @@ const locale = 'zh-CN' as const
   title={t('launches.page.title', locale)}
   description={t('launches.page.description', locale)}
 >
-  <SubscribeBanner locale={locale} client:idle />
+  <SubscribeBanner locale={locale} client:load />
   <HeroSection locale={locale} client:load />
   <DropsSection locale={locale} />
   <CtaSection locale={locale} />

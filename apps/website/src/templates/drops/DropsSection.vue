@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
-import DropCard from '../../components/common/DropCard.vue'
+import DropCard from './DropCard.vue'
 import { drops } from '../../data/drops'
 import { t } from '../../i18n/translations'
 

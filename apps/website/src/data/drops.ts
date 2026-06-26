@@ -121,14 +121,13 @@ export const drops: readonly Drop[] = [
       'zh-CN': 'Comfy MCP'
     }),
     title: { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
-    // TODO: production MCP copy + destination page pending.
     description: {
       en: 'The full power of ComfyUI from anywhere — no setup, no GPU required.',
       'zh-CN': '随时随地体验 ComfyUI 的全部能力 — 无需配置，无需 GPU。'
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/mcp', 'zh-CN': '/zh-CN/mcp' }
+      href: { en: externalLinks.docsMcp, 'zh-CN': externalLinks.docsMcp }
     }
   },
   {

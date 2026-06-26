@@ -2,7 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 
 import HeroLivestream01 from '../../components/blocks/HeroLivestream01.vue'
-import LaunchesHeroLogo from '../../components/launches/LaunchesHeroLogo.vue'
+import LaunchesHeroLogo from './LaunchesHeroLogo.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import { livestream } from './livestream'

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { Drop } from '../../data/drops'
 import type { Locale } from '../../i18n/translations'
-import Badge from '../ui/badge/Badge.vue'
+import Badge from '../../components/ui/badge/Badge.vue'
 
-import ButtonPill from '../ui/button-pill/ButtonPill.vue'
-import Card from '../ui/card/Card.vue'
-import CardContent from '../ui/card/CardContent.vue'
-import CardDescription from '../ui/card/CardDescription.vue'
-import CardFooter from '../ui/card/CardFooter.vue'
-import CardHeader from '../ui/card/CardHeader.vue'
-import CardTitle from '../ui/card/CardTitle.vue'
+import ButtonPill from '../../components/ui/button-pill/ButtonPill.vue'
+import Card from '../../components/ui/card/Card.vue'
+import CardContent from '../../components/ui/card/CardContent.vue'
+import CardDescription from '../../components/ui/card/CardDescription.vue'
+import CardFooter from '../../components/ui/card/CardFooter.vue'
+import CardHeader from '../../components/ui/card/CardHeader.vue'
+import CardTitle from '../../components/ui/card/CardTitle.vue'
 
 const { drop, locale } = defineProps<{
   drop: Drop
@@ -27,7 +27,7 @@ const { drop, locale } = defineProps<{
 
     <div class="flex flex-col-reverse">
       <CardHeader class="gap-2 px-6">
-        <Badge variant="ghost">
+        <Badge variant="category">
           {{ drop.category[locale] }}
         </Badge>
         <CardTitle class="pt-4">

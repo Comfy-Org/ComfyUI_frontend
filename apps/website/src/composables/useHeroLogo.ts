@@ -145,11 +145,19 @@ export function useHeroLogo(
       const shapes = parseShapes(cfg.svgMarkup)
       const tempGeo = new THREE.ShapeGeometry(shapes)
       tempGeo.computeBoundingBox()
-      const bb = tempGeo.boundingBox!
+      const bb = tempGeo.boundingBox
+      if (!bb) {
+        tempGeo.dispose()
+        return
+      }
       const cx = (bb.max.x + bb.min.x) / 2
       const cy = (bb.max.y + bb.min.y) / 2
       const fitExtent =
         cfg.fitAxis === 'width' ? bb.max.x - bb.min.x : bb.max.y - bb.min.y
+      if (fitExtent <= 0) {
+        tempGeo.dispose()
+        return
+      }
       const scaleFactor = cfg.targetSize / fitExtent
       tempGeo.dispose()
 
