@@ -277,10 +277,10 @@ describe('canCreateNodeForAsset', () => {
     expect(mockGetNodeProvider).toHaveBeenCalledWith('BEN')
   })
 
-  it('returns true when the asset has no usable category tag', () => {
+  it('returns false when the asset has no usable category tag (would fail INVALID_ASSET)', () => {
     expect(
       canCreateNodeForAsset(createMockAsset({ tags: ['models', 'missing'] }))
-    ).toBe(true)
+    ).toBe(false)
     expect(mockGetNodeProvider).not.toHaveBeenCalled()
   })
 })

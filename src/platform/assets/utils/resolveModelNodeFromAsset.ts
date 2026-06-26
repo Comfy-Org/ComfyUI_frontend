@@ -18,9 +18,10 @@ export function getAssetCategory(asset: AssetItem): string | undefined {
 
 /**
  * Returns `false` only when we are confident the asset cannot be turned into a
- * node (registry is initialised and no provider matches its category). While
- * the registry is still warming up we return `true` so the UI stays enabled
- * by default and only transitions to disabled once we know.
+ * node — either its category has no provider in the (initialised) registry, or
+ * it carries no usable category tag at all. While the registry is still warming
+ * up we return `true` so the UI stays enabled by default and only transitions
+ * to disabled once we know.
  */
 export function canCreateNodeForAsset(asset: AssetItem): boolean {
   const store = useModelToNodeStore()
@@ -28,7 +29,7 @@ export function canCreateNodeForAsset(asset: AssetItem): boolean {
   if (!store.isReady) return true
 
   const category = getAssetCategory(asset)
-  if (!category) return true
+  if (!category) return false
 
   return Boolean(store.getNodeProvider(category))
 }
