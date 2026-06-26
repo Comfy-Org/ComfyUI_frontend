@@ -290,13 +290,14 @@ const thumbnailFileUrl = useObjectUrl(() => thumbnailFile ?? undefined)
 const thumbnailPreviewUrl = computed(
   () => thumbnailFileUrl.value ?? existingSingleUrl.value
 )
-function isVideoUrl(url: string): boolean {
-  return /\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i.test(url)
+
+function isAnimatedImageUrl(url: string): boolean {
+  return /\.(gif|webp)(\?|#|$)/i.test(url)
 }
 const showVideoPreview = computed(() => {
   if (thumbnailFile) return thumbnailFile.type.startsWith('video/')
   return thumbnailType === 'video' && !!existingSingleUrl.value
-    ? isVideoUrl(existingSingleUrl.value)
+    ? !isAnimatedImageUrl(existingSingleUrl.value)
     : false
 })
 

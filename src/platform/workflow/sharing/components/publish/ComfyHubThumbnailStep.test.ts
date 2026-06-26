@@ -155,6 +155,30 @@ describe('ComfyHubThumbnailStep', () => {
     expect(screen.queryByRole('img')).toBeNull()
   })
 
+  it('renders a restored extensionless video-mode thumbnail as a video', () => {
+    const { container } = renderStep({
+      thumbnailType: 'video',
+      thumbnailUrl: 'https://cdn.example.com/assets/object-key',
+      existingThumbnailType: 'video'
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    expect(container.querySelector('video')).not.toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('renders a restored video-mode thumbnail with a query string as a video', () => {
+    const { container } = renderStep({
+      thumbnailType: 'video',
+      thumbnailUrl: 'https://cdn.example.com/clip?token=abc123',
+      existingThumbnailType: 'video'
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    expect(container.querySelector('video')).not.toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
   it('restores both comparison images on the comparison tab', () => {
     const { container } = renderStep({
       thumbnailType: 'imageComparison',
