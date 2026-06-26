@@ -146,7 +146,7 @@ the version bump — concrete proof of the "few lines of code" claim. Layout bin
 mutations bind the same way once that class finishes migrating to the store.
 
 **Local chat state** — `src/platform/agent/session/agentSessionStore.ts` is an **Immer** reducer
-for streaming deltas / tool-call lifecycle. Chat is single-client, so it is deliberately *not* a
+for streaming deltas / tool-call lifecycle. Chat is single-client, so it is deliberately _not_ a
 CRDT: Yjs owns graph state, Immer owns local UI state, and the two never mix.
 
 A layering constraint surfaced during this work: `platform/` may not import `renderer/`
