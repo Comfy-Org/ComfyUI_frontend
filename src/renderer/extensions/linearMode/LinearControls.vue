@@ -50,6 +50,7 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   { controls: true, immediate: false }
 )
 const widgetListRef = useTemplateRef('widgetListRef')
+const linearRunButtonTestId = 'linear-run-button'
 const showRunErrorWarning = computed(
   () =>
     hasAnyError.value &&
@@ -147,7 +148,7 @@ function handleDragDrop() {
       <PartnerNodesList v-if="!mobile" />
       <section
         v-if="mobile"
-        data-testid="linear-run-button"
+        :data-testid="linearRunButtonTestId"
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
@@ -194,7 +195,7 @@ function handleDragDrop() {
       </section>
       <section
         v-else
-        data-testid="linear-run-button"
+        :data-testid="linearRunButtonTestId"
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
