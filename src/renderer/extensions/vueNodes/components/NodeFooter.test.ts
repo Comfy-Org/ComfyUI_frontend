@@ -343,7 +343,7 @@ describe('NodeFooter', () => {
 
     beforeEach(() => {
       user = userEvent.setup()
-      vi.clearAllMocks()
+      vi.resetAllMocks()
     })
 
     it('renders the gear settings button next to advanced inputs button when expanded', () => {

@@ -21,15 +21,18 @@ const i18n = createI18n({
   }
 })
 
-const mockSettings: Record<string, unknown> = {
-  'Comfy.Node.AlwaysShowAdvancedWidgets': false,
-  'Comfy.Canvas.SelectionToolbox': false,
-  'Comfy.VueNodes.Enabled': false,
-  'Comfy.SnapToGrid.GridSize': 10,
-  'pysssss.SnapToGrid': false,
-  'Comfy.Graph.LinkMarkers': 'None',
-  'Comfy.LinkRenderMode': 'Spline'
-}
+const { mockSettings } = vi.hoisted(() => {
+  const mockSettings: Record<string, unknown> = {
+    'Comfy.Node.AlwaysShowAdvancedWidgets': false,
+    'Comfy.Canvas.SelectionToolbox': false,
+    'Comfy.VueNodes.Enabled': false,
+    'Comfy.SnapToGrid.GridSize': 10,
+    'pysssss.SnapToGrid': false,
+    'Comfy.Graph.LinkMarkers': 'None',
+    'Comfy.LinkRenderMode': 'Spline'
+  }
+  return { mockSettings }
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -61,24 +64,18 @@ describe('TabGlobalSettings', () => {
 
     const rightSidePanelStore = useRightSidePanelStore()
 
-    // 1. Initially, the switch container does not have the animate-highlight class
     const switchEl = screen.getByTestId('advanced-widgets-switch')
     expect(switchEl).not.toHaveClass('animate-highlight')
 
-    // 2. Trigger highlight in the store
     rightSidePanelStore.highlightGlobalSetting =
       'Comfy.Node.AlwaysShowAdvancedWidgets'
 
-    // Wait for watchers to update DOM
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    // 3. The switch container should now have the animate-highlight class
     expect(switchEl).toHaveClass('animate-highlight')
 
-    // 4. Trigger animationend event
     await fireEvent.animationEnd(switchEl)
 
-    // 5. The class should be removed
     expect(switchEl).not.toHaveClass('animate-highlight')
   })
 })
