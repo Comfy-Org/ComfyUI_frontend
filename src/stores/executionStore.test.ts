@@ -252,7 +252,10 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
     })
 
     it('should return null when conversion fails', () => {
-      const locatorId = 'unknown-subgraph-id:456' as NodeLocatorId
+      const locatorId = createNodeLocatorId(
+        'unknown-subgraph-id',
+        toNodeId(456)
+      )
       mockNodeLocatorIdToNodeExecutionId.mockReturnValue(null)
 
       const result = store.nodeLocatorIdToExecutionId(locatorId)
