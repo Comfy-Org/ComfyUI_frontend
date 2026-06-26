@@ -355,8 +355,13 @@ describe('useNodeReplacement', () => {
           { name: 'largest_size', link: null }
         ],
         [{ name: 'IMAGE', links: null }],
-        [{ name: 'largest_size', value: 0 }]
+        [
+          { name: 'largest_size', value: 0 },
+          { name: 'face_point_size', value: 1 }
+        ]
       )
+      const setNodeId = vi.fn()
+      Object.assign(newNode.widgets![1], { setNodeId })
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
 
       const { replaceNodesInPlace } = useNodeReplacement()
@@ -374,8 +379,8 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      // Widget value should be transferred: old "longer_edge" (idx 0, value 512) → new "largest_size"
       expect(newNode.widgets![0].value).toBe(512)
+      expect(setNodeId).toHaveBeenCalledWith(1)
     })
 
     it('should skip replacement when new node type is not registered', () => {

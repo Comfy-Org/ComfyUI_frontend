@@ -5,9 +5,9 @@ import { computed, onMounted, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
+  demotePromotedInput,
   demoteWidget,
   getPromotableWidgets,
   isLinkedPromotion,
@@ -16,8 +16,14 @@ import {
   pruneDisconnected,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
+import {
+  promotedInputSource,
+  promotedInputWidget
+} from '@/core/graph/subgraph/promotedInputWidget'
+import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -33,7 +39,8 @@ import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 type PromotedRow = {
   kind: 'promoted'
   node: LGraphNode
-  widget: PromotedWidgetView
+  input: INodeInputSlot
+  widget: IBaseWidget
 }
 type PreviewRow = {
   kind: 'preview'
@@ -47,6 +54,7 @@ const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
+const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -54,11 +62,23 @@ const activeNode = computed(() => {
   return undefined
 })
 
-const promotedWidgets = shallowRef<readonly IBaseWidget[]>([])
-function refreshPromotedWidgets() {
-  promotedWidgets.value = activeNode.value?.widgets ?? []
+const promotedRows = shallowRef<readonly PromotedRow[]>([])
+function buildPromotedRows(node: SubgraphNode): PromotedRow[] {
+  return node.inputs.flatMap((input): PromotedRow[] => {
+    const widget = promotedInputWidget(input)
+    if (!widget) return []
+    const source = promotedInputSource(node, input)
+    if (!source) return []
+    const sourceNode = node.subgraph._nodes_by_id[source.nodeId]
+    if (!sourceNode) return []
+    return [{ kind: 'promoted', node: sourceNode, input, widget }]
+  })
 }
-watch(activeNode, refreshPromotedWidgets, { immediate: true })
+function refreshPromotedRows() {
+  const node = activeNode.value
+  promotedRows.value = node ? buildPromotedRows(node) : []
+}
+watch(activeNode, refreshPromotedRows, { immediate: true })
 useEventListener(
   () => activeNode.value?.subgraph.events,
   [
@@ -68,33 +88,28 @@ useEventListener(
     'removing-input',
     'inputs-reordered'
   ],
-  refreshPromotedWidgets
+  refreshPromotedRows
 )
+
+function promotedRowSource(row: PromotedRow): PromotedSource | undefined {
+  const node = activeNode.value
+  return node ? promotedInputSource(node, row.input) : undefined
+}
 
 const activeRows = computed<ActiveRow[]>(() => {
   const node = activeNode.value
   if (!node) return []
-  return [...getActivePromotedRows(node), ...getActivePreviewRows(node)]
+  return [...promotedRows.value, ...getActivePreviewRows(node)]
 })
 
 const activePromotedRows = computed<PromotedRow[]>({
   get() {
-    const node = activeNode.value
-    return node ? getActivePromotedRows(node) : []
+    return [...promotedRows.value]
   },
   set(value: PromotedRow[]) {
     updateActivePromotedRows(value, activePromotedRows.value)
   }
 })
-
-function getActivePromotedRows(node: SubgraphNode): PromotedRow[] {
-  return promotedWidgets.value.flatMap((widget): PromotedRow[] => {
-    if (!isPromotedWidgetView(widget)) return []
-    const sourceNode = node.subgraph._nodes_by_id[widget.sourceNodeId]
-    if (!sourceNode) return []
-    return [{ kind: 'promoted', node: sourceNode, widget }]
-  })
-}
 
 function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
   const hostLocator = String(node.id)
@@ -130,7 +145,7 @@ function updateActivePromotedRows(
   if (currentKeys.size === nextKeys.size) {
     reorderSubgraphInputsByWidgetOrder(
       node,
-      value.map((row) => row.widget)
+      value.map((row) => ({ widgetId: row.widget.widgetId }))
     )
   }
   refreshPromotedWidgetRendering()
@@ -151,18 +166,24 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
 })
 
 function activeRowSourceKey(row: ActiveRow): string {
-  return row.kind === 'promoted'
-    ? `${row.widget.sourceNodeId}:${row.widget.sourceWidgetName}`
-    : `${row.exposure.sourceNodeId}:${row.exposure.sourcePreviewName}`
+  if (row.kind !== 'promoted')
+    return `${row.exposure.sourceNodeId}:${row.exposure.sourcePreviewName}`
+
+  const source = promotedRowSource(row)
+  return `${source?.nodeId ?? row.node.id}:${source?.widgetName ?? ''}`
 }
 
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
   const promotedSourceKeys = new Set(activeRows.value.map(activeRowSourceKey))
-  return interiorWidgets.value.filter(
-    ([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`)
-  )
+  return interiorWidgets.value
+    .filter(([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`))
+    .filter(
+      ([, w]) =>
+        w.name.startsWith('$$') ||
+        !(w.options.canvasOnly && shouldRenderVueNodes.value)
+    )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
@@ -228,18 +249,16 @@ function rowDisplayName(row: ActiveRow): string {
 function isRowLinked(row: ActiveRow): boolean {
   if (row.kind !== 'promoted') return false
   if (row.node.id === -1) return true
+  const source = promotedRowSource(row)
   return (
     !!activeNode.value &&
-    isLinkedPromotion(
-      activeNode.value,
-      String(row.node.id),
-      row.widget.sourceWidgetName
-    )
+    !!source &&
+    isLinkedPromotion(activeNode.value, String(row.node.id), source.widgetName)
   )
 }
 
 function promotedRowKey(row: PromotedRow): string {
-  return `${row.node.id}: ${row.widget.name}:${row.widget.sourceNodeId}`
+  return `${row.node.id}: ${row.widget.name}`
 }
 
 function rowKey(row: ActiveRow): string {
@@ -256,7 +275,14 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    demoteWidget(row.node, row.widget, [subgraphNode])
+    const source = promotedRowSource(row)
+    if (source) {
+      demotePromotedInput(subgraphNode, {
+        sourceNodeId: source.nodeId,
+        sourceWidgetName: source.widgetName
+      })
+    }
+    refreshPromotedWidgetRendering()
     return
   }
   if (row.realWidget) {
@@ -274,13 +300,18 @@ function demoteRow(row: ActiveRow) {
 function promotePromotedRow(row: PromotedRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
-  promoteWidget(row.node, row.widget, [subgraphNode])
+  const source = promotedRowSource(row)
+  const sourceWidget = source
+    ? row.node.widgets?.find((widget) => widget.name === source.widgetName)
+    : undefined
+  if (sourceWidget) promoteWidget(row.node, sourceWidget, [subgraphNode])
 }
 
 function promoteCandidate([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
+  refreshPromotedRows()
 }
 
 function showAll() {

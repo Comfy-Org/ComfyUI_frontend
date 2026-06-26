@@ -71,12 +71,11 @@ vi.mock('./MissingPackGroupRow.vue', () => ({
     name: 'MissingPackGroupRow',
     template: `<div class="pack-row" data-testid="pack-row"
       :data-show-info-button="String(showInfoButton)"
-      :data-show-node-id-badge="String(showNodeIdBadge)"
     >
       <button data-testid="locate-node" @click="$emit('locate-node', group.nodeTypes[0]?.nodeId)" />
       <button data-testid="open-manager-info" @click="$emit('open-manager-info', group.packId)" />
     </div>`,
-    props: ['group', 'showInfoButton', 'showNodeIdBadge'],
+    props: ['group', 'showInfoButton'],
     emits: ['locate-node', 'open-manager-info']
   }
 }))
@@ -122,7 +121,6 @@ function makePackGroups(count = 2): MissingPackGroup[] {
 function renderCard(
   props: Partial<{
     showInfoButton: boolean
-    showNodeIdBadge: boolean
     missingPackGroups: MissingPackGroup[]
   }> = {}
 ) {
@@ -130,7 +128,6 @@ function renderCard(
   const result = render(MissingNodeCard, {
     props: {
       showInfoButton: false,
-      showNodeIdBadge: false,
       missingPackGroups: makePackGroups(),
       ...props
     },
@@ -169,12 +166,10 @@ describe('MissingNodeCard', () => {
 
     it('passes props correctly to MissingPackGroupRow children', () => {
       renderCard({
-        showInfoButton: true,
-        showNodeIdBadge: true
+        showInfoButton: true
       })
       const row = screen.getAllByTestId('pack-row')[0]
       expect(row.getAttribute('data-show-info-button')).toBe('true')
-      expect(row.getAttribute('data-show-node-id-badge')).toBe('true')
     })
   })
 
@@ -256,7 +251,6 @@ describe('MissingNodeCard', () => {
       render(MissingNodeCard, {
         props: {
           showInfoButton: false,
-          showNodeIdBadge: false,
           missingPackGroups: makePackGroups(),
           onLocateNode
         },
@@ -279,7 +273,6 @@ describe('MissingNodeCard', () => {
       render(MissingNodeCard, {
         props: {
           showInfoButton: false,
-          showNodeIdBadge: false,
           missingPackGroups: makePackGroups(),
           onOpenManagerInfo
         },

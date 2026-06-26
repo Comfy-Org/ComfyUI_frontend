@@ -10,7 +10,8 @@ import { createTestingPinia } from '@pinia/testing'
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
-    teamWorkspacesEnabled: false
+    teamWorkspacesEnabled: false,
+    unifiedCloudAuthEnabled: false
   }
 }))
 
@@ -24,12 +25,18 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 const mockWorkspaceAuthHeader = vi.fn().mockReturnValue(null)
 const mockGetWorkspaceToken = vi.fn().mockReturnValue(undefined)
 const mockClearWorkspaceContext = vi.fn()
+const mockMintAtLogin = vi.fn().mockResolvedValue(false)
+let mockUnifiedToken: string | null = null
 
 vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => ({
     getWorkspaceAuthHeader: mockWorkspaceAuthHeader,
     getWorkspaceToken: mockGetWorkspaceToken,
-    clearWorkspaceContext: mockClearWorkspaceContext
+    clearWorkspaceContext: mockClearWorkspaceContext,
+    mintAtLogin: mockMintAtLogin,
+    get unifiedToken() {
+      return mockUnifiedToken
+    }
   })
 }))
 
@@ -75,7 +82,7 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
 }))
 
-vi.mock('@/stores/toastStore', () => ({
+vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: vi.fn() })
 }))
 
@@ -112,8 +119,11 @@ describe('auth token priority chain', () => {
     vi.resetAllMocks()
 
     mockFeatureFlags.teamWorkspacesEnabled = false
+    mockFeatureFlags.unifiedCloudAuthEnabled = false
+    mockUnifiedToken = null
     mockWorkspaceAuthHeader.mockReturnValue(null)
     mockGetWorkspaceToken.mockReturnValue(undefined)
+    mockMintAtLogin.mockResolvedValue(false)
     mockApiKeyGetAuthHeader.mockReturnValue(null)
     mockUser.getIdToken.mockResolvedValue('firebase-token')
 
@@ -206,6 +216,73 @@ describe('auth token priority chain', () => {
       const token = await store.getAuthToken()
 
       expect(token).toBe('firebase-token')
+    })
+  })
+
+  describe('unified login mint wiring', () => {
+    it('mints the unified Cloud JWT when a cloud user signs in', () => {
+      // beforeEach signs in mockUser via the onAuthStateChanged callback.
+      expect(mockMintAtLogin).toHaveBeenCalled()
+    })
+
+    it('does not mint on sign-out', () => {
+      mockMintAtLogin.mockClear()
+      authStateCallback(null)
+      expect(mockMintAtLogin).not.toHaveBeenCalled()
+      expect(mockClearWorkspaceContext).toHaveBeenCalled()
+    })
+  })
+
+  describe('unified cloud auth (flag ON)', () => {
+    beforeEach(() => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+    })
+
+    it('getAuthHeader returns only the unified Cloud JWT, never Firebase or API key', async () => {
+      mockUnifiedToken = 'unified-jwt'
+      // Even with the legacy sources available, the unified branch wins.
+      mockFeatureFlags.teamWorkspacesEnabled = true
+      mockWorkspaceAuthHeader.mockReturnValue({
+        Authorization: 'Bearer workspace-token'
+      })
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ Authorization: 'Bearer unified-jwt' })
+      expect(mockWorkspaceAuthHeader).not.toHaveBeenCalled()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+    })
+
+    it('getAuthHeader returns null when the unified token is empty and does not fall back', async () => {
+      mockUnifiedToken = null
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toBeNull()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+    })
+
+    it('getAuthToken returns the unified Cloud JWT, never the Firebase token', async () => {
+      mockUnifiedToken = 'unified-jwt'
+      mockGetWorkspaceToken.mockReturnValue('workspace-raw-token')
+
+      const token = await store.getAuthToken()
+
+      expect(token).toBe('unified-jwt')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('getAuthToken returns undefined when the unified token is empty and does not fall back', async () => {
+      mockUnifiedToken = null
+
+      const token = await store.getAuthToken()
+
+      expect(token).toBeUndefined()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
   })
 })

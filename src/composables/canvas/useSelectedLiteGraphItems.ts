@@ -1,8 +1,10 @@
+import { uniq } from 'es-toolkit'
+
 import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { collectFromNodes } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
+import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 /**
  * Composable for handling selected LiteGraph items filtering and operations.
@@ -71,7 +73,13 @@ export function useSelectedLiteGraphItems() {
    * the prior null-tolerance for callers wired to early-firing commands.
    */
   const getSelectedNodesShallow = (): LGraphNode[] =>
-    Array.from(canvasStore.canvas?.selectedItems ?? []).filter(isLGraphNode)
+    uniq(
+      [...(canvasStore.canvas?.selectedItems ?? [])].flatMap((item) => {
+        if (isLGraphNode(item)) return [item]
+        if (isLGraphGroup(item)) return [...item.children].filter(isLGraphNode)
+        return []
+      })
+    )
 
   /**
    * Get only the selected nodes (LGraphNode instances) from the canvas.
