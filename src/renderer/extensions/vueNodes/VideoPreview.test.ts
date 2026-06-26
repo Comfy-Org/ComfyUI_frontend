@@ -120,6 +120,18 @@ describe('VideoPreview', () => {
       )
       expect(screen.getByText('90 x 160')).toBeInTheDocument()
     })
+
+    it('keeps extreme tall videos aspect-proportional at the minimum width', async () => {
+      const { container } = renderVideoPreview()
+
+      await loadVideoWithDimensions(container, { width: 90, height: 360 })
+
+      expect(getPreviewRegion()).toHaveAttribute(
+        'data-resize-min-height',
+        '800'
+      )
+      expect(screen.getByText('90 x 360')).toBeInTheDocument()
+    })
   })
 
   describe('batch cycling with identical URLs', () => {

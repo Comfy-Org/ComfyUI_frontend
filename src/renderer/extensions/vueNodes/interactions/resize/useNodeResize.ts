@@ -63,18 +63,17 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
+    const resizeFloorElement = nodeElement.querySelector<HTMLElement>(
+      '[data-resize-min-height]'
+    )
+    const resizeFloor = Number(resizeFloorElement?.dataset.resizeMinHeight) || 0
+
     const measureMinContentHeight = (candidateWidth: number) => {
       const savedWidth = nodeElement.style.getPropertyValue('--node-width')
       const savedHeight = nodeElement.style.getPropertyValue('--node-height')
-      const resizeMinHeightElements = Array.from(
-        nodeElement.querySelectorAll<HTMLElement>('[data-resize-min-height]')
-      ).map((element) => ({
-        element,
-        minHeight: element.style.minHeight
-      }))
-      for (const { element } of resizeMinHeightElements) {
-        const height = Number(element.dataset.resizeMinHeight) || 0
-        if (height > 0) element.style.minHeight = `${height}px`
+      const savedFloor = resizeFloorElement?.style.minHeight
+      if (resizeFloorElement && resizeFloor > 0) {
+        resizeFloorElement.style.setProperty('min-height', `${resizeFloor}px`)
       }
       let measured: number
       try {
@@ -84,8 +83,8 @@ export function useNodeResize(
       } finally {
         nodeElement.style.setProperty('--node-height', savedHeight || '')
         nodeElement.style.setProperty('--node-width', savedWidth || '')
-        for (const { element, minHeight } of resizeMinHeightElements) {
-          element.style.minHeight = minHeight
+        if (resizeFloorElement) {
+          resizeFloorElement.style.setProperty('min-height', savedFloor ?? '')
         }
       }
       const currentScale = transformState.camera.z || 1

@@ -13,6 +13,13 @@ const file3 = 'video-preview-square.webm' as const
 const file4 = 'video-preview-portrait.webm' as const
 const MIN_PREVIEW_FRAME_HEIGHT = 100
 const CENTER_TOLERANCE_PX = 1
+const videoShapeFixtures = [
+  [file2, 'landscape'],
+  [file3, 'square'],
+  [file4, 'portrait']
+] as const
+
+type ThumbnailShape = (typeof videoShapeFixtures)[number][1]
 
 interface VideoPreviewLayout {
   objectFit: string
@@ -135,6 +142,32 @@ function getPaintedVideoRect({
   }
 }
 
+function expectAspectRatioMatchesShape(
+  aspectRatio: number,
+  shape: ThumbnailShape
+) {
+  if (shape === 'landscape') {
+    expect(
+      aspectRatio,
+      'landscape fixture should be wider than tall'
+    ).toBeGreaterThan(1)
+    return
+  }
+
+  if (shape === 'portrait') {
+    expect(
+      aspectRatio,
+      'portrait fixture should be taller than wide'
+    ).toBeLessThan(1)
+    return
+  }
+
+  expect(
+    Math.abs(aspectRatio - 1),
+    'square fixture should have matching width and height'
+  ).toBeLessThanOrEqual(CENTER_TOLERANCE_PX / 100)
+}
+
 async function expectCenteredVideoPreview(preview: Locator) {
   await expect
     .poll(async () => {
@@ -196,7 +229,6 @@ test.describe(
       const loadVideoNode = comfyPage.vueNodes.getNodeByTitle('Load Video')
       const loadVideo = new VideoPreview(loadVideoNode)
       let loadVideoFixture: VueNodeFixture
-      const aspectRatios: number[] = []
 
       await test.step('Add node', async () => {
         await comfyPage.menu.topbar.newWorkflowButton.click()
@@ -218,15 +250,11 @@ test.describe(
         await expect(loadVideo.video).toBeVisible()
 
         const layout = await expectCenteredVideoPreview(loadVideo.preview)
-        aspectRatios.push(
-          layout.videoIntrinsicWidth / layout.videoIntrinsicHeight
-        )
+        expect(layout.videoIntrinsicWidth).toBeGreaterThan(0)
       })
 
       await test.step('Update displayed video across thumbnail shapes', async () => {
-        const fixtureVideos = [file2, file3, file4]
-
-        for (const filename of fixtureVideos) {
+        for (const [filename, shape] of videoShapeFixtures) {
           const initialSrc = await loadVideo.videoSrc()
           const nodeBoxBeforeLoad = await requireBoundingBox(
             loadVideoNode,
@@ -251,13 +279,8 @@ test.describe(
           const updatedVideoAspectRatio =
             layout.videoIntrinsicWidth / layout.videoIntrinsicHeight
 
-          aspectRatios.push(updatedVideoAspectRatio)
+          expectAspectRatioMatchesShape(updatedVideoAspectRatio, shape)
         }
-
-        expect(
-          Math.max(...aspectRatios) - Math.min(...aspectRatios),
-          'test videos should exercise landscape, square, and portrait aspect ratios'
-        ).toBeGreaterThan(1)
       })
 
       await test.step('Keep video centered after horizontal resize', async () => {
@@ -304,6 +327,10 @@ test.describe(
           layout.wrapperHeight - initialLayout.wrapperHeight,
           'video preview space should grow with a taller node'
         ).toBeGreaterThan(100)
+        expect(
+          Math.abs(layout.wrapperWidth - initialLayout.wrapperWidth),
+          'vertical resize should not change the preview space width'
+        ).toBeLessThanOrEqual(CENTER_TOLERANCE_PX)
       })
 
       await test.step('Display multiple videos', async () => {

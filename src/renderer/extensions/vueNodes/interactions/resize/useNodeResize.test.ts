@@ -80,12 +80,11 @@ function createMockNodeElement(
   element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
     const nodeHeight = element.style.getPropertyValue('--node-height')
-    const resizeMinHeight = Math.max(
-      ...Array.from(
-        element.querySelectorAll<HTMLElement>('[data-resize-min-height]')
-      ).map((child) => Number.parseFloat(child.style.minHeight) || 0),
-      0
+    const resizeFloorElement = element.querySelector<HTMLElement>(
+      '[data-resize-min-height]'
     )
+    const resizeMinHeight =
+      Number.parseFloat(resizeFloorElement?.style.minHeight ?? '') || 0
     const h =
       nodeHeight === '0px'
         ? Math.max(minContentHeight, resizeMinHeight)

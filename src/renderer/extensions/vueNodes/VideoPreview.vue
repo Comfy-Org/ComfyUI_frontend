@@ -144,7 +144,7 @@ interface VideoPreviewProps {
 
 const props = defineProps<VideoPreviewProps>()
 
-const MIN_PREVIEW_ASPECT_REFERENCE_WIDTH = 200
+const MIN_PREVIEW_CONTENT_WIDTH = 200
 const MIN_PREVIEW_FRAME_HEIGHT = 100
 const FALLBACK_PREVIEW_FRAME_HEIGHT = 220
 
@@ -173,7 +173,7 @@ const minimumFrameHeight = computed(() => {
   if (!aspectRatio) return FALLBACK_PREVIEW_FRAME_HEIGHT
 
   return Math.max(
-    Math.round(MIN_PREVIEW_ASPECT_REFERENCE_WIDTH / aspectRatio),
+    Math.round(MIN_PREVIEW_CONTENT_WIDTH / aspectRatio),
     MIN_PREVIEW_FRAME_HEIGHT
   )
 })
