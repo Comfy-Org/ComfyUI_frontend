@@ -2,8 +2,6 @@
 /* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Textarea from 'primevue/textarea'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -58,8 +56,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
     return render(WidgetMarkdown, {
       global: {
-        plugins: [PrimeVue, i18n],
-        components: { Textarea }
+        plugins: [i18n]
       },
       props: {
         widget,

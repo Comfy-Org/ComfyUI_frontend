@@ -1,0 +1,68 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { models } from '../../../config/models'
+import { t } from '../../../i18n/translations'
+
+const title = t('models.index.title')
+const subtitle = t('models.index.subtitle')
+
+const dirLabel: Record<string, string> = {
+  diffusion_models: 'Diffusion',
+  checkpoints: 'Checkpoint',
+  loras: 'LoRA',
+  controlnet: 'ControlNet',
+  clip_vision: 'CLIP Vision',
+  model_patches: 'Patch',
+  vae: 'VAE',
+  text_encoders: 'Text Encoder',
+  audio_encoders: 'Audio Encoder',
+  latent_upscale_models: 'Latent Upscale',
+  upscale_models: 'Upscale',
+  style_models: 'Style',
+  partner_nodes: 'Partner Node'
+}
+---
+
+<BaseLayout
+  title={`${title} — Comfy`}
+  description={subtitle}
+>
+  <div class="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
+    <header class="mb-12">
+      <p
+        class="mb-2 text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
+      >
+        {t('models.hero.eyebrow')}
+      </p>
+      <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+        {title}
+      </h1>
+      <p class="mt-4 max-w-2xl text-lg text-primary-comfy-canvas/70">
+        {subtitle}
+      </p>
+    </header>
+
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {models.map((model) => (
+        <li>
+          <a
+            href={`/p/supported-models/${model.slug}`}
+            class="flex h-full flex-col gap-3 rounded-xl border border-white/10 p-5 transition-colors hover:border-white/25 hover:bg-white/5"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-base font-semibold leading-tight text-primary-comfy-canvas">
+                {model.displayName}
+              </span>
+              <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-primary-comfy-canvas/70">
+                {dirLabel[model.directory] ?? model.directory}
+              </span>
+            </div>
+            <p class="mt-auto text-xs text-primary-comfy-canvas/50">
+              {model.workflowCount} workflows
+            </p>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</BaseLayout>

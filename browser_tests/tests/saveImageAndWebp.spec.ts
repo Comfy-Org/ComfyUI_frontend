@@ -16,7 +16,7 @@ test.describe(
       await comfyPage.runButton.click()
 
       const saveImageNode = comfyPage.vueNodes.getNodeByTitle('Save Image')
-      const saveWebmNode = comfyPage.vueNodes.getNodeByTitle('SaveWEBM')
+      const saveWebmNode = comfyPage.vueNodes.getNodeByTitle('Save WEBM')
 
       // Wait for SaveImage to render an img inside .image-preview
       await expect(saveImageNode.locator('.image-preview img')).toBeVisible({

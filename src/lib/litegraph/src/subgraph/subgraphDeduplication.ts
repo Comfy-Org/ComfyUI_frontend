@@ -15,19 +15,10 @@ interface DeduplicationResult {
 }
 
 /**
- * Pre-deduplicates node IDs across serialized subgraph definitions before
- * they are configured. This prevents widget store key collisions when
- * multiple subgraph copies contain nodes with the same IDs.
- *
- * Also patches proxyWidgets in root-level nodes that reference the
- * remapped inner node IDs.
- *
- * Returns deep clones of the inputs — the originals are never mutated.
- *
- * @param subgraphs - Serialized subgraph definitions to deduplicate
- * @param reservedNodeIds - Node IDs already in use by root-level nodes
- * @param state - Graph state containing the `lastNodeId` counter (mutated)
- * @param rootNodes - Optional root-level nodes with proxyWidgets to patch
+ * Dedupes node IDs across serialized subgraph definitions to prevent widget
+ * store key collisions, and patches any root-level legacy proxyWidgets that
+ * reference the remapped inner IDs. Returns deep clones; inputs are not
+ * mutated. `state.lastNodeId` is advanced.
  */
 export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
@@ -197,7 +188,7 @@ export function topologicalSortSubgraphs(
   return sorted
 }
 
-/** Patches proxyWidgets in root-level SubgraphNode instances. */
+/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
 function patchProxyWidgets(
   rootNodes: ISerialisedNode[],
   subgraphIdSet: Set<string>,

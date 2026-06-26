@@ -13,7 +13,7 @@ The complete documentation for core extensions has been moved to:
 This directory contains built-in extensions that ship with ComfyUI, including:
 
 - **Image Processing**: maskeditor, uploadImage, saveImageExtraOutput, clipspace
-- **Graph Management**: groupNode, groupNodeManage, groupOptions, rerouteNode, noteNode
+- **Graph Management**: groupNode, groupOptions, rerouteNode, noteNode
 - **Input Handling**: widgetInputs, uploadAudio, webcamCapture, simpleTouchSupport
 - **UI Enhancements**: contextMenuFilter, previewAny, nodeTemplates
 - **Text Processing**: dynamicPrompts, editAttention

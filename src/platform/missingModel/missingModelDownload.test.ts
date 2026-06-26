@@ -1,18 +1,50 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fetchModelMetadata, toBrowsableUrl } from './missingModelDownload'
+import {
+  downloadModel,
+  fetchModelMetadata,
+  isModelDownloadable,
+  toBrowsableUrl
+} from './missingModelDownload'
 
-const fetchMock = vi.fn()
+const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
+  vi.hoisted(() => ({
+    fetchMock: vi.fn(),
+    mockIsDesktop: { value: false },
+    mockSidebarTabStore: { activeSidebarTabId: null as string | null },
+    mockStartDownload: vi.fn()
+  }))
+
 vi.stubGlobal('fetch', fetchMock)
 
-vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
-vi.mock('@/stores/electronDownloadStore', () => ({}))
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockIsDesktop.value
+  }
+}))
+
+vi.mock('@/stores/electronDownloadStore', () => ({
+  useElectronDownloadStore: () => ({
+    start: mockStartDownload
+  })
+}))
+
+vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+  useSidebarTabStore: () => mockSidebarTabStore
+}))
 
 let testId = 0
 
+beforeEach(() => {
+  vi.restoreAllMocks()
+  vi.resetAllMocks()
+  delete window.__comfyDesktop2
+})
+
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
-    fetchMock.mockReset()
+    mockIsDesktop.value = false
+    mockSidebarTabStore.activeSidebarTabId = null
     testId++
   })
 
@@ -176,5 +208,194 @@ describe('toBrowsableUrl', () => {
     expect(toBrowsableUrl('https://civitai.com/api/v1/models/12345')).toBe(
       'https://civitai.com/models/12345'
     )
+  })
+
+  it('converts civitai.red URLs to model pages', () => {
+    expect(
+      toBrowsableUrl('https://civitai.red/api/download/models/12345')
+    ).toBe('https://civitai.red/models/12345')
+    expect(toBrowsableUrl('https://civitai.red/api/v1/models/12345')).toBe(
+      'https://civitai.red/models/12345'
+    )
+  })
+})
+
+describe('isModelDownloadable', () => {
+  it('allows civitai.red URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://civitai.red/api/download/models/12345',
+        directory: 'checkpoints'
+      })
+    ).toBe(true)
+  })
+
+  it('rejects non-allowlisted URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://example.com/model.safetensors',
+        directory: 'checkpoints'
+      })
+    ).toBe(false)
+  })
+})
+
+describe('downloadModel', () => {
+  beforeEach(() => {
+    mockIsDesktop.value = false
+    mockSidebarTabStore.activeSidebarTabId = null
+  })
+
+  it('uses the Desktop2 bridge directly instead of the browser fallback', () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    const desktopDownloadModel = vi
+      .fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+      .mockResolvedValue(true)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(desktopDownloadModel).toHaveBeenCalledWith(
+      'https://huggingface.co/org/model/resolve/main/model.safetensors',
+      'model.safetensors',
+      'checkpoints'
+    )
+    expect(anchorClick).not.toHaveBeenCalled()
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
+  it('logs Desktop2 bridge failures without falling back to browser download', async () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const bridgeError = new Error('bridge failed')
+    const desktopDownloadModel = vi
+      .fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+      .mockRejectedValue(bridgeError)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to start Desktop2 model download:',
+        bridgeError
+      )
+    })
+    expect(anchorClick).not.toHaveBeenCalled()
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
+  it('logs synchronous Desktop2 bridge failures without crashing', async () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const bridgeError = new Error('bridge failed before returning a promise')
+    const desktopDownloadModel = vi
+      .fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+      .mockImplementation(() => {
+        throw bridgeError
+      })
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to start Desktop2 model download:',
+        bridgeError
+      )
+    })
+    expect(anchorClick).not.toHaveBeenCalled()
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
+  it('keeps remote Desktop2 sessions on the browser fallback', () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    const desktopDownloadModel = vi
+      .fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+      .mockResolvedValue(true)
+    window.__comfyDesktop2 = {
+      isRemote: () => true,
+      downloadModel: desktopDownloadModel
+    }
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(desktopDownloadModel).not.toHaveBeenCalled()
+    expect(anchorClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the model library sidebar before starting a desktop download', () => {
+    mockIsDesktop.value = true
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('model-library')
+    expect(mockStartDownload).toHaveBeenCalledWith({
+      url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+      savePath: '/models/checkpoints',
+      filename: 'model.safetensors'
+    })
   })
 })

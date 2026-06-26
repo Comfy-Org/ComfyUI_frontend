@@ -1,5 +1,4 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -8,7 +7,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
@@ -24,9 +24,9 @@ export class MovingInputLink extends MovingLinkBase {
   readonly fromSlot: INodeOutputSlot
   readonly fromPos: Point
   readonly fromDirection: LinkDirection
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
   disconnectOnDrop: boolean
-  readonly disconnectOrigin: Point
+  readonly disconnectOrigin?: Point
 
   constructor(
     network: LinkNetwork,
@@ -135,24 +135,5 @@ export class MovingInputLink extends MovingLinkBase {
 
   disconnect(): boolean {
     return this.inputNode.disconnectInput(this.inputIndex, true)
-  }
-
-  drawConnectionCircle(ctx: CanvasRenderingContext2D, to: Readonly<Point>) {
-    if (!this.disconnectOnDrop) return
-
-    const [originX, originY] = this.disconnectOrigin
-    const radius = 35
-    const distSquared = (originX - to[0]) ** 2 + (originY - to[1]) ** 2
-
-    ctx.save()
-    ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(originX + radius, originY)
-    ctx.arc(originX, originY, radius, 0, Math.PI * 2)
-    ctx.stroke()
-    ctx.restore()
-
-    this.disconnectOnDrop = distSquared < radius ** 2
   }
 }

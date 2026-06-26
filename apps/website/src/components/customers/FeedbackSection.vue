@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useScroll } from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -25,14 +26,14 @@ const feedbacks = [
 ]
 
 const trackRef = ref<HTMLElement>()
-const progress = ref(0)
+const { x } = useScroll(trackRef)
 
-function updateProgress() {
+const progress = computed(() => {
   const el = trackRef.value
-  if (!el) return
+  if (!el) return 0
   const max = el.scrollWidth - el.clientWidth
-  progress.value = max > 0 ? el.scrollLeft / max : 0
-}
+  return max > 0 ? x.value / max : 0
+})
 
 function scroll(direction: -1 | 1) {
   const el = trackRef.value
@@ -41,22 +42,14 @@ function scroll(direction: -1 | 1) {
 }
 
 const progressPercent = computed(() => `${progress.value * 100}%`)
-
-onMounted(() => {
-  trackRef.value?.addEventListener('scroll', updateProgress, { passive: true })
-})
-
-onUnmounted(() => {
-  trackRef.value?.removeEventListener('scroll', updateProgress)
-})
 </script>
 
 <template>
-  <section class="px-6 py-16 lg:px-16 lg:py-24">
+  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-16 lg:py-24">
     <!-- Scrollable track -->
     <div
       ref="trackRef"
-      class="scrollbar-none flex snap-x snap-mandatory gap-12 overflow-x-auto lg:gap-20"
+      class="flex snap-x snap-mandatory scrollbar-none gap-12 overflow-x-auto lg:gap-20"
     >
       <div
         v-for="(fb, i) in feedbacks"
@@ -82,7 +75,7 @@ onUnmounted(() => {
       <!-- Progress bar -->
       <div class="h-1 flex-1 rounded-full bg-white/20">
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full transition-all duration-200"
+          class="bg-primary-comfy-yellow h-full rounded-full"
           :style="{ width: progressPercent }"
         />
       </div>

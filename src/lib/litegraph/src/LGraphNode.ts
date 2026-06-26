@@ -51,7 +51,8 @@ import type {
   Positionable,
   ReadOnlyRect,
   Rect,
-  Size
+  Size,
+  SlotIndex
 } from './interfaces'
 import { LiteGraph, Subgraph } from './litegraph'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
@@ -809,7 +810,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
+    this.id = -1
     this.title = title || 'Unnamed'
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
@@ -830,7 +831,7 @@ export class LGraphNode
    */
   configure(info: ISerialisedNode): void {
     if (this.graph) {
-      this.graph._version++
+      this.graph.incrementVersion()
     }
     if (info.id === -1) info.id = this.id
     for (const j in info) {
@@ -996,7 +997,6 @@ export class LGraphNode
     return o
   }
 
-  /* Creates a clone of this node */
   clone(): LGraphNode | null {
     if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
@@ -1022,8 +1022,7 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
 
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
-
+    node.id = this.id
     node.configure(data)
 
     return node
@@ -1106,7 +1105,7 @@ export class LGraphNode
   /**
    * sets the output data type, useful when you want to be able to overwrite the data type
    */
-  setOutputDataType(slot: number, type: ISlotType): void {
+  setOutputDataType(slot: SlotIndex, type: ISlotType): void {
     const { outputs } = this
     if (!outputs || slot == -1 || slot >= outputs.length) return
 
@@ -1164,7 +1163,7 @@ export class LGraphNode
    * @param slot
    * @returns datatype in string format
    */
-  getInputDataType(slot: number): ISlotType | null {
+  getInputDataType(slot: SlotIndex): ISlotType | null {
     if (!this.inputs) return null
     if (slot >= this.inputs.length || this.inputs[slot].link == null)
       return null
@@ -1399,7 +1398,6 @@ export class LGraphNode
 
       default:
         return false
-        break
     }
     this.mode = modeTo
     return true
@@ -2088,7 +2086,10 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    if (!this.flags?.collapsed) {
+    // In Vue mode, `this.size` is kept in sync with the DOM-measured
+    // collapsed dimensions via ResizeObserver → layoutStore → useLayoutSync,
+    // so the expanded branch produces correct bounds for collapsed nodes too.
+    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else {
@@ -2986,7 +2987,7 @@ export class LGraphNode
         }
       }
     }
-    graph._version++
+    graph.incrementVersion()
 
     // link has been created now, so its updated
     this.onConnectionsChange?.(
@@ -3135,7 +3136,7 @@ export class LGraphNode
 
         // remove the link from the links pool
         link_info.disconnect(graph, 'input')
-        graph._version++
+        graph.incrementVersion()
 
         // link_info hasn't been modified so its ok
         target.onConnectionsChange?.(
@@ -3173,7 +3174,7 @@ export class LGraphNode
         }
 
         const target = graph.getNodeById(link_info.target_id)
-        graph._version++
+        graph.incrementVersion()
 
         if (target) {
           const input = target.inputs[link_info.target_slot]
@@ -3301,7 +3302,7 @@ export class LGraphNode
         }
 
         link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
-        if (graph) graph._version++
+        if (graph) graph.incrementVersion()
 
         this.onConnectionsChange?.(
           NodeSlotType.INPUT,
@@ -3445,7 +3446,7 @@ export class LGraphNode
    * @param outputSlotIndex Output slot index
    * @returns Position of the output slot
    */
-  getOutputPos(outputSlotIndex: number): Point {
+  getOutputPos(outputSlotIndex: SlotIndex): Point {
     return getSlotPosition(this, outputSlotIndex, false)
   }
 
@@ -3536,7 +3537,7 @@ export class LGraphNode
   collapse(force?: boolean): void {
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
-    this.graph._version++
+    this.graph.incrementVersion()
     this.flags.collapsed = !this.flags.collapsed
     this.setDirtyCanvas(true, true)
   }
@@ -3547,7 +3548,7 @@ export class LGraphNode
   toggleAdvanced() {
     if (!this.hasAdvancedWidgets()) return
     if (!this.graph) throw new NullGraphError()
-    this.graph._version++
+    this.graph.incrementVersion()
     this.showAdvanced = !this.showAdvanced
     this.expandToFitContent()
     this.setDirtyCanvas(true, true)
@@ -3564,7 +3565,7 @@ export class LGraphNode
   pin(v?: boolean): void {
     if (!this.graph) throw new NullGraphError()
 
-    this.graph._version++
+    this.graph.incrementVersion()
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
@@ -4236,7 +4237,9 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.pos = [offset, widget.y + offset]
+      const pos: [number, number] = [offset, widget.y + offset]
+      slot.pos = pos
+      this.inputs[i].pos = pos
       this._measureSlot(slot, i, true)
     }
   }

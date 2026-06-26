@@ -3,8 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
-import type { WorkspaceStore } from '@e2e/types/globals'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 // TODO: there might be a better solution for this
@@ -33,56 +32,6 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
   await comfyPage.nextFrame()
 
   return comfyPage.page.getByTestId('properties-panel')
-}
-
-async function setLocaleAndWaitForWorkflowReload(
-  comfyPage: ComfyPage,
-  locale: string
-) {
-  await comfyPage.page.evaluate(async (targetLocale) => {
-    const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
-      .activeWorkflow
-
-    if (!workflow) {
-      throw new Error('No active workflow while waiting for locale reload')
-    }
-
-    const changeTracker = workflow.changeTracker.constructor as unknown as {
-      isLoadingGraph: boolean
-    }
-
-    let sawLoading = false
-    const waitForReload = new Promise<void>((resolve, reject) => {
-      const timeoutAt = performance.now() + 5000
-
-      const tick = () => {
-        if (changeTracker.isLoadingGraph) {
-          sawLoading = true
-        }
-
-        if (sawLoading && !changeTracker.isLoadingGraph) {
-          resolve()
-          return
-        }
-
-        if (performance.now() > timeoutAt) {
-          reject(
-            new Error(
-              `Timed out waiting for workflow reload after setting locale to ${targetLocale}`
-            )
-          )
-          return
-        }
-
-        requestAnimationFrame(tick)
-      }
-
-      tick()
-    })
-
-    await window.app!.extensionManager.setting.set('Comfy.Locale', targetLocale)
-    await waitForReload
-  }, locale)
 }
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
@@ -347,55 +296,6 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       )
     })
 
-    test('Should handle custom node documentation paths', async ({
-      comfyPage
-    }) => {
-      // First load workflow with custom node
-      await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
-
-      // Mock custom node documentation with fallback
-      await comfyPage.page.route(
-        '**/extensions/*/docs/*/en.md',
-        async (route) => {
-          await route.fulfill({ status: 404 })
-        }
-      )
-
-      await comfyPage.page.route('**/extensions/*/docs/*.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# Custom Node Documentation
-
-This is documentation for a custom node.
-
-![Custom Image](assets/custom.png)
-`
-        })
-      })
-
-      // Find and select a custom/group node
-      const nodeRefs = await comfyPage.page.evaluate(() => {
-        return window.app!.graph!.nodes.map((n) => n.id)
-      })
-      if (nodeRefs.length > 0) {
-        const firstNode = await comfyPage.nodeOps.getNodeRefById(nodeRefs[0])
-        await selectNodeWithPan(comfyPage, firstNode)
-      }
-
-      const helpButton = comfyPage.selectionToolbox.getByTestId('info-button')
-      if (await helpButton.isVisible()) {
-        const helpPage = await openSelectionToolboxHelp(comfyPage)
-        await expect(helpPage).toContainText('Custom Node Documentation')
-
-        // Check image path for custom nodes
-        const image = helpPage.locator('img[alt="Custom Image"]')
-        await expect(image).toHaveAttribute(
-          'src',
-          /.*\/extensions\/.*\/docs\/assets\/custom\.png/
-        )
-      }
-    })
-
     test('Should sanitize dangerous HTML content', async ({ comfyPage }) => {
       // Mock response with potentially dangerous content
       await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
@@ -447,34 +347,33 @@ This is documentation for a custom node.
       await expect(helpPage.locator('img[alt="Safe Image"]')).toBeVisible()
     })
 
-    test('Should handle locale-specific documentation', async ({
-      comfyPage
-    }) => {
-      // Mock different responses for different locales
-      await comfyPage.page.route('**/docs/KSampler/ja.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# KSamplerノード
+    test.describe('Locale-specific documentation', () => {
+      test.use({ initialSettings: { 'Comfy.Locale': 'ja' } })
+
+      test('Should handle locale-specific documentation', async ({
+        comfyPage
+      }) => {
+        // Mock different responses for different locales
+        await comfyPage.page.route('**/docs/KSampler/ja.md', async (route) => {
+          await route.fulfill({
+            status: 200,
+            body: `# KSamplerノード
 
 これは日本語のドキュメントです。
 `
+          })
         })
-      })
 
-      await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# KSampler Node
+        await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
+          await route.fulfill({
+            status: 200,
+            body: `# KSampler Node
 
 This is English documentation.
 `
+          })
         })
-      })
 
-      // Set locale to Japanese
-      await setLocaleAndWaitForWorkflowReload(comfyPage, 'ja')
-
-      try {
         await comfyPage.workflow.loadWorkflow('default')
         const ksamplerNodes =
           await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -483,9 +382,7 @@ This is English documentation.
         const helpPage = await openSelectionToolboxHelp(comfyPage)
         await expect(helpPage).toContainText('KSamplerノード')
         await expect(helpPage).toContainText('これは日本語のドキュメントです')
-      } finally {
-        await setLocaleAndWaitForWorkflowReload(comfyPage, 'en')
-      }
+      })
     })
 
     test('Should handle network errors gracefully', async ({ comfyPage }) => {

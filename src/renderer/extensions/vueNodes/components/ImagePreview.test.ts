@@ -15,6 +15,10 @@ vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: vi.fn()
 }))
 
+vi.mock('@/services/hdrViewerService', () => ({
+  openHdrViewer: vi.fn()
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -36,6 +40,10 @@ const i18n = createI18n({
         loading: 'Loading',
         viewGrid: 'Grid view',
         galleryThumbnail: 'Gallery thumbnail'
+      },
+      hdrViewer: {
+        hdrImage: 'HDR image',
+        openInHdrViewer: 'Open in HDR Viewer'
       }
     }
   }
@@ -86,6 +94,15 @@ describe('ImagePreview', () => {
     expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
   })
 
+  it('offers the HDR viewer instead of an <img> for exr outputs', () => {
+    renderImagePreview({
+      imageUrls: ['/api/view?filename=out.exr&type=output']
+    })
+
+    expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+  })
+
   it('displays calculating dimensions text in gallery mode', async () => {
     renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
@@ -132,6 +149,29 @@ describe('ImagePreview', () => {
     })
 
     screen.getByRole('button', { name: 'Edit or mask image' })
+  })
+
+  it('hides mask and download buttons when image fails to load', async () => {
+    renderImagePreview({
+      imageUrls: [defaultProps.imageUrls[0]]
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Edit or mask image' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Download image' })
+    ).toBeInTheDocument()
+
+    await fireEvent.error(screen.getByTestId('main-image'))
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', { name: 'Edit or mask image' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Download image' })
+    ).not.toBeInTheDocument()
   })
 
   it('handles download button click', async () => {
@@ -354,6 +394,16 @@ describe('ImagePreview', () => {
         name: /^View image/
       })
       expect(gridThumbnails).toHaveLength(2)
+    })
+
+    it('requests lightweight thumbnails for grid cells instead of full-resolution images', () => {
+      renderImagePreview()
+
+      const gridImages = screen.getAllByRole('img')
+      expect(gridImages).toHaveLength(2)
+      for (const img of gridImages) {
+        expect(img.getAttribute('src')).toMatch(/[?&]preview=/)
+      }
     })
 
     it('defaults to gallery mode for single image', () => {

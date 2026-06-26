@@ -423,3 +423,44 @@ export const Failed: Story = {
     `
   })
 }
+
+export const FailedWithLongError: Story = {
+  render: (args) => ({
+    components: { JobDetailsPopover },
+    setup() {
+      resetStores()
+      const queue = useQueueStore()
+
+      const jobId = 'job-failed-long-1'
+      const priority = 411
+      const longError =
+        `Failed to send prompt request: request returned error status 400: ` +
+        `{"error": {"type": "prompt_outputs_failed_validation", "message": ` +
+        `"Prompt outputs failed validation", "details": "", "extra_info": {}}, ` +
+        `"node_errors": {"4": {"errors": [{"type": "value_not_in_list", ` +
+        `"message": "Value not in list", "details": "ckpt_name: ` +
+        `'__this_checkpoint_does_not_exist__.safetensors' not in ` +
+        `['JANKUTrainedChenkinNoobai_v777.safetensors', ` +
+        `'NetaYumevXX_pretrained_all_in_one.safetensors', ` +
+        `'animagineXL_v31Inpainting.safetensors', ` +
+        `'animayhemPaleRider_v30PlainsDrifter.safetensors', ` +
+        `'bananaSplitzXL_bananaSplitzXXL.safetensors', ` +
+        `'cyberrealistic_final.safetensors', ` +
+        `'dreamshaper_8.safetensors', ` +
+        `'intorealism_sdxlV4.safetensors', ` +
+        `'kleinova_10BF16.safetensors', 'ltx-2-19b-distilled-fp8.safetensors', ` +
+        `'ltx-2-3-22b-dev-fp8.safetensors', 'ltx-2-3-22b-distilled-fp8.safetensors', ` +
+        `'moodyDesireMix_v10.safetensors', 'perfectionSuperModelILXL_20.safetensors']"}]}}}`
+      queue.historyTasks = [
+        makeHistoryTask(jobId, priority, 12, false, longError)
+      ]
+
+      return { args: { ...args, jobId } }
+    },
+    template: `
+      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+        <JobDetailsPopover v-bind="args" />
+      </div>
+    `
+  })
+}

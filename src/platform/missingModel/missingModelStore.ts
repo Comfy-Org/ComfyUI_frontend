@@ -1,14 +1,16 @@
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 /**
@@ -18,8 +20,10 @@ import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
  */
 export const useMissingModelStore = defineStore('missingModel', () => {
   const canvasStore = useCanvasStore()
+  const workflowStore = useWorkflowStore()
 
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
+  const isRefreshingMissingModels = ref(false)
 
   const hasMissingModels = computed(
     () => !!missingModelCandidates.value?.length
@@ -74,25 +78,15 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     )
   })
 
-  // Persists across component re-mounts so that download progress,
-  // URL inputs, etc. survive tab switches within the right-side panel.
+  // Persists across component re-mounts so that download progress
+  // survives tab switches within the right-side panel.
   const modelExpandState = ref<Record<string, boolean>>({})
   const selectedLibraryModel = ref<Record<string, string>>({})
-  const importCategoryMismatch = ref<Record<string, string>>({})
   const importTaskIds = ref<Record<string, string>>({})
-  const urlInputs = ref<Record<string, string>>({})
-  const urlMetadata = ref<Record<string, AssetMetadata | null>>({})
-  const urlFetching = ref<Record<string, boolean>>({})
-  const urlErrors = ref<Record<string, string>>({})
-  const urlImporting = ref<Record<string, boolean>>({})
   const folderPaths = ref<Record<string, string[]>>({})
   const fileSizes = ref<Record<string, number>>({})
 
-  const _urlDebounceTimers: Record<string, ReturnType<typeof setTimeout>> = {}
-
   let _verificationAbortController: AbortController | null = null
-
-  onScopeDispose(cancelDebounceTimers)
 
   function createVerificationAbortController(): AbortController {
     _verificationAbortController?.abort()
@@ -131,13 +125,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   function clearInteractionStateForName(name: string) {
     delete modelExpandState.value[name]
     delete selectedLibraryModel.value[name]
-    delete importCategoryMismatch.value[name]
     delete importTaskIds.value[name]
-    delete urlInputs.value[name]
-    delete urlMetadata.value[name]
-    delete urlFetching.value[name]
-    delete urlErrors.value[name]
-    delete urlImporting.value[name]
   }
 
   function removeMissingModelsByNodeId(nodeId: string) {
@@ -193,6 +181,34 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     }
   }
 
+  function removeMissingModelsBySourceScope(executionId: string) {
+    if (!missingModelCandidates.value) return
+    const prefix = `${executionId}:`
+    const removedNames = new Set<string>()
+    const remaining: MissingModelCandidate[] = []
+    for (const candidate of missingModelCandidates.value) {
+      const sourceExecutionId =
+        candidate.sourceExecutionId == null
+          ? undefined
+          : String(candidate.sourceExecutionId)
+      if (
+        sourceExecutionId === executionId ||
+        sourceExecutionId?.startsWith(prefix)
+      ) {
+        removedNames.add(candidate.name)
+      } else {
+        remaining.push(candidate)
+      }
+    }
+    if (removedNames.size === 0) return
+    missingModelCandidates.value = remaining.length ? remaining : null
+    for (const name of removedNames) {
+      if (!remaining.some((candidate) => candidate.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+  }
+
   function addMissingModels(models: MissingModelCandidate[]) {
     if (!models.length) return
     const existing = missingModelCandidates.value ?? []
@@ -207,8 +223,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelCandidates.value = [...existing, ...newModels]
   }
 
-  function hasMissingModelOnNode(nodeLocatorId: string): boolean {
-    return missingModelNodeIds.value.has(nodeLocatorId)
+  function hasMissingModelOnNode(nodeLocatorId: NodeLocatorId): boolean {
+    const executionId =
+      workflowStore.nodeLocatorIdToNodeExecutionId(nodeLocatorId)
+    return executionId ? missingModelNodeIds.value.has(executionId) : false
   }
 
   function isWidgetMissingModel(nodeId: string, widgetName: string): boolean {
@@ -217,31 +235,6 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   function isContainerWithMissingModel(node: LGraphNode): boolean {
     return activeMissingModelGraphIds.value.has(String(node.id))
-  }
-
-  function cancelDebounceTimers() {
-    for (const key of Object.keys(_urlDebounceTimers)) {
-      clearTimeout(_urlDebounceTimers[key])
-      delete _urlDebounceTimers[key]
-    }
-  }
-
-  function setDebounceTimer(
-    key: string,
-    callback: () => void,
-    delayMs: number
-  ) {
-    if (_urlDebounceTimers[key]) {
-      clearTimeout(_urlDebounceTimers[key])
-    }
-    _urlDebounceTimers[key] = setTimeout(callback, delayMs)
-  }
-
-  function clearDebounceTimer(key: string) {
-    if (_urlDebounceTimers[key]) {
-      clearTimeout(_urlDebounceTimers[key])
-      delete _urlDebounceTimers[key]
-    }
   }
 
   function setFolderPaths(paths: Record<string, string[]>) {
@@ -256,22 +249,40 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     _verificationAbortController?.abort()
     _verificationAbortController = null
     missingModelCandidates.value = null
-    cancelDebounceTimers()
     modelExpandState.value = {}
     selectedLibraryModel.value = {}
-    importCategoryMismatch.value = {}
     importTaskIds.value = {}
-    urlInputs.value = {}
-    urlMetadata.value = {}
-    urlFetching.value = {}
-    urlErrors.value = {}
-    urlImporting.value = {}
     folderPaths.value = {}
     fileSizes.value = {}
   }
 
+  function isAbortError(error: unknown) {
+    return error instanceof Error && error.name === 'AbortError'
+  }
+
+  async function refreshMissingModels() {
+    if (isRefreshingMissingModels.value) return
+
+    isRefreshingMissingModels.value = true
+    try {
+      await app.refreshMissingModels({ silent: true })
+    } catch (error) {
+      if (isAbortError(error)) return
+
+      console.error('Failed to refresh missing models:', error)
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('rightSidePanel.missingModels.refreshFailed')
+      })
+    } finally {
+      isRefreshingMissingModels.value = false
+    }
+  }
+
   return {
     missingModelCandidates,
+    isRefreshingMissingModels,
     hasMissingModels,
     missingModelCount,
     missingModelNodeIds,
@@ -284,7 +295,9 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     removeMissingModelByWidget,
     removeMissingModelsByNodeId,
     removeMissingModelsByPrefix,
+    removeMissingModelsBySourceScope,
     clearMissingModels,
+    refreshMissingModels,
     createVerificationAbortController,
 
     hasMissingModelOnNode,
@@ -294,19 +307,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     modelExpandState,
     selectedLibraryModel,
     importTaskIds,
-    importCategoryMismatch,
-    urlInputs,
-    urlMetadata,
-    urlFetching,
-    urlErrors,
-    urlImporting,
     folderPaths,
     fileSizes,
 
     setFolderPaths,
-    setFileSize,
-
-    setDebounceTimer,
-    clearDebounceTimer
+    setFileSize
   }
 })

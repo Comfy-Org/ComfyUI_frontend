@@ -7,14 +7,23 @@ on:
     types:
       - completed
 
-permissions:
-  contents: read
-  pull-requests: write
-  actions: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
 
 jobs:
   comment:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    # Uses head_branch as proxy for PR number (unavailable at job-level in workflow_run).
+    # Preview and E2E comment writes are NOT mutually serialized — the race window is
+    # small and self-healing on next push.
+    concurrency:
+      group: website-pr-comment-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       github.event.workflow_run.event == 'pull_request' &&
@@ -31,44 +40,31 @@ jobs:
 
       - name: Resolve PR number from workflow_run context
         id: pr-meta
-        uses: actions/github-script@v8
-        with:
-          script: |
-            let pr = context.payload.workflow_run.pull_requests?.[0];
-            if (!pr) {
-              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.payload.workflow_run.head_sha,
-              });
-              pr = prs.find(p => p.state === 'open');
-            }
+        uses: ./.github/actions/resolve-pr-from-workflow-run
 
-            if (!pr) {
-              core.info('No open PR found for this workflow run — skipping.');
-              core.setOutput('skip', 'true');
-              return;
-            }
-
-            core.setOutput('skip', 'false');
-            core.setOutput('number', String(pr.number));
-
-      - name: Read preview URL
+      - name: Read preview URLs
         if: steps.pr-meta.outputs.skip != 'true'
-        id: meta
+        id: urls
         run: |
-          echo "url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
+          echo "stable-url=$(cat temp/vercel-preview/stable-url.txt)" >> "$GITHUB_OUTPUT"
+          echo "unique-url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
+          echo "short-sha=${HEAD_SHA:0:7}" >> "$GITHUB_OUTPUT"
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Write report
+      - name: Post preview comment
         if: steps.pr-meta.outputs.skip != 'true'
-        run: |
-          echo "**Website Preview:** ${{ steps.meta.outputs.url }}" > preview-report.md
-
-      - name: Post PR comment
-        if: steps.pr-meta.outputs.skip != 'true'
-        uses: ./.github/actions/post-pr-report-comment
+        uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ steps.pr-meta.outputs.number }}
-          report-file: ./preview-report.md
-          comment-marker: '<!-- VERCEL_WEBSITE_PREVIEW -->'
+          section-name: preview
+          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: |-
+            ## 🔗 Website Preview
+
+            **Website Preview:** ${{ steps.urls.outputs.stable-url }}
+
+            <sub>This commit: ${{ steps.urls.outputs.unique-url }}</sub>
+
+            <sub>Last updated: ${{ github.event.workflow_run.updated_at }} for `${{ steps.urls.outputs.short-sha }}`</sub>

@@ -3,11 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
@@ -23,12 +27,22 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
+  const mockDs = {
+    scale: 1,
+    element: { width: 800, height: 600 } as Pick<
+      HTMLCanvasElement,
+      'width' | 'height'
+    >,
+    changeScale: vi.fn()
+  }
   const mockCanvas = {
     subgraph: undefined,
     selectedItems: new Set(),
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
-    selectItems: vi.fn()
+    selectItems: vi.fn(),
+    ds: mockDs,
+    setDirty: vi.fn()
   }
 
   return {
@@ -39,6 +53,8 @@ vi.mock('@/scripts/app', () => {
           mockGraphClear()
         }
       }),
+      openClipspace: vi.fn(),
+      refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
         clear: mockGraphClear
@@ -53,6 +69,15 @@ vi.mock('@/scripts/api', () => ({
     apiURL: vi.fn(() => 'http://localhost:8188')
   }
 }))
+
+const mockModelStoreRefresh = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/stores/modelStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof ModelStoreModule>()
+  return {
+    ...actual,
+    useModelStore: () => ({ refresh: mockModelStoreRefresh })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore')
 
@@ -81,8 +106,27 @@ vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => mockDialogService)
 }))
 
+const mockResetView = vi.hoisted(() => vi.fn())
 vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: vi.fn(() => ({}))
+  useLitegraphService: vi.fn(() => ({
+    resetView: mockResetView
+  }))
+}))
+
+const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: vi.fn(() => ({
+    trackHelpResourceClicked: mockTrackHelpResourceClicked
+  }))
+}))
+
+const mockShowAbout = vi.hoisted(() => vi.fn())
+const mockShowSettings = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: vi.fn(() => ({
+    show: mockShowSettings,
+    showAbout: mockShowAbout
+  }))
 }))
 
 vi.mock('@/stores/executionStore', () => ({
@@ -91,6 +135,23 @@ vi.mock('@/stores/executionStore', () => ({
 
 vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
+}))
+
+const mockToastAdd = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
+}))
+
+const mockAssetBrowse = vi.hoisted(() =>
+  vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
+)
+vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
+  useAssetBrowserDialog: vi.fn(() => ({ browse: mockAssetBrowse }))
+}))
+
+const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/node/startModelNodeDragFromAsset', () => ({
+  startModelNodeDragFromAsset: mockStartModelNodeDrag
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
@@ -480,6 +541,143 @@ describe('useCoreCommands', () => {
         expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
         expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
       })
+    })
+  })
+
+  describe('Canvas view commands', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
+      await findCmd('Comfy.Canvas.ResetView').function()
+
+      expect(mockResetView).toHaveBeenCalled()
+    })
+
+    it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
+      app.canvas.ds.scale = 1
+      await findCmd('Comfy.Canvas.ZoomIn').function()
+
+      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
+        1.1,
+        expect.any(Array)
+      )
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('Comfy.Canvas.ZoomOut scales the canvas down by 1/1.1× and marks it dirty', async () => {
+      app.canvas.ds.scale = 1
+      await findCmd('Comfy.Canvas.ZoomOut').function()
+
+      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
+        1 / 1.1,
+        expect.any(Array)
+      )
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+  })
+
+  describe('Workflow lifecycle commands', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it('Comfy.OpenClipspace delegates to app.openClipspace', async () => {
+      await findCmd('Comfy.OpenClipspace').function()
+
+      expect(app.openClipspace).toHaveBeenCalled()
+    })
+
+    it('Comfy.RefreshNodeDefinitions refreshes combos and the model library', async () => {
+      await findCmd('Comfy.RefreshNodeDefinitions').function()
+
+      expect(app.refreshComboInNodes).toHaveBeenCalled()
+      expect(mockModelStoreRefresh).toHaveBeenCalled()
+    })
+  })
+
+  describe('Help commands', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+    const { staticUrls } = useExternalLink()
+    let openSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      openSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => null as unknown as Window)
+    })
+
+    it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
+      await findCmd('Comfy.Help.OpenComfyUIIssues').function()
+
+      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resource_type: 'github',
+          is_external: true,
+          source: 'menu'
+        })
+      )
+      expect(openSpy).toHaveBeenCalledWith(staticUrls.githubIssues, '_blank')
+    })
+
+    it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
+      await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
+
+      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resource_type: 'discord'
+        })
+      )
+      expect(openSpy).toHaveBeenCalledWith(staticUrls.discord, '_blank')
+    })
+
+    it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
+      await findCmd('Comfy.Help.AboutComfyUI').function()
+
+      expect(mockShowAbout).toHaveBeenCalled()
+    })
+  })
+
+  describe('BrowseModelAssets command', () => {
+    const asset = fromPartial<AssetItem>({ id: 'asset-1' })
+
+    async function selectAssetFromBrowser() {
+      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
+
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
+      )!
+      await command.function()
+
+      const { onAssetSelected } = mockAssetBrowse.mock.calls[0][0]
+      onAssetSelected?.(asset)
+    }
+
+    it('starts a model node drag for the selected asset', async () => {
+      mockStartModelNodeDrag.mockReturnValue(undefined)
+
+      await selectAssetFromBrowser()
+
+      expect(mockStartModelNodeDrag).toHaveBeenCalledWith(
+        asset,
+        'asset_browser'
+      )
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('shows an error toast when the asset cannot start a drag', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockStartModelNodeDrag.mockReturnValue({
+        code: 'NO_PROVIDER',
+        message: 'No node provider registered',
+        assetId: 'asset-1'
+      })
+
+      await selectAssetFromBrowser()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
   })
 })

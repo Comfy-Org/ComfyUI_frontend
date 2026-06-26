@@ -1,9 +1,12 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { ComfyDesktop2Bridge } from '@/types'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
+  'https://civitai.red/',
   'https://huggingface.co/',
   'http://localhost:'
 ] as const
@@ -25,10 +28,23 @@ const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 ])
 
-interface ModelWithUrl {
+const MODEL_LIBRARY_TAB_ID = 'model-library'
+
+export interface ModelWithUrl {
   name: string
   url: string
   directory: string
+}
+
+async function startDesktop2ModelDownload(
+  bridge: ComfyDesktop2Bridge,
+  model: ModelWithUrl
+): Promise<void> {
+  try {
+    await bridge.downloadModel?.(model.url, model.name, model.directory)
+  } catch (error: unknown) {
+    console.error('Failed to start Desktop2 model download:', error)
+  }
 }
 
 /**
@@ -59,6 +75,12 @@ export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
 ): void {
+  const desktop2Bridge = window.__comfyDesktop2
+  if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
+    void startDesktop2ModelDownload(desktop2Bridge, model)
+    return
+  }
+
   if (!isDesktop) {
     const link = document.createElement('a')
     link.href = model.url
@@ -71,6 +93,7 @@ export function downloadModel(
 
   const modelPaths = paths[model.directory]
   if (modelPaths?.[0]) {
+    useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
     void useElectronDownloadStore().start({
       url: model.url,
       savePath: modelPaths[0],

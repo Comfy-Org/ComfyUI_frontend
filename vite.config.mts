@@ -156,6 +156,13 @@ const gcsRedirectProxyConfig: ProxyOptions = {
   }
 }
 
+// Disabling absolute asset-URL transforms under Vitest keeps `/assets/...` as
+// string literals, avoiding rootless `file:///assets/...` imports that crash
+// Vitest's `createRequire` on Windows.
+const vuePluginOptions = process.env.VITEST
+  ? { template: { transformAssetUrls: { includeAbsolute: false } } }
+  : undefined
+
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
@@ -169,7 +176,6 @@ export default defineConfig({
         '*.config.{ts,mts}',
         '**/.git/**',
         '**/.github/**',
-        '**/.nx/**',
         '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
@@ -214,6 +220,11 @@ export default defineConfig({
         }
       },
 
+      '/oauth': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
+      },
+
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
@@ -255,8 +266,8 @@ export default defineConfig({
 
   plugins: [
     ...(!DISABLE_VUE_PLUGINS
-      ? [vueDevTools(), vue(), createHtmlPlugin({})]
-      : [vue()]),
+      ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
+      : [vue(vuePluginOptions)]),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),

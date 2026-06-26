@@ -1,6 +1,7 @@
 <template>
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
+    data-testid="asset-browser-modal"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
     :content-title="displayTitle"
@@ -23,6 +24,7 @@
 
     <template #header>
       <div
+        :ref="primeVueOverlay.overlayScopeRef"
         class="flex w-full items-center justify-between gap-2"
         @click.self="focusedAsset = null"
       >
@@ -52,6 +54,7 @@
       <AssetFilterBar
         :assets="categoryFilteredAssets"
         :show-ownership-filter
+        :content-style="selectContentStyle"
         @filter-change="updateFilters"
         @click.self="focusedAsset = null"
       />
@@ -72,7 +75,12 @@
     </template>
 
     <template #rightPanel>
-      <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
+      <ModelInfoPanel
+        v-if="focusedAsset"
+        :asset="focusedAsset"
+        :cache-key
+        :select-content-style="selectContentStyle"
+      />
       <div
         v-else
         class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted"
@@ -92,6 +100,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import ModelInfoPanel from '@/platform/assets/components/modelInfo/ModelInfoPanel.vue'
@@ -109,6 +118,8 @@ const { t } = useI18n()
 const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const selectContentStyle = primeVueOverlay.contentStyle
 
 const props = defineProps<{
   nodeType?: string
@@ -117,6 +128,12 @@ const props = defineProps<{
   onClose?: () => void
   showLeftPanel?: boolean
   title?: string
+  /**
+   * Storybook/test seam: when provided, bypasses the cloud-only
+   * `assetsStore.getAssets(cacheKey)` fetch and renders this list directly.
+   * Production callers should leave this undefined and rely on the store.
+   */
+  overrideAssets?: AssetItem[]
 }>()
 
 const emit = defineEmits<{
@@ -132,7 +149,9 @@ const cacheKey = computed(() => {
   return ''
 })
 
-const fetchedAssets = computed(() => assetStore.getAssets(cacheKey.value))
+const fetchedAssets = computed(
+  () => props.overrideAssets ?? assetStore.getAssets(cacheKey.value)
+)
 
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
 
@@ -141,6 +160,7 @@ const isLoading = computed(
 )
 
 async function refreshAssets(): Promise<void> {
+  if (props.overrideAssets) return
   if (props.nodeType) {
     await assetStore.updateModelsForNodeType(props.nodeType)
   } else if (props.assetType) {

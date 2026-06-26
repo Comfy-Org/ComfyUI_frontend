@@ -9,6 +9,7 @@ import en from '@frontend-locales/en/main.json' with { type: 'json' }
 import enNodes from '@frontend-locales/en/nodeDefs.json' with { type: 'json' }
 
 import enSettings from '@frontend-locales/en/settings.json' with { type: 'json' }
+import { getDefaultLocale } from '@frontend-locales/localeConfig'
 import { createI18n } from 'vue-i18n'
 
 function buildLocale<
@@ -167,7 +168,7 @@ const messages: Record<string, LocaleMessages> = {
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
-  locale: navigator.language.split('-')[0] || 'en',
+  locale: getDefaultLocale(),
   fallbackLocale: 'en',
   messages,
   // Ignore warnings for locale options as each option is in its own language.

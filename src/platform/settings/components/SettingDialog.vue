@@ -1,5 +1,5 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="sm">
+  <BaseModalLayout content-title="" data-testid="settings-dialog" size="full">
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
@@ -12,7 +12,7 @@
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
-          autofocus
+          :autofocus="activeCategoryKey !== 'keybinding'"
           @search="handleSearch"
         />
       </div>
@@ -90,11 +90,12 @@ import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserM
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
   ISettingGroup,
@@ -129,7 +130,7 @@ const {
   getSearchResults
 } = useSettingSearch()
 
-const authActions = useAuthActions()
+const { fetchBalance } = useBillingContext()
 
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
@@ -205,6 +206,8 @@ function onNavItemClick(id: string) {
 
 const searchResults = computed<ISettingGroup[]>(() => getSearchResults(null))
 
+useSearchQueryTracking('settings', searchQuery, searchResults)
+
 // Scroll to and highlight the target setting once the correct category renders.
 if (scrollToSettingId) {
   const stopScrollWatch = watch(
@@ -235,7 +238,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     activeCategoryKey.value = oldKey
   }
   if (newKey === 'credits') {
-    void authActions.fetchBalance()
+    void fetchBalance()
   }
   if (newKey) {
     void nextTick(() => {

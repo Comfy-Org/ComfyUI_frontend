@@ -9,13 +9,15 @@ import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
 import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
+import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
 
 export class AppModeHelper {
-  readonly steps: BuilderStepsHelper
   readonly footer: BuilderFooterHelper
+  readonly mobile: MobileAppHelper
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
   readonly outputHistory: OutputHistoryComponent
+  readonly steps: BuilderStepsHelper
   readonly widgets: AppModeWidgetHelper
 
   /** The "Connect an output" popover shown when saving without outputs. */
@@ -60,13 +62,16 @@ export class AppModeHelper {
   public readonly vueNodeSwitchDismissButton: Locator
   /** The "Don't show again" checkbox inside the Vue Node switch popup. */
   public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
+  /** The main content area where outputs are displayed*/
+  public readonly centerPanel: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
-    this.steps = new BuilderStepsHelper(comfyPage)
+    this.mobile = new MobileAppHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
+    this.steps = new BuilderStepsHelper(comfyPage)
     this.widgets = new AppModeWidgetHelper(comfyPage)
 
     this.connectOutputPopover = this.page.getByTestId(
@@ -125,6 +130,7 @@ export class AppModeHelper {
     this.vueNodeSwitchDontShowAgainCheckbox = this.page.getByTestId(
       TestIds.appMode.vueNodeSwitchDontShowAgain
     )
+    this.centerPanel = this.page.getByTestId(TestIds.linear.centerPanel)
   }
 
   private get page(): Page {

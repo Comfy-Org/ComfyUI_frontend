@@ -8,8 +8,8 @@ import {
   builderSaveAs,
   openWorkflowFromSidebar,
   setupBuilder
-} from '@e2e/helpers/builderTestUtils'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
+} from '@e2e/fixtures/utils/builderTestUtils'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 /**
  * After a first save, open save-as again from the chevron,

@@ -29,7 +29,10 @@ const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
 
-function scheduleSlotLayoutSync(nodeId: string) {
+export function scheduleSlotLayoutSync(nodeId: string) {
+  // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
+  // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
+  if (!useNodeSlotRegistryStore().getNode(nodeId)) return
   pendingNodes.add(nodeId)
   raf.schedule()
 }

@@ -135,7 +135,6 @@ LiteGraphGlobal {
   "WIDGET_BGCOLOR": "#222",
   "WIDGET_DISABLED_TEXT_COLOR": "#666",
   "WIDGET_OUTLINE_COLOR": "#666",
-  "WIDGET_PROMOTED_OUTLINE_COLOR": "#BF00FF",
   "WIDGET_SECONDARY_TEXT_COLOR": "#999",
   "WIDGET_TEXT_COLOR": "#DDD",
   "allow_multi_output_for_events": true,
@@ -194,7 +193,6 @@ LiteGraphGlobal {
   "throw_errors": true,
   "truncateWidgetTextEvenly": false,
   "truncateWidgetValuesFirst": false,
-  "use_uuids": false,
   "uuidv4": [Function],
   "vueNodesMode": false,
 }

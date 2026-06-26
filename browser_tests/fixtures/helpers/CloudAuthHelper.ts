@@ -13,7 +13,11 @@ import type { Page } from '@playwright/test'
  * so the SDK believes a user is signed in. Must be called before navigation.
  */
 export class CloudAuthHelper {
-  constructor(private readonly page: Page) {}
+  private readonly appUrl: string
+
+  constructor(private readonly page: Page) {
+    this.appUrl = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+  }
 
   /**
    * Set up all auth mocks. Must be called before `comfyPage.setup()`.
@@ -34,7 +38,7 @@ export class CloudAuthHelper {
    */
   private async seedFirebaseIndexedDB(): Promise<void> {
     // Navigate to a lightweight endpoint to get a same-origin context
-    await this.page.goto('http://localhost:8188/api/users')
+    await this.page.goto(`${this.appUrl}/api/users`)
 
     await this.page.evaluate(() => {
       const MOCK_USER_DATA = {

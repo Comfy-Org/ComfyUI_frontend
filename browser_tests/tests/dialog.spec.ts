@@ -157,6 +157,13 @@ test.describe('Signin dialog', () => {
   })
 
   test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
+    await comfyPage.page.route('**/customers', (route) =>
+      route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'test-user-e2e', email: 'test@example.com' })
+      })
+    )
     const dialog = new SignInDialog(comfyPage.page)
     const { result: dialogResult } = await dialog.openWithResult()
 
@@ -246,6 +253,14 @@ test.describe('Cloud notification dialog', () => {
 
     await dialog.back.click()
     await expect(dialog.root).toBeHidden()
+  })
+
+  test('Should not advertise free monthly credits', async ({ comfyPage }) => {
+    const dialog = new CloudNotification(comfyPage.page)
+    await dialog.open()
+
+    await expect(dialog.root.getByText(/Free Credits/i)).toHaveCount(0)
+    await expect(dialog.root.getByText(/400/)).toHaveCount(0)
   })
 })
 

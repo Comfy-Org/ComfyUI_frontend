@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { size = 'md' } = defineProps<{
   loading: boolean

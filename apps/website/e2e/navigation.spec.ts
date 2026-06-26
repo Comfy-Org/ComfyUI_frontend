@@ -1,4 +1,13 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
+
+const TOP_LEVEL_LABELS = [
+  'Products',
+  'Pricing',
+  'Community',
+  'Company'
+] as const
 
 test.describe('Desktop navigation @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -15,14 +24,10 @@ test.describe('Desktop navigation @smoke', () => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 
-    for (const label of [
-      'PRODUCTS',
-      'PRICING',
-      'COMMUNITY',
-      'RESOURCES',
-      'COMPANY'
-    ]) {
-      await expect(desktopLinks.getByText(label).first()).toBeVisible()
+    for (const label of TOP_LEVEL_LABELS) {
+      await expect(
+        desktopLinks.getByText(label, { exact: true }).first()
+      ).toBeVisible()
     }
   })
 
@@ -30,7 +35,7 @@ test.describe('Desktop navigation @smoke', () => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopCTA = nav.getByTestId('desktop-nav-cta')
     await expect(
-      desktopCTA.getByRole('link', { name: 'DOWNLOAD LOCAL' })
+      desktopCTA.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeVisible()
     await expect(
       desktopCTA.getByRole('link', { name: 'LAUNCH CLOUD' })
@@ -47,13 +52,13 @@ test.describe('Desktop dropdown @interaction', () => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
     const productsButton = desktopLinks.getByRole('button', {
-      name: /PRODUCTS/i
+      name: 'Products'
     })
     await productsButton.hover()
 
-    const dropdown = productsButton.locator('..').getByTestId('nav-dropdown')
+    const dropdown = nav.getByTestId('nav-dropdown')
     for (const item of [
-      'Comfy Local',
+      'Comfy Desktop',
       'Comfy Cloud',
       'Comfy API',
       'Comfy Enterprise'
@@ -65,21 +70,22 @@ test.describe('Desktop dropdown @interaction', () => {
   test('moving mouse away closes dropdown', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
-    await desktopLinks.getByRole('button', { name: /PRODUCTS/i }).hover()
+    await desktopLinks.getByRole('button', { name: 'Products' }).hover()
 
-    const comfyLocal = nav.getByRole('link', { name: 'Comfy Local' }).first()
+    const comfyLocal = nav.getByRole('link', { name: 'Comfy Desktop' }).first()
     await expect(comfyLocal).toBeVisible()
 
-    await page.locator('main').hover()
+    const viewport = page.viewportSize()
+    await page.mouse.move(10, (viewport?.height ?? 800) - 10)
     await expect(comfyLocal).toBeHidden()
   })
 
   test('Escape key closes dropdown', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
-    await desktopLinks.getByRole('button', { name: /PRODUCTS/i }).hover()
+    await desktopLinks.getByRole('button', { name: 'Products' }).hover()
 
-    const comfyLocal = nav.getByRole('link', { name: 'Comfy Local' }).first()
+    const comfyLocal = nav.getByRole('link', { name: 'Comfy Desktop' }).first()
     await expect(comfyLocal).toBeVisible()
 
     await page.keyboard.press('Escape')
@@ -103,11 +109,11 @@ test.describe('Mobile menu @mobile', () => {
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
-    const menu = page.locator('#site-mobile-menu')
+    const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['PRODUCTS', 'PRICING', 'COMMUNITY']) {
-      await expect(menu.getByText(label).first()).toBeVisible()
+    for (const label of ['Products', 'Pricing', 'Community']) {
+      await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
@@ -116,24 +122,14 @@ test.describe('Mobile menu @mobile', () => {
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
-    const menu = page.locator('#site-mobile-menu')
-    await menu.getByText('PRODUCTS').first().click()
+    const menu = page.getByRole('dialog')
+    await menu.getByRole('button', { name: 'Products' }).click()
 
-    await expect(menu.getByText('Comfy Local')).toBeVisible()
+    await expect(menu.getByText('Comfy Desktop')).toBeVisible()
     await expect(menu.getByText('Comfy Cloud')).toBeVisible()
 
     await menu.getByRole('button', { name: /BACK/i }).click()
-    await expect(menu.getByText('PRODUCTS').first()).toBeVisible()
-  })
-
-  test('CTA buttons visible in mobile menu', async ({ page }) => {
-    await page.getByRole('button', { name: 'Toggle menu' }).click()
-
-    const menu = page.locator('#site-mobile-menu')
-    await expect(
-      menu.getByRole('link', { name: 'DOWNLOAD LOCAL' })
-    ).toBeVisible()
-    await expect(menu.getByRole('link', { name: 'LAUNCH CLOUD' })).toBeVisible()
+    await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
   })
 })
 

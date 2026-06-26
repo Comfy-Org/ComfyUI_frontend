@@ -25,8 +25,7 @@ const steps = [
   },
   {
     number: '2',
-    title: t('getStarted.step2.title', locale),
-    description: t('getStarted.step2.description', locale)
+    title: t('getStarted.step2.title', locale)
   },
   {
     number: '3',
@@ -37,7 +36,9 @@ const steps = [
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
+  <section
+    class="bg-primary-comfy-ink max-w-9xl mx-auto px-4 py-20 lg:px-20 lg:py-24"
+  >
     <div class="flex flex-col gap-12 lg:flex-row lg:gap-8">
       <!-- Left heading -->
       <div
@@ -73,6 +74,17 @@ const steps = [
             class="text-primary-comfy-canvas flex-1 text-sm"
           >
             {{ step.description }}
+          </p>
+          <p
+            v-else-if="step.number === '2'"
+            class="text-primary-comfy-canvas flex-1 text-sm"
+          >
+            {{ t('getStarted.step2.descriptionPrefix', locale)
+            }}<a
+              :href="externalLinks.workflows"
+              class="text-primary-comfy-yellow hover:underline"
+              >{{ t('getStarted.step2.descriptionLink', locale) }}</a
+            >{{ t('getStarted.step2.descriptionSuffix', locale) }}
           </p>
           <p v-if="step.links" class="flex-1 text-sm">
             <template v-for="(link, i) in step.links" :key="link.href">

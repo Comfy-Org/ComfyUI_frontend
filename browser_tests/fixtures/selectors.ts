@@ -8,7 +8,9 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
+    nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
+    workflowsRefreshButton: 'workflows-refresh-button',
     modeToggle: 'mode-toggle'
   },
   tree: {
@@ -36,13 +38,14 @@ export const TestIds = {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
-    confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
+    missingNodePackExpand: 'missing-node-pack-expand',
+    missingNodePackCount: 'missing-node-pack-count',
     errorCardFindOnGithub: 'error-card-find-on-github',
     errorCardCopy: 'error-card-copy',
     errorDialog: 'error-dialog',
@@ -52,35 +55,55 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    errorGroupDisplayMessage: 'error-group-display-message',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
+    missingModelImport: 'missing-model-import',
+    missingModelImportableRows: 'missing-model-importable-rows',
     missingModelLocate: 'missing-model-locate',
-    missingModelCopyName: 'missing-model-copy-name',
-    missingModelCopyUrl: 'missing-model-copy-url',
+    missingModelReferenceCount: 'missing-model-reference-count',
+    missingModelUnsupportedSection:
+      'missing-model-import-not-supported-section',
     missingModelDownload: 'missing-model-download',
-    missingModelImportUnsupported: 'missing-model-import-unsupported',
+    missingModelActions: 'missing-model-actions',
+    missingModelDownloadAll: 'missing-model-download-all',
+    missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
+    swapNodesGroup: 'error-group-swap-nodes',
+    swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
-    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
-    missingMediaLibrarySelect: 'missing-media-library-select',
-    missingMediaStatusCard: 'missing-media-status-card',
-    missingMediaConfirmButton: 'missing-media-confirm-button',
-    missingMediaCancelButton: 'missing-media-cancel-button',
     missingMediaLocateButton: 'missing-media-locate-button',
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
     updatePassword: 'update-password-dialog',
-    cloudNotification: 'cloud-notification-dialog'
+    cloudNotification: 'cloud-notification-dialog',
+    openSharedWorkflow: 'open-shared-workflow-dialog',
+    openSharedWorkflowTitle: 'open-shared-workflow-title',
+    openSharedWorkflowClose: 'open-shared-workflow-close',
+    openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
+    openSharedWorkflowCancel: 'open-shared-workflow-cancel',
+    openSharedWorkflowOpenWithoutImporting:
+      'open-shared-workflow-open-without-importing',
+    openSharedWorkflowConfirm: 'open-shared-workflow-confirm'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
+  },
+  nodeTemplates: {
+    manageDialog: 'manage-node-templates-dialog'
   },
   topbar: {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
-    subscribeButton: 'topbar-subscribe-button'
+    subscribeButton: 'topbar-subscribe-button',
+    loginButton: 'login-button',
+    loginButtonPopover: 'login-button-popover',
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
+    workflowTabs: 'topbar-workflow-tabs',
+    integratedTabBarActions: 'integrated-tab-bar-actions',
+    actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -89,39 +112,67 @@ export const TestIds = {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors'
   },
+  assets: {
+    browserModal: 'asset-browser-modal',
+    card: 'asset-card'
+  },
   subgraphEditor: {
-    toggle: 'subgraph-editor-toggle',
-    shownSection: 'subgraph-editor-shown-section',
     hiddenSection: 'subgraph-editor-hidden-section',
-    widgetToggle: 'subgraph-widget-toggle',
-    widgetLabel: 'subgraph-widget-label',
-    iconLink: 'icon-link',
     iconEye: 'icon-eye',
-    widgetActionsMenuButton: 'widget-actions-menu-button'
+    iconLink: 'icon-link',
+    nodeName: 'subgraph-widget-node-name',
+    shownSection: 'subgraph-editor-shown-section',
+    toggle: 'subgraph-editor-toggle',
+    widgetActionsMenuButton: 'widget-actions-menu-button',
+    widgetItem: 'subgraph-widget-item',
+    widgetLabel: 'subgraph-widget-label',
+    widgetToggle: 'subgraph-widget-toggle'
   },
   node: {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
-    mainImage: 'main-image'
+    mainImage: 'main-image',
+    slotConnectionDot: 'slot-connection-dot',
+    imageGrid: 'image-grid'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red'
+    colorRed: 'red',
+    convertSubgraph: 'convert-to-subgraph-button',
+    bypass: 'bypass-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'
+  },
+  helpCenter: {
+    button: 'help-center-button',
+    popup: 'help-center-popup',
+    backdrop: 'help-center-backdrop',
+    menuItem: (key: string) => `help-menu-item-${key}`,
+    releaseItem: (version: string) => `help-release-item-${version}`
   },
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
+    valueControl: 'value-control',
     domWidgetTextarea: 'dom-widget-textarea',
-    subgraphEnterButton: 'subgraph-enter-button'
+    subgraphEnterButton: 'subgraph-enter-button',
+    selectDefaultSearchInput: 'widget-select-default-search-input',
+    selectDefaultViewport: 'widget-select-default-viewport'
+  },
+  linear: {
+    centerPanel: 'linear-center-panel',
+    mobile: 'linear-mobile',
+    mobileNavigation: 'linear-mobile-navigation',
+    mobileWorkflows: 'linear-mobile-workflows',
+    outputInfo: 'linear-output-info',
+    widgetContainer: 'linear-widgets'
   },
   builder: {
     footerNav: 'builder-footer-nav',
@@ -176,7 +227,13 @@ export const TestIds = {
     vueNodeSwitchDontShowAgain: 'linear-vue-node-switch-dont-show-again'
   },
   breadcrumb: {
-    subgraph: 'subgraph-breadcrumb'
+    subgraph: 'subgraph-breadcrumb',
+    back: 'subgraph-breadcrumb-back',
+    item: (key: string) => `subgraph-breadcrumb-item-${key}`,
+    blueprintTag: 'subgraph-breadcrumb-blueprint-tag',
+    missingNodesIcon: 'subgraph-breadcrumb-missing-nodes-icon',
+    renameInput: 'subgraph-breadcrumb-rename-input',
+    menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
   templates: {
     content: 'template-workflows-content',
@@ -186,18 +243,46 @@ export const TestIds = {
     currentUserIndicator: 'current-user-indicator'
   },
   queue: {
+    jobHistorySidebar: 'job-history-sidebar',
+    progressOverlay: 'queue-progress-overlay',
     overlayToggle: 'queue-overlay-toggle',
-    clearHistoryAction: 'clear-history-action'
+    dockedJobHistoryAction: 'docked-job-history-action',
+    jobDetailsPopover: 'queue-job-details-popover',
+    clearHistoryAction: 'clear-history-action',
+    jobAssetsList: 'job-assets-list',
+    notificationBanner: 'queue-notification-banner'
   },
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
   },
+  publish: {
+    dialog: 'publish-dialog',
+    savePrompt: 'publish-save-prompt',
+    describeStep: 'publish-describe-step',
+    finishStep: 'publish-finish-step',
+    footer: 'publish-footer',
+    profilePrompt: 'publish-profile-prompt',
+    nav: 'publish-nav',
+    gateFlow: 'publish-gate-flow',
+    nameInput: 'publish-name-input',
+    tagsInput: 'publish-tags-input'
+  },
   loading: {
     overlay: 'loading-overlay'
   },
+  load3d: {
+    recordingDuration: 'load3d-recording-duration'
+  },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
+  },
+  terminal: {
+    root: 'terminal-root',
+    host: 'terminal-host',
+    copyButton: 'terminal-copy-button',
+    errorMessage: 'terminal-error-message',
+    loadingSpinner: 'terminal-loading-spinner'
   },
   imageCompare: {
     viewport: 'image-compare-viewport',
@@ -208,37 +293,19 @@ export const TestIds = {
     batchCounter: 'batch-counter',
     batchNext: 'batch-next',
     batchPrev: 'batch-prev'
+  },
+  searchBoxV2: {
+    resultItem: 'result-item',
+    filterOption: 'filter-option',
+    filterChip: 'filter-chip',
+    chipDelete: 'chip-delete',
+    noResults: 'no-results',
+    nodeIdBadge: 'node-id-badge',
+    sidebarToggle: 'toggle-category-sidebar',
+    sidebarBackdrop: 'sidebar-backdrop',
+    filterChipsScroll: 'filter-chips-scroll',
+    category: (id: string) => `category-${id}`,
+    rootCategory: (id: string) => `search-category-${id}`,
+    typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-/**
- * Helper type for accessing nested TestIds (excludes function values)
- */
-export type TestIdValue =
-  | (typeof TestIds.sidebar)[keyof typeof TestIds.sidebar]
-  | (typeof TestIds.tree)[keyof typeof TestIds.tree]
-  | (typeof TestIds.canvas)[keyof typeof TestIds.canvas]
-  | (typeof TestIds.dialogs)[keyof typeof TestIds.dialogs]
-  | (typeof TestIds.keybindings)[keyof typeof TestIds.keybindings]
-  | (typeof TestIds.topbar)[keyof typeof TestIds.topbar]
-  | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
-  | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
-  | (typeof TestIds.node)[keyof typeof TestIds.node]
-  | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
-  | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
-  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
-  | (typeof TestIds.outputHistory)[keyof typeof TestIds.outputHistory]
-  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
-  | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
-  | Exclude<
-      (typeof TestIds.templates)[keyof typeof TestIds.templates],
-      (id: string) => string
-    >
-  | (typeof TestIds.user)[keyof typeof TestIds.user]
-  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
-  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
-  | (typeof TestIds.queue)[keyof typeof TestIds.queue]
-  | (typeof TestIds.errors)[keyof typeof TestIds.errors]
-  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
-  | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]
-  | (typeof TestIds.imageCompare)[keyof typeof TestIds.imageCompare]

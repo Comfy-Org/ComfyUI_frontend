@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 
 const TARGET = 80
 const MILESTONE_STEP = 5
+const MIN_DELTA = 0.05
 const BAR_WIDTH = 20
 
 interface CoverageData {
@@ -71,8 +72,9 @@ function formatPct(value: number): string {
 }
 
 function formatDelta(delta: number): string {
-  const sign = delta >= 0 ? '+' : ''
-  return sign + delta.toFixed(1) + '%'
+  const rounded = Math.abs(delta) < MIN_DELTA ? 0 : delta
+  const sign = rounded >= 0 ? '+' : ''
+  return sign + rounded.toFixed(1) + '%'
 }
 
 function crossedMilestone(prev: number, curr: number): number | null {
@@ -150,15 +152,18 @@ function main() {
   const e2eCurrent = parseLcov('temp/e2e-coverage/coverage.lcov')
   const e2eBaseline = parseLcov('temp/e2e-coverage-baseline/coverage.lcov')
 
-  const unitImproved =
-    unitCurrent !== null &&
-    unitBaseline !== null &&
-    unitCurrent.percentage > unitBaseline.percentage
+  const unitDelta =
+    unitCurrent !== null && unitBaseline !== null
+      ? unitCurrent.percentage - unitBaseline.percentage
+      : 0
 
-  const e2eImproved =
-    e2eCurrent !== null &&
-    e2eBaseline !== null &&
-    e2eCurrent.percentage > e2eBaseline.percentage
+  const e2eDelta =
+    e2eCurrent !== null && e2eBaseline !== null
+      ? e2eCurrent.percentage - e2eBaseline.percentage
+      : 0
+
+  const unitImproved = unitDelta >= MIN_DELTA
+  const e2eImproved = e2eDelta >= MIN_DELTA
 
   if (!unitImproved && !e2eImproved) {
     process.exit(0)
@@ -172,12 +177,12 @@ function main() {
   )
   summaryLines.push('')
 
-  if (unitCurrent && unitBaseline) {
-    summaryLines.push(formatCoverageRow('Unit', unitCurrent, unitBaseline))
+  if (unitImproved) {
+    summaryLines.push(formatCoverageRow('Unit', unitCurrent!, unitBaseline!))
   }
 
-  if (e2eCurrent && e2eBaseline) {
-    summaryLines.push(formatCoverageRow('E2E', e2eCurrent, e2eBaseline))
+  if (e2eImproved) {
+    summaryLines.push(formatCoverageRow('E2E', e2eCurrent!, e2eBaseline!))
   }
 
   summaryLines.push('')

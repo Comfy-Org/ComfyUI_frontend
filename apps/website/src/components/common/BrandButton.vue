@@ -1,41 +1,42 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const {
-  href,
-  label,
-  variant = 'solid',
-  size = 'sm',
-  className = ''
-} = defineProps<{
-  href: string
-  label?: string
-  variant?: 'solid' | 'outline'
-  size?: 'sm' | 'lg'
-  className?: string
+import { computed } from 'vue'
+import type { HTMLAttributes } from 'vue'
+
+import type { BrandButtonVariants } from './brandButton.variants'
+import { brandButtonVariants } from './brandButton.variants'
+import { resolveRel } from '../../utils/cta'
+
+const props = defineProps<{
+  href?: string
+  target?: string
+  rel?: string
+  variant?: BrandButtonVariants['variant']
+  size?: BrandButtonVariants['size']
+  class?: HTMLAttributes['class']
 }>()
 
-const sizeClass =
-  size === 'lg'
-    ? 'rounded-full px-8 py-4 text-sm font-bold tracking-wider'
-    : 'rounded-2xl px-4 py-2 text-sm font-semibold'
+const resolvedRel = computed(() =>
+  resolveRel({ rel: props.rel, target: props.target })
+)
 </script>
 
 <template>
-  <a
-    :href="href"
+  <component
+    :is="props.href ? 'a' : 'button'"
+    :href="props.href"
+    :target="props.target"
+    :rel="resolvedRel"
     :class="
       cn(
-        sizeClass,
-        className,
-        variant === 'solid'
-          ? 'bg-primary-comfy-yellow text-primary-comfy-ink transition-opacity hover:opacity-90'
-          : 'border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink border transition-colors'
+        brandButtonVariants({ variant: props.variant, size: props.size }),
+        props.class ?? ''
       )
     "
   >
     <span class="ppformula-text-center">
-      <slot>{{ label }}</slot>
+      <slot />
     </span>
-  </a>
+  </component>
 </template>

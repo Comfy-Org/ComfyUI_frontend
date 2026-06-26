@@ -171,6 +171,83 @@ describe('NightlySurveyPopover', () => {
     })
   })
 
+  describe('manual mode', () => {
+    async function renderManual(open = false) {
+      const { default: NightlySurveyPopover } =
+        await import('./NightlySurveyPopover.vue')
+      return render(NightlySurveyPopover, {
+        props: {
+          config: defaultConfig,
+          mode: 'manual',
+          open
+        },
+        global: {
+          stubs: {
+            Teleport: true
+          }
+        }
+      })
+    }
+
+    it('does not auto-open via eligibility watcher', async () => {
+      setFeatureUsage('test-feature', 5)
+
+      await renderManual(false)
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(1000)
+      await nextTick()
+
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows when parent sets open=true regardless of delay', async () => {
+      await renderManual(true)
+      await nextTick()
+
+      expect(screen.getByTestId('nightly-survey-popover')).toBeInTheDocument()
+    })
+
+    it('does not render the Not Now button', async () => {
+      await renderManual(true)
+      await nextTick()
+
+      expect(
+        screen.queryByRole('button', { name: /nightlySurvey.notNow/ })
+      ).not.toBeInTheDocument()
+    })
+
+    it('does not call markSurveyShown automatically', async () => {
+      await renderManual(true)
+      await nextTick()
+
+      const state = JSON.parse(
+        localStorage.getItem('Comfy.SurveyState') ??
+          '{"optedOut":false,"seenSurveys":{}}'
+      )
+      expect(state.seenSurveys['test-feature']).toBeUndefined()
+    })
+
+    it("still persists optedOut when Don't Ask Again clicked", async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+      await renderManual(true)
+      await nextTick()
+
+      const optOutButton = screen.getByRole('button', {
+        name: /nightlySurvey.dontAskAgain/
+      })
+      await user.click(optOutButton)
+      await nextTick()
+
+      const state = JSON.parse(
+        localStorage.getItem('Comfy.SurveyState') ?? '{}'
+      )
+      expect(state.optedOut).toBe(true)
+    })
+  })
+
   describe('config', () => {
     it('uses custom delay from config', async () => {
       setFeatureUsage('test-feature', 5)

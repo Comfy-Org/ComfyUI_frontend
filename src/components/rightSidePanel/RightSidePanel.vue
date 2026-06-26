@@ -14,6 +14,7 @@ import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -22,8 +23,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
@@ -106,6 +106,10 @@ const isSingleSubgraphNode = computed(() => {
 })
 
 function closePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_closed',
+    element_group: 'right_side_panel'
+  })
   rightSidePanelStore.closePanel()
 }
 
@@ -124,7 +128,7 @@ const hasDirectNodeError = computed(() =>
 const hasContainerInternalError = computed(() => {
   if (allErrorExecutionIds.value.length === 0) return false
   return selectedNodes.value.some((node) => {
-    if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
+    if (!(node instanceof SubgraphNode)) return false
     return executionErrorStore.isContainerWithInternalError(node)
   })
 })
@@ -299,14 +303,16 @@ function handleTitleCancel() {
               @cancel="handleTitleCancel"
               @click="isEditing = true"
             />
-            <button
+            <Button
               v-if="!isEditing"
+              variant="link"
+              size="unset"
               :aria-label="t('rightSidePanel.editTitle')"
-              class="relative top-[2px] ml-2 size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
+              class="relative top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
             >
               <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
-            </button>
+            </Button>
           </template>
           <template v-else>
             {{ panelTitle }}
@@ -368,7 +374,7 @@ function handleTitleCancel() {
     </section>
 
     <!-- Panel Content -->
-    <div class="scrollbar-thin flex-1 overflow-y-auto">
+    <div class="flex-1 scrollbar-thin overflow-y-auto">
       <TabErrors v-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />

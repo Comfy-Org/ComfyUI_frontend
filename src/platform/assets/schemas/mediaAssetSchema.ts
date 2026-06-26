@@ -49,3 +49,5 @@ interface MediaAssetProviderValue {
 
 export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
   Symbol('mediaAsset')
+
+export const MIME_ASSET_INFO = 'application/x-comfy-asset-info'

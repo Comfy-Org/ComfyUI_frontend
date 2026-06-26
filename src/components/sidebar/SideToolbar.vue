@@ -82,7 +82,7 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
@@ -138,19 +138,23 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
   if (isNodeLibraryTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_node_library_selected'
+      button_id: 'sidebar_tab_node_library_selected',
+      element_group: 'sidebar'
     })
   else if (isModelLibraryTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_model_library_selected'
+      button_id: 'sidebar_tab_model_library_selected',
+      element_group: 'sidebar'
     })
   else if (isWorkflowsTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_workflows_selected'
+      button_id: 'sidebar_tab_workflows_selected',
+      element_group: 'sidebar'
     })
   else if (isAssetsTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_assets_media_selected'
+      button_id: 'sidebar_tab_assets_media_selected',
+      element_group: 'sidebar'
     })
 
   await commandStore.commands
