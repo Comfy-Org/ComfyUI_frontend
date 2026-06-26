@@ -4,6 +4,7 @@ import type { NodeId } from '@/types/nodeId'
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode
+  nodePath: NodeId[]
   widget: IBaseWidget
 }
 

@@ -1,3 +1,4 @@
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 /**
@@ -7,6 +8,7 @@ import type { SerializedNodeId } from '@/types/nodeId'
 export interface MissingModelCandidate {
   /** Undefined for workflow-level models not tied to a specific node. */
   nodeId?: SerializedNodeId
+  sourceExecutionId?: NodeExecutionId
   nodeType: string
   widgetName: string
   isAssetSupported: boolean

@@ -63,6 +63,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
+import { isBlueprintType } from '@/utils/blueprintUtils'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -895,7 +896,7 @@ export const useLitegraphService = () => {
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
-    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
+    if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
       const items: object = {

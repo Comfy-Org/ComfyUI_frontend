@@ -6,6 +6,7 @@ import type { HTMLAttributes } from 'vue'
 
 import type { BrandButtonVariants } from './brandButton.variants'
 import { brandButtonVariants } from './brandButton.variants'
+import { resolveRel } from '../../utils/cta'
 
 const props = defineProps<{
   href?: string
@@ -16,9 +17,8 @@ const props = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const resolvedRel = computed(
-  () =>
-    props.rel ?? (props.target === '_blank' ? 'noopener noreferrer' : undefined)
+const resolvedRel = computed(() =>
+  resolveRel({ rel: props.rel, target: props.target })
 )
 </script>
 

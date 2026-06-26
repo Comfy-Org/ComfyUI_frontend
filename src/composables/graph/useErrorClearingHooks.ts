@@ -6,8 +6,7 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -35,8 +34,6 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { appendNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -45,8 +42,10 @@ import {
   getExecutionIdByNode,
   getExecutionIdForNodeInGraph,
   getNodeByExecutionId,
-  isAncestorPathActive
+  isExecutionPathActive,
+  isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()
 
@@ -56,15 +55,6 @@ type OriginalCallbacks = {
 }
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
-
-function getPromotedWidgetExecutionId(
-  hostExecId: NodeExecutionId,
-  promotedSource: PromotedSource | undefined
-): NodeExecutionId | null {
-  if (!promotedSource) return hostExecId
-
-  return appendNodeExecutionId(hostExecId, promotedSource.nodeId)
-}
 
 function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
   if (!app.rootGraph) return String(nodeId)
@@ -98,26 +88,29 @@ function installNodeHooks(node: LGraphNode): void {
 
   node.onWidgetChanged = useChainCallback(
     node.onWidgetChanged,
-    function (_name, newValue, _oldValue, widget) {
+    function (name, newValue, _oldValue, widget) {
       if (!app.rootGraph) return
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
-      const promotedSource = widgetPromotedSource(node, widget)
-      const executionId = getPromotedWidgetExecutionId(
-        hostExecId,
-        promotedSource
-      )
-      if (!executionId) return
-
-      const widgetName = promotedSource?.widgetName ?? widget.name
+      const options = { min: widget.options?.min, max: widget.options?.max }
+      const source = resolvePromotedWidgetSource(app.rootGraph, node, widget)
+      if (source?.sourceExecutionId) {
+        useExecutionErrorStore().clearWidgetRelatedErrors(
+          source.sourceExecutionId,
+          source.sourceWidgetName,
+          source.sourceWidgetName,
+          newValue,
+          options
+        )
+      }
 
       useExecutionErrorStore().clearWidgetRelatedErrors(
-        executionId,
-        widgetName,
-        widgetName,
+        hostExecId,
+        name,
+        widget.name,
         newValue,
-        { min: widget.options?.min, max: widget.options?.max }
+        options
       )
     }
   )
@@ -161,8 +154,8 @@ function scanNodeErrorTargets(
   if (!app.rootGraph) return
 
   if (node.isSubgraphNode?.() && node.subgraph) {
+    scanNode(node)
     for (const innerNode of collectAllNodes(node.subgraph)) {
-      if (innerNode.isSubgraphNode?.()) continue
       if (isNodeInactive(innerNode.mode)) continue
       scanNode(innerNode)
     }
@@ -181,7 +174,7 @@ function getActiveExecutionId(node: LGraphNode): string | null {
   // execId means the node has no current graph (e.g. detached mid
   // lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
-  if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return null
+  if (!execId || !isExecutionPathActive(app.rootGraph, execId)) return null
   return execId
 }
 
@@ -221,6 +214,8 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
   if (pendingModels.length) {
     void verifyAndAddPendingModels(pendingModels)
   }
+
+  if (node.isSubgraphNode?.()) return
 
   const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
   if (!(originalType in LiteGraph.registered_node_types)) {
@@ -264,17 +259,18 @@ function scanSingleNodeMedia(node: LGraphNode): void {
  * have been bypassed, deleted, or belong to a workflow that is no
  * longer current — any of which would reintroduce stale errors.
  */
-function isCandidateStillActive(nodeId: unknown): boolean {
-  if (!app.rootGraph || nodeId == null) return false
-  const execId = String(nodeId)
-  const node = getNodeByExecutionId(app.rootGraph, execId)
-  if (!node) return false
-  if (isNodeInactive(node.mode)) return false
-  // Also reject if any enclosing subgraph was bypassed between scan
-  // kick-off and verification resolving — mirrors the pipeline-level
-  // ancestor post-filter so realtime and initial-load paths stay
-  // symmetric.
-  return isAncestorPathActive(app.rootGraph, execId)
+function isModelCandidateStillActive(
+  candidate: MissingModelCandidate
+): boolean {
+  return isMissingCandidateActive(app.rootGraph, candidate)
+}
+
+function isNodeCandidateStillActive(nodeId: unknown): boolean {
+  return (
+    app.rootGraph != null &&
+    nodeId != null &&
+    isExecutionPathActive(app.rootGraph, String(nodeId))
+  )
 }
 
 async function verifyAndAddPendingModels(
@@ -288,7 +284,7 @@ async function verifyAndAddPendingModels(
     await verifyAssetSupportedCandidates(pending)
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+      (c) => c.isMissing === true && isModelCandidateStillActive(c)
     )
     if (verified.length) useMissingModelStore().addMissingModels(verified)
   } catch (error: unknown) {
@@ -304,7 +300,7 @@ async function verifyAndAddPendingMedia(
     await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+      (c) => c.isMissing === true && isNodeCandidateStillActive(c.nodeId)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -356,6 +352,7 @@ function handleNodeModeChange(
     removeNodeErrors(node, execId)
   } else {
     scanAndAddNodeErrors(node)
+    scanAncestorSubgraphHosts(execId)
     if (
       useMissingModelStore().hasMissingModels ||
       useMissingMediaStore().hasMissingMedia ||
@@ -363,6 +360,15 @@ function handleNodeModeChange(
     ) {
       useExecutionErrorStore().showErrorOverlay()
     }
+  }
+}
+
+function scanAncestorSubgraphHosts(execId: string): void {
+  if (!app.rootGraph) return
+  for (const ancestorId of getParentExecutionIds(execId)) {
+    if (!isExecutionPathActive(app.rootGraph, ancestorId)) continue
+    const ancestor = getNodeByExecutionId(app.rootGraph, ancestorId)
+    if (ancestor?.isSubgraphNode?.()) scanSingleNodeErrors(ancestor)
   }
 }
 
@@ -374,6 +380,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   const nodesStore = useMissingNodesErrorStore()
 
   modelStore.removeMissingModelsByNodeId(execId)
+  modelStore.removeMissingModelsBySourceScope(execId)
   mediaStore.removeMissingMediaByNodeId(execId)
   nodesStore.removeMissingNodesByNodeId(execId)
 

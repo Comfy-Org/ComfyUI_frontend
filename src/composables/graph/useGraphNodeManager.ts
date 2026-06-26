@@ -7,12 +7,8 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import {
-  inputForWidget,
-  promotedInputSource,
-  promotedInputWidgets
-} from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -46,7 +42,6 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -92,15 +87,13 @@ export interface SafeWidgetData {
   slotMetadata?: WidgetSlotMetadata
   /**
    * Execution ID of the interior node that owns the source widget.
-   * Only set for promoted widgets where the source node differs from the
-   * host subgraph node. Used for missing-model lookups that key by
-   * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
+   * Only set for promoted widgets where the source node differs from the host
+   * subgraph node. Retained for source-scoped validation errors.
    */
   sourceExecutionId?: NodeExecutionId
   /**
-   * Interior source widget name. Only set for promoted widgets, where `name`
-   * is the host input slot name; missing-model lookups key by the interior
-   * widget name, which can differ from the slot name (e.g. after a rename).
+   * Interior source widget name. Only set for promoted widgets, where `name` is
+   * the host input slot name and the source widget name can differ.
    */
   sourceWidgetName?: string
   /** Tooltip text from the resolved widget. */
@@ -241,31 +234,20 @@ function resolvePromotedMetadata(
   node: SubgraphNode,
   widget: IBaseWidget
 ): PromotedWidgetMetadata | undefined {
-  const input = inputForWidget(node, widget)
-  if (!input?.widgetId) return undefined
-  const source = promotedInputSource(node, input)
+  const source = resolvePromotedWidgetSource(app.rootGraph, node, widget)
   if (!source) return undefined
 
-  const resolution = resolveConcretePromotedWidget(
-    node,
-    source.nodeId,
-    source.widgetName
+  ensurePromotedHostWidgetState(
+    source.input.widgetId,
+    source.input,
+    source.sourceWidget
   )
-  const resolved =
-    resolution.status === 'resolved' ? resolution.resolved : undefined
-  const sourceWidget = resolved?.widget
-  const sourceNode = resolved?.node
-
-  ensurePromotedHostWidgetState(input.widgetId, input, sourceWidget)
 
   return {
-    controlWidget: sourceWidget ? getControlWidget(sourceWidget) : undefined,
-    isDOMWidget: sourceWidget ? isDOMBackedWidget(sourceWidget) : false,
-    sourceExecutionId:
-      sourceNode && app.rootGraph
-        ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
-        : undefined,
-    sourceWidgetName: sourceWidget?.name
+    controlWidget: getControlWidget(source.sourceWidget),
+    isDOMWidget: isDOMBackedWidget(source.sourceWidget),
+    sourceExecutionId: source.sourceExecutionId,
+    sourceWidgetName: source.sourceWidgetName
   }
 }
 

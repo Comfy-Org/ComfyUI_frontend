@@ -154,9 +154,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Clears both validation errors and missing model state for a widget.
    *
    * @param errorInputName Name matched against `error.extra_info.input_name`.
-   *   For promoted subgraph widgets this is the resolved interior widget name.
-   * @param widgetName The actual widget name, used for missing model lookup.
-   *   At the legacy canvas call site both names are identical (`widget.name`).
+   * @param widgetName Widget name used for missing model/media lookup.
    */
   function clearWidgetRelatedErrors(
     executionId: NodeExecutionId,

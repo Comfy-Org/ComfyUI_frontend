@@ -97,13 +97,23 @@ function createWidgetUpdateHandler(
   return (newValue: WidgetValue) => {
     if (widgetState) widgetState.value = newValue
     widget.callback?.(newValue)
-    const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
+    const options = { min: widgetOptions?.min, max: widgetOptions?.max }
+    if (widget.sourceExecutionId) {
+      const sourceWidgetName = widget.sourceWidgetName ?? widget.name
+      executionErrorStore.clearWidgetRelatedErrors(
+        widget.sourceExecutionId,
+        sourceWidgetName,
+        sourceWidgetName,
+        newValue,
+        options
+      )
+    }
     executionErrorStore.clearWidgetRelatedErrors(
-      effectiveExecId,
+      nodeExecId,
       widget.name,
-      widget.sourceWidgetName ?? widget.name,
+      widget.name,
       newValue,
-      { min: widgetOptions?.min, max: widgetOptions?.max }
+      options
     )
   }
 }
@@ -122,10 +132,7 @@ export function hasWidgetError(
     : nodeErrors?.errors
   return (
     !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
-    missingModelStore.isWidgetMissingModel(
-      widget.sourceExecutionId ?? nodeExecId,
-      widget.sourceWidgetName ?? widget.name
-    )
+    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
   )
 }
 

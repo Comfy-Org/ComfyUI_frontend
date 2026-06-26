@@ -1,5 +1,5 @@
 import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -131,13 +131,13 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @returns A properly formatted NodeExecutionId, or null when any segment is invalid
  */
 export function createNodeExecutionId<
-  const T extends readonly [NodeId, ...NodeId[]]
+  const T extends readonly [SerializedNodeId, ...SerializedNodeId[]]
 >(nodeIds: T): NodeExecutionId
 export function createNodeExecutionId(
-  nodeIds: readonly NodeId[]
+  nodeIds: readonly SerializedNodeId[]
 ): NodeExecutionId | null
 export function createNodeExecutionId(
-  nodeIds: readonly NodeId[]
+  nodeIds: readonly SerializedNodeId[]
 ): NodeExecutionId | null {
   if (nodeIds.length === 0) return null
 
