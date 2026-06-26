@@ -140,13 +140,11 @@ test.describe('App mode usage', () => {
   test('Shares the graph side toolbar, filtered to assets + apps', async ({
     comfyPage
   }) => {
-    const sideToolbar = comfyPage.page.getByTestId(TestIds.sidebar.toolbar)
+    const { sideToolbar, nodeLibraryTab, assetsTab, appsTab } = comfyPage.menu
 
     await test.step('Graph mode shows the full toolbar', async () => {
       await expect(sideToolbar).toBeVisible()
-      await expect(
-        sideToolbar.locator('.node-library-tab-button')
-      ).toBeVisible()
+      await expect(nodeLibraryTab.tabButton).toBeVisible()
     })
 
     await test.step('App mode reuses it with only assets + apps', async () => {
@@ -154,9 +152,9 @@ test.describe('App mode usage', () => {
       await expect(comfyPage.appMode.centerPanel).toBeVisible()
 
       await expect(sideToolbar).toBeVisible()
-      await expect(sideToolbar.locator('.assets-tab-button')).toBeVisible()
-      await expect(sideToolbar.locator('.apps-tab-button')).toBeVisible()
-      await expect(sideToolbar.locator('.node-library-tab-button')).toBeHidden()
+      await expect(assetsTab.tabButton).toBeVisible()
+      await expect(appsTab.tabButton).toBeVisible()
+      await expect(nodeLibraryTab.tabButton).toBeHidden()
     })
   })
 
@@ -233,8 +231,12 @@ test.describe('App mode usage', () => {
 
     await comfyPage.appMode.enterBuilder()
     await expect(toggle).toBeHidden()
+    await expect(comfyPage.appMode.centerPanel).toBeHidden()
 
     await comfyPage.appMode.footer.exitButton.click()
+    // The center panel only renders in app mode, so its return proves the exit
+    // landed back in app mode rather than graph mode (where the toggle also shows).
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
     await expect(toggle).toBeVisible()
   })
 

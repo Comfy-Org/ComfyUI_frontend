@@ -65,9 +65,13 @@ export const useCanvasStore = defineStore('canvas', () => {
    * app-mode toggle mounting in its place during a switch.
    */
   const displayLinearMode = ref(linearMode.value)
+  let outerFrame: number | undefined
+  let innerFrame: number | undefined
   watch(linearMode, (next) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
+    if (outerFrame !== undefined) cancelAnimationFrame(outerFrame)
+    if (innerFrame !== undefined) cancelAnimationFrame(innerFrame)
+    outerFrame = requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
         displayLinearMode.value = next
       })
     })

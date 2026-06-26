@@ -164,7 +164,7 @@ const tooltipPt = {
             size="unset"
             :aria-label="
               seg.active
-                ? t('breadcrumbsMenu.workflowActions')
+                ? `${seg.label} ${t('breadcrumbsMenu.workflowActions')}`
                 : seg.switchLabel
             "
             :class="

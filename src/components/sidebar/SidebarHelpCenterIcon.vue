@@ -14,7 +14,18 @@
         :is-small="isSmall"
       />
     </template>
-    <div ref="feedbackRef" data-tf-auto-resize :data-tf-widget="typeformId" />
+    <div
+      v-if="typeformError || !isValidTypeformId"
+      class="text-danger p-4 text-sm"
+    >
+      {{ $t('linearMode.feedbackLoadError') }}
+    </div>
+    <div
+      v-else
+      ref="feedbackRef"
+      data-tf-auto-resize
+      :data-tf-widget="typeformId"
+    />
   </Popover>
   <SidebarIcon
     v-else
@@ -57,7 +68,7 @@ const sidebarOnLeft = computed(
 )
 
 const feedbackRef = useTemplateRef<HTMLDivElement>('feedbackRef')
-const { typeformId } = useTypeformEmbed(
+const { typeformError, isValidTypeformId, typeformId } = useTypeformEmbed(
   feedbackRef,
   APP_MODE_FEEDBACK_TYPEFORM_ID
 )

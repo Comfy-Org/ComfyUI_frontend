@@ -3672,6 +3672,7 @@
       "support": "contact our support",
       "promptShow": "Show error report"
     },
+    "feedbackLoadError": "Failed to load feedback form. Please try again later.",
     "queue": {
       "clickToClear": "Click to clear queue",
       "clear": "Clear queue"

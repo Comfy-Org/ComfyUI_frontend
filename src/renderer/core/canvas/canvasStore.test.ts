@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -137,18 +137,33 @@ describe('useCanvasStore', () => {
   })
 
   describe('displayLinearMode', () => {
-    it('lags the view mode by two frames so the toggle can animate the switch', async () => {
-      const rafCallbacks: FrameRequestCallback[] = []
-      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-        rafCallbacks.push(cb)
-        return rafCallbacks.length
-      })
-      const flushFrames = () => {
-        while (rafCallbacks.length) {
-          for (const cb of rafCallbacks.splice(0)) cb(0)
-        }
-      }
+    const rafQueue = new Map<number, FrameRequestCallback>()
+    let nextHandle: number
 
+    const advanceFrame = () => {
+      const callbacks = [...rafQueue.values()]
+      rafQueue.clear()
+      for (const cb of callbacks) cb(0)
+    }
+
+    beforeEach(() => {
+      rafQueue.clear()
+      nextHandle = 0
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+        const handle = ++nextHandle
+        rafQueue.set(handle, cb)
+        return handle
+      })
+      vi.stubGlobal('cancelAnimationFrame', (handle: number) => {
+        rafQueue.delete(handle)
+      })
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('lags the view mode by two frames so the toggle can animate the switch', async () => {
       expect(store.displayLinearMode).toBe(false)
 
       appModeState.isAppMode.value = true
@@ -159,11 +174,30 @@ describe('useCanvasStore', () => {
       expect(store.linearMode).toBe(true)
       expect(store.displayLinearMode).toBe(false)
 
-      flushFrames()
+      // First frame only schedules the second; the displayed mode must not move.
+      advanceFrame()
+      expect(store.displayLinearMode).toBe(false)
 
+      // The second frame is the one that flips the displayed mode.
+      advanceFrame()
       expect(store.displayLinearMode).toBe(true)
+    })
 
-      vi.unstubAllGlobals()
+    it('cancels a stale frame chain so a rapid toggle has no transient flash', async () => {
+      appModeState.isAppMode.value = true
+      await nextTick()
+      advanceFrame()
+
+      appModeState.isAppMode.value = false
+      await nextTick()
+
+      // The pending second frame from the first toggle is cancelled, so it can
+      // no longer flip the displayed mode to true before settling on false.
+      advanceFrame()
+      expect(store.displayLinearMode).toBe(false)
+
+      advanceFrame()
+      expect(store.displayLinearMode).toBe(false)
     })
   })
 })
