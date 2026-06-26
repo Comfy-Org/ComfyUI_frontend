@@ -67,6 +67,11 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          # Persist a token with `workflow` scope so the backport push can
+          # include changes to .github/workflows/**. The default GITHUB_TOKEN
+          # is refused by GitHub when a push creates/updates workflow files,
+          # which silently aborted the whole job (see PR #12804 backport).
+          token: ${{ secrets.PR_GH_TOKEN }}
 
       - name: Configure git
         run: |
