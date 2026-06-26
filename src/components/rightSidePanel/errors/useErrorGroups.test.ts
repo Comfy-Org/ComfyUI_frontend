@@ -115,10 +115,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
-}))
-
 vi.mock(
   '@/platform/missingModel/composables/useMissingModelInteractions',
   () => ({
@@ -334,7 +330,7 @@ describe('useErrorGroups', () => {
       )
       expect(missingGroup).toBeDefined()
       expect(missingGroup?.groupKey).toBe('missing_node')
-      expect(missingGroup?.displayTitle).toBe('Missing Node Packs (1)')
+      expect(missingGroup?.displayTitle).toBe('Missing Node Packs')
       expect(missingGroup?.displayMessage).toBe(
         'Install missing packs to use this workflow.'
       )
@@ -793,53 +789,6 @@ describe('useErrorGroups', () => {
     })
   })
 
-  describe('groupedErrorMessages', () => {
-    it('returns empty array when no errors', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.groupedErrorMessages.value).toEqual([])
-    })
-
-    it('collects unique display messages from node errors', async () => {
-      const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
-        '1': {
-          class_type: 'KSampler',
-          dependent_outputs: [],
-          errors: [
-            { type: 'err_a', message: 'Error A', details: '' },
-            { type: 'err_b', message: 'Error B', details: '' }
-          ]
-        },
-        '2': {
-          class_type: 'CLIPLoader',
-          dependent_outputs: [],
-          errors: [{ type: 'err_a', message: 'Error A', details: '' }]
-        }
-      }
-      await nextTick()
-
-      const messages = groups.groupedErrorMessages.value
-      expect(messages).toEqual([unknownValidationMessage])
-    })
-
-    it('includes missing node group display message', async () => {
-      const { groups } = createErrorGroups()
-      const missingNodesStore = useMissingNodesErrorStore()
-      missingNodesStore.setMissingNodeTypes([
-        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
-      ])
-      await nextTick()
-
-      const missingGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'missing_node'
-      )
-      expect(missingGroup).toBeDefined()
-      expect(groups.groupedErrorMessages.value).toContain(
-        missingGroup!.displayMessage
-      )
-    })
-  })
-
   describe('missingModelGroups', () => {
     it('returns empty array when no missing models', () => {
       const { groups } = createErrorGroups()
@@ -982,7 +931,7 @@ describe('useErrorGroups', () => {
       )
       expect(modelGroup).toBeDefined()
       expect(modelGroup?.groupKey).toBe('missing_model')
-      expect(modelGroup?.displayTitle).toBe('Missing Models (1)')
+      expect(modelGroup?.displayTitle).toBe('Missing Models')
     })
   })
 
@@ -1098,7 +1047,7 @@ describe('useErrorGroups', () => {
       const missingMediaGroup = groups.allErrorGroups.value.find(
         (group) => group.type === 'missing_media'
       )
-      expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs (2)')
+      expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs')
     })
   })
 

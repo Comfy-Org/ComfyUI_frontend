@@ -5,7 +5,6 @@ import type {
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -13,6 +12,7 @@ import type {
   NodeSearchResultMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  RunButtonProperties,
   SettingChangedMetadata,
   ShareFlowMetadata,
   SubscriptionMetadata,
@@ -27,10 +27,10 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
-import { useAppMode } from '@/composables/useAppMode'
-import { getActionbarDockState } from '../../utils/getActionbarDockState'
+import { TelemetryEvents } from '../../types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -154,7 +154,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
-    this.pushEvent('begin_checkout', metadata)
+    this.pushEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackSubscription(
@@ -183,18 +183,19 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const { mode, isAppMode } = useAppMode()
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    // GA4 names must be bare snake_case; the TelemetryEvents enum carries an
+    // `app:` prefix for Mixpanel/PostHog that dataLayer would forward verbatim.
+    this.pushEvent('workspace_invite_sent', metadata)
+  }
 
+  trackRunButton(properties: RunButtonProperties): void {
     this.pushEvent('run_workflow', {
-      subscribe_to_run: options?.subscribe_to_run ?? false,
-      trigger_source: options?.trigger_source ?? 'unknown',
-      view_mode: mode.value,
-      is_app_mode: isAppMode.value,
-      dock_state: getActionbarDockState()
+      subscribe_to_run: properties.subscribe_to_run,
+      trigger_source: properties.trigger_source ?? 'unknown',
+      view_mode: properties.view_mode,
+      is_app_mode: properties.is_app_mode,
+      dock_state: properties.dock_state
     })
   }
 

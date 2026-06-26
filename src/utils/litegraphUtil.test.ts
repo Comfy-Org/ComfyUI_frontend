@@ -3,14 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 
-import {
-  createNode,
-  getWidgetEntityIdForNode,
-  resolveNode
-} from './litegraphUtil'
+import { createNode, getWidgetIdForNode, resolveNode } from './litegraphUtil'
 
 const mockBringNodeToFront = vi.fn()
 
@@ -149,7 +145,7 @@ describe('createNode', () => {
   })
 })
 
-describe('getWidgetEntityIdForNode', () => {
+describe('getWidgetIdForNode', () => {
   const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 
   function fakeNode(id: number, opts: { detached?: boolean } = {}): LGraphNode {
@@ -159,29 +155,36 @@ describe('getWidgetEntityIdForNode', () => {
     } as unknown as LGraphNode
   }
 
-  it('returns widget.entityId when present', () => {
+  it('returns widget.widgetId when present', () => {
     const node = fakeNode(7)
     const widget = {
       name: 'seed',
-      entityId: 'precomputed:7:seed' as WidgetEntityId
+      widgetId: 'precomputed:7:seed' as WidgetId
     }
-    expect(getWidgetEntityIdForNode(node, widget)).toBe('precomputed:7:seed')
+    expect(getWidgetIdForNode(node, widget)).toBe('precomputed:7:seed')
   })
 
-  it('derives an entityId for plain POJO widgets bound to a node', () => {
+  it('derives an widgetId for plain POJO widgets bound to a node', () => {
     const node = fakeNode(42)
-    expect(getWidgetEntityIdForNode(node, { name: 'legacy_widget' })).toBe(
-      widgetEntityId(graphId, 42, 'legacy_widget')
+    expect(getWidgetIdForNode(node, { name: 'legacy_widget' })).toBe(
+      widgetId(graphId, 42, 'legacy_widget')
+    )
+  })
+
+  it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
+    const node = fakeNode(42)
+    expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
+      widgetId(graphId, 42, 'UNKNOWN#1')
     )
   })
 
   it('returns undefined when the node has no graph', () => {
     const node = fakeNode(1, { detached: true })
-    expect(getWidgetEntityIdForNode(node, { name: 'x' })).toBeUndefined()
+    expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
   })
 
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
-    expect(getWidgetEntityIdForNode(node, { name: 'x' })).toBeUndefined()
+    expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
   })
 })

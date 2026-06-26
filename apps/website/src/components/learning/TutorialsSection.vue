@@ -8,8 +8,8 @@ import {
   learningTutorials
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
-import Badge from '../common/Badge.vue'
-import MaskRevealButton from '../common/MaskRevealButton.vue'
+import Badge from '../ui/badge/Badge.vue'
+import { ButtonMask } from '../ui/button-mask'
 import TutorialDetailDialog from './TutorialDetailDialog.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -76,13 +76,14 @@ const activeTutorial = () =>
               {{ t('learning.tutorials.titlePrefix', locale) }}<br />
               {{ tutorial.title[locale] }}
             </h3>
-            <MaskRevealButton
+            <ButtonMask
               v-if="tutorial.href"
+              as="a"
               :href="tutorial.href"
               icon-position="right"
               class="shrink-0"
               variant="ghost"
-              size="sm"
+              size="default"
             >
               {{ t('cta.tryWorkflow', locale) }}
               <template #icon>
@@ -98,7 +99,7 @@ const activeTutorial = () =>
                   <polyline points="9 6 15 12 9 18" />
                 </svg>
               </template>
-            </MaskRevealButton>
+            </ButtonMask>
           </div>
 
           <ul class="flex flex-wrap gap-2">

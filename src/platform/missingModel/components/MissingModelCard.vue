@@ -1,9 +1,9 @@
 <template>
-  <div class="px-4 pb-2">
+  <div class="px-3">
     <div
       v-if="importableModelRows.length > 0"
       data-testid="missing-model-importable-rows"
-      class="flex flex-col gap-1 overflow-hidden py-2"
+      class="flex flex-col gap-1 overflow-hidden"
     >
       <MissingModelRow
         v-for="row in importableModelRows"
@@ -19,7 +19,7 @@
     <div
       v-if="unsupportedModelRows.length > 0"
       data-testid="missing-model-import-not-supported-section"
-      class="flex flex-col gap-1 border-t border-interface-stroke pt-3"
+      class="flex flex-col gap-1 border-t border-secondary-background pt-3"
     >
       <div class="mb-1">
         <p class="m-0 text-sm font-semibold text-warning-background">
@@ -49,7 +49,7 @@
         data-testid="missing-model-download-all"
         variant="secondary"
         size="sm"
-        class="h-8 min-w-0 flex-1 rounded-lg text-sm"
+        class="h-8 min-w-0 flex-1 rounded-md text-xs"
         @click="downloadAllModels"
       >
         <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />

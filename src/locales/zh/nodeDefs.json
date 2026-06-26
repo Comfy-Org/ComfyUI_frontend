@@ -2471,6 +2471,10 @@
         "name": "融合方法",
         "tooltip": "用于融合上下文窗口的方法。"
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "每个窗口中要在噪声latent本身中保留的latent索引列表。适用于参考内容（如起始图像）直接存在于噪声latent中，而不是单独的条件通道中的工作流（如inplace风格的I2V，例如LTXV、AnimateDiff）。与cond_retain_index_list无关。"
+      },
       "model": {
         "name": "模型",
         "tooltip": "在采样期间应用上下文窗口的模型。"
@@ -8034,7 +8038,8 @@
         "name": "生成后控制"
       },
       "generate_audio": {
-        "name": "生成音频"
+        "name": "生成音频",
+        "tooltip": "“kling-3.0-turbo”始终生成原生音频，因此音频开关将被忽略。"
       },
       "model": {
         "name": "模型",
@@ -8320,6 +8325,57 @@
       "1": {
         "name": "负面条件",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVContextWindows": {
+    "description": "为类似LTXV的模型设置上下文窗口。",
+    "display_name": "LTXV上下文窗口",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "是否闭合上下文窗口循环，仅适用于循环调度。"
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "上下文窗口的实际帧长度。必须为8*n+1。"
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "上下文窗口在实际帧中的重叠部分。"
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "上下文窗口的步进调度算法。"
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "上下文窗口的步幅，仅适用于均匀调度。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "是否应用FreeNoise噪声洗牌，提升窗口融合效果。"
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "用于融合上下文窗口的方法。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "采样时应用上下文窗口的模型。"
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "在每个上下文窗口中保留第一个latent帧（有助于保留初始参考）。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否将多个条件（由ConditionCombine创建）根据区域索引分配到各个窗口。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "采样时应用了上下文窗口的模型。"
       }
     }
   },
@@ -9083,6 +9139,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "加载3D（高级）",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "加载音频",
     "inputs": {
@@ -9742,6 +9837,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "将之前的 Ray 3.2 生成结果向前（在其后继续）或向后（在其前引入）扩展。请连接前一个 Luma Ray 3.2 节点的 generation_id 输出。每次扩展均为 5 秒。",
+    "display_name": "Luma Ray 3.2 视频扩展",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Forward 表示在前一个 clip 后继续；backward 表示在其前插入。"
+      },
+      "direction_loop": {
+        "name": "循环"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "新内容的文本提示。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，结果都是非确定性的。"
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "要扩展的视频的 Ray 3.2 generation_id。请连接另一个 Luma Ray 3.2 节点的 generation_id 输出。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "使用 Luma 的 Ray 3.2 模型从起始帧和/或结束帧生成视频。基于图像锚点的生成时长均为 5 秒。",
+    "display_name": "Luma Ray 3.2 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "生成视频的最后一帧。"
+      },
+      "loop": {
+        "name": "循环",
+        "tooltip": "使视频无缝循环。当设置了 end_frame 时不可用。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "视频生成的文本提示。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，结果都是非确定性的。"
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "生成视频的第一帧。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "将引导图像锚定到 Ray 3.2 输出视频时间线上指定位置。请将此节点连接到 Luma Ray 3.2 关键帧转视频节点的 'keyframes' 输入；可通过下方可选的 'keyframes' 输入将多个关键帧串联。",
+    "display_name": "Luma Ray 3.2 关键帧",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要放置在输出视频指定时刻的引导图像。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可选的前置关键帧，用于与当前关键帧串联。"
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "如何将该图像放置在输出视频的时间线上。"
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "使用 Luma Ray 3.2，通过插值一系列锚定在时间轴上的引导图像，生成视频。请使用 Luma Ray 3.2 关键帧节点（至少 2 个）构建序列。",
+    "display_name": "Luma Ray 3.2 关键帧转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "keyframes": {
+        "name": "关键帧",
+        "tooltip": "来自 Luma Ray 3.2 关键帧节点的关键帧序列（至少 2 个）。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于视频生成的文本提示。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "使用 Luma 的 Ray 3.2 模型，根据文本提示生成视频。",
+    "display_name": "Luma Ray 3.2 文本转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "loop": {
+        "name": "循环",
+        "tooltip": "使视频无缝循环。仅在 5 秒时长可用。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于视频生成的文本提示。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "使用 Luma Ray 3.2 在新提示下重新渲染已有视频（可重绘风格、重新打光、添加或移除元素），同时保持原有运动。源视频最长 18 秒；编辑后的视频保持原长度。",
+    "display_name": "Luma Ray 3.2 视频编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述期望的编辑效果。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，结果都是非确定性的。"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "保留原视频与重新想象的程度。'auto' 由 Ray 3.2 自动选择；adher_* 保留最多，flex_* 平衡，reimagine_* 变化最大。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要编辑的源视频。最长 18 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "更改现有视频的宽高比，使用 Luma Ray 3.2 填充新暴露的画布区域。源视频最长 30 秒。按输出秒数计费。",
+    "display_name": "Luma Ray 3.2 视频重构",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述如何填充新暴露的画布区域。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要重构的源视频。最长 30 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
         "tooltip": null
       }
     }
@@ -14074,6 +14425,12 @@
       "audioUI": {
         "name": "音频UI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14128,6 +14485,11 @@
     "inputs": {
       "images": {
         "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
       }
     }
   },
@@ -16248,6 +16610,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "绘制头部"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
@@ -16921,6 +17286,12 @@
       "images": {
         "name": "图片"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16944,6 +17315,12 @@
       "quality": {
         "name": "质量"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16957,6 +17334,12 @@
       },
       "filename_prefix": {
         "name": "文件名前缀"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16979,6 +17362,12 @@
         "name": "format",
         "tooltip": "保存音频的文件格式。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16996,6 +17385,12 @@
       "quality": {
         "name": "质量"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -17012,6 +17407,12 @@
       },
       "quality": {
         "name": "质量"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -17042,6 +17443,11 @@
         "name": "图片",
         "tooltip": "要保存的图像。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -17065,6 +17471,12 @@
       "images": {
         "name": "图像",
         "tooltip": "要保存的图像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17133,6 +17545,11 @@
       "samples": {
         "name": "Latent"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
+      }
     }
   },
   "SaveLoRA": {
@@ -17162,6 +17579,12 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -17207,6 +17630,12 @@
         "name": "视频",
         "tooltip": "要保存的视频。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17228,6 +17657,12 @@
       "images": {
         "name": "图像",
         "tooltip": "RGBA 图像将以 alpha 通道作为透明度保存（仅 vp9 编解码器支持）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -18803,6 +19238,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "用于编辑的参考图像。Boogu 每个样本专注于一个参考图像；也允许添加更多。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -21900,6 +22366,14 @@
       "model": {
         "name": "模型",
         "tooltip": "在采样过程中应用上下文窗口的模型。"
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "在每个上下文窗口中保留第一个 I2V 帧（有助于保留初始参考）。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否根据区域索引将多个条件（由 ConditionCombine 创建）拆分到每个窗口。"
       }
     },
     "outputs": {

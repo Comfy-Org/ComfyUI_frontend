@@ -1,7 +1,7 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
-    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
@@ -113,7 +113,11 @@
         button-variant="gradient"
       />
       <Button
-        v-if="showSubscribeAction && !isPersonalWorkspace"
+        v-if="
+          showSubscribeAction &&
+          !isPersonalWorkspace &&
+          (!isCancelled || permissions.canManageSubscriptionLifecycle)
+        "
         variant="primary"
         size="sm"
         @click="handleOpenPlansAndPricing"
@@ -139,12 +143,6 @@
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
-      <span
-        v-if="canUpgrade"
-        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
-      >
-        {{ $t('subscription.upgrade') }}
-      </span>
     </div>
 
     <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
@@ -298,12 +296,6 @@ const displayedCredits = computed(() => {
       maximumFractionDigits: 2
     }
   })
-})
-
-const canUpgrade = computed(() => {
-  // PRO is currently the only/highest tier, so no upgrades available
-  // This will need updating when additional tiers are added
-  return false
 })
 
 const showPlansAndPricing = computed(

@@ -141,7 +141,7 @@ export function useSlotLinkInteraction({
     const nodeId = link.node.id
     if (nodeId != null) {
       const isInputFrom = link.toType === 'output'
-      const key = getSlotKey(String(nodeId), link.fromSlotIndex, isInputFrom)
+      const key = getSlotKey(nodeId, link.fromSlotIndex, isInputFrom)
       const layout = layoutStore.getSlotLayout(key)
       if (layout) return layout.position
     }
@@ -218,7 +218,7 @@ export function useSlotLinkInteraction({
   ): { position: Point; direction: LinkDirection } | null => {
     if (!link) return null
 
-    const slotKey = getSlotKey(String(link.origin_id), link.origin_slot, false)
+    const slotKey = getSlotKey(link.origin_id, link.origin_slot, false)
     const layout = layoutStore.getSlotLayout(slotKey)
     if (!layout) return null
 

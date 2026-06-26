@@ -44,14 +44,30 @@ describe('GlobalDialog renderer branching', () => {
     cleanup()
   })
 
-  it('renders the PrimeVue branch when renderer is omitted', async () => {
+  it('renders the Reka branch when renderer is omitted (default)', async () => {
     mountDialog()
     const store = useDialogStore()
 
     store.showDialog({
-      key: 'primevue-default',
-      title: 'PrimeVue dialog',
+      key: 'renderer-default',
+      title: 'Default renderer dialog',
       component: Body
+    })
+
+    const dialogs = await screen.findAllByRole('dialog')
+    expect(dialogs.length).toBeGreaterThan(0)
+    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
+  })
+
+  it("renders the legacy PrimeVue branch when renderer is 'primevue'", async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'primevue-escape-hatch',
+      title: 'PrimeVue dialog',
+      component: Body,
+      dialogComponentProps: { renderer: 'primevue' }
     })
 
     const dialogs = await screen.findAllByRole('dialog')

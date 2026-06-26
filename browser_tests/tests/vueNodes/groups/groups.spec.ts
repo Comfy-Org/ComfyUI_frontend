@@ -177,6 +177,30 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     }).toPass({ timeout: 5000 })
   })
 
+  test('does not drag contents when control is held', async ({ comfyPage }) => {
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+    const groupCount = () => comfyPage.page.evaluate(() => graph!.groups.length)
+    await expect.poll(groupCount, 'create group').toBe(1)
+    await comfyPage.page.mouse.click(100, 100)
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const initialNodeBounds = await ksampler.boundingBox()
+    expect(initialNodeBounds).toBeTruthy()
+
+    const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+    await comfyPage.page.mouse.move(groupPos.x, groupPos.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.mouse.move(groupPos.x + 100, groupPos.y)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Control')
+    await expect
+      .poll(() => getGroupTitlePosition(comfyPage, 'Group'))
+      .not.toEqual(groupPos)
+    expect(await ksampler.boundingBox()).toEqual(initialNodeBounds)
+  })
+
   test('should keep groups aligned after loading legacy Vue workflows', async ({
     comfyPage
   }) => {
@@ -256,3 +280,36 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await expect.poll(bypassCount, "won't toggle double selected node").toBe(7)
   })
 })
+
+test.describe(
+  'Vue Node Group Context Menu',
+  { tag: ['@vue-nodes', '@canvas'] },
+  () => {
+    test('right-clicking a group opens the Vue context menu instead of the legacy menu', async ({
+      comfyPage
+    }) => {
+      // Deselect so the right-click selects the group itself.
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => graph!.groups.length))
+        .toBe(1)
+      await comfyPage.page.mouse.click(100, 100)
+      await comfyPage.nextFrame()
+
+      const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+      await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
+        button: 'right'
+      })
+
+      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+      await expect(comfyPage.contextMenu.litegraphMenu).toBeHidden()
+
+      // Group-only action confirms it is the group menu.
+      await expect(
+        comfyPage.contextMenu.primeVueMenu.getByText('Fit Group To Nodes')
+      ).toBeVisible()
+    })
+  }
+)
