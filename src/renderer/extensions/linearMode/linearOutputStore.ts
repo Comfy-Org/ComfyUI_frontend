@@ -141,7 +141,12 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
         const extras = newOutputs.map((o) =>
           createItem(jobId, { state: 'image', output: o })
         )
-        generatingExtraCards.value = [...extras, ...generatingExtraCards.value]
+        // Only the newest GENERATING_CARD_LIMIT can ever surface in the fan, so
+        // cap on insert rather than retaining every non-selected output.
+        generatingExtraCards.value = [
+          ...extras,
+          ...generatingExtraCards.value
+        ].slice(0, GENERATING_CARD_LIMIT)
       }
       return
     }

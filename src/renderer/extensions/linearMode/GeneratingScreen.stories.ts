@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { computed, ref } from 'vue'
 
 import GeneratingCard from './GeneratingCard.vue'
 import GeneratingScreen from './GeneratingScreen.vue'
+import { GENERATING_CARD_LIMIT } from './linearOutputStore'
 import type { InProgressItem } from './linearModeTypes'
 
 const meta: Meta<typeof GeneratingScreen> = {
@@ -70,9 +72,7 @@ const fanCards: InProgressItem[] = [
 
 function fanned(cards: InProgressItem[]) {
   const total = cards.length
-  return cards
-    .map((card, depth) => ({ card, depth, total, src: card.latentPreviewUrl }))
-    .reverse()
+  return cards.map((card, depth) => ({ card, depth, total })).reverse()
 }
 
 // The real screen, wired to the store (empty fan): shows the ambient glow,
@@ -93,14 +93,79 @@ export const Fan: Story = {
           </div>
           <div class="pointer-events-none absolute inset-0">
             <GeneratingCard
-              v-for="{ card, depth, total, src } in cards"
+              v-for="{ card, depth, total } in cards"
               :key="card.id"
               :card="card"
               :depth="depth"
               :total="total"
-              :src="src"
             />
           </div>
+        </div>
+      </div>
+    `
+  })
+}
+
+// Interactive harness for the fan: add cards to watch the pop-in entrance and
+// reflow, remove the newest to watch it leave, and reset to clear. Adding past
+// GENERATING_CARD_LIMIT evicts the oldest so the eviction fade is visible too.
+export const Interactive: Story = {
+  render: () => ({
+    components: { GeneratingCard },
+    setup() {
+      const cards = ref<InProgressItem[]>([])
+      let seq = 0
+
+      function add() {
+        seq += 1
+        const next: InProgressItem = {
+          id: `c${seq}`,
+          jobId: 'job',
+          seq,
+          state: 'latent',
+          latentPreviewUrl: swatch(seq)
+        }
+        cards.value = [next, ...cards.value].slice(0, GENERATING_CARD_LIMIT)
+      }
+      function remove() {
+        cards.value = cards.value.slice(1)
+      }
+      function reset() {
+        cards.value = []
+      }
+
+      const fanCards = computed(() => {
+        const total = cards.value.length
+        return cards.value
+          .map((card, depth) => ({ card, depth, total }))
+          .reverse()
+      })
+
+      const btnClass =
+        'rounded-lg bg-secondary-background px-3 py-1.5 text-sm text-muted-foreground ring-1 ring-border-subtle transition-opacity hover:opacity-70'
+
+      return { fanCards, add, remove, reset, btnClass }
+    },
+    template: `
+      <div class="@container-size flex h-full w-full flex-col items-center justify-center gap-10">
+        <div class="flex gap-2">
+          <button :class="btnClass" @click="add">Add card</button>
+          <button :class="btnClass" @click="remove">Remove newest</button>
+          <button :class="btnClass" @click="reset">Reset</button>
+        </div>
+        <div class="relative flex h-[min(50cqh,320px)] w-[440px] items-center justify-center overflow-visible">
+          <div class="pointer-events-none absolute top-1/2 left-1/2 size-[min(150cqw,150cqh,760px)] -translate-1/2">
+            <span class="gen-glow" />
+          </div>
+          <TransitionGroup tag="div" name="genfan" class="pointer-events-none absolute inset-0">
+            <GeneratingCard
+              v-for="{ card, depth, total } in fanCards"
+              :key="card.id"
+              :card="card"
+              :depth="depth"
+              :total="total"
+            />
+          </TransitionGroup>
         </div>
       </div>
     `
