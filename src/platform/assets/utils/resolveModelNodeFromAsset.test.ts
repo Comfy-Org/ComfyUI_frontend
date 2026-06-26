@@ -260,3 +260,67 @@ describe('resolveModelNodeFromAsset', () => {
     })
   })
 })
+
+describe('getAssetCategory', () => {
+  it('returns the first tag that is not models or missing', () => {
+    expect(
+      getAssetCategory(createMockAsset({ tags: ['models', 'checkpoints'] }))
+    ).toBe('checkpoints')
+  })
+
+  it('skips the missing placeholder tag', () => {
+    expect(
+      getAssetCategory(
+        createMockAsset({ tags: ['models', 'missing', 'loras'] })
+      )
+    ).toBe('loras')
+  })
+
+  it('returns undefined when only excluded tags are present', () => {
+    expect(
+      getAssetCategory(createMockAsset({ tags: ['models', 'missing'] }))
+    ).toBeUndefined()
+  })
+
+  it('returns undefined when tags is missing', () => {
+    const asset = { ...createMockAsset(), tags: undefined } as unknown as
+      | AssetItem
+      | { tags: undefined }
+    expect(getAssetCategory(asset as AssetItem)).toBeUndefined()
+  })
+})
+
+describe('canCreateNodeForAsset', () => {
+  beforeEach(() => {
+    mockIsReady.value = true
+  })
+
+  it('returns true while the registry is still warming up', () => {
+    mockIsReady.value = false
+    mockProvider(null)
+    expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
+    expect(mockRegisterDefaults).toHaveBeenCalled()
+    expect(mockGetNodeProvider).not.toHaveBeenCalled()
+  })
+
+  it('returns true when a provider exists for the category', () => {
+    mockProvider(createMockNodeProvider())
+    expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
+    expect(mockGetNodeProvider).toHaveBeenCalledWith('checkpoints')
+  })
+
+  it('returns false when the registry is ready but no provider matches', () => {
+    mockProvider(null)
+    expect(
+      canCreateNodeForAsset(createMockAsset({ tags: ['models', 'BEN'] }))
+    ).toBe(false)
+    expect(mockGetNodeProvider).toHaveBeenCalledWith('BEN')
+  })
+
+  it('returns false when the asset has no usable category tag (would fail INVALID_ASSET)', () => {
+    expect(
+      canCreateNodeForAsset(createMockAsset({ tags: ['models', 'missing'] }))
+    ).toBe(false)
+    expect(mockGetNodeProvider).not.toHaveBeenCalled()
+  })
+})
