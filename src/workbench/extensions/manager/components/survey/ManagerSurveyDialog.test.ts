@@ -65,6 +65,15 @@ describe('ManagerSurveyDialog', () => {
     expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
   })
 
+  it('shows the error state when the configured survey url is malformed', () => {
+    remoteConfig.value = { manager_survey_url: 'not a valid url' }
+
+    renderDialog()
+
+    expect(screen.queryByTestId('manager-survey-iframe')).toBeNull()
+    expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
+  })
+
   it('clears the loading state once the iframe loads', async () => {
     remoteConfig.value = { manager_survey_url: SURVEY_URL }
 

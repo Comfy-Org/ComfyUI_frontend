@@ -28,6 +28,7 @@
           :src="surveyUrl"
           :title="$t('manager.survey.title')"
           :style="{ height: `${iframeHeight}px` }"
+          sandbox="allow-scripts allow-same-origin allow-forms"
           data-testid="manager-survey-iframe"
           class="w-full rounded-lg border-0"
           @load="onIframeLoad"
@@ -80,11 +81,16 @@ const { resolvedUserInfo } = useCurrentUser()
 const surveyUrl = computed(() => {
   const base = remoteConfig.value.manager_survey_url
   if (!base) return undefined
-  const url = new URL(base)
-  // Link responses to the logged-in user; omit for anonymous responses.
-  const distinctId = resolvedUserInfo.value?.id
-  if (distinctId) url.searchParams.set('distinct_id', distinctId)
-  return url.toString()
+  try {
+    const url = new URL(base)
+    // Link responses to the logged-in user; omit for anonymous responses.
+    const distinctId = resolvedUserInfo.value?.id
+    if (distinctId) url.searchParams.set('distinct_id', distinctId)
+    return url.toString()
+  } catch {
+    // A malformed configured URL falls back to the error state.
+    return undefined
+  }
 })
 
 const surveyOrigin = computed(() =>
