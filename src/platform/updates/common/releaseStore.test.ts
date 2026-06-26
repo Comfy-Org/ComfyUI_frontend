@@ -40,6 +40,14 @@ vi.mock('@/platform/updates/common/releaseService', () => {
   }
 })
 
+vi.mock('@/scripts/api', () => ({
+  api: {
+    // Non-empty => feature flags already received, so fetchReleases' gate
+    // resolves immediately instead of waiting on the websocket.
+    serverFeatureFlags: ref<Record<string, unknown>>({ ready: true })
+  }
+}))
+
 vi.mock('@/platform/settings/settingStore', () => {
   const get = vi.fn((key: string) => {
     if (key === 'Comfy.Notification.ShowVersionUpdates') return true
@@ -95,7 +103,12 @@ vi.mock('@/stores/systemStatsStore', () => {
   }
 })
 vi.mock('@vueuse/core', () => ({
-  until: vi.fn(() => Promise.resolve()),
+  // until() is awaited directly in some call sites and chained as
+  // until(...).toBe(...) in others; support both shapes.
+  until: vi.fn(() => {
+    const resolved = Promise.resolve()
+    return Object.assign(resolved, { toBe: vi.fn(() => Promise.resolve()) })
+  }),
   useStorage: vi.fn(() => ({ value: {} })),
   createSharedComposable: vi.fn((fn) => fn)
 }))
@@ -442,11 +455,11 @@ describe('useReleaseStore', () => {
 
       vi.mocked(releaseService.getReleases).mockReturnValue(promise)
 
-      const initPromise = store.initialize()
+      const fetchPromise = store.fetchReleases()
       expect(store.isLoading).toBe(true)
 
       resolvePromise!([mockRelease])
-      await initPromise
+      await fetchPromise
 
       expect(store.isLoading).toBe(false)
     })

@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { stringToLocale } from '@/utils/formatUtil'
 
@@ -294,6 +295,16 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Initialize store
   async function initialize(): Promise<void> {
+    // showVersionUpdates' default is seeded by the show_version_updates server
+    // feature flag, which arrives over the websocket shortly after connect. Wait
+    // for the flags (non-empty once received) so a host that disabled updates
+    // isn't briefly treated as enabled on first load; fall back after a timeout
+    // so a missing/late flag message can't block fetching forever.
+    if (!isCloud) {
+      await until(
+        () => Object.keys(api.serverFeatureFlags.value).length > 0
+      ).toBe(true, { timeout: 3000 })
+    }
     await fetchReleases()
   }
 

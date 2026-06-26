@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 
 import { CORE_SETTINGS } from './coreSettings'
@@ -17,15 +16,18 @@ describe('Comfy.Notification.ShowVersionUpdates default', () => {
     vi.restoreAllMocks()
   })
 
-  it('follows the show_version_updates server feature flag', () => {
-    const getServerFeature = vi
-      .spyOn(api, 'getServerFeature')
-      .mockReturnValue(false)
+  it('resolves to the show_version_updates server flag value', () => {
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(true)
+    expect(getDefault('Comfy.Notification.ShowVersionUpdates')).toBe(true)
 
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(false)
     expect(getDefault('Comfy.Notification.ShowVersionUpdates')).toBe(false)
-    expect(getServerFeature).toHaveBeenCalledWith(
-      ServerFeatureFlag.SHOW_VERSION_UPDATES,
-      true
+  })
+
+  it('falls back to true when the server flag is unset', () => {
+    vi.spyOn(api, 'getServerFeature').mockImplementation(
+      (_name, fallback) => fallback
     )
+    expect(getDefault('Comfy.Notification.ShowVersionUpdates')).toBe(true)
   })
 })
