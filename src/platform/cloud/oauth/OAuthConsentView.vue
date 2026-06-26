@@ -9,7 +9,7 @@
             class="flex size-14 items-center justify-center rounded-2xl bg-white"
           >
             <i
-              :class="cn('size-8', clientGlyph.icon, clientGlyph.color)"
+              class="icon-[lucide--app-window] size-8 text-black"
               aria-hidden="true"
               data-testid="client-icon"
             />
@@ -226,8 +226,6 @@ const resourceName = computed(
     challenge.value?.resource_display_name ??
     t('oauth.consent.resourceFallback')
 )
-
-const clientGlyph = { icon: 'icon-[lucide--app-window]', color: 'text-black' }
 
 const selectedWorkspaceIsValid = computed(() =>
   Boolean(
