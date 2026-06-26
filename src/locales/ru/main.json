@@ -325,6 +325,11 @@
       "signUpWithGithub": "Зарегистрироваться через Github",
       "signUpWithGoogle": "Зарегистрироваться через Google",
       "title": "Создать аккаунт"
+    },
+    "turnstile": {
+      "expired": "Срок действия проверки истек. Пожалуйста, выполните проверку снова.",
+      "failed": "Проверка не пройдена. Пожалуйста, попробуйте еще раз.",
+      "submitBlockedHint": "Завершите проверку выше, чтобы включить регистрацию."
     }
   },
   "batch": {
@@ -3742,12 +3747,14 @@
       "keepSubscription": "Сохранить подписку",
       "title": "Отмена подписки"
     },
+    "cancelPlan": "Отменить тариф",
     "cancelSuccess": "Подписка успешно отменена",
     "canceled": "Отменено",
     "canceledCard": {
       "description": "С вас больше не будет взиматься плата. Ваши функции останутся активными до {date}.",
       "title": "Ваша подписка отменена"
     },
+    "changePlan": "Сменить тариф",
     "changeTo": "Перейти на {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Логотип Comfy Cloud",
@@ -3776,6 +3783,7 @@
       "paymentPageBlocked": "Не удалось открыть страницу оплаты — попробуйте еще раз",
       "title": "Перейти на тариф {plan}?"
     },
+    "endsOnDate": "Заканчивается {date}",
     "enterprise": {
       "cta": "Узнать больше",
       "flexibility": "Нужна большая гибкость или индивидуальные функции?",
@@ -3785,6 +3793,9 @@
     },
     "everythingInPlus": "Всё в {plan}, плюс:",
     "expiresDate": "Истекает {date}",
+    "freePerks": {
+      "maxRuntime": "Максимальное время выполнения: {duration}"
+    },
     "freeTier": {
       "description": "Ваш бесплатный тариф включает {credits} кредитов каждый месяц для использования Comfy Cloud.",
       "descriptionGeneric": "Ваш бесплатный тариф включает ежемесячный лимит кредитов для использования Comfy Cloud.",
@@ -3812,7 +3823,7 @@
     "inviteUpTo": "Пригласить до",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
-    "managePayment": "Управление оплатой",
+    "manageBilling": "Управление оплатой",
     "managePlan": "Управление планом",
     "manageSubscription": "Управление подпиской",
     "maxDuration": {
@@ -3826,7 +3837,6 @@
     "maxMembersLabel": "Макс. участников",
     "member": "участник",
     "memberCount": "{count} участник | {count} участников",
-    "membersLabel": "До {count} участников",
     "messageSupport": "Написать в поддержку",
     "monthly": "Ежемесячно",
     "monthlyBonusDescription": "Ежемесячный бонус кредитов",
@@ -3842,17 +3852,19 @@
     "mostPopular": "Самый популярный",
     "needTeamWorkspace": "Нужно командное рабочее пространство?",
     "nextBillingCycle": "следующий платёжный цикл",
-    "nextMonthInvoice": "Счет на следующий месяц",
     "outOfCreditsDescription": "Добавьте кредиты, чтобы продолжить генерацию.",
     "outOfCreditsTitle": "Кредиты закончились. Пополнение {date}",
     "outOfCreditsTitleNoDate": "Кредиты закончились",
     "partnerNodesBalance": "Баланс кредитов \"Партнёрских узлов\"",
     "partnerNodesCredits": "Кредиты партнёрских узлов",
     "partnerNodesDescription": "Для запуска коммерческих/проприетарных моделей",
+    "partnerNodesPricingTable": "Таблица цен на Partner Nodes",
     "perMonth": "USD / месяц",
     "personalHeader": "Личные тарифы предназначены только для индивидуального использования. {action}",
     "personalHeaderAction": "Чтобы добавить участников, оформите командный тариф.",
     "personalWorkspace": "Личное рабочее пространство",
+    "planLoadError": "Не удалось загрузить детали вашего тарифа.",
+    "planLoadErrorRetry": "Попробовать снова",
     "planScope": {
       "personal": "Для личного использования",
       "team": "Для команд"
@@ -3911,11 +3923,13 @@
     "pricingBlurbEnterprise": "корпоративным обсуждениям",
     "pricingBlurbQuestions": "вопросам",
     "pricingBlurbSeeDetails": "подробнее",
+    "reactivatePlan": "Возобновить тариф",
     "refillsDate": "Пополнение {date}",
     "refillsNextCycle": "Пополнение в следующем цикле",
     "refreshCredits": "Обновить кредиты",
     "remaining": "осталось",
     "renewsDate": "Обновляется {date}",
+    "renewsOnDate": "Продлевается {date}",
     "required": {
       "pollingFailed": "Не удалось активировать подписку",
       "pollingSuccess": "Подписка успешно активирована!",
@@ -3930,6 +3944,7 @@
     "saveYearly": "Экономия 20%",
     "saveYearlyUpTo": "Экономьте до 20%",
     "soloUseOnly": "Только для индивидуального использования",
+    "subscribe": "Подписаться",
     "subscribeFailed": "Не удалось подписаться",
     "subscribeForMore": "Обновить",
     "subscribeNow": "Подписаться сейчас",
@@ -3949,6 +3964,12 @@
     },
     "teamHeader": "Для команд, желающих сотрудничать. Нужно больше участников? {learnMore} о корпоративных возможностях.",
     "teamHeaderLearnMore": "Узнать больше",
+    "teamPerks": {
+      "concurrentRuns": "Участники могут запускать рабочие процессы одновременно",
+      "inviteMembers": "Приглашение участников",
+      "rolePermissions": "Разрешения на основе ролей",
+      "sharedCreditPool": "Общий кредитный пул для всех участников"
+    },
     "teamPlan": {
       "changePlan": "Сменить тариф",
       "comingSoonLabel": "Скоро появится:",
@@ -3965,6 +3986,8 @@
       "tagline": "Выберите собственную ежемесячную подписку на кредиты. Чем больше кредитов — тем больше скидка.",
       "unavailable": "Этот командный план сейчас недоступен."
     },
+    "teamPlanIncludes": "Ваш тариф включает всё из {plan}, а также:",
+    "teamPlanName": "Команда",
     "teamWorkspace": "Командное рабочее пространство",
     "tierNameYearly": "{name} Ежегодно",
     "tiers": {

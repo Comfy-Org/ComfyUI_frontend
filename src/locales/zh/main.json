@@ -325,6 +325,11 @@
       "signUpWithGithub": "使用Github注册",
       "signUpWithGoogle": "使用Google注册",
       "title": "创建一个账户"
+    },
+    "turnstile": {
+      "expired": "验证已过期。请重新完成验证。",
+      "failed": "验证失败。请重试。",
+      "submitBlockedHint": "请先完成上方的验证挑战以启用注册。"
     }
   },
   "batch": {
@@ -3754,12 +3759,14 @@
       "keepSubscription": "保留订阅",
       "title": "取消订阅"
     },
+    "cancelPlan": "取消套餐",
     "cancelSuccess": "订阅取消成功",
     "canceled": "已取消",
     "canceledCard": {
       "description": "您将不再被扣费。您的功能将在 {date} 前保持激活。",
       "title": "您的订阅已被取消"
     },
+    "changePlan": "更改套餐",
     "changeTo": "更改为 {plan}",
     "comfyCloud": "Comfy 云",
     "comfyCloudLogo": "Comfy Cloud Logo",
@@ -3788,6 +3795,7 @@
       "paymentPageBlocked": "无法打开支付页面 — 请重试",
       "title": "切换到 {plan} 方案？"
     },
+    "endsOnDate": "将于 {date} 结束",
     "enterprise": {
       "cta": "了解更多",
       "flexibility": "需要更多灵活性或定制功能？",
@@ -3797,6 +3805,9 @@
     },
     "everythingInPlus": "包含 {plan} 的所有内容，并额外提供：",
     "expiresDate": "于 {date} 过期",
+    "freePerks": {
+      "maxRuntime": "最长运行时长 {duration}"
+    },
     "freeTier": {
       "description": "您的免费套餐每月包含 {credits} 积分，可体验 Comfy Cloud。",
       "descriptionGeneric": "您的免费套餐每月包含积分额度，可体验 Comfy Cloud。",
@@ -3824,7 +3835,7 @@
     "inviteUpTo": "可邀请多达",
     "invoiceHistory": "发票历史",
     "learnMore": "了解更多",
-    "managePayment": "管理付款",
+    "manageBilling": "管理账单",
     "managePlan": "管理订阅",
     "manageSubscription": "管理订阅",
     "maxDuration": {
@@ -3838,7 +3849,6 @@
     "maxMembersLabel": "最大成员数",
     "member": "成员",
     "memberCount": "{count} 名成员",
-    "membersLabel": "最多 {count} 名成员",
     "messageSupport": "消息支持",
     "monthly": "月度",
     "monthlyBonusDescription": "每月积分奖励",
@@ -3854,17 +3864,19 @@
     "mostPopular": "最受欢迎",
     "needTeamWorkspace": "需要团队工作区？",
     "nextBillingCycle": "下一个计费周期",
-    "nextMonthInvoice": "下月账单",
     "outOfCreditsDescription": "请添加更多点数以继续生成。",
     "outOfCreditsTitle": "您的点数已用完。点数将于 {date} 补充",
     "outOfCreditsTitleNoDate": "您的点数已用完",
     "partnerNodesBalance": "\"合作伙伴节点\"积分余额",
     "partnerNodesCredits": "合作伙伴节点积分",
     "partnerNodesDescription": "用于运行商业/专有模型",
+    "partnerNodesPricingTable": "合作节点价格表",
     "perMonth": "美元 / 月",
     "personalHeader": "个人方案仅限个人使用。{action}",
     "personalHeaderAction": "如需添加团队成员，请订阅团队方案。",
     "personalWorkspace": "个人工作区",
+    "planLoadError": "无法加载您的套餐详情。",
+    "planLoadErrorRetry": "重试",
     "planScope": {
       "personal": "个人使用",
       "team": "团队使用"
@@ -3923,11 +3935,13 @@
     "pricingBlurbEnterprise": "企业合作",
     "pricingBlurbQuestions": "问题咨询",
     "pricingBlurbSeeDetails": "查看详情",
+    "reactivatePlan": "重新激活套餐",
     "refillsDate": "补充 {date}",
     "refillsNextCycle": "下个周期补充",
     "refreshCredits": "刷新额度",
     "remaining": "剩余",
     "renewsDate": "将于 {date} 续订",
+    "renewsOnDate": "将于 {date} 自动续订",
     "required": {
       "pollingFailed": "订阅激活失败",
       "pollingSuccess": "订阅激活成功！",
@@ -3942,6 +3956,7 @@
     "saveYearly": "立省 20%",
     "saveYearlyUpTo": "最高可节省 20%",
     "soloUseOnly": "仅限个人使用",
+    "subscribe": "订阅",
     "subscribeFailed": "订阅失败",
     "subscribeForMore": "升级",
     "subscribeNow": "立即订阅",
@@ -3961,6 +3976,12 @@
     },
     "teamHeader": "适合希望协作的团队。需要更多成员？{learnMore} 了解企业版。",
     "teamHeaderLearnMore": "了解更多",
+    "teamPerks": {
+      "concurrentRuns": "成员可同时运行工作流",
+      "inviteMembers": "邀请成员",
+      "rolePermissions": "基于角色的权限",
+      "sharedCreditPool": "所有成员共享积分池"
+    },
     "teamPlan": {
       "changePlan": "更改方案",
       "comingSoonLabel": "即将上线：",
@@ -3977,6 +3998,8 @@
       "tagline": "自定义每月积分订阅。订阅更多积分可享更大折扣。",
       "unavailable": "该团队套餐当前不可用。"
     },
+    "teamPlanIncludes": "您的套餐包含 {plan} 的所有内容，以及：",
+    "teamPlanName": "团队",
     "teamWorkspace": "团队工作区",
     "tierNameYearly": "{name} 年度",
     "tiers": {
