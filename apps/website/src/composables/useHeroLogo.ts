@@ -148,6 +148,7 @@ export function useHeroLogo(
       const bb = tempGeo.boundingBox
       if (!bb) {
         tempGeo.dispose()
+        cleanup?.()
         return
       }
       const cx = (bb.max.x + bb.min.x) / 2
@@ -156,6 +157,7 @@ export function useHeroLogo(
         cfg.fitAxis === 'width' ? bb.max.x - bb.min.x : bb.max.y - bb.min.y
       if (fitExtent <= 0) {
         tempGeo.dispose()
+        cleanup?.()
         return
       }
       const scaleFactor = cfg.targetSize / fitExtent
