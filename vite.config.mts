@@ -224,9 +224,9 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig,
         bypass: (req) => {
-          const url = req.url ?? ''
-          if (url === '/oauth/consent' || url.startsWith('/oauth/consent/')) {
-            return url
+          const path = (req.url ?? '').split('?')[0]
+          if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
+            return req.url
           }
           return null
         }
