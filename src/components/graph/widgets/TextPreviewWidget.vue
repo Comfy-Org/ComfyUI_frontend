@@ -1,6 +1,8 @@
 <template>
   <div
+    ref="scrollContainer"
     class="relative max-h-[200px] min-h-[28px] w-full overflow-y-auto rounded-lg px-4 py-2 text-xs"
+    @wheel="handleWheel"
   >
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
@@ -14,8 +16,9 @@
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
@@ -24,6 +27,7 @@ const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{
   nodeId: NodeId
 }>()
+const scrollContainer = ref<HTMLElement | null>(null)
 
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = computed(() => {
@@ -64,6 +68,20 @@ const formattedText = computed(() => {
     ALLOWED_ATTR: ['href', 'target', 'rel']
   })
 })
+
+const handleWheel = (event: WheelEvent) => {
+  const element = scrollContainer.value
+  if (!element) return
+
+  const isScrollable = element.scrollHeight > element.clientHeight
+  if (!isScrollable) return
+
+  event.stopPropagation()
+
+  if (isCanvasGestureWheel(event)) {
+    event.preventDefault()
+  }
+}
 
 let parentNodeId: NodeId | null = null
 onMounted(() => {
