@@ -1,3 +1,7 @@
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -70,11 +74,11 @@ describe('remapClipboardSubgraphNodeIds', () => {
       config: {},
       name: 'Pasted Subgraph',
       inputNode: {
-        id: -10,
+        id: SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 10, 10]
       },
       outputNode: {
-        id: -20,
+        id: SUBGRAPH_OUTPUT_ID,
         bounding: [0, 0, 10, 10]
       },
       inputs: [],
@@ -141,8 +145,8 @@ describe('remapClipboardSubgraphNodeIds', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],
@@ -322,8 +326,8 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],
@@ -398,8 +402,8 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],

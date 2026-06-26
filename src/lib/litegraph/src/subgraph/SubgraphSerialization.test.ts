@@ -4,6 +4,10 @@
  * Tests for saving, loading, and version compatibility of subgraphs.
  * This covers serialization, deserialization, data integrity, and migration scenarios.
  */
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -283,11 +287,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
       inputNode: {
-        id: -10,
+        id: SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: []
@@ -313,11 +317,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       config: {},
       definitions: { subgraphs: [] },
       inputNode: {
-        id: -10,
+        id: SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       }
       // Missing optional: inputs, outputs, widgets
@@ -346,11 +350,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [],
       outputs: [],
       inputNode: {
-        id: -10,
+        id: SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: [],

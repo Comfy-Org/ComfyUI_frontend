@@ -372,10 +372,11 @@ export function getWidgetIdForNode(
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
-  if (!graphId || node.id === UNASSIGNED_NODE_ID) return undefined
+  const nodeId = parseNodeId(node.id)
+  if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
-  return widgetId(graphId, node.id, name)
+  return widgetId(graphId, nodeId, name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

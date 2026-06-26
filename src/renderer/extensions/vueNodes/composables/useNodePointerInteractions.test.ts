@@ -1,4 +1,5 @@
 import { setActivePinia } from 'pinia'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nextTick, ref } from 'vue'
@@ -9,7 +10,6 @@ import { createTestingPinia } from '@pinia/testing'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import { toNodeId } from '@/types/nodeId'
 
 const forwardEventToCanvasMock = vi.fn()
 const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
@@ -75,9 +75,9 @@ vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
   })
 }))
 
-const mockData = await vi.hoisted(async () => {
-  const fakeNodeLayout: NodeLayout = {
-    id: toNodeId('test-node-123'),
+const mockData = vi.hoisted(() => {
+  const fakeNodeLayout = {
+    id: 'test-node-123',
     position: { x: 0, y: 0 },
     size: { width: 100, height: 100 },
     zIndex: 1,
@@ -108,7 +108,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   }
 })
 
-const testNodeId = mockData.fakeNodeLayout.id
+const testNodeId = fromAny<NodeLayout, unknown>(mockData.fakeNodeLayout).id
 
 const createPointerEvent = (
   eventType: string,
