@@ -86,9 +86,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '我可以控制团队消耗积分的方式吗？'
     },
     answer: {
-      en: "Today, owners control the shared pool and top-ups. We're actively building finer-grained controls: <strong>spending limits</strong> at the user, project, and workspace level, <strong>per-project budgets and chargebacks</strong>, <strong>auto-recharge</strong> when the pool runs low, and <strong>self-serve teams beyond 25 seats</strong>.",
+      en: "Today, owners control the shared pool and top-ups. We're actively building finer-grained controls: <strong>spending limits</strong> at the user, project, and workspace level, <strong>per-project budgets and chargebacks</strong>, <strong>auto-recharge</strong> when the pool runs low, and <strong>self-serve teams beyond 50 seats</strong>.",
       'zh-CN':
-        '目前，所有者掌控共享积分池和充值。我们正在积极开发更细粒度的控制功能：用户、项目和工作区级别的<strong>消费上限</strong>、<strong>按项目预算与分摊</strong>、积分池余额不足时的<strong>自动充值</strong>，以及<strong>超过 25 个席位的自助式团队</strong>。'
+        '目前，所有者掌控共享积分池和充值。我们正在积极开发更细粒度的控制功能：用户、项目和工作区级别的<strong>消费上限</strong>、<strong>按项目预算与分摊</strong>、积分池余额不足时的<strong>自动充值</strong>，以及<strong>超过 50 个席位的自助式团队</strong>。'
     }
   },
   {
@@ -99,9 +99,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
         '团队计划是按席位计费吗？我可以为某个项目临时加入一位自由职业者吗？'
     },
     answer: {
-      en: 'No. Team pricing is based on <strong>your monthly credit commit</strong>, not per-seat. Invite a freelancer, they draw from the shared credit pool while they\'re working, then remove them when the project wraps. <strong>No charge for adding or removing people.</strong> Member count is capped at <strong>25</strong> today; if you hit the cap, <a href="https://portal.usepylon.com/comfy-org/forms/question" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">contact support</a> for additional seats.',
+      en: 'No. Team pricing is based on <strong>your monthly credit commit</strong>, not per-seat. Invite a freelancer, they draw from the shared credit pool while they\'re working, then remove them when the project wraps. <strong>No charge for adding or removing people.</strong> Member count is capped at <strong>50</strong> today; if you hit the cap, <a href="https://portal.usepylon.com/comfy-org/forms/question" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">contact support</a> for additional seats.',
       'zh-CN':
-        '不是。团队定价基于<strong>您每月承诺的积分量</strong>，而非按席位计费。邀请自由职业者后，他们在工作期间从共享积分池中扣费，项目结束后再将其移除即可。<strong>添加或移除成员都不收取额外费用。</strong>目前成员数量上限为 <strong>25</strong> 人；如果您达到上限，请<a href="https://portal.usepylon.com/comfy-org/forms/question" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">联系支持</a>以增加席位。'
+        '不是。团队定价基于<strong>您每月承诺的积分量</strong>，而非按席位计费。邀请自由职业者后，他们在工作期间从共享积分池中扣费，项目结束后再将其移除即可。<strong>添加或移除成员都不收取额外费用。</strong>目前成员数量上限为 <strong>50</strong> 人；如果您达到上限，请<a href="https://portal.usepylon.com/comfy-org/forms/question" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">联系支持</a>以增加席位。'
     }
   },
   {
@@ -147,9 +147,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '团队计划的并发是如何运作的？多名成员可以同时运行工作流吗？'
     },
     answer: {
-      en: 'Yes. <strong>The workspace has 25 concurrent slots (matches the number of members), shared across the team</strong>. A ten-person team and a 25-person team both get the same 25 slots. If a few teammates saturate the pool, the rest queue up until slots free.',
+      en: 'Yes. <strong>The workspace has 50 concurrent slots (matches the number of members), shared across the team</strong>. A ten-person team and a 50-person team both get the same 50 slots. If a few teammates saturate the pool, the rest queue up until slots free.',
       'zh-CN':
-        '可以。<strong>工作区拥有 25 个并发槽位（与成员上限一致），由整个团队共享</strong>。无论是 10 人团队还是 25 人团队，都享有相同的 25 个槽位。如果少数成员占满了槽位，其他人会排队等待，直到有槽位空出。'
+        '可以。<strong>工作区拥有 50 个并发槽位（与成员上限一致），由整个团队共享</strong>。无论是 10 人团队还是 50 人团队，都享有相同的 50 个槽位。如果少数成员占满了槽位，其他人会排队等待，直到有槽位空出。'
     }
   },
   {
@@ -159,9 +159,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '运行时长和并发的限制是什么？'
     },
     answer: {
-      en: 'Each workflow has a max runtime of <strong>30 minutes</strong> on Standard and Creator, raised to <strong>1 hour</strong> on Pro. Jobs over the limit are cancelled automatically to keep the system fair and stable. You can queue up to <strong>100 workflows</strong> at once, and run <strong>1 / 3 / 5</strong> concurrently via API on Standard / Creator / Pro. On Team plan, the limit is raised to 25, matching the number of members on the team. Need higher API rate limits? Contact <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
+      en: 'Each workflow has a max runtime of <strong>30 minutes</strong> on Standard and Creator, raised to <strong>1 hour</strong> on Pro. Jobs over the limit are cancelled automatically to keep the system fair and stable. You can queue up to <strong>100 workflows</strong> at once, and run <strong>1 / 3 / 5</strong> concurrently via API on Standard / Creator / Pro. On Team plan, the limit is raised to 50, matching the number of members on the team. Need higher API rate limits? Contact <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
       'zh-CN':
-        'Standard 和 Creator 上，单个工作流的最长运行时长为 <strong>30 分钟</strong>；Pro 上提升至 <strong>1 小时</strong>。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 <strong>100 个工作流</strong>，并在 Standard / Creator / Pro 上通过 API 分别并发运行 <strong>1 / 3 / 5</strong> 个工作流。在团队计划中，此上限提升至 25，与团队成员上限一致。需要更高的 API 速率限制？请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
+        'Standard 和 Creator 上，单个工作流的最长运行时长为 <strong>30 分钟</strong>；Pro 上提升至 <strong>1 小时</strong>。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 <strong>100 个工作流</strong>，并在 Standard / Creator / Pro 上通过 API 分别并发运行 <strong>1 / 3 / 5</strong> 个工作流。在团队计划中，此上限提升至 50，与团队成员上限一致。需要更高的 API 速率限制？请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
     }
   }
 ] as const
