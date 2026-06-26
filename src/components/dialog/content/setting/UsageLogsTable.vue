@@ -99,7 +99,10 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
@@ -111,6 +114,9 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 const customerEventService = useCustomerEventsService()
+
+const { flags } = useFeatureFlags()
+const useBillingApi = computed(() => isCloud && flags.teamWorkspacesEnabled)
 
 const pagination = ref({
   page: 1,
@@ -138,10 +144,13 @@ const loadEvents = async () => {
   error.value = null
 
   try {
-    const response = await customerEventService.getMyEvents({
+    const params = {
       page: pagination.value.page,
       limit: pagination.value.limit
-    })
+    }
+    const response = useBillingApi.value
+      ? await workspaceApi.getBillingEvents(params)
+      : await customerEventService.getMyEvents(params)
 
     if (response) {
       if (response.events) {

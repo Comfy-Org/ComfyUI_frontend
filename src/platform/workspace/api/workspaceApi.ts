@@ -31,6 +31,11 @@ export interface Member {
   email: string
   joined_at: string
   role: WorkspaceRole
+  // True when this member is the workspace's original owner/creator
+  // (member.id == workspace.created_by_user_id). Gates the creator-only
+  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // Optional: the cloud OpenAPI does not carry this field yet.
+  is_original_owner?: boolean
 }
 
 interface PaginationInfo {
@@ -196,9 +201,13 @@ export interface PreviewSubscribeResponse {
   new_plan: PreviewPlanInfo
 }
 
-type BillingSubscriptionStatus = 'active' | 'scheduled' | 'ended' | 'canceled'
+export type BillingSubscriptionStatus =
+  | 'active'
+  | 'scheduled'
+  | 'ended'
+  | 'canceled'
 
-type BillingStatus =
+export type BillingStatus =
   | 'awaiting_payment_method'
   | 'pending_payment'
   | 'paid'
@@ -233,7 +242,7 @@ interface CreateTopupRequest {
 
 type TopupStatus = 'pending' | 'completed' | 'failed'
 
-interface CreateTopupResponse {
+export interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus
