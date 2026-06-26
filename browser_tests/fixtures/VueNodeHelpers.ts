@@ -261,7 +261,7 @@ export class VueNodeHelpers {
 
         return type === 'in'
           ? node.inputs[Number(slotId)]?.link !== null
-          : !!node.outputs[Number(slotId)].links?.length
+          : !!node.outputs[Number(slotId)]?.links?.length
       },
       [nodeId, type, slotId] as const
     )

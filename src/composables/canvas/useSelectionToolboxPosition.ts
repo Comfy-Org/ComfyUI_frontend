@@ -49,6 +49,10 @@ function currentSelectionMatchesSignature(
 }
 
 function getFullNodeBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
+  if (item instanceof LGraphGroup) {
+    return [item.pos[0], item.pos[1], item.size[0], item.size[1]]
+  }
+
   return [
     item.pos[0],
     item.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,

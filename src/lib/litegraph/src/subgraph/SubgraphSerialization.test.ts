@@ -32,6 +32,8 @@ class DummyNode extends LGraphNode {}
 
 const DUPLICATE_ID_SUBGRAPH_A = '11111111-1111-4111-8111-111111111111'
 const DUPLICATE_ID_SUBGRAPH_B = '22222222-2222-4222-8222-222222222222'
+const LEGACY_SUBGRAPH_INPUT_ID = -10
+const LEGACY_SUBGRAPH_OUTPUT_ID = -20
 
 function createRegisteredNode(
   graph: LGraph | Subgraph,
@@ -287,11 +289,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
       inputNode: {
-        id: SUBGRAPH_INPUT_ID,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: SUBGRAPH_OUTPUT_ID,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: []
@@ -303,6 +305,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       expect(subgraph.name).toBe('Modern Subgraph')
       expect(subgraph.inputs.length).toBe(1)
       expect(subgraph.outputs.length).toBe(1)
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
@@ -317,11 +321,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       config: {},
       definitions: { subgraphs: [] },
       inputNode: {
-        id: SUBGRAPH_INPUT_ID,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: SUBGRAPH_OUTPUT_ID,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       }
       // Missing optional: inputs, outputs, widgets
@@ -334,6 +338,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       // Should have default empty arrays
       expect(Array.isArray(subgraph.inputs)).toBe(true)
       expect(Array.isArray(subgraph.outputs)).toBe(true)
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
@@ -350,11 +356,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [],
       outputs: [],
       inputNode: {
-        id: SUBGRAPH_INPUT_ID,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: SUBGRAPH_OUTPUT_ID,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: [],
@@ -366,6 +372,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), futureFormat)
       expect(subgraph.name).toBe('Future Subgraph')
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 })
