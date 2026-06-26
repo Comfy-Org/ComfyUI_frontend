@@ -415,6 +415,48 @@ describe('useSettingStore', () => {
       )
     })
 
+    it('should not trigger onChange when setting the same object value', async () => {
+      const onChangeMock = vi.fn()
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'hidden',
+        defaultValue: {},
+        onChange: onChangeMock
+      })
+      vi.clearAllMocks()
+
+      await store.set('test.setting', { key: 'value', nested: { count: 1 } })
+      expect(onChangeMock).toHaveBeenCalledTimes(1)
+      expect(api.storeSetting).toHaveBeenCalledTimes(1)
+
+      // Same deep value in a new object reference — should be a no-op
+      await store.set('test.setting', { key: 'value', nested: { count: 1 } })
+      expect(onChangeMock).toHaveBeenCalledTimes(1)
+      expect(api.storeSetting).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not trigger onChange when setting the same array value', async () => {
+      const onChangeMock = vi.fn()
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'hidden',
+        defaultValue: [],
+        onChange: onChangeMock
+      })
+      vi.clearAllMocks()
+
+      await store.set('test.setting', [1, 2, 3])
+      expect(onChangeMock).toHaveBeenCalledTimes(1)
+      expect(api.storeSetting).toHaveBeenCalledTimes(1)
+
+      // Same array contents in a new array reference — should be a no-op
+      await store.set('test.setting', [1, 2, 3])
+      expect(onChangeMock).toHaveBeenCalledTimes(1)
+      expect(api.storeSetting).toHaveBeenCalledTimes(1)
+    })
+
     describe('object mutation prevention', () => {
       beforeEach(() => {
         const setting: SettingParams = {

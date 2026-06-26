@@ -106,7 +106,7 @@ export const useSettingStore = defineStore('setting', () => {
       clonedValue
     )
     const oldValue = get(key)
-    if (newValue === oldValue) return undefined
+    if (_.isEqual(newValue, oldValue)) return undefined
 
     onChange(settingsById.value[key], newValue, oldValue)
     settingValues.value[key] = newValue
