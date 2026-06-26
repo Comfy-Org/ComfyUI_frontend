@@ -139,6 +139,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   public readonly root: Locator
   public readonly activeWorkflowLabel: Locator
   public readonly searchInput: Locator
+  public readonly refreshButton: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -147,6 +148,9 @@ export class WorkflowsSidebarTab extends SidebarTab {
       '.comfyui-workflows-open .p-tree-node-selected .node-label'
     )
     this.searchInput = this.root.getByRole('combobox').first()
+    this.refreshButton = this.root.getByTestId(
+      TestIds.sidebar.workflowsRefreshButton
+    )
   }
 
   async getOpenedWorkflowNames() {
@@ -348,20 +352,11 @@ export class AssetsSidebarTab extends SidebarTab {
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
-    this.selectionFooter = page
-      .locator('.sidebar-content-container')
-      .locator('..')
-      .locator('[class*="h-18"]')
-    this.selectionCountButton = page.getByText(/Assets Selected: \d+/)
-    this.deselectAllButton = page.getByText('Deselect all')
-    this.deleteSelectedButton = page
-      .getByTestId('assets-delete-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
-      .first()
-    this.downloadSelectedButton = page
-      .getByTestId('assets-download-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
-      .first()
+    this.selectionFooter = page.getByTestId('assets-selection-bar')
+    this.selectionCountButton = page.getByText(/\d+ selected/)
+    this.deselectAllButton = page.getByTestId('assets-deselect-selected')
+    this.deleteSelectedButton = page.getByTestId('assets-delete-selected')
+    this.downloadSelectedButton = page.getByTestId('assets-download-selected')
     this.backToAssetsButton = page.getByText('Back to all assets')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'

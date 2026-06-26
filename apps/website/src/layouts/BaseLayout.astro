@@ -4,7 +4,7 @@ import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
-import SiteNav from '../components/common/SiteNav.vue'
+import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
@@ -71,7 +71,12 @@ const websiteJsonLd = {
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
-    <link rel="icon" href="/icons/logomark.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
@@ -132,7 +137,7 @@ const websiteJsonLd = {
       </noscript>
     )}
 
-    <SiteNav locale={locale} github-stars={githubStars} client:load />
+    <HeaderMain locale={locale} github-stars={githubStars} client:load />
     <main class="mt-20 lg:mt-32">
       <slot />
     </main>

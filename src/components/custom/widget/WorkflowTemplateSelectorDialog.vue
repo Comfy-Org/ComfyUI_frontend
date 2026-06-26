@@ -190,7 +190,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-base-background"
+            class="group/card hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -316,11 +316,11 @@
                       class="flex flex-col-reverse justify-center"
                     >
                       <Button
-                        v-if="hoveredTemplate === template.name"
                         v-tooltip.bottom="$t('g.seeTutorial')"
-                        v-bind="$attrs"
+                        :aria-label="$t('g.seeTutorial')"
                         variant="inverted"
                         size="icon"
+                        class="not-group-hover/card:opacity-0"
                         @click.stop="openTutorial(template)"
                       >
                         <i class="icon-[lucide--info] size-4" />
@@ -427,7 +427,6 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -453,16 +452,14 @@ onMounted(() => {
 
 // Wrap onClose to track session end
 const onClose = () => {
-  if (isCloud) {
-    const timeSpentSeconds = Math.floor(
-      (Date.now() - sessionStartTime.value) / 1000
-    )
+  const timeSpentSeconds = Math.floor(
+    (Date.now() - sessionStartTime.value) / 1000
+  )
 
-    useTelemetry()?.trackTemplateLibraryClosed({
-      template_selected: templateWasSelected.value,
-      time_spent_seconds: timeSpentSeconds
-    })
-  }
+  useTelemetry()?.trackTemplateLibraryClosed({
+    template_selected: templateWasSelected.value,
+    time_spent_seconds: timeSpentSeconds
+  })
 
   originalOnClose()
 }
@@ -744,10 +741,6 @@ const sortOptions = computed(() => [
     value: 'popular'
   },
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
-  {
-    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
-    value: 'vram-low-to-high'
-  },
   {
     name: t(
       'templateWorkflows.sort.modelSizeLowToHigh',

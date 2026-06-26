@@ -4,6 +4,103 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+
+const generateUniqueFilename = () =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+
+const waitForWorkflowTabState = async (comfyPage: ComfyPage, minPaths = 2) => {
+  await comfyPage.page.waitForFunction((expectedMinPaths) => {
+    let hasActivePath = false
+    let hasOpenPaths = false
+
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i)
+      if (key?.startsWith('Comfy.Workflow.ActivePath:')) {
+        hasActivePath = true
+      }
+      if (!key?.startsWith('Comfy.Workflow.OpenPaths:')) {
+        continue
+      }
+
+      const raw = window.sessionStorage.getItem(key)
+      if (!raw) continue
+
+      try {
+        const state = JSON.parse(raw) as { paths?: unknown[] }
+        hasOpenPaths =
+          Array.isArray(state.paths) && state.paths.length >= expectedMinPaths
+        if (hasActivePath && hasOpenPaths) return true
+      } catch {
+        return false
+      }
+    }
+
+    return hasActivePath && hasOpenPaths
+  }, minPaths)
+}
+
+type NodeRef = NonNullable<
+  Awaited<ReturnType<ComfyPage['nodeOps']['getFirstNodeRef']>>
+>
+
+const getRequiredFirstNodeRef = async (
+  comfyPage: ComfyPage,
+  message: string
+): Promise<NodeRef> => {
+  const node = await comfyPage.nodeOps.getFirstNodeRef()
+  expect(node, message).toBeDefined()
+  if (!node) throw new Error(message)
+  return node
+}
+
+const makeActivePathStale = async (
+  comfyPage: ComfyPage,
+  staleWorkflowName: string,
+  activeWorkflowName: string
+) => {
+  // Intentionally desync ActivePath from OpenPaths to exercise stale pointer recovery.
+  await comfyPage.page.evaluate(
+    ([staleName, activeName]) => {
+      const findStorageKey = (prefix: string) => {
+        for (let i = 0; i < window.sessionStorage.length; i++) {
+          const key = window.sessionStorage.key(i)
+          if (key?.startsWith(prefix)) return key
+        }
+        throw new Error(`Missing ${prefix} persistence key`)
+      }
+
+      const activePathKey = findStorageKey('Comfy.Workflow.ActivePath:')
+      const openPathsKey = findStorageKey('Comfy.Workflow.OpenPaths:')
+      const activePointer = JSON.parse(
+        window.sessionStorage.getItem(activePathKey)!
+      ) as { path: string }
+      const openPointer = JSON.parse(
+        window.sessionStorage.getItem(openPathsKey)!
+      ) as { paths: string[]; activeIndex: number }
+      const pathForName = (name: string) => {
+        const path = openPointer.paths.find((candidate) =>
+          candidate.endsWith(`${name}.json`)
+        )
+        if (!path) throw new Error(`Missing stored path for ${name}`)
+        return path
+      }
+
+      const stalePath = pathForName(staleName)
+      const activePath = pathForName(activeName)
+      activePointer.path = stalePath
+      openPointer.paths = [stalePath, activePath]
+      openPointer.activeIndex = 1
+
+      window.sessionStorage.setItem(
+        activePathKey,
+        JSON.stringify(activePointer)
+      )
+      window.sessionStorage.setItem(openPathsKey, JSON.stringify(openPointer))
+    },
+    [staleWorkflowName, activeWorkflowName]
+  )
+}
 
 async function getNodeOutputImageCount(
   comfyPage: ComfyPage,
@@ -103,9 +200,11 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.saveWorkflow('outputs-test')
 
-    const firstNode = await comfyPage.nodeOps.getFirstNodeRef()
-    expect(firstNode).toBeTruthy()
-    const nodeId = String(firstNode!.id)
+    const firstNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be available after loading the default workflow'
+    )
+    const nodeId = String(firstNode.id)
 
     // Simulate node outputs as if execution completed
     await comfyPage.page.evaluate((id) => {
@@ -380,6 +479,59 @@ test.describe('Workflow Persistence', () => {
 
     // B should have its original content, not A's
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
+  })
+
+  test('Restores saved workflow drafts from inactive restored tabs', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const workflowA = generateUniqueFilename()
+    const workflowB = generateUniqueFilename()
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await fitToViewInstant(comfyPage)
+    await comfyPage.menu.topbar.saveWorkflow(workflowA)
+
+    const firstNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be available after loading single_ksampler'
+    )
+    await firstNode.centerOnNode()
+    const draftSaveStartedAt = Date.now()
+    await firstNode.toggleCollapse()
+    expect(await firstNode.isCollapsed()).toBe(true)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
+
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(workflowB)
+    await waitForWorkflowTabState(comfyPage)
+    await makeActivePathStale(comfyPage, workflowA, workflowB)
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await expect
+      .poll(() => comfyPage.menu.topbar.getActiveTabName())
+      .toBe(workflowB)
+
+    const tabs = await comfyPage.menu.topbar.getTabNames()
+    expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
+    expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+
+    await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+
+    const restoredNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'Restored node should be available after switching back to workflow A'
+    )
+    expect(await restoredNode.isCollapsed()).toBe(true)
+    await expect(comfyPage.toast.toastErrors).toHaveCount(0)
   })
 
   test('Closing an inactive tab with save preserves its own content', async ({

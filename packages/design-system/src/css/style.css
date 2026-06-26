@@ -8,15 +8,12 @@
 
 @plugin 'tailwindcss-primeui';
 
-@plugin "@iconify/tailwind4" {
-  scale: 1.2;
-  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
-}
+@plugin "./iconifyDynamicPlugin.js";
 
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
+@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,bytedance-mono,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,gemini-mono,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 /* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
 @source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent,i-tools-preview-image,i-tools-compare-image,canny-to-image,image-edit,text-to-image,pose-to-image,depth-to-video,image-to-image,canny-to-video,depth-to-image,image-to-video,pose-to-video,text-to-video,image-inpainting,image-outpainting}]");
@@ -25,6 +22,7 @@
 
 @theme {
   --shadow-interface: var(--interface-panel-box-shadow);
+  --shadow-inset-highlight: inset 0 1px 0 0 rgb(from white r g b / 0.1);
 
   --text-2xs: 0.625rem;
   --text-2xs--line-height: calc(1 / 0.625);
@@ -54,6 +52,8 @@
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
 
+  --color-credit: #fabc25;
+
   --color-coral-500: #f75951;
   --color-coral-600: #e04e48;
   --color-coral-700: #b33a3a;
@@ -64,6 +64,9 @@
   --color-ocean-300: #badde8;
   --color-ocean-600: #2f687a;
   --color-ocean-900: #253236;
+
+  --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-canvas: #c2bfb9;
 
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
@@ -120,6 +123,7 @@
   --comfy-topbar-height: 2.5rem;
   --workflow-tabs-height: 2.375rem;
   --comfy-input-bg: #222;
+  --comfy-textarea-font-size: 10px;
   --input-text: #ddd;
   --descrip-text: #999;
   --drag-text: #ccc;
@@ -234,6 +238,8 @@
   --secondary-background: var(--color-smoke-200);
   --secondary-background-hover: var(--color-smoke-400);
   --secondary-background-selected: var(--color-smoke-600);
+  --tertiary-background: var(--color-smoke-400);
+  --tertiary-background-hover: var(--color-smoke-500);
   --base-background: var(--color-white);
   --primary-background: var(--color-azure-400);
   --primary-background-hover: var(--color-cobalt-800);
@@ -382,6 +388,8 @@
   --secondary-background: var(--color-charcoal-600);
   --secondary-background-hover: var(--color-charcoal-400);
   --secondary-background-selected: var(--color-charcoal-200);
+  --tertiary-background: var(--color-charcoal-400);
+  --tertiary-background-hover: var(--color-charcoal-300);
   --base-background: var(--color-charcoal-800);
   --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
@@ -406,9 +414,7 @@
     --secondary-background-selected
   );
   --component-node-widget-background-selected: var(--color-charcoal-100);
-  --component-node-widget-background-disabled: var(
-    --color-alpha-charcoal-600-30
-  );
+  --component-node-widget-background-disabled: var(--color-charcoal-800);
   --component-node-widget-background-highlighted: var(--color-smoke-800);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-600);
@@ -554,6 +560,8 @@
   --color-secondary-background: var(--secondary-background);
   --color-secondary-background-hover: var(--secondary-background-hover);
   --color-secondary-background-selected: var(--secondary-background-selected);
+  --color-tertiary-background: var(--tertiary-background);
+  --color-tertiary-background-hover: var(--tertiary-background-hover);
   --color-primary-background: var(--primary-background);
   --color-primary-background-hover: var(--primary-background-hover);
   --color-destructive-background: var(--destructive-background);
@@ -1893,4 +1901,18 @@ audio.comfy-audio.empty-audio-widget {
     300% 14px,
     300% 14px;
   background-attachment: local, local, scroll, scroll;
+}
+
+/*
+  PrimeVue overlays teleport to body. When a Reka modal dialog is open it sets
+  body { pointer-events: none } via DismissableLayer, which propagates to the
+  body-portaled overlays and makes them unclickable. PrimeVue's own Dialog
+  sets pointer-events inline, but Select / ColorPicker / Popover / Autocomplete
+  overlays do not, so they need to opt in here.
+*/
+.p-select-overlay,
+.p-colorpicker-panel,
+.p-popover,
+.p-autocomplete-overlay {
+  pointer-events: auto;
 }

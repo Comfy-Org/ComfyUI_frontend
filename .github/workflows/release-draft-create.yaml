@@ -59,7 +59,7 @@ jobs:
           pnpm zipdist ./dist ./dist-desktop.zip
 
           # Default release artifact for core/PyPI.
-          NX_SKIP_NX_CACHE=true pnpm build
+          pnpm build
           pnpm zipdist
       - name: Upload dist artifact
         uses: actions/upload-artifact@v6
@@ -92,9 +92,7 @@ jobs:
           make_latest: >-
             ${{ github.event.pull_request.base.ref == 'main' &&
                 needs.build.outputs.is_prerelease == 'false' }}
-          draft: >-
-            ${{ github.event.pull_request.base.ref != 'main' ||
-                needs.build.outputs.is_prerelease == 'true' }}
+          draft: ${{ needs.build.outputs.is_prerelease == 'true' }}
           prerelease: >-
             ${{ needs.build.outputs.is_prerelease == 'true' }}
           generate_release_notes: true

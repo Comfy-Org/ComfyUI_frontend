@@ -25,6 +25,9 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
+  candidateIndex?: number
+  candidateLabel?: string
+  loadingMore?: boolean
 }
 
 const {
@@ -35,10 +38,15 @@ const {
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
-  baseModelOptions
+  baseModelOptions,
+  candidateIndex = -1,
+  candidateLabel,
+  loadingMore = false
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
+  (e: 'search-enter'): void
+  (e: 'approach-end'): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
@@ -130,6 +138,8 @@ const onWheel = (event: WheelEvent) => {
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :candidate-label
+      @search-enter="emit('search-enter')"
     />
     <div
       v-if="items.length === 0"
@@ -151,10 +161,12 @@ const onWheel = (event: WheelEvent) => {
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
+      @approach-end="emit('approach-end')"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
           :index
+          :candidate="index === candidateIndex"
           :selected="isSelected(item, index)"
           :preview-url="item.preview_url ?? ''"
           :name="item.name"
@@ -164,5 +176,15 @@ const onWheel = (event: WheelEvent) => {
         />
       </template>
     </VirtualGrid>
+    <div
+      v-if="loadingMore"
+      class="flex items-center justify-center py-2"
+      data-testid="form-dropdown-loading-more"
+    >
+      <i
+        :aria-label="$t('g.loading')"
+        class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
+      />
+    </div>
   </div>
 </template>

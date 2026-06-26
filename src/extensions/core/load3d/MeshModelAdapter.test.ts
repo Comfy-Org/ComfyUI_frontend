@@ -23,6 +23,7 @@ const mtlLoaderStub = {
 const objLoaderStub = {
   setWorkerUrl: vi.fn(),
   setMaterials: vi.fn(),
+  setBaseObject3d: vi.fn(),
   loadAsync: vi.fn<(url: string) => Promise<THREE.Object3D>>()
 }
 
@@ -58,6 +59,7 @@ vi.mock('wwobjloader2', () => ({
   OBJLoader2Parallel: class {
     setWorkerUrl = objLoaderStub.setWorkerUrl
     setMaterials = objLoaderStub.setMaterials
+    setBaseObject3d = objLoaderStub.setBaseObject3d
     loadAsync = objLoaderStub.loadAsync
   },
   MtlObjBridge: {
@@ -160,8 +162,8 @@ describe('MeshModelAdapter', () => {
       expect(stlLoaderStub.setPath).toHaveBeenCalledWith('/api/view/')
       expect(stlLoaderStub.loadAsync).toHaveBeenCalledWith('model.stl')
       expect(ctx.setOriginalModel).toHaveBeenCalledWith(geometry)
-      expect(result).toBeInstanceOf(THREE.Group)
-      expect(result!.children[0]).toBeInstanceOf(THREE.Mesh)
+      expect(result!.object).toBeInstanceOf(THREE.Group)
+      expect(result!.object.children[0]).toBeInstanceOf(THREE.Mesh)
     })
   })
 
@@ -179,7 +181,7 @@ describe('MeshModelAdapter', () => {
       expect(fbxLoaderStub.loadAsync).toHaveBeenCalledWith('rig.fbx')
       expect(ctx.setOriginalModel).toHaveBeenCalledWith(fbxModel)
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
-      expect(result).toBe(fbxModel)
+      expect(result!.object).toBe(fbxModel)
     })
 
     it('disables frustum culling on SkinnedMesh children', async () => {
@@ -224,7 +226,7 @@ describe('MeshModelAdapter', () => {
         'cube.obj'
       )
 
-      expect(result).toBeInstanceOf(THREE.Group)
+      expect(result!.object).toBeInstanceOf(THREE.Group)
       expect(objLoaderStub.setMaterials).not.toHaveBeenCalled()
     })
 
@@ -246,6 +248,24 @@ describe('MeshModelAdapter', () => {
       await adapter.load(ctx, '/api/view/', 'cube.obj')
 
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
+    })
+
+    it('resets baseObject3d on every load so meshes do not accumulate across calls', async () => {
+      objLoaderStub.loadAsync.mockResolvedValue(makeFbxLikeGroup())
+
+      const adapter = new MeshModelAdapter()
+      const ctx = makeContext('wireframe')
+      await adapter.load(ctx, '/api/view/', 'first.obj')
+      await adapter.load(ctx, '/api/view/', 'second.obj')
+
+      expect(objLoaderStub.setBaseObject3d).toHaveBeenCalledTimes(2)
+      const bases = objLoaderStub.setBaseObject3d.mock.calls.map(
+        ([base]) => base
+      )
+      expect(bases[0]).toBeInstanceOf(THREE.Object3D)
+      expect(bases[1]).toBeInstanceOf(THREE.Object3D)
+      // Each call should hand the loader a fresh container, not the same one.
+      expect(bases[0]).not.toBe(bases[1])
     })
   })
 
@@ -271,7 +291,7 @@ describe('MeshModelAdapter', () => {
       expect(ctx.setOriginalModel).toHaveBeenCalledWith(gltf)
       expect(computeNormals).toHaveBeenCalled()
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
-      expect(result).toBe(scene)
+      expect(result!.object).toBe(scene)
     })
 
     it('also handles .gltf filenames', async () => {

@@ -53,7 +53,8 @@ describe('useReleaseService', () => {
           project: 'comfyui',
           current_version: '1.0.0'
         },
-        signal: undefined
+        signal: undefined,
+        headers: undefined
       })
 
       expect(result).toEqual(mockReleases)
@@ -76,7 +77,8 @@ describe('useReleaseService', () => {
           current_version: '1.0.0',
           form_factor: 'desktop-windows'
         },
-        signal: undefined
+        signal: undefined,
+        headers: undefined
       })
 
       expect(result).toEqual(mockReleases)
@@ -86,11 +88,30 @@ describe('useReleaseService', () => {
       const abortController = new AbortController()
       mockAxiosInstance.get.mockResolvedValue({ data: mockReleases })
 
-      await service.getReleases({ project: 'comfyui' }, abortController.signal)
+      await service.getReleases(
+        { project: 'comfyui' },
+        { signal: abortController.signal }
+      )
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
         params: { project: 'comfyui' },
-        signal: abortController.signal
+        signal: abortController.signal,
+        headers: undefined
+      })
+    })
+
+    it('should send Comfy-Env header when deployEnvironment is provided', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: mockReleases })
+
+      await service.getReleases(
+        { project: 'comfyui' },
+        { deployEnvironment: 'local-desktop' }
+      )
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
+        params: { project: 'comfyui' },
+        signal: undefined,
+        headers: { 'Comfy-Env': 'local-desktop' }
       })
     })
 
