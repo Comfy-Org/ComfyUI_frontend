@@ -37,7 +37,9 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     removeAssetTags: vi.fn()
   },
   INPUT_TAG: 'input',
-  OUTPUT_TAG: 'output'
+  OUTPUT_TAG: 'output',
+  MODELS_TAG: 'models',
+  MISSING_TAG: 'missing'
 }))
 
 // Mock distribution type - hoisted so it can be changed per test
@@ -48,7 +50,16 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-// Mock modelToNodeStore with proper node providers and category lookups
+const mockModelToNodeState = vi.hoisted(() => ({
+  isReady: true,
+  registeredCategories: new Set<string>([
+    'checkpoints',
+    'loras',
+    'vae',
+    'models'
+  ])
+}))
+
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({
     getAllNodeProviders: vi.fn((category: string) => {
@@ -62,7 +73,7 @@ vi.mock('@/stores/modelToNodeStore', () => ({
         ],
         loras: [
           { nodeDef: { name: 'LoraLoader' }, key: 'lora_name' },
-          { nodeDef: { name: 'LoraLoaderModelOnly' }, key: 'lora_name' }
+          { nodeDef: { name: 'VAELoader' }, key: 'vae_name' }
         ],
         vae: [{ nodeDef: { name: 'VAELoader' }, key: 'vae_name' }]
       }
@@ -78,7 +89,14 @@ vi.mock('@/stores/modelToNodeStore', () => ({
       }
       return nodeToCategory[nodeType]
     }),
-    getNodeProvider: vi.fn(),
+    getNodeProvider: vi.fn((category: string) =>
+      mockModelToNodeState.registeredCategories.has(category)
+        ? { nodeDef: { name: `${category}Loader` }, key: 'model' }
+        : undefined
+    ),
+    get isReady() {
+      return mockModelToNodeState.isReady
+    },
     registerDefaults: vi.fn()
   })
 }))
@@ -1431,6 +1449,125 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(store.hasCategory('loras')).toBe(false)
       expect(store.hasCategory('tag:models')).toBe(false)
+    })
+  })
+
+  describe('broken-category warning', () => {
+    const supportedAsset = (id: string, category: string) => ({
+      id,
+      name: `asset-${id}`,
+      size: 100,
+      created_at: new Date().toISOString(),
+      tags: ['models', category],
+      preview_url: `http://test.com/${id}`
+    })
+
+    let warnSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      mockModelToNodeState.isReady = true
+      mockModelToNodeState.registeredCategories = new Set([
+        'checkpoints',
+        'loras',
+        'vae',
+        'models'
+      ])
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      warnSpy.mockRestore()
+    })
+
+    it('warns once with the broken set after a category finishes its first load', async () => {
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        supportedAsset('a', 'checkpoints'),
+        supportedAsset('b', 'BEN'),
+        supportedAsset('c', 'BEN'),
+        supportedAsset('d', 'WAN')
+      ])
+
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('No node provider for categories'),
+        ['BEN', 'WAN']
+      )
+    })
+
+    it('does not warn when every loaded asset has a registered provider', async () => {
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        supportedAsset('a', 'checkpoints'),
+        supportedAsset('b', 'loras')
+      ])
+
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).not.toHaveBeenCalled()
+    })
+
+    it('does not warn again on subsequent refresh of the same category', async () => {
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        supportedAsset('a', 'BEN')
+      ])
+
+      await store.updateModelsForTag('models')
+      store.invalidateCategory('tag:models')
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('warns again when a refresh introduces a new broken category', async () => {
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag)
+        .mockResolvedValueOnce([supportedAsset('a', 'BEN')])
+        .mockResolvedValueOnce([
+          supportedAsset('a', 'BEN'),
+          supportedAsset('b', 'WAN')
+        ])
+
+      await store.updateModelsForTag('models')
+      store.invalidateCategory('tag:models')
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).toHaveBeenCalledTimes(2)
+      expect(warnSpy).toHaveBeenLastCalledWith(
+        expect.stringContaining('No node provider for categories'),
+        ['BEN', 'WAN']
+      )
+    })
+
+    it('stops warning once an extension registers a provider for the previously broken category', async () => {
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        supportedAsset('a', 'BEN')
+      ])
+
+      await store.updateModelsForTag('models')
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+
+      mockModelToNodeState.registeredCategories.add('BEN')
+      store.invalidateCategory('tag:models')
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('skips the report while the modelToNode registry is not ready', async () => {
+      mockModelToNodeState.isReady = false
+      const store = useAssetsStore()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        supportedAsset('a', 'BEN')
+      ])
+
+      await store.updateModelsForTag('models')
+
+      expect(warnSpy).not.toHaveBeenCalled()
     })
   })
 })

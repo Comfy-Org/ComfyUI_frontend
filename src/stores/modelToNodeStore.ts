@@ -25,6 +25,9 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
 
+  /** True once default provider registrations have been applied. */
+  const isReady = computed(() => haveDefaultsLoaded.value)
+
   /** Internal computed for reactive caching of registered node types */
   const registeredNodeTypes = computed<Record<string, string>>(() => {
     return Object.fromEntries(
@@ -164,6 +167,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
   return {
     modelToNodeMap,
+    isReady,
     getRegisteredNodeTypes,
     getCategoryForNodeType,
     getNodeProvider,

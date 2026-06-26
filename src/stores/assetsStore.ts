@@ -15,6 +15,7 @@ import {
   OUTPUT_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
+import { getAssetCategory } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -407,6 +408,11 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const pendingRequestByCategory = new Map<string, ModelPaginationState>()
       const pendingPromiseByCategory = new Map<string, Promise<void>>()
+      const reportedBrokenCategoriesByLoad = new Set<string>()
+
+      function brokenCategoriesFingerprint(loadKey: string, broken: string[]) {
+        return `${loadKey}::${[...broken].sort().join(',')}`
+      }
 
       function createState(
         existingAssets?: Map<string, AssetItem>
@@ -424,6 +430,32 @@ export const useAssetsStore = defineStore('assets', () => {
         const committed = modelStateByCategory.value.get(category)
         const pending = pendingRequestByCategory.get(category)
         return committed !== state && pending !== state
+      }
+
+      function reportBrokenCategoriesOnce(
+        loadKey: string,
+        assets: Map<string, AssetItem>
+      ): void {
+        modelToNodeStore.registerDefaults()
+        if (!modelToNodeStore.isReady) return
+
+        const broken = new Set<string>()
+        for (const asset of assets.values()) {
+          const category = getAssetCategory(asset)
+          if (!category) continue
+          if (!modelToNodeStore.getNodeProvider(category)) broken.add(category)
+        }
+        if (broken.size === 0) return
+
+        const sorted = [...broken].sort()
+        const fingerprint = brokenCategoriesFingerprint(loadKey, sorted)
+        if (reportedBrokenCategoriesByLoad.has(fingerprint)) return
+        reportedBrokenCategoriesByLoad.add(fingerprint)
+
+        console.warn(
+          `[AssetBrowser] No node provider for categories (${loadKey}):`,
+          sorted
+        )
       }
 
       const EMPTY_ASSETS: AssetItem[] = []
@@ -587,6 +619,8 @@ export const useAssetsStore = defineStore('assets', () => {
           }
           assetsArrayCache.delete(category)
           pendingRequestByCategory.delete(category)
+
+          reportBrokenCategoriesOnce(category, state.assets)
         }
 
         const promise = loadBatches().finally(() => {

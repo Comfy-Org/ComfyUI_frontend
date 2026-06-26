@@ -6,6 +6,24 @@ import { createI18n } from 'vue-i18n'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
+const mockModelToNodeState = vi.hoisted(() => ({
+  isReady: true,
+  registeredCategories: new Set<string>(['checkpoints', 'loras'])
+}))
+
+vi.mock('@/stores/modelToNodeStore', () => ({
+  useModelToNodeStore: () => ({
+    get isReady() {
+      return mockModelToNodeState.isReady
+    },
+    getNodeProvider: (category: string) =>
+      mockModelToNodeState.registeredCategories.has(category)
+        ? { nodeDef: { name: `${category}Loader` }, key: 'model' }
+        : undefined,
+    registerDefaults: vi.fn()
+  })
+}))
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: () => 0
@@ -28,7 +46,9 @@ vi.mock('@/stores/dialogStore', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     deleteAsset: vi.fn()
-  }
+  },
+  MODELS_TAG: 'models',
+  MISSING_TAG: 'missing'
 }))
 
 vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
@@ -83,7 +103,10 @@ function renderCard(asset: AssetDisplayItem) {
         IconGroup: true,
         MoreButton: true,
         StatusBadge: true,
-        Button: { template: '<button><slot /></button>' }
+        Button: {
+          props: ['disabled'],
+          template: '<button :disabled="disabled"><slot /></button>'
+        }
       },
       directives: {
         tooltip: {}
@@ -95,6 +118,64 @@ function renderCard(asset: AssetDisplayItem) {
 describe('AssetCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockModelToNodeState.isReady = true
+    mockModelToNodeState.registeredCategories = new Set([
+      'checkpoints',
+      'loras'
+    ])
+  })
+
+  describe('"Use" button gating for unsupported categories', () => {
+    const findUseButton = () =>
+      screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.toLowerCase().includes('use'))
+
+    it('enables Use when the asset category has a registered provider', () => {
+      renderCard(
+        createDisplayAsset({
+          id: 'usable',
+          tags: ['models', 'checkpoints']
+        })
+      )
+      const useBtn = findUseButton()
+      expect(useBtn).toBeDefined()
+      expect(useBtn).toHaveAttribute('aria-disabled', 'false')
+    })
+
+    it('disables Use when the registry is ready and the category has no provider', () => {
+      renderCard(
+        createDisplayAsset({
+          id: 'unsupported',
+          tags: ['models', 'BEN']
+        })
+      )
+      const useBtn = findUseButton()
+      expect(useBtn).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    it('keeps Use enabled while the registry is still warming up', () => {
+      mockModelToNodeState.isReady = false
+      renderCard(
+        createDisplayAsset({
+          id: 'warming',
+          tags: ['models', 'BEN']
+        })
+      )
+      const useBtn = findUseButton()
+      expect(useBtn).toHaveAttribute('aria-disabled', 'false')
+    })
+
+    it('keeps the use button hoverable (not pointer-events-none) when disabled so the tooltip can fire', () => {
+      renderCard(
+        createDisplayAsset({
+          id: 'unsupported',
+          tags: ['models', 'BEN']
+        })
+      )
+      const useBtn = findUseButton()
+      expect(useBtn).not.toHaveAttribute('disabled')
+    })
   })
 
   describe('FE-228: filename rendering', () => {

@@ -679,4 +679,23 @@ describe('useModelToNodeStore', () => {
       expect(modelToNodeStore.getAllNodeProviders(undefined)).toEqual([])
     })
   })
+
+  describe('isReady', () => {
+    it('starts false before defaults are registered', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      expect(modelToNodeStore.isReady).toBe(false)
+    })
+
+    it('flips to true after registerDefaults', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+      expect(modelToNodeStore.isReady).toBe(true)
+    })
+
+    it('flips to true as a side-effect of getNodeProvider lazy-registering', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.getNodeProvider('checkpoints')
+      expect(modelToNodeStore.isReady).toBe(true)
+    })
+  })
 })

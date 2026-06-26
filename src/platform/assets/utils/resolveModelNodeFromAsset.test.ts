@@ -1,12 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
+import {
+  canCreateNodeForAsset,
+  getAssetCategory,
+  resolveModelNodeFromAsset
+} from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
+const mockRegisterDefaults = vi.hoisted(() => vi.fn())
+const mockIsReady = vi.hoisted(() => ({ value: true }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
+  useModelToNodeStore: () => ({
+    getNodeProvider: mockGetNodeProvider,
+    registerDefaults: mockRegisterDefaults,
+    get isReady() {
+      return mockIsReady.value
+    }
+  })
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -48,6 +60,7 @@ function mockProvider(
 describe('resolveModelNodeFromAsset', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockIsReady.value = true
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -204,5 +217,70 @@ describe('resolveModelNodeFromAsset', () => {
         expect(result.error.details?.category).toBe('checkpoints')
       }
     })
+  })
+})
+
+describe('getAssetCategory', () => {
+  it('returns the first tag that is not models or missing', () => {
+    expect(
+      getAssetCategory(createMockAsset({ tags: ['models', 'checkpoints'] }))
+    ).toBe('checkpoints')
+  })
+
+  it('skips the missing placeholder tag', () => {
+    expect(
+      getAssetCategory(
+        createMockAsset({ tags: ['models', 'missing', 'loras'] })
+      )
+    ).toBe('loras')
+  })
+
+  it('returns undefined when only excluded tags are present', () => {
+    expect(
+      getAssetCategory(createMockAsset({ tags: ['models', 'missing'] }))
+    ).toBeUndefined()
+  })
+
+  it('returns undefined when tags is missing', () => {
+    const asset = { ...createMockAsset(), tags: undefined } as unknown as
+      | AssetItem
+      | { tags: undefined }
+    expect(getAssetCategory(asset as AssetItem)).toBeUndefined()
+  })
+})
+
+describe('canCreateNodeForAsset', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsReady.value = true
+  })
+
+  it('returns true while the registry is still warming up', () => {
+    mockIsReady.value = false
+    mockProvider(null)
+    expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
+    expect(mockRegisterDefaults).toHaveBeenCalled()
+    expect(mockGetNodeProvider).not.toHaveBeenCalled()
+  })
+
+  it('returns true when a provider exists for the category', () => {
+    mockProvider(createMockNodeProvider())
+    expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
+    expect(mockGetNodeProvider).toHaveBeenCalledWith('checkpoints')
+  })
+
+  it('returns false when the registry is ready but no provider matches', () => {
+    mockProvider(null)
+    expect(
+      canCreateNodeForAsset(createMockAsset({ tags: ['models', 'BEN'] }))
+    ).toBe(false)
+    expect(mockGetNodeProvider).toHaveBeenCalledWith('BEN')
+  })
+
+  it('returns false when the asset has no usable category tag (would fail INVALID_ASSET)', () => {
+    expect(
+      canCreateNodeForAsset(createMockAsset({ tags: ['models', 'missing'] }))
+    ).toBe(false)
+    expect(mockGetNodeProvider).not.toHaveBeenCalled()
   })
 })
