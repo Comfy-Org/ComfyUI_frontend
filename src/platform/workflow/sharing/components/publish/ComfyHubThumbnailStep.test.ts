@@ -97,6 +97,8 @@ describe('ComfyHubThumbnailStep', () => {
     const user = userEvent.setup()
     const onUpdateThumbnailUrl = vi.fn()
     const onUpdateComparisonAfterUrl = vi.fn()
+    const onUpdateComparisonBeforeFile = vi.fn()
+    const onUpdateComparisonAfterFile = vi.fn()
     const onUpdateThumbnailType = vi.fn()
     renderStep(
       {
@@ -108,6 +110,8 @@ describe('ComfyHubThumbnailStep', () => {
       {
         'onUpdate:thumbnailUrl': onUpdateThumbnailUrl,
         'onUpdate:comparisonAfterUrl': onUpdateComparisonAfterUrl,
+        'onUpdate:comparisonBeforeFile': onUpdateComparisonBeforeFile,
+        'onUpdate:comparisonAfterFile': onUpdateComparisonAfterFile,
         'onUpdate:thumbnailType': onUpdateThumbnailType
       }
     )
@@ -115,6 +119,8 @@ describe('ComfyHubThumbnailStep', () => {
     await user.click(screen.getByTestId('type-image'))
 
     expect(onUpdateThumbnailType).toHaveBeenCalledWith('image')
+    expect(onUpdateComparisonBeforeFile).toHaveBeenCalledWith(null)
+    expect(onUpdateComparisonAfterFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
     expect(onUpdateComparisonAfterUrl).not.toHaveBeenCalled()
   })
