@@ -351,17 +351,19 @@ async function getAuthHeaderOrThrow() {
 }
 
 function parseRetryAfterSeconds(value: unknown): number | undefined {
+  if (typeof value !== 'string' || value.trim() === '') return undefined
   const seconds = Number(value)
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined
 }
 
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const message = err.response?.data?.message ?? err.message
-    const retryAfter = parseRetryAfterSeconds(
-      err.response?.headers?.['retry-after']
-    )
+    const retryAfter =
+      status === 429
+        ? parseRetryAfterSeconds(err.response?.headers?.['retry-after'])
+        : undefined
     throw new WorkspaceApiError(message, status, undefined, retryAfter)
   }
   throw err

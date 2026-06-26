@@ -314,6 +314,24 @@ describe('workspaceApi', () => {
       })
     })
 
+    it('resendInvite() ignores a Retry-After header on a non-429 error', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
+        isAxiosError: true,
+        message: 'Server Error',
+        response: {
+          status: 500,
+          headers: { 'retry-after': '30' },
+          data: {}
+        }
+      })
+
+      await expect(workspaceApi.resendInvite('inv-1')).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 500,
+        retryAfter: undefined
+      })
+    })
+
     it('acceptInvite() uses firebase auth and POST /invites/:token/accept', async () => {
       const data = { workspace_id: 'ws-1', workspace_name: 'Team' }
       mockAxiosInstance.post.mockResolvedValue({ data })
