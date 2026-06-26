@@ -2602,7 +2602,7 @@
   "workspacePanel": {
     "invite": "הזמנה",
     "inviteMember": "הזמנת חבר",
-    "inviteLimitReached": "הגעת למקסימום של 50 חברים",
+    "inviteLimitReached": "הגעת למקסימום של {count} חברים",
     "tabs": {
       "dashboard": "לוח בקרה",
       "planCredits": "מסלול וקרדיטים",
