@@ -325,6 +325,11 @@
       "signUpWithGithub": "Github ile kaydol",
       "signUpWithGoogle": "Google ile kaydol",
       "title": "Hesap oluşturun"
+    },
+    "turnstile": {
+      "expired": "Doğrulamanın süresi doldu. Lütfen doğrulama işlemini tekrar tamamlayın.",
+      "failed": "Doğrulama başarısız oldu. Lütfen tekrar deneyin.",
+      "submitBlockedHint": "Kayıt olmayı etkinleştirmek için yukarıdaki doğrulama işlemini tamamlayın."
     }
   },
   "batch": {
@@ -3742,12 +3747,14 @@
       "keepSubscription": "Aboneliği sürdür",
       "title": "Aboneliği iptal et"
     },
+    "cancelPlan": "Planı iptal et",
     "cancelSuccess": "Abonelik başarıyla iptal edildi",
     "canceled": "İptal edildi",
     "canceledCard": {
       "description": "Tekrar ücretlendirilmeyeceksiniz. Özellikleriniz {date} tarihine kadar aktif kalacak.",
       "title": "Aboneliğiniz iptal edildi"
     },
+    "changePlan": "Planı değiştir",
     "changeTo": "{plan} planına geç",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud Logosu",
@@ -3776,6 +3783,7 @@
       "paymentPageBlocked": "Ödeme sayfası açılamadı — lütfen tekrar deneyin",
       "title": "{plan} planına geçilsin mi?"
     },
+    "endsOnDate": "{date} tarihinde sona erecek",
     "enterprise": {
       "cta": "Daha fazla bilgi",
       "flexibility": "Daha fazla esneklik veya özel özellikler mi arıyorsunuz?",
@@ -3785,6 +3793,9 @@
     },
     "everythingInPlus": "{plan} planındaki her şey ve ayrıca:",
     "expiresDate": "{date} tarihinde sona erer",
+    "freePerks": {
+      "maxRuntime": "Maksimum çalışma süresi: {duration}"
+    },
     "freeTier": {
       "description": "Ücretsiz planınız, Comfy Cloud'u denemek için her ay {credits} kredi içerir.",
       "descriptionGeneric": "Ücretsiz planınız, Comfy Cloud'u denemek için aylık kredi hakkı içerir.",
@@ -3812,7 +3823,7 @@
     "inviteUpTo": "Şu kadar kişiyi davet et:",
     "invoiceHistory": "Fatura geçmişi",
     "learnMore": "Daha fazla bilgi edinin",
-    "managePayment": "Ödemeyi Yönet",
+    "manageBilling": "Faturalamayı yönet",
     "managePlan": "Planı yönet",
     "manageSubscription": "Aboneliği yönet",
     "maxDuration": {
@@ -3826,7 +3837,6 @@
     "maxMembersLabel": "Azami üye",
     "member": "üye",
     "memberCount": "{count} üye",
-    "membersLabel": "{count} üye'ye kadar",
     "messageSupport": "Destek ekibine mesaj gönder",
     "monthly": "Aylık",
     "monthlyBonusDescription": "Aylık kredi bonusu",
@@ -3842,17 +3852,19 @@
     "mostPopular": "En popüler",
     "needTeamWorkspace": "Takım çalışma alanına mı ihtiyacınız var?",
     "nextBillingCycle": "sonraki fatura döngüsü",
-    "nextMonthInvoice": "Gelecek ay faturası",
     "outOfCreditsDescription": "Devam etmek için daha fazla kredi ekleyin.",
     "outOfCreditsTitle": "Kredileriniz tükendi. {date} tarihinde yenilenecek",
     "outOfCreditsTitleNoDate": "Kredileriniz tükendi",
     "partnerNodesBalance": "\"Partner Düğümleri\" Kredi Bakiyesi",
     "partnerNodesCredits": "Partner Düğümleri kredileri",
     "partnerNodesDescription": "Ticari/özel modelleri çalıştırmak için",
+    "partnerNodesPricingTable": "Partner Node fiyat tablosu",
     "perMonth": "USD / ay",
     "personalHeader": "Bireysel planlar yalnızca kişisel kullanım içindir. {action}",
     "personalHeaderAction": "Ekip arkadaşları eklemek için ekip planına abone olun.",
     "personalWorkspace": "Kişisel Çalışma Alanı",
+    "planLoadError": "Plan detaylarınızı yükleyemedik.",
+    "planLoadErrorRetry": "Tekrar dene",
     "planScope": {
       "personal": "Bireysel Kullanım İçin",
       "team": "Ekipler İçin"
@@ -3911,11 +3923,13 @@
     "pricingBlurbEnterprise": "kurumsal görüşmeler",
     "pricingBlurbQuestions": "sorular",
     "pricingBlurbSeeDetails": "detayları gör",
+    "reactivatePlan": "Planı yeniden etkinleştir",
     "refillsDate": "{date} tarihinde yenilenecek",
     "refillsNextCycle": "Sonraki döngüde yenilenecek",
     "refreshCredits": "Kredileri yenile",
     "remaining": "kalan",
     "renewsDate": "{date} tarihinde yenilenir",
+    "renewsOnDate": "{date} tarihinde yenilenecek",
     "required": {
       "pollingFailed": "Abonelik etkinleştirme başarısız oldu",
       "pollingSuccess": "Abonelik başarıyla etkinleştirildi!",
@@ -3930,6 +3944,7 @@
     "saveYearly": "%20 tasarruf",
     "saveYearlyUpTo": "%20'ye kadar tasarruf edin",
     "soloUseOnly": "Sadece bireysel kullanım",
+    "subscribe": "Abone ol",
     "subscribeFailed": "Abonelik başarısız oldu",
     "subscribeForMore": "Yükselt",
     "subscribeNow": "Hemen Abone Ol",
@@ -3949,6 +3964,12 @@
     },
     "teamHeader": "Birlikte çalışmak isteyen ekipler için. Daha fazla üyeye mi ihtiyacınız var? {learnMore} kurumsal hakkında.",
     "teamHeaderLearnMore": "Daha fazla bilgi",
+    "teamPerks": {
+      "concurrentRuns": "Üyeler iş akışlarını eşzamanlı çalıştırabilir",
+      "inviteMembers": "Üyeleri davet et",
+      "rolePermissions": "Rol tabanlı yetkilendirme",
+      "sharedCreditPool": "Tüm üyeler için ortak kredi havuzu"
+    },
     "teamPlan": {
       "changePlan": "Planı değiştir",
       "comingSoonLabel": "Yakında:",
@@ -3965,6 +3986,8 @@
       "tagline": "Kendi aylık kredi aboneliğinizi seçin. Daha fazla krediyle daha büyük indirim elde edin.",
       "unavailable": "Bu ekip planı şu anda kullanılamıyor."
     },
+    "teamPlanIncludes": "Planınız {plan} içeriğine ek olarak şunları da kapsar:",
+    "teamPlanName": "Takım",
     "teamWorkspace": "Takım Çalışma Alanı",
     "tierNameYearly": "{name} Yıllık",
     "tiers": {

@@ -325,6 +325,11 @@
       "signUpWithGithub": "إنشاء حساب باستخدام Github",
       "signUpWithGoogle": "إنشاء حساب باستخدام Google",
       "title": "إنشاء حساب"
+    },
+    "turnstile": {
+      "expired": "انتهت صلاحية التحقق. يرجى إكمال التحقق مرة أخرى.",
+      "failed": "فشل التحقق. يرجى المحاولة مرة أخرى.",
+      "submitBlockedHint": "يرجى إكمال التحقق أعلاه لتفعيل التسجيل."
     }
   },
   "batch": {
@@ -3742,12 +3747,14 @@
       "keepSubscription": "الاحتفاظ بالاشتراك",
       "title": "إلغاء الاشتراك"
     },
+    "cancelPlan": "إلغاء الخطة",
     "cancelSuccess": "تم إلغاء الاشتراك بنجاح",
     "canceled": "تم الإلغاء",
     "canceledCard": {
       "description": "لن يتم خصم أي رسوم أخرى منك. ستبقى ميزاتك نشطة حتى {date}.",
       "title": "تم إلغاء اشتراكك"
     },
+    "changePlan": "تغيير الخطة",
     "changeTo": "تغيير إلى {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "شعار Comfy Cloud",
@@ -3776,6 +3783,7 @@
       "paymentPageBlocked": "تعذر فتح صفحة الدفع — يرجى المحاولة مرة أخرى",
       "title": "تغيير إلى خطة {plan}؟"
     },
+    "endsOnDate": "ينتهي في {date}",
     "enterprise": {
       "cta": "اعرف المزيد",
       "flexibility": "تبحث عن مزيد من المرونة أو ميزات مخصصة؟",
@@ -3785,6 +3793,9 @@
     },
     "everythingInPlus": "كل ما في {plan}، بالإضافة إلى:",
     "expiresDate": "ينتهي في {date}",
+    "freePerks": {
+      "maxRuntime": "مدة تشغيل قصوى {duration}"
+    },
     "freeTier": {
       "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
       "descriptionGeneric": "تشمل خطتك المجانية رصيدًا شهريًا لتجربة Comfy Cloud.",
@@ -3812,7 +3823,7 @@
     "inviteUpTo": "ادعُ حتى",
     "invoiceHistory": "سجل الفواتير",
     "learnMore": "معرفة المزيد",
-    "managePayment": "إدارة الدفع",
+    "manageBilling": "إدارة الفواتير",
     "managePlan": "إدارة الخطة",
     "manageSubscription": "إدارة الاشتراك",
     "maxDuration": {
@@ -3826,7 +3837,6 @@
     "maxMembersLabel": "الحد الأقصى للأعضاء",
     "member": "عضو",
     "memberCount": "{count} عضو | {count} أعضاء",
-    "membersLabel": "حتى {count} عضو",
     "messageSupport": "مراسلة الدعم",
     "monthly": "شهري",
     "monthlyBonusDescription": "مكافأة الرصيد الشهرية",
@@ -3842,17 +3852,19 @@
     "mostPopular": "الأكثر شيوعًا",
     "needTeamWorkspace": "هل تحتاج إلى مساحة عمل للفريق؟",
     "nextBillingCycle": "دورة الفوترة التالية",
-    "nextMonthInvoice": "فاتورة الشهر القادم",
     "outOfCreditsDescription": "أضف المزيد من الرصيد للمتابعة في التوليد.",
     "outOfCreditsTitle": "نفد رصيدك. سيتم إعادة التعبئة {date}",
     "outOfCreditsTitleNoDate": "نفد رصيدك",
     "partnerNodesBalance": "رصيد \"عُقَد الشريك\"",
     "partnerNodesCredits": "رصيد العقد الشريكة",
     "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
+    "partnerNodesPricingTable": "جدول أسعار Partner Nodes",
     "perMonth": "دولار أمريكي / شهر",
     "personalHeader": "الخطط الشخصية للاستخدام الفردي فقط. {action}",
     "personalHeaderAction": "لإضافة زملاء، اشترك في خطة الفريق.",
     "personalWorkspace": "مساحة العمل الشخصية",
+    "planLoadError": "تعذر تحميل تفاصيل خطتك.",
+    "planLoadErrorRetry": "حاول مرة أخرى",
     "planScope": {
       "personal": "للاستخدام الشخصي",
       "team": "للفرق"
@@ -3911,11 +3923,13 @@
     "pricingBlurbEnterprise": "مناقشات المؤسسات",
     "pricingBlurbQuestions": "الاستفسارات",
     "pricingBlurbSeeDetails": "اعرض التفاصيل",
+    "reactivatePlan": "إعادة تفعيل الخطة",
     "refillsDate": "إعادة التعبئة {date}",
     "refillsNextCycle": "إعادة التعبئة في الدورة التالية",
     "refreshCredits": "تحديث الرصيد",
     "remaining": "متبقي",
     "renewsDate": "تجديد في {date}",
+    "renewsOnDate": "يتجدد في {date}",
     "required": {
       "pollingFailed": "فشل تفعيل الاشتراك",
       "pollingSuccess": "تم تفعيل الاشتراك بنجاح!",
@@ -3930,6 +3944,7 @@
     "saveYearly": "وفّر 20%",
     "saveYearlyUpTo": "وفر حتى ٢٠٪",
     "soloUseOnly": "للاستخدام الفردي فقط",
+    "subscribe": "اشترك",
     "subscribeFailed": "فشل الاشتراك",
     "subscribeForMore": "ترقية",
     "subscribeNow": "اشترك الآن",
@@ -3949,6 +3964,12 @@
     },
     "teamHeader": "للفرق التي ترغب في التعاون. تحتاج إلى المزيد من الأعضاء؟ {learnMore} حول المؤسسات.",
     "teamHeaderLearnMore": "اعرف المزيد",
+    "teamPerks": {
+      "concurrentRuns": "يمكن للأعضاء تشغيل سير العمل في نفس الوقت",
+      "inviteMembers": "دعوة الأعضاء",
+      "rolePermissions": "أذونات حسب الدور",
+      "sharedCreditPool": "رصيد مشترك لجميع الأعضاء"
+    },
     "teamPlan": {
       "changePlan": "تغيير الخطة",
       "comingSoonLabel": "قريبًا:",
@@ -3965,6 +3986,8 @@
       "tagline": "اختر اشتراك الرصيد الشهري الخاص بك. احصل على خصم أكبر مع اشتراك رصيد أكبر.",
       "unavailable": "خطة الفريق هذه غير متوفرة حالياً."
     },
+    "teamPlanIncludes": "تشمل خطتك كل ما في {plan}، بالإضافة إلى:",
+    "teamPlanName": "فريق",
     "teamWorkspace": "مساحة عمل الفريق",
     "tierNameYearly": "{name} سنوي",
     "tiers": {
