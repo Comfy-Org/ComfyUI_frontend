@@ -257,8 +257,7 @@ function isModelCandidateStillActive(
 
 function isNodeCandidateStillActive(nodeId: unknown): boolean {
   return (
-    app.rootGraph !== null &&
-    app.rootGraph !== undefined &&
+    app.rootGraph != null &&
     nodeId != null &&
     isExecutionPathActive(app.rootGraph, String(nodeId))
   )
