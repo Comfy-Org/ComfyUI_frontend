@@ -60,5 +60,6 @@ export function getColumnDisplayValue(
   if (column.format && typeof value === 'string') {
     return column.format(value)
   }
+  if (Array.isArray(value)) return undefined
   return value
 }
