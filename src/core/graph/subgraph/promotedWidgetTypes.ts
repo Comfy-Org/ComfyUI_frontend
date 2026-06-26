@@ -3,6 +3,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode
+  nodePath: string[]
   widget: IBaseWidget
 }
 
