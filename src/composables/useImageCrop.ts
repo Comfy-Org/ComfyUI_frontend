@@ -7,7 +7,7 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { resolveNode } from '@/utils/litegraphUtil'
 
-type ResizeDirection =
+export type ResizeDirection =
   | 'top'
   | 'bottom'
   | 'left'
@@ -16,6 +16,17 @@ type ResizeDirection =
   | 'ne'
   | 'sw'
   | 'se'
+
+export interface ResizeHandle {
+  direction: ResizeDirection
+  class: string
+  style: {
+    left: string
+    top: string
+    width?: string
+    height?: string
+  }
+}
 
 const HANDLE_SIZE = 8
 const CORNER_SIZE = 10
@@ -270,17 +281,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     width: `${cropWidth.value * scaleFactor.value}px`,
     height: `${cropHeight.value * scaleFactor.value}px`
   }))
-
-  interface ResizeHandle {
-    direction: ResizeDirection
-    class: string
-    style: {
-      left: string
-      top: string
-      width?: string
-      height?: string
-    }
-  }
 
   const CORNER_DIRECTIONS = new Set<ResizeDirection>(['nw', 'ne', 'sw', 'se'])
 

@@ -25,3 +25,22 @@ export const formatPercent0 = (locale: string, value0to100: number): string => {
     maximumFractionDigits: 0
   }).format((v || 0) / 100)
 }
+
+/**
+ * Format a USD amount given in cents as localized currency. Whole-dollar
+ * amounts drop the fractional part; fractional cents render two decimals so a
+ * charge like 66550 cents shows as "$665.50" instead of being rounded.
+ *
+ * @param locale BCP-47 locale string
+ * @param cents USD amount in integer cents
+ * @returns Localized currency string, e.g. "$665" or "$665.50"
+ */
+export const formatUsdCents = (locale: string, cents: number): string => {
+  const hasFractionalCents = cents % 100 !== 0
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: hasFractionalCents ? 2 : 0,
+    maximumFractionDigits: hasFractionalCents ? 2 : 0
+  }).format(cents / 100)
+}

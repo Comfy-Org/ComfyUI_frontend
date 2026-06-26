@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "Ideogram 4モデル用のJSONプロンプトを作成します。",
+    "display_name": "JSONプロンプトを作成（Ideogram）",
+    "inputs": {
+      "aesthetics": {
+        "name": "美的要素",
+        "tooltip": "必須の美的キーワード（例：ムーディー、シネマティック、デサチュレートなど）。"
+      },
+      "background": {
+        "name": "背景",
+        "tooltip": "画像の背景や環境の説明（必須）。"
+      },
+      "color_palette": {
+        "name": "カラーパレット",
+        "tooltip": "画像の主要な色を指定するHexカラーコード。最大16件まで。"
+      },
+      "element": {
+        "name": "要素",
+        "tooltip": "ノード「バウンディングボックスを作成」からのプロンプト要素。"
+      },
+      "high_level_description": {
+        "name": "概要説明",
+        "tooltip": "画像の概要を1～2文で記述（任意）。推奨。"
+      },
+      "lighting": {
+        "name": "ライティング",
+        "tooltip": "必須のライティング説明（例：ゴールデンアワー、リムライト、ドラマチックな影など）。"
+      },
+      "medium": {
+        "name": "媒体",
+        "tooltip": "必須の媒体タイプ（例：写真、イラスト、3d_render、ペインティング、グラフィックデザイン）。style=photoの場合は「写真」に設定。"
+      },
+      "style": {
+        "name": "スタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "プロンプト",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
@@ -2471,6 +2514,10 @@
         "name": "fuse_method",
         "tooltip": "コンテキストウィンドウを融合するために使用する方法。"
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "各ウィンドウごとにノイズlatent自体で保持するlatentインデックスのリスト。参照コンテンツ（例：開始画像）が個別のコンディショニングチャンネルではなくノイズlatent内に直接存在するワークフロー（例：inplaceスタイルのI2V、LTXVやAnimateDiffなど）で使用します。cond_retain_index_listとは独立しています。"
+      },
       "model": {
         "name": "モデル",
         "tooltip": "サンプリング中にコンテキストウィンドウを適用するモデル。"
@@ -2629,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "配列を文字列に変換",
+    "inputs": {
+      "array": {
+        "name": "配列"
+      },
+      "indent": {
+        "name": "インデント",
+        "tooltip": "インデントレベルごとのスペース数。0の場合は1行のコンパクトな文字列になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "辞書を文字列に変換",
+    "inputs": {
+      "dictionary": {
+        "name": "辞書"
+      },
+      "indent": {
+        "name": "インデント",
+        "tooltip": "インデントレベルごとのスペース数。0の場合は1行のコンパクトな文字列になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2687,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "キャンバス上にバウンディングボックスを描画します。Ideogramプロンプト要素、ピクセル空間のバウンディングボックス、プレビュー画像を出力します。",
+    "display_name": "バウンディングボックスを作成",
+    "inputs": {
+      "background": {
+        "name": "背景画像",
+        "tooltip": "キャンバスやプレビューで背景として使用する画像（任意）。"
+      },
+      "editor_state": {
+        "name": "エディタ状態",
+        "tooltip": "バウンディングボックスを描画し、各ボックスのタイプ、テキスト、説明、カラーパレットを設定します。背景要素から始め、前景を最後に設定してください。"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "キャンバスおよびバウンディングボックス用ピクセルグリッドの高さ。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "キャンバスおよびバウンディングボックス用ピクセルグリッドの幅。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "プレビュー",
+        "tooltip": null
+      },
+      "1": {
+        "name": "バウンディングボックス",
+        "tooltip": null
+      },
+      "2": {
+        "name": "要素",
         "tooltip": null
       }
     }
@@ -8324,6 +8441,57 @@
       }
     }
   },
+  "LTXVContextWindows": {
+    "description": "LTXV系モデルのためのコンテキストウィンドウを設定します。",
+    "display_name": "LTXVコンテキストウィンドウ",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "コンテキストウィンドウループを閉じるかどうか。ループスケジュール時のみ有効です。"
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "コンテキストウィンドウの長さ（実フレーム数）。8*n+1である必要があります。"
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "コンテキストウィンドウの重なり（実フレーム数）。"
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "コンテキストウィンドウのステップ依存スケジューリングアルゴリズム。"
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "コンテキストウィンドウのストライド（間隔）。均一スケジュール時のみ有効です。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoiseノイズシャッフルを適用するかどうか。ウィンドウのブレンドを改善します。"
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "コンテキストウィンドウを融合する方法。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "サンプリング時にコンテキストウィンドウを適用するモデル。"
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "各コンテキストウィンドウで最初のlatentフレームを保持します（初期参照の維持に役立つ場合があります）。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "複数のコンディショニング（ConditionCombineで作成）を領域インデックスに基づいて各ウィンドウに分割するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "サンプリング時にコンテキストウィンドウが適用されたモデル。"
+      }
+    }
+  },
   "LTXVCropGuides": {
     "display_name": "LTXVCropGuides",
     "inputs": {
@@ -9084,6 +9252,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "3D読み込み（詳細）",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "音声を読み込む",
     "inputs": {
@@ -9743,6 +9950,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "以前に生成したRay 3.2のビデオを前方（後に続けて）または後方（前に追加して）拡張します。前のLuma Ray 3.2ノードのgeneration_id出力を接続してください。拡張は常に5秒です。",
+    "display_name": "Luma Ray 3.2 ビデオ拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "前方は前のclipの後に続き、後方はその前に追加されます。"
+      },
+      "direction_loop": {
+        "name": "ループ"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "新しいコンテンツのテキストプロンプト。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。シードに関わらず結果は非決定的です。"
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "拡張したい前のRay 3.2ビデオのgeneration_idです。他のLuma Ray 3.2ノードのgeneration_id出力を接続してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "LumaのRay 3.2モデルを使って、開始フレームや終了フレームからビデオを生成します。画像を基準とした生成は常に5秒です。",
+    "display_name": "Luma Ray 3.2 画像からビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "生成されるビデオの最後のフレーム。"
+      },
+      "loop": {
+        "name": "ループ",
+        "tooltip": "ビデオをシームレスにループさせます。end_frameが設定されている場合は利用できません。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ビデオ生成のためのテキストプロンプト。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。シードに関わらず結果は非決定的です。"
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "生成されるビデオの最初のフレーム。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "ガイド画像をRay 3.2出力ビデオのタイムライン上の位置に固定します。これをLuma Ray 3.2 Keyframes to Videoノードの「keyframes」入力に接続してください。下のオプションの「keyframes」入力で複数を連結できます。",
+    "display_name": "Luma Ray 3.2 キーフレーム",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "出力ビデオの指定したタイミングに配置するガイド画像。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "このキーフレームと連結するための前のキーフレーム（オプション）。"
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "この画像を出力ビデオのタイムライン上にどのように配置するか。"
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "Luma Ray 3.2 を使用して、タイムライン上の位置に固定されたガイド画像のシーケンスを補間しながらビデオを生成します。Luma Ray 3.2 キーフレームノード（最低2つ）でシーケンスを構築してください。",
+    "display_name": "Luma Ray 3.2 キーフレームからビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "Luma Ray 3.2 キーフレームノード（最低2つ）からのキーフレームシーケンス。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオ生成用のテキストプロンプト。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "Luma の Ray 3.2 モデルを使ってテキストプロンプトからビデオを生成します。",
+    "display_name": "Luma Ray 3.2 テキストからビデオへ",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "loop": {
+        "name": "ループ",
+        "tooltip": "ビデオをシームレスにループさせます。5秒の長さでのみ利用可能です。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオ生成用のテキストプロンプト。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "Luma Ray 3.2 を使い、元の動きを維持しながら新しいプロンプトで既存のビデオを再レンダリングします（リスタイル、再照明、要素の追加や削除など）。元動画は最大18秒まで。編集後のビデオは元動画と同じ長さになります。",
+    "display_name": "Luma Ray 3.2 ビデオ編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望する編集内容を記述してください。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。シードに関わらず結果は非決定的です。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "元動画をどの程度維持するか。'auto'はRay 3.2が自動選択、adhere_*は最も維持、flex_*はバランス、reimagine_*は最も変更します。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "編集する元動画。最大18秒まで。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "既存のビデオのアスペクト比を変更し、新たに露出したキャンバス領域をLuma Ray 3.2で埋めます。ソースビデオは最大30秒まで対応。出力秒数ごとに課金されます。",
+    "display_name": "Luma Ray 3.2 ビデオリフレーム",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "新たに露出したキャンバス領域をどのように埋めるかを説明します。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。シードに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "リフレームするソースビデオ。最大30秒まで。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
         "tooltip": null
       }
     }
@@ -11672,6 +12135,131 @@
       },
       "vector_in_": {
         "name": "vector_in."
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
       }
     }
   },
@@ -14075,6 +14663,12 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14129,6 +14723,11 @@
     "inputs": {
       "images": {
         "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
       }
     }
   },
@@ -16925,6 +17524,12 @@
       "images": {
         "name": "画像"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16948,6 +17553,12 @@
       "quality": {
         "name": "品質"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16961,6 +17572,12 @@
       },
       "filename_prefix": {
         "name": "ファイル名_プレフィックス"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16983,6 +17600,12 @@
         "name": "format",
         "tooltip": "オーディオを保存するファイル形式。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -17000,6 +17623,12 @@
       "quality": {
         "name": "quality"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -17016,6 +17645,12 @@
       },
       "quality": {
         "name": "quality"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -17046,6 +17681,11 @@
         "name": "画像",
         "tooltip": "保存する画像。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -17069,6 +17709,12 @@
       "images": {
         "name": "画像",
         "tooltip": "保存する画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17137,6 +17783,11 @@
       "samples": {
         "name": "サンプル"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
+      }
     }
   },
   "SaveLoRA": {
@@ -17166,6 +17817,12 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -17211,6 +17868,12 @@
         "name": "ビデオ",
         "tooltip": "保存するビデオ。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17232,6 +17895,12 @@
       "images": {
         "name": "画像",
         "tooltip": "RGBA画像はアルファチャンネルを透明度として保存します（vp9コーデックのみ対応）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17263,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "シード",
+    "inputs": {
+      "fixed": {
+        "name": "生成後に制御"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "シード",
         "tooltip": null
       }
     }
@@ -21935,6 +22621,14 @@
       "model": {
         "name": "モデル",
         "tooltip": "サンプリング中にコンテキストウィンドウを適用するモデル。"
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "各コンテキストウィンドウで最初のI2Vフレームを保持します（初期リファレンスの維持に役立つ場合があります）。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "複数のコンディショニング（ConditionCombineで作成）を領域インデックスに基づいて各ウィンドウに分割するかどうか。"
       }
     },
     "outputs": {

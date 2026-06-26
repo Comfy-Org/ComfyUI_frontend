@@ -5,7 +5,6 @@ import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
@@ -117,7 +116,9 @@ app
       modal: 1800,
       overlay: 1800,
       menu: 1800,
-      tooltip: 1800
+      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
+      // behind a body-portaled dropdown that lifts itself to modal + 1.
+      tooltip: 2000
     },
     theme: {
       preset: ComfyUIPreset,
@@ -133,7 +134,6 @@ app
       }
     }
   })
-  .use(ConfirmationService)
   .use(ToastService)
   .use(pinia)
   .use(i18n)

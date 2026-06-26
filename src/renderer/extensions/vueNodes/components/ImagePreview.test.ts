@@ -30,6 +30,10 @@ vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: vi.fn()
 }))
 
+vi.mock('@/services/hdrViewerService', () => ({
+  openHdrViewer: vi.fn()
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -51,6 +55,10 @@ const i18n = createI18n({
         loading: 'Loading',
         viewGrid: 'Grid view',
         galleryThumbnail: 'Gallery thumbnail'
+      },
+      hdrViewer: {
+        hdrImage: 'HDR image',
+        openInHdrViewer: 'Open in HDR Viewer'
       }
     }
   }
@@ -100,6 +108,15 @@ describe('ImagePreview', () => {
     const { container } = renderImagePreview({ imageUrls: [] })
 
     expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
+  })
+
+  it('offers the HDR viewer instead of an <img> for exr outputs', () => {
+    renderImagePreview({
+      imageUrls: ['/api/view?filename=out.exr&type=output']
+    })
+
+    expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
   })
 
   it('displays calculating dimensions text in gallery mode', async () => {

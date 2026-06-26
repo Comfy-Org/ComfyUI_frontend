@@ -2,6 +2,7 @@ import { isCloud, isNightly } from '@/platform/distribution/types'
 
 import './clipspace'
 import './contextMenuFilter'
+import './createBoundingBoxes'
 import './customWidgets'
 import './dynamicPrompts'
 import './editAttention'
@@ -36,10 +37,6 @@ if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-
-  if (window.__CONFIG__?.subscription_required) {
-    await import('./cloudSubscription')
-  }
 }
 
 // Feedback button for cloud and nightly builds

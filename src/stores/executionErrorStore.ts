@@ -84,7 +84,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Removes a node's errors if they consist entirely of simple, auto-resolvable
    * types. When `slotName` is provided, only errors for that slot are checked.
    */
-  function clearSimpleNodeErrors(executionId: string, slotName?: string): void {
+  function clearSimpleNodeErrors(
+    executionId: NodeExecutionId,
+    slotName?: string
+  ): void {
     if (!lastNodeErrors.value) return
     const nodeError = lastNodeErrors.value[executionId]
     if (!nodeError) return
@@ -131,7 +134,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * (asset system vs objectInfo) making runtime validation non-trivial.
    */
   function clearSlotErrorsWithRangeCheck(
-    executionId: string,
+    executionId: NodeExecutionId,
     widgetName: string,
     newValue: unknown,
     options?: { min?: number; max?: number }
@@ -152,12 +155,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Clears both validation errors and missing model state for a widget.
    *
    * @param errorInputName Name matched against `error.extra_info.input_name`.
-   *   For promoted subgraph widgets this is the resolved interior widget name.
-   * @param widgetName The actual widget name, used for missing model lookup.
-   *   At the legacy canvas call site both names are identical (`widget.name`).
+   * @param widgetName Widget name used for missing model/media lookup.
    */
   function clearWidgetRelatedErrors(
-    executionId: string,
+    executionId: NodeExecutionId,
     errorInputName: string,
     widgetName: string,
     newValue: unknown,

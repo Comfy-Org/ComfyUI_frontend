@@ -730,13 +730,56 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "display_name": "Build JSON Prompt (Ideogram)",
+    "description": "Build a JSON prompt for the Ideogram 4 model.",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Prompt elements from the node Create Bounding Boxes."
+      },
+      "high_level_description": {
+        "name": "high_level_description",
+        "tooltip": "Optional description of the image in one or two sentences. Strongly recommended."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Mandatory description of the image background or environment."
+      },
+      "style": {
+        "name": "style"
+      },
+      "aesthetics": {
+        "name": "aesthetics",
+        "tooltip": "Mandatory aesthetic keywords (e.g. moody, cinematic, desaturated)."
+      },
+      "lighting": {
+        "name": "lighting",
+        "tooltip": "Mandatory lighting description (e.g. golden hour, rim light, dramatic shadows)."
+      },
+      "medium": {
+        "name": "medium",
+        "tooltip": "Mandatory medium type (e.g. photograph, illustration, 3d_render, painting, graphic_design). When style = photo, set to photograph."
+      },
+      "color_palette": {
+        "name": "color_palette",
+        "tooltip": "Hex color codes that steer the image's dominant colors. Up to 16 entries."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -793,7 +836,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -840,7 +883,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -2138,7 +2181,7 @@
     }
   },
   "ComfySwitchNode": {
-    "display_name": "Switch",
+    "display_name": "If/Else Switch",
     "inputs": {
       "switch": {
         "name": "switch"
@@ -2445,7 +2488,7 @@
       },
       "context_schedule": {
         "name": "context_schedule",
-        "tooltip": "The stride of the context window."
+        "tooltip": "Step-dependent scheduling algorithm for context windows."
       },
       "context_stride": {
         "name": "context_stride",
@@ -2469,11 +2512,15 @@
       },
       "cond_retain_index_list": {
         "name": "cond_retain_index_list",
-        "tooltip": "List of latent indices to retain in the conditioning tensors for each window, for example setting this to '0' will use the initial start image for each window."
+        "tooltip": "List of latent indices to retain in the conditioning tensors for each window. For concat-style I2V models (e.g. Wan I2V, HunyuanVideo I2V, Cosmos I2V, SVD) the encoded start image lives in the c_concat conditioning channels; setting this to '0' will retain that start image content at sub-pos 0 of every window."
       },
       "split_conds_to_windows": {
         "name": "split_conds_to_windows",
         "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
+      },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "List of latent indices to retain in the noise latent itself for each window. Use for workflows where reference content (e.g. a start image) lives directly in the noise latent rather than in separate conditioning channels (e.g. inplace-style I2V like LTXV, AnimateDiff). Independent of cond_retain_index_list."
       },
       "causal_window_fix": {
         "name": "causal_window_fix",
@@ -2629,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Convert Array to String",
+    "inputs": {
+      "array": {
+        "name": "array"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "Spaces per indent level. 0 produces compact single-line string."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Convert Dictionary to String",
+    "inputs": {
+      "dictionary": {
+        "name": "dictionary"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "Spaces per indent level. 0 produces compact single-line string."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2687,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "display_name": "Create Bounding Boxes",
+    "description": "Draw bounding boxes in a canvas. Outputs Ideogram prompt elements, pixel-space bounding boxes, and a preview image.",
+    "inputs": {
+      "width": {
+        "name": "width",
+        "tooltip": "Width of the canvas and the pixel grid for the bounding boxes."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Height of the canvas and the pixel grid for the bounding boxes."
+      },
+      "editor_state": {
+        "name": "editor_state",
+        "tooltip": "Draw bounding boxes and set each box type, text, description, color palette. Start with background element first and foreground last."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Optional image used as background in the canvas and preview."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "preview",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "elements",
         "tooltip": null
       }
     }
@@ -4541,7 +4658,7 @@
     }
   },
   "FrameInterpolate": {
-    "display_name": "Frame Interpolate",
+    "display_name": "Run Frame Interpolation Model",
     "inputs": {
       "interp_model": {
         "name": "interp_model"
@@ -5415,7 +5532,7 @@
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "The resolution of the output video."
+        "tooltip": "The resolution of the output video. 1080p is only available for grok-imagine-video-1.5."
       },
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -8658,6 +8775,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "Load 3D (Advanced)",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "Load Audio",
     "inputs": {
@@ -9264,6 +9420,57 @@
       }
     }
   },
+  "LTXVContextWindows": {
+    "display_name": "LTXV Context Windows",
+    "description": "Set context windows for LTXV-like models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to apply context windows to during sampling."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "The length of the context window in real frames. Must be 8*n + 1."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "The overlap of the context window in real frames."
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "Step-dependent scheduling algorithm for context windows."
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "The stride of the context window; only applicable to uniform schedules."
+      },
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "Whether to close the context window loop; only applicable to looped schedules."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "The method to use to fuse the context windows."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Whether to apply FreeNoise noise shuffling, improves window blending."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Retain the first latent frame in every context window (may help retain initial reference)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The model with context windows applied during sampling."
+      }
+    }
+  },
   "LTXVCropGuides": {
     "display_name": "LTXVCropGuides",
     "inputs": {
@@ -9743,6 +9950,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "display_name": "Luma Ray 3.2 Extend Video",
+    "description": "Extend a previous Ray 3.2 generation forward (continue after it) or backward (lead-in before it). Connect the generation_id output of a prior Luma Ray 3.2 node. Extensions are always 5 seconds.",
+    "inputs": {
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "generation_id of the prior Ray 3.2 video to extend. Connect the generation_id output of another Luma Ray 3.2 node."
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Forward continues after the prior clip; backward is prepended before it."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the new content."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "direction_loop": {
+        "name": "loop"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "display_name": "Luma Ray 3.2 Image to Video",
+    "description": "Generate a video from a start and/or end frame using Luma's Ray 3.2 model. Image-anchored generations are always 5 seconds.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the video generation."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Make the video loop seamlessly. Not available when an end_frame is set."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; results are nondeterministic regardless of seed."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "First frame of the generated video."
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Last frame of the generated video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "display_name": "Luma Ray 3.2 Keyframe",
+    "description": "Anchor a guide image to a position on the Ray 3.2 output video timeline. Connect this to the 'keyframes' input of the Luma Ray 3.2 Keyframes to Video node; chain several together via the optional 'keyframes' input below.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Guide image to place at the chosen moment of the output video."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "How to place this image on the output video's timeline."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Optional earlier keyframes to chain with this one."
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "display_name": "Luma Ray 3.2 Keyframes to Video",
+    "description": "Generate a video that interpolates through a sequence of guide images, each anchored to a position on the timeline, using Luma Ray 3.2. Build the sequence with Luma Ray 3.2 Keyframe nodes (at least 2).",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the video generation."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; results are nondeterministic regardless of seed."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Keyframe sequence from Luma Ray 3.2 Keyframe nodes (at least 2)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "display_name": "Luma Ray 3.2 Text to Video",
+    "description": "Generate a video from a text prompt using Luma's Ray 3.2 model.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the video generation."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Make the video loop seamlessly. Only available with 5s duration."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "display_name": "Luma Ray 3.2 Video Edit",
+    "description": "Re-render an existing video under a new prompt using Luma Ray 3.2 (restyle, relight, add or remove elements) while keeping the original motion. Source video up to 18 seconds; the edited video keeps the source's length.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Source video to edit. Up to 18 seconds."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes the desired edit."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "How strongly to preserve vs. reimagine the source. 'auto' lets Ray 3.2 choose; adhere_* preserves the most, flex_* is balanced, reimagine_* changes the most."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "display_name": "Luma Ray 3.2 Video Reframe",
+    "description": "Change the aspect ratio of an existing video, using Luma Ray 3.2 to fill the newly exposed canvas areas. Source video up to 30 seconds. Billed per second of output.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Source video to reframe. Up to 30 seconds."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes how the newly exposed canvas areas should be filled."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
         "tooltip": null
       }
     }
@@ -11552,6 +12015,131 @@
       },
       "final_layer_": {
         "name": "final_layer."
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "first_": {
+        "name": "first."
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "last_": {
+        "name": "last."
       }
     }
   },
@@ -14075,6 +14663,12 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14128,6 +14722,11 @@
     "description": "Saves the input images to your ComfyUI output directory.",
     "inputs": {
       "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "images"
       }
     }
@@ -14243,7 +14842,7 @@
     }
   },
   "PrimitiveString": {
-    "display_name": "Text String",
+    "display_name": "Text String (DEPRECATED)",
     "inputs": {
       "value": {
         "name": "value"
@@ -14256,7 +14855,7 @@
     }
   },
   "PrimitiveStringMultiline": {
-    "display_name": "Text String (Multiline)",
+    "display_name": "Input Text",
     "inputs": {
       "value": {
         "name": "value"
@@ -16629,6 +17228,12 @@
       "compress_level": {
         "name": "compress_level"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16652,10 +17257,16 @@
       "method": {
         "name": "method"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
-    "display_name": "Save Audio (FLAC) (Deprecated)",
+    "display_name": "Save Audio (FLAC) (DEPRECATED)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16665,6 +17276,12 @@
       },
       "audioUI": {
         "name": "audioUI"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16687,10 +17304,16 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
-    "display_name": "Save Audio (MP3) (Deprecated)",
+    "display_name": "Save Audio (MP3) (DEPRECATED)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16704,10 +17327,16 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
-    "display_name": "Save Audio (Opus) (Deprecated)",
+    "display_name": "Save Audio (Opus) (DEPRECATED)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16720,6 +17349,12 @@
       },
       "audioUI": {
         "name": "audioUI"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16750,6 +17385,11 @@
         "name": "filename_prefix",
         "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -16773,6 +17413,12 @@
       },
       "format_input_color_space": {
         "name": "input_color_space"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -16841,6 +17487,11 @@
       "filename_prefix": {
         "name": "filename_prefix"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
+      }
     }
   },
   "SaveLoRA": {
@@ -16870,6 +17521,12 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -16915,6 +17572,12 @@
         "name": "codec",
         "tooltip": "The codec to use for the video."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -16936,6 +17599,12 @@
       "crf": {
         "name": "crf",
         "tooltip": "Higher crf means lower quality with a smaller file size, lower crf means higher quality higher filesize."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17142,6 +17811,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Seed",
+    "inputs": {
+      "seed": {
+        "name": "seed"
+      },
+      "fixed": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "seed",
         "tooltip": null
       }
     }
@@ -20679,7 +21365,7 @@
     }
   },
   "Video Slice": {
-    "display_name": "Video Slice",
+    "display_name": "Trim Video",
     "inputs": {
       "video": {
         "name": "video"
@@ -21940,8 +22626,8 @@
     }
   },
   "WanContextWindowsManual": {
-    "display_name": "WAN Context Windows (Manual)",
-    "description": "Manually set context windows for WAN-like models (dim=2).",
+    "display_name": "Wan Context Windows",
+    "description": "Set context windows for Wan-like models.",
     "inputs": {
       "model": {
         "name": "model",
@@ -21949,15 +22635,15 @@
       },
       "context_length": {
         "name": "context_length",
-        "tooltip": "The length of the context window."
+        "tooltip": "The length of the context window in real frames. Must be 4*n + 1."
       },
       "context_overlap": {
         "name": "context_overlap",
-        "tooltip": "The overlap of the context window."
+        "tooltip": "The overlap of the context window in real frames."
       },
       "context_schedule": {
         "name": "context_schedule",
-        "tooltip": "The stride of the context window."
+        "tooltip": "Step-dependent scheduling algorithm for context windows."
       },
       "context_stride": {
         "name": "context_stride",
@@ -21974,6 +22660,14 @@
       "freenoise": {
         "name": "freenoise",
         "tooltip": "Whether to apply FreeNoise noise shuffling, improves window blending."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Retain the first I2V frame in every context window (may help retain initial reference)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
       }
     },
     "outputs": {

@@ -30,6 +30,8 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
@@ -43,6 +45,12 @@ import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData
 } from '@/utils/graphTraversalUtil'
+
+const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
+type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
+function isTooltipValueType(val: unknown): val is TooltipValueType {
+  return TOOLTIP_VALUE_TYPES.includes(val as TooltipValueType)
+}
 
 interface ProcessedWidget {
   advanced: boolean
@@ -65,7 +73,7 @@ interface ProcessedWidget {
 }
 
 interface WidgetUiCallbacks {
-  getTooltipConfig: (widget: SafeWidgetData) => TooltipOptions
+  getTooltipConfig: (widget: SafeWidgetData, fullVal?: string) => TooltipOptions
   handleNodeRightClick: (e: PointerEvent, nodeId: string) => void
 }
 
@@ -81,27 +89,37 @@ interface ComputeProcessedWidgetsOptions {
 function createWidgetUpdateHandler(
   widgetState: WidgetState | undefined,
   widget: SafeWidgetData,
-  nodeExecId: string,
+  nodeExecId: NodeExecutionId,
   widgetOptions: IWidgetOptions | Record<string, never>,
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
 ): (newValue: WidgetValue) => void {
   return (newValue: WidgetValue) => {
     if (widgetState) widgetState.value = newValue
     widget.callback?.(newValue)
-    const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
+    const options = { min: widgetOptions?.min, max: widgetOptions?.max }
+    if (widget.sourceExecutionId) {
+      const sourceWidgetName = widget.sourceWidgetName ?? widget.name
+      executionErrorStore.clearWidgetRelatedErrors(
+        widget.sourceExecutionId,
+        sourceWidgetName,
+        sourceWidgetName,
+        newValue,
+        options
+      )
+    }
     executionErrorStore.clearWidgetRelatedErrors(
-      effectiveExecId,
+      nodeExecId,
       widget.name,
-      widget.sourceWidgetName ?? widget.name,
+      widget.name,
       newValue,
-      { min: widgetOptions?.min, max: widgetOptions?.max }
+      options
     )
   }
 }
 
 export function hasWidgetError(
   widget: SafeWidgetData,
-  nodeExecId: string,
+  nodeExecId: NodeExecutionId,
   nodeErrors:
     | { errors: { extra_info?: { input_name?: string } }[] }
     | undefined,
@@ -113,10 +131,7 @@ export function hasWidgetError(
     : nodeErrors?.errors
   return (
     !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
-    missingModelStore.isWidgetMissingModel(
-      widget.sourceExecutionId ?? nodeExecId,
-      widget.sourceWidgetName ?? widget.name
-    )
+    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
   )
 }
 
@@ -178,7 +193,7 @@ export function computeProcessedWidgets({
   const nodeExecId =
     isGraphReady && rootGraph
       ? getExecutionIdFromNodeData(rootGraph, nodeData)
-      : String(nodeData.id ?? '')
+      : createNodeExecutionId([nodeData.id])
 
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
 
@@ -288,11 +303,12 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = widget.nodeId
-      ? widget.nodeId
-      : nodeData
-        ? getLocatorIdFromNodeData(nodeData)
-        : undefined
+    const nodeLocatorId = nodeData
+      ? getLocatorIdFromNodeData({
+          ...nodeData,
+          id: widget.nodeId ?? nodeData.id
+        })
+      : undefined
 
     const simplified: SimplifiedWidget = {
       name: widgetState?.name ?? widget.name,
@@ -316,11 +332,15 @@ export function computeProcessedWidgets({
       executionErrorStore
     )
 
-    const tooltipConfig = ui.getTooltipConfig(widget)
+    const valueTooltip =
+      isTooltipValueType(widget.type) && String(value).length > 10
+        ? String(value)
+        : undefined
+    const tooltipConfig = ui.getTooltipConfig(widget, valueTooltip)
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
+      if (nodeId !== undefined) ui.handleNodeRightClick(e, String(nodeId))
       showNodeOptions(
         e,
         widget.name,
@@ -372,7 +392,10 @@ export function useProcessedWidgets(
   const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
 
   const ui: WidgetUiCallbacks = {
-    getTooltipConfig: (widget) => createTooltipConfig(getWidgetTooltip(widget)),
+    getTooltipConfig: (widget, fullValue = '') =>
+      createTooltipConfig(
+        [getWidgetTooltip(widget), fullValue].join('\n\n').trim()
+      ),
     handleNodeRightClick
   }
 
