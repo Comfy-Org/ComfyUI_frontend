@@ -276,3 +276,136 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     )
   })
 })
+
+test.describe('FE-910 marquee selection and select all', () => {
+  test.beforeEach(async ({ jobsRoutes, page }) => {
+    await jobsRoutes.mockJobsQueue([])
+    await jobsRoutes.mockJobsHistory(generatedJobs)
+    await mockInputFiles(page, ['imported.png'])
+    await mockViewFiles(page, viewFiles)
+  })
+
+  test('marquee-drag from empty space selects the covered cards', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+    await expect(tab.selectedCards).toHaveCount(0)
+
+    const alpha = await tab.getAssetCardByName('alpha').boundingBox()
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!alpha || !beta) throw new Error('asset cards have no layout box')
+
+    const left = Math.min(alpha.x, beta.x)
+    const top = Math.min(alpha.y, beta.y)
+    const right = Math.max(alpha.x + alpha.width, beta.x + beta.width)
+    const bottom = Math.max(alpha.y + alpha.height, beta.y + beta.height)
+
+    // Press in empty space below the cards, then rubber-band up over both.
+    await page.mouse.move((left + right) / 2, bottom + 40)
+    await page.mouse.down()
+    await page.mouse.move(left + 4, top + 4, { steps: 12 })
+    await page.mouse.up()
+
+    await expect(tab.selectedCards).toHaveCount(2)
+    await expect(tab.selectionFooter).toBeVisible()
+  })
+
+  test('Ctrl/Cmd+A selects every asset while the panel is hovered', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await tab.getAssetCardByName('alpha').hover()
+    await comfyPage.page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(2)
+  })
+
+  test('a marquee that begins in the panel header selects the cards', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+    await expect(tab.selectedCards).toHaveCount(0)
+
+    const header = await page
+      .locator('.comfy-vue-side-bar-header')
+      .boundingBox()
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!header || !beta) {
+      throw new Error('panel header or asset card has no layout box')
+    }
+
+    // Begin the rubber-band in the header (above the grid), then drag down
+    // across both cards.
+    await page.mouse.move(header.x + 24, header.y + 20)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + 8, beta.y + beta.height - 8, { steps: 14 })
+    await page.mouse.up()
+
+    await expect(tab.selectedCards).toHaveCount(2)
+    await expect(tab.selectionFooter).toBeVisible()
+  })
+
+  test('Ctrl/Cmd+A leaves assets unselected while the canvas is hovered', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+
+    const viewport = page.viewportSize()
+    if (!viewport) throw new Error('viewport size is unavailable')
+
+    // Hover the canvas (not the panel); Ctrl/Cmd+A must yield to the canvas.
+    await page.mouse.move(viewport.width - 100, viewport.height / 2)
+    await page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(0)
+  })
+
+  test('a modifier-held marquee adds to the existing selection', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await tab.getAssetCardByName('alpha').click()
+    await expect(tab.selectedCards).toHaveCount(1)
+
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!beta) throw new Error('beta card has no layout box')
+
+    // Hold a modifier so the marquee is additive, then rubber-band over beta.
+    await page.keyboard.down('Control')
+    await page.mouse.move(beta.x + 12, beta.y + 12)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width - 12, beta.y + beta.height - 12, {
+      steps: 12
+    })
+    await page.mouse.up()
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(2)
+  })
+})

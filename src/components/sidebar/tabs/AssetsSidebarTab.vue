@@ -1,5 +1,6 @@
 <template>
   <SidebarTabTemplate
+    ref="panelRef"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
     v-bind="$attrs"
   >
@@ -100,18 +101,19 @@
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
-        <AssetsSidebarGridView
-          v-else
-          :assets="displayAssets"
-          :is-selected="isSelected"
-          :show-output-count="shouldShowOutputCount"
-          :get-output-count="getOutputCount"
-          @select-asset="handleAssetSelect"
-          @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
-          @zoom="handleZoomClick"
-          @output-count-click="enterFolderView"
-        />
+        <div v-else class="size-full">
+          <AssetsSidebarGridView
+            :assets="displayAssets"
+            :is-selected="isSelected"
+            :show-output-count="shouldShowOutputCount"
+            :get-output-count="getOutputCount"
+            @select-asset="handleAssetSelect"
+            @context-menu="handleAssetContextMenu"
+            @approach-end="handleApproachEnd"
+            @zoom="handleZoomClick"
+            @output-count-click="enterFolderView"
+          />
+        </div>
       </div>
     </template>
     <template #footer>
@@ -125,6 +127,13 @@
       />
     </template>
   </SidebarTabTemplate>
+  <Teleport to="body">
+    <div
+      v-if="marqueeStyle"
+      class="pointer-events-none fixed z-9999 border border-blue-400 bg-blue-500/20"
+      :style="marqueeStyle"
+    />
+  </Teleport>
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -164,8 +173,10 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -182,6 +193,7 @@ import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBa
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
+import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -259,7 +271,10 @@ const outputAssets = useAssetsApi('output')
 // Asset selection
 const {
   isSelected,
+  selectedIds,
   handleAssetClick,
+  selectAll,
+  setSelectedIds,
   hasSelection,
   clearSelection,
   getSelectedAssets,
@@ -269,6 +284,13 @@ const {
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
+
+const panelRef = ref<ComponentPublicInstance>()
+const marqueePanelRef = ref<HTMLElement>()
+watchEffect(() => {
+  const el = panelRef.value?.$el
+  marqueePanelRef.value = el instanceof HTMLElement ? el : undefined
+})
 
 const {
   downloadAssets,
@@ -335,6 +357,15 @@ const {
 const visibleAssets = computed(() => {
   if (!isListView.value) return displayAssets.value
   return listViewSelectableAssets.value
+})
+
+const { marqueeStyle } = useAssetGridSelection({
+  marqueeContainerRef: marqueePanelRef,
+  hoverTargetRef: marqueePanelRef,
+  getAssets: () => visibleAssets.value,
+  getSelectedIds: () => [...selectedIds.value],
+  setSelectedIds,
+  selectAll
 })
 
 const previewableVisibleAssets = computed(() =>
