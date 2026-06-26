@@ -251,7 +251,7 @@ export const useLitegraphService = () => {
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
       if (app.lastExecutionError?.node_id == this.id) {
-        return { color: '#f0f', lineWidth: 3 }
+        return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
   }
