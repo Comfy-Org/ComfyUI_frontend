@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ChurnkeyAuthResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
@@ -12,19 +13,13 @@ import type {
 const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
 
 function readAppId(): string {
-  // E2e hook: `__CHURNKEY_APP_ID__` is a compile-time define, so a built
-  // bundle can't be reconfigured per test. Playwright sets this global to
-  // exercise the Churnkey routing without a build-time app ID.
-  const override = (window as { __CHURNKEY_APP_ID_OVERRIDE__?: string })
-    .__CHURNKEY_APP_ID_OVERRIDE__
-  return override || __CHURNKEY_APP_ID__
+  return useFeatureFlags().flags.churnkeyAppId
 }
 
 function readAuthOverride(): ChurnkeyAuthResponse | null {
   // Dev-only manual-testing hook: set `window.__CHURNKEY_AUTH_OVERRIDE__` to
   // exercise the embed before the backend `/billing/churnkey/auth` endpoint
-  // is deployed. Unlike the app-id override (used by e2e against a built
-  // bundle), this forges credentials, so it is gated to dev and stripped
+  // is deployed. It forges credentials, so it is gated to dev and stripped
   // from production builds via import.meta.env.DEV tree-shaking.
   if (!import.meta.env.DEV) return null
   return (
@@ -93,7 +88,9 @@ export interface ChurnkeySession {
 export async function prepareChurnkey(): Promise<ChurnkeySession> {
   const appId = readAppId()
   if (!appId) {
-    throw new Error('Churnkey is not configured (missing CHURNKEY_APP_ID)')
+    throw new Error(
+      'Churnkey is not configured (churnkey_app_id flag is unset)'
+    )
   }
 
   await loadEmbedScript(appId)

@@ -30,10 +30,6 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
-// Churnkey cancellation flow (cloud distribution only). The embed script
-// itself is loaded on demand by churnkeyClient.ts when the flow launches.
-const CHURNKEY_APP_ID = process.env.CHURNKEY_APP_ID || ''
-
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
 const VITE_OG_TITLE =
@@ -639,7 +635,6 @@ export default defineConfig({
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
-    __CHURNKEY_APP_ID__: JSON.stringify(CHURNKEY_APP_ID),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
     __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)

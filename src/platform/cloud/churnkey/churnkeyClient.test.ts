@@ -11,6 +11,11 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   }
 }))
 
+const featureFlags = vi.hoisted(() => ({ churnkeyAppId: '' }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: featureFlags })
+}))
+
 const { workspaceApi } = await import('@/platform/workspace/api/workspaceApi')
 const { isChurnkeyConfigured, prepareChurnkey } =
   await import('./churnkeyClient')
@@ -19,12 +24,6 @@ const getChurnkeyAuth = vi.mocked(workspaceApi.getChurnkeyAuth)
 
 type ChurnkeyInit = NonNullable<ChurnkeyWindow['init']>
 
-type GlobalWithChurnkey = typeof globalThis & {
-  __CHURNKEY_APP_ID__: string
-}
-const globalWithChurnkey = globalThis as GlobalWithChurnkey
-const windowWithOverride = window as { __CHURNKEY_APP_ID_OVERRIDE__?: string }
-
 const AUTH_RESPONSE = {
   customer_id: 'cus_123',
   auth_hash: 'hash_abc',
@@ -32,37 +31,28 @@ const AUTH_RESPONSE = {
 } as const
 
 describe('churnkeyClient', () => {
-  let originalAppId: string
-
   beforeEach(() => {
-    originalAppId = globalWithChurnkey.__CHURNKEY_APP_ID__
-    globalWithChurnkey.__CHURNKEY_APP_ID__ = 'app-test-123'
+    featureFlags.churnkeyAppId = 'app-test-123'
     getChurnkeyAuth.mockReset()
   })
 
   afterEach(() => {
-    globalWithChurnkey.__CHURNKEY_APP_ID__ = originalAppId
-    delete windowWithOverride.__CHURNKEY_APP_ID_OVERRIDE__
     delete window.churnkey
     vi.restoreAllMocks()
   })
 
-  it('reports isConfigured=false when CHURNKEY_APP_ID is unset', () => {
-    globalWithChurnkey.__CHURNKEY_APP_ID__ = ''
+  it('reports isConfigured=false when the churnkey_app_id flag is unset', () => {
+    featureFlags.churnkeyAppId = ''
     expect(isChurnkeyConfigured()).toBe(false)
   })
 
-  it('uses the window app ID override when set, falling back to __CHURNKEY_APP_ID__', () => {
-    globalWithChurnkey.__CHURNKEY_APP_ID__ = ''
-    windowWithOverride.__CHURNKEY_APP_ID_OVERRIDE__ = 'override-id'
-    expect(isChurnkeyConfigured()).toBe(true)
-    delete windowWithOverride.__CHURNKEY_APP_ID_OVERRIDE__
-    globalWithChurnkey.__CHURNKEY_APP_ID__ = 'build-id'
+  it('reports isConfigured=true when the churnkey_app_id flag is set', () => {
+    featureFlags.churnkeyAppId = 'app-from-flag'
     expect(isChurnkeyConfigured()).toBe(true)
   })
 
-  it('rejects when CHURNKEY_APP_ID is unset', async () => {
-    globalWithChurnkey.__CHURNKEY_APP_ID__ = ''
+  it('rejects when the churnkey_app_id flag is unset', async () => {
+    featureFlags.churnkeyAppId = ''
     await expect(prepareChurnkey()).rejects.toThrow(
       'Churnkey is not configured'
     )
@@ -177,17 +167,16 @@ describe('churnkeyClient', () => {
     await expect(session.show({})).rejects.toThrow('init exploded')
   })
 
-  it('window app ID override wins over __CHURNKEY_APP_ID__ in init config', async () => {
+  it('passes the churnkey_app_id flag value as the init config appId', async () => {
     const init = vi.fn<ChurnkeyInit>()
     window.churnkey = { init }
-    globalWithChurnkey.__CHURNKEY_APP_ID__ = 'build-id'
-    windowWithOverride.__CHURNKEY_APP_ID_OVERRIDE__ = 'override-id'
+    featureFlags.churnkeyAppId = 'app-from-flag'
     getChurnkeyAuth.mockResolvedValue(AUTH_RESPONSE)
 
     const session = await prepareChurnkey()
     void session.show({})
 
-    expect(init.mock.calls[0][1]).toMatchObject({ appId: 'override-id' })
+    expect(init.mock.calls[0][1]).toMatchObject({ appId: 'app-from-flag' })
   })
 
   describe('embed script loading', () => {

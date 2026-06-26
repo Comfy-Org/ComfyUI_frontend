@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isChurnkeyConfigured } from '@/platform/cloud/churnkey/churnkeyClient'
 import {
   ChurnkeyAuthUnavailableError,
@@ -9,9 +8,11 @@ import { launchChurnkeyCancellation } from '@/platform/cloud/churnkey/launchChur
 import { showCancelSubscriptionDialog } from './showCancelSubscriptionDialog'
 
 function shouldUseChurnkey(): boolean {
-  const { flags } = useFeatureFlags()
-  if (!flags.churnkeyCancellationEnabled) return false
-  return isChurnkeyConfigured()
+  if (isChurnkeyConfigured()) return true
+  console.info(
+    '[Churnkey] Using legacy cancel dialog: churnkey_app_id flag is not set.'
+  )
+  return false
 }
 
 export async function launchCancellationFlow(cancelAt?: string): Promise<void> {
@@ -23,13 +24,16 @@ export async function launchCancellationFlow(cancelAt?: string): Promise<void> {
   try {
     await launchChurnkeyCancellation()
   } catch (err) {
-    if (
-      err instanceof ChurnkeyAuthUnavailableError ||
-      err instanceof ChurnkeyEmbedLoadError
-    ) {
-      await showCancelSubscriptionDialog(cancelAt)
-      return
-    }
-    throw err
+    const fallbackReason =
+      err instanceof ChurnkeyAuthUnavailableError
+        ? 'auth endpoint unavailable'
+        : err instanceof ChurnkeyEmbedLoadError
+          ? 'embed script failed to load (often blocked by an ad blocker)'
+          : null
+    if (fallbackReason === null) throw err
+    console.warn(
+      `[Churnkey] Falling back to legacy cancel dialog: ${fallbackReason}.`
+    )
+    await showCancelSubscriptionDialog(cancelAt)
   }
 }

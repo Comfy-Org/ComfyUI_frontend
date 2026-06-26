@@ -30,13 +30,11 @@ interface ChurnkeyInitCall {
 
 interface ChurnkeyStubWindow extends Window {
   __churnkeyCalls?: ChurnkeyInitCall[]
-  __CHURNKEY_APP_ID_OVERRIDE__?: string
 }
 
 async function stubChurnkey(page: Page): Promise<void> {
-  await page.evaluate((appId) => {
+  await page.evaluate(() => {
     const w = window as ChurnkeyStubWindow
-    w.__CHURNKEY_APP_ID_OVERRIDE__ = appId
     w.__churnkeyCalls = []
     // Defining `init` up front also makes the client skip injecting the
     // real embed script.
@@ -47,7 +45,7 @@ async function stubChurnkey(page: Page): Promise<void> {
       },
       clearState: () => {}
     }
-  }, STUB_APP_ID)
+  })
 }
 
 const AUTH_ROUTE_GLOB = '**/api/billing/churnkey/auth'
@@ -82,10 +80,10 @@ test.describe('Cancellation flow routing', { tag: '@cloud' }, () => {
     dialog = new CancelSubscriptionDialog(comfyPage.page)
   })
 
-  test.describe('flag disabled', () => {
+  test.describe('app id not set', () => {
     test('routes to the legacy cancel dialog', async ({ comfyPage }) => {
       await comfyPage.featureFlags.overrideFlags({
-        churnkey_cancellation_enabled: false
+        churnkey_app_id: ''
       })
 
       await dialog.open(CANCEL_AT)
@@ -95,10 +93,10 @@ test.describe('Cancellation flow routing', { tag: '@cloud' }, () => {
     })
   })
 
-  test.describe('flag enabled', () => {
+  test.describe('app id set', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.featureFlags.overrideFlags({
-        churnkey_cancellation_enabled: true
+        churnkey_app_id: STUB_APP_ID
       })
       await stubChurnkey(comfyPage.page)
     })
