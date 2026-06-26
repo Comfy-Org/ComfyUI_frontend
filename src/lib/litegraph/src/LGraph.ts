@@ -39,7 +39,6 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   HasBoundingRect,
-  IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
@@ -57,6 +56,7 @@ import {
   createBounds,
   snapPoint
 } from './measure'
+import { warnDeprecated } from './utils/feedback'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -348,16 +348,16 @@ export class LGraph
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
   onTrigger?: LGraphTriggerHandler
+  /**
+   * @deprecated Assign a listener to {@link LGraphCanvas.onBeforeChange} instead.
+   * This graph-level hook will be removed in a future version.
+   */
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
-  onGetNodeMenuOptions?(
-    options: (IContextMenuValue<unknown> | null)[],
-    node: LGraphNode
-  ): void
 
   // @ts-expect-error - Private property type needs fixing
   private _input_nodes?: LGraphNode[]
@@ -1377,7 +1377,12 @@ export class LGraph
 
   // used for undo, called before any change is made to the graph
   beforeChange(info?: LGraphNode): void {
-    this.onBeforeChange?.(this, info)
+    if (this.onBeforeChange) {
+      warnDeprecated(
+        'LGraph.onBeforeChange is deprecated and will be removed in a future version. Assign a listener to LGraphCanvas.onBeforeChange instead.'
+      )
+      this.onBeforeChange(this, info)
+    }
     this.canvasAction((c) => c.onBeforeChange?.(this))
   }
 
