@@ -44,6 +44,7 @@ describe('ManagerSurveyDialog', () => {
       screen.getByTestId('manager-survey-iframe').getAttribute('src')!
     )
     expect(src.origin + src.pathname).toBe(SURVEY_URL)
+    expect(src.searchParams.get('embed')).toBe('true')
     expect(src.searchParams.get('distinct_id')).toBe('user-123')
   })
 

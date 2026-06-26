@@ -24,7 +24,6 @@
       <div class="relative">
         <iframe
           v-if="surveyUrl"
-          :name="IFRAME_NAME"
           :src="surveyUrl"
           :title="$t('manager.survey.title')"
           :style="{ height: `${iframeHeight}px` }"
@@ -67,8 +66,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-const IFRAME_NAME = 'comfy-manager-survey'
 const DEFAULT_IFRAME_HEIGHT = 460
+const MAX_IFRAME_HEIGHT = 10000
 const SURVEY_LOAD_TIMEOUT_MS = 8000
 
 defineProps<{
@@ -83,6 +82,7 @@ const surveyUrl = computed(() => {
   if (!base) return undefined
   try {
     const url = new URL(base)
+    url.searchParams.set('embed', 'true')
     // Link responses to the logged-in user; omit for anonymous responses.
     const distinctId = resolvedUserInfo.value?.id
     if (distinctId) url.searchParams.set('distinct_id', distinctId)
@@ -93,8 +93,12 @@ const surveyUrl = computed(() => {
   }
 })
 
-const surveyOrigin = computed(() =>
-  surveyUrl.value ? new URL(surveyUrl.value).origin : undefined
+const parsedSurveyUrl = computed(() =>
+  surveyUrl.value ? new URL(surveyUrl.value) : undefined
+)
+const surveyOrigin = computed(() => parsedSurveyUrl.value?.origin)
+const surveyId = computed(() =>
+  parsedSurveyUrl.value?.pathname.split('/').pop()
 )
 
 const status = ref<'loading' | 'ready' | 'error'>(
@@ -116,11 +120,11 @@ useEventListener(window, 'message', (event: MessageEvent) => {
   if (event.origin !== surveyOrigin.value) return
   const data = event.data
   if (
-    data?.event === 'posthog:dimensions' &&
-    data?.name === IFRAME_NAME &&
-    typeof data.height === 'number'
+    data?.type === 'posthog:survey:height' &&
+    data?.surveyId === surveyId.value
   ) {
-    iframeHeight.value = data.height
+    const height = Number.parseInt(data.height, 10)
+    if (height > 0 && height < MAX_IFRAME_HEIGHT) iframeHeight.value = height
   }
 })
 </script>
