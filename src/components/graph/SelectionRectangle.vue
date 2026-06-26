@@ -1,6 +1,7 @@
 <template>
   <div
     v-show="isVisible"
+    data-testid="selection-rectangle"
     class="pointer-events-none absolute z-9999 border border-blue-400 bg-blue-500/20"
     :style="rectangleStyle"
   />
@@ -11,6 +12,8 @@ import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { clampRectToBounds } from '@/utils/mathUtil'
+import type { RectEdges } from '@/utils/mathUtil'
 
 const canvasStore = useCanvasStore()
 
@@ -44,20 +47,41 @@ useRafFn(() => {
 
 const isVisible = computed(() => selectionRect.value !== null)
 
+function getCanvasPanelBounds(): RectEdges | null {
+  const panelEl = document.querySelector('.graph-canvas-panel')
+  const canvasEl = document.getElementById('graph-canvas')
+  if (!panelEl || !canvasEl) return null
+
+  const panel = panelEl.getBoundingClientRect()
+  const canvas = canvasEl.getBoundingClientRect()
+  return {
+    left: panel.left - canvas.left,
+    top: panel.top - canvas.top,
+    right: panel.right - canvas.left,
+    bottom: panel.bottom - canvas.top
+  }
+}
+
 const rectangleStyle = computed(() => {
   const rect = selectionRect.value
   if (!rect) return {}
 
-  const left = rect.w >= 0 ? rect.x : rect.x + rect.w
-  const top = rect.h >= 0 ? rect.y : rect.y + rect.h
-  const width = Math.abs(rect.w)
-  const height = Math.abs(rect.h)
+  const edges: RectEdges = {
+    left: rect.w >= 0 ? rect.x : rect.x + rect.w,
+    top: rect.h >= 0 ? rect.y : rect.y + rect.h,
+    right: rect.w >= 0 ? rect.x + rect.w : rect.x,
+    bottom: rect.h >= 0 ? rect.y + rect.h : rect.y
+  }
+  const bounds = getCanvasPanelBounds()
+  const { left, top, right, bottom } = bounds
+    ? clampRectToBounds(edges, bounds)
+    : edges
 
   return {
     left: `${left}px`,
     top: `${top}px`,
-    width: `${width}px`,
-    height: `${height}px`
+    width: `${right - left}px`,
+    height: `${bottom - top}px`
   }
 })
 </script>
