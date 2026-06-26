@@ -395,6 +395,41 @@ export function isAncestorPathActive(
   return true
 }
 
+export function isExecutionPathActive(
+  rootGraph: LGraph | null | undefined,
+  executionId: string
+): boolean {
+  if (!rootGraph) return true
+  const node = getNodeByExecutionId(rootGraph, executionId)
+  if (!node) return false
+  if (
+    node.mode === LGraphEventMode.NEVER ||
+    node.mode === LGraphEventMode.BYPASS
+  ) {
+    return false
+  }
+  return isAncestorPathActive(rootGraph, executionId)
+}
+
+function getCandidateActivityExecutionId(candidate: {
+  nodeId?: string | number | null | undefined
+  sourceExecutionId?: string | number | null | undefined
+}): string | null {
+  const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+  return executionId == null ? null : String(executionId)
+}
+
+export function isCandidateScopeActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: {
+    nodeId?: string | number | null | undefined
+    sourceExecutionId?: string | number | null | undefined
+  }
+): boolean {
+  const executionId = getCandidateActivityExecutionId(candidate)
+  return executionId == null || isExecutionPathActive(rootGraph, executionId)
+}
+
 /**
  * Predicate used after async verification resolves: a missing-asset
  * candidate is surfaceable when it is confirmed missing and its
@@ -407,12 +442,12 @@ export function isMissingCandidateActive(
   rootGraph: LGraph | null | undefined,
   candidate: {
     nodeId?: string | number | null | undefined
+    sourceExecutionId?: string | number | null | undefined
     isMissing?: boolean | undefined
   }
 ): boolean {
   if (candidate.isMissing !== true) return false
-  if (candidate.nodeId == null) return true
-  return isAncestorPathActive(rootGraph, String(candidate.nodeId))
+  return isCandidateScopeActive(rootGraph, candidate)
 }
 
 /**

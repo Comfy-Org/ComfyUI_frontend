@@ -31,6 +31,8 @@ import {
   getExecutionIdByNode,
   getExecutionIdForNodeInGraph,
   isAncestorPathActive,
+  isCandidateScopeActive,
+  isExecutionPathActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -795,6 +797,32 @@ describe('graphTraversalUtil', () => {
       })
     })
 
+    describe('isExecutionPathActive', () => {
+      it('returns false when the target node itself is bypassed', () => {
+        const node = createMockLGraphNode({
+          id: 42,
+          mode: LGraphEventMode.BYPASS
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([node])
+
+        expect(isExecutionPathActive(rootGraph, '42')).toBe(false)
+      })
+
+      it('returns false when an ancestor container is bypassed', () => {
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub', [interior])
+        const container = createMockLGraphNode({
+          id: 65,
+          isSubgraphNode: () => true,
+          subgraph,
+          mode: LGraphEventMode.BYPASS
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([container])
+
+        expect(isExecutionPathActive(rootGraph, '65:63')).toBe(false)
+      })
+    })
+
     describe('isMissingCandidateActive', () => {
       function makeBypassedContainer(interiorId: string) {
         const interior = createMockNode(interiorId)
@@ -858,6 +886,35 @@ describe('graphTraversalUtil', () => {
             isMissing: true
           })
         ).toBe(true)
+      })
+
+      it('uses sourceExecutionId for host-keyed promoted candidates', () => {
+        const rootGraph = makeBypassedContainer('63')
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: '65',
+            sourceExecutionId: '65:63',
+            isMissing: true
+          })
+        ).toBe(false)
+      })
+    })
+
+    describe('isCandidateScopeActive', () => {
+      it('uses sourceExecutionId before nodeId', () => {
+        const rootNode = createMockNode('65')
+        const sourceNode = createMockLGraphNode({
+          id: 42,
+          mode: LGraphEventMode.BYPASS
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([rootNode, sourceNode])
+
+        expect(
+          isCandidateScopeActive(rootGraph, {
+            nodeId: '65',
+            sourceExecutionId: '42'
+          })
+        ).toBe(false)
       })
     })
 
