@@ -97,6 +97,7 @@ describe('ComfyHubThumbnailStep', () => {
     const user = userEvent.setup()
     const onUpdateThumbnailUrl = vi.fn()
     const onUpdateComparisonAfterUrl = vi.fn()
+    const onUpdateExistingThumbnailType = vi.fn()
     const onUpdateComparisonBeforeFile = vi.fn()
     const onUpdateComparisonAfterFile = vi.fn()
     const onUpdateThumbnailType = vi.fn()
@@ -110,6 +111,7 @@ describe('ComfyHubThumbnailStep', () => {
       {
         'onUpdate:thumbnailUrl': onUpdateThumbnailUrl,
         'onUpdate:comparisonAfterUrl': onUpdateComparisonAfterUrl,
+        'onUpdate:existingThumbnailType': onUpdateExistingThumbnailType,
         'onUpdate:comparisonBeforeFile': onUpdateComparisonBeforeFile,
         'onUpdate:comparisonAfterFile': onUpdateComparisonAfterFile,
         'onUpdate:thumbnailType': onUpdateThumbnailType
@@ -123,6 +125,9 @@ describe('ComfyHubThumbnailStep', () => {
     expect(onUpdateComparisonAfterFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
     expect(onUpdateComparisonAfterUrl).not.toHaveBeenCalled()
+    // existingThumbnailType must survive the switch — existingComparisonUrls is
+    // gated on it, so clearing it would break restore-on-switch-back.
+    expect(onUpdateExistingThumbnailType).not.toHaveBeenCalled()
   })
 
   it('renders a restored GIF thumbnail as an image, not a video', () => {
