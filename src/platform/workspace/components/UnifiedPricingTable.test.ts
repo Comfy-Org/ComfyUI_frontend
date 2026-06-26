@@ -55,12 +55,12 @@ function renderComponent(props: Record<string, unknown> = {}) {
       components: { Button },
       stubs: {
         SelectButton: { template: '<div />' },
-        // Clicking emits a change to a different stop ($200) so tests can move
-        // the selection off the current stop.
+        // Clicking moves the v-model selection to a different stop ($200) so
+        // tests can move off the current stop.
         CreditSlider: {
           template:
-            '<button data-testid="team-slider" @click="$emit(\'change\', { index: 0, usd: 200, credits: 42200 })" />',
-          emits: ['change', 'update:modelValue']
+            '<button data-testid="team-slider" @click="$emit(\'update:modelValue\', 200)" />',
+          emits: ['update:modelValue']
         }
       }
     }
@@ -163,7 +163,8 @@ describe('UnifiedPricingTable team plan CTA', () => {
     const cta = screen.getByRole('button', { name: 'Change plan' })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    expect(emitted().subscribeTeam).toBeTruthy()
+    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    expect(teamPayload).toMatchObject({ isChange: true })
   })
 
   it('lets an active sub change billing cycle at the current stop', async () => {
@@ -182,7 +183,8 @@ describe('UnifiedPricingTable team plan CTA', () => {
     const cta = screen.getByRole('button', { name: 'Change plan' })
     expect(cta).toBeEnabled()
     await user.click(cta)
-    expect(emitted().subscribeTeam).toBeTruthy()
+    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    expect(teamPayload).toMatchObject({ isChange: true })
     expect(emitted().resubscribe).toBeFalsy()
   })
 

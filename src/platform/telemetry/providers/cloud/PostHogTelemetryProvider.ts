@@ -1,10 +1,11 @@
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
+import type { WatchStopHandle } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -41,7 +42,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
@@ -98,6 +100,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isInitialized = false
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
+  private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
     this.configureDisabledEvents(
@@ -307,12 +310,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private setSubscriptionProperties(): void {
-    const { subscriptionTier } = useSubscription()
-    watch(
-      subscriptionTier,
-      (tier) => {
-        if (tier && this.posthog) {
-          this.posthog.people.set({ subscription_tier: tier })
+    if (this.stopSubscriptionTierWatch) return
+    const { tier } = useBillingContext()
+    this.stopSubscriptionTierWatch = watch(
+      tier,
+      (value) => {
+        if (value && this.posthog) {
+          this.posthog.people.set({ subscription_tier: value })
         }
       },
       { immediate: true }
@@ -368,6 +372,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackApiCreditTopupSucceeded(): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {
