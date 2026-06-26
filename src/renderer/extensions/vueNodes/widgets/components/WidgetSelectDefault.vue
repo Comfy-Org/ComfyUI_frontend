@@ -3,6 +3,7 @@
     <ComboboxRoot
       v-model:open="isOpen"
       :model-value="comboboxValue"
+      :by="isSelectedOption"
       :disabled
       ignore-filter
       selection-behavior="replace"
@@ -217,6 +218,12 @@ function fromComboboxValue(value: string | undefined) {
   }
 
   return value.slice(COMBOBOX_VALUE_PREFIX.length)
+}
+
+// So reka scrolls to the selected option on open instead of the top.
+function isSelectedOption(option: SelectOption | string, value: string) {
+  const optionValue = typeof option === 'string' ? option : option.comboboxValue
+  return optionValue === value
 }
 
 function resolveRawValues(values: unknown): unknown[] {

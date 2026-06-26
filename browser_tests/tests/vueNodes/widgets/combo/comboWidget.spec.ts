@@ -141,6 +141,36 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     ).toBeVisible()
   })
 
+  test('scrolls the selected option into view when reopened', async ({
+    comfyPage
+  }) => {
+    const viewport = await openSamplerDropdown(comfyPage)
+    const samplerCombo = comfyPage.vueNodes
+      .getNodeByTitle('KSampler')
+      .getByRole('combobox', { name: 'sampler_name', exact: true })
+
+    // Select the last option so the selection sits well below the fold.
+    await viewport.evaluate((el) => {
+      el.scrollTop = el.scrollHeight
+    })
+    const lastOption = comfyPage.page.getByRole('option').last()
+    await expect(lastOption).toBeVisible()
+    const selectedName = (await lastOption.textContent())?.trim() ?? ''
+    expect(selectedName.length).toBeGreaterThan(0)
+    await lastOption.click()
+    await expect(viewport).toBeHidden()
+
+    // Reopening reveals the selection rather than the top of the virtualized list.
+    await samplerCombo.click()
+    await expect(viewport).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('option', { name: selectedName, exact: true })
+    ).toBeVisible()
+    await expect
+      .poll(() => viewport.evaluate((el) => el.scrollTop))
+      .toBeGreaterThan(0)
+  })
+
   test('updates the combo value after a new option is selected', async ({
     comfyPage
   }) => {
