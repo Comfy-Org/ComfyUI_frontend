@@ -24,8 +24,6 @@ export function sanitizeNodeName(string: string) {
 /**
  * Checks whether the given data conforms to the ComfyUI API workflow format.
  * Each top-level value must have a string `class_type` and an object `inputs`.
- *
- * @deprecated
  */
 export function isApiJson(data: unknown): data is ComfyApiWorkflow {
   if (!isObject(data) || Array.isArray(data)) {
