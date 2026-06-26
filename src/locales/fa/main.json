@@ -325,6 +325,11 @@
       "signUpWithGithub": "ثبت‌نام با Github",
       "signUpWithGoogle": "ثبت‌نام با Google",
       "title": "ایجاد حساب کاربری"
+    },
+    "turnstile": {
+      "expired": "اعتبار تأییدیه به پایان رسیده است. لطفاً دوباره چالش را تکمیل کنید.",
+      "failed": "تأییدیه ناموفق بود. لطفاً دوباره تلاش کنید.",
+      "submitBlockedHint": "برای فعال‌سازی ثبت‌نام، ابتدا چالش تأییدیه بالا را تکمیل کنید."
     }
   },
   "batch": {
@@ -3754,12 +3759,14 @@
       "keepSubscription": "حفظ اشتراک",
       "title": "لغو اشتراک"
     },
+    "cancelPlan": "لغو پلن",
     "cancelSuccess": "اشتراک با موفقیت لغو شد",
     "canceled": "لغو شد",
     "canceledCard": {
       "description": "دیگر هزینه‌ای از شما دریافت نمی‌شود. امکانات شما تا تاریخ {date} فعال خواهد بود.",
       "title": "اشتراک شما لغو شده است"
     },
+    "changePlan": "تغییر پلن",
     "changeTo": "تغییر به {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "لوگوی Comfy Cloud",
@@ -3788,6 +3795,7 @@
       "paymentPageBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً دوباره تلاش کنید",
       "title": "تغییر به پلن {plan}؟"
     },
+    "endsOnDate": "پایان در تاریخ {date}",
     "enterprise": {
       "cta": "بیشتر بدانید",
       "flexibility": "به دنبال امکانات یا انعطاف‌پذیری بیشتر هستید؟",
@@ -3797,6 +3805,9 @@
     },
     "everythingInPlus": "همه امکانات {plan}، به‌علاوه:",
     "expiresDate": "انقضا در {date}",
+    "freePerks": {
+      "maxRuntime": "حداکثر زمان اجرا {duration}"
+    },
     "freeTier": {
       "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
       "descriptionGeneric": "طرح رایگان شما شامل اعتبار ماهانه برای استفاده از Comfy Cloud است.",
@@ -3824,7 +3835,7 @@
     "inviteUpTo": "دعوت تا سقف",
     "invoiceHistory": "تاریخچه فاکتورها",
     "learnMore": "اطلاعات بیشتر",
-    "managePayment": "مدیریت پرداخت",
+    "manageBilling": "مدیریت صورتحساب",
     "managePlan": "مدیریت طرح",
     "manageSubscription": "مدیریت اشتراک",
     "maxDuration": {
@@ -3838,7 +3849,6 @@
     "maxMembersLabel": "حداکثر اعضا",
     "member": "عضو",
     "memberCount": "{count} عضو",
-    "membersLabel": "تا {count} عضو",
     "messageSupport": "پیام به پشتیبانی",
     "monthly": "ماهانه",
     "monthlyBonusDescription": "پاداش ماهانه اعتبار",
@@ -3854,17 +3864,19 @@
     "mostPopular": "محبوب‌ترین",
     "needTeamWorkspace": "به فضای کاری تیمی نیاز دارید؟",
     "nextBillingCycle": "چرخه صورتحساب بعدی",
-    "nextMonthInvoice": "صورتحساب ماه آینده",
     "outOfCreditsDescription": "برای ادامه تولید، اعتبار بیشتری اضافه کنید.",
     "outOfCreditsTitle": "اعتبار شما تمام شده است. شارژ مجدد در {date}",
     "outOfCreditsTitleNoDate": "اعتبار شما تمام شده است",
     "partnerNodesBalance": "اعتبار «Partner Nodes»",
     "partnerNodesCredits": "قیمت‌گذاری Partner Nodes",
     "partnerNodesDescription": "برای اجرای مدل‌های تجاری/اختصاصی",
+    "partnerNodesPricingTable": "جدول قیمت‌گذاری Partner Nodeها",
     "perMonth": "/ ماه",
     "personalHeader": "پلن‌های شخصی فقط برای استفاده فردی هستند. {action}",
     "personalHeaderAction": "برای افزودن هم‌تیمی، به پلن تیمی ارتقا دهید.",
     "personalWorkspace": "فضای کاری شخصی",
+    "planLoadError": "امکان بارگذاری جزئیات پلن شما وجود ندارد.",
+    "planLoadErrorRetry": "تلاش مجدد",
     "planScope": {
       "personal": "برای استفاده شخصی",
       "team": "برای تیم‌ها"
@@ -3923,11 +3935,13 @@
     "pricingBlurbEnterprise": "بحث‌های سازمانی",
     "pricingBlurbQuestions": "سؤالات",
     "pricingBlurbSeeDetails": "جزئیات را ببینید",
+    "reactivatePlan": "فعال‌سازی مجدد پلن",
     "refillsDate": "شارژ مجدد در {date}",
     "refillsNextCycle": "شارژ مجدد در چرخه بعدی",
     "refreshCredits": "به‌روزرسانی اعتبارها",
     "remaining": "باقی‌مانده",
     "renewsDate": "تمدید در {date}",
+    "renewsOnDate": "تمدید در تاریخ {date}",
     "required": {
       "pollingFailed": "فعال‌سازی اشتراک ناموفق بود",
       "pollingSuccess": "اشتراک با موفقیت فعال شد!",
@@ -3942,6 +3956,7 @@
     "saveYearly": "٪۲۰ صرفه‌جویی",
     "saveYearlyUpTo": "تا ۲۰٪ صرفه‌جویی کنید",
     "soloUseOnly": "فقط برای استفاده فردی",
+    "subscribe": "اشتراک",
     "subscribeFailed": "اشتراک‌گذاری ناموفق بود",
     "subscribeForMore": "ارتقاء",
     "subscribeNow": "هم‌اکنون اشتراک بگیرید",
@@ -3961,6 +3976,12 @@
     },
     "teamHeader": "برای تیم‌هایی که قصد همکاری دارند. به اعضای بیشتری نیاز دارید؟ {learnMore} درباره پلن سازمانی.",
     "teamHeaderLearnMore": "بیشتر بدانید",
+    "teamPerks": {
+      "concurrentRuns": "اعضا می‌توانند workflowها را به صورت همزمان اجرا کنند",
+      "inviteMembers": "دعوت اعضا",
+      "rolePermissions": "دسترسی مبتنی بر نقش",
+      "sharedCreditPool": "استخر اعتبار مشترک برای همه اعضا"
+    },
     "teamPlan": {
       "changePlan": "تغییر پلن",
       "comingSoonLabel": "به‌زودی:",
@@ -3977,6 +3998,8 @@
       "tagline": "اشتراک اعتباری ماهانه دلخواه خود را انتخاب کنید. با اعتبار بیشتر، تخفیف بیشتری دریافت کنید.",
       "unavailable": "این طرح تیمی در حال حاضر در دسترس نیست."
     },
+    "teamPlanIncludes": "پلن شما شامل همه امکانات {plan} و همچنین:",
+    "teamPlanName": "تیمی",
     "teamWorkspace": "فضای کاری تیمی",
     "tierNameYearly": "{name} سالانه",
     "tiers": {
