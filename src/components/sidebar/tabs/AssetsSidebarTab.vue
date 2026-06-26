@@ -575,7 +575,7 @@ const handleDeselectAll = () => {
 }
 
 const handleEmptySpaceClick = () => {
-  if (hasSelection) {
+  if (hasSelection.value) {
     clearSelection()
   }
 }
