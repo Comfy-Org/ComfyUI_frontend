@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { isObject } from 'es-toolkit/compat'
 
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -28,7 +28,7 @@ export function sanitizeNodeName(string: string) {
  * @deprecated
  */
 export function isApiJson(data: unknown): data is ComfyApiWorkflow {
-  if (!_.isObject(data) || Array.isArray(data)) {
+  if (!isObject(data) || Array.isArray(data)) {
     return false
   }
   if (Object.keys(data).length === 0) return false
@@ -39,7 +39,7 @@ export function isApiJson(data: unknown): data is ComfyApiWorkflow {
     }
 
     const { class_type: classType, inputs } = node as Record<string, unknown>
-    const inputsIsRecord = _.isObject(inputs) && !Array.isArray(inputs)
+    const inputsIsRecord = isObject(inputs) && !Array.isArray(inputs)
     return typeof classType === 'string' && inputsIsRecord
   })
 }
