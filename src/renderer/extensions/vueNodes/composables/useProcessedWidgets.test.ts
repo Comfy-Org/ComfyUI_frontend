@@ -367,15 +367,12 @@ describe('computeProcessedWidgets borderStyle', () => {
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
     const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
-    useWidgetValueStore().registerWidget(
-      widgetId(GRAPH_ID, toNodeId('host'), 'text'),
-      {
-        type: 'combo',
-        value: 'state value',
-        label: 'State Label',
-        options: { values: ['state value'] }
-      }
-    )
+    useWidgetValueStore().registerWidget(id, {
+      type: 'combo',
+      value: 'state value',
+      label: 'State Label',
+      options: { values: ['state value'] }
+    })
     const widget = createMockWidget({
       widgetId: id,
       nodeId: toNodeId('host'),
