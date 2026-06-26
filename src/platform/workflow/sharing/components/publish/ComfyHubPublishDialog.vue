@@ -235,8 +235,8 @@ async function handlePublish(): Promise<void> {
 
   isPublishing.value = true
   try {
-    await syncWorkflowName()
     await submitToComfyHub(formData.value)
+    await syncWorkflowName()
     const path = workflowStore.activeWorkflow?.path
     if (path) {
       cachePublishPrefill(path, formData.value)
@@ -299,6 +299,7 @@ onMounted(() => {
 watch(
   () => workflowStore.activeWorkflow?.path,
   (newPath, oldPath) => {
+    if (isPublishing.value) return
     if (!newPath || newPath === oldPath) return
     void fetchPublishPrefill()
   }

@@ -46,40 +46,41 @@ vi.mock(
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
-  () => ({
-    useComfyHubPublishWizard: () => ({
-      currentStep: ref('finish'),
-      formData: ref(
-        (mockFormDataHolder.value = {
-          name: '',
-          description: '',
-          tags: [],
-          models: [],
-          customNodes: [],
-          thumbnailType: 'image',
-          thumbnailFile: null,
-          thumbnailUrl: null,
-          existingThumbnailType: null,
-          comparisonBeforeFile: null,
-          comparisonAfterFile: null,
-          comparisonAfterUrl: null,
-          exampleImages: [],
-          tutorialUrl: '',
-          metadata: {}
-        })
-      ),
-      isFirstStep: ref(false),
-      isLastStep: ref(true),
-      goToStep: mockGoToStep,
-      goNext: mockGoNext,
-      goBack: mockGoBack,
-      openProfileCreationStep: mockOpenProfileCreationStep,
-      closeProfileCreationStep: mockCloseProfileCreationStep,
-      applyPrefill: mockApplyPrefill
-    }),
-    cachePublishPrefill: mockCachePublishPrefill,
-    getCachedPrefill: mockGetCachedPrefill
-  })
+  () => {
+    mockFormDataHolder.value = {
+      name: '',
+      description: '',
+      tags: [],
+      models: [],
+      customNodes: [],
+      thumbnailType: 'image',
+      thumbnailFile: null,
+      thumbnailUrl: null,
+      existingThumbnailType: null,
+      comparisonBeforeFile: null,
+      comparisonAfterFile: null,
+      comparisonAfterUrl: null,
+      exampleImages: [],
+      tutorialUrl: '',
+      metadata: {}
+    }
+    return {
+      useComfyHubPublishWizard: () => ({
+        currentStep: ref('finish'),
+        formData: ref(mockFormDataHolder.value),
+        isFirstStep: ref(false),
+        isLastStep: ref(true),
+        goToStep: mockGoToStep,
+        goNext: mockGoNext,
+        goBack: mockGoBack,
+        openProfileCreationStep: mockOpenProfileCreationStep,
+        closeProfileCreationStep: mockCloseProfileCreationStep,
+        applyPrefill: mockApplyPrefill
+      }),
+      cachePublishPrefill: mockCachePublishPrefill,
+      getCachedPrefill: mockGetCachedPrefill
+    }
+  }
 )
 
 vi.mock(
@@ -277,8 +278,8 @@ describe('ComfyHubPublishDialog', () => {
       expect.anything(),
       'workflows/renamed.json'
     )
-    expect(mockRenameWorkflow.mock.invocationCallOrder[0]).toBeLessThan(
-      mockSubmitToComfyHub.mock.invocationCallOrder[0]
+    expect(mockSubmitToComfyHub.mock.invocationCallOrder[0]).toBeLessThan(
+      mockRenameWorkflow.mock.invocationCallOrder[0]
     )
   })
 
@@ -291,6 +292,91 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockRenameWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('still reports success but warns when the post-publish rename fails', async () => {
+    mockRenameWorkflow.mockRejectedValueOnce(new Error('rename failed'))
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'warn' })
+    )
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('does not rename or close when publish submission fails', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(new Error('submit failed'))
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
+    expect(mockRenameWorkflow).not.toHaveBeenCalled()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(mockToastAdd).not.toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('does not refetch publish status when the rename changes the path mid-publish', async () => {
+    mockRenameWorkflow.mockImplementationOnce(async () => {
+      setActiveWorkflow({
+        path: 'workflows/renamed.json',
+        filename: 'renamed.json',
+        directory: 'workflows',
+        isTemporary: false,
+        isModified: false
+      })
+    })
+    renderComponent()
+    await flushPromises()
+    mockGetPublishStatus.mockClear()
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockGetPublishStatus).not.toHaveBeenCalledWith(
+      'workflows/renamed.json'
+    )
+  })
+
+  it('caches the prefill under the renamed path after publish', async () => {
+    mockRenameWorkflow.mockImplementationOnce(async () => {
+      setActiveWorkflow({
+        path: 'workflows/renamed.json',
+        filename: 'renamed.json',
+        directory: 'workflows',
+        isTemporary: false,
+        isModified: false
+      })
+    })
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockCachePublishPrefill).toHaveBeenCalledWith(
+      'workflows/renamed.json',
+      expect.anything()
+    )
   })
 
   it('applies prefill when workflow is already published with metadata', async () => {
@@ -348,6 +434,17 @@ describe('ComfyHubPublishDialog', () => {
 
     expect(mockApplyPrefill).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('falls back to cached prefill when the status fetch fails', async () => {
+    mockGetPublishStatus.mockRejectedValue(new Error('Network error'))
+    const cached = { description: 'cached' }
+    mockGetCachedPrefill.mockReturnValue(cached)
+
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).toHaveBeenCalledWith(cached)
   })
 
   it('refetches prefill when the active workflow path changes (e.g. rename)', async () => {
