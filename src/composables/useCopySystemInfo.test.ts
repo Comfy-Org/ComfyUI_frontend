@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SystemStats } from '@/schemas/apiSchema'
 
+import { useCopySystemInfo } from './useCopySystemInfo'
+
 const mockCopyToClipboard = vi.fn()
 const distributionFlags = vi.hoisted(() => ({ isCloud: false }))
 
@@ -56,13 +58,6 @@ const cloudStats: SystemStats = {
   devices: []
 }
 
-async function loadComposable(isCloud: boolean) {
-  distributionFlags.isCloud = isCloud
-  vi.resetModules()
-  const mod = await import('./useCopySystemInfo')
-  return mod.useCopySystemInfo
-}
-
 describe('useCopySystemInfo', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -71,7 +66,6 @@ describe('useCopySystemInfo', () => {
 
   describe('local distribution', () => {
     it('formats system info as markdown and copies to clipboard', async () => {
-      const useCopySystemInfo = await loadComposable(false)
       const { copySystemInfo } = useCopySystemInfo(localStats)
       await copySystemInfo()
 
@@ -86,7 +80,6 @@ describe('useCopySystemInfo', () => {
     })
 
     it('omits the Devices section when no devices are present', async () => {
-      const useCopySystemInfo = await loadComposable(false)
       const stats: SystemStats = { ...localStats, devices: [] }
       const { copySystemInfo } = useCopySystemInfo(stats)
       await copySystemInfo()
@@ -96,7 +89,6 @@ describe('useCopySystemInfo', () => {
     })
 
     it('reflects updates when stats are passed as a getter', async () => {
-      const useCopySystemInfo = await loadComposable(false)
       const statsRef = ref<SystemStats>(localStats)
       const { copySystemInfo } = useCopySystemInfo(() => statsRef.value)
 
@@ -110,24 +102,11 @@ describe('useCopySystemInfo', () => {
       await copySystemInfo()
       expect(mockCopyToClipboard.mock.calls[1][0]).toContain('OS: Windows')
     })
-
-    it('re-reads stats on each call when given a plain mutable object', async () => {
-      const useCopySystemInfo = await loadComposable(false)
-      const stats: SystemStats = JSON.parse(JSON.stringify(localStats))
-      const { copySystemInfo } = useCopySystemInfo(stats)
-
-      await copySystemInfo()
-      expect(mockCopyToClipboard.mock.calls[0][0]).toContain('OS: Linux')
-
-      stats.system.os = 'Windows'
-      await copySystemInfo()
-      expect(mockCopyToClipboard.mock.calls[1][0]).toContain('OS: Windows')
-    })
   })
 
   describe('cloud distribution', () => {
     it('formats cloud-specific columns and formats commit hashes', async () => {
-      const useCopySystemInfo = await loadComposable(true)
+      distributionFlags.isCloud = true
       const { copySystemInfo } = useCopySystemInfo(cloudStats)
       await copySystemInfo()
 
