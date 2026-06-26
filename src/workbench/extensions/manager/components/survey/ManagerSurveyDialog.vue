@@ -23,7 +23,7 @@
       </p>
       <div class="relative">
         <iframe
-          v-if="surveyUrl"
+          v-if="surveyUrl && status !== 'error'"
           :src="surveyUrl"
           :title="$t('manager.survey.title')"
           :style="{ height: `${iframeHeight}px` }"
@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { useEventListener, useTimeoutFn } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -97,18 +97,38 @@ const parsedSurveyUrl = computed(() =>
   surveyUrl.value ? new URL(surveyUrl.value) : undefined
 )
 const surveyOrigin = computed(() => parsedSurveyUrl.value?.origin)
+// filter(Boolean) tolerates a trailing slash in the configured URL.
 const surveyId = computed(() =>
-  parsedSurveyUrl.value?.pathname.split('/').pop()
+  parsedSurveyUrl.value?.pathname.split('/').filter(Boolean).pop()
 )
 
-const status = ref<'loading' | 'ready' | 'error'>(
-  surveyUrl.value ? 'loading' : 'error'
-)
+const status = ref<'loading' | 'ready' | 'error'>('loading')
 const iframeHeight = ref(DEFAULT_IFRAME_HEIGHT)
 
-const { stop: stopLoadTimeout } = useTimeoutFn(() => {
-  if (status.value === 'loading') status.value = 'error'
-}, SURVEY_LOAD_TIMEOUT_MS)
+const { start: startLoadTimeout, stop: stopLoadTimeout } = useTimeoutFn(
+  () => {
+    if (status.value === 'loading') status.value = 'error'
+  },
+  SURVEY_LOAD_TIMEOUT_MS,
+  { immediate: false }
+)
+
+// Re-derive load state whenever the survey URL changes — e.g. cloud config or
+// the user identity arriving after the dialog opens — so a late URL recovers
+// from the error state instead of staying stuck.
+watch(
+  surveyUrl,
+  (url) => {
+    if (!url) {
+      stopLoadTimeout()
+      status.value = 'error'
+      return
+    }
+    status.value = 'loading'
+    startLoadTimeout()
+  },
+  { immediate: true }
+)
 
 const onIframeLoad = () => {
   if (status.value === 'loading') status.value = 'ready'

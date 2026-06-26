@@ -1,21 +1,34 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-const remoteConfig = vi.hoisted(() => ({ value: {} as RemoteConfig }))
-const resolvedUserInfo = vi.hoisted(
-  () => ({ value: null }) as { value: { id: string } | null }
+const mocks = vi.hoisted(
+  () =>
+    ({
+      remoteConfig: { value: {} },
+      resolvedUserInfo: { value: null }
+    }) as {
+      remoteConfig: { value: RemoteConfig }
+      resolvedUserInfo: { value: { id: string } | null }
+    }
 )
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig
-}))
+vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+  const { ref } = await import('vue')
+  mocks.remoteConfig = ref<RemoteConfig>({})
+  return { remoteConfig: mocks.remoteConfig }
+})
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ resolvedUserInfo })
-}))
+vi.mock('@/composables/auth/useCurrentUser', async () => {
+  const { ref } = await import('vue')
+  mocks.resolvedUserInfo = ref<{ id: string } | null>(null)
+  return {
+    useCurrentUser: () => ({ resolvedUserInfo: mocks.resolvedUserInfo })
+  }
+})
 
 import ManagerSurveyDialog from '@/workbench/extensions/manager/components/survey/ManagerSurveyDialog.vue'
 
@@ -30,13 +43,13 @@ function renderDialog(onClose = vi.fn()) {
 
 describe('ManagerSurveyDialog', () => {
   beforeEach(() => {
-    remoteConfig.value = {}
-    resolvedUserInfo.value = null
+    mocks.remoteConfig.value = {}
+    mocks.resolvedUserInfo.value = null
   })
 
-  it('embeds the configured survey URL linked to the logged-in user', () => {
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
-    resolvedUserInfo.value = { id: 'user-123' }
+  it('embeds the configured survey URL with embed flag and the logged-in user', () => {
+    mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    mocks.resolvedUserInfo.value = { id: 'user-123' }
 
     renderDialog()
 
@@ -49,7 +62,7 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('omits distinct_id when there is no logged-in user', () => {
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
 
     renderDialog()
 
@@ -67,7 +80,7 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('shows the error state when the configured survey url is malformed', () => {
-    remoteConfig.value = { manager_survey_url: 'not a valid url' }
+    mocks.remoteConfig.value = { manager_survey_url: 'not a valid url' }
 
     renderDialog()
 
@@ -75,8 +88,19 @@ describe('ManagerSurveyDialog', () => {
     expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
   })
 
+  it('recovers from the error state when the survey url arrives after mount', async () => {
+    renderDialog()
+    expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
+
+    mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    await nextTick()
+
+    expect(screen.queryByTestId('manager-survey-error')).toBeNull()
+    expect(screen.getByTestId('manager-survey-iframe')).toBeTruthy()
+  })
+
   it('clears the loading state once the iframe loads', async () => {
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
 
     renderDialog()
     expect(screen.getByTestId('manager-survey-loading')).toBeTruthy()
@@ -88,9 +112,50 @@ describe('ManagerSurveyDialog', () => {
     expect(screen.queryByTestId('manager-survey-loading')).toBeNull()
   })
 
+  it('applies survey height messages even when the url has a trailing slash', async () => {
+    mocks.remoteConfig.value = {
+      manager_survey_url: 'https://us.posthog.com/external_surveys/survey-123/'
+    }
+
+    renderDialog()
+    const iframe = screen.getByTestId('manager-survey-iframe')
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://us.posthog.com',
+        data: {
+          type: 'posthog:survey:height',
+          surveyId: 'survey-123',
+          height: 800
+        }
+      })
+    )
+    await nextTick()
+
+    expect(iframe.getAttribute('style')).toContain('height: 800px')
+  })
+
+  it('removes the iframe and shows the error state when loading times out', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
+
+      renderDialog()
+      expect(screen.getByTestId('manager-survey-iframe')).toBeTruthy()
+
+      await vi.advanceTimersByTimeAsync(8000)
+      await nextTick()
+
+      expect(screen.queryByTestId('manager-survey-iframe')).toBeNull()
+      expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('closes the dialog when the close button is clicked', async () => {
     const onClose = vi.fn()
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
     renderDialog(onClose)
 
     await userEvent.click(screen.getByRole('button', { name: 'g.close' }))
