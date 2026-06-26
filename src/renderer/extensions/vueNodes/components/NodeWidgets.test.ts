@@ -1,6 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { reactive } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -10,16 +9,26 @@ import type {
 
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 
-const mockDragState = reactive({
-  active: false,
-  pointerId: null as number | null,
-  source: null,
-  pointer: { client: { x: 0, y: 0 }, canvas: { x: 0, y: 0 } },
-  candidate: null as {
-    layout: { nodeId: string; index: number; type: string }
-    compatible: boolean
-  } | null,
-  compatible: new Map<string, boolean>()
+const { mockDragState, resetDragState } = vi.hoisted(() => {
+  const mockDragState = {
+    active: false,
+    pointerId: null as number | null,
+    source: null,
+    pointer: { client: { x: 0, y: 0 }, canvas: { x: 0, y: 0 } },
+    candidate: null as {
+      layout: { nodeId: string; index: number; type: string }
+      compatible: boolean
+    } | null,
+    compatible: new Map<string, boolean>()
+  }
+
+  function resetDragState() {
+    mockDragState.active = false
+    mockDragState.candidate = null
+    mockDragState.compatible.clear()
+  }
+
+  return { mockDragState, resetDragState }
 })
 
 vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
@@ -65,12 +74,6 @@ describe('NodeWidgets', () => {
     inputs: [],
     outputs: []
   })
-
-  function resetDragState() {
-    mockDragState.active = false
-    mockDragState.candidate = null
-    mockDragState.compatible.clear()
-  }
 
   afterEach(() => {
     resetDragState()
