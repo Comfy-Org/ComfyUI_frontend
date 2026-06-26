@@ -11,6 +11,10 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { useNodeTooltips } from './useNodeTooltips'
 
+vi.mock('@/scripts/app', () => ({
+  app: {}
+}))
+
 const jsonTooltip =
   'Positive point prompts as JSON [{"x": int, "y": int}, ...] (pixel coords)'
 
