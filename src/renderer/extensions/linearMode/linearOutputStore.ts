@@ -12,6 +12,9 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
+// Max cards shown in the generating screen's fan before the oldest drop off.
+export const GENERATING_CARD_LIMIT = 3
+
 export const useLinearOutputStore = defineStore('linearOutput', () => {
   const { isAppMode } = useAppMode()
   const appModeStore = useAppModeStore()
@@ -20,6 +23,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const workflowStore = useWorkflowStore()
 
   const inProgressItems = ref<InProgressItem[]>([])
+  // Outputs from nodes not selected in the builder: shown in the generating
+  // screen so every result still "pops", but never added to the output feed.
+  const generatingExtraCards = ref<InProgressItem[]>([])
   const resolvedOutputsCache = new Map<string, ResultItemImpl[]>()
   const selectedId = ref<string | null>(null)
   const isFollowing = ref(true)
@@ -36,10 +42,23 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     )
   })
 
+  // Cards for the generating screen's fan: selected (feed) and non-selected
+  // outputs interleaved by true arrival order so the newest is always first,
+  // regardless of which list it came from.
+  const generatingCards = computed<InProgressItem[]>(() =>
+    [...activeWorkflowInProgressItems.value, ...generatingExtraCards.value]
+      .sort((a, b) => b.seq - a.seq)
+      .slice(0, GENERATING_CARD_LIMIT)
+  )
+
   let nextSeq = 0
 
-  function makeItemId(jobId: JobId): string {
-    return `job-${jobId}-${nextSeq++}`
+  function createItem(
+    jobId: JobId,
+    props: Omit<InProgressItem, 'id' | 'jobId' | 'seq'>
+  ): InProgressItem {
+    const seq = nextSeq++
+    return { id: `job-${jobId}-${seq}`, jobId, seq, ...props }
   }
 
   function replaceItem(
@@ -57,12 +76,11 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onJobStart(jobId: JobId) {
     executedNodeIds.clear()
+    // Drop any non-selected cards left over from a previous run so back-to-back
+    // jobs don't carry stale cards into the new fan.
+    generatingExtraCards.value = []
 
-    const item: InProgressItem = {
-      id: makeItemId(jobId),
-      jobId,
-      state: 'skeleton'
-    }
+    const item = createItem(jobId, { state: 'skeleton' })
     currentSkeletonId.value = item.id
     inProgressItems.value = [item, ...inProgressItems.value]
 
@@ -95,12 +113,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       // Only create on-demand for the tracked job
       if (jobId !== trackedJobId.value) return
 
-      const item: InProgressItem = {
-        id: makeItemId(jobId),
-        jobId,
-        state: 'latent',
-        latentPreviewUrl: url
-      }
+      const item = createItem(jobId, { state: 'latent', latentPreviewUrl: url })
       currentSkeletonId.value = item.id
       inProgressItems.value = [item, ...inProgressItems.value]
       autoSelect(`slot:${item.id}`, jobId)
@@ -117,13 +130,21 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     const newOutputs = flattenNodeOutput([nodeId, detail.output])
     if (newOutputs.length === 0) return
 
-    // Skip output items for nodes not flagged as output nodes
+    // Outputs from nodes not selected in the builder stay out of the feed, but
+    // still pop into the generating screen so the run feels alive.
     const outputNodeIds = appModeStore.selectedOutputs
-    if (
-      outputNodeIds.length > 0 &&
-      !outputNodeIds.some((id) => String(id) === String(nodeId))
-    )
+    const isSelectedOutput =
+      outputNodeIds.length === 0 ||
+      outputNodeIds.some((id) => String(id) === String(nodeId))
+    if (!isSelectedOutput) {
+      if (jobId === trackedJobId.value) {
+        const extras = newOutputs.map((o) =>
+          createItem(jobId, { state: 'image', output: o })
+        )
+        generatingExtraCards.value = [...extras, ...generatingExtraCards.value]
+      }
       return
+    }
 
     const skeletonItem = inProgressItems.value.find(
       (i) => i.id === currentSkeletonId.value && i.jobId === jobId
@@ -138,12 +159,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       }
       autoSelect(`slot:${imageItem.id}`, jobId)
 
-      const extras: InProgressItem[] = newOutputs.slice(1).map((o) => ({
-        id: makeItemId(jobId),
-        jobId,
-        state: 'image' as const,
-        output: o
-      }))
+      const extras = newOutputs
+        .slice(1)
+        .map((o) => createItem(jobId, { state: 'image', output: o }))
 
       const idx = inProgressItems.value.indexOf(skeletonItem)
       const arr = [...inProgressItems.value]
@@ -156,12 +174,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // No skeleton — create image items directly (only for tracked job)
     if (jobId !== trackedJobId.value) return
 
-    const newItems: InProgressItem[] = newOutputs.map((o) => ({
-      id: makeItemId(jobId),
-      jobId,
-      state: 'image' as const,
-      output: o
-    }))
+    const newItems = newOutputs.map((o) =>
+      createItem(jobId, { state: 'image', output: o })
+    )
     autoSelect(`slot:${newItems[0].id}`, jobId)
     inProgressItems.value = [...newItems, ...inProgressItems.value]
   }
@@ -285,6 +300,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       ) {
         onJobStart(jobId)
       }
+      if (!jobId) generatingExtraCards.value = []
     }
   )
 
@@ -301,6 +317,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   function reconcileOnEnter() {
+    // Drop stale non-selected cards from a run that ended while away.
+    if (!executionStore.activeJobId) generatingExtraCards.value = []
     // Complete any tracked job that finished while we were away.
     // The activeJobId watcher couldn't fire onJobComplete because
     // isAppMode was false at the time.
@@ -367,6 +385,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   return {
     activeWorkflowInProgressItems,
+    generatingCards,
     resolvedOutputsCache,
     selectedId,
     pendingResolve,
