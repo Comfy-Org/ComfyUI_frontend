@@ -1,3 +1,4 @@
+import type { VideoTrack } from '../components/common/VideoPlayer.vue'
 import type { LocalizedText, TranslationKey } from '../i18n/translations'
 
 export interface LearningTutorial {
@@ -7,6 +8,7 @@ export interface LearningTutorial {
   videoSrc: string
   href?: string
   poster?: string
+  caption?: readonly VideoTrack[]
   posterTime?: number
 }
 
@@ -28,6 +30,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
       'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03.mp4',
     poster:
       'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03_thumbnail.jpg',
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     // href: '#',
     tags: [partnerNodesTag, imageToVideoTag]
   },
@@ -38,7 +48,15 @@ export const learningTutorials: readonly LearningTutorial[] = [
       'https://media.comfy.org/website/learning/deaging_workflow_v03.mp4',
     poster:
       'https://media.comfy.org/website/learning/deaging_workflow_v03_thumbnail.jpg',
-    href: 'https://cloud.comfy.org/?share=93f286fbc2c8',
+    href: 'https://comfy.org/workflows/93f286fbc2c8-93f286fbc2c8/',
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/deaging_workflow_v03_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
@@ -49,6 +67,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster:
       'https://media.comfy.org/website/learning/frame_adjustments_demo_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=7dca0438edf4',
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/frame_adjustments_demo_v03_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
@@ -59,6 +85,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster:
       'https://media.comfy.org/website/learning/mattes_and_utilities_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=be0889296f65',
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/mattes_and_utilities_v03_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
@@ -69,6 +103,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster:
       'https://media.comfy.org/website/learning/seedance seedance_demo_comfyui_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=ef543bd4a773',
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
@@ -79,6 +121,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster:
       'https://media.comfy.org/website/learning/skyreplacement_smaller_v06_thumbnail.jpg',
     href: 'https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/',
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/skyreplacement_smaller_v06_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag]
   }
 ] as const

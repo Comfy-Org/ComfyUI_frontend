@@ -712,7 +712,6 @@
     "Inputs": "المدخلات",
     "Left": "يسار",
     "Manage": "إدارة",
-    "Manage Group Nodes": "إدارة عقد المجموعة",
     "Minimize Node": "تصغير العقدة",
     "Mode": "الوضع",
     "Node Info": "معلومات العقدة",
@@ -872,6 +871,7 @@
     "LORA_MODEL": "نموذج لورا",
     "LOSS_MAP": "خريطة الخسارة",
     "LUMA_CONCEPTS": "مفاهيم Luma",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "مرجع Luma",
     "MASK": "قناع",
     "MESH": "شبكة",
@@ -1830,10 +1830,6 @@
     "zoomOptions": "خيارات التكبير",
     "zoomOut": "تصغير"
   },
-  "groupNode": {
-    "create": "إنشاء عقدة مجموعة",
-    "enterName": "أدخل الاسم"
-  },
   "help": {
     "helpCenterMenu": "قائمة مركز المساعدة",
     "recentReleases": "الإصدارات الأخيرة"
@@ -2563,7 +2559,6 @@
     "Job History": "سجل المهام",
     "Load Default Workflow": "تحميل سير العمل الافتراضي",
     "Lock Canvas": "قفل اللوحة",
-    "Manage group nodes": "إدارة عقد المجموعة",
     "Manager": "المدير",
     "Manager Menu (Legacy)": "قائمة المدير (قديم)",
     "Minimap": "خريطة مصغرة",
@@ -2629,7 +2624,6 @@
     "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",
     "Toggle promotion of hovered widget": "تبديل ترقية عنصر واجهة المستخدم المحدد",
     "Undo": "تراجع",
-    "Ungroup selected group nodes": "فك تجميع عقد المجموعة المحددة",
     "Unload Models": "إلغاء تحميل النماذج",
     "Unload Models and Execution Cache": "إلغاء تحميل النماذج وذاكرة التنفيذ المؤقتة",
     "Unlock Canvas": "فتح قفل اللوحة",
@@ -3688,7 +3682,6 @@
       "keepSubscription": "الاحتفاظ بالاشتراك",
       "title": "إلغاء الاشتراك"
     },
-    "cancelSubscription": "إلغاء الاشتراك",
     "cancelSuccess": "تم إلغاء الاشتراك بنجاح",
     "canceled": "تم الإلغاء",
     "canceledCard": {
@@ -3853,7 +3846,7 @@
     "workspaceNotSubscribed": "هذه مساحة العمل ليست مشتركة",
     "yearly": "سنوي",
     "yearlyCreditsLabel": "إجمالي الرصيد السنوي",
-    "yearlyDiscount": "خصم 20%",
+    "saveYearly": "وفّر 20%",
     "yourPlanIncludes": "خطتك تشمل:"
   },
   "tabMenu": {
@@ -3986,6 +3979,7 @@
     "fileTooLarge": "الملف كبير جدًا ({size} ميجابايت). الحد الأقصى المدعوم هو {maxSize} ميجابايت",
     "fileUploadFailed": "فشل رفع الملف",
     "interrupted": "تم إيقاف التنفيذ",
+    "invalidTemplateData": "فشل في تحميل قالب العقدة: بيانات غير صالحة",
     "legacyMaskEditorDeprecated": "محرر القناع القديم لم يعد مدعوماً وسيتم إزالته قريباً.",
     "migrateToLitegraphReroute": "سيتم إزالة عقد إعادة التوجيه في الإصدارات المستقبلية. انقر للترحيل إلى إعادة التوجيه الأصلية في Litegraph.",
     "missingModelVerificationFailed": "فشل التحقق من النماذج المفقودة. قد لا تظهر بعض النماذج في علامة تبويب الأخطاء.",

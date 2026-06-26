@@ -712,7 +712,6 @@
     "Inputs": "输入",
     "Left": "左侧",
     "Manage": "管理",
-    "Manage Group Nodes": "管理组节点",
     "Minimize Node": "最小化节点",
     "Mode": "模式",
     "Node Info": "节点信息",
@@ -872,6 +871,7 @@
     "LORA_MODEL": "LORA模型",
     "LOSS_MAP": "损失图",
     "LUMA_CONCEPTS": "Luma 概念",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "Luma 参考",
     "MASK": "遮罩",
     "MESH": "网格",
@@ -1830,10 +1830,6 @@
     "zoomOptions": "缩放选项",
     "zoomOut": "缩小"
   },
-  "groupNode": {
-    "create": "创建组节点",
-    "enterName": "输入名称"
-  },
   "help": {
     "helpCenterMenu": "帮助中心菜单",
     "recentReleases": "最近发布"
@@ -2563,7 +2559,6 @@
     "Job History": "任务历史",
     "Load Default Workflow": "加载默认工作流",
     "Lock Canvas": "锁定画布",
-    "Manage group nodes": "管理组节点",
     "Manager": "管理器",
     "Manager Menu (Legacy)": "管理菜单（旧版）",
     "Minimap": "小地图",
@@ -2629,7 +2624,6 @@
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
     "Toggle promotion of hovered widget": "切换悬停小部件的提升",
     "Undo": "撤销",
-    "Ungroup selected group nodes": "解散选中组节点",
     "Unload Models": "卸载模型",
     "Unload Models and Execution Cache": "卸载模型和执行缓存",
     "Unlock Canvas": "解除锁定画布",
@@ -3700,7 +3694,6 @@
       "keepSubscription": "保留订阅",
       "title": "取消订阅"
     },
-    "cancelSubscription": "取消订阅",
     "cancelSuccess": "订阅取消成功",
     "canceled": "已取消",
     "canceledCard": {
@@ -3865,7 +3858,7 @@
     "workspaceNotSubscribed": "此工作区未订阅",
     "yearly": "年度",
     "yearlyCreditsLabel": "总共年度积分",
-    "yearlyDiscount": "20% 减免",
+    "saveYearly": "立省 20%",
     "yourPlanIncludes": "您的计划包括："
   },
   "tabMenu": {
@@ -3998,6 +3991,7 @@
     "fileTooLarge": "文件过大（{size} MB）。最大支持大小为 {maxSize} MB",
     "fileUploadFailed": "文件上传失败",
     "interrupted": "执行已被中断",
+    "invalidTemplateData": "加载节点模板失败：数据无效",
     "legacyMaskEditorDeprecated": "旧版遮罩编辑器已弃用，即将删除。",
     "migrateToLitegraphReroute": "将来的版本中将删除重定向节点。点击以迁移到litegraph-native重定向。",
     "missingModelVerificationFailed": "验证缺失模型失败。部分模型可能不会在错误标签页中显示。",

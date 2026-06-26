@@ -712,7 +712,6 @@
     "Inputs": "入力",
     "Left": "左",
     "Manage": "管理",
-    "Manage Group Nodes": "グループノードを管理",
     "Minimize Node": "ノードを最小化",
     "Mode": "モード",
     "Node Info": "ノード情報",
@@ -872,6 +871,7 @@
     "LORA_MODEL": "LoRAモデル",
     "LOSS_MAP": "損失マップ",
     "LUMA_CONCEPTS": "Lumaコンセプト",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "Luma参照",
     "MASK": "マスク",
     "MESH": "メッシュ",
@@ -1830,10 +1830,6 @@
     "zoomOptions": "ズームオプション",
     "zoomOut": "縮小"
   },
-  "groupNode": {
-    "create": "グループノードを作成",
-    "enterName": "名前を入力"
-  },
   "help": {
     "helpCenterMenu": "ヘルプセンターメニュー",
     "recentReleases": "最近のリリース"
@@ -2563,7 +2559,6 @@
     "Job History": "ジョブ履歴",
     "Load Default Workflow": "デフォルトワークフローを読み込む",
     "Lock Canvas": "キャンバスをロック",
-    "Manage group nodes": "グループノードを管理",
     "Manager": "マネージャー",
     "Manager Menu (Legacy)": "マネージャーメニュー（レガシー）",
     "Minimap": "ミニマップ",
@@ -2629,7 +2624,6 @@
     "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
     "Toggle promotion of hovered widget": "ホバー中のウィジェットの昇格を切り替え",
     "Undo": "元に戻す",
-    "Ungroup selected group nodes": "選択したグループノードのグループ解除",
     "Unload Models": "モデルのアンロード",
     "Unload Models and Execution Cache": "モデルと実行キャッシュのアンロード",
     "Unlock Canvas": "キャンバスのロックを解除",
@@ -3688,7 +3682,6 @@
       "keepSubscription": "サブスクリプションを維持する",
       "title": "サブスクリプションのキャンセル"
     },
-    "cancelSubscription": "サブスクリプションをキャンセル",
     "cancelSuccess": "サブスクリプションが正常にキャンセルされました",
     "canceled": "キャンセル済み",
     "canceledCard": {
@@ -3853,7 +3846,7 @@
     "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
     "yearlyCreditsLabel": "年間合計クレジット",
-    "yearlyDiscount": "20%割引",
+    "saveYearly": "20%お得",
     "yourPlanIncludes": "ご利用プランに含まれるもの:"
   },
   "tabMenu": {
@@ -3986,6 +3979,7 @@
     "fileTooLarge": "ファイルが大きすぎます（{size} MB）。サポートされている最大サイズは{maxSize} MBです",
     "fileUploadFailed": "ファイルのアップロードに失敗しました",
     "interrupted": "実行が中断されました",
+    "invalidTemplateData": "ノードテンプレートの読み込みに失敗しました：無効なデータです",
     "legacyMaskEditorDeprecated": "従来のマスクエディタは非推奨となり、まもなく削除されます。",
     "migrateToLitegraphReroute": "将来のバージョンではRerouteノードが削除されます。litegraph-native rerouteに移行するにはクリックしてください。",
     "missingModelVerificationFailed": "不足しているモデルの検証に失敗しました。一部のモデルはエラータブに表示されない場合があります。",

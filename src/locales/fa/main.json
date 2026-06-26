@@ -712,7 +712,6 @@
     "Inputs": "ورودی‌ها",
     "Left": "چپ",
     "Manage": "مدیریت",
-    "Manage Group Nodes": "مدیریت Group Nodeها",
     "Minimize Node": "کوچک‌سازی Node",
     "Mode": "حالت",
     "Node Info": "اطلاعات Node",
@@ -872,6 +871,7 @@
     "LORA_MODEL": "مدل lora",
     "LOSS_MAP": "نقشه خطا",
     "LUMA_CONCEPTS": "مفاهیم Luma",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "مرجع Luma",
     "MASK": "ماسک",
     "MESH": "مش",
@@ -1830,10 +1830,6 @@
     "zoomOptions": "گزینه‌های بزرگ‌نمایی",
     "zoomOut": "کوچک‌نمایی"
   },
-  "groupNode": {
-    "create": "ایجاد گره گروهی",
-    "enterName": "نام را وارد کنید"
-  },
   "help": {
     "helpCenterMenu": "منوی مرکز راهنما",
     "recentReleases": "انتشارهای اخیر"
@@ -2563,7 +2559,6 @@
     "Job History": "تاریخچه وظایف",
     "Load Default Workflow": "بارگذاری Workflow پیش‌فرض",
     "Lock Canvas": "قفل کردن بوم",
-    "Manage group nodes": "مدیریت group nodeها",
     "Manager": "مدیر",
     "Manager Menu (Legacy)": "منوی مدیر (قدیمی)",
     "Minimap": "نقشه کوچک",
@@ -2629,7 +2624,6 @@
     "Toggle View Controls Bottom Panel": "تغییر وضعیت کنترل‌های نمای پایین",
     "Toggle promotion of hovered widget": "تغییر وضعیت ارتقاء ابزارک زیر نشانگر",
     "Undo": "واگرد",
-    "Ungroup selected group nodes": "خارج کردن group nodeهای انتخاب‌شده از گروه",
     "Unload Models": "خارج کردن مدل‌ها",
     "Unload Models and Execution Cache": "خارج کردن مدل‌ها و حافظه اجرای موقت",
     "Unlock Canvas": "باز کردن قفل بوم",
@@ -3700,7 +3694,6 @@
       "keepSubscription": "حفظ اشتراک",
       "title": "لغو اشتراک"
     },
-    "cancelSubscription": "لغو اشتراک",
     "cancelSuccess": "اشتراک با موفقیت لغو شد",
     "canceled": "لغو شد",
     "canceledCard": {
@@ -3865,7 +3858,7 @@
     "workspaceNotSubscribed": "این محیط کاری اشتراک فعال ندارد",
     "yearly": "سالانه",
     "yearlyCreditsLabel": "کل اعتبار سالانه",
-    "yearlyDiscount": "٪۲۰ تخفیف",
+    "saveYearly": "٪۲۰ صرفه‌جویی",
     "yourPlanIncludes": "طرح شما شامل:"
   },
   "tabMenu": {
@@ -3998,6 +3991,7 @@
     "fileTooLarge": "فایل بیش از حد بزرگ است ({size} مگابایت). حداکثر اندازه مجاز {maxSize} مگابایت است",
     "fileUploadFailed": "بارگذاری فایل انجام نشد",
     "interrupted": "اجرا متوقف شد",
+    "invalidTemplateData": "بارگذاری قالب نود ناموفق بود: داده نامعتبر",
     "legacyMaskEditorDeprecated": "ویرایشگر mask قدیمی منسوخ شده و به‌زودی حذف خواهد شد.",
     "migrateToLitegraphReroute": "nodeهای reroute در نسخه‌های آینده حذف خواهند شد. برای مهاجرت به reroute بومی litegraph کلیک کنید.",
     "missingModelVerificationFailed": "تأیید مدل‌های مفقود شده انجام نشد. برخی مدل‌ها ممکن است در برگه خطاها نمایش داده نشوند.",

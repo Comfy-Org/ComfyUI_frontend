@@ -8,6 +8,7 @@ import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -37,6 +38,8 @@ export type WorkspaceTokenResponse = z.infer<
   typeof WorkspaceTokenResponseSchema
 >
 
+const MAX_SCHEDULED_REFRESH_RETRIES = 3
+
 export class WorkspaceAuthError extends Error {
   constructor(
     message: string,
@@ -53,12 +56,51 @@ interface MintedToken {
   workspace: WorkspaceWithRole
 }
 
+const PERMANENT_AUTH_ERROR_CODES = new Set([
+  'ACCESS_DENIED',
+  'WORKSPACE_NOT_FOUND',
+  'INVALID_FIREBASE_TOKEN',
+  'NOT_AUTHENTICATED'
+])
+
+function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
+  return (
+    err instanceof WorkspaceAuthError &&
+    PERMANENT_AUTH_ERROR_CODES.has(err.code ?? '')
+  )
+}
+
+function permanentAuthErrorMessageKey(code: string | undefined): string {
+  switch (code) {
+    case 'ACCESS_DENIED':
+      return 'workspaceAuth.errors.accessDenied'
+    case 'WORKSPACE_NOT_FOUND':
+      return 'workspaceAuth.errors.workspaceNotFound'
+    case 'INVALID_FIREBASE_TOKEN':
+      return 'workspaceAuth.errors.invalidFirebaseToken'
+    default:
+      return 'workspaceAuth.errors.notAuthenticated'
+  }
+}
+
+// Flag-ON has no Firebase fallback, so surface permanent failures instead of
+// stranding every cloud request on a silently cleared token.
+function surfacePermanentAuthError(err: WorkspaceAuthError): void {
+  console.error('Unified workspace auth revoked or invalid:', err)
+  useToastStore().add({
+    severity: 'error',
+    summary: t('g.error'),
+    detail: t(permanentAuthErrorMessageKey(err.code))
+  })
+}
+
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
 
   // State
   const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
   const workspaceToken = ref<string | null>(null)
+  const workspaceTokenExpiresAt = ref<number | null>(null)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -69,6 +111,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // Timer state
   let refreshTimerId: ReturnType<typeof setTimeout> | null = null
+  let inFlightSwitchCount = 0
+  let scheduledRefreshRetryCount = 0
   // The unified lifecycle keeps its own timer + request-id so it never shares
   // mutable state with the legacy switchWorkspace/refreshToken machinery.
   let unifiedRefreshTimerId: ReturnType<typeof setTimeout> | null = null
@@ -92,6 +136,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function scheduleTokenRefresh(expiresAt: number): void {
     stopRefreshTimer()
+    scheduledRefreshRetryCount = 0
     const now = Date.now()
     const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
     const delay = Math.max(0, refreshAt - now)
@@ -99,6 +144,60 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     refreshTimerId = setTimeout(() => {
       void refreshToken()
     }, delay)
+  }
+
+  function scheduleClearAtExpiry(): void {
+    if (workspaceTokenExpiresAt.value === null) {
+      clearWorkspaceContext()
+      return
+    }
+
+    const timeUntilExpiry = workspaceTokenExpiresAt.value - Date.now()
+    if (timeUntilExpiry <= 0) {
+      clearWorkspaceContext()
+      return
+    }
+
+    stopRefreshTimer()
+    refreshTimerId = setTimeout(() => {
+      clearWorkspaceContext()
+    }, timeUntilExpiry)
+  }
+
+  function scheduleTokenRefreshRetry(delayMs: number): boolean {
+    if (workspaceTokenExpiresAt.value === null) {
+      clearWorkspaceContext()
+      return false
+    }
+
+    const timeUntilExpiry = workspaceTokenExpiresAt.value - Date.now()
+    if (timeUntilExpiry <= 0) {
+      clearWorkspaceContext()
+      return false
+    }
+
+    if (scheduledRefreshRetryCount >= MAX_SCHEDULED_REFRESH_RETRIES) {
+      scheduleClearAtExpiry()
+      return false
+    }
+
+    scheduledRefreshRetryCount += 1
+    stopRefreshTimer()
+    const timeUntilRefreshBuffer = Math.max(
+      0,
+      timeUntilExpiry - TOKEN_REFRESH_BUFFER_MS
+    )
+    refreshTimerId = setTimeout(
+      () => {
+        void refreshToken()
+      },
+      Math.min(delayMs, timeUntilRefreshBuffer)
+    )
+    return true
+  }
+
+  function isStaleWorkspaceRequest(capturedRequestId: number): boolean {
+    return capturedRequestId !== refreshRequestId
   }
 
   function persistToSession(
@@ -164,8 +263,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return false
       }
 
-      const parsedWorkspace = JSON.parse(workspaceJson)
-      const parseResult = WorkspaceWithRoleSchema.safeParse(parsedWorkspace)
+      const parseResult = WorkspaceWithRoleSchema.safeParse(
+        JSON.parse(workspaceJson)
+      )
 
       if (!parseResult.success) {
         clearSessionStorage()
@@ -174,6 +274,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
       currentWorkspace.value = parseResult.data
       workspaceToken.value = token
+      workspaceTokenExpiresAt.value = expiresAt
       error.value = null
 
       scheduleTokenRefresh(expiresAt)
@@ -275,29 +376,46 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return
     }
 
-    // Only increment request ID when switching to a different workspace
-    // This invalidates stale refresh operations for the old workspace
-    // but allows refresh operations for the same workspace to complete
-    if (currentWorkspace.value?.id !== workspaceId) {
-      refreshRequestId++
-    }
+    const capturedRequestId = refreshRequestId
 
+    inFlightSwitchCount += 1
     isLoading.value = true
     error.value = null
 
     try {
       const { token, expiresAt, workspace } = await requestToken(workspaceId)
 
+      if (isStaleWorkspaceRequest(capturedRequestId)) {
+        console.warn(
+          'Aborting stale workspace switch: workspace context changed before commit'
+        )
+        return
+      }
+
+      if (currentWorkspace.value?.id !== workspaceId) {
+        refreshRequestId++
+      }
       currentWorkspace.value = workspace
       workspaceToken.value = token
+      workspaceTokenExpiresAt.value = expiresAt
+      scheduledRefreshRetryCount = 0
 
       persistToSession(workspace, token, expiresAt)
       scheduleTokenRefresh(expiresAt)
     } catch (err) {
+      if (isStaleWorkspaceRequest(capturedRequestId)) {
+        console.warn(
+          'Aborting stale workspace switch: workspace context changed before error commit',
+          err
+        )
+        return
+      }
+
       error.value = err instanceof Error ? err : new Error(String(err))
       throw error.value
     } finally {
-      isLoading.value = false
+      inFlightSwitchCount = Math.max(0, inFlightSwitchCount - 1)
+      isLoading.value = inFlightSwitchCount > 0
     }
   }
 
@@ -307,14 +425,15 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
 
     const workspaceId = currentWorkspace.value.id
-    // Capture the current request ID to detect if workspace context changed during refresh
     const capturedRequestId = refreshRequestId
     const maxRetries = 3
     const baseDelayMs = 1000
+    // Clear any previous error optimistically; a stale-aborted refresh should
+    // not leave a stale error visible on the new workspace's context.
+    error.value = null
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      // Check if workspace context changed since refresh started (user switched workspaces)
-      if (capturedRequestId !== refreshRequestId) {
+      if (isStaleWorkspaceRequest(capturedRequestId)) {
         console.warn(
           'Aborting stale token refresh: workspace context changed during refresh'
         )
@@ -335,8 +454,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             err.code === 'NOT_AUTHENTICATED')
 
         if (isPermanentError) {
-          // Only clear context if this refresh is still for the current workspace
-          if (capturedRequestId === refreshRequestId) {
+          if (!isStaleWorkspaceRequest(capturedRequestId)) {
             console.error('Workspace access revoked or auth invalid:', err)
             clearWorkspaceContext()
           }
@@ -356,8 +474,21 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           continue
         }
 
-        // Only clear context if this refresh is still for the current workspace
-        if (capturedRequestId === refreshRequestId) {
+        if (!isStaleWorkspaceRequest(capturedRequestId)) {
+          if (isTransientError && hasValidWorkspaceToken()) {
+            error.value = null
+            const retryScheduled = scheduleTokenRefreshRetry(
+              baseDelayMs * Math.pow(2, maxRetries)
+            )
+            console.warn(
+              retryScheduled
+                ? 'Failed to refresh workspace token after retries; preserving existing valid token and retrying later:'
+                : 'Failed to refresh workspace token after retries; preserving existing valid token until expiry:',
+              err
+            )
+            return
+          }
+
           console.error('Failed to refresh workspace token after retries:', err)
           clearWorkspaceContext()
         }
@@ -370,10 +501,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // A parallel mint/refresh lifecycle that writes to the dormant `unifiedToken`
   // slot. The legacy switchWorkspace/refreshToken machinery above is untouched.
 
-  // The mint body the unified session re-mints against. `{}` is the personal
-  // default (the backend resolves the personal workspace from the Firebase
-  // identity); `{ workspace_id }` targets a concrete workspace. `null` means no
-  // active unified session.
+  // Mint body the unified session re-mints against: `{}` = personal (resolved
+  // server-side from the Firebase identity), `{ workspace_id }` = explicit.
   type UnifiedMintBody = Record<string, never> | { workspace_id: string }
   let unifiedTarget: UnifiedMintBody | null = null
 
@@ -448,15 +577,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         useAuthStore().notifyTokenRefreshed()
       }
     } catch (err) {
-      const isPermanentError =
-        err instanceof WorkspaceAuthError &&
-        (err.code === 'ACCESS_DENIED' ||
-          err.code === 'WORKSPACE_NOT_FOUND' ||
-          err.code === 'INVALID_FIREBASE_TOKEN' ||
-          err.code === 'NOT_AUTHENTICATED')
-
-      if (isPermanentError) {
-        console.error('Unified workspace auth revoked or invalid:', err)
+      // Guard the toast on a live token so concurrent permanent failures across
+      // the proactive + reactive paths alarm the user once, not once per caller.
+      if (isPermanentAuthError(err)) {
+        if (unifiedToken.value) surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified token refresh failed:', err)
@@ -471,7 +595,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (unifiedToken.value) {
       return true
     }
-    return mintUnified(personalWorkspaceTarget())
+    try {
+      return await mintUnified(personalWorkspaceTarget())
+    } catch (err) {
+      if (isPermanentAuthError(err)) {
+        surfacePermanentAuthError(err)
+      } else {
+        console.warn('Unified login mint failed:', err)
+      }
+      return false
+    }
   }
 
   const remintUnifiedOnce = async (): Promise<string | null> => {
@@ -482,8 +615,24 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (!target) {
       return null
     }
-    await mintUnified(target)
-    return unifiedToken.value
+    try {
+      // On a concurrent burst the stale-guard discards all but the winning
+      // mint. Return the slot's current token (the winner's, once it lands)
+      // rather than this call's own success, so a discarded caller can still
+      // retry with it instead of burning its one-shot retry on a fresh 401.
+      await mintUnified(target)
+      return unifiedToken.value ?? null
+    } catch (err) {
+      // Mirror refreshUnified: a permanent failure tears down the session;
+      // guard the toast on a live token so a concurrent burst surfaces it once.
+      if (isPermanentAuthError(err)) {
+        if (unifiedToken.value) surfacePermanentAuthError(err)
+        clearUnifiedContext()
+      } else {
+        console.warn('Unified reactive re-mint failed:', err)
+      }
+      return null
+    }
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {
@@ -499,16 +648,23 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return workspaceToken.value ?? undefined
   }
 
+  function hasValidWorkspaceToken(): boolean {
+    return (
+      workspaceToken.value !== null &&
+      workspaceTokenExpiresAt.value !== null &&
+      workspaceTokenExpiresAt.value > Date.now()
+    )
+  }
+
   function clearWorkspaceContext(): void {
-    // Increment request ID to invalidate any in-flight stale refresh operations
     refreshRequestId++
     stopRefreshTimer()
     currentWorkspace.value = null
     workspaceToken.value = null
+    workspaceTokenExpiresAt.value = null
+    scheduledRefreshRetryCount = 0
     error.value = null
     clearSessionStorage()
-    // Drop the unified Cloud JWT and stop its timer on logout. Safe under any
-    // flag state: the slot is null when unified auth is off.
     clearUnifiedContext()
   }
 

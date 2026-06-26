@@ -712,7 +712,6 @@
     "Inputs": "Entradas",
     "Left": "Esquerda",
     "Manage": "Gerenciar",
-    "Manage Group Nodes": "Gerenciar Nós de Grupo",
     "Minimize Node": "Minimizar Nó",
     "Mode": "Modo",
     "Node Info": "Informações do Nó",
@@ -872,6 +871,7 @@
     "LORA_MODEL": "lora MODEL",
     "LOSS_MAP": "MAPA DE PERDA",
     "LUMA_CONCEPTS": "CONCEITOS LUMA",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "REFERÊNCIA LUMA",
     "MASK": "MÁSCARA",
     "MESH": "MALHA",
@@ -1830,10 +1830,6 @@
     "zoomOptions": "Opções de Zoom",
     "zoomOut": "Afastar"
   },
-  "groupNode": {
-    "create": "Criar nó de grupo",
-    "enterName": "Digite o nome"
-  },
   "help": {
     "helpCenterMenu": "Menu do Centro de Ajuda",
     "recentReleases": "Lançamentos recentes"
@@ -2563,7 +2559,6 @@
     "Job History": "Histórico de tarefas",
     "Load Default Workflow": "Carregar fluxo de trabalho padrão",
     "Lock Canvas": "Travar tela",
-    "Manage group nodes": "Gerenciar nós de grupo",
     "Manager": "Gerenciador",
     "Manager Menu (Legacy)": "Menu do gerenciador (Legado)",
     "Minimap": "Minimapa",
@@ -2629,7 +2624,6 @@
     "Toggle View Controls Bottom Panel": "Alternar painel inferior de controles de visualização",
     "Toggle promotion of hovered widget": "Alternar promoção do widget destacado",
     "Undo": "Desfazer",
-    "Ungroup selected group nodes": "Desagrupar nós de grupo selecionados",
     "Unload Models": "Descarregar modelos",
     "Unload Models and Execution Cache": "Descarregar modelos e cache de execução",
     "Unlock Canvas": "Destravar tela",
@@ -3700,7 +3694,6 @@
       "keepSubscription": "Manter assinatura",
       "title": "Cancelar assinatura"
     },
-    "cancelSubscription": "Cancelar assinatura",
     "cancelSuccess": "Assinatura cancelada com sucesso",
     "canceled": "Cancelado",
     "canceledCard": {
@@ -3865,7 +3858,7 @@
     "workspaceNotSubscribed": "Este espaço de trabalho não possui uma assinatura",
     "yearly": "Anual",
     "yearlyCreditsLabel": "Total de créditos anuais",
-    "yearlyDiscount": "20% DE DESCONTO",
+    "saveYearly": "Economize 20%",
     "yourPlanIncludes": "Seu plano inclui:"
   },
   "tabMenu": {
@@ -3998,6 +3991,7 @@
     "fileTooLarge": "Arquivo muito grande ({size} MB). O tamanho máximo suportado é {maxSize} MB",
     "fileUploadFailed": "Falha no upload do arquivo",
     "interrupted": "Execução interrompida",
+    "invalidTemplateData": "Falha ao carregar o modelo de nó: dados inválidos",
     "legacyMaskEditorDeprecated": "O editor de máscara legado está obsoleto e será removido em breve.",
     "migrateToLitegraphReroute": "Nós de redirecionamento serão removidos em versões futuras. Clique para migrar para o redirecionamento nativo do litegraph.",
     "missingModelVerificationFailed": "Falha ao verificar modelos ausentes. Alguns modelos podem não aparecer na aba de Erros.",

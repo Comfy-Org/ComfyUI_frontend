@@ -137,8 +137,8 @@ export class ComfyNodeDefImpl
     const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
     /**
-     * Assign extra fields to `this` for compatibility with group node feature.
-     * TODO: Remove this once group node feature is removed.
+     * Copy fields that are declared on this class but not explicitly assigned
+     * below (e.g. `search_aliases`) straight from the source definition.
      */
     Object.assign(this, obj)
 
