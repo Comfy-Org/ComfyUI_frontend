@@ -1,27 +1,25 @@
 <script setup lang="ts">
-import ReasonSection from '../../components/product/shared/ReasonSection.vue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const reasons: Array<{
-  titleKey: TranslationKey
-  descriptionKey: TranslationKey
-}> = [
-  { titleKey: 'mcp.why.1.title', descriptionKey: 'mcp.why.1.description' },
-  { titleKey: 'mcp.why.2.title', descriptionKey: 'mcp.why.2.description' },
-  { titleKey: 'mcp.why.3.title', descriptionKey: 'mcp.why.3.description' },
-  { titleKey: 'mcp.why.4.title', descriptionKey: 'mcp.why.4.description' }
-]
+const reasonNumbers = [1, 2, 3, 4] as const
+
+const reasons = reasonNumbers.map((n) => ({
+  id: String(n),
+  title: t(`mcp.why.${n}.title`, locale),
+  description: t(`mcp.why.${n}.description`, locale)
+}))
 </script>
 
 <template>
-  <ReasonSection
-    :locale="locale"
-    heading-key="mcp.why.heading"
-    heading-highlight-key="mcp.why.headingHighlight"
+  <ReasonsSplit01
+    :heading="t('mcp.why.heading', locale)"
+    :heading-highlight="t('mcp.why.headingHighlight', locale)"
     highlight-class="text-primary-comfy-yellow"
-    subtitle-key="mcp.why.subtitle"
+    :subtitle="t('mcp.why.subtitle', locale)"
     :reasons="reasons"
   />
 </template>
