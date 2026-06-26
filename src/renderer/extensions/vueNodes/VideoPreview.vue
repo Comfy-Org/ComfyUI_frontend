@@ -1,13 +1,13 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
+    class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
     @keydown="handleKeyDown"
   >
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -47,7 +47,7 @@
         :src="currentVideoUrl"
         :class="
           cn(
-            'absolute inset-0 block size-full object-contain',
+            'absolute inset-0 size-full object-contain',
             showLoader && 'invisible'
           )
         "
