@@ -110,4 +110,17 @@ export type RemoteConfig = {
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
   sentry_dsn?: string
+  turnstile_sitekey?: string
+  // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
+  // Always funnel it through normalizeTurnstileMode before trusting it as a
+  // TurnstileMode — that resolver is the single narrowing boundary.
+  signup_turnstile?: string
 }
+
+/**
+ * Gate mode for the signup Turnstile challenge.
+ * - 'off': do not render the widget
+ * - 'shadow': render the widget but never block submit (observe only)
+ * - 'enforce': block submit until the challenge is solved
+ */
+export type TurnstileMode = 'off' | 'shadow' | 'enforce'
