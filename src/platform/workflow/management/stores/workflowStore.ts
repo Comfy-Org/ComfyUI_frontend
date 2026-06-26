@@ -9,10 +9,7 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -26,6 +23,8 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -571,7 +570,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
-    const node = graph.getNodeById(id)
+    const parsedNodeId = parseNodeId(id)
+    if (!parsedNodeId) return
+    const node = graph.getNodeById(parsedNodeId)
     if (node?.isSubgraphNode()) return node.subgraph
   }
 

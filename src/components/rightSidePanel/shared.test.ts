@@ -1,24 +1,34 @@
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import { describe, expect, it, beforeEach } from 'vitest'
-import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toNodeId } from '@/types/nodeId'
+import { describe, expect, it, beforeEach } from 'vitest'
+import {
+  flatAndCategorizeSelectedItems,
+  searchWidgets,
+  searchWidgetsAndNodes
+} from './shared'
+import type { NodeWidgetsListList } from './shared'
 
 describe('searchWidgets', () => {
-  const createWidget = (
+  function createWidget(
     name: string,
     type: string,
     value?: string,
     label?: string
-  ): { widget: IBaseWidget } => ({
-    widget: {
-      name,
-      type,
-      value,
-      label
-    } as IBaseWidget
-  })
+  ): { widget: IBaseWidget } {
+    return {
+      widget: {
+        name,
+        options: {},
+        type,
+        value,
+        label,
+        y: 0
+      }
+    }
+  }
 
   it('should return all widgets when query is empty', () => {
     const widgets = [
@@ -68,6 +78,54 @@ describe('searchWidgets', () => {
     const widgets = [createWidget('Width', 'Number', '100', 'Image Width')]
     const result = searchWidgets(widgets, 'IMAGE width')
     expect(result).toHaveLength(1)
+  })
+})
+
+describe('searchWidgetsAndNodes', () => {
+  function createWidget(name: string): IBaseWidget {
+    return {
+      name,
+      options: {},
+      type: 'number',
+      y: 0
+    }
+  }
+
+  function createNodeSection(
+    id: number,
+    title: string,
+    widgetNames: string[]
+  ): NodeWidgetsListList[number] {
+    const node = new LGraphNode(title)
+    node.id = toNodeId(id)
+    const widgets = widgetNames.map((name) => ({
+      node,
+      widget: createWidget(name)
+    }))
+
+    return { node, widgets }
+  }
+
+  it('keeps all widgets for matching nodes and filters widgets for other nodes', () => {
+    const matchingNode = createNodeSection(1, 'Image Size', ['width', 'height'])
+    const matchingWidget = createNodeSection(2, 'Sampler', [
+      'seed',
+      'imageQuality'
+    ])
+    const hiddenNode = createNodeSection(3, 'Preview', ['scale'])
+
+    const result = searchWidgetsAndNodes(
+      [matchingNode, matchingWidget, hiddenNode],
+      'image'
+    )
+
+    expect(result).toEqual([
+      matchingNode,
+      {
+        ...matchingWidget,
+        widgets: [matchingWidget.widgets[1]]
+      }
+    ])
   })
 })
 

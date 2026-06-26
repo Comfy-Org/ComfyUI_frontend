@@ -18,6 +18,7 @@ import {
 
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -118,7 +119,7 @@ describe('LGraphNode', () => {
 
     // Should not override existing inputs
     node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    expect(node.id).toEqual(toNodeId(1))
     expect(node.inputs.length).toEqual(1)
   })
 
@@ -138,7 +139,7 @@ describe('LGraphNode', () => {
 
     // Should not override existing outputs
     node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    expect(node.id).toEqual(toNodeId(1))
     expect(node.outputs.length).toEqual(1)
   })
   test('should not allow configuring id to -1', () => {
