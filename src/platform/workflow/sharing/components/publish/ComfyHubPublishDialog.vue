@@ -273,6 +273,7 @@ async function fetchPublishPrefill() {
 
   try {
     const status = await shareService.getPublishStatus(path)
+    if (workflowStore.activeWorkflow?.path !== path) return
     isAlreadyPublished.value = status.isPublished
     const prefill = status.isPublished
       ? (status.prefill ?? getCachedPrefill(path))
@@ -281,6 +282,7 @@ async function fetchPublishPrefill() {
       applyPrefill(prefill)
     }
   } catch (error) {
+    if (workflowStore.activeWorkflow?.path !== path) return
     isAlreadyPublished.value = false
     console.warn('Failed to fetch publish prefill:', error)
     const cached = getCachedPrefill(path)

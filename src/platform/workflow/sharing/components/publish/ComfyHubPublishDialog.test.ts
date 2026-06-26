@@ -483,4 +483,47 @@ describe('ComfyHubPublishDialog', () => {
 
     expect(mockGetPublishStatus).not.toHaveBeenCalled()
   })
+
+  it('ignores a stale prefill response after the workflow path changes', async () => {
+    const stalePrefill = { description: 'stale' }
+    let resolveStale: (value: unknown) => void = () => {}
+    mockGetPublishStatus.mockImplementation((path: string) => {
+      if (path === 'workflows/test.json') {
+        return new Promise((resolve) => {
+          resolveStale = resolve
+        })
+      }
+      return Promise.resolve({
+        isPublished: true,
+        shareId: 'fresh',
+        shareUrl: null,
+        publishedAt: new Date(),
+        prefill: { description: 'fresh' }
+      })
+    })
+
+    renderComponent()
+    await nextTick()
+
+    setActiveWorkflow({
+      path: 'workflows/renamed.json',
+      filename: 'renamed.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    })
+    await nextTick()
+    await flushPromises()
+
+    resolveStale({
+      isPublished: true,
+      shareId: 'stale',
+      shareUrl: null,
+      publishedAt: new Date(),
+      prefill: stalePrefill
+    })
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalledWith(stalePrefill)
+  })
 })
