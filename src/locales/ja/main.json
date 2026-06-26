@@ -325,6 +325,11 @@
       "signUpWithGithub": "Githubでサインアップ",
       "signUpWithGoogle": "Googleでサインアップ",
       "title": "アカウントを作成する"
+    },
+    "turnstile": {
+      "expired": "認証の有効期限が切れました。再度チャレンジを完了してください。",
+      "failed": "認証に失敗しました。もう一度お試しください。",
+      "submitBlockedHint": "上記の認証チャレンジを完了すると、サインアップが有効になります。"
     }
   },
   "batch": {
@@ -3742,12 +3747,14 @@
       "keepSubscription": "サブスクリプションを維持する",
       "title": "サブスクリプションのキャンセル"
     },
+    "cancelPlan": "プランをキャンセル",
     "cancelSuccess": "サブスクリプションが正常にキャンセルされました",
     "canceled": "キャンセル済み",
     "canceledCard": {
       "description": "今後請求されることはありません。{date}まで機能は有効です。",
       "title": "サブスクリプションはキャンセルされました"
     },
+    "changePlan": "プランを変更",
     "changeTo": "{plan}に変更",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud ロゴ",
@@ -3776,6 +3783,7 @@
       "paymentPageBlocked": "お支払いページを開けませんでした。再度お試しください。",
       "title": "{plan}プランに変更しますか？"
     },
+    "endsOnDate": "{date}に終了します",
     "enterprise": {
       "cta": "詳細を見る",
       "flexibility": "より柔軟な対応やカスタム機能をご希望ですか？",
@@ -3785,6 +3793,9 @@
     },
     "everythingInPlus": "{plan}のすべて、さらに：",
     "expiresDate": "{date} に期限切れ",
+    "freePerks": {
+      "maxRuntime": "最大実行時間：{duration}"
+    },
     "freeTier": {
       "description": "無料プランには、Comfy Cloudをお試しいただける毎月{credits}クレジットが含まれています。",
       "descriptionGeneric": "無料プランには、Comfy Cloudをお試しいただける毎月のクレジット枠が含まれています。",
@@ -3812,7 +3823,7 @@
     "inviteUpTo": "最大 {count} 人を招待",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
-    "managePayment": "支払いを管理",
+    "manageBilling": "請求管理",
     "managePlan": "プランを管理",
     "manageSubscription": "サブスクリプションを管理",
     "maxDuration": {
@@ -3826,7 +3837,6 @@
     "maxMembersLabel": "最大メンバー数",
     "member": "メンバー",
     "memberCount": "{count}名のメンバー",
-    "membersLabel": "{count}名までのメンバー",
     "messageSupport": "サポートに連絡",
     "monthly": "月額",
     "monthlyBonusDescription": "月間クレジットボーナス",
@@ -3842,17 +3852,19 @@
     "mostPopular": "最も人気",
     "needTeamWorkspace": "チームワークスペースが必要ですか？",
     "nextBillingCycle": "次の請求サイクル",
-    "nextMonthInvoice": "翌月の請求書",
     "outOfCreditsDescription": "生成を続けるにはクレジットを追加してください。",
     "outOfCreditsTitle": "クレジットがありません。{date}に補充されます",
     "outOfCreditsTitleNoDate": "クレジットがありません",
     "partnerNodesBalance": "\"パートナーノード\" クレジット残高",
     "partnerNodesCredits": "パートナーノードクレジット",
     "partnerNodesDescription": "商用/独自モデルの実行用",
+    "partnerNodesPricingTable": "パートナーノードの料金表",
     "perMonth": "USD / 月",
     "personalHeader": "個人プランは個人利用専用です。{action}",
     "personalHeaderAction": "チームメンバーを追加するには、チームプランにご加入ください。",
     "personalWorkspace": "個人ワークスペース",
+    "planLoadError": "プランの詳細を読み込めませんでした。",
+    "planLoadErrorRetry": "再試行",
     "planScope": {
       "personal": "個人向け",
       "team": "チーム向け"
@@ -3911,11 +3923,13 @@
     "pricingBlurbEnterprise": "エンタープライズのご相談",
     "pricingBlurbQuestions": "ご質問",
     "pricingBlurbSeeDetails": "詳細を見る",
+    "reactivatePlan": "プランを再開",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",
     "remaining": "残り",
     "renewsDate": "{date} に更新",
+    "renewsOnDate": "{date}に更新されます",
     "required": {
       "pollingFailed": "サブスクリプションの有効化に失敗しました",
       "pollingSuccess": "サブスクリプションが有効化されました！",
@@ -3930,6 +3944,7 @@
     "saveYearly": "20%お得",
     "saveYearlyUpTo": "最大20%お得",
     "soloUseOnly": "個人利用のみ",
+    "subscribe": "購読する",
     "subscribeFailed": "購読に失敗しました",
     "subscribeForMore": "アップグレード",
     "subscribeNow": "今すぐ購読",
@@ -3949,6 +3964,12 @@
     },
     "teamHeader": "コラボレーションを希望するチーム向け。さらに多くのメンバーが必要ですか？{learnMore}（エンタープライズについて）。",
     "teamHeaderLearnMore": "詳細はこちら",
+    "teamPerks": {
+      "concurrentRuns": "メンバーはワークフローを同時に実行可能",
+      "inviteMembers": "メンバーを招待",
+      "rolePermissions": "ロールベースの権限",
+      "sharedCreditPool": "全メンバーで共有するクレジットプール"
+    },
     "teamPlan": {
       "changePlan": "プランを変更",
       "comingSoonLabel": "近日公開：",
@@ -3965,6 +3986,8 @@
       "tagline": "月間クレジット数を自由に選択。多くのクレジットでさらに割引。",
       "unavailable": "このチームプランは現在ご利用いただけません。"
     },
+    "teamPlanIncludes": "{plan}のすべてに加えて、以下が含まれます：",
+    "teamPlanName": "チーム",
     "teamWorkspace": "チームワークスペース",
     "tierNameYearly": "{name} 年間",
     "tiers": {

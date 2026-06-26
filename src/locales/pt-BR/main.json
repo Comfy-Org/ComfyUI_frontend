@@ -325,6 +325,11 @@
       "signUpWithGithub": "Cadastrar-se com Github",
       "signUpWithGoogle": "Cadastrar-se com Google",
       "title": "Criar uma conta"
+    },
+    "turnstile": {
+      "expired": "Verificação expirada. Por favor, complete o desafio novamente.",
+      "failed": "Falha na verificação. Por favor, tente novamente.",
+      "submitBlockedHint": "Complete o desafio de verificação acima para habilitar o cadastro."
     }
   },
   "batch": {
@@ -3754,12 +3759,14 @@
       "keepSubscription": "Manter assinatura",
       "title": "Cancelar assinatura"
     },
+    "cancelPlan": "Cancelar plano",
     "cancelSuccess": "Assinatura cancelada com sucesso",
     "canceled": "Cancelado",
     "canceledCard": {
       "description": "Você não será mais cobrado. Seus recursos permanecem ativos até {date}.",
       "title": "Sua assinatura foi cancelada"
     },
+    "changePlan": "Alterar plano",
     "changeTo": "Mudar para {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo do Comfy Cloud",
@@ -3788,6 +3795,7 @@
       "paymentPageBlocked": "Não foi possível abrir a página de pagamento — tente novamente",
       "title": "Mudar para o plano {plan}?"
     },
+    "endsOnDate": "Termina em {date}",
     "enterprise": {
       "cta": "Saiba mais",
       "flexibility": "Procurando mais flexibilidade ou recursos personalizados?",
@@ -3797,6 +3805,9 @@
     },
     "everythingInPlus": "Tudo do {plan}, além de:",
     "expiresDate": "Expira em {date}",
+    "freePerks": {
+      "maxRuntime": "{duration} de tempo máximo de execução"
+    },
     "freeTier": {
       "description": "Seu plano gratuito inclui {credits} créditos por mês para testar o Comfy Cloud.",
       "descriptionGeneric": "Seu plano gratuito inclui uma cota mensal de créditos para testar o Comfy Cloud.",
@@ -3824,7 +3835,7 @@
     "inviteUpTo": "Convide até",
     "invoiceHistory": "Histórico de faturas",
     "learnMore": "Saiba mais",
-    "managePayment": "Gerenciar pagamento",
+    "manageBilling": "Gerenciar cobrança",
     "managePlan": "Gerenciar plano",
     "manageSubscription": "Gerenciar assinatura",
     "maxDuration": {
@@ -3838,7 +3849,6 @@
     "maxMembersLabel": "Máx. de membros",
     "member": "membro",
     "memberCount": "{count} membro | {count} membros",
-    "membersLabel": "Até {count} membros",
     "messageSupport": "Falar com o suporte",
     "monthly": "Mensal",
     "monthlyBonusDescription": "Bônus mensal de créditos",
@@ -3854,17 +3864,19 @@
     "mostPopular": "Mais popular",
     "needTeamWorkspace": "Precisa de um espaço de trabalho em equipe?",
     "nextBillingCycle": "próximo ciclo de cobrança",
-    "nextMonthInvoice": "Fatura do próximo mês",
     "outOfCreditsDescription": "Adicione mais créditos para continuar gerando.",
     "outOfCreditsTitle": "Você está sem créditos. Recarga em {date}",
     "outOfCreditsTitleNoDate": "Você está sem créditos",
     "partnerNodesBalance": "Saldo de Créditos \"Partner Nodes\"",
     "partnerNodesCredits": "Preços dos Partner Nodes",
     "partnerNodesDescription": "Para executar modelos comerciais/proprietários",
+    "partnerNodesPricingTable": "Tabela de preços dos Partner Nodes",
     "perMonth": "/ mês",
     "personalHeader": "Planos pessoais são apenas para uso individual. {action}",
     "personalHeaderAction": "Para adicionar colegas, assine o plano de equipe.",
     "personalWorkspace": "Espaço de Trabalho Pessoal",
+    "planLoadError": "Não foi possível carregar os detalhes do seu plano.",
+    "planLoadErrorRetry": "Tentar novamente",
     "planScope": {
       "personal": "Para uso pessoal",
       "team": "Para equipes"
@@ -3923,11 +3935,13 @@
     "pricingBlurbEnterprise": "discussões enterprise",
     "pricingBlurbQuestions": "dúvidas",
     "pricingBlurbSeeDetails": "ver detalhes",
+    "reactivatePlan": "Reativar plano",
     "refillsDate": "Recargas em {date}",
     "refillsNextCycle": "Recargas no próximo ciclo",
     "refreshCredits": "Atualizar créditos",
     "remaining": "restante",
     "renewsDate": "Renova em {date}",
+    "renewsOnDate": "Renova em {date}",
     "required": {
       "pollingFailed": "Falha ao ativar a assinatura",
       "pollingSuccess": "Assinatura ativada com sucesso!",
@@ -3942,6 +3956,7 @@
     "saveYearly": "Economize 20%",
     "saveYearlyUpTo": "Economize até 20%",
     "soloUseOnly": "Apenas para uso individual",
+    "subscribe": "Assinar",
     "subscribeFailed": "Falha ao assinar",
     "subscribeForMore": "Fazer upgrade",
     "subscribeNow": "Assine Agora",
@@ -3961,6 +3976,12 @@
     },
     "teamHeader": "Para equipes que desejam colaborar. Precisa de mais membros? {learnMore} sobre enterprise.",
     "teamHeaderLearnMore": "Saiba mais",
+    "teamPerks": {
+      "concurrentRuns": "Membros podem executar fluxos de trabalho simultaneamente",
+      "inviteMembers": "Convidar membros",
+      "rolePermissions": "Permissões baseadas em função",
+      "sharedCreditPool": "Créditos compartilhados entre todos os membros"
+    },
     "teamPlan": {
       "changePlan": "Mudar plano",
       "comingSoonLabel": "Em breve:",
@@ -3977,6 +3998,8 @@
       "tagline": "Escolha sua própria assinatura mensal de créditos. Obtenha um desconto maior com uma assinatura de mais créditos.",
       "unavailable": "Este plano de equipe não está disponível no momento."
     },
+    "teamPlanIncludes": "Seu plano inclui tudo do {plan}, além de:",
+    "teamPlanName": "Equipe",
     "teamWorkspace": "Espaço de Trabalho em Equipe",
     "tierNameYearly": "{name} Anual",
     "tiers": {
