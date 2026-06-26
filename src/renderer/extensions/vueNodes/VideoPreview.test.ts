@@ -61,6 +61,58 @@ describe('VideoPreview', () => {
     })
   }
 
+  function getVideoElement(container: Element): HTMLVideoElement {
+    // eslint-disable-next-line testing-library/no-node-access
+    const video = container.querySelector('video')
+    expect(video).toBeInstanceOf(HTMLVideoElement)
+
+    return video as HTMLVideoElement
+  }
+
+  async function loadVideoWithDimensions(
+    container: Element,
+    { height, width }: { height: number; width: number }
+  ) {
+    const video = getVideoElement(container)
+    Object.defineProperties(video, {
+      videoHeight: { configurable: true, value: height },
+      videoWidth: { configurable: true, value: width }
+    })
+
+    await fireEvent.loadedData(video)
+    await nextTick()
+  }
+
+  function getPreviewRegion() {
+    return screen.getByRole('region', { name: /^Video preview/ })
+  }
+
+  describe('minimum frame height', () => {
+    it('uses the fallback height before video metadata loads', () => {
+      renderVideoPreview()
+
+      expect(getPreviewRegion()).toHaveStyle('min-height: 220px')
+    })
+
+    it('uses the 100px floor for ultrawide videos', async () => {
+      const { container } = renderVideoPreview()
+
+      await loadVideoWithDimensions(container, { width: 320, height: 80 })
+
+      expect(getPreviewRegion()).toHaveStyle('min-height: 100px')
+      expect(screen.getByText('320 x 80')).toBeInTheDocument()
+    })
+
+    it('keeps portrait videos aspect-proportional at the minimum width', async () => {
+      const { container } = renderVideoPreview()
+
+      await loadVideoWithDimensions(container, { width: 90, height: 160 })
+
+      expect(getPreviewRegion()).toHaveStyle('min-height: 356px')
+      expect(screen.getByText('90 x 160')).toBeInTheDocument()
+    })
+  })
+
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical videos', async () => {
       const sameUrl = '/api/view?filename=test.mp4&type=output'

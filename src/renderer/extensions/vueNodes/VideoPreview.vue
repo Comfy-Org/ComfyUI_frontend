@@ -1,13 +1,14 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
+    class="video-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-[5px] bg-node-component-surface"
+      :style="{ minHeight: `${minimumFrameHeight}px` }"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -45,7 +46,12 @@
       <video
         v-if="!videoError"
         :src="currentVideoUrl"
-        :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        :class="
+          cn(
+            'absolute inset-0 block size-full object-contain',
+            showLoader && 'invisible'
+          )
+        "
         preload="metadata"
         controls
         loop
@@ -138,6 +144,10 @@ interface VideoPreviewProps {
 
 const props = defineProps<VideoPreviewProps>()
 
+const MIN_PREVIEW_ASPECT_REFERENCE_WIDTH = 200
+const MIN_PREVIEW_FRAME_HEIGHT = 100
+const FALLBACK_PREVIEW_FRAME_HEIGHT = 220
+
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 
@@ -151,12 +161,22 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
+const videoAspectRatio = ref<number | null>(null)
 
 const videoWrapperEl = ref<HTMLDivElement>()
 
 // Computed values
 const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
 const hasMultipleVideos = computed(() => props.imageUrls.length > 1)
+const minimumFrameHeight = computed(() => {
+  const aspectRatio = videoAspectRatio.value
+  if (!aspectRatio) return FALLBACK_PREVIEW_FRAME_HEIGHT
+
+  return Math.max(
+    Math.round(MIN_PREVIEW_ASPECT_REFERENCE_WIDTH / aspectRatio),
+    MIN_PREVIEW_FRAME_HEIGHT
+  )
+})
 
 // Watch for URL changes and reset state
 watch(
@@ -178,6 +198,7 @@ watch(
     // Reset loading and error states when URLs change
     actualDimensions.value = null
     videoError.value = false
+    videoAspectRatio.value = null
     showLoader.value = newUrls.length > 0
   },
   { immediate: true }
@@ -191,6 +212,7 @@ const handleVideoLoad = (event: Event) => {
   videoError.value = false
   if (video.videoWidth && video.videoHeight) {
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
+    videoAspectRatio.value = video.videoWidth / video.videoHeight
   }
 }
 
@@ -198,6 +220,7 @@ const handleVideoError = () => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
+  videoAspectRatio.value = null
 }
 
 const handleDownload = () => {
@@ -227,6 +250,7 @@ const setCurrentIndex = (index: number) => {
     videoError.value = false
     if (urlChanged) {
       actualDimensions.value = null
+      videoAspectRatio.value = null
       showLoader.value = true
     }
   }
