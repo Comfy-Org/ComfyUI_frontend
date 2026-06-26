@@ -33,9 +33,6 @@
             @update:thumbnail-type="onUpdateFormData({ thumbnailType: $event })"
             @update:thumbnail-file="onUpdateFormData({ thumbnailFile: $event })"
             @update:thumbnail-url="onUpdateFormData({ thumbnailUrl: $event })"
-            @update:existing-thumbnail-type="
-              onUpdateFormData({ existingThumbnailType: $event })
-            "
             @update:comparison-before-file="
               onUpdateFormData({ comparisonBeforeFile: $event })
             "

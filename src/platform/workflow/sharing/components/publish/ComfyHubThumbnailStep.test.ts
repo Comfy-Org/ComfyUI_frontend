@@ -97,7 +97,6 @@ describe('ComfyHubThumbnailStep', () => {
     const user = userEvent.setup()
     const onUpdateThumbnailUrl = vi.fn()
     const onUpdateComparisonAfterUrl = vi.fn()
-    const onUpdateExistingThumbnailType = vi.fn()
     const onUpdateComparisonBeforeFile = vi.fn()
     const onUpdateComparisonAfterFile = vi.fn()
     const onUpdateThumbnailType = vi.fn()
@@ -111,7 +110,6 @@ describe('ComfyHubThumbnailStep', () => {
       {
         'onUpdate:thumbnailUrl': onUpdateThumbnailUrl,
         'onUpdate:comparisonAfterUrl': onUpdateComparisonAfterUrl,
-        'onUpdate:existingThumbnailType': onUpdateExistingThumbnailType,
         'onUpdate:comparisonBeforeFile': onUpdateComparisonBeforeFile,
         'onUpdate:comparisonAfterFile': onUpdateComparisonAfterFile,
         'onUpdate:thumbnailType': onUpdateThumbnailType
@@ -121,13 +119,12 @@ describe('ComfyHubThumbnailStep', () => {
     await user.click(screen.getByTestId('type-image'))
 
     expect(onUpdateThumbnailType).toHaveBeenCalledWith('image')
+    // Comparison file inputs reset, but the restored before/after URLs stay
+    // inert so switching back restores the previews.
     expect(onUpdateComparisonBeforeFile).toHaveBeenCalledWith(null)
     expect(onUpdateComparisonAfterFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
     expect(onUpdateComparisonAfterUrl).not.toHaveBeenCalled()
-    // existingThumbnailType must survive the switch — existingComparisonUrls is
-    // gated on it, so clearing it would break restore-on-switch-back.
-    expect(onUpdateExistingThumbnailType).not.toHaveBeenCalled()
   })
 
   it('renders a restored GIF thumbnail as an image, not a video', () => {
@@ -174,9 +171,9 @@ describe('ComfyHubThumbnailStep', () => {
     expect(srcs).toContain('https://cdn.example.com/after.png')
   })
 
-  it('clears the existing thumbnail type when a restored image is removed', async () => {
+  it('clears a restored image thumbnail when removed', async () => {
     const user = userEvent.setup()
-    const onUpdateExistingThumbnailType = vi.fn()
+    const onUpdateThumbnailFile = vi.fn()
     const onUpdateThumbnailUrl = vi.fn()
     renderStep(
       {
@@ -185,20 +182,23 @@ describe('ComfyHubThumbnailStep', () => {
         existingThumbnailType: 'image'
       },
       {
-        'onUpdate:existingThumbnailType': onUpdateExistingThumbnailType,
+        'onUpdate:thumbnailFile': onUpdateThumbnailFile,
         'onUpdate:thumbnailUrl': onUpdateThumbnailUrl
       }
     )
 
     await user.click(screen.getByTestId('clear-button'))
 
-    expect(onUpdateExistingThumbnailType).toHaveBeenCalledWith(null)
+    expect(onUpdateThumbnailFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).toHaveBeenCalledWith(null)
   })
 
-  it('clears the existing thumbnail type when a restored comparison is removed', async () => {
+  it('clears both restored comparison images when removed', async () => {
     const user = userEvent.setup()
-    const onUpdateExistingThumbnailType = vi.fn()
+    const onUpdateThumbnailUrl = vi.fn()
+    const onUpdateComparisonAfterUrl = vi.fn()
+    const onUpdateComparisonBeforeFile = vi.fn()
+    const onUpdateComparisonAfterFile = vi.fn()
     renderStep(
       {
         thumbnailType: 'imageComparison',
@@ -206,11 +206,19 @@ describe('ComfyHubThumbnailStep', () => {
         comparisonAfterUrl: 'https://cdn.example.com/after.png',
         existingThumbnailType: 'imageComparison'
       },
-      { 'onUpdate:existingThumbnailType': onUpdateExistingThumbnailType }
+      {
+        'onUpdate:thumbnailUrl': onUpdateThumbnailUrl,
+        'onUpdate:comparisonAfterUrl': onUpdateComparisonAfterUrl,
+        'onUpdate:comparisonBeforeFile': onUpdateComparisonBeforeFile,
+        'onUpdate:comparisonAfterFile': onUpdateComparisonAfterFile
+      }
     )
 
     await user.click(screen.getByTestId('clear-button'))
 
-    expect(onUpdateExistingThumbnailType).toHaveBeenCalledWith(null)
+    expect(onUpdateThumbnailUrl).toHaveBeenCalledWith(null)
+    expect(onUpdateComparisonAfterUrl).toHaveBeenCalledWith(null)
+    expect(onUpdateComparisonBeforeFile).toHaveBeenCalledWith(null)
+    expect(onUpdateComparisonAfterFile).toHaveBeenCalledWith(null)
   })
 })

@@ -219,7 +219,6 @@ const emit = defineEmits<{
   'update:thumbnailType': [value: ThumbnailType]
   'update:thumbnailFile': [value: File | null]
   'update:thumbnailUrl': [value: string | null]
-  'update:existingThumbnailType': [value: ThumbnailType | null]
   'update:comparisonBeforeFile': [value: File | null]
   'update:comparisonAfterFile': [value: File | null]
   'update:comparisonAfterUrl': [value: string | null]
@@ -339,7 +338,6 @@ const hasThumbnailContent = computed(() => {
 })
 
 function clearAllPreviews() {
-  emit('update:existingThumbnailType', null)
   if (thumbnailType === 'imageComparison') {
     emit('update:comparisonBeforeFile', null)
     emit('update:comparisonAfterFile', null)
