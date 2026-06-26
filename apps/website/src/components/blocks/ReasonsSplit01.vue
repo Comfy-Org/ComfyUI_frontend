@@ -40,7 +40,7 @@ const { highlightClass = 'text-white' } = defineProps<{
       <div
         v-for="reason in reasons"
         :key="reason.id"
-        class="flex flex-col gap-4 border-b border-primary-comfy-canvas/20 py-10 first:pt-0 lg:flex-row lg:gap-12"
+        class="flex flex-col gap-4 border-b border-primary-comfy-canvas/20 py-10 first:pt-0 lg:gap-12 xl:flex-row"
       >
         <div class="shrink-0 lg:w-84">
           <h3
