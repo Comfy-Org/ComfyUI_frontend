@@ -30,7 +30,8 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   CHURNKEY_CANCELLATION_ENABLED = 'churnkey_cancellation_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
-  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth'
+  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  SIGNUP_TURNSTILE = 'signup_turnstile'
 }
 
 /**
@@ -181,6 +182,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
         false
+      )
+    },
+    get signupTurnstileMode() {
+      return resolveFlag(
+        ServerFeatureFlag.SIGNUP_TURNSTILE,
+        remoteConfig.value.signup_turnstile,
+        'off'
       )
     }
   })

@@ -144,7 +144,6 @@ const i18n = createI18n({
         gpuLabel: 'RTX 6000 Pro (96GB VRAM)',
         addCreditsLabel: 'Add more credits whenever',
         customLoRAsLabel: 'Import your own LoRAs',
-        membersLabel: '{count} members',
         tiers: {
           founder: {
             name: "Founder's Edition",
