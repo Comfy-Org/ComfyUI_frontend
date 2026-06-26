@@ -526,7 +526,8 @@ describe('useTemplateUrlLoader', () => {
       const thrownError = new Error('Network error')
       mockLoadTemplates.mockRejectedValueOnce(thrownError)
 
-      const { loadTemplateFromUrl, error, hasAttempted } = useTemplateUrlLoader()
+      const { loadTemplateFromUrl, error, hasAttempted } =
+        useTemplateUrlLoader()
 
       await loadTemplateFromUrl()
       expect(error.value).toBe(thrownError)
