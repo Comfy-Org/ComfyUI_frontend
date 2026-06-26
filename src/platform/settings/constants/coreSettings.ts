@@ -487,7 +487,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Show updates for new models, and major new features.',
     type: 'boolean',
     defaultValue: () =>
-      api.getServerFeature(ServerFeatureFlag.SHOW_VERSION_UPDATES, true)
+      api.getServerFeature(ServerFeatureFlag.SHOW_VERSION_UPDATES, isCloud)
   },
   {
     id: 'Comfy.ConfirmClear',

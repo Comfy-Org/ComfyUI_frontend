@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -94,8 +94,8 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    // Cloud has its own update surface; the toast is for local installs.
+    if (isCloud) {
       return false
     }
 
@@ -126,8 +126,8 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
-    // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    // Cloud has its own update surface; the red dot is for local installs.
+    if (isCloud) {
       return false
     }
 
@@ -172,10 +172,8 @@ export const useReleaseStore = defineStore('release', () => {
   })
 
   const shouldShowPopup = computed(() => {
-    if (!isDesktop && !isCloud) {
-      return false
-    }
-
+    // Gated purely by the setting: off by default on local installs,
+    // on by default on Cloud (seeded by the server feature flag fallback).
     if (!showVersionUpdates.value) {
       return false
     }

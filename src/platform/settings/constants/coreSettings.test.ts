@@ -1,8 +1,18 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
 import { CORE_SETTINGS } from './coreSettings'
+
+const mockDist = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  isDesktop: false,
+  isNightly: false,
+  get isCloud() {
+    return mockDist.isCloud
+  }
+}))
 
 function getDefault(id: string) {
   const setting = CORE_SETTINGS.find((s) => s.id === id)
@@ -12,6 +22,10 @@ function getDefault(id: string) {
 }
 
 describe('Comfy.Notification.ShowVersionUpdates default', () => {
+  beforeEach(() => {
+    mockDist.isCloud = false
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -24,7 +38,15 @@ describe('Comfy.Notification.ShowVersionUpdates default', () => {
     expect(getDefault('Comfy.Notification.ShowVersionUpdates')).toBe(false)
   })
 
-  it('falls back to true when the server flag is unset', () => {
+  it('falls back to off on local installs when the server flag is unset', () => {
+    vi.spyOn(api, 'getServerFeature').mockImplementation(
+      (_name, fallback) => fallback
+    )
+    expect(getDefault('Comfy.Notification.ShowVersionUpdates')).toBe(false)
+  })
+
+  it('falls back to on for Cloud when the server flag is unset', () => {
+    mockDist.isCloud = true
     vi.spyOn(api, 'getServerFeature').mockImplementation(
       (_name, fallback) => fallback
     )
