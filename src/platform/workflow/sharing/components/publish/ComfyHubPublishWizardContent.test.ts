@@ -52,8 +52,11 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
+    thumbnailUrl: null,
     comparisonBeforeFile: null,
+    comparisonBeforeUrl: null,
     comparisonAfterFile: null,
+    comparisonAfterUrl: null,
     exampleImages: [],
     tutorialUrl: '',
     metadata: {}
@@ -137,7 +140,24 @@ describe('ComfyHubPublishWizardContent', () => {
             template: '<div data-testid="examples-step" />'
           },
           ComfyHubThumbnailStep: {
-            template: '<div data-testid="thumbnail-step" />'
+            template:
+              '<div data-testid="thumbnail-step">' +
+              '<button data-testid="emit-type" @click="$emit(\'update:thumbnailType\', \'video\')" />' +
+              '<button data-testid="emit-file" @click="$emit(\'update:thumbnailFile\', stubFile)" />' +
+              '<button data-testid="emit-before-file" @click="$emit(\'update:comparisonBeforeFile\', stubFile)" />' +
+              '<button data-testid="emit-after-file" @click="$emit(\'update:comparisonAfterFile\', stubFile)" />' +
+              '<button data-testid="emit-clear" @click="$emit(\'clear\')" />' +
+              '</div>',
+            emits: [
+              'update:thumbnailType',
+              'update:thumbnailFile',
+              'update:comparisonBeforeFile',
+              'update:comparisonAfterFile',
+              'clear'
+            ],
+            setup() {
+              return { stubFile: new File(['x'], 'stub.png') }
+            }
           },
           ComfyHubProfilePromptPanel: {
             template:
@@ -314,6 +334,93 @@ describe('ComfyHubPublishWizardContent', () => {
 
       const footer = screen.getByTestId('publish-footer')
       expect(footer.getAttribute('data-publish-disabled')).toBe('false')
+    })
+  })
+
+  describe('thumbnail step handlers', () => {
+    function lastFormUpdate(): Partial<ComfyHubPublishFormData> {
+      const payload = onUpdateFormData.mock.calls.at(-1)?.[0]
+      expect(payload).toBeTruthy()
+      return payload as Partial<ComfyHubPublishFormData>
+    }
+
+    it('clears every file/url field when thumbnail type changes', async () => {
+      renderComponent({ currentStep: 'examples' })
+
+      await userEvent.click(screen.getByTestId('emit-type'))
+
+      expect(onUpdateFormData).toHaveBeenCalledWith({
+        thumbnailType: 'video',
+        thumbnailFile: null,
+        thumbnailUrl: null,
+        comparisonBeforeFile: null,
+        comparisonBeforeUrl: null,
+        comparisonAfterFile: null,
+        comparisonAfterUrl: null
+      })
+    })
+
+    it('clears thumbnailUrl when a new thumbnail file is chosen', async () => {
+      renderComponent({ currentStep: 'examples' })
+
+      await userEvent.click(screen.getByTestId('emit-file'))
+
+      const call = lastFormUpdate()
+      expect(call).toMatchObject({ thumbnailUrl: null })
+      expect(call.thumbnailFile).toBeInstanceOf(File)
+    })
+
+    it('clears comparisonBeforeUrl when a new comparison-before file is chosen', async () => {
+      renderComponent({ currentStep: 'examples' })
+
+      await userEvent.click(screen.getByTestId('emit-before-file'))
+
+      const call = lastFormUpdate()
+      expect(call).toMatchObject({ comparisonBeforeUrl: null })
+      expect(call.comparisonBeforeFile).toBeInstanceOf(File)
+    })
+
+    it('clears comparisonAfterUrl when a new comparison-after file is chosen', async () => {
+      renderComponent({ currentStep: 'examples' })
+
+      await userEvent.click(screen.getByTestId('emit-after-file'))
+
+      const call = lastFormUpdate()
+      expect(call).toMatchObject({ comparisonAfterUrl: null })
+      expect(call.comparisonAfterFile).toBeInstanceOf(File)
+    })
+
+    it('clears thumbnail file + url when child emits clear in image mode', async () => {
+      renderComponent({
+        currentStep: 'examples',
+        formData: { ...createDefaultFormData(), thumbnailType: 'image' }
+      })
+
+      await userEvent.click(screen.getByTestId('emit-clear'))
+
+      expect(onUpdateFormData).toHaveBeenCalledWith({
+        thumbnailFile: null,
+        thumbnailUrl: null
+      })
+    })
+
+    it('clears both comparison files + urls when child emits clear in comparison mode', async () => {
+      renderComponent({
+        currentStep: 'examples',
+        formData: {
+          ...createDefaultFormData(),
+          thumbnailType: 'imageComparison'
+        }
+      })
+
+      await userEvent.click(screen.getByTestId('emit-clear'))
+
+      expect(onUpdateFormData).toHaveBeenCalledWith({
+        comparisonBeforeFile: null,
+        comparisonBeforeUrl: null,
+        comparisonAfterFile: null,
+        comparisonAfterUrl: null
+      })
     })
   })
 

@@ -32,13 +32,24 @@ function getAssetIds(assets: AssetInfo[]): string[] {
   return assets.map((asset) => asset.id)
 }
 
-function resolveThumbnailFile(
+interface ThumbnailSource {
+  file: File | null
+  url: string | null
+}
+
+function resolveThumbnailSource(
   formData: ComfyHubPublishFormData
-): File | undefined {
+): ThumbnailSource {
   if (formData.thumbnailType === 'imageComparison') {
-    return formData.comparisonBeforeFile ?? undefined
+    return {
+      file: formData.comparisonBeforeFile,
+      url: formData.comparisonBeforeUrl
+    }
   }
-  return formData.thumbnailFile ?? undefined
+  return {
+    file: formData.thumbnailFile,
+    url: formData.thumbnailUrl
+  }
 }
 
 export function useComfyHubPublishSubmission() {
@@ -74,14 +85,15 @@ export function useComfyHubPublishSubmission() {
       await workflowShareService.getShareableAssets()
     )
 
-    const thumbnailFile = resolveThumbnailFile(formData)
-    const thumbnailTokenOrUrl = thumbnailFile
-      ? await uploadFileAndGetToken(thumbnailFile)
-      : undefined
+    const thumbnail = resolveThumbnailSource(formData)
+    const thumbnailTokenOrUrl = thumbnail.file
+      ? await uploadFileAndGetToken(thumbnail.file)
+      : (thumbnail.url ?? undefined)
     const thumbnailComparisonTokenOrUrl =
-      formData.thumbnailType === 'imageComparison' &&
-      formData.comparisonAfterFile
-        ? await uploadFileAndGetToken(formData.comparisonAfterFile)
+      formData.thumbnailType === 'imageComparison'
+        ? formData.comparisonAfterFile
+          ? await uploadFileAndGetToken(formData.comparisonAfterFile)
+          : (formData.comparisonAfterUrl ?? undefined)
         : undefined
 
     const sampleImageTokensOrUrls =

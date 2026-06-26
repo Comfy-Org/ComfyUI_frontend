@@ -24,14 +24,14 @@
         >
           <ComfyHubThumbnailStep
             :thumbnail-type="formData.thumbnailType"
-            @update:thumbnail-type="onUpdateFormData({ thumbnailType: $event })"
-            @update:thumbnail-file="onUpdateFormData({ thumbnailFile: $event })"
-            @update:comparison-before-file="
-              onUpdateFormData({ comparisonBeforeFile: $event })
-            "
-            @update:comparison-after-file="
-              onUpdateFormData({ comparisonAfterFile: $event })
-            "
+            :thumbnail-url="formData.thumbnailUrl"
+            :comparison-before-url="formData.comparisonBeforeUrl"
+            :comparison-after-url="formData.comparisonAfterUrl"
+            @update:thumbnail-type="onUpdateThumbnailType"
+            @update:thumbnail-file="onUpdateThumbnailFile"
+            @update:comparison-before-file="onUpdateComparisonBeforeFile"
+            @update:comparison-after-file="onUpdateComparisonAfterFile"
+            @clear="onClearThumbnail"
           />
           <ComfyHubExamplesStep
             :example-images="formData.exampleImages"
@@ -139,6 +139,57 @@ const isPublishDisabled = computed(
     (flags.comfyHubProfileGateEnabled && hasProfile.value !== true) ||
     (isFinishStepVisible.value && !finishStepReady.value)
 )
+
+function onUpdateThumbnailType(
+  value: ComfyHubPublishFormData['thumbnailType']
+) {
+  onUpdateFormData({
+    thumbnailType: value,
+    thumbnailFile: null,
+    thumbnailUrl: null,
+    comparisonBeforeFile: null,
+    comparisonBeforeUrl: null,
+    comparisonAfterFile: null,
+    comparisonAfterUrl: null
+  })
+}
+
+function onUpdateThumbnailFile(value: File | null) {
+  onUpdateFormData({
+    thumbnailFile: value,
+    thumbnailUrl: null
+  })
+}
+
+function onUpdateComparisonBeforeFile(value: File | null) {
+  onUpdateFormData({
+    comparisonBeforeFile: value,
+    comparisonBeforeUrl: null
+  })
+}
+
+function onUpdateComparisonAfterFile(value: File | null) {
+  onUpdateFormData({
+    comparisonAfterFile: value,
+    comparisonAfterUrl: null
+  })
+}
+
+function onClearThumbnail() {
+  if (formData.thumbnailType === 'imageComparison') {
+    onUpdateFormData({
+      comparisonBeforeFile: null,
+      comparisonBeforeUrl: null,
+      comparisonAfterFile: null,
+      comparisonAfterUrl: null
+    })
+    return
+  }
+  onUpdateFormData({
+    thumbnailFile: null,
+    thumbnailUrl: null
+  })
+}
 
 async function handlePublish() {
   if (isResolvingPublishAccess.value || isPublishing) {

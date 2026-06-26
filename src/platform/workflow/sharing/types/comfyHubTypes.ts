@@ -14,8 +14,11 @@ export interface ComfyHubPublishFormData {
   customNodes: string[]
   thumbnailType: ThumbnailType
   thumbnailFile: File | null
+  thumbnailUrl: string | null
   comparisonBeforeFile: File | null
+  comparisonBeforeUrl: string | null
   comparisonAfterFile: File | null
+  comparisonAfterUrl: string | null
   exampleImages: ExampleImage[]
   tutorialUrl: string
   metadata: Record<string, unknown>
