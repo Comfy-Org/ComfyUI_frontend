@@ -439,7 +439,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJob.value) return
 
     // Update the executing nodes list
-    if (typeof e.detail !== 'string') {
+    if (e.detail == null) {
       if (activeJobId.value) {
         delete queuedJobs.value[activeJobId.value]
       }

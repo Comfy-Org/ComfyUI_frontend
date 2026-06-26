@@ -417,6 +417,7 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('uses widget nodeId for simplified widget locator when present', () => {
+    const subgraphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const widget = createMockWidget({
       name: 'text',
       type: 'combo',
@@ -434,7 +435,7 @@ describe('computeProcessedWidgets borderStyle', () => {
         executing: false,
         inputs: [],
         outputs: [],
-        subgraphId: 'subgraph-node'
+        subgraphId
       },
       graphId: GRAPH_ID,
       showAdvanced: false,
@@ -444,7 +445,7 @@ describe('computeProcessedWidgets borderStyle', () => {
     })
 
     expect(result[0].simplified.nodeLocatorId).toBe(
-      createNodeLocatorId('subgraph-node', toNodeId('inner-node'))
+      createNodeLocatorId(subgraphId, toNodeId('inner-node'))
     )
   })
   it('deduplication keeps visible widget over hidden duplicate', () => {
@@ -523,6 +524,35 @@ describe('computeProcessedWidgets borderStyle', () => {
     expect(result).toHaveLength(1)
     expect(result[0].name).toBe('color')
     expect(result[0].renderKey).toBe('node:1:color:color')
+  })
+
+  it('omits the processed widget id when node id normalization fails', () => {
+    const widget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: toNodeId('')
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: toNodeId('1'),
+        type: 'TestNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result[0].id).toBeUndefined()
   })
 })
 

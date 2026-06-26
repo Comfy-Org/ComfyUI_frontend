@@ -7,6 +7,7 @@ import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -251,10 +252,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
     })
 
     it('should return null when conversion fails', () => {
-      const locatorId = createNodeLocatorId(
-        'unknown-subgraph-id',
-        toNodeId(456)
-      )
+      const locatorId = 'unknown-subgraph-id:456' as NodeLocatorId
       mockNodeLocatorIdToNodeExecutionId.mockReturnValue(null)
 
       const result = store.nodeLocatorIdToExecutionId(locatorId)
@@ -1578,6 +1576,15 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store._executingNodeProgress).toBeNull()
       expect(store.activeJobId).toBeNull()
+    })
+
+    it('keeps the active job when a numeric node id is executing', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('executing', 123)
+
+      expect(store.activeJobId).toBe('job-1')
+      expect(store.queuedJobs['job-1']).toBeDefined()
     })
   })
 

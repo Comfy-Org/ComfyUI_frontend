@@ -971,8 +971,6 @@ export class LGraph
       return
     }
 
-    if (node.id != null) node.id = node.id
-
     if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'

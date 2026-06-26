@@ -849,7 +849,8 @@ export class LGraphNode
       }
 
       if (j === 'id') {
-        if (info.id !== -1) this.id = toNodeId(info.id)
+        const id = toNodeId(info.id)
+        if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
       }
 

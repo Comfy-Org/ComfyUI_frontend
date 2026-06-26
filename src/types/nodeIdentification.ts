@@ -1,4 +1,4 @@
-import { toNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
@@ -30,7 +30,15 @@ export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
 export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
 
 function parseNodeIdSegment(part: string): NodeId {
-  return toNodeId(part)
+  return requireNodeIdSegment(part)
+}
+
+function requireNodeIdSegment(value: unknown): NodeId {
+  const nodeId = parseNodeId(value)
+  if (!nodeId) throw new Error('Node ID segment must be non-empty')
+  if (nodeId.includes(':'))
+    throw new Error('Node ID segment cannot contain ":"')
+  return nodeId
 }
 
 function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
@@ -108,9 +116,12 @@ export function createNodeLocatorId(
   subgraphUuid: string | null,
   localNodeId: NodeId
 ): NodeLocatorId {
-  return (
-    subgraphUuid ? `${subgraphUuid}:${localNodeId}` : localNodeId
-  ) as NodeLocatorId
+  const nodeId = requireNodeIdSegment(localNodeId)
+  const locatorId = subgraphUuid ? `${subgraphUuid}:${nodeId}` : nodeId
+  if (!isNodeLocatorId(locatorId)) {
+    throw new Error('Invalid NodeLocatorId components')
+  }
+  return locatorId as NodeLocatorId
 }
 /**
  * Parse a NodeExecutionId into its component node IDs
@@ -135,10 +146,9 @@ export function createNodeExecutionId<const T extends readonly NodeId[]>(
   if (nodeIds.length === 0) {
     throw new Error('NodeExecutionId requires at least one node ID')
   }
-  if (nodeIds.some((id) => id.length === 0)) {
-    throw new Error('Node ID segment must be non-empty')
-  }
-  const executionId = nodeExecutionIdFromString(nodeIds.join(':'))
+  const executionId = nodeExecutionIdFromString(
+    nodeIds.map(requireNodeIdSegment).join(':')
+  )
   if (!executionId) throw new Error('Invalid NodeExecutionId components')
   return executionId
 }

@@ -13,7 +13,6 @@ const zRendererType = z.enum([
 // innerNode.id = `${this.node.id}:${i}`
 // Remove it after GroupNode is redesigned.
 export const zNodeId = z.union([z.number().int(), z.string()])
-export type NodeId = z.infer<typeof zNodeId>
 const zNodeInputName = z.string()
 
 /**

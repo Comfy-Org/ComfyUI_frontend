@@ -122,6 +122,15 @@ describe('nodeIdentification', () => {
         expect(result).toBe(`${validUuid}:node_1`)
         expect(isNodeLocatorId(result)).toBe(true)
       })
+
+      it('should reject node ID segments with separators', () => {
+        expect(() =>
+          createNodeLocatorId(validUuid, toNodeId('node:1'))
+        ).toThrow('Node ID segment cannot contain ":"')
+        expect(() => createNodeLocatorId(null, toNodeId('node:1'))).toThrow(
+          'Node ID segment cannot contain ":"'
+        )
+      })
     })
   })
 
@@ -229,6 +238,12 @@ describe('nodeIdentification', () => {
         expect(() =>
           createNodeExecutionId([toNodeId(123), toNodeId('')])
         ).toThrow('Node ID segment must be non-empty')
+      })
+
+      it('should reject path segments with separators', () => {
+        expect(() =>
+          createNodeExecutionId([toNodeId(123), toNodeId('node:1')])
+        ).toThrow('Node ID segment cannot contain ":"')
       })
     })
   })

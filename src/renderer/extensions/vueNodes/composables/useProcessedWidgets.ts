@@ -30,7 +30,10 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
@@ -42,10 +45,7 @@ import type {
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
-import {
-  getExecutionIdFromNodeData,
-  getLocatorIdFromNodeData
-} from '@/utils/graphTraversalUtil'
+import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
 type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
@@ -59,7 +59,7 @@ interface ProcessedWidget {
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
-  id: string
+  id?: string
   widgetId?: WidgetId
   name: string
   renderKey: string
@@ -209,7 +209,7 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const widgetNodeId = stripGraphPrefix(widget.nodeId ?? nodeId ?? '')
+    const widgetNodeId = stripGraphPrefix(widget.nodeId ?? nodeId)
     const widgetState = widget.widgetId
       ? widgetValueStore.getWidget(widget.widgetId)
       : graphId && widgetNodeId
@@ -269,7 +269,7 @@ export function computeProcessedWidgets({
     isVisible: visible,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId ?? '') ?? ''
+    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -296,11 +296,8 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = nodeData
-      ? getLocatorIdFromNodeData({
-          ...nodeData,
-          id: widget.nodeId ?? nodeData.id
-        })
+    const nodeLocatorId = bareWidgetId
+      ? createNodeLocatorId(nodeData.subgraphId ?? null, bareWidgetId)
       : undefined
 
     const simplified: SimplifiedWidget = {
@@ -355,7 +352,6 @@ export function computeProcessedWidgets({
         missingModelStore
       ),
       hidden: mergedOptions.hidden ?? false,
-      id: String(bareWidgetId),
       widgetId: widget.widgetId,
       name: widget.name,
       renderKey,
@@ -366,7 +362,8 @@ export function computeProcessedWidgets({
       visible,
       updateHandler,
       tooltipConfig,
-      slotMetadata
+      slotMetadata,
+      ...(bareWidgetId === null ? {} : { id: bareWidgetId })
     })
   }
 
