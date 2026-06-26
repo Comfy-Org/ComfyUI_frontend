@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import { ref } from 'vue'
+import { defineComponent, h, inject, provide, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -57,7 +57,22 @@ const MockFormDropdownInput = {
     '<button ref="triggerButton" class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
-const PassThroughStub = {
+const PopoverOpenKey = Symbol('popover-open')
+
+const PopoverRootStub = defineComponent({
+  props: { open: { type: Boolean, default: false } },
+  setup(props, { slots }) {
+    provide(PopoverOpenKey, () => props.open)
+    return () => h('div', slots.default?.())
+  }
+})
+const PopoverContentStub = defineComponent({
+  setup(_, { slots }) {
+    const isOpen = inject<() => boolean>(PopoverOpenKey, () => false)
+    return () => (isOpen() ? h('div', slots.default?.()) : null)
+  }
+})
+const PopoverPortalStub = {
   template: '<div><slot /></div>'
 }
 const TriggerStub = {
@@ -98,9 +113,9 @@ function mountDropdown(
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
         FormDropdownMenu: MockFormDropdownMenu,
-        PopoverRoot: PassThroughStub,
-        PopoverPortal: PassThroughStub,
-        PopoverContent: PassThroughStub,
+        PopoverRoot: PopoverRootStub,
+        PopoverPortal: PopoverPortalStub,
+        PopoverContent: PopoverContentStub,
         PopoverTrigger: TriggerStub
       }
     }
@@ -134,19 +149,20 @@ async function openDropdown(
 describe('FormDropdown', () => {
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
-      const { rerender } = mountDropdown([
+      const ctx = mountDropdown([
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
-      await flushPromises()
+      await openDropdown(ctx)
 
       expect(getMenuItems()).toHaveLength(2)
 
-      await rerender({
+      await ctx.rerender({
         items: [
           createItem('output-0', 'rendered1.mp4'),
           createItem('output-1', 'rendered2.mp4')
-        ]
+        ],
+        isOpen: true
       })
       await flushPromises()
 
@@ -156,28 +172,31 @@ describe('FormDropdown', () => {
     })
 
     it('updates when items change but IDs stay the same', async () => {
-      const { rerender } = mountDropdown([createItem('1', 'alpha')])
-      await flushPromises()
+      const ctx = mountDropdown([createItem('1', 'alpha')])
+      await openDropdown(ctx)
 
-      await rerender({ items: [createItem('1', 'beta')] })
+      await ctx.rerender({ items: [createItem('1', 'beta')], isOpen: true })
       await flushPromises()
 
       expect(getMenuItems()[0].name).toBe('beta')
     })
 
     it('updates when switching between empty and non-empty items', async () => {
-      const { rerender } = mountDropdown([])
-      await flushPromises()
+      const ctx = mountDropdown([])
+      await openDropdown(ctx)
 
       expect(getMenuItems()).toHaveLength(0)
 
-      await rerender({ items: [createItem('1', 'video.mp4')] })
+      await ctx.rerender({
+        items: [createItem('1', 'video.mp4')],
+        isOpen: true
+      })
       await flushPromises()
 
       expect(getMenuItems()).toHaveLength(1)
       expect(getMenuItems()[0].name).toBe('video.mp4')
 
-      await rerender({ items: [] })
+      await ctx.rerender({ items: [], isOpen: true })
       await flushPromises()
 
       expect(getMenuItems()).toHaveLength(0)
@@ -190,7 +209,7 @@ describe('FormDropdown', () => {
         sourceItems.filter((item) => item.name.includes('video'))
     )
 
-    const { rerender } = mountDropdown(
+    const ctx = mountDropdown(
       [createItem('1', 'video-a.mp4'), createItem('2', 'video-b.mp4')],
       { searcher }
     )
@@ -198,12 +217,12 @@ describe('FormDropdown', () => {
 
     expect(searcher).not.toHaveBeenCalled()
 
-    await rerender({
+    await ctx.rerender({
       items: [createItem('1', 'video-a.mp4'), createItem('2', 'video-b.mp4')],
       searcher,
       searchQuery: 'video-a'
     })
-    await rerender({
+    await ctx.rerender({
       items: [createItem('3', 'video-c.mp4'), createItem('4', 'video-d.mp4')],
       searcher,
       searchQuery: 'video-a'
@@ -211,6 +230,12 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
+
+    await openDropdown(ctx, {
+      items: [createItem('3', 'video-c.mp4'), createItem('4', 'video-d.mp4')],
+      searcher,
+      searchQuery: 'video-a'
+    })
     expect(getMenuItems().map((item) => item.id)).toEqual(['3', '4'])
   })
 
@@ -261,20 +286,15 @@ describe('FormDropdown', () => {
     expect(onUpdateSelected).not.toHaveBeenCalled()
   })
 
-  it('does not treat closed full-list items as current search results', async () => {
-    const onUpdateSelected = vi.fn()
-    const { user } = mountDropdown(
+  it('does not render the menu (or expose closed items as candidates) when closed', async () => {
+    mountDropdown(
       [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
-      { searchQuery: 'alp', onUpdateSelected }
+      { searchQuery: 'alp' }
     )
     await flushPromises()
 
-    expect(getCandidateIndex()).toBe(-1)
-
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
-    await flushPromises()
-
-    expect(onUpdateSelected).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('dropdown-menu')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Search enter' })).toBeNull()
   })
 
   it('searches the latest query before selecting the top search result', async () => {

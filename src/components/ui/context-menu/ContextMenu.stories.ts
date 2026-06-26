@@ -40,6 +40,86 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+export const Default: Story = {
+  render: (args) => ({
+    components: {
+      DropdownMenu,
+      DropdownMenuTrigger,
+      DropdownMenuContent,
+      DropdownMenuItem,
+      DropdownMenuSeparator,
+      DropdownMenuShortcut,
+      Button
+    },
+    setup: () => ({ args }),
+    template: `
+      <div class="flex h-72 items-center justify-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="secondary">Open menu</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent :size="args.size">
+            <DropdownMenuItem>
+              <template #icon><i class="icon-[lucide--copy]" /></template>
+              Copy
+              <DropdownMenuShortcut>Ctrl+C</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <template #icon><i class="icon-[lucide--clipboard-paste]" /></template>
+              Paste
+              <DropdownMenuShortcut>Ctrl+V</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <template #icon><i class="icon-[lucide--trash-2]" /></template>
+              Delete
+              <DropdownMenuShortcut>⌫</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    `
+  })
+}
+
+export const Disabled: Story = {
+  render: (args) => ({
+    components: {
+      DropdownMenu,
+      DropdownMenuTrigger,
+      DropdownMenuContent,
+      DropdownMenuItem,
+      DropdownMenuSeparator,
+      Button
+    },
+    setup: () => ({ args }),
+    template: `
+      <div class="flex h-72 items-center justify-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="secondary">Open menu</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent :size="args.size">
+            <DropdownMenuItem>
+              <template #icon><i class="icon-[lucide--copy]" /></template>
+              Copy
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>
+              <template #icon><i class="icon-[lucide--clipboard-paste]" /></template>
+              Paste (disabled)
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled>
+              <template #icon><i class="icon-[lucide--trash-2]" /></template>
+              Delete (disabled)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    `
+  })
+}
+
 export const ContextMenuOnAssetCard: Story = {
   render: (args) => ({
     setup() {
@@ -60,9 +140,12 @@ export const ContextMenuOnAssetCard: Story = {
       <div class="flex h-72 items-center justify-center">
         <ContextMenu>
           <ContextMenuTrigger as-child>
-            <div class="flex h-40 w-56 cursor-context-menu items-center justify-center rounded-lg border border-border-subtle bg-secondary-background text-sm text-text-subtle">
+            <button
+              type="button"
+              class="flex h-40 w-56 cursor-context-menu items-center justify-center rounded-lg border border-border-subtle bg-secondary-background text-sm text-text-subtle"
+            >
               Right-click here
-            </div>
+            </button>
           </ContextMenuTrigger>
           <ContextMenuContent :size="args.size">
             <ContextMenuItem>

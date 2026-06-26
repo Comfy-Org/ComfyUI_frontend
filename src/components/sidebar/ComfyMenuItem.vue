@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@/components/common/Badge.vue'
 import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
 import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue'
 import DropdownMenuShortcut from '@/components/ui/dropdown-menu/DropdownMenuShortcut.vue'
@@ -82,7 +82,7 @@ function onMouseDown(event: MouseEvent) {
     @select="(event: Event) => event.preventDefault()"
   >
     <span class="flex-1">{{ item.label }}</span>
-    <Tag severity="info" class="text-xs">{{ t('g.beta') }}</Tag>
+    <Badge :label="t('g.beta')" />
     <ToggleSwitch
       :model-value="nodes2Enabled"
       :aria-label="item.label as string"

@@ -196,11 +196,15 @@ const contextMenuItems = computed<ContextMenuItem[]>(() => {
   return items
 })
 
+let isRepositioning = false
+
 async function show(event: MouseEvent) {
   anchor.value = { x: event.clientX, y: event.clientY }
   if (isOpen.value) {
+    isRepositioning = true
     isOpen.value = false
     await nextTick()
+    isRepositioning = false
   }
   isOpen.value = true
 }
@@ -210,7 +214,7 @@ function hide() {
 }
 
 function onOpenChange(open: boolean) {
-  if (!open) emit('hide')
+  if (!open && !isRepositioning) emit('hide')
 }
 
 function runCommand(item: ContextMenuItem) {

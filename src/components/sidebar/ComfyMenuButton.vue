@@ -160,11 +160,11 @@ const translatedItems = computed(() => {
 
   if (helpIndex !== -1) {
     items[helpIndex].icon = 'icon-[lucide--circle-help]'
-    const isLastItem = helpIndex !== items.length - 1
+    const hasItemsAfterHelp = helpIndex !== items.length - 1
     helpItem = items.splice(
       helpIndex,
       1,
-      ...(isLastItem ? [{ separator: true }] : [])
+      ...(hasItemsAfterHelp ? [{ separator: true }] : [])
     )[0]
   }
   helpIndex = items.length
