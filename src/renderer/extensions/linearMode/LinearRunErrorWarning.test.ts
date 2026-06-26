@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
+import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 
 const mocks = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
@@ -60,6 +61,22 @@ describe('LinearRunErrorWarning', () => {
     expect(warning).toHaveTextContent(
       'KSampler is missing a required input: model'
     )
+    expect(screen.getByText('Required input missing')).toHaveAttribute(
+      'title',
+      'Required input missing'
+    )
+    const description = screen.getByTestId(
+      'linear-validation-warning-description'
+    )
+    expect(description).toHaveAttribute(
+      'id',
+      LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+    )
+    expect(description).toHaveTextContent('Required input missing')
+    expect(description).toHaveTextContent(
+      'KSampler is missing a required input: model'
+    )
+    expect(description).not.toHaveTextContent('Show errors in graph')
     expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()
   })
 

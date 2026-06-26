@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
@@ -15,6 +16,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
+import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
@@ -32,6 +34,7 @@ const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
 const { hasAnyError } = storeToRefs(useExecutionErrorStore())
+const { overlayMessage } = useErrorOverlayState()
 
 const { toastTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
@@ -47,7 +50,12 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   { controls: true, immediate: false }
 )
 const widgetListRef = useTemplateRef('widgetListRef')
-const runErrorWarningId = 'linear-run-error-warning'
+const showRunErrorWarning = computed(
+  () =>
+    hasAnyError.value &&
+    toValue(isActiveSubscription) &&
+    toValue(overlayMessage).trim().length > 0
+)
 
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
@@ -142,7 +150,7 @@ function handleDragDrop() {
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
-        <LinearRunErrorWarning v-if="hasAnyError && isActiveSubscription" />
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
           class="mt-4 w-full"
@@ -173,8 +181,8 @@ function handleDragDrop() {
             class="grow"
             size="lg"
             :aria-describedby="
-              hasAnyError && isActiveSubscription
-                ? runErrorWarningId
+              showRunErrorWarning
+                ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
                 : undefined
             "
             @click="runButtonClick"
@@ -189,7 +197,7 @@ function handleDragDrop() {
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
-        <LinearRunErrorWarning v-if="hasAnyError && isActiveSubscription" />
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div
           class="m-1 mb-2 text-node-component-slot-text"
           v-text="t('linearMode.runCount')"
@@ -211,7 +219,9 @@ function handleDragDrop() {
           class="mt-4 w-full text-sm"
           size="lg"
           :aria-describedby="
-            hasAnyError && isActiveSubscription ? runErrorWarningId : undefined
+            showRunErrorWarning
+              ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+              : undefined
           "
           @click="runButtonClick"
         >

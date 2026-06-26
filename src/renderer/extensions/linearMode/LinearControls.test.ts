@@ -6,11 +6,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeError } from '@/schemas/apiSchema'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
+import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const billingMock = vi.hoisted(() => ({
   isActiveSubscription: true
+}))
+
+const overlayMock = vi.hoisted(() => ({
+  overlayMessage: 'KSampler is missing a required input: model',
+  overlayTitle: 'Required input missing'
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -21,8 +27,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/components/error/useErrorOverlayState', () => ({
   useErrorOverlayState: () => ({
-    overlayMessage: 'KSampler is missing a required input: model',
-    overlayTitle: 'Required input missing'
+    overlayMessage: overlayMock.overlayMessage,
+    overlayTitle: overlayMock.overlayTitle
   })
 }))
 
@@ -114,6 +120,8 @@ describe('LinearControls', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     billingMock.isActiveSubscription = true
+    overlayMock.overlayMessage = 'KSampler is missing a required input: model'
+    overlayMock.overlayTitle = 'Required input missing'
   })
 
   it.for([
@@ -133,10 +141,23 @@ describe('LinearControls', () => {
       within(warning).getByRole('button', { name: 'Show errors in graph' })
     ).toBeInTheDocument()
     expect(within(warning).queryByLabelText('Close')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Run' })).toHaveAttribute(
+    const runButton = screen.getByRole('button', { name: 'Run' })
+    expect(runButton).toHaveAttribute(
       'aria-describedby',
-      'linear-run-error-warning'
+      LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
     )
+    const description = screen.getByTestId(
+      'linear-validation-warning-description'
+    )
+    expect(description).toHaveAttribute(
+      'id',
+      LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+    )
+    expect(description).toHaveTextContent('Required input missing')
+    expect(description).toHaveTextContent(
+      'KSampler is missing a required input: model'
+    )
+    expect(description).not.toHaveTextContent('Show errors in graph')
   })
 
   it.for([
@@ -172,4 +193,15 @@ describe('LinearControls', () => {
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
     }
   )
+
+  it('does not show the warning when the error copy is empty', () => {
+    overlayMock.overlayMessage = ''
+
+    renderControls({ hasError: true })
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Run' })).not.toHaveAttribute(
+      'aria-describedby'
+    )
+  })
 })
