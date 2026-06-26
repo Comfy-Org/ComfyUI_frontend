@@ -87,11 +87,14 @@ describe('VideoPreview', () => {
     return screen.getByRole('region', { name: /^Video preview/ })
   }
 
-  describe('minimum frame height', () => {
+  describe('resize minimum frame height', () => {
     it('uses the fallback height before video metadata loads', () => {
       renderVideoPreview()
 
-      expect(getPreviewRegion()).toHaveStyle('min-height: 220px')
+      expect(getPreviewRegion()).toHaveAttribute(
+        'data-resize-min-height',
+        '220'
+      )
     })
 
     it('uses the 100px floor for ultrawide videos', async () => {
@@ -99,7 +102,10 @@ describe('VideoPreview', () => {
 
       await loadVideoWithDimensions(container, { width: 320, height: 80 })
 
-      expect(getPreviewRegion()).toHaveStyle('min-height: 100px')
+      expect(getPreviewRegion()).toHaveAttribute(
+        'data-resize-min-height',
+        '100'
+      )
       expect(screen.getByText('320 x 80')).toBeInTheDocument()
     })
 
@@ -108,7 +114,10 @@ describe('VideoPreview', () => {
 
       await loadVideoWithDimensions(container, { width: 90, height: 160 })
 
-      expect(getPreviewRegion()).toHaveStyle('min-height: 356px')
+      expect(getPreviewRegion()).toHaveAttribute(
+        'data-resize-min-height',
+        '356'
+      )
       expect(screen.getByText('90 x 160')).toBeInTheDocument()
     })
   })

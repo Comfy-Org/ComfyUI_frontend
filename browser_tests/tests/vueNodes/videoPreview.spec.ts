@@ -64,6 +64,22 @@ async function requireBoundingBox(locator: Locator, subject: string) {
   return box
 }
 
+async function expectNodeBoxUnchanged(
+  locator: Locator,
+  before: { height: number; width: number },
+  subject: string
+) {
+  const after = await requireBoundingBox(locator, subject)
+  expect(
+    Math.abs(after.width - before.width),
+    `${subject} should not change node width`
+  ).toBeLessThanOrEqual(CENTER_TOLERANCE_PX)
+  expect(
+    Math.abs(after.height - before.height),
+    `${subject} should not change node height`
+  ).toBeLessThanOrEqual(CENTER_TOLERANCE_PX)
+}
+
 function objectPositionFraction(value: string) {
   if (value.endsWith('%')) return Number.parseFloat(value) / 100
 
@@ -212,6 +228,10 @@ test.describe(
 
         for (const filename of fixtureVideos) {
           const initialSrc = await loadVideo.videoSrc()
+          const nodeBoxBeforeLoad = await requireBoundingBox(
+            loadVideoNode,
+            `Load Video node before loading ${filename}`
+          )
           await loadVideo.upload.setInputFiles(
             assetPath(`workflowInMedia/${filename}`)
           )
@@ -223,6 +243,11 @@ test.describe(
           await expect.poll(() => loadVideo.videoSrc()).not.toEqual(initialSrc)
 
           const layout = await expectCenteredVideoPreview(loadVideo.preview)
+          await expectNodeBoxUnchanged(
+            loadVideoNode,
+            nodeBoxBeforeLoad,
+            `Load Video node after loading ${filename}`
+          )
           const updatedVideoAspectRatio =
             layout.videoIntrinsicWidth / layout.videoIntrinsicHeight
 
