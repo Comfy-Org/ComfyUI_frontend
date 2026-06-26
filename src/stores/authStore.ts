@@ -455,7 +455,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isCustomerEndpoint = (input: string): boolean => {
     try {
       const { pathname } = new URL(input, window.location.href)
-      return pathname === '/customers' || pathname.includes('/customers/')
+      return pathname === '/customers' || pathname.startsWith('/customers/')
     } catch {
       return false
     }
