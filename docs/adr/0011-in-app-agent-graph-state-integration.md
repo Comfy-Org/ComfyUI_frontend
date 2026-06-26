@@ -115,6 +115,44 @@ a rewrite:
    merge, retiring the merge dialog for fine-grained edits. The room model, actor/source tracking,
    and the Redis channel are unchanged.
 
+### Prototype implementation (this PR)
+
+This PR ships TDD-as-code for **both** layers so the V0 shape and the end-state are exercised, not
+just described. Nothing is wired into the chat UI yet.
+
+**Layer A — V0 server-draft path** (`src/platform/agent/common/`)
+
+- `agentProtocol.ts` — typed FE⇄agent wire contract + `parseAgentEvent()` decoder for untrusted
+  WS payloads.
+- `draftReconciler.ts` — pure `version`-CAS decision (`apply` / `conflict` / `stale`).
+- `useAgentDraftSync.ts` — composable tracking per-workflow base `version` and the three merge
+  outcomes via injected canvas ports.
+
+**Layer B — CRDT peer path (the #4661 migration target)** (`src/platform/agent/crdt/`)
+
+- `agentRoom.ts` — a `Y.Doc`-backed room whose top-level types (`nodes`/`links`/`reroutes`) mirror
+  the layout store; real `encodeStateVector`/`diffSince`/`applyRemoteUpdate` + presence.
+- `roomSync.ts` — transport-agnostic two-phase Yjs sync (state-vector handshake + live updates),
+  modelled on `y-protocols/sync`; runs over the existing Redis→WS bridge.
+- `agentRoomManager.ts` — room lifecycle: a tab switch is a `join`/`leave`; rooms stay alive in
+  memory while referenced or pinned (agent editing a backgrounded workflow).
+- `roomDocBinding.ts` — generic, layer-safe bidirectional `Y.Doc` binding with origin-tag echo
+  guards.
+
+**Wiring (renderer layer)** — `src/renderer/core/layout/agent/bindRoomToLayoutStore.ts` binds a
+room to the **real** `layoutStore` singleton via its existing (`"future feature"`)
+`getYDoc()`/`applyUpdate` surface. A test drives an agent room edit into the live store and asserts
+the version bump — concrete proof of the "few lines of code" claim. Layout binds today; data-model
+mutations bind the same way once that class finishes migrating to the store.
+
+**Local chat state** — `src/platform/agent/session/agentSessionStore.ts` is an **Immer** reducer
+for streaming deltas / tool-call lifecycle. Chat is single-client, so it is deliberately *not* a
+CRDT: Yjs owns graph state, Immer owns local UI state, and the two never mix.
+
+A layering constraint surfaced during this work: `platform/` may not import `renderer/`
+(base → platform → workbench → renderer). Hence the pure CRDT core lives in `platform/` and only
+the thin singleton wiring lives in `renderer/`.
+
 ### Alternatives considered
 
 - **Build true CRDT (Yjs) agent sync in V0** — rejected: data-model CRDT migration incomplete;
