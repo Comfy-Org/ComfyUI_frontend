@@ -1,26 +1,18 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import ProductCardsSection from "../../components/common/ProductCardsSection.vue";
-import HeroSection from "../../templates/mcp/HeroSection.vue";
-import SetupSection from "../../templates/mcp/SetupSection.vue";
-import WhySection from "../../templates/mcp/WhySection.vue";
-import ToolsSection from "../../templates/mcp/ToolsSection.vue";
-import HowItWorksSection from "../../templates/mcp/HowItWorksSection.vue";
-import FAQSection from "../../templates/mcp/FAQSection.vue";
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import HeroSection from '../../templates/mcp/HeroSection.vue'
+import SetupSection from '../../templates/mcp/SetupSection.vue'
+import WhySection from '../../templates/mcp/WhySection.vue'
+import ToolsSection from '../../templates/mcp/ToolsSection.vue'
+import HowItWorksSection from '../../templates/mcp/HowItWorksSection.vue'
+import FAQSection from '../../templates/mcp/FAQSection.vue'
+import { t } from '../../i18n/translations'
 ---
 
 <BaseLayout
-  title="Comfy MCP — Drive ComfyUI from any AI agent"
-  description="Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client."
-  keywords={[
-    "comfy mcp",
-    "comfyui mcp server",
-    "model context protocol comfyui",
-    "ai agent comfyui",
-    "claude comfyui",
-    "comfy claude integration",
-    "mcp image generation",
-  ]}
+  title={t('mcp.meta.title', 'zh-CN')}
+  description={t('mcp.meta.description', 'zh-CN')}
 >
   <HeroSection locale="zh-CN" client:load />
   <SetupSection locale="zh-CN" client:visible />

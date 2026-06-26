@@ -1825,6 +1825,17 @@ const translations = {
       '我们尽力为经历面试流程的候选人提供有意义的反馈。由于申请量较大，在简历筛选阶段可能无法提供详细反馈。'
   },
 
+  // MCP – Meta
+  'mcp.meta.title': {
+    en: 'Comfy MCP — Drive ComfyUI from any AI agent',
+    'zh-CN': 'Comfy MCP — 让任何 AI 智能体驱动 ComfyUI'
+  },
+  'mcp.meta.description': {
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client.',
+    'zh-CN':
+      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎，可在 Claude Code、Claude Desktop 及任何兼容 MCP 的客户端中生成图像、视频、音频和 3D 内容。'
+  },
+
   // MCP – HeroSection
   'mcp.hero.heading': {
     en: 'Drive ComfyUI from\nany AI agent.',
