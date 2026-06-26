@@ -76,6 +76,8 @@ async function getChurnkeyInitCalls(page: Page): Promise<ChurnkeyInitCall[]> {
 test.describe('Cancellation flow routing', { tag: '@cloud' }, () => {
   let dialog: CancelSubscriptionDialog
 
+  test.use({ timezoneId: 'UTC' })
+
   test.beforeEach(async ({ comfyPage }) => {
     dialog = new CancelSubscriptionDialog(comfyPage.page)
   })
