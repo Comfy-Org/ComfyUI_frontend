@@ -19,26 +19,24 @@ import FieldSwitch from './FieldSwitch.vue'
 import LayoutField from './LayoutField.vue'
 
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const settingsDialog = useSettingsDialog()
 const rightSidePanelStore = useRightSidePanelStore()
-const colorPaletteStore = useColorPaletteStore()
 
 const isHighlightingAdvanced = ref(false)
-
-function triggerHighlightAnimation() {
-  isHighlightingAdvanced.value = true
-  rightSidePanelStore.clearHighlight()
-}
 
 watch(
   () => rightSidePanelStore.highlightGlobalSetting,
   (newVal) => {
-    if (newVal === 'Comfy.Node.AlwaysShowAdvancedWidgets') {
-      triggerHighlightAnimation()
+    if (
+      newVal &&
+      rightSidePanelStore.consumeHighlight(
+        'Comfy.Node.AlwaysShowAdvancedWidgets'
+      )
+    ) {
+      isHighlightingAdvanced.value = true
     }
   },
   { immediate: true }
@@ -128,10 +126,10 @@ function openFullSettings() {
       <div class="space-y-4 px-4 py-3">
         <FieldSwitch
           v-model="showAdvancedParameters"
+          data-testid="advanced-widgets-switch"
           :label="t('rightSidePanel.globalSettings.showAdvanced')"
           :tooltip="t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')"
-          :class="{ 'animate-highlight': isHighlightingAdvanced }"
-          :data-theme="colorPaletteStore.activePaletteId"
+          :highlighted="isHighlightingAdvanced"
           @animationend="isHighlightingAdvanced = false"
         />
         <FieldSwitch

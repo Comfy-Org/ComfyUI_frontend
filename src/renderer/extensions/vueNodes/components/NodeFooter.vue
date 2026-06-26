@@ -71,54 +71,44 @@
       </div>
     </Button>
 
-    <div class="relative z-0 -ml-5 flex flex-1 flex-row pl-5">
-      <Button
-        variant="textonly"
-        data-testid="advanced-inputs-button"
-        :class="
-          cn(
-            tabStyles,
-            'box-border w-full rounded-none bg-node-component-header-surface pt-9 pb-4',
-            enterRadiusClass
-          )
-        "
-        :style="headerColorStyle"
-        @pointerup="snapshotDragOnPointerUp"
-        @click.stop="emitIfNotDragged('toggleAdvanced')"
+    <Button
+      as="div"
+      variant="textonly"
+      data-testid="advanced-inputs-button"
+      :class="
+        cn(
+          tabStyles,
+          'relative z-0 -ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          'has-[[data-testid=advanced-settings-button]:hover]:hover:bg-node-component-header-surface',
+          enterRadiusClass
+        )
+      "
+      :style="headerColorStyle"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('toggleAdvanced')"
+    >
+      <div
+        class="flex size-full items-center justify-center gap-2"
+        :class="{ 'px-8': showAdvancedState }"
       >
-        <div class="flex size-full items-center justify-center gap-2">
-          <span class="truncate">{{
-            showAdvancedState
-              ? t('rightSidePanel.hideAdvancedShort')
-              : t('rightSidePanel.showAdvancedShort')
-          }}</span>
-          <i
-            v-if="!showAdvancedState"
-            class="icon-[lucide--settings-2] size-4 shrink-0"
-          />
-        </div>
-      </Button>
-
-      <Button
-        v-if="showAdvancedState"
-        v-tooltip.bottom="tooltipConfig"
-        variant="textonly"
-        data-testid="advanced-settings-button"
-        :aria-label="t('rightSidePanel.advancedWidgetSettings')"
-        class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex aspect-square h-full w-8 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface pt-9 pr-1 pb-4"
-        :class="[tabStyles, enterRadiusClass]"
-        :style="headerColorStyle"
-        @pointerdown.stop
-        @pointerup.stop
-        @mousedown.stop
-        @mouseup.stop
-        @click.stop="openSettings"
-      >
+        <span class="min-w-0 truncate">{{
+          showAdvancedState
+            ? t('rightSidePanel.hideAdvancedShort')
+            : t('rightSidePanel.showAdvancedShort')
+        }}</span>
         <i
-          class="hover:text-foreground icon-[lucide--settings] size-4 text-muted-foreground"
+          v-if="!showAdvancedState"
+          class="icon-[lucide--settings-2] size-4 shrink-0"
         />
-      </Button>
-    </div>
+      </div>
+
+      <NodeFooterAdvancedSettingsButton
+        v-if="showAdvancedState"
+        class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex aspect-square h-full w-8 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface pt-9 pr-1 pb-4"
+        :class="cn(tabStyles, enterRadiusClass)"
+        :style="headerColorStyle"
+      />
+    </Button>
   </div>
 
   <!-- Case 2: Error Only (Full Width) -->
@@ -203,7 +193,10 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
+      <div
+        class="flex size-full items-center justify-center gap-2"
+        :class="{ 'px-10': showAdvancedState }"
+      >
         <template v-if="showAdvancedState">
           <span class="truncate">{{
             t('rightSidePanel.hideAdvancedInputsButton')
@@ -218,29 +211,18 @@
       </div>
     </Button>
 
-    <Button
+    <NodeFooterAdvancedSettingsButton
       v-if="showAdvancedState"
-      v-tooltip.bottom="tooltipConfig"
-      variant="textonly"
-      data-testid="advanced-settings-button"
-      :aria-label="t('rightSidePanel.advancedWidgetSettings')"
       class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex aspect-square h-full w-10 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface"
-      :class="[
-        tabStyles,
-        footerRadiusRightClass,
-        hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4'
-      ]"
+      :class="
+        cn(
+          tabStyles,
+          footerRadiusRightClass,
+          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4'
+        )
+      "
       :style="headerColorStyle"
-      @pointerdown.stop
-      @pointerup.stop
-      @mousedown.stop
-      @mouseup.stop
-      @click.stop="openSettings"
-    >
-      <i
-        class="hover:text-foreground icon-[lucide--settings] size-4 text-muted-foreground"
-      />
-    </Button>
+    />
   </div>
 </template>
 
@@ -248,23 +230,12 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
+import NodeFooterAdvancedSettingsButton from './NodeFooterAdvancedSettingsButton.vue'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { app } from '@/scripts/app'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
-const settingsDialog = useSettingsDialog()
-const rightSidePanelStore = useRightSidePanelStore()
-const { createTooltipConfig } = useNodeTooltips('')
-const tooltipConfig = computed(() =>
-  createTooltipConfig(t('rightSidePanel.advancedWidgetSettings'))
-)
 
 interface Props {
   isSubgraph: boolean
@@ -309,19 +280,6 @@ function emitIfNotDragged(
   else emit('toggleAdvanced')
 }
 
-function openSettings() {
-  const isLegacyMenu = settingStore.get('Comfy.UseNewMenu') === 'Disabled'
-  if (isLegacyMenu) {
-    settingsDialog.show(undefined, 'Comfy.Node.AlwaysShowAdvancedWidgets')
-  } else {
-    if (app?.canvas) {
-      app.canvas.deselectAll()
-    }
-    rightSidePanelStore.openPanel('settings')
-    rightSidePanelStore.triggerHighlight('Comfy.Node.AlwaysShowAdvancedWidgets')
-  }
-}
-
 const RADIUS_CLASS = {
   'rounded-b-17': 'rounded-b-[17px]',
   'rounded-b-20': 'rounded-b-[20px]',
@@ -331,23 +289,25 @@ const RADIUS_CLASS = {
   'rounded-bl-20': 'rounded-bl-[20px]'
 } as const
 
+const SHAPE_CORNER_PREFIX_MAP: Record<
+  string | number,
+  Record<'both' | 'right' | 'left', string>
+> = {
+  [RenderShape.BOX]: { both: '', right: '', left: '' },
+  [RenderShape.CARD]: { both: 'rounded-br', right: 'rounded-br', left: '' },
+  default: { both: 'rounded-b', right: 'rounded-br', left: 'rounded-bl' }
+}
+
 function getBottomRadius(
   nodeShape: RenderShape | undefined,
   size: '17px' | '20px',
   corners: 'both' | 'right' | 'left' = 'both'
 ): string {
-  if (nodeShape === RenderShape.BOX) return ''
-  if (nodeShape === RenderShape.CARD) {
-    return corners === 'right' || corners === 'both'
-      ? RADIUS_CLASS[`rounded-br-${size === '17px' ? '17' : '20'}`]
-      : ''
-  }
-  const prefix =
-    corners === 'both'
-      ? 'rounded-b'
-      : corners === 'right'
-        ? 'rounded-br'
-        : 'rounded-bl'
+  const map =
+    SHAPE_CORNER_PREFIX_MAP[nodeShape ?? 'default'] ??
+    SHAPE_CORNER_PREFIX_MAP.default
+  const prefix = map[corners]
+  if (!prefix) return ''
   const key =
     `${prefix}-${size === '17px' ? '17' : '20'}` as keyof typeof RADIUS_CLASS
   return RADIUS_CLASS[key]
@@ -361,7 +321,7 @@ const footerRadiusRightClass = computed(() =>
   getBottomRadius(shape, hasAnyError ? '20px' : '17px', 'right')
 )
 
-const errorRadiusClass = computed(() => getBottomRadius(shape, '20px'))
+const errorRadiusClass = computed(() => getBottomRadius(shape, '20px', 'left'))
 
 const enterRadiusClass = computed(() => getBottomRadius(shape, '20px', 'right'))
 

@@ -87,8 +87,12 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     highlightGlobalSetting.value = settingName
   }
 
-  function clearHighlight() {
-    highlightGlobalSetting.value = null
+  function consumeHighlight(settingName: string): boolean {
+    if (highlightGlobalSetting.value === settingName) {
+      highlightGlobalSetting.value = null
+      return true
+    }
+    return false
   }
 
   return {
@@ -105,6 +109,6 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     focusSection,
     clearFocusedSection,
     triggerHighlight,
-    clearHighlight
+    consumeHighlight
   }
 })

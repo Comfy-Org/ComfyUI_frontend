@@ -38,13 +38,8 @@
     }
     6%,
     63% {
-      background-color: color-mix(
-        in srgb,
-        var(--p-primary-color) 25%,
-        transparent
-      );
-      box-shadow: 0 0 0 6px
-        color-mix(in srgb, var(--p-primary-color) 25%, transparent);
+      background-color: color-mix(in srgb, var(--fg-color) 25%, transparent);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--fg-color) 25%, transparent);
       border-radius: 4px;
     }
     100% {

@@ -269,6 +269,55 @@ describe('NodeFooter', () => {
       const enterBtn = screen.getByTestId('subgraph-enter-button')
       expect(enterBtn.className).toMatch(/rounded-br-\[20px\]/)
     })
+
+    it('error tab uses left-only rounding in dual-tab mode (Case 1)', () => {
+      renderFooter({
+        isSubgraph: true,
+        hasAnyError: true,
+        showErrorsTabEnabled: true
+      })
+      const errorBtn = screen.getByRole('button', { name: /error/i })
+      expect(errorBtn.className).toMatch(/rounded-bl-\[20px\]/)
+      expect(errorBtn.className).not.toMatch(/rounded-br-\[/)
+      expect(errorBtn.className).not.toMatch(/rounded-b-\[/)
+    })
+
+    it('error tab uses no rounding for CARD shape in dual-tab mode', () => {
+      renderFooter({
+        isSubgraph: true,
+        hasAnyError: true,
+        showErrorsTabEnabled: true,
+        shape: RenderShape.CARD
+      })
+      const errorBtn = screen.getByRole('button', { name: /error/i })
+      expect(errorBtn.className).not.toMatch(/rounded-bl-\[/)
+      expect(errorBtn.className).not.toMatch(/rounded-br-\[/)
+      expect(errorBtn.className).not.toMatch(/rounded-b-\[/)
+    })
+
+    it('enter tab uses rounded-br rounding for CARD shape in dual-tab mode', () => {
+      renderFooter({
+        isSubgraph: true,
+        hasAnyError: true,
+        showErrorsTabEnabled: true,
+        shape: RenderShape.CARD
+      })
+      const enterBtn = screen.getByTestId('subgraph-enter-button')
+      expect(enterBtn.className).toMatch(/rounded-br-\[20px\]/)
+    })
+
+    it('BOX shape renders no rounded corners in dual-tab mode', () => {
+      renderFooter({
+        isSubgraph: true,
+        hasAnyError: true,
+        showErrorsTabEnabled: true,
+        shape: RenderShape.BOX
+      })
+      const errorBtn = screen.getByRole('button', { name: /error/i })
+      const enterBtn = screen.getByTestId('subgraph-enter-button')
+      expect(errorBtn.className).not.toMatch(/rounded-b/)
+      expect(enterBtn.className).not.toMatch(/rounded-b/)
+    })
   })
 
   describe('headerColor style', () => {
