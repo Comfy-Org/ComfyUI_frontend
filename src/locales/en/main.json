@@ -2071,13 +2071,30 @@
     "reloadingModel": "Reloading model...",
     "uploadTexture": "Upload Texture",
     "applyingTexture": "Applying Texture...",
+    "menuBar": {
+      "showGrid": "Show grid",
+      "bgColor": "BG Color",
+      "bgImage": "BG image",
+      "panorama": "Panorama",
+      "removeBackground": "Remove BG",
+      "upDirection": "Up Direction",
+      "material": "Material",
+      "skeleton": "Skeleton",
+      "fov": "FOV",
+      "intensity": "Intensity",
+      "record": "Record",
+      "stopRecording": "Stop recording",
+      "switchProjection": "Switch projection",
+      "originalMaterialOnly": "Original material only"
+    },
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
       "pointCloud": "Point Cloud",
       "depth": "Depth",
-      "lineart": "Lineart"
+      "lineart": "Lineart",
+      "clay": "Clay"
     },
     "upDirections": {
       "original": "Original"

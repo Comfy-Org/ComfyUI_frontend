@@ -177,6 +177,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const canExport = ref(true)
   const materialModes = ref<readonly MaterialMode[]>([
     'original',
+    'clay',
     'normal',
     'wireframe'
   ])
