@@ -4,19 +4,29 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
-const { settings, nodeDefs } = vi.hoisted(() => ({
+const { settings, nodeDefs, pricing } = vi.hoisted(() => ({
   settings: {} as Record<string, unknown>,
-  nodeDefs: {} as Record<string, unknown>
+  nodeDefs: {} as Record<string, unknown>,
+  pricing: {
+    dynamic: false,
+    widgets: [] as string[],
+    inputs: [] as string[],
+    groups: [] as string[]
+  }
 }))
 
-vi.mock('@/scripts/app', () => ({ app: {} }))
+vi.mock('@/scripts/app', () => ({
+  app: {
+    canvas: { graph: { getNodeById: () => null, rootGraph: { id: 'g1' } } }
+  }
+}))
 
 vi.mock('@/composables/node/useNodePricing', () => ({
   useNodePricing: () => ({
-    getRelevantWidgetNames: () => [],
-    hasDynamicPricing: () => false,
-    getInputGroupPrefixes: () => [],
-    getInputNames: () => [],
+    getRelevantWidgetNames: () => pricing.widgets,
+    hasDynamicPricing: () => pricing.dynamic,
+    getInputGroupPrefixes: () => pricing.groups,
+    getInputNames: () => pricing.inputs,
     getNodeRevisionRef: () => ({ value: 0 })
   })
 }))
@@ -56,12 +66,38 @@ beforeEach(() => {
   settings['Comfy.NodeBadge.NodeIdBadgeMode'] = NodeBadgeMode.None
   for (const k of Object.keys(nodeDefs)) delete nodeDefs[k]
   nodeDefs['TestNode'] = { isCoreNode: false }
+  pricing.dynamic = false
+  pricing.widgets = []
+  pricing.inputs = []
+  pricing.groups = []
 })
 
 describe('usePartitionedBadges', () => {
   it('emits no core badges when every badge mode is None', () => {
     const result = usePartitionedBadges(nodeData()).value
     expect(result.core).toEqual([])
+  })
+
+  it('tracks dynamic-pricing dependencies for an api node without throwing', () => {
+    pricing.dynamic = true
+    pricing.widgets = ['seed']
+    pricing.inputs = ['model']
+    pricing.groups = ['lora']
+    const result = usePartitionedBadges(
+      nodeData({
+        apiNode: true,
+        inputs: [
+          { name: 'model', link: 1 },
+          { name: 'lora.0', link: 2 },
+          { name: 'unrelated', link: null }
+        ]
+      })
+    ).value
+
+    // The dynamic-pricing dependency tracking runs (widget + input + group
+    // access) and still produces a partitioned result.
+    expect(result).toHaveProperty('core')
+    expect(result).toHaveProperty('extension')
   })
 
   it('adds an id badge when the id mode is enabled', () => {
