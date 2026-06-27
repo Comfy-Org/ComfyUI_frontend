@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatusResponse,
   Plan
@@ -20,12 +22,14 @@ const {
   mockIsPersonal,
   mockPlans,
   mockPurchaseCredits,
+  mockUpdateActiveWorkspace,
   mockBillingStatus
 } = vi.hoisted(() => ({
   mockTeamWorkspacesEnabled: { value: false },
   mockIsPersonal: { value: true },
   mockPlans: { value: [] as Plan[] },
   mockPurchaseCredits: vi.fn(),
+  mockUpdateActiveWorkspace: vi.fn(),
   mockBillingStatus: {
     value: {
       is_active: true,
@@ -44,15 +48,25 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get teamWorkspacesEnabled() {
-        return mockTeamWorkspacesEnabled.value
-      }
+vi.mock('@/composables/useFeatureFlags', async () => {
+  const { ref } = await import('vue')
+  const teamWorkspacesEnabledRef = ref(mockTeamWorkspacesEnabled.value)
+  Object.defineProperty(mockTeamWorkspacesEnabled, 'value', {
+    get: () => teamWorkspacesEnabledRef.value,
+    set: (value: boolean) => {
+      teamWorkspacesEnabledRef.value = value
     }
   })
-}))
+  return {
+    useFeatureFlags: () => ({
+      flags: {
+        get teamWorkspacesEnabled() {
+          return mockTeamWorkspacesEnabled.value
+        }
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
@@ -64,7 +78,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
         ? { id: 'personal-123', type: 'personal' }
         : { id: 'team-456', type: 'team' }
     },
-    updateActiveWorkspace: vi.fn()
+    updateActiveWorkspace: mockUpdateActiveWorkspace
   })
 }))
 
@@ -142,9 +156,26 @@ describe('useBillingContext', () => {
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
   })
 
-  it('returns legacy type for personal workspace', () => {
+  it('selects legacy type when team workspaces are disabled', () => {
+    mockTeamWorkspacesEnabled.value = false
     const { type } = useBillingContext()
     expect(type.value).toBe('legacy')
+  })
+
+  it('selects workspace type for personal when team workspaces are enabled', () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockIsPersonal.value = true
+
+    const { type } = useBillingContext()
+    expect(type.value).toBe('workspace')
+  })
+
+  it('selects workspace type for team when team workspaces are enabled', () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockIsPersonal.value = false
+
+    const { type } = useBillingContext()
+    expect(type.value).toBe('workspace')
   })
 
   it('provides subscription info from legacy billing', () => {
@@ -227,6 +258,42 @@ describe('useBillingContext', () => {
   it('exposes showSubscriptionDialog action', () => {
     const { showSubscriptionDialog } = useBillingContext()
     expect(() => showSubscriptionDialog()).not.toThrow()
+  })
+
+  it('reinitializes workspace billing when the type flips on after legacy init', async () => {
+    mockTeamWorkspacesEnabled.value = false
+    mockIsPersonal.value = true
+
+    const { type, initialize } = useBillingContext()
+    await initialize()
+    await nextTick()
+
+    expect(type.value).toBe('legacy')
+    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+
+    // Authenticated remote config resolves the flag on for the same workspace
+    mockTeamWorkspacesEnabled.value = true
+
+    await vi.waitFor(() => {
+      expect(type.value).toBe('workspace')
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+    })
+  })
+
+  describe('subscription mirror to workspace store', () => {
+    it('mirrors subscription for personal workspaces when team workspaces are enabled', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = true
+
+      const { initialize } = useBillingContext()
+      await initialize()
+      await nextTick()
+
+      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
+        isSubscribed: true,
+        subscriptionPlan: null
+      })
+    })
   })
 
   describe('getMaxSeats', () => {
