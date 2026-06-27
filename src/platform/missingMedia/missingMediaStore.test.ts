@@ -289,7 +289,7 @@ describe('useMissingMediaStore', () => {
       expect(store.missingMediaCandidates).toBeNull()
     })
 
-    it('preserves candidates with a nullish nodeId (defensive)', () => {
+    it('preserves candidates with a nullish toNodeId(defensive)', () => {
       const store = useMissingMediaStore()
       const orphan = {
         nodeId: undefined as unknown as string,

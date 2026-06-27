@@ -115,10 +115,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { resolveNode } from '@/utils/litegraphUtil'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 const {
   widget,
