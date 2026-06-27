@@ -270,19 +270,17 @@ describe('NodeFooter', () => {
       expect(enterBtn.className).toMatch(/rounded-br-\[20px\]/)
     })
 
-    it('error tab uses left-only rounding in dual-tab mode (Case 1)', () => {
+    it('error tab uses both-corner rounding in dual-tab mode (Case 1)', () => {
       renderFooter({
         isSubgraph: true,
         hasAnyError: true,
         showErrorsTabEnabled: true
       })
       const errorBtn = screen.getByRole('button', { name: /error/i })
-      expect(errorBtn.className).toMatch(/rounded-bl-\[20px\]/)
-      expect(errorBtn.className).not.toMatch(/rounded-br-\[/)
-      expect(errorBtn.className).not.toMatch(/rounded-b-\[/)
+      expect(errorBtn.className).toMatch(/rounded-b-\[20px\]/)
     })
 
-    it('error tab uses no rounding for CARD shape in dual-tab mode', () => {
+    it('error tab uses rounded-br rounding for CARD shape in dual-tab mode', () => {
       renderFooter({
         isSubgraph: true,
         hasAnyError: true,
@@ -290,8 +288,8 @@ describe('NodeFooter', () => {
         shape: RenderShape.CARD
       })
       const errorBtn = screen.getByRole('button', { name: /error/i })
+      expect(errorBtn.className).toMatch(/rounded-br-\[20px\]/)
       expect(errorBtn.className).not.toMatch(/rounded-bl-\[/)
-      expect(errorBtn.className).not.toMatch(/rounded-br-\[/)
       expect(errorBtn.className).not.toMatch(/rounded-b-\[/)
     })
 

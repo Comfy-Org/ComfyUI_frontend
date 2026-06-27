@@ -28,7 +28,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pr-0 pb-4 pl-5',
           enterRadiusClass
         )
       "
@@ -78,7 +78,7 @@
       :class="
         cn(
           tabStyles,
-          'relative z-0 -ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          'relative z-0 -ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pr-0 pb-4 pl-5',
           'has-[[data-testid=advanced-settings-button]:hover]:hover:bg-node-component-header-surface',
           enterRadiusClass
         )
@@ -88,8 +88,12 @@
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
       <div
-        class="flex size-full items-center justify-center gap-2"
-        :class="{ 'px-8': showAdvancedState }"
+        :class="
+          cn(
+            'flex size-full min-w-0 items-center justify-center gap-2',
+            showAdvancedState ? 'pr-10' : 'px-4'
+          )
+        "
       >
         <span class="min-w-0 truncate">{{
           showAdvancedState
@@ -104,7 +108,7 @@
 
       <NodeFooterAdvancedSettingsButton
         v-if="showAdvancedState"
-        class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex aspect-square h-full w-8 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface pt-9 pr-1 pb-4"
+        class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex h-full w-10 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface pt-9 pb-4"
         :class="cn(tabStyles, enterRadiusClass)"
         :style="headerColorStyle"
       />
@@ -184,7 +188,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface',
+          'box-border w-full rounded-none bg-node-component-header-surface px-0',
           hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
           footerRadiusClass
         )
@@ -194,16 +198,20 @@
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
       <div
-        class="flex size-full items-center justify-center gap-2"
-        :class="{ 'px-10': showAdvancedState }"
+        :class="
+          cn(
+            'flex size-full min-w-0 items-center justify-center gap-2',
+            showAdvancedState ? 'pr-10' : 'px-4'
+          )
+        "
       >
         <template v-if="showAdvancedState">
-          <span class="truncate">{{
+          <span class="min-w-0 truncate">{{
             t('rightSidePanel.hideAdvancedInputsButton')
           }}</span>
         </template>
         <template v-else>
-          <span class="truncate">{{
+          <span class="min-w-0 truncate">{{
             t('rightSidePanel.showAdvancedInputsButton')
           }}</span>
           <i class="icon-[lucide--settings-2] size-4 shrink-0" />
@@ -213,7 +221,7 @@
 
     <NodeFooterAdvancedSettingsButton
       v-if="showAdvancedState"
-      class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex aspect-square h-full w-10 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface"
+      class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex h-full w-10 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface"
       :class="
         cn(
           tabStyles,
@@ -321,7 +329,7 @@ const footerRadiusRightClass = computed(() =>
   getBottomRadius(shape, hasAnyError ? '20px' : '17px', 'right')
 )
 
-const errorRadiusClass = computed(() => getBottomRadius(shape, '20px', 'left'))
+const errorRadiusClass = computed(() => getBottomRadius(shape, '20px'))
 
 const enterRadiusClass = computed(() => getBottomRadius(shape, '20px', 'right'))
 
