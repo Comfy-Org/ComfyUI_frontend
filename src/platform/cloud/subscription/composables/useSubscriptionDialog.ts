@@ -16,7 +16,7 @@ export type SubscriptionDialogReason =
   | 'out_of_credits'
   | 'top_up_blocked'
 
-export interface SubscriptionDialogOptions {
+interface SubscriptionDialogOptions {
   reason?: SubscriptionDialogReason
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
