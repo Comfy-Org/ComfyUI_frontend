@@ -115,10 +115,8 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalled()
     })
 
-    it('uses the unified table (no onChooseTeam) when team workspaces are enabled', () => {
+    it('does not wire onChooseTeam on the unified table (personal subscribes directly)', () => {
       mockTeamWorkspacesEnabled.value = true
-      // Unified table is workspace-type-agnostic (Jun-5 model): same path for
-      // a personal-plan or team-plan workspace.
       mockIsInPersonalWorkspace.value = true
       const { showPricingTable } = useSubscriptionDialog()
 
