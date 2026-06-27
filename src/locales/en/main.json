@@ -2249,9 +2249,10 @@
     "widgets": "Node Widgets Error"
   },
   "dynamicGroup": {
-    "addRow": "Add row",
-    "removeRow": "Remove row",
-    "row": "Row {index}"
+    "addGroup": "Add {group_name}",
+    "removeGroup": "Remove {group_name}",
+    "group": "{group_name} #{index}",
+    "defaultGroupName": "Group"
   },
   "oauth": {
     "consent": {

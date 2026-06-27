@@ -75,13 +75,9 @@ const WidgetBoundingBoxes = defineAsyncComponent(
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
-const WidgetDynamicGroupAdd = defineAsyncComponent(
+const WidgetDynamicGroup = defineAsyncComponent(
   () =>
-    import('@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupAdd.vue')
-)
-const WidgetDynamicGroupRow = defineAsyncComponent(
-  () =>
-    import('@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue')
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroup.vue')
 )
 
 export const FOR_TESTING = {
@@ -251,17 +247,9 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
-    'dynamic_group_add',
+    'dynamic_group',
     {
-      component: WidgetDynamicGroupAdd,
-      aliases: ['COMFY_DYNAMICGROUP_V3'],
-      essential: false
-    }
-  ],
-  [
-    'dynamic_group_row',
-    {
-      component: WidgetDynamicGroupRow,
+      component: WidgetDynamicGroup,
       aliases: [],
       essential: false
     }

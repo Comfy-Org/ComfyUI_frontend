@@ -1,9 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test, vi } from 'vitest'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { describe, expect, test } from 'vitest'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -315,14 +313,8 @@ describe('Dynamic Groups', () => {
   test('renders min rows on creation', () => {
     const node = testNode()
     addDynamicGroup(node, stringTemplate, { min: 2, max: 5 })
-    expect(widgetNames(node)).toStrictEqual([
-      'g',
-      'g.__row__0',
-      'g.0.a',
-      'g.__row__1',
-      'g.1.a'
-    ])
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+    expect(inputNames(node)).toStrictEqual([])
   })
 
   test('add row appends a new row up to max', () => {
@@ -331,75 +323,65 @@ describe('Dynamic Groups', () => {
     expect(widgetNames(node)).toStrictEqual(['g'])
 
     widgetNamed(node, 'g').callback?.(undefined)
-    expect(inputNames(node)).toStrictEqual(['g.0.a'])
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
 
     widgetNamed(node, 'g').callback?.(undefined)
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
 
     // At max, further adds are ignored.
     widgetNamed(node, 'g').callback?.(undefined)
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+  })
+
+  test('controller disabled option set at max', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 1 })
+    expect(widgetNamed(node, 'g').options?.disabled).toBe(false)
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNamed(node, 'g').options?.disabled).toBe(true)
   })
 
   test('remove row renumbers later rows', () => {
     const node = testNode()
     addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
-    widgetNamed(node, 'g').callback?.(undefined)
-    widgetNamed(node, 'g').callback?.(undefined)
-    widgetNamed(node, 'g').callback?.(undefined)
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<
+            string,
+            { addRow: () => void; removeRow: (r: number) => void }
+          >
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+    state.addRow()
 
     const row0Field = widgetNamed(node, 'g.0.a')
     const row2Field = widgetNamed(node, 'g.2.a')
 
-    widgetNamed(node, 'g.__row__1').callback?.(undefined)
+    state.removeRow(1)
 
-    expect(widgetNames(node)).toStrictEqual([
-      'g',
-      'g.__row__0',
-      'g.0.a',
-      'g.__row__1',
-      'g.1.a'
-    ])
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
     // Row 0 is untouched; the former row 2 shifts down into row 1.
     expect(widgetNamed(node, 'g.0.a')).toBe(row0Field)
     expect(widgetNamed(node, 'g.1.a')).toBe(row2Field)
   })
 
-  test('rows below min are not removable', () => {
+  test('rows below min cannot be removed', () => {
     const node = testNode()
     addDynamicGroup(node, stringTemplate, { min: 1, max: 5 })
-    widgetNamed(node, 'g').callback?.(undefined)
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<string, { removeRow: (r: number) => void }>
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
 
-    expect(widgetNamed(node, 'g.__row__0').options?.removable).toBe(false)
-    expect(widgetNamed(node, 'g.__row__1').options?.removable).toBe(true)
-
-    // Attempting to remove a protected row is a no-op.
-    widgetNamed(node, 'g.__row__0').callback?.(undefined)
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
-  })
-
-  test('canvas click removes a row only on the remove hit target', () => {
-    const node = testNode()
-    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
-    widgetNamed(node, 'g').callback?.(undefined)
-    widgetNamed(node, 'g').callback?.(undefined)
-
-    const header = widgetNamed(node, 'g.__row__1')
-    const up = { type: 'pointerup' } as CanvasPointerEvent
-    const down = { type: 'pointerdown' } as CanvasPointerEvent
-    const xCenter = node.size[0] - 15 - LiteGraph.NODE_WIDGET_HEIGHT * 0.5
-
-    // Releasing away from the remove target does nothing.
-    header.mouse?.(up, [0, 0] as Point, node)
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
-
-    // A pointerdown on the target does nothing (only release acts).
-    header.mouse?.(down, [xCenter, 0] as Point, node)
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
-
-    // Releasing on the target removes the row.
-    header.mouse?.(up, [xCenter, 0] as Point, node)
-    expect(inputNames(node)).toStrictEqual(['g.0.a'])
+    // Row 0 is at the min boundary — removing it is a no-op.
+    state.removeRow(0)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
   })
 })
