@@ -7,13 +7,23 @@ import {
   toBrowsableUrl
 } from './missingModelDownload'
 
-const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
-  vi.hoisted(() => ({
-    fetchMock: vi.fn(),
-    mockIsDesktop: { value: false },
-    mockSidebarTabStore: { activeSidebarTabId: null as string | null },
-    mockStartDownload: vi.fn()
-  }))
+const {
+  fetchMock,
+  mockIsDesktop,
+  mockSidebarTabStore,
+  mockStartDownload,
+  mockEnqueue,
+  mockToastAdd,
+  mockFlags
+} = vi.hoisted(() => ({
+  fetchMock: vi.fn(),
+  mockIsDesktop: { value: false },
+  mockSidebarTabStore: { activeSidebarTabId: null as string | null },
+  mockStartDownload: vi.fn(),
+  mockEnqueue: vi.fn(),
+  mockToastAdd: vi.fn(),
+  mockFlags: { serverSideModelDownloads: false }
+}))
 
 vi.stubGlobal('fetch', fetchMock)
 
@@ -33,12 +43,25 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
   useSidebarTabStore: () => mockSidebarTabStore
 }))
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFlags })
+}))
+
+vi.mock('@/platform/modelManager/stores/modelDownloadStore', () => ({
+  useModelDownloadStore: () => ({ enqueue: mockEnqueue })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mockToastAdd })
+}))
+
 let testId = 0
 
 beforeEach(() => {
   vi.restoreAllMocks()
   vi.resetAllMocks()
   delete window.__comfyDesktop2
+  mockFlags.serverSideModelDownloads = false
 })
 
 describe('fetchModelMetadata', () => {
@@ -377,6 +400,71 @@ describe('downloadModel', () => {
 
     expect(desktopDownloadModel).not.toHaveBeenCalled()
     expect(anchorClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the browser fallback on web when server-side downloads are disabled', () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(anchorClick).toHaveBeenCalledTimes(1)
+    expect(mockEnqueue).not.toHaveBeenCalled()
+  })
+
+  it('enqueues a server-side download and reveals the manager when enabled', async () => {
+    mockFlags.serverSideModelDownloads = true
+    mockEnqueue.mockResolvedValue({ download_id: 'd1', accepted: true })
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSidebarTabStore.activeSidebarTabId).toBe('model-manager')
+    })
+    expect(mockEnqueue).toHaveBeenCalledWith({
+      url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+      model_id: 'checkpoints/model.safetensors'
+    })
+    expect(anchorClick).not.toHaveBeenCalled()
+  })
+
+  it('shows a toast when a server-side enqueue fails', async () => {
+    mockFlags.serverSideModelDownloads = true
+    mockEnqueue.mockRejectedValue(new Error('boom'))
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: 'boom' })
+      )
+    })
+    expect(mockSidebarTabStore.activeSidebarTabId).toBeNull()
   })
 
   it('opens the model library sidebar before starting a desktop download', () => {

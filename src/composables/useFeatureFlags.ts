@@ -34,6 +34,7 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile'
+  SERVER_SIDE_MODEL_DOWNLOADS = 'server_side_model_downloads'
 }
 
 /**
@@ -207,6 +208,12 @@ export function useFeatureFlags() {
         ServerFeatureFlag.SIGNUP_TURNSTILE,
         remoteConfig.value.signup_turnstile,
         'off'
+      )
+    },
+    get serverSideModelDownloads() {
+      return api.getServerFeature(
+        ServerFeatureFlag.SERVER_SIDE_MODEL_DOWNLOADS,
+        false
       )
     }
   })
