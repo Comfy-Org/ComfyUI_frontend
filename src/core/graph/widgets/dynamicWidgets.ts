@@ -314,7 +314,10 @@ function syncController(group: string, node: DynamicGroupNode): void {
   if (!state || !controller) return
   controller.options ??= {}
   controller.options.disabled = countGroupRows(group, node) >= state.max
-  node.size[1] = node.computeSize([...node.size])[1]
+  // Route through setSize (not `size[1] = …`) so the layout store and the Vue
+  // node's min-height floor are updated; a direct buffer write bypasses the
+  // size setter and leaves the node unable to shrink after rows are removed.
+  node.setSize([node.size[0], node.computeSize()[1]])
 }
 
 function addRow(group: string, node: DynamicGroupNode): void {

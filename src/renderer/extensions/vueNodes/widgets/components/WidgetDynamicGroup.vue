@@ -75,6 +75,7 @@ import {
 } from '@/stores/widgetValueStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState } from '@/types/widgetState'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 const { widget, nodeId, nodeType } = defineProps<{
@@ -90,7 +91,7 @@ const nodeDefStore = useNodeDefStore()
 const group = widget.name
 
 const node = computed(
-  () => app.graph?.getNodeById(Number(nodeId)) as DynamicGroupNode | undefined
+  () => app.graph?.getNodeById(toNodeId(nodeId)) as DynamicGroupNode | undefined
 )
 
 const groupState = computed(
@@ -115,9 +116,9 @@ function resolveWidgetState(w: IBaseWidget): WidgetState | undefined {
   if (w.widgetId) return widgetValueStore.getWidget(w.widgetId)
   const graphId = node.value?.graph?.rootGraph?.id
   if (!graphId) return undefined
-  return widgetValueStore.getWidget(
-    widgetId(graphId, stripGraphPrefix(String(nodeId)), w.name)
-  )
+  const localId = stripGraphPrefix(String(nodeId))
+  if (!localId) return undefined
+  return widgetValueStore.getWidget(widgetId(graphId, localId, w.name))
 }
 
 function toFieldView(
