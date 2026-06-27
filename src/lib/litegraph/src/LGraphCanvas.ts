@@ -818,8 +818,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     options ||= {}
     this.options = options
 
-    // if(graph === undefined)
-    // throw ("No graph assigned");
     this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE
 
     this.ds = new DragAndScale(canvas)
@@ -4178,7 +4176,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
     const { created, nodes, links, reroutes } = results
 
-    // const failedNodes: ISerialisedNode[] = []
     const subgraphIdMap: Record<string, string> = {}
     // SubgraphV2: Remove always-clone behaviour
     //Update subgraph ids

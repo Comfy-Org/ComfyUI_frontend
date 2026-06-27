@@ -1,4 +1,3 @@
-// import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -14,7 +13,6 @@ import { useDialogService } from '@/services/dialogService'
  * Composable for handling basic selection operations like copy, paste, duplicate, delete, rename
  */
 export function useSelectionOperations() {
-  // const { getSelectedNodes } = useSelectedLiteGraphItems() // Unused for now
   const canvasStore = useCanvasStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
