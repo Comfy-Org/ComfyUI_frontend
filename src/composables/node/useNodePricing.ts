@@ -24,6 +24,7 @@ import type {
   WidgetDependency
 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { NodeId } from '@/types/nodeId'
 import type { Expression } from 'jsonata'
 import jsonata from 'jsonata'
 
@@ -452,18 +453,17 @@ const pricingTick = ref(0)
 // Per-node revision tracking for VueNodes mode (more efficient than global tick)
 // Uses plain Map with individual refs per node for fine-grained reactivity
 // Keys are stringified node IDs to handle both string and number ID types
-const nodeRevisions = new Map<string, Ref<number>>()
+const nodeRevisions = new Map<NodeId, Ref<number>>()
 
 /**
  * Get or create a revision ref for a specific node.
  * Each node has its own independent ref, so updates to one won't trigger others.
  */
-const getNodeRevisionRef = (nodeId: string | number): Ref<number> => {
-  const key = String(nodeId)
-  let rev = nodeRevisions.get(key)
+const getNodeRevisionRef = (nodeId: NodeId): Ref<number> => {
+  let rev = nodeRevisions.get(nodeId)
   if (!rev) {
     rev = ref(0)
-    nodeRevisions.set(key, rev)
+    nodeRevisions.set(nodeId, rev)
   }
   return rev
 }

@@ -1,4 +1,4 @@
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * Slot identifier utilities for consistent slot key generation and parsing

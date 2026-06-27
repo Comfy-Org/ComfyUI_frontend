@@ -39,7 +39,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
@@ -62,6 +61,9 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { isBlueprintType } from '@/utils/blueprintUtils'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -235,8 +237,7 @@ export const useLitegraphService = () => {
    */
   function setupStrokeStyles(node: LGraphNode) {
     node.strokeStyles['running'] = function (this: LGraphNode) {
-      const nodeId = String(this.id)
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(this.id)
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
@@ -250,7 +251,7 @@ export const useLitegraphService = () => {
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
       if (app.lastExecutionError?.node_id == this.id) {
-        return { color: '#f0f', lineWidth: 3 }
+        return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
   }
@@ -895,7 +896,7 @@ export const useLitegraphService = () => {
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
-    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
+    if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
       const items: object = {
@@ -947,8 +948,10 @@ export const useLitegraphService = () => {
     return [x + w / dpi / 2, y + h / dpi / 2]
   }
 
-  function goToNode(nodeId: NodeId) {
-    const graphNode = app.canvas.graph?.getNodeById(nodeId)
+  function goToNode(nodeId: SerializedNodeId) {
+    const parsedNodeId = parseNodeId(nodeId)
+    if (!parsedNodeId) return
+    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
   }

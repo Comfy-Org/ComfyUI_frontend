@@ -13,13 +13,11 @@ import type {
   IWidgetLocator
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  INodeInputSlot,
-  ISlotType,
-  NodeId
-} from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   GraphOrSubgraph,
   Subgraph
@@ -545,7 +543,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       store.setExposures(rootGraphId, hostLocator, [])
       return
     }
-    const legacyKey = createNodeLocatorId(rootGraphId, this.id)
+    const legacyKey = createNodeLocatorId(null, this.id)
     const legacy = store.getExposures(rootGraphId, legacyKey)
     if (legacy.length) {
       store.setExposures(rootGraphId, hostLocator, [...legacy])
@@ -737,7 +735,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     const newLink = LLink.create(innerLink)
-    newLink.origin_id = `${this.id}:${innerLink.origin_id}`
+    newLink.origin_id = toNodeId(`${this.id}:${innerLink.origin_id}`)
     newLink.origin_slot = innerLink.origin_slot
 
     return newLink
@@ -778,7 +776,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override getInnerNodes(
     executableNodes: Map<ExecutionId, ExecutableLGraphNode>,
-    subgraphNodePath: readonly NodeId[] = [],
+    subgraphNodePath: readonly SerializedNodeId[] = [],
     nodes: ExecutableLGraphNode[] = [],
     visited = new Set<SubgraphNode>()
   ): ExecutableLGraphNode[] {
@@ -796,7 +794,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
 
     const parentSubgraphNode = this.rootGraph
-      .resolveSubgraphIdPath(subgraphNodePath)
+      .resolveSubgraphIdPath(subgraphNodePath.map(toNodeId))
       .at(-1)
     const subgraphNodeDto = new ExecutableNodeDTO(
       this,

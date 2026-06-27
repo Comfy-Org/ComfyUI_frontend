@@ -9,7 +9,6 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type {
@@ -38,7 +37,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const missingNodesStore = useMissingNodesErrorStore()
   const missingMediaStore = useMissingMediaStore()
 
-  const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
+  const lastNodeErrors = ref<Record<string, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   const lastPromptError = ref<PromptError | null>(null)
 
@@ -155,9 +154,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Clears both validation errors and missing model state for a widget.
    *
    * @param errorInputName Name matched against `error.extra_info.input_name`.
-   *   For promoted subgraph widgets this is the resolved interior widget name.
-   * @param widgetName The actual widget name, used for missing model lookup.
-   *   At the legacy canvas call site both names are identical (`widget.name`).
+   * @param widgetName Widget name used for missing model/media lookup.
    */
   function clearWidgetRelatedErrors(
     executionId: NodeExecutionId,
@@ -216,7 +213,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const locator = lastExecutionErrorNodeLocatorId.value
     if (!locator) return null
     const localId = workflowStore.nodeLocatorIdToNodeId(locator)
-    return localId != null ? String(localId) : null
+    return localId
   })
 
   const hasExecutionError = computed(() => !!lastExecutionError.value)
