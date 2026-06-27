@@ -4,17 +4,6 @@ import type { Ref } from 'vue'
 export const DEFAULT_VIDEO_FPS = 20
 export const FILMSTRIP_SAMPLE_COUNT = 20
 
-export interface VideoFilmstripState {
-  thumbnails: string[]
-  duration: number
-  totalFrames: number
-  width: number
-  height: number
-  fps: number
-  loading: boolean
-  error: string | null
-}
-
 interface UseVideoFilmstripOptions {
   fps?: number
   sampleCount?: number
