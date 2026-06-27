@@ -33,8 +33,12 @@ const i18n = createI18n({
         trimVideo: 'Trim Video',
         startFrame: 'Start Frame',
         endFrame: 'End Frame',
-        skipToStart: 'Skip to start',
-        skipToEnd: 'Skip to end',
+        setStartFrame: 'Reset start to beginning',
+        setEndFrame: 'Reset end to last frame',
+        play: 'Play',
+        pause: 'Pause',
+        adjustStartFrame: 'Adjust start frame',
+        adjustEndFrame: 'Adjust end frame',
         duration: 'Duration',
         frames: 'Number of Frames',
         fileSize: 'File Size',
@@ -48,6 +52,11 @@ const i18n = createI18n({
 })
 
 type PanelProps = ComponentProps<typeof LoadVideoTrimPanel>
+
+async function flushPromises() {
+  await Promise.resolve()
+  await Promise.resolve()
+}
 
 function renderPanel(props: PanelProps) {
   return render(LoadVideoTrimPanel, {
@@ -205,17 +214,125 @@ describe('LoadVideoTrimPanel', () => {
     expect(playheadFrame.value).toBe(51)
   })
 
-  it('seeks the video preview when scrubbing the filmstrip', async () => {
-    renderPanel({
-      videoUrl: 'https://example.com/video.mp4',
-      trimEnabled: true
+  it('resets the start trim handle to the first frame', async () => {
+    const user = userEvent.setup()
+    const startFrame = ref(10)
+    const endFrame = ref(100)
+    const playheadFrame = ref(50)
+
+    const Host = defineComponent({
+      components: { LoadVideoTrimPanel },
+      setup() {
+        return {
+          playheadFrame,
+          startFrame,
+          endFrame,
+          trimEnabled: ref(true),
+          videoUrl: 'https://example.com/video.mp4'
+        }
+      },
+      template: `
+        <LoadVideoTrimPanel
+          v-model:playhead-frame="playheadFrame"
+          v-model:start-frame="startFrame"
+          v-model:end-frame="endFrame"
+          v-model:trim-enabled="trimEnabled"
+          :video-url="videoUrl"
+        />
+      `
     })
 
+    render(Host, { global: { plugins: [i18n] } })
+
+    await user.click(screen.getByLabelText('Reset start to beginning'))
+
+    expect(startFrame.value).toBe(0)
+    expect(playheadFrame.value).toBe(0)
+  })
+
+  it('resets the end trim handle to the last frame', async () => {
+    const user = userEvent.setup()
+    const startFrame = ref(10)
+    const endFrame = ref(80)
+    const playheadFrame = ref(50)
+
+    const Host = defineComponent({
+      components: { LoadVideoTrimPanel },
+      setup() {
+        return {
+          playheadFrame,
+          startFrame,
+          endFrame,
+          trimEnabled: ref(true),
+          videoUrl: 'https://example.com/video.mp4'
+        }
+      },
+      template: `
+        <LoadVideoTrimPanel
+          v-model:playhead-frame="playheadFrame"
+          v-model:start-frame="startFrame"
+          v-model:end-frame="endFrame"
+          v-model:trim-enabled="trimEnabled"
+          :video-url="videoUrl"
+        />
+      `
+    })
+
+    render(Host, { global: { plugins: [i18n] } })
+
+    await user.click(screen.getByLabelText('Reset end to last frame'))
+
+    expect(endFrame.value).toBe(100)
+    expect(playheadFrame.value).toBe(100)
+  })
+
+  it('seeks the video preview when scrubbing the filmstrip', async () => {
+    const playheadFrame = ref(0)
+    const startFrame = ref(0)
+    const endFrame = ref(100)
+
+    const Host = defineComponent({
+      components: { LoadVideoTrimPanel },
+      setup() {
+        return {
+          playheadFrame,
+          startFrame,
+          endFrame,
+          trimEnabled: ref(true),
+          videoUrl: 'https://example.com/video.mp4'
+        }
+      },
+      template: `
+        <LoadVideoTrimPanel
+          v-model:playhead-frame="playheadFrame"
+          v-model:start-frame="startFrame"
+          v-model:end-frame="endFrame"
+          v-model:trim-enabled="trimEnabled"
+          :video-url="videoUrl"
+        />
+      `
+    })
+
+    render(Host, { global: { plugins: [i18n] } })
+
     const video = screen.getByTestId('video-preview') as HTMLVideoElement
+    let currentTime = 0
+    Object.defineProperty(video, 'currentTime', {
+      get: () => currentTime,
+      set: (value: number) => {
+        currentTime = value
+      },
+      configurable: true
+    })
     Object.defineProperty(video, 'duration', {
       value: 10,
       configurable: true
     })
+
+    await fireEvent.loadedMetadata(video)
+    await flushPromises()
+    await fireEvent.seeked(video)
+    await flushPromises()
 
     const track = screen.getByTestId('trim-track')
     vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
@@ -229,11 +346,19 @@ describe('LoadVideoTrimPanel', () => {
       y: 0,
       toJSON: () => ({})
     })
+    track.setPointerCapture = vi.fn()
 
-    const user = userEvent.setup()
-    await user.pointer({ target: track, coords: { clientX: 100 } })
+    // eslint-disable-next-line testing-library/prefer-user-event -- pointer capture scrubbing needs low-level pointer events
+    await fireEvent.pointerDown(track, {
+      clientX: 100,
+      button: 0,
+      pointerId: 1
+    })
+    await flushPromises()
     await fireEvent.seeked(video)
+    await flushPromises()
 
-    expect(video.currentTime).toBe(5)
+    expect(playheadFrame.value).toBe(50)
+    expect(currentTime).toBe(5)
   })
 })

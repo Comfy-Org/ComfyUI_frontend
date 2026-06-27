@@ -90,8 +90,8 @@
             )
           "
           :disabled="controlsDisabled"
-          :aria-label="t('loadVideoTrim.skipToStart')"
-          @click="skipToStart"
+          :aria-label="t('loadVideoTrim.setStartFrame')"
+          @click="setStartFrame"
         >
           <i class="icon-[lucide--skip-back] size-4" />
         </button>
@@ -104,8 +104,8 @@
             )
           "
           :disabled="controlsDisabled"
-          :aria-label="t('loadVideoTrim.skipToEnd')"
-          @click="skipToEnd"
+          :aria-label="t('loadVideoTrim.setEndFrame')"
+          @click="setEndFrame"
         >
           <i class="icon-[lucide--skip-forward] size-4" />
         </button>
@@ -290,11 +290,18 @@ watch(
   }
 )
 
-watch(totalFrames, (frames) => {
-  if (!videoUrl || frames <= 0) return
-  endFrame.value = Math.max(frames - 1, 0)
-  playheadFrame.value = clamp(playheadFrame.value, 0, frameMax.value)
-})
+watch(
+  totalFrames,
+  (frames) => {
+    if (!videoUrl || frames <= 0) return
+    const lastFrame = Math.max(frames - 1, 0)
+    if (endFrame.value === 0 || endFrame.value > lastFrame) {
+      endFrame.value = lastFrame
+    }
+    playheadFrame.value = clamp(playheadFrame.value, 0, frameMax.value)
+  },
+  { immediate: true }
+)
 
 watch([startFrame, endFrame], ([start, end]) => {
   if (start >= end && end > 0) {
@@ -415,12 +422,16 @@ function handleTimeUpdate() {
   }
 }
 
-function skipToStart() {
-  void seekPreviewToFrame(startFrame.value)
+function setStartFrame() {
+  isPlaying.value = false
+  startFrame.value = 0
+  void seekPreviewToFrame(0)
 }
 
-function skipToEnd() {
-  void seekPreviewToFrame(endFrame.value)
+function setEndFrame() {
+  isPlaying.value = false
+  endFrame.value = frameMax.value
+  void seekPreviewToFrame(frameMax.value)
 }
 
 function formatDuration(seconds: number) {
