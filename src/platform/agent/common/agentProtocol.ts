@@ -215,3 +215,29 @@ export function parseAgentEvent(raw: unknown): AgentEvent | null {
       return null
   }
 }
+
+// ---------------------------------------------------------------------------
+// Draft snapshot: GET /api/agent/draft?workflow_id=... -> { content, version }
+// ---------------------------------------------------------------------------
+
+/**
+ * The authoritative server draft for a workflow (ADR-0011). Fetched on WS
+ * (re)connect and whenever a gap is suspected, to seed/reconcile the tab's base
+ * `version` without waiting for the agent to emit a new `draft_patch`.
+ */
+export interface DraftSnapshot {
+  content: WorkflowGraph
+  version: number
+}
+
+/** Decode an untrusted `GET /api/agent/draft` body, or `null` if malformed. */
+export function parseDraftSnapshot(raw: unknown): DraftSnapshot | null {
+  if (
+    !isRecord(raw) ||
+    !isRecord(raw.content) ||
+    typeof raw.version !== 'number'
+  ) {
+    return null
+  }
+  return { content: raw.content, version: raw.version }
+}

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AgentTurnRequest } from './agentProtocol'
-import { parseAgentEvent, serializeAgentTurnRequest } from './agentProtocol'
+import {
+  parseAgentEvent,
+  parseDraftSnapshot,
+  serializeAgentTurnRequest
+} from './agentProtocol'
 
 const data = { thread_id: 't1', message_id: 'm1' }
 
@@ -184,5 +188,30 @@ describe('serializeAgentTurnRequest', () => {
     expect(
       serializeAgentTurnRequest({ content: 'hi', baseVersion: 0 })
     ).toEqual({ content: 'hi', base_version: 0 })
+  })
+})
+
+describe('parseDraftSnapshot', () => {
+  it('decodes a well-formed snapshot body', () => {
+    const snapshot = parseDraftSnapshot({
+      content: { nodes: ['ksampler'] },
+      version: 12
+    })
+    expect(snapshot).toEqual({ content: { nodes: ['ksampler'] }, version: 12 })
+  })
+
+  it('accepts version 0', () => {
+    expect(parseDraftSnapshot({ content: {}, version: 0 })).toEqual({
+      content: {},
+      version: 0
+    })
+  })
+
+  it('rejects a malformed or partial body', () => {
+    expect(parseDraftSnapshot(null)).toBeNull()
+    expect(parseDraftSnapshot({ content: { nodes: [] } })).toBeNull()
+    expect(parseDraftSnapshot({ version: 3 })).toBeNull()
+    expect(parseDraftSnapshot({ content: 'nope', version: 3 })).toBeNull()
+    expect(parseDraftSnapshot({ content: {}, version: '3' })).toBeNull()
   })
 })
