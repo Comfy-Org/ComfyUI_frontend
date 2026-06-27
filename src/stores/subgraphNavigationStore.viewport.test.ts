@@ -136,6 +136,20 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   })
 
   describe('saveViewport', () => {
+    it('does not save when canvas is unavailable', () => {
+      const store = useSubgraphNavigationStore()
+      const canvas = app.canvas
+      const appWithOptionalCanvas = app as unknown as {
+        canvas: typeof app.canvas | undefined
+      }
+      appWithOptionalCanvas.canvas = undefined
+
+      store.saveViewport('root')
+
+      expect(store.viewportCache.has(':root')).toBe(false)
+      appWithOptionalCanvas.canvas = canvas
+    })
+
     it('saves viewport state for root graph', () => {
       const store = useSubgraphNavigationStore()
       mockCanvas.ds.state.scale = 2
@@ -164,6 +178,21 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   })
 
   describe('restoreViewport', () => {
+    it('does nothing when canvas is unavailable', () => {
+      const store = useSubgraphNavigationStore()
+      const canvas = app.canvas
+      const appWithOptionalCanvas = app as unknown as {
+        canvas: typeof app.canvas | undefined
+      }
+      appWithOptionalCanvas.canvas = undefined
+
+      store.restoreViewport('root')
+
+      expect(mockSetDirty).not.toHaveBeenCalled()
+      expect(rafCallbacks).toHaveLength(0)
+      appWithOptionalCanvas.canvas = canvas
+    })
+
     it('restores cached viewport', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.set(':root', { scale: 2.5, offset: [150, 250] })

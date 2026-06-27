@@ -157,6 +157,14 @@ describe('assetExportStore', () => {
     expect(store.exportList[0].exportName).toBe('export.zip')
   })
 
+  it('falls back to a blank export name when no message has named it', () => {
+    const { store, emit } = setup()
+
+    emit(wsMessage({ export_name: undefined, status: 'running' }))
+
+    expect(store.exportList[0].exportName).toBe('')
+  })
+
   it('triggers a download for a named export and clears prior errors', async () => {
     const { store, emit } = setup()
     emit(wsMessage({ status: 'running' }))
@@ -197,6 +205,17 @@ describe('assetExportStore', () => {
     )
   })
 
+  it('records a string download error', async () => {
+    getExportDownloadUrl.mockRejectedValueOnce('offline')
+    const { store, emit } = setup()
+    emit(wsMessage({ status: 'running' }))
+    const [exp] = store.exportList
+
+    await store.triggerDownload(exp)
+
+    expect(exp.downloadError).toBe('offline')
+  })
+
   it('clears finished exports while keeping active ones', () => {
     const { store, emit } = setup()
     emit(wsMessage({ task_id: 'a', status: 'running' }))
@@ -230,6 +249,42 @@ describe('assetExportStore', () => {
     expect(getTask).toHaveBeenCalledWith('task-1')
     expect(store.exportList[0].status).toBe('completed')
     expect(store.exportList[0].exportName).toBe('reconciled.zip')
+  })
+
+  it('leaves a stale export active when the task is still running', async () => {
+    const { store, emit, runPoll } = setup()
+    emit(wsMessage({ status: 'running' }))
+    store.exportList[0].lastUpdate = Date.now() - STALE_AGO_MS
+    getTask.mockResolvedValue({ status: 'running' })
+
+    await runPoll()
+
+    expect(store.exportList[0].status).toBe('running')
+  })
+
+  it('reconciles a stale failed export using existing counters', async () => {
+    const { store, emit, runPoll } = setup()
+    emit(
+      wsMessage({
+        assets_attempted: 4,
+        assets_failed: 1,
+        status: 'running'
+      })
+    )
+    store.exportList[0].lastUpdate = Date.now() - STALE_AGO_MS
+    getTask.mockResolvedValue({
+      status: 'failed',
+      result: { error: 'failed in result' }
+    })
+
+    await runPoll()
+
+    expect(store.exportList[0]).toMatchObject({
+      assetsAttempted: 4,
+      assetsFailed: 1,
+      error: 'failed in result',
+      status: 'failed'
+    })
   })
 
   it('leaves a stale export untouched when the task lookup fails', async () => {

@@ -13,6 +13,7 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -36,6 +37,7 @@ vi.mock('@/scripts/api', () => ({
     storeUserData: vi.fn(),
     listUserDataFullInfo: vi.fn(),
     getGlobalSubgraphs: vi.fn(),
+    deleteUserData: vi.fn(),
     apiURL: vi.fn(),
     addEventListener: vi.fn()
   }
@@ -98,6 +100,12 @@ describe('useSubgraphStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSubgraphStore()
     vi.clearAllMocks()
+    vi.mocked(useDialogService).mockReturnValue(
+      fromPartial<ReturnType<typeof useDialogService>>({
+        prompt: vi.fn(() => 'testname'),
+        confirm: vi.fn(() => true)
+      })
+    )
   })
 
   it('should allow publishing of a subgraph', async () => {
@@ -134,6 +142,70 @@ describe('useSubgraphStore', () => {
     await store.publishSubgraph()
     expect(api.storeUserData).toHaveBeenCalled()
   })
+
+  it('rejects publishing when a single subgraph node is not selected', async () => {
+    vi.mocked(comfyApp.canvas).selectedItems = new Set()
+
+    await expect(store.publishSubgraph()).rejects.toThrow(
+      'Must have single SubgraphNode selected to publish'
+    )
+  })
+
+  it('rejects publishing when serialization produces multiple nodes', async () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
+    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
+      nodes: [subgraphNode.serialize(), subgraphNode.serialize()],
+      subgraphs: []
+    }))
+
+    await expect(store.publishSubgraph()).rejects.toThrow(
+      'Must have single SubgraphNode selected to publish'
+    )
+  })
+
+  it('does not publish when the name prompt is cancelled', async () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
+    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
+      nodes: [subgraphNode.serialize()],
+      subgraphs: [fromAny<ExportedSubgraph, unknown>(subgraph.serialize())]
+    }))
+    vi.mocked(useDialogService).mockReturnValue(
+      fromPartial<ReturnType<typeof useDialogService>>({
+        prompt: vi.fn(() => null),
+        confirm: vi.fn(() => true)
+      })
+    )
+
+    await store.publishSubgraph()
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
+  })
+
+  it('does not overwrite an existing blueprint when confirmation is cancelled', async () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
+    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
+      nodes: [subgraphNode.serialize()],
+      subgraphs: [fromAny<ExportedSubgraph, unknown>(subgraph.serialize())]
+    }))
+    vi.mocked(useDialogService).mockReturnValue(
+      fromPartial<ReturnType<typeof useDialogService>>({
+        prompt: vi.fn(() => 'test'),
+        confirm: vi.fn(() => false)
+      })
+    )
+    await mockFetch({ 'test.json': mockGraph })
+
+    await store.publishSubgraph('test')
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
+  })
+
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(
@@ -147,6 +219,30 @@ describe('useSubgraphStore', () => {
     await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
+  })
+
+  it('switches into the nested subgraph when editing opens a wrapper graph', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    const setGraph = vi.fn()
+    const nested = { id: 'nested' }
+    vi.mocked(comfyApp.canvas).graph = fromAny<
+      NonNullable<typeof comfyApp.canvas.graph>,
+      unknown
+    >({
+      nodes: [{ subgraph: nested }],
+      setGraph
+    })
+    vi.mocked(comfyApp.canvas).setGraph = setGraph
+
+    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+
+    expect(setGraph).toHaveBeenCalledWith(nested)
+  })
+
+  it('throws when editing an unloaded blueprint', async () => {
+    await expect(
+      store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
+    ).rejects.toThrow('not yet loaded')
   })
   it('should allow subgraphs to be added to graph', async () => {
     //mock
@@ -165,6 +261,12 @@ describe('useSubgraphStore', () => {
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
     expect(second.definitions!.subgraphs![0].id).toBe('123')
+  })
+
+  it('throws when getting an unloaded blueprint', () => {
+    expect(() => store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')).toThrow(
+      'not yet loaded'
+    )
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -186,6 +288,57 @@ describe('useSubgraphStore', () => {
   it('should return false for non-existent blueprints', async () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(store.isGlobalBlueprint('nonexistent')).toBe(false)
+  })
+
+  describe('deleteBlueprint', () => {
+    it('throws for unloaded blueprints', async () => {
+      await expect(
+        store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
+      ).rejects.toThrow('not yet loaded')
+    })
+
+    it('does not delete global blueprints', async () => {
+      await mockFetch(
+        {},
+        {
+          global_bp: {
+            name: 'Global Blueprint',
+            info: { node_pack: 'comfy_essentials' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+
+      await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'global_bp')
+
+      expect(api.deleteUserData).not.toHaveBeenCalled()
+    })
+
+    it('does not delete when confirmation is cancelled', async () => {
+      await mockFetch({ 'test.json': mockGraph })
+      vi.mocked(useDialogService).mockReturnValue(
+        fromPartial<ReturnType<typeof useDialogService>>({
+          prompt: vi.fn(() => 'testname'),
+          confirm: vi.fn(() => false)
+        })
+      )
+
+      await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+
+      expect(api.deleteUserData).not.toHaveBeenCalled()
+    })
+
+    it('deletes user blueprints after confirmation', async () => {
+      await mockFetch({ 'test.json': mockGraph })
+      vi.mocked(api.deleteUserData).mockResolvedValue({
+        status: 204
+      } as Response)
+
+      await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+
+      expect(api.deleteUserData).toHaveBeenCalledWith('subgraphs/test.json')
+      expect(store.isUserBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')).toBe(false)
+    })
   })
 
   describe('isUserBlueprint', () => {
@@ -277,6 +430,69 @@ describe('useSubgraphStore', () => {
         }
       }
     )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to load subgraph blueprint',
+      expect.any(Error)
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('continues when global blueprint discovery rejects', async () => {
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue([])
+    vi.mocked(api.getGlobalSubgraphs).mockRejectedValue(
+      new Error('global down')
+    )
+
+    await store.fetchSubgraphs()
+
+    expect(store.subgraphBlueprints).toEqual([])
+  })
+
+  it('reports compact detail when more than three blueprints fail', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch(
+      {},
+      {
+        a: { name: 'A', info: { node_pack: 'test' }, data: '' },
+        b: { name: 'B', info: { node_pack: 'test' }, data: '' },
+        c: { name: 'C', info: { node_pack: 'test' }, data: '' },
+        d: { name: 'D', info: { node_pack: 'test' }, data: '' }
+      }
+    )
+
+    expect(consoleSpy).toHaveBeenCalledTimes(4)
+    consoleSpy.mockRestore()
+  })
+
+  it('ignores invalid user blueprint files during fetch', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await mockFetch({
+      'invalid.json': {
+        nodes: [],
+        definitions: { subgraphs: [] }
+      }
+    })
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to load subgraph blueprint',
+      expect.any(Error)
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('rejects loaded blueprints whose wrapper node does not reference a subgraph', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await mockFetch({
+      'invalid-ref.json': {
+        nodes: [{ id: 1, type: 'missing' }],
+        definitions: { subgraphs: [{ id: 'present' }] }
+      }
+    })
+
     expect(consoleSpy).toHaveBeenCalledWith(
       'Failed to load subgraph blueprint',
       expect.any(Error)

@@ -111,6 +111,16 @@ describe('aboutPanelStore', () => {
     expect(templates.severity).toBeUndefined()
   })
 
+  it('does not mark templates outdated when the required version is missing', () => {
+    stats.system = {
+      installed_templates_version: '1.1.0'
+    }
+    const store = useAboutPanelStore()
+
+    const templates = label(store.badges, 'Templates v1.1.0')!
+    expect(templates.severity).toBeUndefined()
+  })
+
   it('appends extension badges and tolerates extensions without any', () => {
     exts.list = [
       {

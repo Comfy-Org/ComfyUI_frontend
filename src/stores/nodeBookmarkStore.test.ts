@@ -168,6 +168,14 @@ describe('nodeBookmarkStore', () => {
         'Other/Node'
       ])
     })
+
+    it('does nothing when the folder keeps the same path', async () => {
+      const store = useNodeBookmarkStore()
+
+      await store.renameBookmarkFolder(folderNode('Old/'), 'Old')
+
+      expect(setSpy).not.toHaveBeenCalled()
+    })
   })
 
   it('deletes a folder and all its descendants', async () => {
@@ -177,6 +185,14 @@ describe('nodeBookmarkStore', () => {
     await store.deleteBookmarkFolder(folderNode('Old/'))
 
     expect(setSpy).toHaveBeenCalledWith(BOOKMARK_ID, ['Keep/Node'])
+  })
+
+  it('rejects deleting a non-folder node', async () => {
+    const store = useNodeBookmarkStore()
+
+    await expect(
+      store.deleteBookmarkFolder(leafNode('KSampler'))
+    ).rejects.toThrow('Cannot delete non-folder node')
   })
 
   describe('updateBookmarkCustomization', () => {

@@ -118,6 +118,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    vi.mocked(app.canvas.setGraph).mockReset()
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined
@@ -303,5 +304,171 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(routerMocks.replace).toHaveBeenCalledTimes(1)
     expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     warnSpy.mockRestore()
+  })
+
+  it('updateHash does nothing on initial load with an empty hash', async () => {
+    const store = useSubgraphNavigationStore()
+
+    await store.updateHash()
+
+    expect(routerMocks.replace).not.toHaveBeenCalled()
+    expect(routerMocks.push).not.toHaveBeenCalled()
+  })
+
+  it('updateHash follows a non-empty initial subgraph hash', async () => {
+    const subgraph = makeSubgraph(ids.validSubgraph)
+    app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+    vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
+      app.canvas.graph = graph
+    })
+    routeHashRef.value = `#${ids.validSubgraph}`
+    const store = useSubgraphNavigationStore()
+
+    await store.updateHash()
+
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(subgraph)
+  })
+
+  it('updateHash replaces an empty hash and pushes the active graph id', async () => {
+    const store = useSubgraphNavigationStore()
+    await store.updateHash()
+    app.canvas.graph = fromPartial<LGraph>({ id: ids.validSubgraph })
+
+    await store.updateHash()
+
+    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    expect(routerMocks.push).toHaveBeenCalledWith(`#${ids.validSubgraph}`)
+  })
+
+  it('updateHash skips router push when hash already matches the active graph', async () => {
+    const store = useSubgraphNavigationStore()
+    await store.updateHash()
+    routeHashRef.value = `#${ids.validSubgraph}`
+    app.canvas.graph = fromPartial<LGraph>({ id: ids.validSubgraph })
+
+    await store.updateHash()
+
+    expect(routerMocks.push).not.toHaveBeenCalled()
+  })
+
+  it('updateHash skips router push when the active graph has no id', async () => {
+    const store = useSubgraphNavigationStore()
+    await store.updateHash()
+    routeHashRef.value = '#old'
+    app.canvas.graph = fromPartial<LGraph>({})
+
+    await store.updateHash()
+
+    expect(routerMocks.push).not.toHaveBeenCalled()
+  })
+
+  it('updateHash warns when router push rejects', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    routerMocks.push.mockRejectedValueOnce(new Error('push failed'))
+    const store = useSubgraphNavigationStore()
+    await store.updateHash()
+    routeHashRef.value = '#old'
+    app.canvas.graph = fromPartial<LGraph>({ id: ids.validSubgraph })
+
+    await store.updateHash()
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[subgraphNavigation] router.push rejected',
+      expect.any(Error)
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('skips workflows without active state during hash recovery', async () => {
+    workflowStoreState.openWorkflows = [
+      fromPartial<ComfyWorkflow>({ path: 'inactive.json' })
+    ]
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
+  })
+
+  it('skips workflow states and subgraphs that do not match the hash', async () => {
+    workflowStoreState.openWorkflows = [
+      fromPartial<ComfyWorkflow>({
+        path: 'other-workflow.json',
+        activeState: {
+          id: ids.validSubgraph,
+          definitions: {
+            subgraphs: [{ id: ids.validSubgraph }]
+          }
+        }
+      })
+    ]
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
+  })
+
+  it('handles workflow states with no subgraph definitions during recovery', async () => {
+    workflowStoreState.openWorkflows = [
+      fromPartial<ComfyWorkflow>({
+        path: 'no-definitions.json',
+        activeState: { id: ids.validSubgraph }
+      })
+    ]
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
+  })
+
+  it('opens a workflow and navigates to the loaded root graph', async () => {
+    workflowStoreState.openWorkflows = [
+      fromPartial<ComfyWorkflow>({
+        path: 'root-workflow.json',
+        activeState: {
+          id: ids.deletedSubgraph,
+          definitions: { subgraphs: [] }
+        }
+      })
+    ]
+    workflowServiceMocks.openWorkflow.mockImplementation(async () => {
+      app.rootGraph.id = ids.deletedSubgraph
+      app.canvas.graph = fromPartial<LGraph>({ id: ids.root })
+    })
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() =>
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
+    )
+  })
+
+  it('does not reset the graph when loaded workflow is already active', async () => {
+    workflowStoreState.openWorkflows = [
+      fromPartial<ComfyWorkflow>({
+        path: 'already-active.json',
+        activeState: {
+          id: ids.deletedSubgraph,
+          definitions: { subgraphs: [] }
+        }
+      })
+    ]
+    workflowServiceMocks.openWorkflow.mockImplementation(async () => {
+      app.rootGraph.id = ids.deletedSubgraph
+      app.canvas.graph = fromPartial<LGraph>({ id: ids.deletedSubgraph })
+    })
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() =>
+      expect(workflowServiceMocks.openWorkflow).toHaveBeenCalled()
+    )
+
+    expect(app.canvas.setGraph).not.toHaveBeenCalledWith(app.rootGraph)
   })
 })

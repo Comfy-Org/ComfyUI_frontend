@@ -138,6 +138,22 @@ describe('useModelToNodeStore', () => {
       expect(provider?.key).toBe('ckpt_name')
     })
 
+    it('omits providers whose node definition is unavailable from reverse lookup', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.modelToNodeMap = {
+        missing: [
+          new ModelNodeProvider(
+            undefined as unknown as ComfyNodeDefImpl,
+            'model'
+          )
+        ]
+      }
+
+      expect(modelToNodeStore.getRegisteredNodeTypes()).not.toHaveProperty(
+        'undefined'
+      )
+    })
+
     it('should return undefined for unregistered model type', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
