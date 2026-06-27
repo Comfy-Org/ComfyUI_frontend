@@ -4473,7 +4473,6 @@
     "resolution": "{width} × {height}",
     "play": "Play",
     "pause": "Pause",
-    "noVideo": "Select a video to preview",
     "dragAndDropVideos": "Drag and drop videos here to upload",
     "uploadFromDevice": "Upload from device",
     "uploading": "Uploading…",
