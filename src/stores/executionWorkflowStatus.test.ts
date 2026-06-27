@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 
 const { handlers, openSet } = vi.hoisted(() => ({
@@ -55,12 +56,16 @@ function workflow(path: string): ComfyWorkflow {
   return { path } as unknown as ComfyWorkflow
 }
 
+function promptOutput(): ComfyApiWorkflow {
+  return {}
+}
+
 function storeJob(
   store: ReturnType<typeof useExecutionStore>,
   id: string,
   wf: ComfyWorkflow
 ) {
-  store.storeJob({ nodes: [], id, promptOutput: {} as never, workflow: wf })
+  store.storeJob({ nodes: [], id, promptOutput: promptOutput(), workflow: wf })
 }
 
 function fire(event: string, jobId: string) {
@@ -98,7 +103,6 @@ describe('executionStore workflow status', () => {
     const wf = workflow('b.json')
     openSet.add(wf)
 
-    // Status event arrives before storeJob maps the job to a workflow
     fire('execution_start', 'job-2')
     expect(store.getWorkflowStatus(wf)).toBeUndefined()
 
@@ -109,7 +113,6 @@ describe('executionStore workflow status', () => {
   it('does not apply status to a workflow that is not open', () => {
     const store = setup()
     const wf = workflow('c.json')
-    // not added to openSet
     storeJob(store, 'job-3', wf)
 
     fire('execution_start', 'job-3')
@@ -137,8 +140,6 @@ describe('executionStore workflow status', () => {
     fire('execution_success', 'job-5')
     expect(store.getWorkflowStatus(wf)).toBe('completed')
 
-    // A second run of the same workflow: a stale 'running' is buffered before
-    // its storeJob, and must not resurrect over the existing terminal status.
     fire('execution_start', 'job-6')
     storeJob(store, 'job-6', wf)
     expect(store.getWorkflowStatus(wf)).toBe('completed')

@@ -2,8 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Subgraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 vi.mock('@/scripts/app', () => ({ app: {} }))
 
@@ -59,10 +60,14 @@ describe('workflowStore node locator translation', () => {
 
   it('extracts the local node id from a locator', () => {
     const store = useWorkflowStore()
-    expect(store.nodeLocatorIdToNodeId(`${SUBGRAPH_UUID}:5` as never)).toBe(
-      toNodeId(5)
-    )
-    expect(store.nodeLocatorIdToNodeId('9' as never)).toBe(toNodeId(9))
+    expect(
+      store.nodeLocatorIdToNodeId(
+        createNodeLocatorId(SUBGRAPH_UUID, toNodeId(5))
+      )
+    ).toBe(toNodeId(5))
+    expect(
+      store.nodeLocatorIdToNodeId(createNodeLocatorId(null, toNodeId(9)))
+    ).toBe(toNodeId(9))
   })
 
   it('round-trips a root node id through locator translation', () => {
@@ -73,6 +78,10 @@ describe('workflowStore node locator translation', () => {
 
   it('maps a root locator to a single-segment execution id', () => {
     const store = useWorkflowStore()
-    expect(store.nodeLocatorIdToNodeExecutionId('5' as never)).toBe('5')
+    expect(
+      store.nodeLocatorIdToNodeExecutionId(
+        createNodeLocatorId(null, toNodeId(5))
+      )
+    ).toBe('5')
   })
 })

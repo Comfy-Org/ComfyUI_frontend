@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 
 const { handlers } = vi.hoisted(() => ({
@@ -56,6 +57,10 @@ function setup() {
   return store
 }
 
+function promptOutput(): ComfyApiWorkflow {
+  return {}
+}
+
 function startJob(
   store: ReturnType<typeof useExecutionStore>,
   id: string,
@@ -64,7 +69,7 @@ function startJob(
   store.storeJob({
     nodes,
     id,
-    promptOutput: {} as never,
+    promptOutput: promptOutput(),
     workflow: { path: `${id}.json` } as unknown as ComfyWorkflow
   })
   handlers['execution_start']?.({ detail: { prompt_id: id } })

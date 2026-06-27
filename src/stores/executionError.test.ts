@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 
 const {
@@ -80,6 +81,10 @@ function workflow(path: string): ComfyWorkflow {
   return { path } as unknown as ComfyWorkflow
 }
 
+function promptOutput(): ComfyApiWorkflow {
+  return {}
+}
+
 function setup() {
   const store = useExecutionStore()
   store.bindExecutionEvents()
@@ -109,7 +114,7 @@ describe('executionStore error handling', () => {
     store.storeJob({
       nodes: [],
       id: 'job-1',
-      promptOutput: {} as never,
+      promptOutput: promptOutput(),
       workflow: wf
     })
 
@@ -132,7 +137,7 @@ describe('executionStore error handling', () => {
     store.storeJob({
       nodes: [],
       id: 'job-2',
-      promptOutput: {} as never,
+      promptOutput: promptOutput(),
       workflow: wf
     })
 
@@ -171,7 +176,7 @@ describe('executionStore error handling', () => {
     store.storeJob({
       nodes: [],
       id: 'job-4',
-      promptOutput: {} as never,
+      promptOutput: promptOutput(),
       workflow: wf
     })
 
