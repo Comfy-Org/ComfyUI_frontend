@@ -24,7 +24,8 @@ test.describe(
       'workflow.mp4',
       'workflow.mov',
       'workflow.m4v',
-      'workflow.svg'
+      'workflow.svg',
+      'workflow.ogg'
       // TODO: Re-enable after fixing test asset to use core nodes only
       // Currently opens missing nodes dialog which is outside scope of AVIF loading functionality
       // 'workflow.avif'
