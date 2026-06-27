@@ -35,7 +35,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from './types'
 
 /**
@@ -110,6 +111,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackApiCreditTopupSucceeded(): void {
     this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
+  }
+
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
   }
 
   trackRunButton(options?: {

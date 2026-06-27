@@ -102,6 +102,7 @@
       :tier-key="selectedTierKey"
       :team-plan="selectedTeamStop"
       :preview-data="previewData"
+      :is-team="isTeamCheckout"
       @close="handleSuccessClose"
     />
   </div>
