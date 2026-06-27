@@ -29,6 +29,26 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+const COVERAGE_CRITICAL = process.env.COVERAGE_CRITICAL === 'true'
+
+// Directories carved out of the critical unit coverage gate: data/static
+// modules and shell views verified by E2E, Storybook, i18n, or static checks
+// rather than unit tests.
+const CRITICAL_COVERAGE_EXCLUDE = [
+  'src/config/**',
+  'src/constants/**',
+  'src/storybook/**',
+  'src/views/**'
+]
+
+// Stage 0 critical coverage floor (PR-blocking). Plan-documented baseline;
+// ratchet upward only after measured gains land on main.
+const CRITICAL_COVERAGE_THRESHOLDS = {
+  statements: 62.76,
+  branches: 53.38,
+  functions: 57.3,
+  lines: 63.98
+}
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -667,7 +687,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
       include: ['src/**/*.{ts,vue}'],
       exclude: [
         'src/**/*.test.ts',
@@ -676,8 +696,10 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/lib/litegraph/**',
-        'src/assets/**'
-      ]
+        'src/assets/**',
+        ...(COVERAGE_CRITICAL ? CRITICAL_COVERAGE_EXCLUDE : [])
+      ],
+      ...(COVERAGE_CRITICAL ? { thresholds: CRITICAL_COVERAGE_THRESHOLDS } : {})
     },
     exclude: [
       '**/node_modules/**',
