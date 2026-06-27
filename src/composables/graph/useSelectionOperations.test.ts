@@ -146,6 +146,30 @@ describe('useSelectionOperations', () => {
     expect(captureCanvasState).toHaveBeenCalled()
   })
 
+  it('leaves a single titled item unchanged when the prompt returns the same title', async () => {
+    const group = { title: 'Old' }
+    store.selectedItems = [group]
+    prompt.mockResolvedValue('Old')
+
+    await useSelectionOperations().renameSelection()
+
+    expect(group.title).toBe('Old')
+    expect(canvas.setDirty).not.toHaveBeenCalled()
+    expect(captureCanvasState).not.toHaveBeenCalled()
+  })
+
+  it('does not assign a title to a selected item without a title property', async () => {
+    const item = {}
+    store.selectedItems = [item]
+    prompt.mockResolvedValue('New')
+
+    await useSelectionOperations().renameSelection()
+
+    expect(item).toEqual({})
+    expect(canvas.setDirty).not.toHaveBeenCalled()
+    expect(captureCanvasState).not.toHaveBeenCalled()
+  })
+
   it('batch-renames multiple items with an indexed base name', async () => {
     const a = { title: 'a' }
     const b = { title: 'b' }
@@ -158,6 +182,34 @@ describe('useSelectionOperations', () => {
     expect(b.title).toBe('Item 2')
     expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
     expect(captureCanvasState).toHaveBeenCalled()
+  })
+
+  it('skips untitled items during batch rename', async () => {
+    const a = { title: 'a' }
+    const b = {}
+    store.selectedItems = [a, b]
+    prompt.mockResolvedValue('Item')
+
+    await useSelectionOperations().renameSelection()
+
+    expect(a.title).toBe('Item 1')
+    expect(b).toEqual({})
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(captureCanvasState).toHaveBeenCalled()
+  })
+
+  it('leaves a multiple selection unchanged when batch rename is cancelled', async () => {
+    const a = { title: 'a' }
+    const b = { title: 'b' }
+    store.selectedItems = [a, b]
+    prompt.mockResolvedValue('')
+
+    await useSelectionOperations().renameSelection()
+
+    expect(a.title).toBe('a')
+    expect(b.title).toBe('b')
+    expect(canvas.setDirty).not.toHaveBeenCalled()
+    expect(captureCanvasState).not.toHaveBeenCalled()
   })
 
   it('warns when renaming an empty selection', async () => {

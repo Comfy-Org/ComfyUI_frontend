@@ -82,8 +82,31 @@ describe('useNodeCustomization', () => {
     expect(item.setColorOption.mock.calls[0][0]).not.toBeNull()
   })
 
+  it('skips non-colorable items when applying colors', () => {
+    const item = colorable()
+    selection.items = [{}, item]
+
+    useNodeCustomization().applyColor(null)
+
+    expect(item.setColorOption).toHaveBeenCalledWith(null)
+    expect(refreshCanvas).toHaveBeenCalled()
+  })
+
   it('returns null current color for an empty selection', () => {
     expect(useNodeCustomization().getCurrentColor()).toBeNull()
+  })
+
+  it('returns null current color when no selected item is colorable', () => {
+    selection.items = [{}]
+    expect(useNodeCustomization().getCurrentColor()).toBeNull()
+  })
+
+  it('reports a recognized current color', () => {
+    const { colorOptions, getCurrentColor } = useNodeCustomization()
+    const named = colorOptions.at(-1)!
+    selection.items = [colorable(named.value.dark)]
+
+    expect(getCurrentColor()?.name).toBe(named.name)
   })
 
   it('falls back to the no-color option for an unrecognized current color', () => {
@@ -119,6 +142,32 @@ describe('useNodeCustomization', () => {
     const node = new LGraphNode('Test')
     const { shapeOptions, getCurrentShape } = useNodeCustomization()
     node.shape = shapeOptions[0].value
+    selection.items = [node]
+
+    expect(getCurrentShape()?.value).toBe(shapeOptions[0].value)
+  })
+
+  it('uses the default shape when a selected node has no shape', () => {
+    const node = new LGraphNode('Test')
+    Object.defineProperty(node, 'shape', {
+      value: undefined,
+      writable: true,
+      configurable: true
+    })
+    const { shapeOptions, getCurrentShape } = useNodeCustomization()
+    selection.items = [node]
+
+    expect(getCurrentShape()?.value).toBe(shapeOptions[0].value)
+  })
+
+  it('falls back to the default shape for an unknown node shape', () => {
+    const node = new LGraphNode('Test')
+    Object.defineProperty(node, 'shape', {
+      value: 999,
+      writable: true,
+      configurable: true
+    })
+    const { shapeOptions, getCurrentShape } = useNodeCustomization()
     selection.items = [node]
 
     expect(getCurrentShape()?.value).toBe(shapeOptions[0].value)

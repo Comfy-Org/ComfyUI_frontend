@@ -5,17 +5,17 @@ import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useGroupMenuOptions } from '@/composables/graph/useGroupMenuOptions'
 
-const { canvas, captureCanvasState, refreshCanvas, settings } = vi.hoisted(
-  () => ({
+const { canvas, captureCanvasState, isLightTheme, refreshCanvas, settings } =
+  vi.hoisted(() => ({
     canvas: { setDirty: vi.fn() },
     captureCanvasState: vi.fn(),
+    isLightTheme: { value: false },
     refreshCanvas: vi.fn(),
     settings: { 'Comfy.GroupSelectedNodes.Padding': 10 } as Record<
       string,
       unknown
     >
-  })
-)
+  }))
 
 vi.mock('vue-i18n', async (importOriginal) => ({
   ...(await importOriginal<typeof VueI18n>()),
@@ -41,7 +41,7 @@ vi.mock('@/composables/graph/useNodeCustomization', () => ({
     colorOptions: [
       { value: { dark: '#111', light: '#eee' }, localizedName: 'Red' }
     ],
-    isLightTheme: { value: false }
+    isLightTheme
   })
 }))
 
@@ -59,6 +59,7 @@ function group(over: Record<string, unknown> = {}): LGraphGroup {
 beforeEach(() => {
   canvas.setDirty.mockReset()
   captureCanvasState.mockReset()
+  isLightTheme.value = false
   refreshCanvas.mockReset()
 })
 
@@ -98,6 +99,16 @@ describe('useGroupMenuOptions', () => {
     expect(bump).toHaveBeenCalled()
   })
 
+  it('handles shape actions when a group has no nodes array', () => {
+    const bump = vi.fn()
+    useGroupMenuOptions()
+      .getGroupShapeOptions(group({ nodes: undefined }), bump)
+      .submenu?.[0].action?.()
+
+    expect(refreshCanvas).toHaveBeenCalled()
+    expect(bump).toHaveBeenCalled()
+  })
+
   it('applies a color to the group via the color submenu (dark theme)', () => {
     const g = group()
     const bump = vi.fn()
@@ -107,9 +118,46 @@ describe('useGroupMenuOptions', () => {
     expect(bump).toHaveBeenCalled()
   })
 
+  it('applies a light-theme color to the group via the color submenu', () => {
+    const g = group()
+    const bump = vi.fn()
+    isLightTheme.value = true
+    useGroupMenuOptions().getGroupColorOptions(g, bump).submenu?.[0].action?.()
+
+    expect((g as unknown as { color: string }).color).toBe('#eee')
+    expect(bump).toHaveBeenCalled()
+  })
+
   it('returns no mode options for an empty group', () => {
     expect(useGroupMenuOptions().getGroupModeOptions(group(), vi.fn())).toEqual(
       []
+    )
+  })
+
+  it('returns no mode options when a group has no nodes array', () => {
+    expect(
+      useGroupMenuOptions().getGroupModeOptions(
+        group({ nodes: undefined }),
+        vi.fn()
+      )
+    ).toEqual([])
+  })
+
+  it('returns no mode options when recomputing group nodes fails', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const options = useGroupMenuOptions().getGroupModeOptions(
+      group({
+        recomputeInsideNodes: vi.fn(() => {
+          throw new Error('boom')
+        })
+      }),
+      vi.fn()
+    )
+
+    expect(options).toEqual([])
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Failed to recompute nodes in group for mode options:',
+      expect.any(Error)
     )
   })
 
@@ -152,6 +200,14 @@ describe('useGroupMenuOptions', () => {
           { mode: LGraphEventMode.NEVER }
         ]
       }),
+      vi.fn()
+    )
+    expect(options).toHaveLength(3)
+  })
+
+  it('offers all three modes when the uniform mode is unknown', () => {
+    const options = useGroupMenuOptions().getGroupModeOptions(
+      group({ nodes: [{ mode: 999 }] }),
       vi.fn()
     )
     expect(options).toHaveLength(3)

@@ -45,7 +45,7 @@ const CRITICAL_COVERAGE_EXCLUDE = [
 // proof PRs while the other metrics remain at the plan-documented baseline.
 const CRITICAL_COVERAGE_THRESHOLDS = {
   statements: 62.76,
-  branches: 56.76,
+  branches: 57.14,
   functions: 57.3,
   lines: 63.98
 }
