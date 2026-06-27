@@ -79,6 +79,36 @@ vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
 
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
+const { getNodeImageUrlsMock, mockLoadVideoNode, getNodeByIdMock } = vi.hoisted(
+  () => ({
+    getNodeImageUrlsMock: vi.fn<(node: unknown) => string[] | undefined>(
+      () => undefined
+    ),
+    getNodeByIdMock: vi.fn(),
+    mockLoadVideoNode: {
+      isUploading: false,
+      widgets: [{ name: 'file', value: 'ltx2-audio_to_video.mov' }]
+    }
+  })
+)
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    canvas: {
+      graph: {
+        getNodeById: getNodeByIdMock
+      }
+    },
+    getPreviewFormatParam: () => ''
+  }
+}))
+
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: () => ({
+    nodeOutputs: {},
+    getNodeImageUrls: getNodeImageUrlsMock
+  })
+}))
 
 const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
   () => {
@@ -144,6 +174,12 @@ describe('WidgetSelectDropdown', () => {
     mockFilterSelectedRef.value = 'all'
     mockUpdateSelectedItems.mockClear()
     mockHandleFilesUpdate.mockClear()
+    getNodeImageUrlsMock.mockReturnValue(undefined)
+    mockLoadVideoNode.isUploading = false
+    mockLoadVideoNode.widgets = [
+      { name: 'file', value: 'ltx2-audio_to_video.mov' }
+    ]
+    getNodeByIdMock.mockReturnValue(mockLoadVideoNode)
   })
 
   function renderComponent(
@@ -255,6 +291,48 @@ describe('WidgetSelectDropdown', () => {
 
       expect(screen.getByText('dog.png')).toBeDefined()
       expect(screen.queryByText('cat.png')).toBeNull()
+    })
+  })
+
+  describe('LoadVideo file dropdown', () => {
+    function renderLoadVideoDropdown(modelValue = 'ltx2-audio_to_video.mov') {
+      mockItemsRef.value = [{ id: 'input-0', name: 'ltx2-audio_to_video.mov' }]
+      mockSelectedSetRef.value = new Set(['input-0'])
+      const widget = createMockWidget<string | undefined>({
+        value: modelValue,
+        name: 'file',
+        type: 'combo',
+        options: {
+          values: ['ltx2-audio_to_video.mov']
+        }
+      })
+      return renderComponent(widget, modelValue, {
+        assetKind: 'video',
+        nodeType: 'LoadVideo',
+        nodeId: 'load-video-node',
+        allowUpload: false
+      })
+    }
+
+    it('stays enabled when preview resolves from the file widget fallback', () => {
+      renderLoadVideoDropdown()
+      const button = screen.getByRole('button', {
+        name: 'ltx2-audio_to_video.mov'
+      })
+
+      // eslint-disable-next-line testing-library/no-node-access -- disabled styling is on the wrapper
+      expect(button.parentElement).not.toHaveClass('opacity-50')
+    })
+
+    it('disables while the node is uploading', () => {
+      mockLoadVideoNode.isUploading = true
+      renderLoadVideoDropdown()
+      const button = screen.getByRole('button', {
+        name: 'ltx2-audio_to_video.mov'
+      })
+
+      // eslint-disable-next-line testing-library/no-node-access -- disabled styling is on the wrapper
+      expect(button.parentElement).toHaveClass('opacity-50')
     })
   })
 })

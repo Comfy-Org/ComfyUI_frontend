@@ -1,0 +1,239 @@
+import type { ComponentProps } from 'vue-component-type-helpers'
+import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { describe, expect, it, vi } from 'vitest'
+
+import LoadVideoTrimPanel from './LoadVideoTrimPanel.vue'
+
+vi.mock('@/composables/video/useVideoFilmstrip', () => ({
+  DEFAULT_VIDEO_FPS: 30,
+  useVideoFilmstrip: () => ({
+    thumbnails: ref<string[]>(['data:image/jpeg;base64,one']),
+    duration: ref(10),
+    totalFrames: ref(101),
+    width: ref(1920),
+    height: ref(1080),
+    fps: ref(30),
+    loading: ref(false)
+  })
+}))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      g: {
+        increment: 'Increment',
+        decrement: 'Decrement'
+      },
+      loadVideoTrim: {
+        trimVideo: 'Trim Video',
+        startFrame: 'Start Frame',
+        endFrame: 'End Frame',
+        skipToStart: 'Skip to start',
+        skipToEnd: 'Skip to end',
+        duration: 'Duration',
+        frames: 'Number of Frames',
+        fileSize: 'File Size',
+        resolution: '{width} × {height}',
+        dragAndDropVideos: 'Drag and drop videos here to upload',
+        uploadFromDevice: 'Upload from device',
+        loadingVideo: 'Loading video preview'
+      }
+    }
+  }
+})
+
+type PanelProps = ComponentProps<typeof LoadVideoTrimPanel>
+
+function renderPanel(props: PanelProps) {
+  return render(LoadVideoTrimPanel, {
+    props,
+    global: {
+      plugins: [i18n]
+    }
+  })
+}
+
+describe('LoadVideoTrimPanel', () => {
+  it('shows upload empty state and hides trim controls when no video', () => {
+    renderPanel({
+      videoUrl: undefined
+    })
+
+    expect(screen.getByTestId('media-upload-empty')).toBeTruthy()
+    expect(screen.queryByText('Trim Video')).toBeNull()
+  })
+
+  it('shows trim controls when video is loaded', () => {
+    renderPanel({
+      videoUrl: 'https://example.com/video.mp4'
+    })
+
+    expect(screen.queryByTestId('media-upload-empty')).toBeNull()
+    expect(screen.getByText('Trim Video')).toBeTruthy()
+  })
+
+  it('keeps the filmstrip visible when trim is toggled off', () => {
+    renderPanel({
+      videoUrl: 'https://example.com/video.mp4',
+      trimEnabled: false
+    })
+
+    expect(screen.getByTestId('trim-track')).toBeTruthy()
+    expect(screen.queryByText('Start Frame')).toBeNull()
+    expect(screen.queryByText('End Frame')).toBeNull()
+  })
+
+  it('forwards browse event from empty state', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel({
+      videoUrl: undefined
+    })
+
+    await user.click(screen.getByTestId('media-upload-browse-button'))
+
+    expect(emitted().browse).toHaveLength(1)
+  })
+
+  it('keeps playhead when trim edges move without collision', async () => {
+    const playheadFrame = ref(50)
+    const startFrame = ref(10)
+    const endFrame = ref(80)
+
+    const Host = defineComponent({
+      components: { LoadVideoTrimPanel },
+      setup() {
+        return {
+          playheadFrame,
+          startFrame,
+          endFrame,
+          trimEnabled: ref(true),
+          videoUrl: 'https://example.com/video.mp4'
+        }
+      },
+      template: `
+        <LoadVideoTrimPanel
+          v-model:playhead-frame="playheadFrame"
+          v-model:start-frame="startFrame"
+          v-model:end-frame="endFrame"
+          v-model:trim-enabled="trimEnabled"
+          :video-url="videoUrl"
+        />
+      `
+    })
+
+    render(Host, { global: { plugins: [i18n] } })
+
+    startFrame.value = 20
+    await Promise.resolve()
+
+    expect(playheadFrame.value).toBe(50)
+  })
+
+  it('moves playhead when trim edge collides with it', async () => {
+    const playheadFrame = ref(50)
+    const startFrame = ref(10)
+    const endFrame = ref(80)
+
+    const Host = defineComponent({
+      components: { LoadVideoTrimPanel },
+      setup() {
+        return {
+          playheadFrame,
+          startFrame,
+          endFrame,
+          trimEnabled: ref(true),
+          videoUrl: 'https://example.com/video.mp4'
+        }
+      },
+      template: `
+        <LoadVideoTrimPanel
+          v-model:playhead-frame="playheadFrame"
+          v-model:start-frame="startFrame"
+          v-model:end-frame="endFrame"
+          v-model:trim-enabled="trimEnabled"
+          :video-url="videoUrl"
+        />
+      `
+    })
+
+    render(Host, { global: { plugins: [i18n] } })
+
+    startFrame.value = 60
+    await Promise.resolve()
+
+    expect(playheadFrame.value).toBe(60)
+  })
+
+  it('moves playhead when start frame increment passes playhead', async () => {
+    const user = userEvent.setup()
+    const playheadFrame = ref(50)
+    const startFrame = ref(50)
+    const endFrame = ref(80)
+
+    const Host = defineComponent({
+      components: { LoadVideoTrimPanel },
+      setup() {
+        return {
+          playheadFrame,
+          startFrame,
+          endFrame,
+          trimEnabled: ref(true),
+          videoUrl: 'https://example.com/video.mp4'
+        }
+      },
+      template: `
+        <LoadVideoTrimPanel
+          v-model:playhead-frame="playheadFrame"
+          v-model:start-frame="startFrame"
+          v-model:end-frame="endFrame"
+          v-model:trim-enabled="trimEnabled"
+          :video-url="videoUrl"
+        />
+      `
+    })
+
+    render(Host, { global: { plugins: [i18n] } })
+
+    await user.click(screen.getAllByTestId('increment')[0])
+
+    expect(startFrame.value).toBe(51)
+    expect(playheadFrame.value).toBe(51)
+  })
+
+  it('seeks the video preview when scrubbing the filmstrip', async () => {
+    renderPanel({
+      videoUrl: 'https://example.com/video.mp4',
+      trimEnabled: true
+    })
+
+    const video = screen.getByTestId('video-preview') as HTMLVideoElement
+    Object.defineProperty(video, 'duration', {
+      value: 10,
+      configurable: true
+    })
+
+    const track = screen.getByTestId('trim-track')
+    vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 64,
+      right: 200,
+      bottom: 64,
+      x: 0,
+      y: 0,
+      toJSON: () => ({})
+    })
+
+    const user = userEvent.setup()
+    await user.pointer({ target: track, coords: { clientX: 100 } })
+    await fireEvent.seeked(video)
+
+    expect(video.currentTime).toBe(5)
+  })
+})

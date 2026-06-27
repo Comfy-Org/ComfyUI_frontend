@@ -142,6 +142,7 @@ export type IWidget =
   | ICurveWidget
   | IPainterWidget
   | IRangeWidget
+  | IVideoTrimWidget
   | IBoundingBoxesWidget
   | IColorsWidget
 
@@ -365,6 +366,12 @@ export interface RangeValue {
   midpoint?: number
 }
 
+export interface VideoTrimValue {
+  trimEnabled: boolean
+  startFrame: number
+  endFrame: number
+}
+
 export interface IWidgetRangeOptions extends IWidgetOptions {
   display?: 'plain' | 'gradient' | 'histogram'
   gradient_stops?: ColorStop[]
@@ -381,6 +388,14 @@ export interface IRangeWidget extends IBaseWidget<
 > {
   type: 'range'
   value: RangeValue
+}
+
+export interface IVideoTrimWidget extends IBaseWidget<
+  VideoTrimValue,
+  'videotrim'
+> {
+  type: 'videotrim'
+  value: VideoTrimValue
 }
 
 /**

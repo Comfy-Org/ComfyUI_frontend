@@ -69,6 +69,9 @@ const WidgetPainter = defineAsyncComponent(
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
 )
+const WidgetVideoTrim = defineAsyncComponent(
+  () => import('../components/WidgetVideoTrim.vue')
+)
 const WidgetBoundingBoxes = defineAsyncComponent(
   () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
 )
@@ -223,6 +226,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: WidgetRange,
       aliases: ['RANGE'],
+      essential: false
+    }
+  ],
+  [
+    'videotrim',
+    {
+      component: WidgetVideoTrim,
+      aliases: ['VIDEOTRIM'],
       essential: false
     }
   ],

@@ -7,6 +7,7 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
+import { nodeHasLoadVideoPreview } from '@/composables/video/useLoadVideoPreview'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
@@ -30,6 +31,7 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
@@ -385,6 +387,8 @@ export function useProcessedWidgets(
 ) {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
+  const nodeOutputStore = useNodeOutputStore()
+  const widgetValueStore = useWidgetValueStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
 
@@ -430,17 +434,53 @@ export function useProcessedWidgets(
     processedWidgets.value.filter((w) => w.visible)
   )
 
+  const loadVideoHasPreview = computed(() => {
+    const nodeData = nodeDataGetter()
+    if (nodeData?.type !== 'LoadVideo') return false
+    const node = app.canvas.graph?.getNodeById(nodeData.id)
+    if (!node) return false
+
+    void nodeOutputStore.nodeOutputs
+    const graphId = canvasStore.canvas?.graph?.rootGraph.id
+    if (graphId) {
+      void widgetValueStore.getWidget(widgetId(graphId, nodeData.id, 'file'))
+        ?.value
+    }
+
+    return nodeHasLoadVideoPreview(node)
+  })
+
+  const loadVideoTrimFillsSpace = computed(
+    () => nodeType.value === 'LoadVideo' && !loadVideoHasPreview.value
+  )
+
+  function widgetGridRow(widget: ProcessedWidget) {
+    if (
+      widget.type === 'videotrim' &&
+      nodeType.value === 'LoadVideo' &&
+      !loadVideoHasPreview.value
+    ) {
+      return 'minmax(0, 1fr)'
+    }
+    if (shouldExpand(widget.type) || widget.hasLayoutSize) return 'auto'
+    return 'min-content'
+  }
+
   const gridTemplateRows = computed((): string =>
-    visibleWidgets.value
-      .map((w) =>
-        shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
-      )
-      .join(' ')
+    visibleWidgets.value.map(widgetGridRow).join(' ')
+  )
+
+  const hasExpandingRows = computed(() =>
+    visibleWidgets.value.some(
+      (widget) => widgetGridRow(widget) !== 'min-content'
+    )
   )
 
   return {
     canSelectInputs,
     gridTemplateRows,
+    hasExpandingRows,
+    loadVideoTrimFillsSpace,
     nodeType,
     processedWidgets,
     visibleWidgets

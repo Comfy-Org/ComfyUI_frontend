@@ -50,6 +50,7 @@ interface HarnessOptions {
   valueMax?: number
   showMidpoint?: boolean
   track?: HTMLElement | null
+  contentInsetX?: number
 }
 
 interface Harness {
@@ -72,6 +73,7 @@ const mountRangeEditor = (opts: HarnessOptions = {}): Harness => {
   const valueMin = ref(opts.valueMin ?? 0)
   const valueMax = ref(opts.valueMax ?? 100)
   const showMidpoint = ref(opts.showMidpoint ?? true)
+  const contentInsetX = ref(opts.contentInsetX ?? 0)
 
   let api: ReturnType<typeof useRangeEditor> | undefined
   const TestComponent = defineComponent({
@@ -81,7 +83,8 @@ const mountRangeEditor = (opts: HarnessOptions = {}): Harness => {
         modelValue,
         valueMin,
         valueMax,
-        showMidpoint
+        showMidpoint,
+        contentInsetX
       })
       return () => null
     }
@@ -322,5 +325,45 @@ describe('useRangeEditor', () => {
     expect(removedTypes).toEqual(
       expect.arrayContaining(['pointermove', 'pointerup', 'lostpointercapture'])
     )
+  })
+
+  it('maps pointer at content inset to valueMin when contentInsetX is set', () => {
+    harness = mountRangeEditor({
+      initial: { min: 20, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      showMidpoint: false,
+      contentInsetX: 16
+    })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 16 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 16 })
+    )
+
+    expect(harness.modelValue.value.min).toBe(0)
+  })
+
+  it('maps pointer at right content inset to valueMax when contentInsetX is set', () => {
+    harness = mountRangeEditor({
+      initial: { min: 0, max: 80, midpoint: 0.5 },
+      valueMin: 0,
+      valueMax: 100,
+      showMidpoint: false,
+      contentInsetX: 16
+    })
+
+    harness.api.startDrag(
+      'max',
+      createPointerEvent('pointerdown', { clientX: 184 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 184 })
+    )
+
+    expect(harness.modelValue.value.max).toBe(100)
   })
 })

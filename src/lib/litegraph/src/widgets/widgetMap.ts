@@ -25,6 +25,7 @@ import { BoundingBoxesWidget } from './BoundingBoxesWidget'
 import { ColorsWidget } from './ColorsWidget'
 import { PainterWidget } from './PainterWidget'
 import { RangeWidget } from './RangeWidget'
+import { VideoTrimWidget } from './VideoTrimWidget'
 import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
@@ -64,6 +65,7 @@ export type WidgetTypeMap = {
   curve: CurveWidget
   painter: PainterWidget
   range: RangeWidget
+  videotrim: VideoTrimWidget
   boundingboxes: BoundingBoxesWidget
   colors: ColorsWidget
   [key: string]: BaseWidget
@@ -148,6 +150,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(PainterWidget, narrowedWidget, node)
     case 'range':
       return toClass(RangeWidget, narrowedWidget, node)
+    case 'videotrim':
+      return toClass(VideoTrimWidget, narrowedWidget, node)
     case 'boundingboxes':
       return toClass(BoundingBoxesWidget, narrowedWidget, node)
     case 'colors':
