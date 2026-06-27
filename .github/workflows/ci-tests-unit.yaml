@@ -35,8 +35,8 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Run Vitest tests with coverage
-        run: pnpm test:coverage
+      - name: Run Vitest critical coverage gate
+        run: pnpm test:coverage:critical
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
