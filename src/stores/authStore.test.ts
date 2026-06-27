@@ -1065,7 +1065,7 @@ describe('useAuthStore', () => {
   })
 
   describe('fetchWithCustomerRecovery', () => {
-    const make409 = (message: string) => {
+    function make409(message: string) {
       const body = { message }
       return {
         ok: false,
@@ -1075,15 +1075,18 @@ describe('useAuthStore', () => {
         clone: () => ({ json: () => Promise.resolve(body) })
       }
     }
-    const makeConflictResponse = () => make409('Failed to find customer')
+    function makeConflictResponse() {
+      return make409('Failed to find customer')
+    }
 
-    const countCustomerPosts = () =>
-      mockFetch.mock.calls.filter(
+    function countCustomerPosts() {
+      return mockFetch.mock.calls.filter(
         ([url, init]) =>
           typeof url === 'string' &&
           url.endsWith('/customers') &&
           (init as RequestInit | undefined)?.method === 'POST'
       ).length
+    }
 
     it('should provision the customer and retry once when a /customers/* call returns 409', async () => {
       let balanceCalls = 0
