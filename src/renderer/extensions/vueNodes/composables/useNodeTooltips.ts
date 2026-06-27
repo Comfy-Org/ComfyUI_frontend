@@ -86,15 +86,14 @@ function setupGlobalTooltipHiding() {
  * Composable for creating the themed tooltip configuration object.
  */
 export function useTooltipConfig() {
-  const settingsStore = useSettingStore()
+  const settingStore = useSettingStore()
 
-  // Check if tooltips are globally enabled
   const tooltipsEnabled = computed(() =>
-    settingsStore.get('Comfy.EnableTooltips')
+    settingStore.get('Comfy.EnableTooltips')
   )
 
   const createTooltipConfig = (text: string): TooltipOptions => {
-    const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
+    const tooltipDelay = settingStore.get('LiteGraph.Node.TooltipDelay')
     const tooltipText = text || ''
 
     return {

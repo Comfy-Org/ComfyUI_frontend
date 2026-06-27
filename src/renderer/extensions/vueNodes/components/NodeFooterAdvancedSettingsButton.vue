@@ -6,12 +6,13 @@ import { useTooltipConfig } from '@/renderer/extensions/vueNodes/composables/use
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const settingsDialog = useSettingsDialog()
 const rightSidePanelStore = useRightSidePanelStore()
+const canvasStore = useCanvasStore()
 const { createTooltipConfig } = useTooltipConfig()
 
 const tooltipConfig = computed(() =>
@@ -23,8 +24,8 @@ function openSettings() {
   if (isLegacyMenu) {
     settingsDialog.show(undefined, 'Comfy.Node.AlwaysShowAdvancedWidgets')
   } else {
-    if (app?.canvas) {
-      app.canvas.deselectAll()
+    if (canvasStore.canvas) {
+      canvasStore.canvas.deselectAll()
     }
     rightSidePanelStore.openPanel('settings')
     rightSidePanelStore.triggerHighlight('Comfy.Node.AlwaysShowAdvancedWidgets')
@@ -36,6 +37,7 @@ function openSettings() {
   <Button
     v-tooltip.bottom="tooltipConfig"
     variant="textonly"
+    class="node-footer-settings-btn group"
     data-testid="advanced-settings-button"
     :aria-label="t('rightSidePanel.advancedWidgetSettings')"
     @pointerdown.stop
@@ -45,7 +47,7 @@ function openSettings() {
     @click.stop="openSettings"
   >
     <i
-      class="hover:text-foreground icon-[lucide--settings] size-4 text-muted-foreground"
+      class="group-hover:text-foreground icon-[lucide--settings] size-4 text-muted-foreground"
     />
   </Button>
 </template>

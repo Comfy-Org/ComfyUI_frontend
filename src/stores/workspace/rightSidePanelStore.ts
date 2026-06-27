@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, readonly, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -102,7 +102,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     focusedSection,
     focusedErrorNodeId,
     searchQuery,
-    highlightGlobalSetting,
+    highlightGlobalSetting: readonly(highlightGlobalSetting),
     openPanel,
     closePanel,
     togglePanel,

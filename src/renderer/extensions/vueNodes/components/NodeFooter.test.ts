@@ -13,9 +13,10 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import PrimeVue from 'primevue/config'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
 
 vi.hoisted(() => {
@@ -370,16 +371,19 @@ describe('NodeFooter', () => {
 
     it('opens right side settings panel when clicked in new menu mode', async () => {
       const deselectAllSpy = vi.fn()
-      const originalCanvas = app.canvas
-      app.canvas = {
+
+      renderFooter({
+        showAdvancedInputsButton: true,
+        showAdvancedState: true
+      })
+
+      const canvasStore = useCanvasStore()
+      const originalCanvas = canvasStore.canvas
+      canvasStore.canvas = fromAny({
         deselectAll: deselectAllSpy
-      } as unknown as typeof app.canvas
+      })
 
       try {
-        renderFooter({
-          showAdvancedInputsButton: true,
-          showAdvancedState: true
-        })
         const settingStore = (
           await import('@/platform/settings/settingStore')
         ).useSettingStore()
@@ -399,7 +403,7 @@ describe('NodeFooter', () => {
         expect(deselectAllSpy).toHaveBeenCalledOnce()
         expect(openPanelSpy).toHaveBeenCalledWith('settings')
       } finally {
-        app.canvas = originalCanvas
+        canvasStore.canvas = originalCanvas
       }
     })
   })

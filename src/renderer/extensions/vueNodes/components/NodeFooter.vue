@@ -73,13 +73,16 @@
 
     <Button
       as="div"
+      role="button"
+      tabindex="0"
       variant="textonly"
       data-testid="advanced-inputs-button"
       :class="
         cn(
           tabStyles,
-          'relative z-0 -ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pr-0 pb-4 pl-5',
-          'has-[[data-testid=advanced-settings-button]:hover]:hover:bg-node-component-header-surface',
+          'relative z-0 -ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          showAdvancedState ? 'pr-0' : 'pr-4',
+          'has-[.node-footer-settings-btn:hover]:hover:bg-node-component-header-surface',
           enterRadiusClass
         )
       "
@@ -91,7 +94,7 @@
         :class="
           cn(
             'flex size-full min-w-0 items-center justify-center gap-2',
-            showAdvancedState ? 'pr-10' : 'px-4'
+            showAdvancedState ? 'pr-10' : 'pr-0'
           )
         "
       >

@@ -67,8 +67,7 @@ describe('TabGlobalSettings', () => {
     const switchEl = screen.getByTestId('advanced-widgets-switch')
     expect(switchEl).not.toHaveClass('animate-highlight')
 
-    rightSidePanelStore.highlightGlobalSetting =
-      'Comfy.Node.AlwaysShowAdvancedWidgets'
+    rightSidePanelStore.triggerHighlight('Comfy.Node.AlwaysShowAdvancedWidgets')
 
     await new Promise((resolve) => setTimeout(resolve, 0))
 
