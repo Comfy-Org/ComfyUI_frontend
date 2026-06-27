@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -210,6 +211,32 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.fetchStatus()).rejects.toThrow('boom')
       expect(billing.error.value).toBe('boom')
+    })
+
+    it('surfaces a team credit stop from the status response', async () => {
+      const teamStop = {
+        id: 'team_2500',
+        credits_monthly: 527_500,
+        stop_usd: 2500
+      }
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        team_credit_stop: teamStop
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.currentTeamCreditStop.value).toEqual(teamStop)
+    })
+
+    it('yields a null team credit stop when status omits one', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.currentTeamCreditStop.value).toBeNull()
     })
   })
 
@@ -521,6 +548,90 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.cancelSubscription()).rejects.toBe('boom')
       expect(billing.error.value).toBe('Failed to cancel subscription')
+    })
+  })
+
+  describe('resubscribe', () => {
+    it('refreshes status and balance after a successful resubscribe', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.resubscribe()
+
+      expect(mockWorkspaceApi.resubscribe).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+      expect(billing.error.value).toBeNull()
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('sets error, rethrows, and skips the refresh when the API call fails', async () => {
+      mockWorkspaceApi.resubscribe.mockRejectedValue(
+        new Error('reactivation failed')
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).rejects.toThrow('reactivation failed')
+      expect(billing.error.value).toBe('reactivation failed')
+      expect(billing.isLoading.value).toBe(false)
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    })
+
+    it('falls back to a generic error message for non-Error rejections', async () => {
+      mockWorkspaceApi.resubscribe.mockRejectedValue('boom')
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).rejects.toBe('boom')
+      expect(billing.error.value).toBe('Failed to resubscribe')
+    })
+  })
+
+  describe('topup', () => {
+    const topupResponse = {
+      billing_op_id: 'op-topup',
+      topup_id: 'topup-1',
+      status: 'completed' as const,
+      amount_cents: 500
+    }
+
+    it('returns the createTopup response without refreshing status or balance', async () => {
+      mockWorkspaceApi.createTopup.mockResolvedValue(topupResponse)
+
+      const billing = setupBilling()
+      const result = await billing.topup(500)
+
+      expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(500)
+      expect(result).toBe(topupResponse)
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
+      expect(billing.error.value).toBeNull()
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('sets error and rethrows when the API call fails', async () => {
+      mockWorkspaceApi.createTopup.mockRejectedValue(new Error('card declined'))
+
+      const billing = setupBilling()
+
+      await expect(billing.topup(500)).rejects.toThrow('card declined')
+      expect(billing.error.value).toBe('card declined')
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('falls back to a generic error message for non-Error rejections', async () => {
+      mockWorkspaceApi.createTopup.mockRejectedValue('boom')
+
+      const billing = setupBilling()
+
+      await expect(billing.topup(500)).rejects.toBe('boom')
+      expect(billing.error.value).toBe('Failed to top up credits')
     })
   })
 
