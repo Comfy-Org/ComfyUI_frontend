@@ -75,7 +75,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     graphId: UUID,
     nodeId: NodeId
   ): NodeDataState | undefined {
-    return getGraphNodeDataMap(graphId).get(nodeId)
+    return graphNodeData.value.get(graphId)?.get(nodeId)
+  }
+
+  function getGraphNodes(graphId: UUID): NodeDataState[] {
+    return Array.from(graphNodeData.value.get(graphId)?.values() ?? [])
   }
 
   function patchNodeData(
@@ -91,7 +95,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   function deleteNodeData(graphId: UUID, nodeId: NodeId): boolean {
-    return getGraphNodeDataMap(graphId).delete(nodeId)
+    return graphNodeData.value.get(graphId)?.delete(nodeId) ?? false
   }
 
   function clearGraph(graphId: UUID): void {
@@ -101,9 +105,9 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   return {
     registerNodeData,
     getNodeData,
+    getGraphNodes,
     patchNodeData,
     deleteNodeData,
-    getGraphNodeDataMap,
     clearGraph
   }
 })

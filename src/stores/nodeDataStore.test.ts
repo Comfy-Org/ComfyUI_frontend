@@ -94,6 +94,21 @@ describe('useNodeDataStore', () => {
     expect(store.deleteNodeData(graphA, nodeA)).toBe(false)
   })
 
+  it('returns registered nodes for a graph namespace', () => {
+    const store = useNodeDataStore()
+    const nodeB = toNodeId('node-2')
+
+    expect(store.getGraphNodes(graphA)).toEqual([])
+
+    store.registerNodeData(graphA, nodeA, nodeData('First'))
+    store.registerNodeData(graphA, nodeB, nodeData('Second'))
+
+    expect(store.getGraphNodes(graphA).map((node) => node.title)).toEqual([
+      'First',
+      'Second'
+    ])
+  })
+
   it('isolates the same NodeId in different graph namespaces', () => {
     const store = useNodeDataStore()
     store.registerNodeData(graphA, nodeA, nodeData('Graph A'))

@@ -1,4 +1,4 @@
-import { onScopeDispose, toValue } from 'vue'
+import { onScopeDispose, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import {
@@ -7,9 +7,10 @@ import {
   isMiddlePointerInput
 } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import type { NodeId } from '@/types/nodeId'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
@@ -24,10 +25,14 @@ export function useNodePointerInteractions(
     useCanvasInteractions()
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
-  const { nodeManager } = useVueNodeLifecycle()
+  const canvasStore = useCanvasStore()
+  const nodeDataStore = useNodeDataStore()
 
   function isPinnedNode(nodeId: NodeId): boolean {
-    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
+    const graphId = canvasStore.currentGraph?.id
+    return graphId
+      ? (nodeDataStore.getNodeData(graphId, nodeId)?.flags?.pinned ?? false)
+      : false
   }
 
   const forwardMiddlePointerIfNeeded = (
@@ -39,7 +44,7 @@ export function useNodePointerInteractions(
     return true
   }
 
-  let hasDraggingStarted = false
+  const hasDraggingStarted = ref(false)
 
   const dragGuard = useClickDragGuard(3)
 
@@ -120,7 +125,7 @@ export function useNodePointerInteractions(
     try {
       startDrag(event, nodeId)
     } finally {
-      hasDraggingStarted = true
+      hasDraggingStarted.value = true
     }
   }
 
@@ -131,7 +136,7 @@ export function useNodePointerInteractions(
     } catch (error) {
       console.error('Error during endDrag:', error)
     } finally {
-      hasDraggingStarted = false
+      hasDraggingStarted.value = false
       cleanupDragState()
     }
   }
@@ -146,7 +151,7 @@ export function useNodePointerInteractions(
     }
     const wasDragging = layoutStore.isDraggingVueNodes.value
 
-    if (hasDraggingStarted || wasDragging) {
+    if (hasDraggingStarted.value || wasDragging) {
       safeDragEnd(event)
 
       if (wasDragging) {

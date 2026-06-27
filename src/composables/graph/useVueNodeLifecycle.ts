@@ -1,8 +1,7 @@
 import { createSharedComposable, whenever } from '@vueuse/core'
-import { shallowRef, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -16,17 +15,15 @@ function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const nodeManager = shallowRef<GraphNodeManager | null>(null)
+  const cleanupNodeManager = ref<(() => void) | null>(null)
   const { startSync, stopSync } = useLayoutSync()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
     const activeGraph = comfyApp.canvas?.graph
-    if (!activeGraph || nodeManager.value) return
+    if (!activeGraph || cleanupNodeManager.value) return
 
-    // Initialize the core node manager
-    const manager = useGraphNodeManager(activeGraph)
-    nodeManager.value = manager
+    cleanupNodeManager.value = useGraphNodeManager(activeGraph)
 
     // Initialize layout system with existing nodes from active graph
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
@@ -67,14 +64,14 @@ function useVueNodeLifecycleIndividual() {
 
   const disposeNodeManagerAndSyncs = () => {
     stopSync()
-    if (!nodeManager.value) return
+    if (!cleanupNodeManager.value) return
 
     try {
-      nodeManager.value.cleanup()
+      cleanupNodeManager.value()
     } catch {
       /* empty */
     }
-    nodeManager.value = null
+    cleanupNodeManager.value = null
   }
 
   // Watch for Vue nodes enabled state changes
@@ -127,7 +124,7 @@ function useVueNodeLifecycleIndividual() {
     const activeGraph = comfyApp.canvas?.graph
     if (
       !shouldRenderVueNodes.value ||
-      nodeManager.value ||
+      cleanupNodeManager.value ||
       activeGraph?._nodes.length !== 0
     ) {
       return
@@ -138,7 +135,7 @@ function useVueNodeLifecycleIndividual() {
       activeGraph.onNodeAdded = originalOnNodeAdded
 
       // Initialize node manager if needed
-      if (shouldRenderVueNodes.value && !nodeManager.value) {
+      if (shouldRenderVueNodes.value && !cleanupNodeManager.value) {
         initializeNodeManager()
       }
 
@@ -151,16 +148,13 @@ function useVueNodeLifecycleIndividual() {
 
   // Cleanup function for component unmounting
   const cleanup = () => {
-    if (nodeManager.value) {
-      nodeManager.value.cleanup()
-      nodeManager.value = null
+    if (cleanupNodeManager.value) {
+      cleanupNodeManager.value()
+      cleanupNodeManager.value = null
     }
   }
 
   return {
-    nodeManager,
-
-    // Lifecycle methods
     initializeNodeManager,
     disposeNodeManagerAndSyncs,
     setupEmptyGraphListener,

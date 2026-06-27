@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { extractVueNodeData } from '@/renderer/extensions/vueNodes/utils/nodeDataExtraction'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'

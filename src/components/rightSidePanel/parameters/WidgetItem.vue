@@ -3,8 +3,7 @@ import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import { getControlWidget } from '@/renderer/extensions/vueNodes/utils/nodeDataExtraction'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -15,6 +14,7 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
@@ -58,6 +58,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const canvasStore = useCanvasStore()
+const nodeDataStore = useNodeDataStore()
 const nodeDefStore = useNodeDefStore()
 const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
@@ -69,9 +70,12 @@ const widgetComponent = computed(() => {
 })
 
 const isLinked = computed(() => {
-  const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(node.id)
-    ?.widgets?.find((w) => w.name === widget.name)
+  const graphId = node.graph?.id
+  const safeWidget = graphId
+    ? nodeDataStore
+        .getNodeData(graphId, node.id)
+        ?.widgets?.find((w) => w.name === widget.name)
+    : undefined
   return safeWidget?.slotMetadata
     ? !!safeWidget.slotMetadata.linked
     : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link

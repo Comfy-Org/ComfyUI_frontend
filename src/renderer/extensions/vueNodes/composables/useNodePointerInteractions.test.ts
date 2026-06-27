@@ -37,6 +37,7 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
+    currentGraph: { id: 'test-graph-id' },
     get selectedItems() {
       return selectedItemsState.items
     }
@@ -63,17 +64,6 @@ vi.mock(
     }
   }
 )
-
-vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
-  useVueNodeLifecycle: () => ({
-    nodeManager: ref({
-      getNode: vi.fn((id: string) => ({
-        id,
-        selected: false // Default to not selected
-      }))
-    })
-  })
-}))
 
 const mockData = vi.hoisted(() => {
   const fakeNodeLayout = {
@@ -139,7 +129,7 @@ describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
     vi.resetAllMocks()
     selectedItemsState.items = []
-    setActivePinia(createTestingPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('should only start drag on left-click', async () => {

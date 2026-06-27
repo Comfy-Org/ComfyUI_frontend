@@ -1,16 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, shallowRef } from 'vue'
+import { computed } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { toNodeId } from '@/types/nodeId'
 
-const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: string }>)
+const { canvasSelectedItems, getNodeById, mockNode } = vi.hoisted(() => ({
+  canvasSelectedItems: [] as Array<{ id?: string }>,
+  getNodeById: vi.fn(),
+  mockNode: {
+    id: 'node-1',
+    selected: false,
+    flags: { pinned: false },
+    isSubgraphNode: vi.fn(() => false),
+    collapse: vi.fn()
+  } as unknown as LGraphNode
+}))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => {
   const canvas: Partial<LGraphCanvas> = {
@@ -19,8 +30,10 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
     deselectAll: vi.fn()
   }
   const updateSelectedItems = vi.fn()
+  const currentGraph = { getNodeById } as Partial<LGraph> as LGraph
   const canvasStoreInstance = {
     canvas: canvas as LGraphCanvas,
+    currentGraph,
     updateSelectedItems,
     selectedItems: canvasSelectedItems
   }
@@ -46,39 +59,16 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
   }
 })
 
-vi.mock('@/composables/graph/useGraphNodeManager', () => {
-  const mockNode = {
-    id: 'node-1',
-    selected: false,
-    flags: { pinned: false }
-  }
-  const nodeManager = shallowRef({
-    getNode: vi.fn(() => mockNode as Partial<LGraphNode> as LGraphNode)
-  } as Partial<GraphNodeManager> as GraphNodeManager)
-  return {
-    useGraphNodeManager: vi.fn(() => nodeManager)
-  }
-})
-
-vi.mock('@/composables/graph/useVueNodeLifecycle', () => {
-  const nodeManager = useGraphNodeManager(null!)
-  return {
-    useVueNodeLifecycle: vi.fn(() => ({
-      nodeManager
-    }))
-  }
-})
-
 describe('useNodeEventHandlers', () => {
-  const { nodeManager: mockNodeManager } = useVueNodeLifecycle()
-
-  const mockNode = mockNodeManager.value!.getNode(toNodeId('fake_id'))
   const mockLayoutMutations = useLayoutMutations()
 
   const testNodeId = toNodeId('node-1')
 
   beforeEach(async () => {
-    vi.resetAllMocks()
+    vi.clearAllMocks()
+    getNodeById.mockReturnValue(mockNode)
+    mockNode.selected = false
+    mockNode.flags.pinned = false
     canvasSelectedItems.length = 0
   })
 

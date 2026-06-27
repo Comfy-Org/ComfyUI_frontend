@@ -187,6 +187,7 @@ import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -206,6 +207,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
 const settingStore = useSettingStore()
+const nodeDataStore = useNodeDataStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
@@ -252,12 +254,12 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 const vueNodeLifecycle = useVueNodeLifecycle()
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
-let cleanupErrorHooks: (() => void) | null = null
+const cleanupErrorHooks = shallowRef<(() => void) | null>(null)
 watch(
   () => canvasStore.currentGraph,
   (graph) => {
-    cleanupErrorHooks?.()
-    cleanupErrorHooks = graph ? installErrorClearingHooks(graph) : null
+    cleanupErrorHooks.value?.()
+    cleanupErrorHooks.value = graph ? installErrorClearingHooks(graph) : null
   }
 )
 
@@ -281,9 +283,10 @@ watch(
   }
 )
 
-const allNodes = computed((): NodeDataState[] =>
-  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
-)
+const allNodes = computed((): NodeDataState[] => {
+  const graphId = canvasStore.currentGraph?.id
+  return graphId ? nodeDataStore.getGraphNodes(graphId) : []
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {
@@ -539,7 +542,7 @@ onMounted(async () => {
 
     // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
-      cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
+      cleanupErrorHooks.value = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
     vueNodeLifecycle.setupEmptyGraphListener()
@@ -576,8 +579,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  cleanupErrorHooks?.()
-  cleanupErrorHooks = null
+  cleanupErrorHooks.value?.()
+  cleanupErrorHooks.value = null
   vueNodeLifecycle.cleanup()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
