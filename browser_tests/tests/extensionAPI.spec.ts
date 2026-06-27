@@ -13,33 +13,37 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 type TestSettingId = keyof Settings
 
 test.describe('Topbar commands', () => {
-  test('Should allow registering topbar commands', async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.registerExtension({
-        name: 'TestExtension1',
-        commands: [
-          {
-            id: 'foo',
-            label: 'foo-command',
-            function: () => {
-              window.foo = true
+  test(
+    'Should allow registering topbar commands',
+    { tag: '@critical' },
+    async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window.app!.registerExtension({
+          name: 'TestExtension1',
+          commands: [
+            {
+              id: 'foo',
+              label: 'foo-command',
+              function: () => {
+                window.foo = true
+              }
             }
-          }
-        ],
-        menuCommands: [
-          {
-            path: ['ext'],
-            commands: ['foo']
-          }
-        ]
+          ],
+          menuCommands: [
+            {
+              path: ['ext'],
+              commands: ['foo']
+            }
+          ]
+        })
       })
-    })
 
-    await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
-    await expect
-      .poll(() => comfyPage.page.evaluate(() => window.foo))
-      .toBe(true)
-  })
+      await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.foo))
+        .toBe(true)
+    }
+  )
 
   test('Should not allow register command defined in other extension', async ({
     comfyPage
