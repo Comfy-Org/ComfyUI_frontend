@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import {
+  trackNodePrice,
+  usePartitionedBadges
+} from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 const { settings, nodeDefs, pricing } = vi.hoisted(() => ({
@@ -148,5 +151,33 @@ describe('usePartitionedBadges', () => {
       nodeData({ badges: [{ text: 'x' }] })
     ).value
     expect(result.hasComfyBadge).toBe(true)
+  })
+})
+
+describe('trackNodePrice', () => {
+  it('no-ops for a node without dynamic pricing', () => {
+    pricing.dynamic = false
+    expect(() =>
+      trackNodePrice({ id: '1', type: 'Static', inputs: [] } as never)
+    ).not.toThrow()
+  })
+
+  it('touches widget, input, and input-group pricing dependencies', () => {
+    pricing.dynamic = true
+    pricing.widgets = ['seed']
+    pricing.inputs = ['model']
+    pricing.groups = ['lora']
+
+    expect(() =>
+      trackNodePrice({
+        id: '2',
+        type: 'Dynamic',
+        inputs: [
+          { name: 'model', link: 1 },
+          { name: 'lora.0', link: 2 },
+          { name: 'unrelated', link: null }
+        ]
+      } as never)
+    ).not.toThrow()
   })
 })
