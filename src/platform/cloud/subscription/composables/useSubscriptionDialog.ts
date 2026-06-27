@@ -102,18 +102,15 @@ export const useSubscriptionDialog = () => {
             (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team')
         },
         dialogComponentProps: {
-          // The dialog hugs its content so each step sizes itself: the pricing
-          // table stays wide/fixed (cards fill it, DES QA 2026-06-13) while the
-          // compact confirm/success steps shrink instead of floating in the big
-          // pricing modal. Sizes are set on the content root per checkoutStep.
-          style: 'max-width: 95vw; max-height: 90vh;',
-          pt: {
-            root: { class: 'rounded-2xl bg-transparent' },
-            content: {
-              class:
-                '!p-0 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
-            }
-          }
+          // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
+          // `style` width is ignored here and collapses the table to the default
+          // `md` frame. `w-fit` lets each step hug its content — the pricing
+          // table fills its 1280px content while the compact confirm/success
+          // steps shrink (the content root sets its own width per checkoutStep).
+          renderer: 'reka',
+          size: 'full',
+          contentClass:
+            'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
         }
       })
       return
