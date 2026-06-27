@@ -14,7 +14,7 @@ import { toNodeId } from '@/types/nodeId'
 
 const PROMOTED_MODEL_WIDGET_NAME = 'ckpt_name'
 
-export interface PromotedMissingModelWorkflow {
+interface PromotedMissingModelWorkflow {
   workflowName: string
   hostNodeId: number
   hostNodeTitle: string
