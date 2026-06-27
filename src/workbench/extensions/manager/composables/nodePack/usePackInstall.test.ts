@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
+import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 type NodePack = components['schemas']['Node']
+type CompatibilityCheck = {
+  hasConflict: boolean
+  conflicts: ConflictDetail[]
+}
 
 const { managerStore, showDialog, checkNodeCompatibility } = vi.hoisted(() => ({
   managerStore: {
@@ -12,7 +17,9 @@ const { managerStore, showDialog, checkNodeCompatibility } = vi.hoisted(() => ({
     isPackInstalled: vi.fn((_id?: string) => false)
   },
   showDialog: vi.fn(),
-  checkNodeCompatibility: vi.fn(() => ({ hasConflict: false, conflicts: [] }))
+  checkNodeCompatibility: vi.fn(
+    (): CompatibilityCheck => ({ hasConflict: false, conflicts: [] })
+  )
 }))
 
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
@@ -37,6 +44,15 @@ vi.mock(
 
 function pack(over: Partial<NodePack> = {}): NodePack {
   return { id: 'pack-a', name: 'Pack A', ...over } as NodePack
+}
+
+function conflict(overrides: Partial<ConflictDetail> = {}): ConflictDetail {
+  return {
+    type: 'os',
+    current_value: 'linux',
+    required_value: 'darwin',
+    ...overrides
+  }
 }
 
 beforeEach(() => {
@@ -65,6 +81,10 @@ describe('usePackInstall', () => {
 
   it('reports not installing for an empty or idle pack list', () => {
     expect(usePackInstall(() => []).isInstalling.value).toBe(false)
+    expect(
+      usePackInstall(() => undefined as unknown as NodePack[]).isInstalling
+        .value
+    ).toBe(false)
     expect(usePackInstall(() => [pack()]).isInstalling.value).toBe(false)
   })
 
@@ -105,20 +125,150 @@ describe('usePackInstall', () => {
     )
   })
 
+  it('installAllPacks returns early for empty or already installed packs', async () => {
+    await usePackInstall(() => []).installAllPacks()
+
+    managerStore.isPackInstalled.mockReturnValue(true)
+    await usePackInstall(() => [pack({ id: 'installed' })]).installAllPacks()
+
+    expect(managerStore.installPack.call).not.toHaveBeenCalled()
+    expect(managerStore.installPack.clear).not.toHaveBeenCalled()
+  })
+
   it('installAllPacks opens the conflict dialog instead of installing when conflicted', async () => {
+    const osConflict = conflict()
     checkNodeCompatibility.mockReturnValue({
       hasConflict: true,
-      conflicts: [{ type: 'os' }]
-    } as never)
+      conflicts: [osConflict]
+    })
     const { installAllPacks } = usePackInstall(
       () => [pack({ id: 'x' })],
       () => true,
-      () => [{ type: 'os' } as never]
+      () => [osConflict]
     )
 
     await installAllPacks()
 
     expect(showDialog).toHaveBeenCalledTimes(1)
+    expect(showDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conflictedPackages: [
+          expect.objectContaining({
+            package_id: 'x',
+            package_name: 'Pack A',
+            has_conflict: true,
+            conflicts: [osConflict],
+            is_compatible: false
+          })
+        ]
+      })
+    )
     expect(managerStore.installPack.call).not.toHaveBeenCalled()
+  })
+
+  it('installAllPacks stops when conflict details are unavailable', async () => {
+    const { installAllPacks } = usePackInstall(
+      () => [pack({ id: 'x' })],
+      () => true
+    )
+
+    await installAllPacks()
+
+    expect(showDialog).not.toHaveBeenCalled()
+    expect(managerStore.installPack.call).not.toHaveBeenCalled()
+  })
+
+  it('conflict dialog payload falls back for unnamed package data', async () => {
+    checkNodeCompatibility.mockReturnValue({
+      hasConflict: true,
+      conflicts: [conflict()]
+    })
+    const { installAllPacks } = usePackInstall(
+      () => [pack({ id: undefined, name: undefined })],
+      () => true,
+      () => [conflict()]
+    )
+
+    await installAllPacks()
+
+    expect(showDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conflictedPackages: [
+          expect.objectContaining({
+            package_id: '',
+            package_name: ''
+          })
+        ]
+      })
+    )
+  })
+
+  it('conflict dialog action installs only packs still missing', async () => {
+    checkNodeCompatibility.mockReturnValue({
+      hasConflict: false,
+      conflicts: []
+    })
+    managerStore.isPackInstalled.mockImplementation(
+      (id?: string) => id === 'installed'
+    )
+    const { installAllPacks } = usePackInstall(
+      () => [pack({ id: 'installed' }), pack({ id: 'fresh' })],
+      () => true,
+      () => [conflict()]
+    )
+
+    await installAllPacks()
+    const [{ onButtonClick }] = showDialog.mock.calls[0]
+    await onButtonClick()
+
+    expect(managerStore.installPack.call).toHaveBeenCalledTimes(1)
+    expect(managerStore.installPack.call).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'fresh' })
+    )
+    expect(managerStore.installPack.clear).toHaveBeenCalledTimes(1)
+  })
+
+  it('conflict dialog action returns when every pack is already installed', async () => {
+    managerStore.isPackInstalled.mockReturnValue(true)
+    const { installAllPacks } = usePackInstall(
+      () => [pack({ id: 'installed' })],
+      () => true,
+      () => [conflict()]
+    )
+
+    await installAllPacks()
+    const [{ onButtonClick }] = showDialog.mock.calls[0]
+    await onButtonClick()
+
+    expect(managerStore.installPack.call).not.toHaveBeenCalled()
+    expect(managerStore.installPack.clear).not.toHaveBeenCalled()
+  })
+
+  it('clears the command when payload validation rejects', async () => {
+    const { performInstallation } = usePackInstall(() => [])
+
+    await expect(
+      performInstallation([pack({ id: undefined })])
+    ).rejects.toThrow('manager.packInstall.nodeIdRequired')
+
+    expect(managerStore.installPack.call).not.toHaveBeenCalled()
+    expect(managerStore.installPack.clear).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves command cleanup in finally when one install fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    managerStore.installPack.call
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('failed'))
+    const { performInstallation } = usePackInstall(() => [])
+
+    await performInstallation([pack({ id: 'a' }), pack({ id: 'b' })])
+
+    expect(consoleError).toHaveBeenCalledWith(
+      '[usePackInstall] Some installations failed:',
+      [expect.any(Error)]
+    )
+    expect(managerStore.installPack.clear).toHaveBeenCalledTimes(1)
+    consoleError.mockRestore()
   })
 })

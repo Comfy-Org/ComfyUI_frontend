@@ -94,8 +94,10 @@ describe('useSelectionOperations', () => {
     canvas.selectedItems = new Set(['a'])
     useSelectionOperations().duplicateSelection()
     expect(canvas.copyToClipboard).toHaveBeenCalled()
+    expect(canvas.selectedItems.size).toBe(0)
     expect(updateSelectedItems).toHaveBeenCalled()
     expect(canvas.pasteFromClipboard).toHaveBeenCalled()
+    expect(captureCanvasState).toHaveBeenCalled()
   })
 
   it('warns when duplicating nothing', () => {
@@ -111,6 +113,7 @@ describe('useSelectionOperations', () => {
     useSelectionOperations().deleteSelection()
     expect(canvas.deleteSelected).toHaveBeenCalled()
     expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(captureCanvasState).toHaveBeenCalled()
   })
 
   it('warns when deleting nothing', () => {
@@ -140,6 +143,7 @@ describe('useSelectionOperations', () => {
 
     expect(group.title).toBe('New')
     expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(captureCanvasState).toHaveBeenCalled()
   })
 
   it('batch-renames multiple items with an indexed base name', async () => {
@@ -152,6 +156,8 @@ describe('useSelectionOperations', () => {
 
     expect(a.title).toBe('Item 1')
     expect(b.title).toBe('Item 2')
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(captureCanvasState).toHaveBeenCalled()
   })
 
   it('warns when renaming an empty selection', async () => {

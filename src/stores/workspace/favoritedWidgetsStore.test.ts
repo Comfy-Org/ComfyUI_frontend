@@ -1,7 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { toNodeId } from '@/types/nodeId'
 
 const { mockState } = vi.hoisted(() => ({
   mockState: {
@@ -22,8 +25,8 @@ vi.mock('@/scripts/app', () => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
     activeWorkflow: undefined,
-    nodeToNodeLocatorId: (node: { id: number | string }) => String(node.id),
-    nodeIdToNodeLocatorId: (id: number | string) => String(id)
+    nodeToNodeLocatorId: (node: { id: unknown }) => String(node.id),
+    nodeIdToNodeLocatorId: (id: unknown) => String(id)
   })
 }))
 
@@ -49,11 +52,25 @@ interface FakeWidget {
   label?: string
 }
 
-function makeNode(id: number, widgets: FakeWidget[] = [], title = 'My Node') {
-  return { id, title, widgets } as never
+function makeWidget({ name, label }: FakeWidget): IBaseWidget {
+  return {
+    name,
+    label,
+    options: {},
+    type: 'number',
+    y: 0
+  } as IBaseWidget
 }
 
-function registerNode(node: { id: number }) {
+function makeNode(id: number, widgets: FakeWidget[] = [], title = 'My Node') {
+  const node = new LGraphNode(title)
+  node.id = toNodeId(id)
+  node.title = title
+  node.widgets = widgets.map(makeWidget)
+  return node
+}
+
+function registerNode(node: { id: unknown }) {
   mockState.nodes[String(node.id)] = node
 }
 
@@ -85,9 +102,14 @@ describe('favoritedWidgetsStore', () => {
     registerNode(node)
 
     store.addFavorite(node, 'seed')
+    const persisted = structuredClone(mockState.graph?.extra.favoritedWidgets)
+    const dirtyCalls = mockState.setDirty.mock.calls.length
+
     store.addFavorite(node, 'seed')
 
     expect(store.favoritedWidgets).toHaveLength(1)
+    expect(mockState.graph?.extra.favoritedWidgets).toEqual(persisted)
+    expect(mockState.setDirty).toHaveBeenCalledTimes(dirtyCalls)
   })
 
   it('removes a favorite and treats removing an absent one as a no-op', () => {
@@ -95,9 +117,13 @@ describe('favoritedWidgetsStore', () => {
     const node = makeNode(1, [{ name: 'seed' }])
     registerNode(node)
     store.addFavorite(node, 'seed')
+    const persisted = structuredClone(mockState.graph?.extra.favoritedWidgets)
+    const dirtyCalls = mockState.setDirty.mock.calls.length
 
     store.removeFavorite(node, 'missing')
     expect(store.isFavorited(node, 'seed')).toBe(true)
+    expect(mockState.graph?.extra.favoritedWidgets).toEqual(persisted)
+    expect(mockState.setDirty).toHaveBeenCalledTimes(dirtyCalls)
 
     store.removeFavorite(node, 'seed')
     expect(store.isFavorited(node, 'seed')).toBe(false)
@@ -217,11 +243,16 @@ describe('favoritedWidgetsStore', () => {
     ])
   })
 
-  it('treats a missing graph as no favorites without throwing', () => {
-    mockState.graph = null
+  it('labels existing favorites when the graph is not loaded', () => {
+    const node = makeNode(1, [{ name: 'seed' }])
+    registerNode(node)
     const store = useFavoritedWidgetsStore()
+    store.addFavorite(node, 'seed')
 
+    mockState.graph = null
+
+    expect(store.favoritedWidgets[0].label).toContain('(graph not loaded)')
+    store.clearFavorites()
     expect(store.favoritedWidgets).toHaveLength(0)
-    expect(() => store.clearFavorites()).not.toThrow()
   })
 })

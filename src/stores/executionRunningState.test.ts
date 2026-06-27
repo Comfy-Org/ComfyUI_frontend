@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
+import type { classifyCloudValidationError } from '@/utils/executionErrorUtil'
+
+type CloudValidationResult = ReturnType<typeof classifyCloudValidationError>
 
 const { handlers, errorStore, activeWorkflow, dist, classifyCloud } =
   vi.hoisted(() => ({
@@ -14,7 +18,7 @@ const { handlers, errorStore, activeWorkflow, dist, classifyCloud } =
     } as Record<string, unknown>,
     activeWorkflow: { value: null as { path: string } | null },
     dist: { isCloud: false },
-    classifyCloud: vi.fn(() => null)
+    classifyCloud: vi.fn<(_: string) => CloudValidationResult>(() => null)
   }))
 
 vi.mock('@/scripts/app', () => ({ app: { rootGraph: {} } }))
@@ -75,6 +79,10 @@ function workflow(path: string): ComfyWorkflow {
   return { path } as unknown as ComfyWorkflow
 }
 
+function promptOutput(): ComfyApiWorkflow {
+  return {}
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   for (const key of Object.keys(handlers)) delete handlers[key]
@@ -99,16 +107,31 @@ describe('executionStore running state and error edges', () => {
     expect(store.runningWorkflowCount).toBe(1)
   })
 
-  it('reports the active workflow as running only when job, path and session agree', () => {
+  it('does not report the active workflow as running when the path differs', () => {
     const store = setup()
     expect(store.isActiveWorkflowRunning).toBe(false)
 
+    const wf = workflow('w.json')
+    activeWorkflow.value = { path: 'other.json' }
+    store.storeJob({
+      nodes: [],
+      id: 'job-2',
+      promptOutput: promptOutput(),
+      workflow: wf
+    })
+    handlers['execution_start']?.({ detail: { prompt_id: 'job-2' } })
+
+    expect(store.isActiveWorkflowRunning).toBe(false)
+  })
+
+  it('reports the active workflow as running when job, path and session agree', () => {
+    const store = setup()
     const wf = workflow('w.json')
     activeWorkflow.value = { path: 'w.json' }
     store.storeJob({
       nodes: [],
       id: 'job-2',
-      promptOutput: {} as never,
+      promptOutput: promptOutput(),
       workflow: wf
     })
     handlers['execution_start']?.({ detail: { prompt_id: 'job-2' } })
@@ -133,8 +156,8 @@ describe('executionStore running state and error edges', () => {
     dist.isCloud = true
     classifyCloud.mockReturnValue({
       kind: 'promptError',
-      promptError: { type: 'validation', message: 'bad input' }
-    } as never)
+      promptError: { type: 'validation', message: 'bad input', details: '' }
+    })
     setup()
 
     handlers['execution_error']?.({
@@ -143,7 +166,8 @@ describe('executionStore running state and error edges', () => {
 
     expect(errorStore.lastPromptError).toEqual({
       type: 'validation',
-      message: 'bad input'
+      message: 'bad input',
+      details: ''
     })
   })
 })

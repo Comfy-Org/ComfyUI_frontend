@@ -41,11 +41,11 @@ const CRITICAL_COVERAGE_EXCLUDE = [
   'src/views/**'
 ]
 
-// Stage 0 critical coverage floor (PR-blocking). Plan-documented baseline;
-// ratchet upward only after measured gains land on main.
+// Critical coverage floor (PR-blocking). Branch coverage is ratcheted by
+// proof PRs while the other metrics remain at the plan-documented baseline.
 const CRITICAL_COVERAGE_THRESHOLDS = {
   statements: 62.76,
-  branches: 53.38,
+  branches: 56.7,
   functions: 57.3,
   lines: 63.98
 }

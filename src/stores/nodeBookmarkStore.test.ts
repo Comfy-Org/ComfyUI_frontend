@@ -2,24 +2,30 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const BOOKMARK_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 const CUSTOMIZATION_ID = 'Comfy.NodeLibrary.BookmarksCustomization'
 
 const { settings, setSpy, nodeDefs } = vi.hoisted(() => ({
   settings: {} as Record<string, unknown>,
-  setSpy: vi.fn(async (id: string, value: unknown) => {
-    settings[id] = value
-  }),
+  setSpy: vi.fn(),
   nodeDefs: {} as Record<string, unknown>
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (id: string) => settings[id],
-    set: setSpy
+vi.mock('@/platform/settings/settingStore', async () => {
+  const { reactive } = await import('vue')
+  const reactiveSettings = reactive(settings)
+  setSpy.mockImplementation(async (id: string, value: unknown) => {
+    reactiveSettings[id] = value
   })
-}))
+  return {
+    useSettingStore: () => ({
+      get: (id: string) => reactiveSettings[id],
+      set: setSpy
+    })
+  }
+})
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({ allNodeDefsByName: nodeDefs }),
@@ -31,19 +37,29 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
-// A dummy folder's category is its nodePath without the trailing slash; the
-// store derives the renamed path from category, so this relationship matters.
+type BookmarkNodeFixture = Pick<
+  ComfyNodeDefImpl,
+  'isDummyFolder' | 'nodePath' | 'category' | 'name'
+>
+
 function folderNode(nodePath: string) {
-  return {
+  const node = {
     isDummyFolder: true,
     nodePath,
     category: nodePath.replace(/\/$/, ''),
     name: nodePath
-  } as never
+  } satisfies BookmarkNodeFixture
+  return node as ComfyNodeDefImpl
 }
 
 function leafNode(name: string, nodePath = name) {
-  return { isDummyFolder: false, name, nodePath, category: '' } as never
+  const node = {
+    isDummyFolder: false,
+    name,
+    nodePath,
+    category: ''
+  } satisfies BookmarkNodeFixture
+  return node as ComfyNodeDefImpl
 }
 
 beforeEach(() => {
@@ -91,7 +107,8 @@ describe('nodeBookmarkStore', () => {
     await store.toggleBookmark(leafNode('KSampler', 'sampling/KSampler'))
 
     expect(setSpy).toHaveBeenCalledWith(BOOKMARK_ID, ['KSampler'])
-    expect(setSpy).toHaveBeenCalledWith(BOOKMARK_ID, ['sampling/KSampler'])
+    expect(setSpy).toHaveBeenLastCalledWith(BOOKMARK_ID, [])
+    expect(store.bookmarks).toEqual([])
   })
 
   it('creates a folder under a parent and at the root', async () => {
@@ -113,7 +130,7 @@ describe('nodeBookmarkStore', () => {
     const store = useNodeBookmarkStore()
 
     const children = (store.bookmarkedRoot as { children: unknown[] }).children
-    expect(children).toHaveLength(2) // KSampler clone + dummy folder, Unknown dropped
+    expect(children).toHaveLength(2)
   })
 
   describe('renameBookmarkFolder', () => {
@@ -184,7 +201,6 @@ describe('nodeBookmarkStore', () => {
         icon: store.defaultBookmarkIcon
       })
 
-      // Both attributes equal defaults -> customization becomes empty -> deleted
       expect(setSpy).toHaveBeenCalledWith(CUSTOMIZATION_ID, {
         'Folder/': undefined
       })

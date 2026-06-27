@@ -74,8 +74,6 @@ describe('useNodeCustomization', () => {
     const item = colorable()
     selection.items = [item]
     const { colorOptions, applyColor } = useNodeCustomization()
-    // Options are built from LGraphCanvas.node_colors, so the last one is a
-    // real named color that resolves to a non-null canvas color option.
     const named = colorOptions.at(-1)!
 
     applyColor(named)
@@ -91,12 +89,13 @@ describe('useNodeCustomization', () => {
   it('falls back to the no-color option for an unrecognized current color', () => {
     selection.items = [colorable('#not-a-known-color')]
     const result = useNodeCustomization().getCurrentColor()
-    expect(result?.name).toBeDefined()
+    expect(result?.name).toBe('noColor')
   })
 
   it('no-ops shape changes when no graph nodes are selected', () => {
-    selection.items = [colorable()] // colorable but not an LGraphNode
-    useNodeCustomization().applyShape({ name: 'box', value: 'box' } as never)
+    selection.items = [colorable()]
+    const { applyShape, shapeOptions } = useNodeCustomization()
+    applyShape(shapeOptions[0])
     expect(refreshCanvas).not.toHaveBeenCalled()
   })
 

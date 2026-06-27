@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ResultItemType, TaskOutput } from '@/schemas/apiSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
@@ -26,32 +28,36 @@ type JobStatus =
   | 'failed'
   | 'cancelled'
 
-interface JobOverrides {
-  id?: string
-  status?: JobStatus
-  outputs_count?: number
-  workflow_id?: string
-  create_time?: number
-  execution_start_time?: number
-  execution_end_time?: number
-  execution_error?: { exception_type?: string; exception_message?: string }
-  preview_output?: unknown
+function executionError(
+  overrides: Partial<NonNullable<JobListItem['execution_error']>> = {}
+): NonNullable<JobListItem['execution_error']> {
+  return {
+    node_id: '1',
+    node_type: 'KSampler',
+    exception_message: 'boom',
+    exception_type: 'Error',
+    traceback: [],
+    current_inputs: {},
+    current_outputs: {},
+    ...overrides
+  }
 }
 
-function job(over: JobOverrides = {}) {
+function job(over: Partial<JobListItem> = {}): JobListItem {
   return {
     id: 'job-1',
     status: 'completed',
     create_time: 1000,
+    priority: 0,
     ...over
-  } as never
+  }
 }
 
-function result(filename: string, type = 'output') {
+function result(filename: string, type: ResultItemType = 'output') {
   return new ResultItemImpl({
     filename,
     subfolder: '',
-    type: type as 'output' | 'input' | 'temp',
+    type,
     nodeId: '1' as SerializedNodeId,
     mediaType: 'images'
   })
@@ -108,7 +114,8 @@ describe('TaskItemImpl', () => {
   it('parses outputs lazily when flat outputs are not supplied', () => {
     const parsed = [result('p.png')]
     parseTaskOutput.mockReturnValueOnce(parsed)
-    const task = new TaskItemImpl(job(), { '1': { images: [] } } as never)
+    const outputs: TaskOutput = { '1': { images: [] } }
+    const task = new TaskItemImpl(job(), outputs)
     expect(parseTaskOutput).toHaveBeenCalled()
     expect(task.flatOutputs).toBe(parsed)
   })
@@ -137,13 +144,18 @@ describe('TaskItemImpl', () => {
       new TaskItemImpl(
         job({
           status: 'failed',
-          execution_error: { exception_type: 'InterruptProcessingException' }
+          execution_error: executionError({
+            exception_type: 'InterruptProcessingException'
+          })
         })
       ).interrupted
     ).toBe(true)
     expect(
       new TaskItemImpl(
-        job({ status: 'failed', execution_error: { exception_type: 'Other' } })
+        job({
+          status: 'failed',
+          execution_error: executionError({ exception_type: 'Other' })
+        })
       ).interrupted
     ).toBe(false)
   })
@@ -154,7 +166,7 @@ describe('TaskItemImpl', () => {
         status: 'failed',
         outputs_count: 3,
         workflow_id: 'wf-9',
-        execution_error: { exception_message: 'boom' }
+        execution_error: executionError({ exception_message: 'boom' })
       })
     )
     expect(task.errorMessage).toBe('boom')

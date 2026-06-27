@@ -1,22 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import {
   trackNodePrice,
   usePartitionedBadges
 } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import { toNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
-const { settings, nodeDefs, pricing } = vi.hoisted(() => ({
-  settings: {} as Record<string, unknown>,
-  nodeDefs: {} as Record<string, unknown>,
-  pricing: {
-    dynamic: false,
-    widgets: [] as string[],
-    inputs: [] as string[],
-    groups: [] as string[]
-  }
-}))
+const { settings, nodeDefs, pricing, getNodeRevisionRefMock, getWidgetMock } =
+  vi.hoisted(() => ({
+    settings: {} as Record<string, unknown>,
+    nodeDefs: {} as Record<string, unknown>,
+    pricing: {
+      dynamic: false,
+      widgets: [] as string[],
+      inputs: [] as string[],
+      groups: [] as string[]
+    },
+    getNodeRevisionRefMock: vi.fn(() => ({ value: 0 })),
+    getWidgetMock: vi.fn(() => ({ value: 'widget-value' }))
+  }))
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -30,7 +36,7 @@ vi.mock('@/composables/node/useNodePricing', () => ({
     hasDynamicPricing: () => pricing.dynamic,
     getInputGroupPrefixes: () => pricing.groups,
     getInputNames: () => pricing.inputs,
-    getNodeRevisionRef: () => ({ value: 0 })
+    getNodeRevisionRef: getNodeRevisionRefMock
   })
 }))
 
@@ -49,18 +55,41 @@ vi.mock('@/stores/nodeDefStore', () => ({
 }))
 
 vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({ getWidget: () => undefined })
+  useWidgetValueStore: () => ({ getWidget: getWidgetMock })
 }))
 
-function nodeData(over: Record<string, unknown> = {}): VueNodeData {
+function nodeData(overrides: Partial<VueNodeData> = {}): VueNodeData {
   return {
-    id: '1',
+    executing: false,
+    id: toNodeId(1),
+    mode: 0,
+    selected: false,
+    title: 'Test node',
     type: 'TestNode',
     apiNode: false,
     badges: [],
     inputs: [],
-    ...over
-  } as unknown as VueNodeData
+    ...overrides
+  } satisfies VueNodeData
+}
+
+function inputSlot(
+  name: string,
+  readLink: () => number | null
+): INodeInputSlot {
+  return {
+    name,
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    get link() {
+      return readLink()
+    },
+    set link(_value: number | null) {}
+  } as INodeInputSlot
+}
+
+function badge(text: string): LGraphBadge {
+  return new LGraphBadge({ text })
 }
 
 beforeEach(() => {
@@ -73,6 +102,8 @@ beforeEach(() => {
   pricing.widgets = []
   pricing.inputs = []
   pricing.groups = []
+  getNodeRevisionRefMock.mockClear()
+  getWidgetMock.mockClear()
 })
 
 describe('usePartitionedBadges', () => {
@@ -90,22 +121,20 @@ describe('usePartitionedBadges', () => {
       nodeData({
         apiNode: true,
         inputs: [
-          { name: 'model', link: 1 },
-          { name: 'lora.0', link: 2 },
-          { name: 'unrelated', link: null }
+          inputSlot('model', () => 1),
+          inputSlot('lora.0', () => 2),
+          inputSlot('unrelated', () => null)
         ]
       })
     ).value
 
-    // The dynamic-pricing dependency tracking runs (widget + input + group
-    // access) and still produces a partitioned result.
     expect(result).toHaveProperty('core')
     expect(result).toHaveProperty('extension')
   })
 
   it('adds an id badge when the id mode is enabled', () => {
     settings['Comfy.NodeBadge.NodeIdBadgeMode'] = NodeBadgeMode.ShowAll
-    const result = usePartitionedBadges(nodeData({ id: '7' })).value
+    const result = usePartitionedBadges(nodeData({ id: toNodeId(7) })).value
     expect(result.core).toContainEqual({ text: '#7' })
   })
 
@@ -132,15 +161,11 @@ describe('usePartitionedBadges', () => {
   it('partitions extension badges (skipping the first) from credits badges', () => {
     const result = usePartitionedBadges(
       nodeData({
-        badges: [
-          { text: 'skipped' },
-          { text: 'ext-badge' },
-          { text: '$5 per run' }
-        ]
+        badges: [badge('skipped'), badge('ext-badge'), badge('$5 per run')]
       })
     ).value
 
-    expect(result.extension).toEqual([{ text: 'ext-badge' }])
+    expect(result.extension.map((badge) => badge.text)).toEqual(['ext-badge'])
     expect(result.pricing).toEqual([{ required: '$5', rest: 'per run' }])
   })
 
@@ -148,7 +173,7 @@ describe('usePartitionedBadges', () => {
     settings['Comfy.NodeBadge.NodeSourceBadgeMode'] = NodeBadgeMode.ShowAll
     nodeDefs['TestNode'] = { isCoreNode: true }
     const result = usePartitionedBadges(
-      nodeData({ badges: [{ text: 'x' }] })
+      nodeData({ badges: [badge('x')] })
     ).value
     expect(result.hasComfyBadge).toBe(true)
   })
@@ -157,9 +182,10 @@ describe('usePartitionedBadges', () => {
 describe('trackNodePrice', () => {
   it('no-ops for a node without dynamic pricing', () => {
     pricing.dynamic = false
-    expect(() =>
-      trackNodePrice({ id: '1', type: 'Static', inputs: [] } as never)
-    ).not.toThrow()
+    trackNodePrice({ id: '1', type: 'Static', inputs: [] })
+
+    expect(getNodeRevisionRefMock).toHaveBeenCalledWith(toNodeId('1'))
+    expect(getWidgetMock).not.toHaveBeenCalled()
   })
 
   it('touches widget, input, and input-group pricing dependencies', () => {
@@ -167,17 +193,33 @@ describe('trackNodePrice', () => {
     pricing.widgets = ['seed']
     pricing.inputs = ['model']
     pricing.groups = ['lora']
+    let modelReads = 0
+    let groupReads = 0
+    let unrelatedReads = 0
 
-    expect(() =>
-      trackNodePrice({
-        id: '2',
-        type: 'Dynamic',
-        inputs: [
-          { name: 'model', link: 1 },
-          { name: 'lora.0', link: 2 },
-          { name: 'unrelated', link: null }
-        ]
-      } as never)
-    ).not.toThrow()
+    trackNodePrice({
+      id: '2',
+      type: 'Dynamic',
+      inputs: [
+        inputSlot('model', () => {
+          modelReads += 1
+          return 1
+        }),
+        inputSlot('lora.0', () => {
+          groupReads += 1
+          return 2
+        }),
+        inputSlot('unrelated', () => {
+          unrelatedReads += 1
+          return null
+        })
+      ]
+    })
+
+    expect(getNodeRevisionRefMock).toHaveBeenCalledWith(toNodeId('2'))
+    expect(getWidgetMock).toHaveBeenCalled()
+    expect(modelReads).toBe(1)
+    expect(groupReads).toBe(1)
+    expect(unrelatedReads).toBe(0)
   })
 })

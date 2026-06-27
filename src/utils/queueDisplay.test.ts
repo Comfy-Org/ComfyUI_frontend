@@ -21,21 +21,27 @@ function createJob(
   }
 }
 
-function createTask({
-  job,
-  jobId = 'job-123456',
-  createTime = 1_710_000_000_000,
-  executionTime,
-  executionTimeInSeconds,
-  previewOutput
-}: {
-  job?: Partial<JobListItem>
-  jobId?: string
-  createTime?: number
-  executionTime?: number
-  executionTimeInSeconds?: number
-  previewOutput?: PreviewOutput
-} = {}): QueueDisplayTask {
+function createTask(
+  options: {
+    job?: Partial<JobListItem>
+    jobId?: string
+    createTime?: number | undefined
+    executionTime?: number
+    executionTimeInSeconds?: number
+    previewOutput?: PreviewOutput
+  } = {}
+): QueueDisplayTask {
+  const {
+    job,
+    jobId = 'job-123456',
+    executionTime,
+    executionTimeInSeconds,
+    previewOutput
+  } = options
+  const createTime = Object.hasOwn(options, 'createTime')
+    ? options.createTime
+    : 1_710_000_000_000
+
   return {
     job: createJob(job?.status ?? 'pending', job),
     jobId,
@@ -74,6 +80,12 @@ describe('iconForJobState', () => {
     ['failed', 'icon-[lucide--alert-circle]']
   ])('maps %s to its icon', ([state, icon]) => {
     expect(iconForJobState(state)).toBe(icon)
+  })
+
+  it('uses a neutral icon for unrecognized states', () => {
+    expect(iconForJobState('archived' as JobState)).toBe(
+      'icon-[lucide--circle]'
+    )
   })
 })
 
@@ -131,6 +143,23 @@ describe('buildJobDisplay', () => {
       secondary:
         'KSampler sideToolbar.queueProgressOverlay.colonPercent(percent=0%)',
       showClear: true
+    })
+  })
+
+  it('omits current node progress when the active job has no node name', () => {
+    expect(
+      buildJobDisplay(
+        createTask({ job: { status: 'in_progress' } }),
+        'running',
+        createCtx({
+          isActive: true,
+          totalPercent: 101,
+          currentNodePercent: 50
+        })
+      )
+    ).toMatchObject({
+      primary: 'sideToolbar.queueProgressOverlay.total(percent=100%)',
+      secondary: ''
     })
   })
 
@@ -214,6 +243,40 @@ describe('buildJobDisplay', () => {
       secondary: '',
       showClear: false
     })
+  })
+
+  it('builds completed fallback titles from job id or the generic label', () => {
+    expect(
+      buildJobDisplay(
+        createTask({
+          jobId: 'abcdef-123',
+          job: { status: 'completed', priority: undefined }
+        }),
+        'completed',
+        createCtx()
+      ).primary
+    ).toBe('g.job abcdef')
+
+    expect(
+      buildJobDisplay(
+        createTask({
+          jobId: '',
+          job: { status: 'completed', id: '', priority: undefined }
+        }),
+        'completed',
+        createCtx()
+      ).primary
+    ).toBe('g.job')
+  })
+
+  it('uses an empty queued timestamp when create time is unavailable', () => {
+    expect(
+      buildJobDisplay(
+        createTask({ createTime: undefined }),
+        'pending',
+        createCtx()
+      ).secondary
+    ).toBe('')
   })
 
   it('shows failed jobs as clearable failures', () => {

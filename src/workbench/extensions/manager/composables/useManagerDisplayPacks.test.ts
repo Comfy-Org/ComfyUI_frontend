@@ -12,17 +12,24 @@ const { state } = vi.hoisted(() => ({
   state: {
     installed: [] as NodePack[],
     workflow: [] as NodePack[],
+    installedLoading: false,
+    workflowLoading: false,
+    installedReady: true,
+    workflowReady: true,
+    startFetchInstalled: vi.fn(),
+    startFetchWorkflowPacks: vi.fn(),
     installedIds: new Set<string>(),
     installedVersions: {} as Record<string, string>,
     conflicts: [] as { package_id: string }[]
   }
 }))
 
-// Invoke the predicate once so the data-fetch trigger conditions are exercised.
 vi.mock('@vueuse/core', async (orig) => ({
   ...(await orig<typeof VueUse>()),
-  whenever: (source: unknown) => {
-    if (typeof source === 'function') (source as () => unknown)()
+  whenever: (source: unknown, callback?: () => void) => {
+    if (typeof source === 'function' && source() && callback) {
+      callback()
+    }
   }
 }))
 
@@ -38,12 +45,12 @@ vi.mock(
   '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
   () => ({
     useInstalledPacks: () => ({
-      startFetchInstalled: () => {},
+      startFetchInstalled: state.startFetchInstalled,
       filterInstalledPack: (packs: NodePack[]) =>
         packs.filter((p) => state.installedIds.has(p.id ?? '')),
       installedPacks: ref(state.installed),
-      isLoading: ref(false),
-      isReady: ref(true)
+      isLoading: ref(state.installedLoading),
+      isReady: ref(state.installedReady)
     })
   })
 )
@@ -52,11 +59,11 @@ vi.mock(
   '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks',
   () => ({
     useWorkflowPacks: () => ({
-      startFetchWorkflowPacks: () => {},
+      startFetchWorkflowPacks: state.startFetchWorkflowPacks,
       filterWorkflowPack: (packs: NodePack[]) => packs,
       workflowPacks: ref(state.workflow),
-      isLoading: ref(false),
-      isReady: ref(true)
+      isLoading: ref(state.workflowLoading),
+      isReady: ref(state.workflowReady)
     })
   })
 )
@@ -102,6 +109,12 @@ function display(
 beforeEach(() => {
   state.installed = []
   state.workflow = []
+  state.installedLoading = false
+  state.workflowLoading = false
+  state.installedReady = true
+  state.workflowReady = true
+  state.startFetchInstalled.mockReset()
+  state.startFetchWorkflowPacks.mockReset()
   state.installedIds = new Set()
   state.installedVersions = {}
   state.conflicts = []
@@ -136,10 +149,10 @@ describe('useManagerDisplayPacks', () => {
       nightly: 'not-semver'
     }
     state.installed = [
-      pack('old', '1.2.0'), // newer -> included
-      pack('current', '2.0.0'), // equal -> excluded
-      pack('nightly', '9.9.9'), // invalid installed version -> excluded
-      pack('uninstalled', '5.0.0') // not installed -> excluded
+      pack('old', '1.2.0'),
+      pack('current', '2.0.0'),
+      pack('nightly', '9.9.9'),
+      pack('uninstalled', '5.0.0')
     ]
     const { displayPacks } = display(ManagerTab.UpdateAvailable)
     expect(displayPacks.value.map((p) => p.id)).toEqual(['old'])
@@ -167,9 +180,32 @@ describe('useManagerDisplayPacks', () => {
   })
 
   it('reports loading state scoped to the active tab group', () => {
-    expect(display(ManagerTab.AllInstalled).isLoading.value).toBe(false)
-    expect(display(ManagerTab.Workflow).isLoading.value).toBe(false)
+    state.installedLoading = true
+    state.workflowLoading = false
+    expect(display(ManagerTab.AllInstalled).isLoading.value).toBe(true)
     expect(display(ManagerTab.All).isLoading.value).toBe(false)
+
+    state.installedLoading = false
+    state.workflowLoading = true
+    expect(display(ManagerTab.Workflow).isLoading.value).toBe(true)
+    expect(display(ManagerTab.Missing).isLoading.value).toBe(true)
+  })
+
+  it('fetches installed packs when an installed tab is selected and not ready', () => {
+    state.installedReady = false
+    display(ManagerTab.AllInstalled)
+
+    expect(state.startFetchInstalled).toHaveBeenCalledTimes(1)
+    expect(state.startFetchWorkflowPacks).not.toHaveBeenCalled()
+  })
+
+  it('fetches workflow and installed packs for missing workflow dependencies', () => {
+    state.installedReady = false
+    state.workflowReady = false
+    display(ManagerTab.Missing)
+
+    expect(state.startFetchInstalled).toHaveBeenCalledTimes(1)
+    expect(state.startFetchWorkflowPacks).toHaveBeenCalledTimes(1)
   })
 
   it('filters search results to installed packs on the AllInstalled tab while searching', () => {
@@ -182,6 +218,33 @@ describe('useManagerDisplayPacks', () => {
     expect(displayPacks.value.map((p) => p.id)).toEqual(['a'])
   })
 
+  it('filters searched update and conflict tabs before applying tab rules', () => {
+    state.installedIds = new Set(['old', 'conflict'])
+    state.installedVersions = {
+      old: '1.0.0',
+      conflict: '1.0.0'
+    }
+    state.conflicts = [{ package_id: 'conflict' }]
+    const results = [
+      pack('old', '2.0.0'),
+      pack('current', '1.0.0'),
+      pack('conflict', '1.0.0')
+    ]
+
+    expect(
+      display(
+        ManagerTab.UpdateAvailable,
+        results,
+        'query'
+      ).displayPacks.value.map((p) => p.id)
+    ).toEqual(['old'])
+    expect(
+      display(ManagerTab.Conflicting, results, 'query').displayPacks.value.map(
+        (p) => p.id
+      )
+    ).toEqual(['conflict'])
+  })
+
   it('filters workflow search results on the Workflow tab while searching', () => {
     const { displayPacks } = display(
       ManagerTab.Workflow,
@@ -189,6 +252,23 @@ describe('useManagerDisplayPacks', () => {
       'query'
     )
     expect(displayPacks.value.map((p) => p.id)).toEqual(['a', 'b'])
+  })
+
+  it('filters searched missing workflow packs to not-installed packs', () => {
+    state.installedIds = new Set(['a'])
+    const { displayPacks } = display(
+      ManagerTab.Missing,
+      [pack('a'), pack('b')],
+      'query'
+    )
+    expect(displayPacks.value.map((p) => p.id)).toEqual(['b'])
+  })
+
+  it('falls back to search results for unknown tabs', () => {
+    const results = [pack('a')]
+    expect(
+      display('unknown' as ManagerTab, results).displayPacks.value
+    ).toEqual(results)
   })
 
   it('sorts installed packs by the configured field', () => {
