@@ -2,12 +2,10 @@ import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { t } from '@/i18n'
 import type {
   ISlotType,
   INodeInputSlot,
-  INodeOutputSlot,
-  Point
+  INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +13,6 @@ import type { LLink } from '@/lib/litegraph/src/LLink'
 import { commonType } from '@/lib/litegraph/src/utils/type'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -36,9 +33,12 @@ const INLINE_INPUTS = false
 type DynamicGroupState = {
   min: number
   max: number
+  groupName?: string
   inputSpecs: InputSpecV2[]
+  addRow: () => void
+  removeRow: (row: number) => void
 }
-type DynamicGroupNode = LGraphNode & {
+export type DynamicGroupNode = LGraphNode & {
   comfyDynamic: { dynamicGroup: Record<string, DynamicGroupState> }
 }
 
@@ -236,19 +236,8 @@ function withComfyDynamicGroup(
   node.comfyDynamic.dynamicGroup = {}
 }
 
-const ROW_MARKER = '__row__'
-const rowHeaderName = (group: string, row: number) =>
-  `${group}.${ROW_MARKER}${row}`
 const fieldName = (group: string, row: number, field: string) =>
   `${group}.${row}.${field}`
-
-/** Extract the row index from a header widget name, or `undefined`. */
-function headerRowIndex(group: string, name: string): number | undefined {
-  const prefix = `${group}.${ROW_MARKER}`
-  if (!name.startsWith(prefix)) return undefined
-  const row = Number(name.slice(prefix.length))
-  return Number.isInteger(row) ? row : undefined
-}
 
 /** Rename a field that sits above the removed row, shifting its index down. */
 function shiftedFieldName(
@@ -266,71 +255,27 @@ function shiftedFieldName(
   return fieldName(group, row - 1, rest.slice(dot + 1))
 }
 
+const isGroupField = (group: string, name: string) =>
+  name.startsWith(`${group}.`)
+
 const belongsToRow = (group: string, name: string, row: number): boolean =>
-  name === rowHeaderName(group, row) || name.startsWith(`${group}.${row}.`)
+  name.startsWith(`${group}.${row}.`)
 
-const CANVAS_MARGIN = 15
-
-/** Draw the "Add row" capsule button on the LiteGraph canvas. */
-function drawGroupButton(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  y: number,
-  label: string,
-  disabled: boolean
-): void {
-  const height = LiteGraph.NODE_WIDGET_HEIGHT
-  ctx.save()
-  if (disabled) ctx.globalAlpha *= 0.5
-  ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
-  ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
-  ctx.beginPath()
-  ctx.roundRect(CANVAS_MARGIN, y, width - CANVAS_MARGIN * 2, height, [
-    height * 0.5
-  ])
-  ctx.fill()
-  if (!disabled) ctx.stroke()
-  ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
-  ctx.font = `${LiteGraph.NODE_TEXT_SIZE}px ${LiteGraph.NODE_FONT}`
-  ctx.textAlign = 'center'
-  ctx.fillText(label, width * 0.5, y + height * 0.7)
-  ctx.restore()
-}
-
-/** Horizontal centre of a row header's remove (✕) hit target. */
-const removeButtonCenterX = (width: number) =>
-  width - CANVAS_MARGIN - LiteGraph.NODE_WIDGET_HEIGHT * 0.5
-
-/** Draw a row header (label on the left, ✕ on the right) on the canvas. */
-function drawGroupRowHeader(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  y: number,
-  label: string,
-  removable: boolean
-): void {
-  const height = LiteGraph.NODE_WIDGET_HEIGHT
-  ctx.save()
-  ctx.font = `${LiteGraph.NODE_TEXT_SIZE}px ${LiteGraph.NODE_FONT}`
-  ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
-  ctx.textAlign = 'left'
-  ctx.fillText(label, CANVAS_MARGIN, y + height * 0.7)
-  if (removable) {
-    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
-    ctx.textAlign = 'center'
-    ctx.fillText('\u2715', removeButtonCenterX(width), y + height * 0.7)
+function countGroupRows(group: string, node: LGraphNode): number {
+  const rows = new Set<number>()
+  for (const w of node.widgets ?? []) {
+    if (!isGroupField(group, w.name)) continue
+    const rest = w.name.slice(group.length + 1)
+    const dot = rest.indexOf('.')
+    if (dot !== -1) {
+      const row = Number(rest.slice(0, dot))
+      if (Number.isInteger(row)) rows.add(row)
+    }
   }
-  ctx.restore()
+  return rows.size
 }
 
-const countGroupRows = (group: string, node: LGraphNode): number =>
-  (node.widgets ?? []).reduce(
-    (count, w) =>
-      headerRowIndex(group, w.name) !== undefined ? count + 1 : count,
-    0
-  )
-
-/** Build a row's header + field widgets, returning them detached from the node. */
+/** Build field widgets for a single row, returning them detached from the node. */
 function createRow(
   group: string,
   row: number,
@@ -340,45 +285,13 @@ function createRow(
   const { addNodeInput } = useLitegraphService()
   const startLen = node.widgets!.length
 
-  const header = node.addCustomWidget({
-    name: rowHeaderName(group, row),
-    type: 'dynamic_group_row',
-    value: row,
-    y: 0,
-    serialize: false,
-    callback: undefined as IBaseWidget['callback'],
-    draw(
-      this: IBaseWidget,
-      ctx: CanvasRenderingContext2D,
-      _node: LGraphNode,
-      width: number,
-      y: number
-    ) {
-      const idx = headerRowIndex(group, this.name) ?? 0
-      const label = t('dynamicGroup.row', { index: idx + 1 })
-      drawGroupRowHeader(ctx, width, y, label, !!this.options?.removable)
-    },
-    mouse(this: IBaseWidget, event: CanvasPointerEvent, pos: Point) {
-      if (event.type !== 'pointerup' || !this.options?.removable) return false
-      const half = LiteGraph.NODE_WIDGET_HEIGHT * 0.5
-      if (Math.abs(pos[0] - removeButtonCenterX(node.size[0])) > half)
-        return false
-      const idx = headerRowIndex(group, this.name)
-      if (idx !== undefined) removeRow(group, idx, node)
-      return true
-    },
-    options: { serialize: false, socketless: true, removable: row >= state.min }
-  })
-  header.callback = function (this: IBaseWidget) {
-    const idx = headerRowIndex(group, this.name)
-    if (idx !== undefined) removeRow(group, idx, node)
-  }
-
   for (const spec of state.inputSpecs)
     addNodeInput(node, {
       ...spec,
       name: fieldName(group, row, spec.name),
-      display_name: spec.display_name ?? spec.name
+      display_name: spec.display_name ?? spec.name,
+      hidden: true,
+      socketless: true
     })
 
   return node.widgets!.splice(startLen)
@@ -390,7 +303,7 @@ function insertRowAfterGroup(
   rowWidgets: IBaseWidget[]
 ): void {
   const lastIdx = node.widgets!.findLastIndex(
-    (w) => w.name === group || w.name.startsWith(`${group}.`)
+    (w) => w.name === group || isGroupField(group, w.name)
   )
   node.widgets!.splice(lastIdx + 1, 0, ...rowWidgets)
 }
@@ -426,13 +339,6 @@ function removeRow(group: string, row: number, node: DynamicGroupNode): void {
   remove(node.inputs, (inp) => belongsToRow(group, inp.name, row))
 
   for (const w of node.widgets ?? []) {
-    const headerRow = headerRowIndex(group, w.name)
-    if (headerRow !== undefined && headerRow > row) {
-      w.name = rowHeaderName(group, headerRow - 1)
-      w.options ??= {}
-      w.options.removable = headerRow - 1 >= state.min
-      continue
-    }
     const shifted = shiftedFieldName(group, w.name, row)
     if (shifted !== undefined) w.name = shifted
   }
@@ -453,7 +359,7 @@ function rebuildRows(group: string, count: number, node: DynamicGroupNode) {
   if (!state) return
   node.widgets ??= []
 
-  const isRowMember = (name: string) => name.startsWith(`${group}.`)
+  const isRowMember = (name: string) => isGroupField(group, name)
   for (const w of remove(node.widgets, (w) => isRowMember(w.name)))
     w.onRemove?.()
   remove(node.inputs, (inp) => isRowMember(inp.name))
@@ -473,7 +379,7 @@ function dynamicGroupWidget(
 ) {
   const parseResult = zDynamicGroupInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicGroup spec')
-  const [, { template, min, max }] = parseResult.data
+  const [, { template, min, max, group_name: groupName }] = parseResult.data
 
   const toSpecs = (
     inputs: Record<string, InputSpec> | undefined,
@@ -489,37 +395,24 @@ function dynamicGroupWidget(
 
   withComfyDynamicGroup(node)
   const typedNode = node as DynamicGroupNode
-  typedNode.comfyDynamic.dynamicGroup[inputName] = { min, max, inputSpecs }
+  typedNode.comfyDynamic.dynamicGroup[inputName] = {
+    min,
+    max,
+    groupName,
+    inputSpecs,
+    addRow: () => addRow(inputName, typedNode),
+    removeRow: (row: number) => removeRow(inputName, row, typedNode)
+  }
 
   node.widgets ??= []
   const controller = node.addCustomWidget({
     name: inputName,
-    type: 'dynamic_group_add',
+    type: 'dynamic_group',
     value: min,
     y: 0,
     serialize: true,
     callback: () => addRow(inputName, typedNode),
-    draw(
-      this: IBaseWidget,
-      ctx: CanvasRenderingContext2D,
-      _node: LGraphNode,
-      width: number,
-      y: number
-    ) {
-      drawGroupButton(
-        ctx,
-        width,
-        y,
-        t('dynamicGroup.addRow'),
-        !!this.options?.disabled
-      )
-    },
-    mouse(this: IBaseWidget, event: CanvasPointerEvent) {
-      if (event.type !== 'pointerup' || this.options?.disabled) return false
-      addRow(inputName, typedNode)
-      return true
-    },
-    options: { serialize: false, socketless: true, disabled: false }
+    options: { socketless: true, disabled: false, min, max }
   })
 
   Object.defineProperty(controller, 'value', {

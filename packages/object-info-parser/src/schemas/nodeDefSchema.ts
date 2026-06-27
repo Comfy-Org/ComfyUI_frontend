@@ -349,7 +349,8 @@ export const zDynamicGroupInputSpec = z.tuple([
   zBaseInputOptions.extend({
     template: zComfyInputsSpec,
     min: z.number().int().nonnegative().optional().default(0),
-    max: z.number().int().positive().max(100).optional().default(50)
+    max: z.number().int().positive().max(100).optional().default(50),
+    group_name: z.string().optional()
   })
 ])
 
