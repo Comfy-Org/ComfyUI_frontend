@@ -151,10 +151,11 @@ function isWidgetShownOnParents(
   const source = widgetPromotedSource(widgetNode, widget)
   return parents.some((parent) => {
     if (source) {
+      const widgetNodeId = widgetNode.id
       const interiorNodeId =
         String(widgetNode.id) === String(parent.id)
           ? source.nodeId
-          : String(widgetNode.id)
+          : widgetNodeId
 
       return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
@@ -162,7 +163,7 @@ function isWidgetShownOnParents(
       })
     }
     return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: String(widgetNode.id),
+      sourceNodeId: widgetNode.id,
       sourceWidgetName: widget.name
     })
   })

@@ -4,7 +4,6 @@ import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
@@ -25,6 +24,8 @@ import {
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
@@ -64,20 +65,33 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
+  function pruneLinearData(data: Partial<LinearData> | undefined): {
+    inputs: LinearInput[]
+    outputs: NodeId[]
+  } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
     if (!rootGraph) {
-      return { inputs: rawInputs, outputs: rawOutputs }
+      return {
+        inputs: rawInputs,
+        outputs: rawOutputs.flatMap((nodeId) => {
+          const parsedNodeId = parseNodeId(nodeId)
+          return parsedNodeId ? [parsedNodeId] : []
+        })
+      }
     }
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
         .filter((entry): entry is LinearInput => entry !== null),
-      outputs: ChangeTracker.isLoadingGraph
-        ? rawOutputs
-        : rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      outputs: rawOutputs.flatMap((nodeId) => {
+        const parsedNodeId = parseNodeId(nodeId)
+        if (!parsedNodeId) return []
+        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+          ? [parsedNodeId]
+          : []
+      })
     }
   }
 
@@ -111,7 +125,10 @@ export const useAppModeStore = defineStore('appMode', () => {
       return buildEntry(widget.widgetId, widgetName, config)
     }
 
-    const directNode = rootGraph.getNodeById?.(storedId)
+    const directNodeId = parseNodeId(storedId)
+    const directNode = directNodeId
+      ? rootGraph.getNodeById?.(directNodeId)
+      : null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
