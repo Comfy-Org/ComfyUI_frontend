@@ -1,6 +1,8 @@
 import type * as VueI18n from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 
 const { selection, refreshCanvas, palette } = vi.hoisted(() => ({
@@ -100,5 +102,26 @@ describe('useNodeCustomization', () => {
 
   it('returns null current shape with no nodes selected', () => {
     expect(useNodeCustomization().getCurrentShape()).toBeNull()
+  })
+
+  it('applies a shape to selected graph nodes and refreshes', () => {
+    const node = new LGraphNode('Test')
+    selection.items = [node]
+    const { applyShape, shapeOptions } = useNodeCustomization()
+    const target = shapeOptions[0]
+
+    applyShape(target)
+
+    expect(node.shape).toBe(target.value)
+    expect(refreshCanvas).toHaveBeenCalled()
+  })
+
+  it('reports the current shape of a selected node', () => {
+    const node = new LGraphNode('Test')
+    const { shapeOptions, getCurrentShape } = useNodeCustomization()
+    node.shape = shapeOptions[0].value
+    selection.items = [node]
+
+    expect(getCurrentShape()?.value).toBe(shapeOptions[0].value)
   })
 })
