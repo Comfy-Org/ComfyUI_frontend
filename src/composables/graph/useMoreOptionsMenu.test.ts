@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import {
   isNodeOptionsOpen,
   registerNodeOptionsInstance,
@@ -50,7 +51,7 @@ vi.mock('@/composables/graph/useGroupMenuOptions', () => ({
   useGroupMenuOptions: () => ({
     getFitGroupToNodesOption: () => ({ label: 'Fit' }),
     getGroupColorOptions: () => ({ label: 'Group Color' }),
-    getGroupModeOptions: () => []
+    getGroupModeOptions: () => [{ label: 'Group Mode' }]
   })
 }))
 vi.mock('@/composables/graph/useSelectionMenuOptions', () => ({
@@ -128,5 +129,16 @@ describe('useMoreOptionsMenu', () => {
       bump()
       void menuOptions.value
     }).not.toThrow()
+  })
+
+  it('assembles group-context options for a single selected group', () => {
+    const group = new LGraphGroup('Group')
+    selectionState.selectedItems.value = [group]
+    selectionState.selectedNodes.value = []
+
+    const labels = useMoreOptionsMenu().menuOptions.value.map((o) => o.label)
+    expect(labels).toContain('Group Mode')
+    expect(labels).toContain('Fit')
+    expect(labels).toContain('Group Color')
   })
 })
