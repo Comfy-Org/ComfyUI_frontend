@@ -3264,7 +3264,6 @@
       "keepSubscription": "サブスクリプションを維持する",
       "title": "サブスクリプションのキャンセル"
     },
-    "cancelSubscription": "サブスクリプションをキャンセル",
     "cancelSuccess": "サブスクリプションが正常にキャンセルされました",
     "canceled": "キャンセル済み",
     "canceledCard": {
