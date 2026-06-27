@@ -11,6 +11,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import {
@@ -25,7 +27,6 @@ import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
@@ -101,6 +102,22 @@ const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
 function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
   return validTriggerActions.has(action as LGraphTriggerAction)
+}
+
+function nextNodeId(state: LGraphState): NodeId {
+  return toNodeId(++state.lastNodeId)
+}
+
+function numericNodeId(id: NodeId): number | null {
+  const numericId = Number(id)
+  return Number.isInteger(numericId) ? numericId : null
+}
+
+function syncLastNodeId(state: LGraphState, id: NodeId): void {
+  const numericId = numericNodeId(id)
+  if (numericId !== null && state.lastNodeId < numericId) {
+    state.lastNodeId = numericId
+  }
 }
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
@@ -638,8 +655,8 @@ export class LGraph
     const S: LGraphNode[] = []
     const M: Dictionary<LGraphNode> = {}
     // to avoid repeating links
-    const visited_links: Record<NodeId, boolean> = {}
-    const remaining_links: Record<NodeId, number> = {}
+    const visited_links: Record<SerializedNodeId, boolean> = {}
+    const remaining_links: Record<SerializedNodeId, number> = {}
 
     // search for the nodes without inputs (starting nodes)
     for (const node of this._nodes) {
@@ -954,12 +971,13 @@ export class LGraph
       return
     }
 
-    // nodes
-    if (node.id != -1 && this._nodes_by_id[node.id] != null) {
+    node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
+
+    if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
-      node.id = ++state.lastNodeId
+      node.id = nextNodeId(state)
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
@@ -967,10 +985,10 @@ export class LGraph
     }
 
     // give him an id
-    if (node.id == null || node.id == -1) {
-      node.id = ++state.lastNodeId
-    } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
-      state.lastNodeId = node.id
+    if (node.id == null || node.id === UNASSIGNED_NODE_ID) {
+      node.id = nextNodeId(state)
+    } else {
+      syncLastNodeId(state, node.id)
     }
 
     // Set ghost flag before registration so VueNodeData picks it up
@@ -1134,7 +1152,9 @@ export class LGraph
    * Returns a node by its id.
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
-    return id != null ? this._nodes_by_id[id] : null
+    return id != null && id !== UNASSIGNED_NODE_ID
+      ? this._nodes_by_id[id]
+      : null
   }
 
   /**
@@ -1400,7 +1420,7 @@ export class LGraph
     this.floatingLinksInternal.set(link.id, link)
 
     const slot =
-      link.target_id !== -1
+      link.target_id !== UNASSIGNED_NODE_ID
         ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
         : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
@@ -1423,7 +1443,7 @@ export class LGraph
     this.floatingLinksInternal.delete(link.id)
 
     const slot =
-      link.target_id !== -1
+      link.target_id !== UNASSIGNED_NODE_ID
         ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
         : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
@@ -1631,7 +1651,9 @@ export class LGraph
       const node = this.getNodeById(sampleLink.target_id)
       const keepId = selectSurvivorLink(ids, node)
 
-      purgeOrphanedLinks(ids, keepId, this._links, (id) => this.getNodeById(id))
+      purgeOrphanedLinks(ids, keepId, this._links, (id) =>
+        this.getNodeById(toNodeId(id))
+      )
       repairInputLinks(ids, keepId, node)
     }
   }
@@ -1972,9 +1994,10 @@ export class LGraph
         }
       }
 
-      nodeIdMap.set(n_info.id, ++this.last_node_id)
-      node.id = this.last_node_id
-      n_info.id = this.last_node_id
+      const newNodeId = nextNodeId(this.state)
+      nodeIdMap.set(toNodeId(n_info.id), newNodeId)
+      node.id = newNodeId
+      n_info.id = newNodeId
 
       // Strip links from serialized data before configure to prevent
       // onConnectionsChange from resolving subgraph-internal link IDs
@@ -2050,7 +2073,10 @@ export class LGraph
         link.origin_slot = outerLink.origin_slot
         externalParentId = outerLink.parentId
       } else {
-        const origin_id = nodeIdMap.get(link.origin_id)
+        const origin_id =
+          link.origin_id === UNASSIGNED_NODE_ID
+            ? undefined
+            : nodeIdMap.get(link.origin_id)
         if (!origin_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2075,7 +2101,10 @@ export class LGraph
         }
         continue
       } else {
-        const target_id = nodeIdMap.get(link.target_id)
+        const target_id =
+          link.target_id === UNASSIGNED_NODE_ID
+            ? undefined
+            : nodeIdMap.get(link.target_id)
         if (!target_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2113,7 +2142,9 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink.tid]
+        if (newLink.tid === UNASSIGNED_NODE_ID) continue
+        const tnode = this.getNodeById(newLink.tid)
+        if (!tnode) continue
         created = this.inputNode.slots[newLink.oslot].connect(
           tnode.inputs[newLink.tslot],
           tnode
@@ -2123,17 +2154,23 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink.oid]
+        if (newLink.oid === UNASSIGNED_NODE_ID) continue
+        const tnode = this.getNodeById(newLink.oid)
+        if (!tnode) continue
         created = this.outputNode.slots[newLink.tslot].connect(
           tnode.outputs[newLink.oslot],
           tnode
         )
       } else {
-        created = this._nodes_by_id[newLink.oid].connect(
-          newLink.oslot,
-          this._nodes_by_id[newLink.tid],
-          newLink.tslot
+        if (
+          newLink.oid === UNASSIGNED_NODE_ID ||
+          newLink.tid === UNASSIGNED_NODE_ID
         )
+          continue
+        const originNode = this.getNodeById(newLink.oid)
+        const targetNode = this.getNodeById(newLink.tid)
+        if (!originNode || !targetNode) continue
+        created = originNode.connect(newLink.oslot, targetNode, newLink.tslot)
       }
       if (!created) {
         console.error('Failed to create link')
@@ -2509,11 +2546,13 @@ export class LGraph
       if (subgraphs) {
         const reservedNodeIds = new Set<number>()
         for (const node of this._nodes) {
-          if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+          const id = numericNodeId(node.id)
+          if (id !== null) reservedNodeIds.add(id)
         }
         for (const sg of this.subgraphs.values()) {
           for (const node of sg.nodes) {
-            if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+            const id = numericNodeId(node.id)
+            if (id !== null) reservedNodeIds.add(id)
           }
         }
         for (const n of nodesData ?? []) {
@@ -2543,7 +2582,7 @@ export class LGraph
       }
 
       let error = false
-      const nodeDataMap = new Map<NodeId, ISerialisedNode>()
+      const nodeDataMap = new Map<SerializedNodeId, ISerialisedNode>()
 
       // create nodes
       this._nodes = []
@@ -2564,7 +2603,7 @@ export class LGraph
           }
 
           // id it or it will create a new id
-          node.id = n_info.id
+          node.id = toNodeId(n_info.id)
           // add before configure, otherwise configure cannot create links
           this.add(node, true)
           nodeDataMap.set(node.id, n_info)
@@ -2572,7 +2611,7 @@ export class LGraph
 
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          const node = this.getNodeById(id)
+          const node = this.getNodeById(toNodeId(id))
           node?.configure(nodeData)
 
           if (LiteGraph.alwaysSnapToGrid && node) {
@@ -2686,24 +2725,24 @@ export class LGraph
       const remappedIds = new Map<NodeId, NodeId>()
 
       for (const node of graph._nodes) {
-        if (typeof node.id !== 'number') continue
+        const currentId = numericNodeId(node.id)
+        if (currentId === null) continue
 
-        if (usedNodeIds.has(node.id)) {
+        if (usedNodeIds.has(currentId)) {
           const oldId = node.id
           while (usedNodeIds.has(++state.lastNodeId));
-          const newId = state.lastNodeId
+          const newId = toNodeId(state.lastNodeId)
           delete graph._nodes_by_id[oldId]
           node.id = newId
           graph._nodes_by_id[newId] = node
-          usedNodeIds.add(newId)
+          usedNodeIds.add(state.lastNodeId)
           remappedIds.set(oldId, newId)
           console.warn(
             `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
           )
         } else {
-          usedNodeIds.add(node.id as number)
-          if ((node.id as number) > state.lastNodeId)
-            state.lastNodeId = node.id as number
+          usedNodeIds.add(currentId)
+          if (currentId > state.lastNodeId) state.lastNodeId = currentId
         }
       }
 
@@ -2896,7 +2935,7 @@ export class Subgraph
 
   private _repairSlotLinkIds(
     linkIds: LinkId[],
-    ioNodeId: number,
+    ioNodeId: NodeId,
     slotIndex: number
   ): void {
     const repaired = linkIds.map((id) =>
@@ -2910,7 +2949,7 @@ export class Subgraph
   }
 
   private _findLinkBySlot(
-    nodeId: number,
+    nodeId: NodeId,
     slotIndex: number
   ): LLink | undefined {
     for (const link of this._links.values()) {
@@ -3114,10 +3153,16 @@ function patchLinkNodeIds(
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const link of links.values()) {
-    const newOrigin = remappedIds.get(link.origin_id)
+    const newOrigin =
+      link.origin_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.origin_id)
     if (newOrigin !== undefined) link.origin_id = newOrigin
 
-    const newTarget = remappedIds.get(link.target_id)
+    const newTarget =
+      link.target_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.target_id)
     if (newTarget !== undefined) link.target_id = newTarget
   }
 }
