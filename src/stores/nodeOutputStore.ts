@@ -446,6 +446,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeSubgraphPreviews,
     removeNodeOutputs,
     removeNodeOutputsForNode,
+    removeOutputsByLocatorId,
     snapshotOutputs,
     restoreOutputs,
     resetAllOutputsAndPreviews,
