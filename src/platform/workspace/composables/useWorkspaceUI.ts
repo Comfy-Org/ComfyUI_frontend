@@ -14,7 +14,7 @@ interface WorkspacePermissions {
   canViewPendingInvites: boolean
   canInviteMembers: boolean
   canManageInvites: boolean
-  canRemoveMembers: boolean
+  canManageMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
@@ -50,7 +50,7 @@ function getPermissions(
       canViewPendingInvites: false,
       canInviteMembers: false,
       canManageInvites: false,
-      canRemoveMembers: false,
+      canManageMembers: false,
       canLeaveWorkspace: false,
       canAccessWorkspaceMenu: false,
       canManageSubscription: true,
@@ -66,7 +66,7 @@ function getPermissions(
       canViewPendingInvites: true,
       canInviteMembers: true,
       canManageInvites: true,
-      canRemoveMembers: true,
+      canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
@@ -81,7 +81,7 @@ function getPermissions(
     canViewPendingInvites: false,
     canInviteMembers: false,
     canManageInvites: false,
-    canRemoveMembers: false,
+    canManageMembers: false,
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
     canManageSubscription: false,
