@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
 
 const {
@@ -118,6 +119,16 @@ describe('useSelectionOperations', () => {
     expect(toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'warn' })
     )
+  })
+
+  it('routes a single node rename to the title editor', async () => {
+    const node = new LGraphNode('Test')
+    store.selectedItems = [node]
+
+    await useSelectionOperations().renameSelection()
+
+    expect(titleEditor.titleEditorTarget).toBe(node)
+    expect(prompt).not.toHaveBeenCalled()
   })
 
   it('renames a single non-node item via the prompt dialog', async () => {
