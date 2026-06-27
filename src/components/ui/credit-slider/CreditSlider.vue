@@ -21,16 +21,16 @@ const {
   disabled = false,
   class: rootClass,
   stops = TEAM_PLAN_CREDIT_STOPS,
-  defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX
+  defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX,
+  cycle = 'yearly'
 } = defineProps<{
   disabled?: boolean
   class?: HTMLAttributes['class']
   /**
-   * The fixed credit stops the slider snaps to; when empty, the component
-   * renders nothing. Defaults to the hardcoded DES-197 set; pass the
-   * backend-sourced stops once the contract lands — map
-   * `GET /api/billing/plans → team_credit_stops.stops` to `CreditStop[]`
-   * (credits, the pre-discount `usd`, and `discountPercentYearly`).
+   * The fixed credit stops the slider snaps to. Must be non-empty. Defaults to
+   * the hardcoded DES-197 set; pass the backend-sourced stops once the contract
+   * lands — map `GET /api/billing/plans → team_credit_stops.stops` to
+   * `CreditStop[]` (credits, the pre-discount `usd`, and `discountPercentYearly`).
    */
   stops?: readonly CreditStop[]
   /**
@@ -38,6 +38,12 @@ const {
    * Maps to `team_credit_stops.default_stop_index`. Defaults to DES-197 ($700).
    */
   defaultStopIndex?: number
+  /**
+   * Billing cycle. Yearly applies the full `discountPercentYearly`; monthly
+   * applies half of it (PRD: GA Team Billing — "for monthly the discount is
+   * halved": yearly 0/5/10/15/20% → monthly 0/2.5/5/7.5/10%).
+   */
+  cycle?: 'monthly' | 'yearly'
 }>()
 
 const emit = defineEmits<{
@@ -59,25 +65,28 @@ const selectedIndex = computed(() => {
   const i = stops.findIndex((stop) => stop.usd === usd.value)
   if (i !== -1) return i
   // Fall back to the default stop, clamped into range: a backend-driven `stops`
-  // array can be shorter than expected (or `defaultStopIndex` out of bounds).
+  // array can be shorter than expected (or `defaultStopIndex` out of bounds), so
+  // clamping keeps `current` defined and the price computeds below from reading
+  // `undefined.usd` at runtime. (`stops` is required to be non-empty.)
   return Math.min(Math.max(defaultStopIndex, 0), Math.max(stops.length - 1, 0))
 })
 
-// Zero-stop fallback: `useTransition` reads its source eagerly at setup, so an
-// empty `stops` must not crash even though the template then renders nothing.
-const EMPTY_STOP: CreditStop = { usd: 0, credits: 0, discountPercentYearly: 0 }
-const current = computed(() => stops.at(selectedIndex.value) ?? EMPTY_STOP)
+const current = computed<CreditStop>(() => stops[selectedIndex.value])
 
-// Yearly commitment (per DES-197): the discount applies to the monthly figure.
-// The card shows the discounted monthly price, the struck pre-discount price,
-// the saving, and the annual total.
+// The discount applies to the monthly figure. Yearly uses the full
+// `discountPercentYearly`; monthly halves it (PRD: GA Team Billing). The card
+// shows the discounted monthly price, the struck pre-discount price, the
+// saving, and — for yearly — the annual total.
+const effectiveDiscountPercent = computed(() =>
+  cycle === 'monthly'
+    ? current.value.discountPercentYearly / 2
+    : current.value.discountPercentYearly
+)
 const discountedMonthly = computed(() =>
-  Math.round(
-    current.value.usd * (1 - current.value.discountPercentYearly / 100)
-  )
+  Math.round(current.value.usd * (1 - effectiveDiscountPercent.value / 100))
 )
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
-const hasDiscount = computed(() => current.value.discountPercentYearly > 0)
+const hasDiscount = computed(() => effectiveDiscountPercent.value > 0)
 
 /**
  * Smoothly count the price figures up/down as the slider moves between stops
@@ -91,16 +100,11 @@ const priceTween = {
   easing: TransitionPresets.easeOutCubic,
   disabled: computed(() => prefersReducedMotion.value === 'reduce')
 }
-// One vector tween keeps both figures in phase. Deriving the monthly from the
-// animated original instead would jump at the start of each move: the discount
-// tier snaps per stop while the base price is still mid-tween.
-const animatedPrices = useTransition(
-  () => [discountedMonthly.value, current.value.usd],
-  priceTween
-)
+const animatedMonthly = useTransition(discountedMonthly, priceTween)
+const animatedOriginal = useTransition(() => current.value.usd, priceTween)
 
-const displayMonthly = computed(() => Math.round(animatedPrices.value[0]))
-const displayOriginal = computed(() => Math.round(animatedPrices.value[1]))
+const displayMonthly = computed(() => Math.round(animatedMonthly.value))
+const displayOriginal = computed(() => Math.round(animatedOriginal.value))
 // Derive the yearly total from the displayed monthly so it always reads as
 // exactly 12× the price shown — even mid-count — rather than drifting as a
 // second, independently-phased tween would.
@@ -134,23 +138,20 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div
-    v-if="stops.length > 0"
-    :class="cn('flex w-full flex-col gap-3', rootClass)"
-  >
+  <div :class="cn('flex w-full flex-col gap-3', rootClass)">
     <!-- Price: discounted monthly + struck pre-discount + save badge -->
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-2">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span class="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
           <span
-            class="text-[2rem]/none font-semibold text-base-foreground"
+            class="text-[2rem]/none font-semibold text-base-foreground tabular-nums"
             data-testid="credit-slider-price"
           >
             {{ formatUsd(displayMonthly) }}
           </span>
           <span
             v-if="hasDiscount"
-            class="text-base text-muted-foreground line-through"
+            class="text-base text-muted-foreground tabular-nums line-through"
             data-testid="credit-slider-original-price"
           >
             {{ formatUsd(displayOriginal) }}
@@ -159,28 +160,32 @@ const { t } = useI18n()
             {{ t('subscription.usdPerMonth') }}
           </span>
         </span>
-        <!-- Save badge: outlined primary pill, pushed to the right (DES-197) -->
+        <!-- Save badge: outlined primary pill. On wide layouts it's pushed to
+             the right of the price; when the column narrows (mobile) it wraps
+             and aligns left under the price instead (DES QA). -->
         <span
           v-if="hasDiscount"
           data-testid="credit-slider-save"
-          class="ms-auto shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background"
+          class="shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background xl:ms-auto"
         >
           {{
             t('subscription.creditSliderSave', {
-              percent: current.discountPercentYearly,
+              percent: effectiveDiscountPercent,
               amount: formatUsd(saveAmount)
             })
           }}
         </span>
       </div>
       <p
-        class="m-0 text-sm text-muted-foreground"
+        class="m-0 text-sm text-muted-foreground tabular-nums"
         data-testid="credit-slider-billed-yearly"
       >
         {{
-          t('subscription.billedYearly', {
-            total: formatUsd(displayBilledYearly)
-          })
+          cycle === 'monthly'
+            ? t('subscription.billedMonthly')
+            : t('subscription.billedYearly', {
+                total: formatUsd(displayBilledYearly)
+              })
         }}
       </p>
     </div>
@@ -192,6 +197,8 @@ const { t } = useI18n()
       :max="lastIndex"
       :step="1"
       :disabled="disabled"
+      range-class="bg-base-foreground"
+      thumb-class="bg-base-foreground"
     />
 
     <!-- Credit stop labels; the selected stop is emphasized -->
@@ -205,7 +212,7 @@ const { t } = useI18n()
         :data-selected="i === selectedIndex ? '' : undefined"
         :class="
           cn(
-            'flex items-center gap-1 text-xs',
+            'flex items-center gap-1 text-xs tabular-nums',
             i === selectedIndex
               ? 'font-semibold text-base-foreground'
               : 'text-muted-foreground'

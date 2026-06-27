@@ -1,6 +1,12 @@
 <template>
   <div
-    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
+    :class="
+      cn(
+        'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
+        checkoutStep === 'pricing' &&
+          'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]'
+      )
+    "
   >
     <Button
       v-if="checkoutStep === 'preview'"
@@ -24,24 +30,9 @@
     </Button>
 
     <div class="flex flex-col items-center gap-3">
-      <!-- Decorative initial for "Team" workspace icon; not user-facing text -->
-      <div
-        class="flex size-10 items-center justify-center rounded-xl bg-primary-background text-lg font-semibold text-white"
-        aria-hidden="true"
-      >
-        T
-      </div>
-      <i18n-t
-        keypath="subscription.plansForWorkspace"
-        tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
-      >
-        <template #workspace>
-          <span class="text-emerald-400">
-            {{ $t('subscription.teamWorkspace') }}
-          </span>
-        </template>
-      </i18n-t>
+      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
+        {{ $t('subscription.descriptionWorkspace') }}
+      </h2>
     </div>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">
@@ -53,14 +44,16 @@
       </p>
     </div>
 
-    <!-- Pricing Table Step -->
-    <PricingTableWorkspace
+    <!-- Pricing Table Step (unified: personal/team plan toggle) -->
+    <UnifiedPricingTable
       v-if="checkoutStep === 'pricing'"
-      class="flex-1"
+      class="xl:flex-1"
+      :initial-plan-mode="initialPlanMode"
       :is-loading="isLoadingPreview || isResubscribing"
       :loading-tier="loadingTier"
       @subscribe="handleSubscribeClick"
       @resubscribe="handleResubscribe"
+      @subscribe-team="handleSubscribeTeamClick"
     />
 
     <!-- Subscription Preview Step - New Subscription -->
@@ -91,7 +84,16 @@
       @back="handleBackToPricing"
     />
 
-    <!-- Success Step - subscribe/change-plan confirmation -->
+    <!-- Subscription Preview Step - Team (display-only until the BE slider
+         contract lands; the confirm CTA is stubbed below) -->
+    <SubscriptionAddPaymentPreviewWorkspace
+      v-else-if="checkoutStep === 'preview' && selectedTeamStop"
+      :team-plan="selectedTeamStop"
+      @add-credit-card="handleTeamSubscribe"
+      @back="handleBackToPricing"
+    />
+
+    <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
       v-else-if="checkoutStep === 'success' && selectedTierKey"
       :tier-key="selectedTierKey"
@@ -102,23 +104,31 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
-import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
+import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
-const { onClose, reason } = defineProps<{
+const { onClose, reason, initialPlanMode } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
+  initialPlanMode?: 'personal' | 'team'
 }>()
 
 const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
+
+const { t } = useI18n()
+const toast = useToast()
 
 const {
   checkoutStep,
@@ -128,23 +138,29 @@ const {
   isResubscribing,
   previewData,
   selectedTierKey,
+  selectedTeamStop,
   selectedBillingCycle,
   isPolling,
   handleSubscribeClick,
+  handleSubscribeTeamClick,
   handleBackToPricing,
+  handleSuccessClose,
   handleAddCreditCard,
   handleConfirmTransition,
-  handleResubscribe,
-  handleSuccessClose
+  handleResubscribe
 } = useSubscriptionCheckout(emit)
+
+// Personal-tier checkout reuses the full useSubscriptionCheckout flow above.
+// Team-plan checkout renders the confirm step from the selected slider stop,
+// but the final subscribe is blocked on the BE discount-breakpoint contract
+// (FE-934 / doc Open Q#2: the slider stop -> plan-slug / subscribe-request shape
+// is undefined), so the confirm CTA is stubbed until that lands.
+function handleTeamSubscribe() {
+  toast.add({
+    severity: 'info',
+    summary: t('subscription.teamPlan.name'),
+    detail: t('subscription.teamPlan.checkoutComingSoon'),
+    life: 4000
+  })
+}
 </script>
-
-<style scoped>
-.legacy-dialog :deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-
-.legacy-dialog :deep(.p-button) {
-  color: white;
-}
-</style>
