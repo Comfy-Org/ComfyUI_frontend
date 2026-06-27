@@ -113,7 +113,7 @@ export function useAssetMarqueeSelection({
     const pointerId = event.pointerId
     marqueeDrag.value = {
       pointerId,
-      captureTarget: capturePointer(assetPanelRef.value, pointerId),
+      captureTarget: null,
       start,
       current: start,
       startTarget: event.target,
@@ -141,7 +141,11 @@ export function useAssetMarqueeSelection({
       return
     }
 
+    const startedDragging = !drag.hasDragged
     event.preventDefault()
+    if (startedDragging) {
+      drag.captureTarget = capturePointer(assetPanelRef.value, drag.pointerId)
+    }
     drag.hasDragged = true
     shouldSuppressNextPanelClick.value = true
     clearNativeTextSelection(drag.startTarget)
@@ -309,11 +313,9 @@ function releasePointerCapture(target: HTMLElement | null, pointerId: number) {
   if (!target) return
 
   try {
-    if (target.hasPointerCapture(pointerId)) {
-      target.releasePointerCapture(pointerId)
-    }
-  } catch {
     target.releasePointerCapture(pointerId)
+  } catch {
+    return
   }
 }
 

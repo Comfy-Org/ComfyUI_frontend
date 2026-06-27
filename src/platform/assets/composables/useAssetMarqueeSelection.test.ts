@@ -500,6 +500,47 @@ describe('useAssetMarqueeSelection', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
+  it('delays pointer capture until a marquee drag starts', () => {
+    const { marquee, panel } = mountMarquee([createAsset('a')])
+    const { setPointerCapture } = installPointerCapture(panel)
+    const button = document.createElement('button')
+    panel.append(
+      button,
+      createAssetElement('a', { left: 40, top: 80, width: 80, height: 80 })
+    )
+
+    marquee.handleMarqueePointerDown(
+      createPointerEvent('pointerdown', {
+        target: button,
+        clientX: 20,
+        clientY: 20,
+        pointerId: 7
+      })
+    )
+
+    expect(setPointerCapture).not.toHaveBeenCalled()
+
+    window.dispatchEvent(
+      createPointerEvent('pointermove', {
+        clientX: 22,
+        clientY: 22,
+        pointerId: 7
+      })
+    )
+
+    expect(setPointerCapture).not.toHaveBeenCalled()
+
+    window.dispatchEvent(
+      createPointerEvent('pointermove', {
+        clientX: 120,
+        clientY: 120,
+        pointerId: 7
+      })
+    )
+
+    expect(setPointerCapture).toHaveBeenCalledWith(7)
+  })
+
   it('selects all only when the panel is hovered and text input is not focused', () => {
     const { panel, selectedIds, selectAll } = mountMarquee()
     const input = document.createElement('input')
@@ -642,19 +683,15 @@ describe('useAssetMarqueeSelection', () => {
     expect(marquee.isMarqueeSelecting.value).toBe(false)
   })
 
-  it('still releases capture when hasPointerCapture throws', () => {
+  it('does not throw when releasing pointer capture fails', () => {
     const { marquee, panel } = mountMarquee([createAsset('a')])
-    const releasePointerCapture = vi.fn()
+    const releasePointerCapture = vi.fn(() => {
+      throw new Error('already released')
+    })
     Object.defineProperties(panel, {
       setPointerCapture: {
         configurable: true,
         value: vi.fn()
-      },
-      hasPointerCapture: {
-        configurable: true,
-        value: vi.fn(() => {
-          throw new Error('unsupported')
-        })
       },
       releasePointerCapture: {
         configurable: true,
@@ -680,6 +717,9 @@ describe('useAssetMarqueeSelection', () => {
         pointerId: 7
       })
     )
+
+    expect(marquee.isMarqueeSelecting.value).toBe(true)
+
     window.dispatchEvent(
       createPointerEvent('pointerup', {
         clientX: 100,
@@ -689,6 +729,7 @@ describe('useAssetMarqueeSelection', () => {
     )
 
     expect(releasePointerCapture).toHaveBeenCalledWith(7)
+    expect(marquee.isMarqueeSelecting.value).toBe(false)
   })
 
   it('ends an off-panel drag when the canvas stops pointerup propagation', () => {
