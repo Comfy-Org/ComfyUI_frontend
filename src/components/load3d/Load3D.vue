@@ -15,7 +15,7 @@
       :is-preview="isPreview"
     />
     <div class="pointer-events-none absolute top-0 left-0 size-full">
-      <Load3DControls
+      <Load3DMenuBar
         v-model:scene-config="sceneConfig"
         v-model:model-config="modelConfig"
         v-model:camera-config="cameraConfig"
@@ -31,9 +31,7 @@
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
         @update-hdri-file="handleHDRIFileUpdate"
-        @toggle-gizmo="handleToggleGizmo"
-        @set-gizmo-mode="handleSetGizmoMode"
-        @reset-gizmo-transform="handleResetGizmoTransform"
+        @fit-to-viewer="handleFitToViewer"
       />
       <AnimationControls
         v-if="animations && animations.length > 0"
@@ -47,6 +45,7 @@
       />
     </div>
     <div
+      v-if="false"
       class="pointer-events-auto absolute top-12 right-2 z-20 flex flex-col gap-2"
     >
       <div
@@ -106,7 +105,7 @@
 import { computed, onMounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import Load3DControls from '@/components/load3d/Load3DControls.vue'
+import Load3DMenuBar from '@/components/load3d/Load3DMenuBar.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
@@ -192,9 +191,6 @@ const {
   handleHDRIFileUpdate,
   handleExportModel,
   handleModelDrop,
-  handleToggleGizmo,
-  handleSetGizmoMode,
-  handleResetGizmoTransform,
   handleFitToViewer,
   handleCenterCameraOnModel,
   cleanup

@@ -275,6 +275,18 @@ export class SceneModelManager implements ModelManagerInterface {
               opacity: 1.0
             })
             break
+          case 'clay':
+            if (!this.originalMaterials.has(child)) {
+              this.originalMaterials.set(child, child.material)
+            }
+            child.material = new THREE.MeshStandardMaterial({
+              color: 0x888888,
+              metalness: 0.0,
+              roughness: 0.9,
+              flatShading: false,
+              side: THREE.DoubleSide
+            })
+            break
           case 'original':
           case 'pointCloud':
             const originalMaterial = this.originalMaterials.get(child)
