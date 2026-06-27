@@ -263,6 +263,7 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
             !(
               w.options?.canvasOnly ||
               w.options?.hidden ||
+              w.options?.hideInPanel ||
               (w.options?.advanced && !includesAdvanced.value)
             )
         )
