@@ -97,34 +97,38 @@ test.describe(
   'Execute to selected output nodes',
   { tag: ['@smoke', '@workflow'] },
   () => {
-    test('Execute to selected output nodes', async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
-      const input = await comfyPage.nodeOps.getNodeRefById(3)
-      const output1 = await comfyPage.nodeOps.getNodeRefById(1)
-      const output2 = await comfyPage.nodeOps.getNodeRefById(4)
-      await expect
-        .poll(async () => (await input.getWidget(0)).getValue())
-        .toBe('foo')
-      await expect
-        .poll(async () => (await output1.getWidget(0)).getValue())
-        .toBe('')
-      await expect
-        .poll(async () => (await output2.getWidget(0)).getValue())
-        .toBe('')
+    test(
+      'Execute to selected output nodes',
+      { tag: '@critical' },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+        const input = await comfyPage.nodeOps.getNodeRefById(3)
+        const output1 = await comfyPage.nodeOps.getNodeRefById(1)
+        const output2 = await comfyPage.nodeOps.getNodeRefById(4)
+        await expect
+          .poll(async () => (await input.getWidget(0)).getValue())
+          .toBe('foo')
+        await expect
+          .poll(async () => (await output1.getWidget(0)).getValue())
+          .toBe('')
+        await expect
+          .poll(async () => (await output2.getWidget(0)).getValue())
+          .toBe('')
 
-      await output1.click('title')
+        await output1.click('title')
 
-      await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
-      await expect
-        .poll(async () => (await input.getWidget(0)).getValue())
-        .toBe('foo')
-      await expect
-        .poll(async () => (await output1.getWidget(0)).getValue())
-        .toBe('foo')
-      await expect
-        .poll(async () => (await output2.getWidget(0)).getValue())
-        .toBe('')
-    })
+        await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
+        await expect
+          .poll(async () => (await input.getWidget(0)).getValue())
+          .toBe('foo')
+        await expect
+          .poll(async () => (await output1.getWidget(0)).getValue())
+          .toBe('foo')
+        await expect
+          .poll(async () => (await output2.getWidget(0)).getValue())
+          .toBe('')
+      }
+    )
   }
 )
 
