@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { DraftPatchEvent } from './agentProtocol'
+import { parseAgentEvent } from './agentProtocol'
 import type { AgentDraftPorts } from './useAgentDraftSync'
 import { useAgentDraftSync } from './useAgentDraftSync'
 
@@ -128,6 +129,58 @@ describe('useAgentDraftSync', () => {
       )
       expect(ports.applyToTab).not.toHaveBeenCalled()
       expect(sync.pendingConflict.value).toBeNull()
+    })
+  })
+
+  describe('wire envelope -> reconciler', () => {
+    function wirePatch(version: number, baseVersion: number) {
+      const event = parseAgentEvent({
+        type: 'draft_patch',
+        data: {
+          thread_id: 't1',
+          message_id: 'm1',
+          workflow_id: 'wf1',
+          content: { nodes: ['ksampler'] },
+          version,
+          base_version: baseVersion
+        }
+      })
+      if (event?.type !== 'draft_patch') {
+        throw new Error('expected a draft_patch event')
+      }
+      return event
+    }
+
+    it('applies when base_version matches the tab version', () => {
+      const ports = makePorts()
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 7)
+
+      const outcome = sync.handlePatch(wirePatch(8, 7))
+
+      expect(outcome).toBe('applied')
+      expect(ports.applyToTab).toHaveBeenCalledWith(
+        'wf1',
+        { nodes: ['ksampler'] },
+        8
+      )
+    })
+
+    it('conflicts when base_version differs from the tab version', () => {
+      const ports = makePorts()
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 7)
+      sync.setVersion('wf1', 8)
+
+      const outcome = sync.handlePatch(wirePatch(9, 7))
+
+      expect(outcome).toBe('conflict')
+      expect(ports.applyToTab).not.toHaveBeenCalled()
+      expect(sync.pendingConflict.value).toMatchObject({
+        workflowId: 'wf1',
+        baseVersion: 7,
+        version: 9
+      })
     })
   })
 })
