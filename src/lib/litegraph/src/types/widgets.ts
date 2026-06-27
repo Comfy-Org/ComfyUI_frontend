@@ -46,6 +46,14 @@ export interface IWidgetOptions<TValues = unknown> {
   socketless?: boolean
   /** If `true`, the widget will not be rendered by the Vue renderer. */
   canvasOnly?: boolean
+  /**
+   * If `true`, the widget still renders on the node but is omitted from the
+   * right side panel. Unlike {@link IWidgetOptions.canvasOnly}, the node body
+   * keeps rendering it via the Vue renderer. Used for widgets that hold
+   * non-syncable state (e.g. a Three.js viewport) where a second instance in
+   * the panel would diverge from the one on the node.
+   */
+  hideInPanel?: boolean
   /** Used as a temporary override for determining the asset type in vue mode*/
   nodeType?: string
 
