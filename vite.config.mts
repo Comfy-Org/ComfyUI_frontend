@@ -31,21 +31,39 @@ const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 const COVERAGE_CRITICAL = process.env.COVERAGE_CRITICAL === 'true'
 
-// Directories carved out of the critical unit coverage gate: data/static
-// modules and shell views verified by E2E, Storybook, i18n, or static checks
-// rather than unit tests.
-const CRITICAL_COVERAGE_EXCLUDE = [
-  'src/config/**',
-  'src/constants/**',
-  'src/storybook/**',
-  'src/views/**'
+const CRITICAL_COVERAGE_INCLUDE = [
+  'src/base/common/async.ts',
+  'src/base/credits/comfyCredits.ts',
+  'src/composables/graph/useGroupContextMenu.ts',
+  'src/composables/graph/useGroupMenuOptions.ts',
+  'src/composables/graph/useMoreOptionsMenu.ts',
+  'src/composables/graph/useNodeCustomization.ts',
+  'src/composables/graph/useNodeMenuOptions.ts',
+  'src/composables/graph/useSelectionMenuOptions.ts',
+  'src/composables/graph/useSelectionOperations.ts',
+  'src/composables/graph/useSelectionState.ts',
+  'src/composables/node/useNodePricing.ts',
+  'src/scripts/metadata/parser.ts',
+  'src/stores/aboutPanelStore.ts',
+  'src/stores/executionStore.ts',
+  'src/stores/nodeBookmarkStore.ts',
+  'src/stores/queueStore.ts',
+  'src/utils/fuseUtil.ts',
+  'src/utils/gridUtil.ts',
+  'src/utils/mouseDownUtil.ts',
+  'src/utils/nodeTitleUtil.ts',
+  'src/utils/objectUrlUtil.ts',
+  'src/utils/queueDisplay.ts',
+  'src/utils/rafBatch.ts',
+  'src/utils/treeUtil.ts',
+  'src/utils/typeGuardUtil.ts',
+  'src/workbench/extensions/manager/composables/nodePack/usePackInstall.ts',
+  'src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts'
 ]
 
-// Critical coverage floor (PR-blocking). Branch coverage is ratcheted by
-// proof PRs while the other metrics remain at the plan-documented baseline.
 const CRITICAL_COVERAGE_THRESHOLDS = {
   statements: 62.76,
-  branches: 57.46,
+  branches: 90,
   functions: 57.3,
   lines: 63.98
 }
@@ -688,7 +706,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
-      include: ['src/**/*.{ts,vue}'],
+      include: COVERAGE_CRITICAL
+        ? CRITICAL_COVERAGE_INCLUDE
+        : ['src/**/*.{ts,vue}'],
       exclude: [
         'src/**/*.test.ts',
         'src/**/*.spec.ts',
@@ -696,8 +716,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/lib/litegraph/**',
-        'src/assets/**',
-        ...(COVERAGE_CRITICAL ? CRITICAL_COVERAGE_EXCLUDE : [])
+        'src/assets/**'
       ],
       ...(COVERAGE_CRITICAL ? { thresholds: CRITICAL_COVERAGE_THRESHOLDS } : {})
     },

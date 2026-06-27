@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -433,7 +434,7 @@ describe('legacy workflow migration helpers', () => {
 
 describe('resolveNodeWidget', () => {
   it('resolves root graph nodes and widgets', () => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     const graph = new LGraph()
     const node = new LGraphNode('TestNode')
     const widget = node.addWidget('text', 'prompt', 'hello', () => {})
