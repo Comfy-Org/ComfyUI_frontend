@@ -13,7 +13,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 const PROMOTED_MODEL_WIDGET_NAME = 'ckpt_name'
 
-export interface PromotedMissingModelWorkflow {
+interface PromotedMissingModelWorkflow {
   workflowName: string
   hostNodeId: number
   hostNodeTitle: string
