@@ -34,6 +34,7 @@ import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
   CustomNodesI18n,
+  DownloadStatus,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -186,6 +187,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
+  download_progress: DownloadStatus
 }
 
 /** Dictionary of all api calls */

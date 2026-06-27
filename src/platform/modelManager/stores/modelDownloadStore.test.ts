@@ -1,0 +1,216 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import * as downloadApi from '../api/modelDownloadApi'
+import type { DownloadState, DownloadStatus } from '../types'
+import {
+  downloadProgressFraction,
+  useModelDownloadStore
+} from './modelDownloadStore'
+
+type ProgressHandler = (e: CustomEvent<DownloadStatus>) => void
+
+const eventHandler = vi.hoisted(() => {
+  const state: { current: ProgressHandler | null } = { current: null }
+  return state
+})
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: vi.fn((_event: string, handler: ProgressHandler) => {
+      eventHandler.current = handler
+    })
+  }
+}))
+
+vi.mock('../api/modelDownloadApi', () => ({
+  enqueueDownload: vi.fn(),
+  listDownloads: vi.fn(),
+  pauseDownload: vi.fn(),
+  resumeDownload: vi.fn(),
+  cancelDownload: vi.fn(),
+  setDownloadPriority: vi.fn()
+}))
+
+function createStatus(overrides: Partial<DownloadStatus> = {}): DownloadStatus {
+  return {
+    download_id: 'd1',
+    model_id: 'loras/x.safetensors',
+    url: 'https://huggingface.co/x.safetensors',
+    status: 'active',
+    priority: 0,
+    total_bytes: 1000,
+    bytes_done: 250,
+    progress: 0.25,
+    speed_bps: 100,
+    eta_seconds: 10,
+    segments: null,
+    error: null,
+    created_at: 1,
+    updated_at: 2,
+    ...overrides
+  }
+}
+
+function dispatch(status: DownloadStatus) {
+  if (!eventHandler.current) throw new Error('handler not registered')
+  eventHandler.current(new CustomEvent('download_progress', { detail: status }))
+}
+
+describe('useModelDownloadStore', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    vi.resetAllMocks()
+    eventHandler.current = null
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('upserts rows from download_progress events', () => {
+    const store = useModelDownloadStore()
+
+    dispatch(createStatus({ download_id: 'd1', bytes_done: 100 }))
+    dispatch(createStatus({ download_id: 'd1', bytes_done: 900 }))
+    dispatch(createStatus({ download_id: 'd2', status: 'queued' }))
+
+    expect(store.downloadList).toHaveLength(2)
+    expect(
+      store.downloadList.find((d) => d.download_id === 'd1')?.bytes_done
+    ).toBe(900)
+  })
+
+  it('splits active and terminal downloads', () => {
+    const store = useModelDownloadStore()
+    const states: DownloadState[] = [
+      'queued',
+      'active',
+      'paused',
+      'verifying',
+      'completed',
+      'failed',
+      'cancelled'
+    ]
+    states.forEach((status, idx) =>
+      dispatch(createStatus({ download_id: `d${idx}`, status }))
+    )
+
+    expect(store.activeDownloads.map((d) => d.status)).toEqual([
+      'queued',
+      'active',
+      'paused',
+      'verifying'
+    ])
+    expect(store.historyDownloads.map((d) => d.status)).toEqual([
+      'completed',
+      'failed',
+      'cancelled'
+    ])
+    expect(store.activeDownloadCount).toBe(4)
+  })
+
+  it('inserts an optimistic queued row on enqueue', async () => {
+    vi.mocked(downloadApi.enqueueDownload).mockResolvedValue({
+      download_id: 'new-id',
+      accepted: true
+    })
+    const store = useModelDownloadStore()
+
+    const result = await store.enqueue({
+      url: 'https://huggingface.co/x.safetensors',
+      model_id: 'loras/x.safetensors'
+    })
+
+    expect(result.download_id).toBe('new-id')
+    const row = store.downloadList.find((d) => d.download_id === 'new-id')
+    expect(row?.status).toBe('queued')
+    expect(row?.model_id).toBe('loras/x.safetensors')
+  })
+
+  it('optimistically updates status when pausing', async () => {
+    vi.mocked(downloadApi.pauseDownload).mockResolvedValue()
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+
+    await store.pause('d1')
+
+    expect(store.downloadList.find((d) => d.download_id === 'd1')?.status).toBe(
+      'paused'
+    )
+    expect(downloadApi.pauseDownload).toHaveBeenCalledWith('d1')
+  })
+
+  it('records the last completed download once on the completing transition', () => {
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+    expect(store.lastCompletedDownload).toBeNull()
+
+    dispatch(
+      createStatus({
+        download_id: 'd1',
+        model_id: 'loras/x.safetensors',
+        status: 'completed'
+      })
+    )
+
+    expect(store.lastCompletedDownload).toMatchObject({
+      downloadId: 'd1',
+      modelId: 'loras/x.safetensors',
+      directory: 'loras'
+    })
+
+    const firstTimestamp = store.lastCompletedDownload?.timestamp
+    dispatch(createStatus({ download_id: 'd1', status: 'completed' }))
+    expect(store.lastCompletedDownload?.timestamp).toBe(firstTimestamp)
+  })
+
+  it('removes a row from view and clears history', () => {
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+    dispatch(createStatus({ download_id: 'd2', status: 'completed' }))
+    dispatch(createStatus({ download_id: 'd3', status: 'failed' }))
+
+    store.removeFromView('d1')
+    expect(store.downloadList.map((d) => d.download_id)).toEqual(['d2', 'd3'])
+
+    store.clearHistory()
+    expect(store.downloadList).toHaveLength(0)
+  })
+
+  it('polls the list when active downloads go stale', async () => {
+    vi.mocked(downloadApi.listDownloads).mockResolvedValue([])
+    useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    expect(downloadApi.listDownloads).toHaveBeenCalled()
+  })
+
+  describe('downloadProgressFraction', () => {
+    it('uses live progress when present', () => {
+      expect(downloadProgressFraction(createStatus({ progress: 0.4 }))).toBe(
+        0.4
+      )
+    })
+
+    it('derives from bytes when progress is null', () => {
+      expect(
+        downloadProgressFraction(
+          createStatus({ progress: null, bytes_done: 500, total_bytes: 1000 })
+        )
+      ).toBe(0.5)
+    })
+
+    it('returns null when total is unknown', () => {
+      expect(
+        downloadProgressFraction(
+          createStatus({ progress: null, total_bytes: null })
+        )
+      ).toBeNull()
+    })
+  })
+})

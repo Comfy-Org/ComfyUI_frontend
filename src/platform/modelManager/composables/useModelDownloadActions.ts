@@ -1,0 +1,74 @@
+import { useI18n } from 'vue-i18n'
+
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogStore } from '@/stores/dialogStore'
+
+import { useModelDownloadStore } from '../stores/modelDownloadStore'
+import type { DownloadStatus } from '../types'
+import { DownloadApiError } from '../types'
+
+/**
+ * Wraps download store mutations with user feedback: optimistic-friendly error
+ * toasts and a confirmation prompt for the destructive cancel action (which
+ * deletes the partial file, §6.5).
+ */
+export function useModelDownloadActions() {
+  const store = useModelDownloadStore()
+  const dialogStore = useDialogStore()
+  const { t } = useI18n()
+
+  function toastError(error: unknown) {
+    const detail =
+      error instanceof DownloadApiError || error instanceof Error
+        ? error.message
+        : String(error)
+    useToastStore().add({
+      severity: 'error',
+      summary: t('modelManager.actionFailed'),
+      detail,
+      life: 5000
+    })
+  }
+
+  async function run(action: () => Promise<void>) {
+    try {
+      await action()
+    } catch (error) {
+      toastError(error)
+    }
+  }
+
+  const pause = (download: DownloadStatus) =>
+    run(() => store.pause(download.download_id))
+
+  const resume = (download: DownloadStatus) =>
+    run(() => store.resume(download.download_id))
+
+  const raisePriority = (download: DownloadStatus, delta: number) =>
+    run(() =>
+      store.setPriority(download.download_id, download.priority + delta)
+    )
+
+  function cancel(download: DownloadStatus) {
+    const dialog = showConfirmDialog({
+      headerProps: { title: t('modelManager.cancelConfirmTitle') },
+      props: {
+        promptText: t('modelManager.cancelConfirmMessage', {
+          name: download.model_id
+        })
+      },
+      footerProps: {
+        confirmText: t('modelManager.cancelConfirm'),
+        confirmVariant: 'destructive' as const,
+        onCancel: () => dialogStore.closeDialog(dialog),
+        onConfirm: async () => {
+          dialogStore.closeDialog(dialog)
+          await run(() => store.cancel(download.download_id))
+        }
+      }
+    })
+  }
+
+  return { pause, resume, cancel, raisePriority, toastError }
+}
