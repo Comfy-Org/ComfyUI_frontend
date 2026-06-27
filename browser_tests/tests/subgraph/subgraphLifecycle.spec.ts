@@ -5,6 +5,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getPseudoPreviewWidgets } from '@e2e/fixtures/utils/promotedWidgets'
+import { toNodeId } from '@/types/nodeId'
 
 const domPreviewSelector = '.image-preview'
 
@@ -57,12 +58,12 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
         })
         .toBeGreaterThan(0)
 
-      await comfyPage.page.evaluate(() => {
+      await comfyPage.page.evaluate((nodeId) => {
         const graph = window.app!.graph!
-        const subgraphNode = graph.getNodeById('5')
+        const subgraphNode = graph.getNodeById(nodeId)
         if (!subgraphNode || !subgraphNode.isSubgraphNode()) return
         graph.unpackSubgraph(subgraphNode)
-      })
+      }, toNodeId(5))
       await comfyPage.nextFrame()
 
       await expect

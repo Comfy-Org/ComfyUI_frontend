@@ -44,6 +44,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     title: t('footer.resources', locale),
     links: [
       { label: t('nav.learning', locale), href: routes.learning },
+      { label: t('nav.launches', locale), href: routes.launches },
       {
         label: t('footer.blog', locale),
         href: externalLinks.blog,

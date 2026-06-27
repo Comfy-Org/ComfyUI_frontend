@@ -9,6 +9,8 @@ import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previ
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
@@ -16,6 +18,19 @@ const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
 >
+
+type PreviewExposureInput = Omit<PreviewExposure, 'sourceNodeId'> & {
+  sourceNodeId: SerializedNodeId
+}
+
+function normalizePreviewExposure(
+  exposure: PreviewExposureInput
+): PreviewExposure {
+  return {
+    ...exposure,
+    sourceNodeId: toNodeId(exposure.sourceNodeId)
+  }
+}
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
@@ -48,7 +63,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   function setExposures(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    next: readonly PreviewExposure[]
+    next: readonly PreviewExposureInput[]
   ): void {
     const hosts = _getHostsForGraph(rootGraphId)
     if (next.length === 0) {
@@ -56,13 +71,13 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
       if (hosts.size === 0) exposures.value.delete(rootGraphId)
       return
     }
-    hosts.set(hostNodeLocator, [...next])
+    hosts.set(hostNodeLocator, next.map(normalizePreviewExposure))
   }
 
   function addExposure(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    source: { sourceNodeId: string; sourcePreviewName: string }
+    source: { sourceNodeId: SerializedNodeId; sourcePreviewName: string }
   ): PreviewExposure {
     const hosts = _getHostsForGraph(rootGraphId)
     const current = hosts.get(hostNodeLocator) ?? []
@@ -70,7 +85,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     const name = nextUniqueName(source.sourcePreviewName, existingNames)
     const entry: PreviewExposure = {
       name,
-      sourceNodeId: source.sourceNodeId,
+      sourceNodeId: toNodeId(source.sourceNodeId),
       sourcePreviewName: source.sourcePreviewName
     }
     hosts.set(hostNodeLocator, [...current, entry])
