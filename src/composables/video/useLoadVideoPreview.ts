@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
@@ -38,7 +38,6 @@ export function useLoadVideoPreview(
   node: ComputedRef<LGraphNode | null | undefined>
 ) {
   const nodeOutputStore = useNodeOutputStore()
-  const fileSize = ref<number | undefined>()
 
   const videoUrl = computed(() => {
     const currentNode = node.value
@@ -52,24 +51,5 @@ export function useLoadVideoPreview(
     )
   })
 
-  watch(
-    videoUrl,
-    async (url) => {
-      fileSize.value = undefined
-      if (!url) return
-
-      try {
-        const response = await fetch(url, { method: 'HEAD' })
-        const contentLength = response.headers.get('Content-Length')
-        if (contentLength) {
-          fileSize.value = Number.parseInt(contentLength, 10)
-        }
-      } catch {
-        fileSize.value = undefined
-      }
-    },
-    { immediate: true }
-  )
-
-  return { videoUrl, fileSize }
+  return { videoUrl }
 }

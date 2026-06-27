@@ -59,7 +59,7 @@
         v-model:end-frame="endFrame"
         v-model:playhead-frame="playheadFrame"
         v-model:is-playing="isPlaying"
-        class="col-span-full"
+        class="col-span-full mt-2"
         :trim-enabled="trimEnabled"
         :total-frames="effectiveTotalFrames"
         :thumbnails="thumbnails"
@@ -153,14 +153,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   videoUrl,
-  fileSize,
   uploading = false,
   uploadDisabled = false,
   onDragOver,
   onDragDrop
 } = defineProps<{
   videoUrl?: string
-  fileSize?: number
   uploading?: boolean
   uploadDisabled?: boolean
   onDragOver?: (event: DragEvent) => boolean
@@ -191,6 +189,7 @@ const {
   width,
   height,
   fps,
+  fileSize,
   loading: filmstripLoading
 } = useVideoFilmstrip(videoUrlRef)
 
@@ -264,7 +263,7 @@ const metadataRows = computed(() => [
   },
   {
     label: t('loadVideoTrim.fileSize'),
-    value: formatFileSize(fileSize)
+    value: formatFileSize(fileSize.value)
   }
 ])
 
@@ -333,7 +332,7 @@ function frameToTime(frame: number) {
   if (duration.value > 0 && frameMax.value > 0) {
     return (frame / frameMax.value) * duration.value
   }
-  return frame / (fps || DEFAULT_VIDEO_FPS)
+  return frame / (fps.value || DEFAULT_VIDEO_FPS)
 }
 
 function clampSeekTime(video: HTMLVideoElement, time: number) {
@@ -411,7 +410,7 @@ function handleTimeUpdate() {
   const video = videoRef.value
   if (!video || !isPlaying.value || isSeeking.value) return
 
-  const frame = Math.round(video.currentTime * (fps || DEFAULT_VIDEO_FPS))
+  const frame = Math.round(video.currentTime * (fps.value || DEFAULT_VIDEO_FPS))
   const minFrame = trimEnabled.value ? startFrame.value : 0
   const maxFrame = trimEnabled.value ? endFrame.value : frameMax.value
   playheadFrame.value = clamp(frame, minFrame, maxFrame)

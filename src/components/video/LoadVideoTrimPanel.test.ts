@@ -16,6 +16,7 @@ vi.mock('@/composables/video/useVideoFilmstrip', () => ({
     width: ref(1920),
     height: ref(1080),
     fps: ref(30),
+    fileSize: ref(5 * 1024 * 1024),
     loading: ref(false)
   })
 }))

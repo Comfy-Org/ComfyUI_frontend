@@ -9,7 +9,6 @@
       v-model:end-frame="endFrame"
       v-model:playhead-frame="playheadFrame"
       :video-url="videoUrl"
-      :file-size="fileSize"
       :uploading="isProcessing"
       :on-drag-over="handleDragOver"
       :on-drag-drop="handleDragDrop"
@@ -46,7 +45,7 @@ const playheadFrame = ref(0)
 
 const node = computed(() => app.canvas.graph?.getNodeById(nodeId))
 
-const { videoUrl, fileSize } = useLoadVideoPreview(node)
+const { videoUrl } = useLoadVideoPreview(node)
 
 const isUploading = computed(() => node.value?.isUploading ?? false)
 

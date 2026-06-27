@@ -1,6 +1,9 @@
 import { onScopeDispose, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { probeVideoFrameRate } from '@/composables/video/probeVideoFrameRate'
+import { fetchHttpResourceByteSize } from '@/utils/httpResourceByteSize'
+
 export const DEFAULT_VIDEO_FPS = 20
 export const FILMSTRIP_SAMPLE_COUNT = 20
 
@@ -68,7 +71,6 @@ export function useVideoFilmstrip(
   videoUrl: Ref<string | undefined>,
   options: UseVideoFilmstripOptions = {}
 ) {
-  const fps = options.fps ?? DEFAULT_VIDEO_FPS
   const sampleCount = options.sampleCount ?? FILMSTRIP_SAMPLE_COUNT
 
   const thumbnails = ref<string[]>([])
@@ -76,6 +78,8 @@ export function useVideoFilmstrip(
   const totalFrames = ref(0)
   const width = ref(0)
   const height = ref(0)
+  const fps = ref(options.fps ?? DEFAULT_VIDEO_FPS)
+  const fileSize = ref<number | undefined>()
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -115,7 +119,17 @@ export function useVideoFilmstrip(
       duration.value = videoDuration
       width.value = video.videoWidth
       height.value = video.videoHeight
-      totalFrames.value = Math.max(Math.round(videoDuration * fps), 1)
+
+      const [detectedFrameRate, detectedFileSize] = await Promise.all([
+        probeVideoFrameRate(url, videoDuration),
+        fetchHttpResourceByteSize(url)
+      ])
+
+      if (isLoadStale(loadId, url)) return
+
+      fps.value = detectedFrameRate ?? options.fps ?? DEFAULT_VIDEO_FPS
+      fileSize.value = detectedFileSize
+      totalFrames.value = Math.max(Math.round(videoDuration * fps.value), 1)
 
       const sampledThumbnails = await sampleFilmstripFrames(
         video,
@@ -136,6 +150,8 @@ export function useVideoFilmstrip(
       totalFrames.value = 0
       width.value = 0
       height.value = 0
+      fps.value = options.fps ?? DEFAULT_VIDEO_FPS
+      fileSize.value = undefined
       thumbnails.value = []
     } finally {
       if (loadId === activeLoadId) {
@@ -158,6 +174,8 @@ export function useVideoFilmstrip(
         totalFrames.value = 0
         width.value = 0
         height.value = 0
+        fps.value = options.fps ?? DEFAULT_VIDEO_FPS
+        fileSize.value = undefined
         return
       }
       void loadVideo(url)
@@ -176,6 +194,7 @@ export function useVideoFilmstrip(
     width,
     height,
     fps,
+    fileSize,
     loading,
     error
   }

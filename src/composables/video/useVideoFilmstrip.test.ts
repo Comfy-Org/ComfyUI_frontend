@@ -2,11 +2,22 @@ import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { probeVideoFrameRate } from '@/composables/video/probeVideoFrameRate'
+import { fetchHttpResourceByteSize } from '@/utils/httpResourceByteSize'
+
 import {
   DEFAULT_VIDEO_FPS,
   FILMSTRIP_SAMPLE_COUNT,
   useVideoFilmstrip
 } from './useVideoFilmstrip'
+
+vi.mock('@/composables/video/probeVideoFrameRate', () => ({
+  probeVideoFrameRate: vi.fn(async () => undefined)
+}))
+
+vi.mock('@/utils/httpResourceByteSize', () => ({
+  fetchHttpResourceByteSize: vi.fn(async () => undefined)
+}))
 
 type VideoListener = (event: Event) => void
 
@@ -134,6 +145,23 @@ describe('useVideoFilmstrip', () => {
     expect(thumbnails.value).toEqual([])
     expect(totalFrames.value).toBe(0)
     expect(loading.value).toBe(false)
+  })
+
+  it('uses probed frame rate and file size when available', async () => {
+    installVideoMocks()
+    vi.mocked(probeVideoFrameRate).mockResolvedValueOnce(24)
+    vi.mocked(fetchHttpResourceByteSize).mockResolvedValueOnce(5 * 1024 * 1024)
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { totalFrames, fps, fileSize, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(fps.value).toBe(24)
+    expect(totalFrames.value).toBe(240)
+    expect(fileSize.value).toBe(5 * 1024 * 1024)
   })
 
   it('samples the configured number of frames', async () => {

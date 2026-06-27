@@ -28,7 +28,6 @@ const meta: Meta<StoryArgs> = {
   ],
   args: {
     videoUrl: SAMPLE_VIDEO,
-    fileSize: 1024 * 1024,
     trimEnabled: false,
     startFrame: 0,
     endFrame: 400
@@ -42,14 +41,13 @@ function renderPanel(initialTrimEnabled: boolean) {
   return (args: StoryArgs) => ({
     components: { LoadVideoTrimPanel },
     setup() {
-      const { videoUrl, fileSize } = toRefs(args)
+      const { videoUrl } = toRefs(args)
       const trimEnabled = ref(initialTrimEnabled)
       const startFrame = ref(args.startFrame ?? 0)
       const endFrame = ref(args.endFrame ?? 400)
       const playheadFrame = ref(0)
       return {
         videoUrl,
-        fileSize,
         trimEnabled,
         startFrame,
         endFrame,
@@ -63,7 +61,6 @@ function renderPanel(initialTrimEnabled: boolean) {
         v-model:end-frame="endFrame"
         v-model:playhead-frame="playheadFrame"
         :video-url="videoUrl"
-        :file-size="fileSize"
       />
     `
   })
@@ -79,8 +76,7 @@ export const TrimEnabled: Story = {
 
 export const EmptyNoVideo: Story = {
   args: {
-    videoUrl: undefined,
-    fileSize: undefined
+    videoUrl: undefined
   },
   render: (args) => ({
     components: { LoadVideoTrimPanel },
@@ -113,7 +109,6 @@ export const EmptyNoVideo: Story = {
         v-model:end-frame="endFrame"
         v-model:playhead-frame="playheadFrame"
         :video-url="args.videoUrl"
-        :file-size="args.fileSize"
         :uploading="uploading"
         @browse="handleBrowse"
       />
@@ -123,8 +118,7 @@ export const EmptyNoVideo: Story = {
 
 export const EmptyNodeLayout: Story = {
   args: {
-    videoUrl: undefined,
-    fileSize: undefined
+    videoUrl: undefined
   },
   render: (args) => ({
     components: { LoadVideoTrimPanel },
@@ -158,7 +152,6 @@ export const EmptyNodeLayout: Story = {
           v-model:end-frame="endFrame"
           v-model:playhead-frame="playheadFrame"
           :video-url="args.videoUrl"
-          :file-size="args.fileSize"
           :uploading="uploading"
         />
       </div>
@@ -169,7 +162,6 @@ export const EmptyNodeLayout: Story = {
 export const LongVideoManyFrames: Story = {
   args: {
     videoUrl: SAMPLE_VIDEO,
-    fileSize: 50 * 1024 * 1024,
     startFrame: 120,
     endFrame: 3600
   },
