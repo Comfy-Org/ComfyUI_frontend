@@ -201,7 +201,7 @@
         :class="
           cn(
             'flex size-full min-w-0 items-center justify-center gap-2',
-            showAdvancedState ? 'pr-10' : 'px-4'
+            showAdvancedState ? 'px-10' : 'px-4'
           )
         "
       >
