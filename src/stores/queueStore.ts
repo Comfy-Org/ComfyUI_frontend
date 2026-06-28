@@ -257,10 +257,13 @@ export class TaskItemImpl {
     flatOutputs?: ReadonlyArray<ResultItemImpl>
   ) {
     this.job = job
-    // If no outputs provided but job has preview_output, create synthetic outputs
-    // using the real nodeId and mediaType from the backend response
+    // Prefer the full outputs map (list payload includes it for multi-output
+    // jobs); fall back to synthesizing from the single preview_output when the
+    // list omits outputs. Using only preview_output drops other outputs when
+    // the backend picks a text node as the preview.
     const effectiveOutputs =
       outputs ??
+      job.outputs ??
       (job.preview_output
         ? {
             [job.preview_output.nodeId]: {
@@ -286,11 +289,12 @@ export class TaskItemImpl {
 
   get previewOutput(): ResultItemImpl | undefined {
     const previewable = this.previewableOutputs
+    // Keep a real media file as the thumbnail; only fall back to text when the
+    // job has nothing else previewable.
+    const media = previewable.filter((output) => !output.isText)
+    const pool = media.length ? media : previewable
     // Prefer the last saved media file (most recent result) over temp previews
-    return (
-      previewable.findLast((output) => output.type === 'output') ??
-      previewable.at(-1)
-    )
+    return pool.findLast((output) => output.type === 'output') ?? pool.at(-1)
   }
 
   // Derive taskType from job status

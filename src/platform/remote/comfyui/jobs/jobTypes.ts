@@ -62,6 +62,7 @@ const zRawJobListItem = z
     execution_start_time: z.number().nullable().optional(),
     execution_end_time: z.number().nullable().optional(),
     preview_output: zPreviewOutput.nullable().optional(),
+    outputs: zTaskOutput.optional(),
     outputs_count: z.number().nullable().optional(),
     execution_error: zExecutionError.nullable().optional(),
     workflow_id: z.string().nullable().optional(),
@@ -76,7 +77,6 @@ const zRawJobListItem = z
 export const zJobDetail = zRawJobListItem
   .extend({
     workflow: z.unknown().optional(),
-    outputs: zTaskOutput.optional(),
     update_time: z.number().optional(),
     execution_status: z.unknown().optional(),
     execution_meta: z.unknown().optional()
