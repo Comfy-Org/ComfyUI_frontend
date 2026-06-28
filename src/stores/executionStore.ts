@@ -153,9 +153,9 @@ export const useExecutionStore = defineStore('execution', () => {
     pendingWorkflowStatusByJobId.delete(jobId)
     pendingWorkflowStatusByJobId.set(jobId, status)
     while (pendingWorkflowStatusByJobId.size > MAX_PROGRESS_JOBS) {
-      const oldest = pendingWorkflowStatusByJobId.keys().next().value
-      if (oldest === undefined) break
-      pendingWorkflowStatusByJobId.delete(oldest)
+      pendingWorkflowStatusByJobId.delete(
+        pendingWorkflowStatusByJobId.keys().next().value as string
+      )
     }
   }
 
@@ -314,8 +314,8 @@ export const useExecutionStore = defineStore('execution', () => {
       : null
   )
 
-  const activeJob = computed<QueuedJob | undefined>(
-    () => queuedJobs.value[activeJobId.value ?? '']
+  const activeJob = computed<QueuedJob | undefined>(() =>
+    activeJobId.value ? queuedJobs.value[activeJobId.value] : undefined
   )
 
   const totalNodesToExecute = computed<number>(() => {
@@ -440,9 +440,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
     // Update the executing nodes list
     if (e.detail == null) {
-      if (activeJobId.value) {
-        delete queuedJobs.value[activeJobId.value]
-      }
+      delete queuedJobs.value[activeJobId.value as JobId]
       activeJobId.value = null
     }
   }
@@ -593,7 +591,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleCloudValidationError(
     detail: ExecutionErrorWsMessage
   ): boolean {
-    const result = classifyCloudValidationError(detail.exception_message)
+    const result = classifyCloudValidationError(detail.exception_message ?? '')
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)
@@ -669,17 +667,14 @@ export const useExecutionStore = defineStore('execution', () => {
   /**
    * Reset execution-related state after a run completes or is stopped.
    */
-  function resetExecutionState(jobIdParam?: JobId | null) {
+  function resetExecutionState(jobId: JobId) {
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
-    const jobId = jobIdParam ?? activeJobId.value ?? null
-    if (jobId) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-      useJobPreviewStore().clearPreview(jobId)
-      jobIdToWorkflow.delete(jobId)
-    }
+    const map = { ...nodeProgressStatesByJob.value }
+    delete map[jobId]
+    nodeProgressStatesByJob.value = map
+    useJobPreviewStore().clearPreview(jobId)
+    jobIdToWorkflow.delete(jobId)
     if (activeJobId.value) {
       delete queuedJobs.value[activeJobId.value]
     }
@@ -771,9 +766,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const next = new Map(jobIdToSessionWorkflowPath.value)
     next.set(jobId, path)
     while (next.size > MAX_SESSION_PATH_ENTRIES) {
-      const oldest = next.keys().next().value
-      if (oldest !== undefined) next.delete(oldest)
-      else break
+      next.delete(next.keys().next().value as JobId)
     }
     jobIdToSessionWorkflowPath.value = next
   }
