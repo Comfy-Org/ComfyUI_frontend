@@ -22,11 +22,15 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
       .toBe(1)
   })
 
-  test('Validate workflow links', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Validation.Workflows', true)
-    await comfyPage.workflow.loadWorkflow('links/bad_link')
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(2)
-  })
+  test(
+    'Validate workflow links',
+    { tag: '@critical' },
+    async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Validation.Workflows', true)
+      await comfyPage.workflow.loadWorkflow('links/bad_link')
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(2)
+    }
+  )
 
   // Regression: duplicate links with shifted target_slot (widget-to-input
   // conversion) caused the wrong link to survive during deduplication.
