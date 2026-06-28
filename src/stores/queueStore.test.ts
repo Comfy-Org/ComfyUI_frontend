@@ -208,6 +208,33 @@ describe('TaskItemImpl', () => {
     expect(task.previewOutput?.content).toBe('test')
   })
 
+  it('keeps the image as preview while exposing text in a mixed-output job', () => {
+    const job: JobListItem = {
+      ...createHistoryJob(0, 'mixed-job'),
+      outputs_count: 2,
+      preview_output: {
+        nodeId: '6',
+        mediaType: 'text',
+        content: '1048576'
+      } satisfies JobListItem['preview_output'],
+      outputs: {
+        '6': { text: ['1048576'] },
+        '7': {
+          images: [{ filename: 'result.png', subfolder: '', type: 'temp' }]
+        }
+      }
+    }
+
+    const task = new TaskItemImpl(job)
+
+    expect(task.previewableOutputs).toHaveLength(2)
+    expect(task.previewOutput?.filename).toBe('result.png')
+    expect(task.previewOutput?.isText).toBe(false)
+
+    const textOutput = task.previewableOutputs.find((output) => output.isText)
+    expect(textOutput?.content).toBe('1048576')
+  })
+
   describe('error extraction getters', () => {
     it('errorMessage returns undefined when no execution_error', () => {
       const job = createHistoryJob(0, 'job-id')

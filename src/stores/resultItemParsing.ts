@@ -2,7 +2,7 @@ import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
 import { resultItemType } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
 
-const METADATA_KEYS = new Set(['animated', 'text'])
+const METADATA_KEYS = new Set(['animated'])
 
 /**
  * Validates that an unknown value is a well-formed ResultItem.
@@ -27,6 +27,31 @@ function isResultItem(item: unknown): item is ResultItem {
   return true
 }
 
+/**
+ * Builds previewable text outputs from a node's `text` array.
+ *
+ * Text outputs arrive as raw strings with no backing file, so we synthesize a
+ * `.txt` filename. This lets text ride the same filename-based machinery as
+ * media outputs (media-type detection, dedupe keys, asset mapping) and render
+ * via the existing text preview components.
+ */
+function parseTextOutput(
+  nodeId: string | number,
+  items: unknown[]
+): ResultItemImpl[] {
+  return items
+    .filter((item): item is string => typeof item === 'string')
+    .map(
+      (content, index) =>
+        new ResultItemImpl({
+          filename: `${nodeId}-text-${index}.txt`,
+          nodeId,
+          mediaType: 'text',
+          content
+        })
+    )
+}
+
 export function parseNodeOutput(
   nodeId: string | number,
   nodeOutput: NodeExecutionOutput | null | undefined
@@ -36,9 +61,11 @@ export function parseNodeOutput(
   return Object.entries(nodeOutput)
     .filter(([key, value]) => !METADATA_KEYS.has(key) && Array.isArray(value))
     .flatMap(([mediaType, items]) =>
-      (items as unknown[])
-        .filter(isResultItem)
-        .map((item) => new ResultItemImpl({ ...item, mediaType, nodeId }))
+      mediaType === 'text'
+        ? parseTextOutput(nodeId, items as unknown[])
+        : (items as unknown[])
+            .filter(isResultItem)
+            .map((item) => new ResultItemImpl({ ...item, mediaType, nodeId }))
     )
 }
 
