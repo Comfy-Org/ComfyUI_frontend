@@ -117,6 +117,23 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaCandidates.value = remaining.length ? remaining : null
   }
 
+  function removeMissingMediaBySourceScope(executionId: string) {
+    if (!missingMediaCandidates.value) return
+    const prefix = `${executionId}:`
+    const remaining = missingMediaCandidates.value.filter((candidate) => {
+      const sourceExecutionId =
+        candidate.sourceExecutionId == null
+          ? undefined
+          : String(candidate.sourceExecutionId)
+      return !(
+        sourceExecutionId === executionId ||
+        sourceExecutionId?.startsWith(prefix)
+      )
+    })
+    if (remaining.length === missingMediaCandidates.value.length) return
+    missingMediaCandidates.value = remaining.length ? remaining : null
+  }
+
   function addMissingMedia(media: MissingMediaCandidate[]) {
     if (!media.length) return
     const existing = missingMediaCandidates.value ?? []
@@ -150,6 +167,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     removeMissingMediaByWidget,
     removeMissingMediaByNodeId,
     removeMissingMediaByPrefix,
+    removeMissingMediaBySourceScope,
     clearMissingMedia,
     createVerificationAbortController,
 

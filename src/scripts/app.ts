@@ -118,6 +118,7 @@ import {
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
+  isCandidateScopeActive,
   isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
@@ -1555,7 +1556,7 @@ export class ComfyApp {
     const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
     // Drop candidates whose enclosing subgraph is muted/bypassed.
     const candidates = allCandidates.filter((c) =>
-      isAncestorPathActive(this.rootGraph, String(c.nodeId))
+      isCandidateScopeActive(this.rootGraph, c)
     )
 
     if (!candidates.length) {

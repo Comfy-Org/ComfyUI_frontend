@@ -12,13 +12,20 @@ import type {
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import {
+  inputForWidget,
+  promotedInputWidgets
+} from '@/core/graph/subgraph/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isAbortError } from '@/utils/typeGuardUtil'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   getAnnotatedMediaPathTypeForDetection,
   getMediaPathDetectionNames,
@@ -45,6 +52,21 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
 
+function isInactiveMode(mode: number | undefined): boolean {
+  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
+}
+
+interface MediaWidgetScanTarget {
+  executionId: NodeExecutionId
+  nodeType: string
+  candidateWidgetName: string
+  definitionWidgetName: string
+  sourceExecutionId?: NodeExecutionId
+  valueWidget: IBaseWidget
+  definitionWidget: IBaseWidget
+  isUploading?: boolean
+}
+
 /**
  * Scan combo widgets on media nodes for file values that may be missing.
  *
@@ -62,13 +84,7 @@ export function scanAllMediaCandidates(
   const candidates: MissingMediaCandidate[] = []
 
   for (const node of allNodes) {
-    if (!node.widgets?.length) continue
-    if (node.isSubgraphNode?.()) continue
-    if (
-      node.mode === LGraphEventMode.NEVER ||
-      node.mode === LGraphEventMode.BYPASS
-    )
-      continue
+    if (isInactiveMode(node.mode)) continue
 
     candidates.push(...scanNodeMediaCandidates(rootGraph, node, isCloud))
   }
@@ -82,21 +98,31 @@ export function scanNodeMediaCandidates(
   node: LGraphNode,
   isCloud: boolean
 ): MissingMediaCandidate[] {
-  if (!node.widgets?.length) return []
-
-  const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
-  if (!mediaInfo) return []
-  if (node.isUploading) return []
+  const widgets = node.isSubgraphNode?.()
+    ? promotedInputWidgets(node)
+    : (node.widgets ?? [])
+  if (!widgets.length) return []
 
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) return []
 
   const candidates: MissingMediaCandidate[] = []
-  for (const widget of node.widgets) {
-    if (!isComboWidget(widget)) continue
-    if (widget.name !== mediaInfo.widgetName) continue
+  for (const widget of widgets) {
+    const target = getMediaWidgetScanTarget(
+      rootGraph,
+      node,
+      widget,
+      executionId
+    )
+    if (!target) continue
 
-    const value = widget.value
+    const mediaInfo = MEDIA_NODE_WIDGETS[target.nodeType]
+    if (!mediaInfo) continue
+    if (target.isUploading) continue
+    if (!isComboWidget(target.definitionWidget)) continue
+    if (target.definitionWidgetName !== mediaInfo.widgetName) continue
+
+    const value = target.valueWidget.value
     if (typeof value !== 'string' || !value.trim()) continue
 
     let isMissing: boolean | undefined
@@ -107,7 +133,7 @@ export function scanNodeMediaCandidates(
       if (type === 'output') {
         isMissing = undefined
       } else {
-        const options = resolveComboValues(widget)
+        const options = resolveComboValues(target.definitionWidget)
         const detectionNames = getMediaPathDetectionNames(value)
         const existsInOptions = detectionNames.some((name) =>
           options.includes(name)
@@ -117,9 +143,12 @@ export function scanNodeMediaCandidates(
     }
 
     candidates.push({
-      nodeId: executionId,
-      nodeType: node.type,
-      widgetName: widget.name,
+      nodeId: target.executionId,
+      ...(target.sourceExecutionId && {
+        sourceExecutionId: target.sourceExecutionId
+      }),
+      nodeType: target.nodeType,
+      widgetName: target.candidateWidgetName,
       mediaType: mediaInfo.mediaType,
       name: value,
       isMissing
@@ -127,6 +156,51 @@ export function scanNodeMediaCandidates(
   }
 
   return candidates
+}
+
+function getMediaWidgetScanTarget(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  widget: IBaseWidget,
+  executionId: NodeExecutionId
+): MediaWidgetScanTarget | null {
+  const input = getInputForWidget(node, widget)
+  if (input?.link != null) return null
+
+  if (!node.isSubgraphNode?.()) {
+    return {
+      executionId,
+      nodeType: node.type,
+      candidateWidgetName: widget.name,
+      definitionWidgetName: widget.name,
+      valueWidget: widget,
+      definitionWidget: widget,
+      isUploading: node.isUploading
+    }
+  }
+
+  if (!input) return null
+
+  const source = resolvePromotedWidgetSource(rootGraph, node, widget)
+  const sourceExecutionId = source?.sourceExecutionId
+  if (!sourceExecutionId) return null
+  if (!isExecutionPathActive(rootGraph, sourceExecutionId)) return null
+
+  return {
+    executionId,
+    nodeType: source.sourceNode.type,
+    candidateWidgetName: widget.name,
+    definitionWidgetName: source.sourceWidgetName,
+    sourceExecutionId,
+    valueWidget: widget,
+    definitionWidget: source.sourceWidget,
+    isUploading: source.sourceNode.isUploading
+  }
+}
+
+function getInputForWidget(node: LGraphNode, widget: IBaseWidget) {
+  if (typeof node.getSlotFromWidget !== 'function') return undefined
+  return inputForWidget(node, widget)
 }
 
 interface MediaVerificationOptions {
