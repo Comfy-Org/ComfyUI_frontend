@@ -67,7 +67,15 @@ jobs:
 
       - name: Deploy report to Cloudflare
         id: deploy
-        if: always() && !cancelled()
+        if: >-
+          ${{
+            always() &&
+            !cancelled() &&
+            (
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.fork == false
+            )
+          }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
