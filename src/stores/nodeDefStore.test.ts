@@ -590,6 +590,22 @@ describe('useNodeDefStore', () => {
 
       expect(store.getInputSpecForWidget(host, 'prompt')).toBeUndefined()
     })
+
+    it('returns undefined when concrete promoted widget resolution fails', async () => {
+      const resolver =
+        await import('@/core/graph/subgraph/resolveConcretePromotedWidget')
+      vi.spyOn(resolver, 'resolveConcretePromotedWidget').mockReturnValue(
+        fromAny({ status: 'failure', failure: 'missing-widget' })
+      )
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: { required: { prompt: ['STRING', {}] } }
+        })
+      )
+
+      expect(store.getInputSpecForWidget(host, 'prompt')).toBeUndefined()
+    })
   })
 
   describe('node frequency store', () => {

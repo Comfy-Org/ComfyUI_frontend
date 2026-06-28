@@ -10,6 +10,9 @@ import {
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -163,6 +166,22 @@ describe('useSubgraphStore', () => {
     await expect(store.publishSubgraph()).rejects.toThrow(
       'Must have single SubgraphNode selected to publish'
     )
+  })
+
+  it('rejects publishing when the serialized node is not a subgraph node', async () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
+    vi.mocked(comfyApp.canvas).draw = vi.fn()
+    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
+      nodes: [{ ...subgraphNode.serialize(), type: 'missing' }],
+      subgraphs: [fromAny<ExportedSubgraph, unknown>(subgraph.serialize())]
+    }))
+
+    await expect(store.publishSubgraph('invalid')).rejects.toThrow(
+      'Loaded subgraph blueprint does not contain valid subgraph'
+    )
+    expect(api.storeUserData).not.toHaveBeenCalled()
   })
 
   it('does not publish when the name prompt is cancelled', async () => {
@@ -501,6 +520,140 @@ describe('useSubgraphStore', () => {
     consoleSpy.mockRestore()
   })
 
+  it('rejects loaded blueprints without subgraph definitions', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await mockFetch({
+      'missing-definitions.json': {
+        nodes: [{ id: 1, type: 'missing' }]
+      }
+    })
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to load subgraph blueprint',
+      expect.any(Error)
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('rejects saving a blueprint whose active state has no subgraph definitions', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    const blueprint = useWorkflowStore().getWorkflowByPath(
+      'subgraphs/test.json'
+    )
+    if (!blueprint?.changeTracker) throw new Error('Blueprint was not loaded')
+    blueprint.changeTracker!.activeState = fromAny<ComfyWorkflowJSON, unknown>({
+      nodes: [{ id: 1, type: '123' }]
+    })
+
+    await expect(blueprint.save()).rejects.toThrow(
+      'The root graph of a subgraph blueprint must consist of only a single subgraph node'
+    )
+  })
+
+  it('marks non-blueprint root nodes when saving an invalid blueprint', async () => {
+    vi.mocked(comfyApp.canvas).draw = vi.fn()
+    await mockFetch({ 'test.json': mockGraph })
+    const blueprint = useWorkflowStore().getWorkflowByPath(
+      'subgraphs/test.json'
+    )
+    if (!blueprint?.changeTracker) throw new Error('Blueprint was not loaded')
+    blueprint.changeTracker!.activeState = fromAny<ComfyWorkflowJSON, unknown>({
+      nodes: [
+        { id: 1, type: '123' },
+        { id: 2, type: 'OtherNode' }
+      ],
+      definitions: { subgraphs: [{ id: '123' }] }
+    })
+
+    await expect(blueprint.save()).rejects.toThrow(
+      'The root graph of a subgraph blueprint must consist of only a single subgraph node'
+    )
+    expect(comfyApp.canvas.draw).toHaveBeenCalledWith(true, true)
+  })
+
+  it('does not save a loaded blueprint when first-save confirmation is cancelled', async () => {
+    const confirm = vi.fn(() => false)
+    vi.mocked(useDialogService).mockReturnValue(
+      fromPartial<ReturnType<typeof useDialogService>>({
+        prompt: vi.fn(() => 'testname'),
+        confirm
+      })
+    )
+    useSettingStore().settingValues['Comfy.Workflow.WarnBlueprintOverwrite'] =
+      true
+    await mockFetch({ 'test.json': mockGraph })
+    const blueprint = useWorkflowStore().getWorkflowByPath(
+      'subgraphs/test.json'
+    )
+    if (!blueprint) throw new Error('Blueprint was not loaded')
+
+    const result = await blueprint.save()
+
+    expect(result).toBe(blueprint)
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'overwriteBlueprint',
+        itemList: ['test']
+      })
+    )
+    expect(api.storeUserData).not.toHaveBeenCalled()
+  })
+
+  it('saves a loaded blueprint after first-save confirmation', async () => {
+    const confirm = vi.fn(() => true)
+    vi.mocked(useDialogService).mockReturnValue(
+      fromPartial<ReturnType<typeof useDialogService>>({
+        prompt: vi.fn(() => 'testname'),
+        confirm
+      })
+    )
+    useSettingStore().settingValues['Comfy.Workflow.WarnBlueprintOverwrite'] =
+      true
+    vi.mocked(api.storeUserData).mockResolvedValue({
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          path: 'subgraphs/test.json',
+          modified: Date.now(),
+          size: 2
+        })
+    } as Response)
+    await mockFetch({ 'test.json': mockGraph })
+    const blueprint = useWorkflowStore().getWorkflowByPath(
+      'subgraphs/test.json'
+    )
+    if (!blueprint) throw new Error('Blueprint was not loaded')
+
+    await blueprint.save()
+
+    const [path, data, options] = vi.mocked(api.storeUserData).mock.calls[0]
+    if (typeof data !== 'string') throw new Error('Expected saved JSON')
+    expect(path).toBe('subgraphs/test.json')
+    expect(JSON.parse(data)).toMatchObject({
+      nodes: [{ type: '123', title: 'test' }],
+      definitions: { subgraphs: [{ id: '123', name: 'test' }] }
+    })
+    expect(options).toEqual({
+      overwrite: true,
+      throwOnError: true,
+      full_info: true
+    })
+  })
+
+  it('returns an already-loaded blueprint when loading without force', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    const blueprint = useWorkflowStore().getWorkflowByPath(
+      'subgraphs/test.json'
+    )
+    if (!blueprint) throw new Error('Blueprint was not loaded')
+
+    await blueprint.load()
+
+    expect(api.getUserData).toHaveBeenCalledTimes(1)
+  })
+
   it('should handle global blueprint with rejected data promise gracefully', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
@@ -622,6 +775,29 @@ describe('useSubgraphStore', () => {
       expect(nodeDef?.description).toBe('This is a test blueprint')
     })
 
+    it('does not copy workflowRendererVersion into subgraph metadata on load', async () => {
+      await mockFetch({
+        'metadata-load.json': {
+          nodes: [{ type: '123' }],
+          definitions: {
+            subgraphs: [{ id: '123', extra: {} }]
+          },
+          extra: {
+            BlueprintDescription: 'Loaded description',
+            workflowRendererVersion: 'Vue'
+          }
+        }
+      })
+
+      const blueprint = store.getBlueprint(
+        BLUEPRINT_TYPE_PREFIX + 'metadata-load'
+      )
+
+      expect(blueprint.definitions!.subgraphs![0].extra).toEqual({
+        BlueprintDescription: 'Loaded description'
+      })
+    })
+
     it('should not duplicate metadata in both workflow extra and subgraph extra when publishing', async () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
@@ -631,7 +807,8 @@ describe('useSubgraphStore', () => {
       // Set metadata on the subgraph's extra (as the commands do)
       subgraph.extra = {
         BlueprintDescription: 'Test description',
-        BlueprintSearchAliases: ['alias1', 'alias2']
+        BlueprintSearchAliases: ['alias1', 'alias2'],
+        workflowRendererVersion: 'Vue'
       }
 
       vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
@@ -680,6 +857,7 @@ describe('useSubgraphStore', () => {
       const subgraphExtra = definitions.subgraphs[0]?.extra
       expect(subgraphExtra?.BlueprintDescription).toBeUndefined()
       expect(subgraphExtra?.BlueprintSearchAliases).toBeUndefined()
+      expect(subgraphExtra?.workflowRendererVersion).toBe('Vue')
     })
   })
 

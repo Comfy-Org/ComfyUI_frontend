@@ -273,9 +273,6 @@ export class TaskItemImpl {
   }
 
   calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
-    if (!this.outputs) {
-      return []
-    }
     return parseTaskOutput(this.outputs)
   }
 
@@ -435,9 +432,6 @@ export class TaskItemImpl {
 
     // Use full outputs from job detail, or fall back to existing outputs
     const outputsToLoad = jobDetail?.outputs ?? this.outputs
-    if (!outputsToLoad) {
-      return
-    }
 
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)

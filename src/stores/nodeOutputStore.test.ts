@@ -838,6 +838,19 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('ignores widget outputs when no locator can be resolved', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    mockNodeToNodeLocatorId.mockReturnValueOnce(
+      fromAny<NodeLocatorId, undefined>(undefined)
+    )
+
+    store.setNodeOutputs(node, 'test.png')
+
+    expect(store.nodeOutputs).toEqual({})
+    expect(app.nodeOutputs).toEqual({})
+  })
+
   it('should skip empty array of filenames after createOutputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })

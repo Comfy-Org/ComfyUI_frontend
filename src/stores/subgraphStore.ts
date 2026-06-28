@@ -39,6 +39,10 @@ async function confirmOverwrite(name: string): Promise<boolean | null> {
   })
 }
 
+type ValidSubgraphWorkflowJSON = ComfyWorkflowJSON & {
+  definitions: NonNullable<ComfyWorkflowJSON['definitions']>
+}
+
 export const useSubgraphStore = defineStore('subgraph', () => {
   class SubgraphBlueprint extends ComfyWorkflow {
     static override readonly basePath = 'subgraphs/'
@@ -54,18 +58,20 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       this.hasPromptedSave = !confirmFirstSave
     }
 
-    validateSubgraph() {
-      if (!this.activeState?.definitions)
+    validateSubgraph(): ValidSubgraphWorkflowJSON {
+      const activeState = this.activeState
+      if (!activeState?.definitions)
         throw new Error(
           'The root graph of a subgraph blueprint must consist of only a single subgraph node'
         )
-      const { subgraphs } = this.activeState.definitions
-      const { nodes } = this.activeState
+      const validState = activeState as ValidSubgraphWorkflowJSON
+      const { subgraphs } = validState.definitions
+      const { nodes } = validState
       //Instanceof doesn't function as nodes are serialized
       function isSubgraphNode(node: ComfyNode) {
         return node && subgraphs.some((s) => s.id === node.type)
       }
-      if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
+      if (nodes.length == 1 && isSubgraphNode(nodes[0])) return validState
       const errors: Record<SerializedNodeId, NodeError> = {}
       //mark errors for all but first subgraph node
       let firstSubgraphFound = false
@@ -88,7 +94,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
 
     override async save(): Promise<UserFile> {
-      this.validateSubgraph()
+      const activeState = this.validateSubgraph()
       if (
         !this.hasPromptedSave &&
         useSettingStore().get('Comfy.Workflow.WarnBlueprintOverwrite')
@@ -97,7 +103,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         this.hasPromptedSave = true
       }
       // Extract metadata from subgraph.extra to workflow.extra before saving
-      this.extractMetadataToWorkflowExtra()
+      this.extractMetadataToWorkflowExtra(activeState)
       const ret = await super.save()
       // Force reload to update initialState with saved metadata
       registerNodeDef(await this.load({ force: true }), {
@@ -110,13 +116,14 @@ export const useSubgraphStore = defineStore('subgraph', () => {
      * Moves all properties (except workflowRendererVersion) from subgraph.extra
      * to workflow.extra, then removes from subgraph.extra to avoid duplication.
      */
-    private extractMetadataToWorkflowExtra(): void {
-      if (!this.activeState) return
-      const subgraph = this.activeState.definitions?.subgraphs?.[0]
+    private extractMetadataToWorkflowExtra(
+      activeState: ValidSubgraphWorkflowJSON
+    ): void {
+      const subgraph = activeState.definitions.subgraphs?.[0]
       if (!subgraph?.extra) return
 
       const sgExtra = subgraph.extra as Record<string, unknown>
-      const workflowExtra = (this.activeState.extra ??= {}) as Record<
+      const workflowExtra = (activeState.extra ??= {}) as Record<
         string,
         unknown
       >
@@ -129,10 +136,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
 
     override async saveAs(path: string) {
-      this.validateSubgraph()
+      const activeState = this.validateSubgraph()
       this.hasPromptedSave = true
       // Extract metadata from subgraph.extra to workflow.extra before saving
-      this.extractMetadataToWorkflowExtra()
+      this.extractMetadataToWorkflowExtra(activeState)
       const ret = await super.saveAs(path)
       // Force reload to update initialState with saved metadata
       registerNodeDef(await this.load({ force: true }), {
@@ -276,8 +283,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     overrides: Partial<ComfyNodeDefV1> = {},
     name: string = workflow.filename
   ) {
-    const subgraphNode = workflow.changeTracker.initialState.nodes[0]
-    if (!subgraphNode) throw new Error('Invalid Subgraph Blueprint')
+    const subgraphNode = workflow.changeTracker.initialState
+      .nodes[0] as ComfyNode
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
     //NOTE: Types are cast to string. This is only used for input coloring on previews

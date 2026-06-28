@@ -126,7 +126,6 @@ export const useSubgraphNavigationStore = defineStore(
     /** Apply a viewport state to the canvas. */
     function applyViewport(viewport: DragAndScaleState): void {
       const canvas = app.canvas
-      if (!canvas) return
       canvas.ds.scale = viewport.scale
       canvas.ds.offset[0] = viewport.offset[0]
       canvas.ds.offset[1] = viewport.offset[1]
@@ -170,7 +169,8 @@ export const useSubgraphNavigationStore = defineStore(
       if (!isWorkflowSwitching) {
         if (prevSubgraph) {
           saveViewport(prevSubgraph.id)
-        } else if (!prevSubgraph && subgraph) {
+        }
+        if (!prevSubgraph && subgraph) {
           saveViewport(getCurrentRootGraphId())
         }
       }

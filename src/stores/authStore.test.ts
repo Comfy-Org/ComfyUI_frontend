@@ -322,6 +322,16 @@ describe('useAuthStore', () => {
     expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalledOnce()
   })
 
+  it('does not mint workspace auth outside cloud', () => {
+    mockWorkspaceAuthStore.mintAtLogin.mockClear()
+    mockDistributionTypes.isCloud = false
+
+    authStateCallback(mockUser)
+
+    expect(mockWorkspaceAuthStore.mintAtLogin).not.toHaveBeenCalled()
+    mockDistributionTypes.isCloud = true
+  })
+
   it('should properly clean up error state between operations', async () => {
     // First, cause an error
     const mockError = new Error('Invalid password')
@@ -377,6 +387,19 @@ describe('useAuthStore', () => {
         'wrong-password'
       )
       expect(store.loading).toBe(false)
+    })
+
+    it('tracks login when Firebase returns no email', async () => {
+      const userWithoutEmail = { ...mockUser, email: null }
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: userWithoutEmail
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.login('test@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ email: undefined })
+      )
     })
 
     it('fails customer creation when the signed-in user has no token yet', async () => {
@@ -526,6 +549,19 @@ describe('useAuthStore', () => {
         store.login('test@example.com', 'password')
       ).rejects.toThrow()
       expect(mockUser.delete).not.toHaveBeenCalled()
+    })
+
+    it('tracks registration when Firebase returns no email', async () => {
+      const userWithoutEmail = { ...mockUser, email: null }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: userWithoutEmail
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ email: undefined })
+      )
     })
   })
 
@@ -702,6 +738,10 @@ describe('useAuthStore', () => {
       await expect(store.getAuthHeader()).resolves.toEqual({
         Authorization: 'Bearer mock-id-token'
       })
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+    })
+
+    it('returns the Firebase token by default', async () => {
       await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
     })
   })
@@ -889,6 +929,22 @@ describe('useAuthStore', () => {
           )
         }
       )
+
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s should track undefined email when Firebase returns no email',
+        async (method) => {
+          const userWithoutEmail = { ...mockUser, email: null }
+          vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+            user: userWithoutEmail
+          } as Partial<UserCredential> as UserCredential)
+
+          await store[method]()
+
+          expect(mockTrackAuth).toHaveBeenCalledWith(
+            expect.objectContaining({ email: undefined })
+          )
+        }
+      )
     })
   })
 
@@ -1073,6 +1129,14 @@ describe('useAuthStore', () => {
   })
 
   describe('fetchBalance', () => {
+    it('stores the balance and update time when fetching succeeds', async () => {
+      await expect(store.fetchBalance()).resolves.toEqual({ balance: 0 })
+
+      expect(store.balance).toEqual({ balance: 0 })
+      expect(store.lastBalanceUpdateTime).toBeInstanceOf(Date)
+      expect(store.isFetchingBalance).toBe(false)
+    })
+
     it('throws when no auth method is available', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue(null)

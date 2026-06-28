@@ -37,20 +37,6 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     currentUser.value = createCustomerResponse
   }
 
-  watch(
-    apiKey,
-    () => {
-      if (apiKey.value) {
-        // IF API key is set, initialize user
-        void initializeUserFromApiKey()
-      } else {
-        // IF API key is cleared, clear user
-        currentUser.value = null
-      }
-    },
-    { immediate: true }
-  )
-
   const reportError = (error: unknown) => {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
       toastStore.add({
@@ -62,6 +48,20 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       toastErrorHandler(error)
     }
   }
+
+  watch(
+    apiKey,
+    () => {
+      if (apiKey.value) {
+        // IF API key is set, initialize user
+        void initializeUserFromApiKey().catch(reportError)
+      } else {
+        // IF API key is cleared, clear user
+        currentUser.value = null
+      }
+    },
+    { immediate: true }
+  )
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
     apiKey.value = newApiKey

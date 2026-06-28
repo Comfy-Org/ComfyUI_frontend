@@ -849,18 +849,15 @@ export const useAssetsStore = defineStore('assets', () => {
         updateModelsForTag('models')
       ]
 
-      const results = await Promise.allSettled([
-        ...nodeTypeUpdates,
-        ...tagUpdates
-      ])
-
-      for (const result of results) {
-        if (result.status === 'rejected') {
-          console.error(
-            `Failed to refresh model cache for provider: ${result.reason}`
-          )
-        }
-      }
+      await Promise.all(
+        [...nodeTypeUpdates, ...tagUpdates].map((update) =>
+          update.catch((reason) => {
+            console.error(
+              `Failed to refresh model cache for provider: ${reason}`
+            )
+          })
+        )
+      )
     }
   )
 

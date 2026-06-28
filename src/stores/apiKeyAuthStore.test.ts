@@ -94,6 +94,18 @@ describe('apiKeyAuthStore', () => {
     expect(store.getAuthHeader()).toBeNull()
   })
 
+  it('clears an API key when no associated user is found', async () => {
+    authStoreMock.createCustomer.mockResolvedValue(undefined)
+    const store = useApiKeyAuthStore()
+
+    await expect(store.storeApiKey('orphaned-secret')).resolves.toBe(true)
+    await vi.waitFor(() => expect(store.getApiKey()).toBeNull())
+
+    expect(errorHandlingMock.toastErrorHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'auth.login.noAssociatedUser' })
+    )
+  })
+
   it('reports storage failures through the API-key toast copy', async () => {
     errorHandlingMock.forceStorageFailure = true
     const store = useApiKeyAuthStore()

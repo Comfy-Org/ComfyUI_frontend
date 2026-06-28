@@ -593,6 +593,22 @@ describe('useModelToNodeStore', () => {
       expect(modelToNodeStore.getCategoryForNodeType('')).toBeUndefined()
     })
 
+    it('skips providers without node definitions during category lookup', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.modelToNodeMap = {
+        missing: [
+          new ModelNodeProvider(
+            undefined as unknown as ComfyNodeDefImpl,
+            'model'
+          )
+        ]
+      }
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('MissingNode')
+      ).toBeUndefined()
+    })
+
     it('maps the IC-LoRA Loader Model Only node to loras so its lora_name dropdown uses the cloud asset browser (FE-838)', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()

@@ -50,9 +50,9 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       .map((bookmark: string) => {
         if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
 
-        const parts = bookmark.split('/')
-        const name = parts.pop() ?? ''
-        const category = parts.join('/')
+        const slashIndex = bookmark.lastIndexOf('/')
+        const name = bookmark.slice(slashIndex + 1)
+        const category = bookmark.slice(0, Math.max(0, slashIndex))
         const srcNodeDef = nodeDefStore.allNodeDefsByName[name]
         if (!srcNodeDef) {
           return null

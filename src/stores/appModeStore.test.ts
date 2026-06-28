@@ -481,6 +481,32 @@ describe('appModeStore', () => {
       expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
 
+    it('drops malformed output ids on load', () => {
+      store.loadSelections({
+        outputs: [fromAny<SerializedNodeId, unknown>('')]
+      })
+
+      expect(store.selectedOutputs).toEqual([])
+    })
+
+    it('drops legacy subgraph input slots without widget ids', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
+        id: 5,
+        inputs: [{ name: 'Prompt' }]
+      })
+      vi.mocked(app.rootGraph).nodes = [hostNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+
+      store.loadSelections({
+        inputs: [[1, 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
     it('reloads selections on configured event', async () => {
       const node1 = nodeWithWidgets(1, ['seed'])
 
@@ -1057,6 +1083,121 @@ describe('appModeStore', () => {
       expect(result.inputs).toEqual([
         [rootEntityId, sourceWidgetName, { height: 120 }]
       ])
+    })
+
+    it('drops direct root-node widgets that cannot produce an entity id', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const sourceNodeId = 42
+      const sourceWidgetName = 'text'
+      const rootNode = fromAny<LGraphNode, unknown>({
+        id: sourceNodeId,
+        widgets: [{ name: sourceWidgetName }]
+      })
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [rootNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+        (id: SerializedNodeId | null | undefined) =>
+          id == sourceNodeId ? rootNode : null
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('legacy selectedInput tuple'),
+        expect.objectContaining({
+          storedId: sourceNodeId,
+          widgetName: sourceWidgetName
+        })
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('drops promoted inputs whose source target no longer matches', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const subgraphInputName = 'Prompt'
+      const sourceWidgetName = 'text'
+
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
+      })
+      const interior = new LGraphNodeClass('Interior')
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+
+      const host = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = host.graph as LGraph
+      rootGraph.add(host)
+      host._internalConfigureAfterSlots()
+
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        rootGraph.getNodeById(id)
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[interior.id, 'other-widget', { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('drops legacy inputs when multiple promoted inputs match', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const subgraphInputName = 'Prompt'
+      const sourceWidgetName = 'text'
+
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
+      })
+      const interior = new LGraphNodeClass('Interior')
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+
+      const firstHost = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = firstHost.graph as LGraph
+      const secondHost = createTestSubgraphNode(subgraph, {
+        id: 6,
+        parentGraph: rootGraph
+      })
+      rootGraph.add(firstHost)
+      rootGraph.add(secondHost)
+      firstHost._internalConfigureAfterSlots()
+      secondHost._internalConfigureAfterSlots()
+
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        rootGraph.getNodeById(id)
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ambiguous legacy selectedInput tuple'),
+        expect.objectContaining({
+          storedId: interior.id,
+          widgetName: sourceWidgetName
+        })
+      )
+      warnSpy.mockRestore()
     })
 
     it('warns and drops a tuple whose target widget no longer resolves', () => {

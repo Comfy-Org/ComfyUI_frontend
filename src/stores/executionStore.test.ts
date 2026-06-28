@@ -475,6 +475,31 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     ).toMatchObject({ state: 'running', value: 5 })
   })
 
+  it('keeps later running progress from moving a locator backwards', () => {
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123',
+        state: 'running',
+        value: 6,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node1'
+      },
+      node2: {
+        display_node_id: '123',
+        state: 'running',
+        value: 8,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node2'
+      }
+    }
+
+    expect(
+      store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
+    ).toMatchObject({ state: 'running', value: 6, max: 10 })
+  })
+
   it('merges zero-max running progress without dividing by zero', () => {
     store.nodeProgressStates = {
       node1: {
@@ -498,6 +523,23 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     expect(
       store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
     ).toMatchObject({ state: 'running', value: 0, max: 0 })
+  })
+
+  it('skips nested progress when the execution id cannot be resolved', () => {
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '404:1',
+        state: 'running',
+        value: 5,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    expect(store.nodeLocationProgressStates).toHaveProperty('404')
+    expect(store.nodeLocationProgressStates).not.toHaveProperty('404:1')
   })
 })
 
@@ -643,6 +685,14 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
 
     expect(store.isJobInitializing(undefined)).toBe(false)
     expect(store.isJobInitializing(7)).toBe(true)
+  })
+
+  it('does not rewrite initializing state when no requested ids are tracked', () => {
+    store.initializingJobIds = new Set(['job-1'])
+
+    store.clearInitializationByJobIds(['missing'])
+
+    expect(store.initializingJobIds).toEqual(new Set(['job-1']))
   })
 })
 
@@ -1062,8 +1112,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
     useCanvasStore().canvas = {
       graph: { getNodeById: vi.fn() }
     } as unknown as LGraphCanvas
+    mockExecutionIdToCurrentId.mockReturnValue({})
 
-    fireProgressText({ nodeId: toNodeId('not-a-node-id'), text: 'warming up' })
+    fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
 
     expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
@@ -1827,6 +1878,18 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.clientId).toBe('test-client')
       expect(removeSpy).toHaveBeenCalledWith('status', expect.any(Function))
     })
+
+    it('keeps listening when status arrives before clientId is available', async () => {
+      const apiModule = await import('@/scripts/api')
+      const removeSpy = vi.mocked(apiModule.api.removeEventListener)
+      apiModule.api.clientId = ''
+
+      fire('status', { exec_info: { queue_remaining: 0 } })
+
+      expect(store.clientId).toBeNull()
+      expect(removeSpy).not.toHaveBeenCalledWith('status', expect.any(Function))
+      apiModule.api.clientId = 'test-client'
+    })
   })
 
   describe('execution_error', () => {
@@ -1845,6 +1908,39 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         type: 'StagnationError',
         message: 'StagnationError: Job has stagnated',
         details: 'line 1\nline 2'
+      })
+    })
+
+    it('uses the message directly for service-level errors without a type', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: null,
+        exception_message: 'Job failed before node execution',
+        traceback: []
+      })
+
+      expect(errorStore.lastPromptError).toMatchObject({
+        type: 'error',
+        message: 'Job failed before node execution',
+        details: ''
+      })
+    })
+
+    it('uses an empty prompt message for service-level errors without backend copy', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: null,
+        traceback: []
+      })
+
+      expect(errorStore.lastPromptError).toMatchObject({
+        type: 'error',
+        message: '',
+        details: ''
       })
     })
 
@@ -2034,6 +2130,38 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
       '/workflows/foo.json'
     )
+  })
+
+  it('storeJob works without workflow metadata', () => {
+    const workflow = {} as Parameters<typeof store.storeJob>[0]['workflow']
+    const missingWorkflow = undefined as unknown as Parameters<
+      typeof store.storeJob
+    >[0]['workflow']
+
+    store.storeJob({
+      nodes: ['a'],
+      id: 'job-1',
+      promptOutput: {
+        a: createPromptNode('Node A', 'NodeA')
+      },
+      workflow
+    })
+
+    expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false })
+    expect(store.jobIdToWorkflowId.has('job-1')).toBe(false)
+    expect(store.jobIdToSessionWorkflowPath.has('job-1')).toBe(false)
+
+    store.storeJob({
+      nodes: ['b'],
+      id: 'job-2',
+      promptOutput: {
+        b: createPromptNode('Node B', 'NodeB')
+      },
+      workflow: missingWorkflow
+    })
+
+    expect(store.queuedJobs['job-2']?.nodes).toEqual({ b: false })
+    expect(store.queuedJobs['job-2']?.workflow).toBeUndefined()
   })
 
   it('reports zero execution progress for an active job with no nodes', () => {

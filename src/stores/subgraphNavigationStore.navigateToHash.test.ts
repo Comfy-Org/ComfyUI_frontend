@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type * as VueRouter from 'vue-router'
 
@@ -102,10 +103,22 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 function makeSubgraph(id: string): Subgraph {
   return fromPartial<Subgraph>({
     id,
+    isRootGraph: false,
     rootGraph: app.rootGraph,
     _nodes: [],
     nodes: []
   })
+}
+
+async function makeDuplicatedNavigationFailure(): Promise<Error> {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/', component: {} }]
+  })
+  await router.push('/')
+  const failure = await router.push('/')
+  if (!failure) throw new Error('Expected duplicated navigation failure')
+  return failure
 }
 
 async function flushHashWatcher() {
@@ -231,6 +244,42 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     warnSpy.mockRestore()
   })
 
+  it('does not warn when recovery redirect hits a duplicated navigation', async () => {
+    routerMocks.replace.mockRejectedValueOnce(
+      await makeDuplicatedNavigationFailure()
+    )
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    app.canvas.graph = makeSubgraph(ids.deletedSubgraph)
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
+
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      '[subgraphNavigation] router.replace rejected during recovery',
+      expect.any(Error)
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('recovers to root when canvas is unavailable during redirect cleanup', async () => {
+    const appWithOptionalCanvas = app as unknown as {
+      canvas: typeof app.canvas | undefined
+    }
+    const canvas = appWithOptionalCanvas.canvas
+    appWithOptionalCanvas.canvas = undefined
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = '#not-a-valid-uuid'
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
+
+    appWithOptionalCanvas.canvas = canvas
+  })
+
   it('redirects when a workflow load resolves but the subgraph is still missing', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     workflowStoreState.openWorkflows = [
@@ -329,6 +378,16 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(app.canvas.setGraph).toHaveBeenCalledWith(subgraph)
   })
 
+  it('updateHash does not treat the initial root hash as a subgraph', async () => {
+    routeHashRef.value = `#${ids.root}`
+    app.canvas.graph = app.rootGraph
+    const store = useSubgraphNavigationStore()
+
+    await store.updateHash()
+
+    expect(workflowStoreState.activeSubgraph).toBeUndefined()
+  })
+
   it('updateHash replaces an empty hash and pushes the active graph id', async () => {
     const store = useSubgraphNavigationStore()
     await store.updateHash()
@@ -376,6 +435,22 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       '[subgraphNavigation] router.push rejected',
       expect.any(Error)
     )
+    warnSpy.mockRestore()
+  })
+
+  it('updateHash ignores duplicated router push failures', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    routerMocks.push.mockRejectedValueOnce(
+      await makeDuplicatedNavigationFailure()
+    )
+    const store = useSubgraphNavigationStore()
+    await store.updateHash()
+    routeHashRef.value = `#${ids.root}`
+    app.canvas.graph = fromPartial<LGraph>({ id: ids.validSubgraph })
+
+    await store.updateHash()
+
+    expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
   })
 
