@@ -29,6 +29,44 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+const COVERAGE_CRITICAL = process.env.COVERAGE_CRITICAL === 'true'
+
+const CRITICAL_COVERAGE_INCLUDE = [
+  'src/base/common/async.ts',
+  'src/base/credits/comfyCredits.ts',
+  'src/composables/graph/useGroupContextMenu.ts',
+  'src/composables/graph/useGroupMenuOptions.ts',
+  'src/composables/graph/useMoreOptionsMenu.ts',
+  'src/composables/graph/useNodeCustomization.ts',
+  'src/composables/graph/useNodeMenuOptions.ts',
+  'src/composables/graph/useSelectionMenuOptions.ts',
+  'src/composables/graph/useSelectionOperations.ts',
+  'src/composables/graph/useSelectionState.ts',
+  'src/composables/node/useNodePricing.ts',
+  'src/scripts/metadata/parser.ts',
+  'src/stores/aboutPanelStore.ts',
+  'src/stores/executionStore.ts',
+  'src/stores/nodeBookmarkStore.ts',
+  'src/stores/queueStore.ts',
+  'src/utils/fuseUtil.ts',
+  'src/utils/gridUtil.ts',
+  'src/utils/mouseDownUtil.ts',
+  'src/utils/nodeTitleUtil.ts',
+  'src/utils/objectUrlUtil.ts',
+  'src/utils/queueDisplay.ts',
+  'src/utils/rafBatch.ts',
+  'src/utils/treeUtil.ts',
+  'src/utils/typeGuardUtil.ts',
+  'src/workbench/extensions/manager/composables/nodePack/usePackInstall.ts',
+  'src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts'
+]
+
+const CRITICAL_COVERAGE_THRESHOLDS = {
+  statements: 58,
+  branches: 47,
+  functions: 54,
+  lines: 58
+}
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -667,8 +705,10 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
-      include: ['src/**/*.{ts,vue}'],
+      reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
+      include: COVERAGE_CRITICAL
+        ? CRITICAL_COVERAGE_INCLUDE
+        : ['src/**/*.{ts,vue}'],
       exclude: [
         'src/**/*.test.ts',
         'src/**/*.spec.ts',
@@ -677,7 +717,8 @@ export default defineConfig({
         'src/locales/**',
         'src/lib/litegraph/**',
         'src/assets/**'
-      ]
+      ],
+      ...(COVERAGE_CRITICAL ? { thresholds: CRITICAL_COVERAGE_THRESHOLDS } : {})
     },
     exclude: [
       '**/node_modules/**',
