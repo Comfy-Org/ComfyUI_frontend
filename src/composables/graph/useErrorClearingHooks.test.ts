@@ -839,6 +839,62 @@ describe('realtime verification staleness guards', () => {
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
   })
 
+  it('skips adding verified promoted media when source is bypassed before verification resolved', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('LoadImage')
+    subgraph.add(interiorNode)
+
+    const host = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = host.graph as LGraph
+    rootGraph.add(host)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
+      (_rootGraph, node) =>
+        node === host
+          ? [
+              fromAny<MissingMediaCandidate, unknown>({
+                nodeId: String(host.id),
+                sourceExecutionId: `${host.id}:${interiorNode.id}`,
+                nodeType: 'LoadImage',
+                widgetName: 'image',
+                mediaType: 'image',
+                name: 'promoted_image.png',
+                isMissing: undefined
+              })
+            ]
+          : []
+    )
+    let resolveVerify: (() => void) | undefined
+    const verifyPromise = new Promise<void>((r) => (resolveVerify = r))
+    const verifySpy = vi
+      .spyOn(missingMediaScan, 'verifyMediaCandidates')
+      .mockImplementation(async (candidates) => {
+        await verifyPromise
+        for (const c of candidates) c.isMissing = true
+      })
+
+    installErrorClearingHooks(rootGraph)
+
+    host.mode = LGraphEventMode.ALWAYS
+    rootGraph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: host.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+
+    interiorNode.mode = LGraphEventMode.BYPASS
+
+    resolveVerify!()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
   it('skips adding verified model when rootGraph switched before verification resolved', async () => {
     // Workflow A has a pending candidate on node id=1. A is replaced
     // by workflow B (fresh LGraph, potentially has a node with the
