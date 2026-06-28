@@ -837,30 +837,24 @@ export const useAssetsStore = defineStore('assets', () => {
         .getAllNodeProviders(modelType)
         .filter((provider) => provider.nodeDef?.name)
 
-      const nodeTypeUpdates = providers.map((provider) =>
-        updateModelsForNodeType(provider.nodeDef.name).then(
-          () => provider.nodeDef.name
-        )
-      )
+      const nodeTypeRefreshes = providers.map((provider) => ({
+        target: `node type "${provider.nodeDef.name}"`,
+        refresh: updateModelsForNodeType(provider.nodeDef.name)
+      }))
 
       // Also update by tag in case modal was opened with assetType
-      const tagUpdates = [
-        updateModelsForTag(modelType),
-        updateModelsForTag('models')
-      ]
+      const tagRefreshes = [modelType, 'models'].map((tag) => ({
+        target: `tag "${tag}"`,
+        refresh: updateModelsForTag(tag)
+      }))
 
-      const results = await Promise.allSettled([
-        ...nodeTypeUpdates,
-        ...tagUpdates
-      ])
-
-      for (const result of results) {
-        if (result.status === 'rejected') {
-          console.error(
-            `Failed to refresh model cache for provider: ${result.reason}`
-          )
-        }
-      }
+      await Promise.all(
+        [...nodeTypeRefreshes, ...tagRefreshes].map(({ target, refresh }) =>
+          refresh.catch((error) => {
+            console.error(`Failed to refresh model cache for ${target}`, error)
+          })
+        )
+      )
     }
   )
 
