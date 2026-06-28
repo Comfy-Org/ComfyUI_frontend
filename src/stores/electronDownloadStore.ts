@@ -33,18 +33,15 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     }
 
     DownloadManager.onDownloadProgress((data) => {
-      if (!findByUrl(data.url)) {
-        downloads.value.push(data)
-      }
-
       const download = findByUrl(data.url)
-
-      if (download) {
-        download.progress = data.progress
-        download.status = data.status
-        download.filename = data.filename
-        download.savePath = data.savePath
+      if (!download) {
+        downloads.value.push(data)
+        return
       }
+      download.progress = data.progress
+      download.status = data.status
+      download.filename = data.filename
+      download.savePath = data.savePath
     })
   }
 
