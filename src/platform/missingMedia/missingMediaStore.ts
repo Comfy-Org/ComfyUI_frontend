@@ -125,10 +125,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
         candidate.sourceExecutionId == null
           ? undefined
           : String(candidate.sourceExecutionId)
-      return !(
+      // Host-keyed promoted candidates are removed by their interior source
+      // path. The trailing colon prevents sibling prefix matches ("6" vs "60").
+      const inScope =
         sourceExecutionId === executionId ||
-        sourceExecutionId?.startsWith(prefix)
-      )
+        sourceExecutionId?.startsWith(prefix) === true
+      return !inScope
     })
     if (remaining.length === missingMediaCandidates.value.length) return
     missingMediaCandidates.value = remaining.length ? remaining : null

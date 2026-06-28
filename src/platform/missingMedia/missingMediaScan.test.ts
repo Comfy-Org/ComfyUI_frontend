@@ -347,6 +347,25 @@ describe('scanNodeMediaCandidates', () => {
     expect(result).toEqual([])
   })
 
+  it('skips plain media widgets backed by linked inputs', () => {
+    const graph = makeGraph([])
+    const widget = makeMediaCombo('image', 'photo.png', [])
+    const linkedInput = fromAny<INodeInputSlot, unknown>({
+      name: 'image',
+      link: 12,
+      widget: { name: 'image' }
+    })
+    const node = makeMediaNode(1, 'LoadImage', [widget], 0)
+    Object.assign(node, {
+      getSlotFromWidget: (candidate: IBaseWidget | undefined) =>
+        candidate === widget ? linkedInput : undefined
+    })
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
   it.for([false, true])(
     'returns empty while a media upload is pending on the node (isCloud: %s)',
     (isCloud) => {
