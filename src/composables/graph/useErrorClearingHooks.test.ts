@@ -849,22 +849,18 @@ describe('realtime verification staleness guards', () => {
     rootGraph.add(host)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
 
+    const promotedCandidate: MissingMediaCandidate = {
+      nodeId: String(host.id),
+      sourceExecutionId: createNodeExecutionId([host.id, interiorNode.id]),
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'promoted_image.png',
+      isMissing: undefined
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
-      (_rootGraph, node) =>
-        node === host
-          ? [
-              fromAny<MissingMediaCandidate, unknown>({
-                nodeId: String(host.id),
-                sourceExecutionId: `${host.id}:${interiorNode.id}`,
-                nodeType: 'LoadImage',
-                widgetName: 'image',
-                mediaType: 'image',
-                name: 'promoted_image.png',
-                isMissing: undefined
-              })
-            ]
-          : []
+      (_rootGraph, node) => (node === host ? [promotedCandidate] : [])
     )
     let resolveVerify: (() => void) | undefined
     const verifyPromise = new Promise<void>((r) => (resolveVerify = r))

@@ -48,16 +48,11 @@ beforeEach(() => {
 vi.mock('@/utils/graphTraversalUtil', () => {
   type TestNode = LGraphNode & {
     _testExecutionId?: string
-    _testActiveExecutionIds?: string[]
   }
   type TestGraph = { _testNodes: TestNode[] }
-  const getNodeExecutionIds = (node: TestNode) => [
-    node._testExecutionId ?? String(node.id),
-    ...(node._testActiveExecutionIds ?? [])
-  ]
   const findNodeByExecutionId = (graph: TestGraph, executionId: string) =>
-    graph._testNodes.find((node) =>
-      getNodeExecutionIds(node).includes(executionId)
+    graph._testNodes.find(
+      (node) => (node._testExecutionId ?? String(node.id)) === executionId
     )
   const isInactive = (node: LGraphNode | undefined) =>
     node?.mode === 2 || node?.mode === 4
@@ -161,15 +156,11 @@ function makeGraph(nodes: LGraphNode[]): LGraph {
 
 function makeNestedPromotedMediaGraph({
   hostValue = 'missing.png',
-  leafActiveExecutionIds,
-  leafExecutionId = '65:77:42',
   innerMode = 0,
   sourceOptions = ['existing.png'],
   sourceValue = 'stale.png'
 }: {
   hostValue?: string
-  leafActiveExecutionIds?: string[]
-  leafExecutionId?: string
   innerMode?: number
   sourceOptions?: string[]
   sourceValue?: string
@@ -181,15 +172,8 @@ function makeNestedPromotedMediaGraph({
     name: 'image',
     link: innerLinkId
   })
-  const leafNode = makeMediaNode(
-    42,
-    'LoadImage',
-    [sourceWidget],
-    0,
-    leafExecutionId
-  )
+  const leafNode = makeMediaNode(42, 'LoadImage', [sourceWidget], 0, '65:77:42')
   Object.assign(leafNode, {
-    _testActiveExecutionIds: leafActiveExecutionIds,
     inputs: [sourceInput],
     isSubgraphNode: () => false,
     getSlotFromWidget: (widget: IBaseWidget | undefined) =>

@@ -317,17 +317,14 @@ describe('useMissingMediaStore', () => {
         {
           ...makeCandidate('65', 'a.png'),
           sourceExecutionId: createNodeExecutionId([65, 77, 42])
-        } as MissingMediaCandidate,
+        },
         {
           ...makeCandidate('80', 'b.png'),
           sourceExecutionId: createNodeExecutionId([80, 77, 42])
-        } as MissingMediaCandidate
+        }
       ])
 
-      const sourceAwareStore = store as typeof store & {
-        removeMissingMediaBySourceScope: (executionId: string) => void
-      }
-      sourceAwareStore.removeMissingMediaBySourceScope('65:77')
+      store.removeMissingMediaBySourceScope('65:77')
 
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('b.png')
@@ -337,10 +334,7 @@ describe('useMissingMediaStore', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([makeCandidate('65', 'a.png')])
 
-      const sourceAwareStore = store as typeof store & {
-        removeMissingMediaBySourceScope: (executionId: string) => void
-      }
-      sourceAwareStore.removeMissingMediaBySourceScope('65')
+      store.removeMissingMediaBySourceScope('65')
 
       expect(store.missingMediaCandidates).toHaveLength(1)
     })
