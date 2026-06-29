@@ -42,7 +42,7 @@ const { highlightClass = 'text-white' } = defineProps<{
         :key="reason.id"
         class="flex flex-col gap-4 border-b border-primary-comfy-canvas/20 py-10 first:pt-0 lg:gap-12 xl:flex-row"
       >
-        <div class="shrink-0 lg:w-84">
+        <div class="shrink-0 xl:w-84">
           <h3
             class="text-2xl font-light whitespace-pre-line text-primary-comfy-canvas"
           >

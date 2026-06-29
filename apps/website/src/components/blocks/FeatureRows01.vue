@@ -91,7 +91,7 @@ const {
           <VideoPlayer
             v-else
             :locale="locale"
-            :aria-label="row.media.alt"
+            :aria-label="row.media.alt ?? row.title"
             :src="row.media.src"
             :poster="row.media.poster"
             :tracks="row.media.tracks"

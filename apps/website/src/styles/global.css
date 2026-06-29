@@ -190,7 +190,6 @@
 
 .card-slide-leave-active {
   transition: opacity 0.2s ease;
-  position: absolute;
 }
 
 .card-slide-leave-to {

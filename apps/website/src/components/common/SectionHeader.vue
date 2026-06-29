@@ -33,9 +33,8 @@ const headingSizeClass = {
   <div
     :class="
       cn(
-        align === 'center'
-          ? cn('mx-auto text-center', maxWidthClass[maxWidth])
-          : 'text-left'
+        maxWidthClass[maxWidth],
+        align === 'center' ? 'mx-auto text-center' : 'text-left'
       )
     "
   >

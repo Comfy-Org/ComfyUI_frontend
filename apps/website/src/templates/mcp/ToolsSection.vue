@@ -30,7 +30,8 @@ const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/mcp/search-ecosystem.png'
-    }
+    },
+    altKey: 'mcp.tools.2.alt'
   },
   {
     n: 3,

@@ -1981,6 +1981,10 @@ const translations = {
     en: 'Query thousands of models, browse rankings, and choose workflow templates straight from your response.',
     'zh-CN': '查询数千个模型，浏览排名，直接在对话中选择工作流模板。'
   },
+  'mcp.tools.2.alt': {
+    en: 'Comfy MCP searching the ecosystem of models, rankings, and workflow templates',
+    'zh-CN': 'Comfy MCP 搜索模型、排名和工作流模板的生态系统'
+  },
   'mcp.tools.3.title': {
     en: 'Run real workflows',
     'zh-CN': '运行真实工作流'
