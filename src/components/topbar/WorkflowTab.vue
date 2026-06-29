@@ -26,14 +26,14 @@
             v-if="isAgentEditing"
             role="img"
             :aria-label="t('g.agentWorking')"
-            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-hover:hidden motion-safe:animate-spin"
+            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-hover:hidden motion-safe:animate-spin touch:hidden"
           />
           <span
             v-else-if="showUnseenAgentDot"
             role="img"
             :aria-label="t('g.agentModified')"
             data-testid="agent-modified-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
+            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden touch:hidden"
           />
           <i
             v-else-if="workflowStatus"
@@ -41,7 +41,7 @@
             :aria-label="workflowStatusLabel"
             :class="
               cn(
-                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden touch:hidden',
                 workflowStatusIconClasses[workflowStatus]
               )
             "
@@ -51,13 +51,13 @@
             data-testid="workflow-dirty-indicator"
             :class="
               cn(
-                'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover:hidden',
+                'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover:hidden touch:hidden',
                 isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
               )
             "
           />
           <Button
-            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible"
+            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible touch:visible"
             variant="muted-textonly"
             size="unset"
             :aria-label="t('g.close')"
