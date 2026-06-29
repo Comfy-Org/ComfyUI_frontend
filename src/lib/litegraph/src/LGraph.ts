@@ -1484,9 +1484,9 @@ export class LGraph
    * @returns The reroute with the provided {@link id}, otherwise `undefined`. Always returns `undefined` if `id` is nullish.
    */
   getReroute(id: null | undefined): undefined
-  getReroute(id: RerouteId | number | null | undefined): Reroute | undefined
-  getReroute(id: RerouteId | number | null | undefined): Reroute | undefined {
-    return id == null ? undefined : this.reroutes.get(toRerouteId(id))
+  getReroute(id: RerouteId | null | undefined): Reroute | undefined
+  getReroute(id: RerouteId | null | undefined): Reroute | undefined {
+    return id == null ? undefined : this.reroutes.get(id)
   }
 
   /**

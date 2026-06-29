@@ -13,6 +13,7 @@ import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
@@ -1188,15 +1189,15 @@ describe('LinkConnector Integration', () => {
   )
 
   const nodeReroutePairs = [
-    { nodeId: toNodeId(1), rerouteId: 1 },
-    { nodeId: toNodeId(1), rerouteId: 3 },
-    { nodeId: toNodeId(1), rerouteId: 4 },
-    { nodeId: toNodeId(1), rerouteId: 2 },
-    { nodeId: toNodeId(4), rerouteId: 7 },
-    { nodeId: toNodeId(4), rerouteId: 6 },
-    { nodeId: toNodeId(4), rerouteId: 8 },
-    { nodeId: toNodeId(4), rerouteId: 10 },
-    { nodeId: toNodeId(4), rerouteId: 12 }
+    { nodeId: toNodeId(1), rerouteId: toRerouteId(1) },
+    { nodeId: toNodeId(1), rerouteId: toRerouteId(3) },
+    { nodeId: toNodeId(1), rerouteId: toRerouteId(4) },
+    { nodeId: toNodeId(1), rerouteId: toRerouteId(2) },
+    { nodeId: toNodeId(4), rerouteId: toRerouteId(7) },
+    { nodeId: toNodeId(4), rerouteId: toRerouteId(6) },
+    { nodeId: toNodeId(4), rerouteId: toRerouteId(8) },
+    { nodeId: toNodeId(4), rerouteId: toRerouteId(10) },
+    { nodeId: toNodeId(4), rerouteId: toRerouteId(12) }
   ]
   test.for(nodeReroutePairs)(
     'Should ignore connections from input to same node via reroutes',

@@ -21,12 +21,12 @@ export function getSlotKey(
 ): SlotId {
   if (typeof nodeIdOrIdentifier === 'object') {
     const { nodeId, index, isInput } = nodeIdOrIdentifier
-    return slotId(nodeId, index, isInput ? 'input' : 'output')
+    return slotId(nodeId, isInput ? 'input' : 'output', index)
   }
 
   if (index === undefined || isInput === undefined) {
     throw new Error('Missing required parameters for slot key generation')
   }
 
-  return slotId(nodeIdOrIdentifier, index, isInput ? 'input' : 'output')
+  return slotId(nodeIdOrIdentifier, isInput ? 'input' : 'output', index)
 }

@@ -4,16 +4,11 @@ export type SlotId = string & { readonly __brand: 'SlotId' }
 export type SlotIndex = number
 export type SlotDirection = 'input' | 'output'
 
-const SEPARATOR = ':'
-
 export function slotId(
   nodeId: NodeId,
-  index: SlotIndex,
-  direction: SlotDirection
+  direction: SlotDirection,
+  index: SlotIndex
 ): SlotId {
-  return [
-    encodeURIComponent(String(nodeId)),
-    encodeURIComponent(direction),
-    encodeURIComponent(String(index))
-  ].join(SEPARATOR) as SlotId
+  const type = direction === 'input' ? 'in' : 'out'
+  return `${String(nodeId)}-${type}-${index}` as SlotId
 }

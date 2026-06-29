@@ -4,23 +4,20 @@ import { toNodeId } from '@/types/nodeId'
 import { slotId } from '@/types/slotId'
 
 describe('slotId', () => {
-  it('distinguishes input and output slots', () => {
-    const nodeId = toNodeId('node-1')
-
-    expect(slotId(nodeId, 0, 'input')).not.toBe(slotId(nodeId, 0, 'output'))
+  it('uses the legacy slot key format', () => {
+    expect(slotId(toNodeId('node-1'), 'input', 0)).toBe('node-1-in-0')
+    expect(slotId(toNodeId('node-1'), 'output', 0)).toBe('node-1-out-0')
   })
 
-  it('escapes node id segments that contain separators', () => {
-    expect(slotId(toNodeId('node:input'), 0, 'input')).toBe(
-      'node%3Ainput:input:0'
-    )
+  it('preserves node id text without escaping', () => {
+    expect(slotId(toNodeId('node:input'), 'input', 0)).toBe('node:input-in-0')
   })
 
   it('sorts input slots before output slots for the same node and index', () => {
     const nodeId = toNodeId('node-1')
 
     expect(
-      [slotId(nodeId, 0, 'output'), slotId(nodeId, 0, 'input')].sort()
-    ).toEqual([slotId(nodeId, 0, 'input'), slotId(nodeId, 0, 'output')])
+      [slotId(nodeId, 'output', 0), slotId(nodeId, 'input', 0)].sort()
+    ).toEqual([slotId(nodeId, 'input', 0), slotId(nodeId, 'output', 0)])
   })
 })
