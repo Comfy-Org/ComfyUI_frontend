@@ -68,6 +68,7 @@ vi.mock('@/scripts/app', () => ({
         getReroute: () => null
       },
       linkConnector: mockLinkConnector,
+      selectedItems: new Set(),
       canvas: {
         getBoundingClientRect: () => ({
           left: 0,
@@ -197,10 +198,6 @@ vi.mock('@vueuse/core', () => ({
 
 vi.mock('@/lib/litegraph/src/LLink', () => ({
   LLink: { getReroutes: () => [] }
-}))
-
-vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
-  LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
 }))
 
 vi.mock('@/utils/rafBatch', () => ({

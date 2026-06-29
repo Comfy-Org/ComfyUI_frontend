@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import { toNodeId } from '@/types/nodeId'
 
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -205,7 +206,7 @@ export class VueNodeFixture {
         }
         return false
       },
-      [await this.getId(), await target.getId(), atSlotIndex] as const
+      [await this.getId(), toNodeId(await target.getId()), atSlotIndex] as const
     )
   }
 }
