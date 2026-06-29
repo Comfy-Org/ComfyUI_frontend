@@ -254,6 +254,32 @@ describe('LoadVideoTrimPanel', () => {
     expect(playheadFrame.value).toBe(51)
   })
 
+  it('disables set start and end frame when trim handles are at defaults', () => {
+    renderPanel({
+      videoUrl: 'https://example.com/video.mp4',
+      trimEnabled: true,
+      startFrame: 0,
+      endFrame: 100,
+      playheadFrame: 0
+    })
+
+    expect(screen.getByLabelText('Set start frame')).toBeDisabled()
+    expect(screen.getByLabelText('Set end frame')).toBeDisabled()
+  })
+
+  it('disables set end frame when trim end is already at the last frame', () => {
+    renderPanel({
+      videoUrl: 'https://example.com/video.mp4',
+      trimEnabled: true,
+      startFrame: 10,
+      endFrame: 100,
+      playheadFrame: 50
+    })
+
+    expect(screen.getByLabelText('Set start frame')).not.toBeDisabled()
+    expect(screen.getByLabelText('Set end frame')).toBeDisabled()
+  })
+
   it('resets the start trim handle to the first frame', async () => {
     const user = userEvent.setup()
     const startFrame = ref(10)

@@ -105,17 +105,12 @@
       <div v-if="trimEnabled" class="col-span-full grid grid-cols-2 gap-1">
         <TooltipHint
           :content="t('loadVideoTrim.setStartFrame')"
-          :disabled="controlsDisabled"
+          :disabled="setStartFrameDisabled"
         >
           <button
             type="button"
-            :class="
-              cn(
-                WidgetInputBaseClass,
-                'flex h-8 cursor-pointer items-center justify-center not-disabled:hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50'
-              )
-            "
-            :disabled="controlsDisabled"
+            :class="WidgetInputActionButtonClass"
+            :disabled="setStartFrameDisabled"
             :aria-label="t('loadVideoTrim.setStartFrame')"
             @click="setStartFrame"
           >
@@ -124,17 +119,12 @@
         </TooltipHint>
         <TooltipHint
           :content="t('loadVideoTrim.setEndFrame')"
-          :disabled="controlsDisabled"
+          :disabled="setEndFrameDisabled"
         >
           <button
             type="button"
-            :class="
-              cn(
-                WidgetInputBaseClass,
-                'flex h-8 cursor-pointer items-center justify-center not-disabled:hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50'
-              )
-            "
-            :disabled="controlsDisabled"
+            :class="WidgetInputActionButtonClass"
+            :disabled="setEndFrameDisabled"
             :aria-label="t('loadVideoTrim.setEndFrame')"
             @click="setEndFrame"
           >
@@ -178,11 +168,10 @@ import {
   DEFAULT_VIDEO_FPS,
   useVideoFilmstrip
 } from '@/composables/video/useVideoFilmstrip'
-import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
+import { WidgetInputActionButtonClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   videoUrl,
@@ -236,6 +225,14 @@ const effectiveTotalFrames = computed(() => Math.max(totalFrames.value, 1))
 const frameMax = computed(() => Math.max(totalFrames.value - 1, 0))
 
 const controlsDisabled = computed(() => !trimEnabled.value || !videoUrl)
+
+const setStartFrameDisabled = computed(
+  () => controlsDisabled.value || startFrame.value <= 0
+)
+
+const setEndFrameDisabled = computed(
+  () => controlsDisabled.value || endFrame.value >= frameMax.value
+)
 
 const trimToggleWidget = computed(
   (): SimplifiedWidget<boolean> => ({
