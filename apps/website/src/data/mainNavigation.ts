@@ -78,6 +78,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             // { label: t('nav.appMode', locale), href: '#' },
             // { label: t('nav.agentSkills', locale), href: '#' },
             {
+              label: t('nav.launches', locale),
+              href: routes.launches,
+              badge: 'new'
+            },
+            {
               label: t('nav.docs', locale),
               href: externalLinks.docs,
               external: true
@@ -184,11 +189,6 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             // TODO: no /brand page yet
             // { label: t('nav.brand', locale), href: '#' },
-            {
-              label: t('nav.launches', locale),
-              href: routes.launches,
-              badge: 'new'
-            },
             {
               label: t('nav.blogs', locale),
               href: externalLinks.blog,

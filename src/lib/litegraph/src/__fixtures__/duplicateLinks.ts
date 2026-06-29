@@ -1,3 +1,7 @@
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 
 /**
@@ -175,8 +179,8 @@ export const duplicateLinksSubgraph: SerialisableGraph = {
         },
         name: 'Subgraph With Duplicates',
         config: {},
-        inputNode: { id: -10, bounding: [0, 100, 120, 60] },
-        outputNode: { id: -20, bounding: [500, 100, 120, 60] },
+        inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 100, 120, 60] },
+        outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [500, 100, 120, 60] },
         inputs: [],
         outputs: [],
         widgets: [],

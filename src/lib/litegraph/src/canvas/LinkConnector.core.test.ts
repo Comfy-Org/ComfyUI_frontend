@@ -17,6 +17,7 @@ import {
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot
@@ -46,7 +47,7 @@ const test = baseTest.extend<TestContext>({
       reroutes,
       floatingLinks,
       getLink: graph.getLink.bind(graph),
-      getNodeById: (id: number) => graph.getNodeById(id),
+      getNodeById: (id) => graph.getNodeById(id),
       addFloatingLink: (link: LLink) => {
         floatingLinks.set(link.id, link)
         return link
@@ -74,7 +75,7 @@ const test = baseTest.extend<TestContext>({
   createTestNode: async ({ network }, use) => {
     await use((id: number): LGraphNode => {
       const node = new LGraphNode('test')
-      node.id = id
+      node.id = toNodeId(id)
       network.add(node)
       return node
     })

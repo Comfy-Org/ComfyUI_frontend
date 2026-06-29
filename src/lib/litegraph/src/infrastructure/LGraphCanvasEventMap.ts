@@ -1,7 +1,8 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -57,6 +58,6 @@ export interface LGraphCanvasEventMap {
   /** Ghost placement mode has started or ended. */
   'litegraph:ghost-placement': {
     active: boolean
-    nodeId: NodeId
+    nodeId: SerializedNodeId
   }
 }

@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   createMockLGraphNode,
@@ -83,7 +84,7 @@ const ImageCropHarness = defineComponent({
       modelValue,
       imageEl,
       containerEl,
-      ...useImageCrop(props.nodeId as NodeId, {
+      ...useImageCrop(toNodeId(props.nodeId), {
         imageEl,
         containerEl,
         modelValue
@@ -183,7 +184,7 @@ function setupImageLayout(vm: CropVm, nw: number, nh: number) {
 
 const harnessCleanups: Array<() => void> = []
 
-async function mountHarness(nodeId: NodeId = 2 as NodeId) {
+async function mountHarness(nodeId: NodeId = toNodeId(2)) {
   const el = document.createElement('div')
   document.body.appendChild(el)
   const app = createApp(ImageCropHarness, { nodeId: Number(nodeId) })
@@ -657,7 +658,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },
       global: {
@@ -689,7 +690,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
       global: {
@@ -733,7 +734,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
       global: {
@@ -779,7 +780,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },
       global: {
