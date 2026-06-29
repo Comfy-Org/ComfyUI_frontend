@@ -46,7 +46,8 @@ const i18n = createI18n({
       g: { back: 'Back', close: 'Close' },
       subscription: {
         plansForWorkspace: 'Plans for {workspace}',
-        teamWorkspace: 'Team'
+        teamWorkspace: 'Team Workspace',
+        personalWorkspace: 'Personal Workspace'
       },
       credits: {
         topUp: {
@@ -88,12 +89,19 @@ const SuccessStub = {
 }
 
 function renderComponent(
-  props: { onClose?: () => void; reason?: SubscriptionDialogReason } = {}
+  props: {
+    onClose?: () => void
+    reason?: SubscriptionDialogReason
+    isPersonal?: boolean
+  } = {}
 ) {
   return render(SubscriptionRequiredDialogContentWorkspace, {
     props: {
       onClose: props.onClose ?? vi.fn(),
-      ...(props.reason ? { reason: props.reason } : {})
+      ...(props.reason ? { reason: props.reason } : {}),
+      ...(props.isPersonal !== undefined
+        ? { isPersonal: props.isPersonal }
+        : {})
     },
     global: {
       plugins: [
@@ -122,6 +130,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.getByTestId('pricing-table')).toBeInTheDocument()
     expect(screen.queryByTestId('add-payment-preview')).not.toBeInTheDocument()
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
+  })
+
+  it('shows the team workspace header by default', () => {
+    renderComponent()
+    expect(screen.getByText('Team Workspace')).toBeInTheDocument()
+    expect(screen.queryByText('Personal Workspace')).not.toBeInTheDocument()
+  })
+
+  it('shows the personal workspace header for a single-seat context', () => {
+    renderComponent({ isPersonal: true })
+    expect(screen.getByText('Personal Workspace')).toBeInTheDocument()
+    expect(screen.queryByText('Team Workspace')).not.toBeInTheDocument()
   })
 
   it('shows close button and hides back button on pricing step', () => {

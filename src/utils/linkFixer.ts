@@ -25,7 +25,8 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -46,9 +47,10 @@ enum IoDirection {
   OUTPUT
 }
 
-function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
+function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
   if ((graph as LGraph).getNodeById) {
-    return (graph as LGraph).getNodeById(id)
+    const parsedNodeId = parseNodeId(id)
+    return parsedNodeId ? (graph as LGraph).getNodeById(parsedNodeId) : null
   }
   graph = graph as ISerialisedGraph
   return graph.nodes.find((node: ISerialisedNode) => node.id == id)!

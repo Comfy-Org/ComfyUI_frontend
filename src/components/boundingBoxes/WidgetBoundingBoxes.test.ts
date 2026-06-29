@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@/types/boundingBoxes'
+import { toNodeId } from '@/types/nodeId'
 
 const { appState } = vi.hoisted(() => ({ appState: { node: null as unknown } }))
 
@@ -83,7 +84,7 @@ function prepCanvas(canvas: HTMLCanvasElement) {
 
 function renderWidget(modelValue: BoundingBox[]) {
   const result = render(WidgetBoundingBoxes, {
-    props: { nodeId: '1', modelValue },
+    props: { nodeId: toNodeId('1'), modelValue },
     global: { plugins: [i18n] }
   })
   const canvas = screen.getByTestId('bounding-boxes').querySelector('canvas')!

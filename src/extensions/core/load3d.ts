@@ -343,7 +343,7 @@ useExtensionService().registerExtension({
           name: inputName,
           component: Load3D,
           inputSpec: { ...inputSpecLoad3D, name: inputName },
-          options: {}
+          options: { hideInPanel: true }
         })
 
         widget.type = 'load3D'
@@ -566,7 +566,7 @@ useExtensionService().registerExtension({
           name: inputSpecPreview3D.name,
           component: Load3D,
           inputSpec: inputSpecPreview3D,
-          options: {}
+          options: { hideInPanel: true }
         })
 
         widget.type = 'load3D'

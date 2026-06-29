@@ -127,13 +127,14 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
   /** Array of video URLs to display */
   readonly imageUrls: readonly string[] // Named imageUrls for consistency with parent components
   /** Optional node ID for context-aware actions */
-  readonly nodeId?: string
+  readonly nodeId?: NodeId
 }
 
 const props = defineProps<VideoPreviewProps>()

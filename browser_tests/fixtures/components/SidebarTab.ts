@@ -93,7 +93,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly searchInput: Locator
   public readonly sidebarContent: Locator
   public readonly allTab: Locator
-  public readonly blueprintsTab: Locator
+  public readonly essentialsTab: Locator
   public readonly sortButton: Locator
   public readonly nodePreview: Locator
 
@@ -101,8 +101,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     super(page, 'node-library')
     this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
-    this.allTab = this.getTab('All')
-    this.blueprintsTab = this.getTab('Blueprints')
+    this.allTab = this.getTab('All nodes')
+    this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
   }

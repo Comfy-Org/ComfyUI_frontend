@@ -43,12 +43,6 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isFreeTier: mockIsFreeTier
-  })
-}))
-
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -65,6 +59,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    isFreeTier: mockIsFreeTier,
     isLegacyTeamPlan: mockIsLegacyTeamPlan
   })
 }))
@@ -115,10 +110,8 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalled()
     })
 
-    it('uses the unified table (no onChooseTeam) when team workspaces are enabled', () => {
+    it('does not wire onChooseTeam on the unified table (personal subscribes directly)', () => {
       mockTeamWorkspacesEnabled.value = true
-      // Unified table is workspace-type-agnostic (Jun-5 model): same path for
-      // a personal-plan or team-plan workspace.
       mockIsInPersonalWorkspace.value = true
       const { showPricingTable } = useSubscriptionDialog()
 
@@ -127,6 +120,21 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props).not.toHaveProperty('onChooseTeam')
+    })
+
+    it('sizes the unified pricing dialog via the Reka contentClass, not the ignored PrimeVue style', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
+      // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
+      // `style` width is silently ignored and collapses the wide table to the
+      // default md (576px) frame.
+      expect(dialogComponentProps).toHaveProperty('contentClass')
+      expect(dialogComponentProps).not.toHaveProperty('style')
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
@@ -189,6 +197,43 @@ describe('useSubscriptionDialog', () => {
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props.initialPlanMode).toBe('team')
+    })
+  })
+
+  describe('show', () => {
+    it('opens the free-tier dialog for a free-tier personal user', () => {
+      mockIsFreeTier.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'free-tier-info' })
+      )
+    })
+
+    it('falls back to the pricing table for a non-free-tier user', () => {
+      mockIsFreeTier.value = false
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'subscription-required' })
+      )
+    })
+
+    it('falls back to the pricing table for a free-tier team workspace', () => {
+      mockIsFreeTier.value = true
+      mockIsInPersonalWorkspace.value = false
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'subscription-required' })
+      )
     })
   })
 
