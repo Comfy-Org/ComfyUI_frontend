@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
+
 defineProps<{ title: string; price: string }>()
 </script>
 <template>
-  <div class="not-last:mb-4">
-    <div class="text-muted-foreground" v-text="title" />
+  <li class="col-span-2 grid grid-cols-subgrid items-center text-xs/4.5">
+    <span class="line-clamp-2 min-w-0 wrap-break-word" v-text="title" />
     <span
-      class="mt-2 flex h-5 max-w-max items-center rounded-full bg-component-node-widget-background p-2 py-3"
+      class="inline-flex shrink-0 items-center gap-1 justify-self-end rounded-full bg-current/15 px-1.5 py-1 text-[11px] leading-none font-medium"
     >
-      <i class="mr-1 icon-[lucide--component] h-4 bg-amber-400" />
+      <i :class="cn(CREDITS_ICON, 'size-3 shrink-0 bg-current')" />
       {{ price }}
     </span>
-  </div>
+  </li>
 </template>
