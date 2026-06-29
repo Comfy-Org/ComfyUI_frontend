@@ -88,6 +88,12 @@ function isVideoTrack(data: Uint8Array, trak: BoxRange): boolean {
   return readBoxType(data, handler.start + 8) === 'vide'
 }
 
+function readUint64(data: Uint8Array, offset: number): number {
+  if (offset + 8 > data.length) return 0
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
+  return Number(view.getBigUint64(offset))
+}
+
 function frameRateFromTrack(
   data: Uint8Array,
   trak: BoxRange,
@@ -97,8 +103,18 @@ function frameRateFromTrack(
   const sampleSizes = findBoxDeep(data, trak, 'stsz')
   if (!mediaHeader || !sampleSizes) return undefined
 
-  const timescale = readUint32(data, mediaHeader.start + 12)
-  const mediaDurationTicks = readUint32(data, mediaHeader.start + 16)
+  const version = data[mediaHeader.start]
+  let timescale: number
+  let mediaDurationTicks: number
+
+  if (version === 1) {
+    timescale = readUint32(data, mediaHeader.start + 20)
+    mediaDurationTicks = readUint64(data, mediaHeader.start + 24)
+  } else {
+    timescale = readUint32(data, mediaHeader.start + 12)
+    mediaDurationTicks = readUint32(data, mediaHeader.start + 16)
+  }
+
   const sampleCount = readUint32(data, sampleSizes.start + 8)
 
   if (timescale <= 0 || sampleCount <= 0) return undefined
@@ -143,7 +159,7 @@ async function fetchRange(
     const response = await fetch(url, {
       headers: { Range: `bytes=${start}-${end}` }
     })
-    if (!response.ok && response.status !== 206) return undefined
+    if (response.status !== 206) return undefined
     return await response.arrayBuffer()
   } catch {
     return undefined
@@ -152,22 +168,23 @@ async function fetchRange(
 
 export async function probeVideoFrameRate(
   url: string,
-  durationSeconds: number
+  durationSeconds: number,
+  byteSize?: number
 ): Promise<number | undefined> {
   if (durationSeconds <= 0) return undefined
 
-  const byteSize = await fetchHttpResourceByteSize(url)
+  const resolvedByteSize = byteSize ?? (await fetchHttpResourceByteSize(url))
   const chunks: Uint8Array[] = []
 
   const leading = await fetchRange(url, 0, PROBE_CHUNK_BYTES - 1)
   if (leading) chunks.push(new Uint8Array(leading))
 
-  if (byteSize != null && byteSize > PROBE_CHUNK_BYTES) {
-    const trailingStart = Math.max(0, byteSize - PROBE_CHUNK_BYTES)
+  if (resolvedByteSize != null && resolvedByteSize > PROBE_CHUNK_BYTES) {
+    const trailingStart = Math.max(0, resolvedByteSize - PROBE_CHUNK_BYTES)
     const trailing = await fetchRange(
       url,
       trailingStart,
-      Math.max(trailingStart, byteSize - 1)
+      Math.max(trailingStart, resolvedByteSize - 1)
     )
     if (trailing) chunks.push(new Uint8Array(trailing))
   }

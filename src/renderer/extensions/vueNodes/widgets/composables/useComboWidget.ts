@@ -153,6 +153,8 @@ function resolveCloudInputDefault(
   nodeType: string | undefined,
   specDefault: string | undefined
 ): string | undefined {
+  if (nodeType === 'LoadVideo') return undefined
+
   const assets = getCloudInputAssets(nodeType)
   if (specDefault != null) {
     const matchingAsset =
@@ -160,8 +162,6 @@ function resolveCloudInputDefault(
       assets.find((asset) => asset.name === specDefault)
     if (matchingAsset) return getCloudInputAssetValue(matchingAsset)
   }
-
-  if (nodeType === 'LoadVideo') return undefined
 
   return assets[0] ? getCloudInputAssetValue(assets[0]) : undefined
 }

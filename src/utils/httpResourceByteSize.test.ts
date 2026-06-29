@@ -49,4 +49,19 @@ describe('fetchHttpResourceByteSize', () => {
       fetchHttpResourceByteSize('https://example.com/video.mp4')
     ).resolves.toBeUndefined()
   })
+
+  it('uses Content-Length from a full-body Range fallback response', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 200,
+          headers: { 'Content-Length': '5242880' }
+        })
+      )
+
+    await expect(
+      fetchHttpResourceByteSize('https://example.com/video.mp4')
+    ).resolves.toBe(5242880)
+  })
 })

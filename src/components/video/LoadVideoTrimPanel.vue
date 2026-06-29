@@ -17,10 +17,8 @@
     <div
       v-else
       data-testid="video-preview-container"
-      class="relative w-full"
+      class="group relative w-full"
       :style="videoAspectRatioStyle"
-      @mouseenter="isVideoHovered = true"
-      @mouseleave="isVideoHovered = false"
     >
       <div
         class="relative size-full overflow-hidden rounded-lg bg-node-component-surface"
@@ -49,14 +47,16 @@
           </p>
         </div>
       </div>
-      <TooltipHint
-        v-if="isVideoHovered && !filmstripLoading"
-        :content="t('g.remove')"
-      >
+      <TooltipHint v-if="!filmstripLoading" :content="t('g.remove')">
         <button
           type="button"
           data-testid="video-remove-button"
-          :class="removeButtonClass"
+          :class="
+            cn(
+              removeButtonClass,
+              'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100'
+            )
+          "
           :aria-label="t('g.remove')"
           @pointerdown.stop
           @click.stop="emit('remove')"
@@ -164,6 +164,7 @@ import Loader from '@/components/loader/Loader.vue'
 import MediaUploadEmpty from '@/components/video/MediaUploadEmpty.vue'
 import VideoFilmstripTrim from '@/components/video/VideoFilmstripTrim.vue'
 import TooltipHint from '@/components/ui/tooltip/TooltipHint.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   DEFAULT_VIDEO_FPS,
   useVideoFilmstrip
@@ -202,7 +203,6 @@ const playheadFrame = defineModel<number>('playheadFrame', { default: 0 })
 
 const { t } = useI18n()
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
-const isVideoHovered = ref(false)
 const isPlaying = ref(false)
 const isSeeking = ref(false)
 const videoIntrinsicSize = ref<{ width: number; height: number } | null>(null)
@@ -357,7 +357,11 @@ async function handlePlaybackChange(playing: boolean) {
       : clamp(playheadFrame.value, 0, frameMax.value)
     await seekPreviewToFrame(startAt)
     if (!isPlaying.value) return
-    void video.play()
+    try {
+      await video.play()
+    } catch {
+      isPlaying.value = false
+    }
   } else {
     video.pause()
   }
@@ -441,11 +445,18 @@ function handleVideoMetadata() {
   void seekPreviewToFrame(playheadFrame.value)
 }
 
+function timeToFrame(time: number) {
+  if (duration.value > 0 && frameMax.value > 0) {
+    return Math.round((time / duration.value) * frameMax.value)
+  }
+  return Math.round(time * (fps.value || DEFAULT_VIDEO_FPS))
+}
+
 function handleTimeUpdate() {
   const video = videoRef.value
   if (!video || !isPlaying.value || isSeeking.value) return
 
-  const frame = Math.round(video.currentTime * (fps.value || DEFAULT_VIDEO_FPS))
+  const frame = timeToFrame(video.currentTime)
   const minFrame = trimEnabled.value ? startFrame.value : 0
   const maxFrame = trimEnabled.value ? endFrame.value : frameMax.value
   playheadFrame.value = clamp(frame, minFrame, maxFrame)
@@ -469,14 +480,22 @@ function setEndFrame() {
 }
 
 function formatDuration(seconds: number) {
-  if (!seconds) return '0s'
-  return `${Math.round(seconds)}s`
+  if (!seconds) return t('loadVideoTrim.durationZero')
+  return t('loadVideoTrim.durationSeconds', { count: Math.round(seconds) })
 }
 
 function formatFileSize(bytes?: number) {
-  if (bytes == null) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes == null) return t('loadVideoTrim.fileSizeUnknown')
+  if (bytes < 1024) {
+    return t('loadVideoTrim.fileSizeBytes', { count: bytes })
+  }
+  if (bytes < 1024 * 1024) {
+    return t('loadVideoTrim.fileSizeKilobytes', {
+      count: Math.round(bytes / 1024)
+    })
+  }
+  return t('loadVideoTrim.fileSizeMegabytes', {
+    count: Number((bytes / (1024 * 1024)).toFixed(1))
+  })
 }
 </script>

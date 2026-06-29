@@ -21,6 +21,14 @@ function syncSubWidgets(
   endFrameWidget.value = parent.value.endFrame
 }
 
+/**
+ * Adds the LoadVideo trim widget surface and linked sub-widgets.
+ *
+ * Extension migration: LoadVideo nodes now expose `trim` (videotrim),
+ * `trim_enabled`, `start_frame`, and `end_frame` widgets. Code that reads
+ * `node.widgets` by index or name should tolerate the new entries and prefer
+ * lookup by widget name over positional access.
+ */
 export function useVideoTrimWidget(node: LGraphNode) {
   const defaultValue: VideoTrimValue = {
     trimEnabled: false,

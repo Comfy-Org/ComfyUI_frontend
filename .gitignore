@@ -99,3 +99,4 @@ vitest.config.*.timestamp*
 .amp
 .vercel
 .env*
+!.env_example

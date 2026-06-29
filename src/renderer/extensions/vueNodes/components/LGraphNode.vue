@@ -489,15 +489,16 @@ function handleLayoutChange(change: LayoutChange) {
     return
   if (layoutStore.isResizingVueNodes.value) return
   if (isCollapsed.value) return
-  if (loadVideoShrinkWrapBody.value) return
 
   const el = nodeContainerRef.value
   if (!el) return
 
   const newSize = size.value
-  const fullHeight = newSize.height + LiteGraph.NODE_TITLE_HEIGHT
   el.style.setProperty('--node-width', `${newSize.width}px`)
-  el.style.setProperty('--node-height', `${fullHeight}px`)
+  if (!loadVideoShrinkWrapBody.value) {
+    const fullHeight = newSize.height + LiteGraph.NODE_TITLE_HEIGHT
+    el.style.setProperty('--node-height', `${fullHeight}px`)
+  }
 }
 
 let unsubscribeLayoutChange: (() => void) | null = null

@@ -61,6 +61,7 @@ defineExpose({ focus })
   >
     <button
       ref="buttonRef"
+      :disabled="disabled"
       :class="
         cn(
           theButtonStyle,

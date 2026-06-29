@@ -37,10 +37,13 @@ export async function fetchHttpResourceByteSize(
     const rangeResponse = await fetch(url, {
       headers: { Range: 'bytes=0-0' }
     })
-    if (!rangeResponse.ok && rangeResponse.status !== 206) {
-      return undefined
+    if (rangeResponse.status === 206) {
+      return parseContentRangeTotal(rangeResponse.headers.get('Content-Range'))
     }
-    return parseContentRangeTotal(rangeResponse.headers.get('Content-Range'))
+    if (rangeResponse.ok) {
+      return parseContentLength(rangeResponse.headers.get('Content-Length'))
+    }
+    return undefined
   } catch {
     return undefined
   }

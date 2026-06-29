@@ -52,9 +52,13 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
     if (isInteractionDisabled.value) return
 
     if (onDragDrop && event) {
-      void onDragDrop(event)
+      void Promise.resolve(onDragDrop(event)).catch(() => {})
     } else {
-      const accepted = Array.from(files ?? []).filter(matchesAccept)
+      const droppedFiles =
+        files && files.length > 0
+          ? files
+          : Array.from(event?.dataTransfer?.files ?? [])
+      const accepted = droppedFiles.filter(matchesAccept)
       if (accepted.length) emit('upload', accepted)
     }
     canAcceptDrop.value = false
@@ -126,9 +130,7 @@ function handleBrowseClick() {
         class="icon-[lucide--upload] size-8 text-muted-foreground"
         aria-hidden="true"
       />
-      <p
-        class="max-w-48 text-center text-sm/snug text-muted-foreground"
-      >
+      <p class="max-w-48 text-center text-sm/snug text-muted-foreground">
         {{ t('loadVideoTrim.dragAndDropVideos') }}
       </p>
       <Button

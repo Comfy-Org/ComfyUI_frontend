@@ -120,10 +120,15 @@ export function useVideoFilmstrip(
       width.value = video.videoWidth
       height.value = video.videoHeight
 
-      const [detectedFrameRate, detectedFileSize] = await Promise.all([
-        probeVideoFrameRate(url, videoDuration),
-        fetchHttpResourceByteSize(url)
-      ])
+      const detectedFileSize = await fetchHttpResourceByteSize(url)
+
+      if (isLoadStale(loadId, url)) return
+
+      const detectedFrameRate = await probeVideoFrameRate(
+        url,
+        videoDuration,
+        detectedFileSize
+      )
 
       if (isLoadStale(loadId, url)) return
 

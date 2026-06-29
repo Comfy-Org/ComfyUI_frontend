@@ -1,9 +1,69 @@
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { nextTick, ref, watch } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import MediaUploadEmpty from './MediaUploadEmpty.vue'
+
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+
+  function useDropZone(
+    target: { value: HTMLElement | null | undefined },
+    options?:
+      | {
+          onDrop?: (files: File[] | null, event: DragEvent) => void
+          onOver?: (files: File[] | null, event: DragEvent) => void
+          onLeave?: (files: File[] | null, event: DragEvent) => void
+        }
+      | ((files: File[] | null, event: DragEvent) => void)
+  ) {
+    const isOverDropZone = ref(false)
+    const resolved =
+      typeof options === 'function' ? { onDrop: options } : options
+
+    watch(
+      () => target.value,
+      (element, _, onCleanup) => {
+        if (!element || !resolved) return
+        const callbacks = resolved
+
+        function onDragOver(event: DragEvent) {
+          event.preventDefault()
+          isOverDropZone.value = true
+          callbacks.onOver?.(Array.from(event.dataTransfer?.files ?? []), event)
+        }
+
+        function onDrop(event: DragEvent) {
+          event.preventDefault()
+          isOverDropZone.value = false
+          callbacks.onDrop?.(Array.from(event.dataTransfer?.files ?? []), event)
+        }
+
+        function onDragLeave(event: DragEvent) {
+          isOverDropZone.value = false
+          callbacks.onLeave?.(null, event)
+        }
+
+        element.addEventListener('dragover', onDragOver)
+        element.addEventListener('drop', onDrop)
+        element.addEventListener('dragleave', onDragLeave)
+        onCleanup(() => {
+          element.removeEventListener('dragover', onDragOver)
+          element.removeEventListener('drop', onDrop)
+          element.removeEventListener('dragleave', onDragLeave)
+        })
+      },
+      { immediate: true }
+    )
+
+    return { isOverDropZone }
+  }
+
+  return { ...actual, useDropZone }
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -22,8 +82,24 @@ const i18n = createI18n({
   }
 })
 
-function renderEmpty(props: Record<string, unknown> = {}) {
-  return render(MediaUploadEmpty, {
+function dragPayload(files: File[] = []) {
+  return {
+    dataTransfer: {
+      files,
+      types: ['Files'],
+      items: files.map((file) => ({
+        kind: 'file',
+        type: file.type,
+        getAsFile: () => file
+      }))
+    }
+  }
+}
+
+async function renderEmpty(
+  props: Partial<ComponentProps<typeof MediaUploadEmpty>> = {}
+) {
+  const result = render(MediaUploadEmpty, {
     props: {
       accept: 'video/*',
       ...props
@@ -32,11 +108,21 @@ function renderEmpty(props: Record<string, unknown> = {}) {
       plugins: [i18n]
     }
   })
+  await nextTick()
+  return result
+}
+
+async function simulateDrop(
+  target: HTMLElement,
+  payload: ReturnType<typeof dragPayload>
+) {
+  await fireEvent.dragOver(target, payload)
+  await fireEvent.drop(target, payload)
 }
 
 describe('MediaUploadEmpty', () => {
-  it('renders drag-drop prompt and upload button', () => {
-    renderEmpty()
+  it('renders drag-drop prompt and upload button', async () => {
+    await renderEmpty()
 
     expect(screen.getByText('Drag and drop videos here to upload')).toBeTruthy()
     expect(screen.getByTestId('media-upload-browse-button')).toBeTruthy()
@@ -45,7 +131,7 @@ describe('MediaUploadEmpty', () => {
 
   it('emits browse when upload button is clicked', async () => {
     const user = userEvent.setup()
-    const { emitted } = renderEmpty()
+    const { emitted } = await renderEmpty()
 
     await user.click(screen.getByTestId('media-upload-browse-button'))
 
@@ -53,22 +139,11 @@ describe('MediaUploadEmpty', () => {
   })
 
   it('emits upload with video files on drop', async () => {
-    const { emitted } = renderEmpty()
+    const { emitted } = await renderEmpty()
     const zone = screen.getByTestId('media-upload-empty')
     const file = new File(['video'], 'clip.mp4', { type: 'video/mp4' })
 
-    await fireEvent.drop(zone, {
-      dataTransfer: {
-        files: [file],
-        items: [
-          {
-            kind: 'file',
-            type: 'video/mp4',
-            getAsFile: () => file
-          }
-        ]
-      }
-    })
+    await simulateDrop(zone, dragPayload([file]))
 
     expect(emitted().upload).toHaveLength(1)
     expect((emitted().upload[0] as [File[]])[0][0].name).toBe('clip.mp4')
@@ -77,15 +152,10 @@ describe('MediaUploadEmpty', () => {
   it('delegates drag events to provided handlers', async () => {
     const onDragOver = vi.fn(() => true)
     const onDragDrop = vi.fn(() => true)
-    renderEmpty({ onDragOver, onDragDrop })
+    await renderEmpty({ onDragOver, onDragDrop })
     const zone = screen.getByTestId('media-upload-empty')
 
-    await fireEvent.dragOver(zone, {
-      dataTransfer: { items: [{ kind: 'file', type: 'video/mp4' }] }
-    })
-    await fireEvent.drop(zone, {
-      dataTransfer: { files: [] }
-    })
+    await simulateDrop(zone, dragPayload([]))
 
     expect(onDragOver).toHaveBeenCalled()
     expect(onDragDrop).toHaveBeenCalled()
@@ -93,15 +163,15 @@ describe('MediaUploadEmpty', () => {
 
   it('does not emit browse when disabled', async () => {
     const user = userEvent.setup()
-    const { emitted } = renderEmpty({ disabled: true })
+    const { emitted } = await renderEmpty({ disabled: true })
 
     await user.click(screen.getByTestId('media-upload-browse-button'))
 
     expect(emitted().browse).toBeUndefined()
   })
 
-  it('shows uploading spinner and hides upload controls while processing', () => {
-    renderEmpty({
+  it('shows uploading spinner and hides upload controls while processing', async () => {
+    await renderEmpty({
       uploading: true
     })
 
@@ -110,8 +180,8 @@ describe('MediaUploadEmpty', () => {
     expect(screen.queryByTestId('media-upload-browse-button')).toBeNull()
   })
 
-  it('does not emit browse while uploading', () => {
-    renderEmpty({ uploading: true })
+  it('does not emit browse while uploading', async () => {
+    await renderEmpty({ uploading: true })
 
     expect(screen.queryByTestId('media-upload-browse-button')).toBeNull()
   })

@@ -552,7 +552,9 @@
   );
   --color-component-node-widget-promoted: var(--component-node-widget-promoted);
   --color-component-node-widget-advanced: var(--component-node-widget-advanced);
-  --color-video-trim-selection-background: var(--video-trim-selection-background);
+  --color-video-trim-selection-background: var(
+    --video-trim-selection-background
+  );
   --color-video-trim-playhead-background: var(--video-trim-playhead-background);
 
   /* Semantic tokens */

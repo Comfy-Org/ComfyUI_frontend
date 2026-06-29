@@ -320,8 +320,7 @@ describe('WidgetSelectDropdown', () => {
         name: 'ltx2-audio_to_video.mov'
       })
 
-      // eslint-disable-next-line testing-library/no-node-access -- disabled styling is on the wrapper
-      expect(button.parentElement).not.toHaveClass('opacity-50')
+      expect(button).not.toBeDisabled()
     })
 
     it('disables while the node is uploading', () => {
@@ -331,8 +330,7 @@ describe('WidgetSelectDropdown', () => {
         name: 'ltx2-audio_to_video.mov'
       })
 
-      // eslint-disable-next-line testing-library/no-node-access -- disabled styling is on the wrapper
-      expect(button.parentElement).toHaveClass('opacity-50')
+      expect(button).toBeDisabled()
     })
   })
 })

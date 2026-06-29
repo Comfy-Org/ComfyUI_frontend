@@ -441,6 +441,7 @@ export function useProcessedWidgets(
     if (!node) return false
 
     void nodeOutputStore.nodeOutputs
+    void nodeOutputStore.nodePreviewImages
     const graphId = canvasStore.canvas?.graph?.rootGraph.id
     if (graphId) {
       void widgetValueStore.getWidget(widgetId(graphId, nodeData.id, 'file'))

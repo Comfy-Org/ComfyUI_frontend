@@ -44,6 +44,12 @@ const i18n = createI18n({
         duration: 'Duration',
         frames: 'Number of Frames',
         fileSize: 'File Size',
+        durationZero: '0s',
+        durationSeconds: '{count}s',
+        fileSizeUnknown: '—',
+        fileSizeBytes: '{count} B',
+        fileSizeKilobytes: '{count} KB',
+        fileSizeMegabytes: '{count} MB',
         resolution: '{width} × {height}',
         dragAndDropVideos: 'Drag and drop videos here to upload',
         uploadFromDevice: 'Upload from device',
@@ -120,20 +126,30 @@ describe('LoadVideoTrimPanel', () => {
     expect(screen.getByText('Uploading…')).toBeTruthy()
   })
 
-  it('shows remove button on hover and emits remove when clicked', async () => {
+  it('shows remove button and emits remove when clicked', async () => {
     const user = userEvent.setup()
     const { emitted } = renderPanel({
       videoUrl: 'https://example.com/video.mp4'
     })
 
-    expect(screen.queryByTestId('video-remove-button')).toBeNull()
-
-    await user.hover(screen.getByTestId('video-preview-container'))
     const removeButton = screen.getByTestId('video-remove-button')
     expect(removeButton).toBeTruthy()
     expect(removeButton).toHaveAttribute('aria-label', 'Remove')
 
     await user.click(removeButton)
+    expect(emitted().remove).toHaveLength(1)
+  })
+
+  it('activates remove from keyboard', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel({
+      videoUrl: 'https://example.com/video.mp4'
+    })
+
+    const removeButton = screen.getByTestId('video-remove-button')
+    removeButton.focus()
+    await user.keyboard('{Enter}')
+
     expect(emitted().remove).toHaveLength(1)
   })
 

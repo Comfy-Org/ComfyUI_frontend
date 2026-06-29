@@ -4479,7 +4479,13 @@
     "loadingVideo": "Loading video preview",
     "loadingFilmstrip": "Loading filmstrip…",
     "adjustStartFrame": "Adjust start frame",
-    "adjustEndFrame": "Adjust end frame"
+    "adjustEndFrame": "Adjust end frame",
+    "durationZero": "0s",
+    "durationSeconds": "{count}s",
+    "fileSizeUnknown": "—",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB"
   },
   "execution": {
     "generating": "Generating…",
