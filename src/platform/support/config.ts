@@ -52,8 +52,10 @@ export function buildFeedbackHiddenFields(
   source: FeedbackSource,
   extraTags: Record<string, string> = {}
 ): string {
+  // Typeform's `data-tf-hidden` parser (transformRecord) splits on `,` and
+  // unescapes `\,`, so a comma in a value is the only delimiter that needs escaping.
   return Object.entries({ ...getFeedbackTags(source), ...extraTags })
-    .map(([key, value]) => `${key}=${value}`)
+    .map(([key, value]) => `${key}=${value.replace(/,/g, '\\,')}`)
     .join(',')
 }
 

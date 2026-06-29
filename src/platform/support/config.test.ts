@@ -84,4 +84,11 @@ describe('buildFeedbackHiddenFields', () => {
       'distribution=ccloud,source=topbar,email=user@example.com'
     )
   })
+
+  it('escapes commas in values so they survive the data-tf-hidden parser', async () => {
+    distribution.isCloud = true
+    expect(await build('topbar', { email: 'a,b@example.com' })).toBe(
+      'distribution=ccloud,source=topbar,email=a\\,b@example.com'
+    )
+  })
 })
