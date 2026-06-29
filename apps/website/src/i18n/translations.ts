@@ -2117,9 +2117,8 @@ const translations = {
     'zh-CN': '现已正式发布了吗？'
   },
   'mcp.faq.8.a': {
-    en: "Comfy Cloud MCP is in closed beta, invite only. Join the waitlist if you don't have access yet.",
-    'zh-CN':
-      'Comfy Cloud MCP 目前处于封闭测试阶段，仅限受邀使用。如果你还没有访问权限，请加入候补名单。'
+    en: 'Comfy Cloud MCP is in open beta and available to everyone.',
+    'zh-CN': 'Comfy Cloud MCP 目前处于公开测试阶段，所有人均可使用。'
   },
 
   // SiteNav
