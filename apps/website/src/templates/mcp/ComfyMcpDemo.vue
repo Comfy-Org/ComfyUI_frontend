@@ -51,6 +51,9 @@ const displayedCards = computed(() =>
   cards
     .slice(0, visibleCount.value)
     .map((card) => ({ ...card, action: t(card.actionKey, locale) }))
+    // Newest card first — it slides in right below the prompt box and pushes
+    // the rest down.
+    .reverse()
 )
 
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -110,7 +113,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-6 max-lg:h-[50vh]">
     <!-- Prompt panel -->
     <div
       class="rounded-5xl flex flex-col justify-between gap-8 overflow-hidden bg-white/4 p-8"
@@ -136,8 +139,12 @@ onUnmounted(() => {
     </div>
 
     <!-- Cards accumulate — each slides in from the right after its prompt cycle -->
-    <div class="flex flex-col gap-2.5 overflow-hidden">
-      <TransitionGroup name="card-slide">
+    <div class="relative overflow-hidden max-lg:min-h-0 max-lg:flex-1">
+      <TransitionGroup
+        name="card-slide"
+        tag="div"
+        class="flex flex-col gap-2.5 max-lg:absolute max-lg:inset-x-0 max-lg:top-0"
+      >
         <div
           v-for="(card, i) in displayedCards"
           :key="card.file"
@@ -178,6 +185,11 @@ onUnmounted(() => {
           />
         </div>
       </TransitionGroup>
+
+      <!-- Bottom fade so accumulating cards dissolve into the page background -->
+      <div
+        class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-linear-to-t from-primary-comfy-ink to-transparent lg:hidden"
+      />
     </div>
   </div>
 </template>
