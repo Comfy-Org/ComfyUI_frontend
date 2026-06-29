@@ -163,5 +163,65 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN':
         'Standard 和 Creator 上，单个工作流的最长运行时长为 <strong>30 分钟</strong>；Pro 上提升至 <strong>1 小时</strong>。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 <strong>100 个工作流</strong>，并在 Standard / Creator / Pro 上通过 API 分别并发运行 <strong>1 / 3 / 5</strong> 个工作流。在团队计划中，此上限提升至 50，与团队成员上限一致。需要更高的 API 速率限制？请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
     }
+  },
+  {
+    id: 'partner-nodes-cost',
+    question: {
+      en: 'What are Partner Nodes, and do they cost extra?',
+      'zh-CN': '什么是合作伙伴节点？它们会额外收费吗？'
+    },
+    answer: {
+      en: 'Partner Nodes let you run proprietary models (like Nano Banana Pro) directly inside your workflow. They draw from the same credit pool as your subscription (no separate bill); how much each call costs depends on the model and parameters you set. These credits work across both Comfy Cloud and Comfy Desktop. <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Read more about Partner Nodes</a>.',
+      'zh-CN':
+        '合作伙伴节点让您直接在工作流中运行专有模型（如 Nano Banana Pro）。它们从与您订阅相同的积分池中扣费（不会单独出账单）；每次调用的费用取决于模型以及您设置的参数。这些积分在 Comfy Cloud 和 Comfy 桌面版上均可使用。<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">了解更多关于合作伙伴节点的信息</a>。'
+    }
+  },
+  {
+    id: 'run-workflows-via-api',
+    question: {
+      en: 'Can I run workflows via API?',
+      'zh-CN': '我可以通过 API 运行工作流吗？'
+    },
+    answer: {
+      en: 'Yes. Run Comfy workflows programmatically via API. Concurrency limits scale with your plan: 1 / 3 / 5 on Standard / Creator / Pro, or one per member on Team. It\'s built for integrating ComfyUI into your apps, automating batch jobs, or running production pipelines. For higher rate limits, contact <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
+      'zh-CN':
+        '可以。通过 API 以编程方式运行 Comfy 工作流。并发上限随您的计划扩展：Standard / Creator / Pro 分别为 1 / 3 / 5，团队计划则为每位成员一个。它专为将 ComfyUI 集成到您的应用、自动化批处理任务或运行生产管线而打造。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
+    }
+  },
+  {
+    id: 'change-cancel-plan-refunds',
+    question: {
+      en: 'Can I change or cancel my plan? Do you offer refunds?',
+      'zh-CN': '我可以更改或取消我的计划吗？你们提供退款吗？'
+    },
+    answer: {
+      en: "You can cancel any time. Cancelling stops all future payments immediately, and your plan stays active until the end of the period you've already paid for. For refunds, submit a support ticket. These are reviewed by our team case by case.",
+      'zh-CN':
+        '您可以随时取消。取消后会立即停止所有后续付款，而您的计划在已付费周期结束前仍保持有效。如需退款，请提交支持工单。我们的团队会逐一进行审核。'
+    }
+  },
+  {
+    id: 'find-invoices-tax-id',
+    question: {
+      en: "Where can I find my invoices or add my company's tax ID?",
+      'zh-CN': '我在哪里可以找到发票或添加公司的税号？'
+    },
+    answer: {
+      en: "You can manage all billing details directly through your Stripe portal. Go to Settings → Plans & Credits → Invoice History to open it. From there, you can view and download invoices, update your billing information, and add your company's tax ID.",
+      'zh-CN':
+        '您可以直接通过 Stripe 门户管理所有账单信息。前往 设置 → 计划与积分 → 发票历史 即可打开。在那里，您可以查看和下载发票、更新账单信息，并添加公司的税号。'
+    }
+  },
+  {
+    id: 'running-comfy-at-scale',
+    question: {
+      en: "What if I'm running Comfy at scale?",
+      'zh-CN': '如果我在大规模运行 Comfy 怎么办？'
+    },
+    answer: {
+      en: 'For teams running Comfy in production and at scale, Enterprise adds higher API rate limits, advanced security, and dedicated support. <a href="https://comfy.org/cloud/enterprise" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Learn more about Enterprise</a> or reach out at <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
+      'zh-CN':
+        '对于在生产环境中大规模运行 Comfy 的团队，企业版提供更高的 API 速率限制、高级安全性和专属支持。<a href="https://comfy.org/cloud/enterprise" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">了解更多关于企业版的信息</a>，或通过 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a> 与我们联系。'
+    }
   }
 ] as const
