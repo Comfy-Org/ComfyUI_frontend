@@ -20,6 +20,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0008](0008-entity-component-system.md)                     | Entity Component System                     | Proposed | 2026-03-23 |
 | [0009](0009-subgraph-promoted-widgets-use-linked-inputs.md) | Subgraph Promoted Widgets Use Linked Inputs | Proposed | 2026-05-05 |
 | [0010](0010-remove-nx-orchestration.md)                     | Remove Nx Orchestration                     | Accepted | 2026-05-19 |
+| [0011](0011-adopt-fallow.md)                                | Adopt Fallow                                | Proposed | 2026-06-29 |
 
 ## Creating a New ADR
 

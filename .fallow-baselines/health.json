@@ -1,0 +1,3234 @@
+{
+  "finding_counts": {
+    ".storybook/main.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/desktop-ui/.storybook/main.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/desktop-ui/src/components/bottomPanel/tabs/terminal/BaseTerminal.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/desktop-ui/src/components/install/InstallLocationPicker.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/desktop-ui/src/components/maintenance/TaskListPanel.vue": {
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "apps/desktop-ui/src/views/InstallView.stories.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/desktop-ui/src/views/InstallView.vue": {
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "apps/desktop-ui/src/views/MaintenanceView.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/desktop-ui/src/views/ServerStartView.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/scripts/generate-models.ts": {
+      "complexity_critical": {
+        "count": 4
+      },
+      "crap_critical": {
+        "count": 4
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/website/src/components/blocks/FAQSplit01.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/blocks/HeroLivestream01.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/blocks/HeroSplit01.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/blocks/StepsGrid01.vue": {
+      "crap_high": {
+        "count": 3
+      }
+    },
+    "apps/website/src/components/careers/RolesSection.vue": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/website/src/components/cloud-nodes/PackBanner.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/cloud-nodes/PackDetail.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/ContentSection.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/FAQSection.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/HeaderMain/HeaderMainDesktop.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/HeaderMain/HeaderMainMobile.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/NodeBadge.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/PlayPauseButton.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/SocialProofBarSection.vue": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/VideoPlayer.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/common/WireNodeLayout.vue": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/customers/DetailHeroSection.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/gallery/GalleryDetailModal.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/gallery/GallerySection.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/home/GetStartedSection.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/home/ProductShowcaseSection.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/home/UseCaseSection.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/learning/TutorialsSection.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/legal/LegalContentSection.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/models/ModelCreationsSection.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/models/ModelHeroSection.vue": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/pricing/PriceSection.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/pricing/PricingPlanFeatureList.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/product/api/HeroSection.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/product/enterprise/OrchestrationSection.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/product/shared/AIModelsSection.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/product/shared/FeatureShowcaseSection.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/product/shared/ReasonSection.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/components/ui/sheet/SheetContent.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/composables/scrollLock.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/composables/useCurrentPath.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/composables/useFrameScrub.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/composables/useHeroAnimation.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/composables/useHeroLogo.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/composables/useParallax.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/composables/usePinScrub.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/config/contentSections.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "apps/website/src/scripts/smoothScroll.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "apps/website/src/scripts/snakeGame.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/utils/ashby.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "apps/website/src/utils/cloudNodes.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/helpers/AssetHelper.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/helpers/DragDropHelper.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/helpers/SubgraphHelper.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "browser_tests/fixtures/utils/promotedWidgets.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/containAudit.spec.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/graph.spec.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/sidebar/workflows.spec.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "browser_tests/tests/workflowPersistence.spec.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "browser_tests/utils/backupUtils.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/design-system/src/css/comfyIconSet.js": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/design-system/src/css/lucideStrokePlugin.js": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "scripts/bundle-categories.js": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/check-unused-i18n-keys.ts": {
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "scripts/cicd/extract-playwright-counts.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/cicd/resolve-comfyui-release.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "scripts/collect-i18n-node-defs.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/coverage-slack-notify.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/diff-i18n.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "scripts/perf-report.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/size-collect.js": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/size-report.js": {
+      "crap_critical": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/LiteGraphCanvasSplitterOverlay.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/TopMenuSection.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/actionbar/ComfyActionbar.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/breadcrumb/SubgraphBreadcrumbItem.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/builder/AppBuilder.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/builder/AppModeWidgetList.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/common/DropdownItem.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/common/FormItem.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/common/LazyImage.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/common/TreeExplorerV2.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/common/TreeExplorerV2Node.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/common/WaveAudioPlayer.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/common/WorkflowActionsList.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/curve/curveUtils.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/custom/widget/WorkflowTemplateSelectorDialog.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/GlobalDialog.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/content/ConfirmationDialogContent.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/content/SignInContent.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/content/setting/KeybindingPanel.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/dialog/content/setting/UsageLogsTable.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/components/dialog/content/signin/SignInForm.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/error/useErrorOverlayState.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/graph/DomWidgets.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/graph/GraphCanvas.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/graph/NodeTooltip.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/graph/SelectionToolbox.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/hdr/HdrViewerContent.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/helpcenter/HelpCenterMenuContent.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/imagecrop/WidgetImageCrop.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/load3d/Load3D.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/load3d/Load3DControls.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/load3d/controls/HDRIControls.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/load3d/controls/ModelControls.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/load3d/controls/RecordingControls.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/load3d/controls/SceneControls.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/maskeditor/MaskEditorContent.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/node/NodeHelpContent.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/node/NodePreview.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/node/NodePreviewCard.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/painter/WidgetPainter.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/queue/job/JobAssetsList.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/queue/job/JobDetailsPopover.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/queue/job/JobFilterActions.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/queue/job/useQueueEstimates.test.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/range/RangeEditor.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/range/WidgetRange.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/RightSidePanel.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/errors/ErrorNodeCard.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/errors/MissingNodeCard.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/errors/MissingPackGroupRow.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/errors/TabErrors.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/errors/useErrorGroups.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/errors/useErrorReport.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/parameters/TabNormalInputs.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/parameters/WidgetItem.vue": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/rightSidePanel/subgraph/SubgraphEditor.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/searchbox/NodeSearchItem.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/searchbox/v2/NodeSearchCategoryTreeNode.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/searchbox/v2/NodeSearchContent.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/searchbox/v2/NodeSearchListItem.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/ComfyMenuButton.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/AssetsSidebarTab.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/NodeLibrarySidebarTab.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/modelLibrary/DownloadItem.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/sidebar/tabs/queue/MediaLightbox.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/topbar/CurrentUserButton.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/topbar/CurrentUserPopoverLegacy.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/topbar/TopbarBadge.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/topbar/WorkflowTabs.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/ui/Popover.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/ui/chart/useChart.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/ui/multi-select/MultiSelect.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/widget/layout/BaseModalLayout.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/auth/useAuthActions.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/boundingBoxes/boundingBoxesUtil.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/composables/boundingBoxes/useBoundingBoxes.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/contextMenuConverter.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useErrorClearingHooks.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useGraphNodeManager.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/composables/graph/useGroupMenuOptions.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useImageMenuOptions.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useMoreOptionsMenu.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/composables/graph/useNodeErrorFlagSync.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/maskeditor/useBrushDrawing.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/composables/maskeditor/useCanvasHistory.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/maskeditor/useCanvasTools.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/maskeditor/useGPUResources.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/composables/maskeditor/useKeyboard.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/maskeditor/useMaskEditorLoader.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/maskeditor/usePanAndZoom.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/maskeditor/useToolManager.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/node/useNodeBadge.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/composables/node/useNodeDragAndDrop.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/node/useNodePricing.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 4
+      }
+    },
+    "src/composables/node/usePriceBadge.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/node/usePromotedPreviews.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/composables/painter/usePainter.ts": {
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/palette/usePaletteSwatchRow.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/queue/useJobList.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/queue/useJobMenu.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/queue/useQueueNotificationBanners.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/useCanvasDrop.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/composables/useContextMenuTranslation.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/useCoreCommands.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/composables/useImageCrop.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/composables/useLoad3d.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 4
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/composables/useLoad3dViewer.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/composables/usePaste.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/composables/useWorkflowActionsMenu.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/graph/subgraph/promotionUtils.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/graph/widgets/dynamicWidgets.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/extensions/core/editAttention.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/groupNode.ts": {
+      "complexity_critical": {
+        "count": 4
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 4
+      },
+      "crap_critical": {
+        "count": 4
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/extensions/core/groupOptions.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/extensions/core/load3d/CameraManager.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/Load3d.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/LoaderManager.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/PointCloudModelAdapter.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/RecordingManager.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/SceneManager.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/load3d/SceneModelManager.ts": {
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/extensions/core/rerouteNode.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/simpleTouchSupport.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/slotDefaults.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/uploadAudio.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/extensions/core/widgetInputs.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/ContextMenu.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/CurveEditor.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/LGraph.ts": {
+      "complexity_critical": {
+        "count": 6
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 3
+      },
+      "crap_critical": {
+        "count": 6
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 5
+      }
+    },
+    "src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/LGraphCanvas.ts": {
+      "complexity_critical": {
+        "count": 20
+      },
+      "complexity_high": {
+        "count": 14
+      },
+      "complexity_moderate": {
+        "count": 4
+      },
+      "crap_critical": {
+        "count": 20
+      },
+      "crap_high": {
+        "count": 15
+      },
+      "crap_moderate": {
+        "count": 14
+      }
+    },
+    "src/lib/litegraph/src/LGraphGroup.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/LGraphNode.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/LGraphNode.ts": {
+      "complexity_critical": {
+        "count": 10
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 10
+      },
+      "crap_high": {
+        "count": 6
+      },
+      "crap_moderate": {
+        "count": 10
+      }
+    },
+    "src/lib/litegraph/src/LLink.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/LiteGraphGlobal.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 5
+      }
+    },
+    "src/lib/litegraph/src/Reroute.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/canvas/InputIndicators.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/canvas/LinkConnector.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 3
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 3
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/contextMenuCompat.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/draw.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/node/NodeSlot.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/polyfills.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/subgraph/SubgraphInput.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/SubgraphSlotBase.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/utils/collections.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/utils/mathParser.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/widgets/BaseWidget.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/widgets/ComboWidget.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/widgets/KnobWidget.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/lib/litegraph/src/widgets/widgetMap.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/ActiveMediaAssetCard.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/AssetCard.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/AssetExportProgressDialog.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/AssetsListItem.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/Media3DTop.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/MediaAssetCard.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/MediaAssetContextMenu.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/ModelImportProgressDialog.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/UploadModelConfirmation.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/UploadModelFooter.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/UploadModelProgress.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/components/modelInfo/ModelInfoPanel.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/assets/composables/useMediaAssetActions.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/assets/composables/useUploadModelWizard.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/oauth/OAuthConsentView.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/oauth/oauthApi.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/onboarding/survey/DynamicSurveyForm.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/cloud/onboarding/survey/surveySchema.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/subscription/components/CreditsTile.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/subscription/components/FreeTierDialogContent.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/subscription/components/PricingTable.vue": {
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/cloud/subscription/components/SubscriptionPanelContentLegacy.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/subscription/composables/useSubscriptionDialog.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/keybindings/keybindingService.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/keybindings/presetService.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/missingMedia/missingMediaScan.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/missingModel/components/MissingModelRow.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/missingModel/missingModelScan.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/missingModel/missingModelStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/nodeReplacement/components/SwapNodeGroupRow.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/nodeReplacement/missingNodeScan.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/nodeReplacement/useNodeReplacement.ts": {
+      "complexity_high": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 3
+      }
+    },
+    "src/platform/secrets/components/SecretFormDialog.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/settings/components/SettingDialog.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/settings/composables/useSettingUI.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/settings/settingStore.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/surveys/NightlySurveyPopover.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/telemetry/providers/cloud/ImpactTelemetryProvider.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/telemetry/utils/getExecutionContext.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/updates/common/releaseService.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/updates/common/releaseStore.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/platform/updates/common/useFrontendVersionMismatchWarning.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/core/services/workflowService.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/platform/workflow/management/stores/comfyWorkflow.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/persistence/base/storageIO.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/persistence/stores/workflowDraftStoreV2.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/sharing/services/workflowShareService.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workflow/templates/composables/useTemplateUrlLoader.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/InviteMembersForm.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/PricingTableWorkspace.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/UnifiedPricingTable.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/WorkspaceSwitcherPopover.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/dialogs/TeamWorkspacesDialogContent.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/dialogs/settings/MemberListItem.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/composables/useDowngradeToPersonal.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/composables/useMembersPanel.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/stores/teamWorkspaceStore.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/workspace/stores/workspaceAuthStore.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/core/canvas/links/linkDropOrchestrator.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/core/canvas/pathRenderer.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/renderer/core/layout/operations/layoutMutations.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/core/layout/store/layoutStore.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/renderer/core/layout/sync/useLayoutSync.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/core/spatial/QuadTree.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/linearMode/DropZone.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/linearMode/LinearControls.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/linearMode/LinearPreview.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/linearMode/MobileDisplay.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/linearMode/OutputHistory.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/linearMode/linearOutputStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/linearMode/useOutputHistory.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/minimap/composables/useMinimapGraph.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/minimap/data/AbstractMinimapDataSource.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/minimap/minimapCanvasRenderer.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/VideoPreview.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/ImagePreview.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/InputSlot.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/LGraphNode.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/LGraphNodePreview.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/NodeBadges.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/NodeContent.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/NodeFooter.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/NodeSlots.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/components/NodeWidgets.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/renderer/extensions/vueNodes/composables/useNodePointerInteractions.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/composables/useSlotElementTracking.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/interactions/resize/useNodeResize.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/layout/useNodeDrag.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/renderer/glsl/useGLSLPreview.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "src/renderer/glsl/useGLSLRenderer.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/renderer/glsl/useGLSLUniforms.ts": {
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/router.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/scripts/api.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/scripts/app.ts": {
+      "complexity_critical": {
+        "count": 5
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 5
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 4
+      }
+    },
+    "src/scripts/changeTracker.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/scripts/domWidget.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/scripts/metadata/avif.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/scripts/metadata/parser.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/scripts/metadata/ply.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/scripts/metadata/png.ts": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "src/scripts/pnginfo.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/scripts/ui.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "src/scripts/valueControl.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/services/comfyRegistryService.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/services/customerEventsService.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/services/litegraphService.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 4
+      }
+    },
+    "src/services/load3dService.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/services/mediaCacheService.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/services/providers/algoliaSearchProvider.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/services/providers/registrySearchProvider.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/appModeStore.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/stores/assetDownloadStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/assetExportStore.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/assetsStore.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/assetsStore.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/stores/executionErrorStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/executionStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/modelStore.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/stores/nodeDefStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/nodeOutputStore.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/subgraphNavigationStore.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/subgraphStore.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/stores/systemStatsStore.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/stores/workspace/assetsSidebarBadgeStore.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/utils/colorUtil.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/utils/executionUtil.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/utils/linkFixer.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/utils/litegraphUtil.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/utils/migration/migrateReroute.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/utils/queueDisplay.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/utils/searchAndReplace.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/utils/vintageClipboard.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/views/GraphView.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/views/LinearView.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/components/ManagerProgressToast.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/composables/nodePack/useMissingNodes.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/composables/useConflictDetection.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/composables/useManagerState.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/extensions/manager/services/comfyManagerService.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/workbench/utils/nodeDefOrderingUtil.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "vite.config.mts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "src/scripts/app.ts:circular dependency",
+    "src/stores/appModeStore.ts:high impact",
+    "src/lib/litegraph/src/LGraphCanvas.ts:circular dependency",
+    "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts:untested risk",
+    "src/composables/useUpstreamValue.ts:high impact",
+    "src/platform/keybindings/keybindingService.ts:complexity",
+    "src/lib/litegraph/src/LGraph.ts:circular dependency",
+    "src/platform/keybindings/keyCombo.ts:high impact",
+    "src/composables/useLoad3d.ts:circular dependency",
+    "src/lib/litegraph/src/LGraphNode.ts:circular dependency",
+    "src/platform/workflow/core/services/workflowService.ts:circular dependency",
+    "src/core/graph/subgraph/promotionUtils.ts:circular dependency",
+    "src/lib/litegraph/src/subgraph/SubgraphNode.ts:circular dependency",
+    "src/composables/useTreeExpansion.ts:high impact",
+    "src/services/litegraphService.ts:circular dependency",
+    "src/views/LinearView.vue:complexity",
+    "src/renderer/extensions/vueNodes/components/ImagePreview.vue:complexity",
+    "browser_tests/fixtures/ComfyPage.ts:circular dependency",
+    "src/workbench/extensions/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
+    "src/components/builder/AppBuilder.vue:complexity",
+    "src/renderer/glsl/useGLSLUniforms.ts:untested risk",
+    "src/composables/node/useNodeDragAndDrop.ts:high impact",
+    "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:complexity",
+    "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts:complexity",
+    "src/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue:circular dependency",
+    "src/stores/subgraphNavigationStore.ts:circular dependency",
+    "src/components/TopMenuSection.vue:complexity",
+    "src/components/graph/SelectionToolbox.vue:complexity",
+    "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts:circular dependency",
+    "src/platform/workflow/management/stores/workflowStore.ts:circular dependency",
+    "src/components/rightSidePanel/errors/MissingPackGroupRow.vue:complexity",
+    "src/platform/missingModel/missingModelStore.ts:circular dependency",
+    "src/components/rightSidePanel/RightSidePanel.vue:complexity",
+    "src/renderer/extensions/vueNodes/composables/useSlotElementTracking.ts:circular dependency",
+    "src/scripts/widgets.ts:circular dependency",
+    "src/stores/authStore.ts:circular dependency",
+    "src/platform/assets/utils/assetFilterUtils.ts:high impact",
+    "src/stores/workspace/sidebarTabStore.ts:circular dependency",
+    "src/scripts/ui.ts:complexity",
+    "src/platform/cloud/subscription/composables/useSubscriptionDialog.ts:circular dependency",
+    "apps/website/src/components/common/ContentSection.vue:complexity",
+    "src/platform/assets/composables/useMediaAssetActions.ts:complexity",
+    "src/stores/assetsStore.ts:complexity",
+    "src/lib/litegraph/src/node/NodeInputSlot.ts:circular dependency",
+    "src/services/dialogService.ts:circular dependency",
+    "src/renderer/core/canvas/canvasStore.ts:circular dependency",
+    "src/lib/litegraph/src/utils/type.ts:high impact",
+    "src/workbench/extensions/manager/composables/useConflictDetection.ts:circular dependency",
+    "src/components/builder/useResolvedSelectedInputs.ts:high impact",
+    "src/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue:complexity",
+    "src/composables/graph/useMoreOptionsMenu.ts:circular dependency",
+    "src/composables/auth/useCurrentUser.ts:high impact",
+    "src/renderer/extensions/vueNodes/components/LGraphNode.vue:complexity",
+    "src/composables/usePaste.ts:circular dependency",
+    "src/platform/missingMedia/missingMediaStore.ts:circular dependency",
+    "src/platform/nodeReplacement/missingNodesErrorStore.ts:circular dependency",
+    "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts:complexity",
+    "src/workbench/extensions/manager/components/manager/button/PackInstallButton.vue:circular dependency",
+    "src/renderer/extensions/vueNodes/utils/nodeDataUtils.ts:high impact",
+    "src/lib/litegraph/src/LGraphGroup.ts:circular dependency",
+    "apps/desktop-ui/src/utils/envUtil.ts:high impact",
+    "src/workbench/extensions/manager/stores/comfyManagerStore.ts:circular dependency",
+    "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
+    "src/workbench/extensions/manager/composables/nodePack/usePackInstall.ts:circular dependency",
+    "src/composables/useAppMode.ts:high impact",
+    "src/lib/litegraph/src/Reroute.ts:circular dependency",
+    "src/extensions/core/widgetInputs.ts:high impact",
+    "src/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue:circular dependency",
+    "src/components/searchbox/v2/NodeSearchListItem.vue:complexity",
+    "src/platform/workspace/stores/teamWorkspaceStore.ts:complexity",
+    "src/composables/useCanvasDrop.ts:complexity",
+    "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts:complexity",
+    "src/workbench/extensions/manager/composables/useManagerState.ts:circular dependency",
+    "src/workbench/extensions/manager/services/comfyManagerService.ts:circular dependency",
+    "src/lib/litegraph/src/node/NodeSlot.ts:complexity",
+    "src/platform/telemetry/TelemetryRegistry.ts:high impact",
+    "src/lib/litegraph/src/utils/collections.ts:circular dependency",
+    "src/renderer/extensions/linearMode/LinearControls.vue:complexity",
+    "src/utils/eventUtils.ts:high impact",
+    "src/lib/litegraph/src/subgraph/subgraphUtils.ts:circular dependency",
+    "src/lib/litegraph/src/DragAndScale.ts:circular dependency",
+    "src/lib/litegraph/src/canvas/LinkConnector.ts:complexity",
+    "src/utils/hdrFormatUtil.ts:high impact",
+    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
+    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
+    "src/services/load3dService.ts:circular dependency",
+    "src/components/dialog/GlobalDialog.vue:complexity",
+    "src/lib/litegraph/src/widgets/NumberWidget.ts:high impact",
+    "src/core/graph/widgets/dynamicWidgets.ts:untested risk",
+    "src/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue:circular dependency",
+    "src/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus.ts:high impact",
+    "src/lib/litegraph/src/node/NodeOutputSlot.ts:circular dependency",
+    "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts:complexity",
+    "src/platform/workspace/stores/workspaceAuthStore.ts:circular dependency",
+    "src/platform/settings/settingStore.ts:circular dependency",
+    "src/components/rightSidePanel/errors/ErrorNodeCard.vue:complexity",
+    "browser_tests/fixtures/helpers/SubgraphHelper.ts:circular dependency",
+    "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue:complexity",
+    "src/composables/maskeditor/useKeyboard.ts:high impact",
+    "src/components/graph/GraphCanvas.vue:complexity",
+    "src/composables/node/useNodePricing.ts:complexity",
+    "src/composables/useLoad3dViewer.ts:circular dependency",
+    "src/core/graph/subgraph/migration/proxyWidgetMigration.ts:complexity",
+    "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue:complexity",
+    "src/lib/litegraph/src/utils/mathParser.ts:untested risk",
+    "src/workbench/extensions/manager/components/manager/packCard/PackCard.vue:circular dependency",
+    "src/components/dialog/content/SignInContent.vue:complexity",
+    "src/extensions/core/groupNode.ts:complexity",
+    "src/lib/litegraph/src/ContextMenu.ts:complexity",
+    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts:circular dependency",
+    "src/workbench/extensions/manager/components/manager/PackVersionBadge.vue:circular dependency",
+    "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue:complexity",
+    "src/utils/linkFixer.ts:complexity",
+    "src/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
+    "src/lib/litegraph/src/LiteGraphGlobal.ts:circular dependency",
+    "src/composables/useEditKeybindingDialog.ts:circular dependency",
+    "src/stores/maskEditorStore.ts:circular dependency",
+    "src/components/rightSidePanel/errors/TabErrors.vue:complexity",
+    "src/extensions/core/rerouteNode.ts:complexity",
+    "src/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes.ts:circular dependency",
+    "src/utils/executionUtil.ts:complexity",
+    "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts:complexity",
+    "src/renderer/extensions/linearMode/DropZone.vue:complexity",
+    "src/components/custom/widget/WorkflowTemplateSelectorDialog.vue:complexity",
+    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue:circular dependency",
+    "src/scripts/metadata/avif.ts:complexity",
+    "src/composables/maskeditor/useCanvasHistory.ts:circular dependency",
+    "src/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
+    "src/composables/boundingBoxes/useBoundingBoxes.ts:complexity",
+    "src/composables/sidebarTabs/useJobHistorySidebarTab.ts:circular dependency",
+    "src/components/helpcenter/HelpCenterMenuContent.vue:complexity",
+    "src/scripts/metadata/png.ts:complexity",
+    "src/composables/graph/useSelectionMenuOptions.ts:circular dependency",
+    "src/lib/litegraph/src/widgets/LegacyWidget.ts:circular dependency",
+    "browser_tests/fixtures/components/QueuePanel.ts:circular dependency",
+    "apps/website/src/components/pricing/PriceSection.vue:complexity",
+    "src/scripts/pnginfo.ts:complexity",
+    "src/workbench/extensions/manager/composables/useManagerDialog.ts:circular dependency",
+    "browser_tests/fixtures/components/SubgraphEditor.ts:circular dependency",
+    "scripts/cicd/extract-playwright-counts.ts:complexity",
+    "apps/website/scripts/generate-models.ts:complexity",
+    "apps/website/src/components/ui/button-mask/ButtonMask.vue:circular dependency",
+    "scripts/perf-report.ts:complexity"
+  ]
+}

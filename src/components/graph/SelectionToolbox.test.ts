@@ -64,12 +64,6 @@ vi.mock('@/composables/canvas/useSelectionToolboxPosition', () => ({
   resetMoreOptionsState: vi.fn()
 }))
 
-vi.mock('@/composables/element/useRetriggerableAnimation', () => ({
-  useRetriggerableAnimation: vi.fn(() => ({
-    shouldAnimate: { value: false }
-  }))
-}))
-
 vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
   useMinimap: vi.fn(() => ({
     containerStyles: {

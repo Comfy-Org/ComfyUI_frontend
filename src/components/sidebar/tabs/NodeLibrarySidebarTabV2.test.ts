@@ -61,13 +61,6 @@ vi.mock('./nodeLibrary/EssentialNodesPanel.vue', () => ({
   }
 }))
 
-vi.mock('./nodeLibrary/NodeDragPreview.vue', () => ({
-  default: {
-    name: 'NodeDragPreview',
-    template: '<div />'
-  }
-}))
-
 vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchBox',
