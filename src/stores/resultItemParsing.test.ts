@@ -130,6 +130,21 @@ describe(parseNodeOutput, () => {
     expect(textItems[0].filename).toBe('6-text-0.txt')
   })
 
+  it('parses object-shaped text entries from a synthesized preview_output', () => {
+    const output = makeOutput({
+      text: [
+        { nodeId: '6', mediaType: 'text', content: 'from preview_output' }
+      ] as unknown as NodeExecutionOutput['text']
+    })
+
+    const result = parseNodeOutput('6', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].isText).toBe(true)
+    expect(result[0].content).toBe('from preview_output')
+    expect(result[0].filename).toBe('6-text-0.txt')
+  })
+
   it('excludes non-ResultItem array items', () => {
     const output = fromPartial<NodeExecutionOutput>({
       images: [{ filename: 'img.png', subfolder: '', type: 'output' }],

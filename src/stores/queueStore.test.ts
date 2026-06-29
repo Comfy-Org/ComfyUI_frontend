@@ -190,7 +190,7 @@ describe('TaskItemImpl', () => {
     })
   })
 
-  it.skip('should parse text outputs', () => {
+  it('parses a text-shaped preview_output from the jobs list payload', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
       preview_output: {
@@ -203,7 +203,7 @@ describe('TaskItemImpl', () => {
     const task = new TaskItemImpl(job)
 
     expect(task.flatOutputs).toHaveLength(1)
-    expect(task.flatOutputs[0].filename).toBe('')
+    expect(task.flatOutputs[0].filename).toBe('5-text-0.txt')
     expect(task.previewableOutputs).toHaveLength(1)
     expect(task.previewOutput?.content).toBe('test')
   })
