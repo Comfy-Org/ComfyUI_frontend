@@ -5,7 +5,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { VideoPreview } from '@e2e/fixtures/components/VideoPreview'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const file1 = 'workflow.mp4' as const
 const file2 = 'video-preview-wide.webm' as const
@@ -228,7 +227,6 @@ test.describe(
     test('@vue-nodes Load Video', async ({ comfyPage, comfyFiles }) => {
       const loadVideoNode = comfyPage.vueNodes.getNodeByTitle('Load Video')
       const loadVideo = new VideoPreview(loadVideoNode)
-      let loadVideoFixture: VueNodeFixture
 
       await test.step('Add node', async () => {
         await comfyPage.menu.topbar.newWorkflowButton.click()
@@ -237,9 +235,10 @@ test.describe(
         await comfyPage.searchBoxV2.addNode('Load Video')
         await expect(loadVideoNode).toHaveCount(1)
         await expect(loadVideoNode).toBeVisible()
-        loadVideoFixture =
-          await comfyPage.vueNodes.getFixtureByTitle('Load Video')
       })
+
+      const loadVideoFixture =
+        await comfyPage.vueNodes.getFixtureByTitle('Load Video')
 
       await test.step('Upload a video file', async () => {
         await loadVideo.upload.setInputFiles(
@@ -260,9 +259,7 @@ test.describe(
             loadVideoNode,
             `Load Video node before loading ${filename}`
           )
-          await loadVideo.upload.setInputFiles(
-            assetPath(`workflowInMedia/${filename}`)
-          )
+          await loadVideo.upload.setInputFiles(assetPath(`video/${filename}`))
           comfyFiles.deleteAfterTest({
             filename,
             type: 'input'
