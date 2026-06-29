@@ -1,9 +1,147 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": ["src/main.ts", "index.html"],
+
+  // Entry points fallow cannot infer. These files are roots (run by package.json
+  // scripts / CI / tool CLIs / Storybook), not imported from the app graph.
+  "entry": [
+    "src/main.ts",
+    "index.html",
+    "scripts/**/*.{js,ts}",
+    "apps/website/src/scripts/**/*.ts",
+    "**/.storybook/{main,preview}.ts",
+    "packages/ingest-types/openapi-ts.config.ts"
+  ],
+
+  "ignorePatterns": [
+    // Static assets, not analyzable source.
+    "public/**",
+    // Devtools browser-extension artifacts, loaded dynamically (mirrors knip).
+    "tools/devtools/**",
+    // Storybook-only mocks, reached through Storybook's vite alias, not the prod graph.
+    "src/storybook/mocks/**"
+  ],
+
+  "ignoreDependencies": [
+    // Iconify icon sets consumed at build time by the iconify tailwind plugin /
+    // importmap, never via a JS import (mirrors knip ignoreDependencies).
+    "@iconify/json",
+    "@iconify-json/lucide",
+    // Loaded by config, not imported: oxlint jsPlugin (.oxlintrc.json) and
+    // stylelint customSyntax (.stylelintrc.json) respectively.
+    "eslint-plugin-playwright",
+    "postcss-html",
+    // Vite path aliases to local locale bundles in apps/desktop-ui; virtual
+    // packages, not installable npm deps.
+    "@frontend-locales/ar",
+    "@frontend-locales/en",
+    "@frontend-locales/es",
+    "@frontend-locales/fr",
+    "@frontend-locales/ja",
+    "@frontend-locales/ko",
+    "@frontend-locales/pt-BR",
+    "@frontend-locales/ru",
+    "@frontend-locales/tr",
+    "@frontend-locales/zh",
+    "@frontend-locales/zh-TW",
+    // Declared in the root manifest and provided to the apps/desktop-ui sub-app
+    // via pnpm hoisting. Real (benign) phantom deps; tracked for follow-up
+    // cleanup into apps/desktop-ui/package.json.
+    "@pinia/testing",
+    "@storybook/vue3-vite",
+    "@testing-library/jest-dom",
+    "@testing-library/user-event",
+    "@testing-library/vue",
+    "@xterm/addon-fit",
+    "@xterm/addon-serialize",
+    "@xterm/xterm",
+    "es-toolkit"
+  ],
+
+  "ignoreUnresolvedImports": [
+    // Static stylesheet referenced from index.html, resolved by the bundler.
+    "./materialdesignicons.min.css",
+    // Generated sibling JS for the desktop-bridge type stubs.
+    "./comfyDesktopBridge.js"
+  ],
+
+  "ignoreExports": [
+    // Public extension API surface, deliberately exported for the 40+ custom-node
+    // ecosystem (ADR 0003 / 0008). No internal importer by design.
+    { "file": "src/types/index.ts", "exports": ["*"] },
+    { "file": "src/lib/litegraph/src/litegraph.ts", "exports": ["*"] },
+    { "file": "src/scripts/ui/menu/index.ts", "exports": ["*"] },
+    {
+      "file": "src/scripts/ui/components/asyncDialog.ts",
+      "exports": ["ComfyAsyncDialog"]
+    },
+    {
+      "file": "src/scripts/ui/components/splitButton.ts",
+      "exports": ["ComfySplitButton"]
+    },
+    {
+      "file": "src/scripts/utils.ts",
+      "exports": ["applyTextReplacements", "addStylesheet"]
+    },
+    {
+      "file": "src/scripts/ui/imagePreview.ts",
+      "exports": ["createImageHost"]
+    },
+    {
+      "file": "src/extensions/core/widgetInputs.ts",
+      "exports": ["convertToInput"]
+    },
+    {
+      "file": "src/lib/litegraph/src/widgets/widgetMap.ts",
+      "exports": ["isAssetWidget"]
+    },
+    // Generated OpenAPI client types (mirrors knip ignore).
+    {
+      "file": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "exports": ["*"]
+    },
+    // Loaded dynamically: cloud onboarding routes, cloud telemetry provider, and
+    // share dialog are imported lazily / from astro pages, invisible statically.
+    {
+      "file": "src/platform/cloud/onboarding/onboardingCloudRoutes.ts",
+      "exports": ["cloudOnboardingRoutes"]
+    },
+    {
+      "file": "src/platform/telemetry/providers/cloud/ClickHouseTelemetryProvider.ts",
+      "exports": ["ClickHouseTelemetryProvider"]
+    },
+    {
+      "file": "src/platform/workflow/sharing/composables/useShareDialog.ts",
+      "exports": ["useShareDialog"]
+    },
+    // apps/website data consumed by astro pages; getGalleryItemById is a
+    // pre-annotated stacked-PR keep.
+    {
+      "file": "apps/website/src/data/events.ts",
+      "exports": ["learningEvents"]
+    },
+    {
+      "file": "apps/website/src/data/gallery.ts",
+      "exports": ["getGalleryItemById"]
+    }
+  ],
+
   "duplicates": {
     "minOccurrences": 3,
     "ignore": ["**/*.generated.*", "**/generatedManagerTypes.ts"]
   },
+
+  // Staged adoption: the residual dead-code, complexity, and duplication findings
+  // are inherited legacy (litegraph extension-API members, store members, intra-lib
+  // cycles, the marketing-media file pending page adoption). They are captured in
+  // per-analysis baselines so `fallow audit` fails only on NEWLY introduced issues
+  // in changed files. Baselines are a migration aid, not the desired steady state;
+  // shrink them as the underlying code is cleaned up, then re-save.
+  "audit": {
+    "gate": "new-only",
+    "deadCodeBaseline": ".fallow-baselines/dead-code.json",
+    "healthBaseline": ".fallow-baselines/health.json",
+    "dupesBaseline": ".fallow-baselines/dupes.json"
+  },
+
   "rules": {}
 }
