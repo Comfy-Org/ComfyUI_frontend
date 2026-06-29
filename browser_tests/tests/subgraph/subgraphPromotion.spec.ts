@@ -471,11 +471,10 @@ test.describe(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
 
-        let initialWidgetCount = 0
         await expect
           .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeGreaterThan(0)
-        initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
+        const initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
 
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
         await subgraphNode.navigateIntoSubgraph()

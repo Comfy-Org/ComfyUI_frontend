@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "Construa um prompt JSON para o modelo Ideogram 4.",
+    "display_name": "Construir Prompt JSON (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "estética",
+        "tooltip": "Palavras-chave estéticas obrigatórias (ex: sombrio, cinematográfico, dessaturado)."
+      },
+      "background": {
+        "name": "fundo",
+        "tooltip": "Descrição obrigatória do fundo ou ambiente da imagem."
+      },
+      "color_palette": {
+        "name": "paleta_de_cores",
+        "tooltip": "Códigos de cor hexadecimais que direcionam as cores dominantes da imagem. Até 16 entradas."
+      },
+      "element": {
+        "name": "elemento",
+        "tooltip": "Elementos do prompt do nó Criar Caixas Delimitadoras."
+      },
+      "high_level_description": {
+        "name": "descrição_nível_alto",
+        "tooltip": "Descrição opcional da imagem em uma ou duas frases. Altamente recomendado."
+      },
+      "lighting": {
+        "name": "iluminação",
+        "tooltip": "Descrição obrigatória da iluminação (ex: hora dourada, luz de recorte, sombras dramáticas)."
+      },
+      "medium": {
+        "name": "meio",
+        "tooltip": "Tipo de meio obrigatório (ex: fotografia, ilustração, renderização_3d, pintura, design_gráfico). Quando estilo = foto, defina como fotografia."
+      },
+      "style": {
+        "name": "estilo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Gere vídeo usando Seedance 2.0 a partir de uma imagem do primeiro frame e, opcionalmente, uma imagem do último frame.",
     "display_name": "ByteDance Seedance 2.0 Primeiro-Último-Frame para Vídeo",
@@ -2471,6 +2514,10 @@
         "name": "método_fusão",
         "tooltip": "O método a ser usado para fundir as janelas de contexto."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "Lista de índices latentes a serem retidos no próprio latent de ruído para cada janela. Use para fluxos de trabalho onde o conteúdo de referência (por exemplo, uma imagem inicial) está diretamente no latent de ruído em vez de em canais de condicionamento separados (por exemplo, I2V estilo inplace como LTXV, AnimateDiff). Independente de cond_retain_index_list."
+      },
       "model": {
         "name": "modelo",
         "tooltip": "O modelo ao qual aplicar as janelas de contexto durante a amostragem."
@@ -2629,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Converter Array para String",
+    "inputs": {
+      "array": {
+        "name": "array"
+      },
+      "indent": {
+        "name": "indentação",
+        "tooltip": "Espaços por nível de indentação. 0 produz uma string compacta em linha única."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Converter Dicionário para String",
+    "inputs": {
+      "dictionary": {
+        "name": "dicionário"
+      },
+      "indent": {
+        "name": "indentação",
+        "tooltip": "Espaços por nível de indentação. 0 produz uma string compacta em linha única."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2687,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "Desenhe caixas delimitadoras em uma tela. Gera elementos de prompt Ideogram, caixas delimitadoras em espaço de pixels e uma imagem de pré-visualização.",
+    "display_name": "Criar Caixas Delimitadoras",
+    "inputs": {
+      "background": {
+        "name": "fundo",
+        "tooltip": "Imagem opcional usada como fundo na tela e na pré-visualização."
+      },
+      "editor_state": {
+        "name": "estado_do_editor",
+        "tooltip": "Desenhe caixas delimitadoras e defina o tipo de cada caixa, texto, descrição, paleta de cores. Comece pelo elemento de fundo e termine pelo primeiro plano."
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Altura da tela e da grade de pixels para as caixas delimitadoras."
+      },
+      "width": {
+        "name": "largura",
+        "tooltip": "Largura da tela e da grade de pixels para as caixas delimitadoras."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pré-visualização",
+        "tooltip": null
+      },
+      "1": {
+        "name": "caixas_delimitadoras",
+        "tooltip": null
+      },
+      "2": {
+        "name": "elementos",
         "tooltip": null
       }
     }
@@ -2903,6 +3020,10 @@
       "audio": {
         "name": "áudio",
         "tooltip": "O áudio a ser adicionado ao vídeo."
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Profundidade de bits do vídeo criado. 10 bits mantém gradientes mais suaves com menos faixas, mas alguns players e nós subsequentes podem não suportar."
       },
       "fps": {
         "name": "fps"
@@ -5219,6 +5340,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8151,8 @@
         "name": "controlar após gerar"
       },
       "generate_audio": {
-        "name": "gerar áudio"
+        "name": "gerar áudio",
+        "tooltip": "'kling-3.0-turbo' sempre gera áudio nativo, então a opção de áudio é ignorada."
       },
       "model": {
         "name": "modelo",
@@ -8312,6 +8438,57 @@
       "1": {
         "name": "negativo",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVContextWindows": {
+    "description": "Defina janelas de contexto para modelos do tipo LTXV.",
+    "display_name": "Janelas de Contexto LTXV",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "Se deve fechar o loop da janela de contexto; aplicável apenas para agendamentos em loop."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "O comprimento da janela de contexto em quadros reais. Deve ser 8*n + 1."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "A sobreposição da janela de contexto em quadros reais."
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "Algoritmo de agendamento dependente de etapa para janelas de contexto."
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "O passo da janela de contexto; aplicável apenas para agendamentos uniformes."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Se deve aplicar embaralhamento de ruído FreeNoise, melhora a mesclagem das janelas."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "O método a ser usado para fundir as janelas de contexto."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo ao qual aplicar as janelas de contexto durante a amostragem."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Reter o primeiro quadro latente em cada janela de contexto (pode ajudar a manter a referência inicial)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Se deve dividir múltiplos condicionamentos (criados por ConditionCombine) para cada janela com base no índice da região."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo com janelas de contexto aplicadas durante a amostragem."
       }
     }
   },
@@ -9075,6 +9252,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "Carregar 3D (Avançado)",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "Carregar Áudio",
     "inputs": {
@@ -9734,6 +9950,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "Estenda uma geração anterior do Ray 3.2 para frente (continue após ela) ou para trás (introdução antes dela). Conecte a saída generation_id de um nó Luma Ray 3.2 anterior. As extensões são sempre de 5 segundos.",
+    "display_name": "Luma Ray 3.2 Estender Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Para frente continua após o clipe anterior; para trás é inserido antes dele."
+      },
+      "direction_loop": {
+        "name": "loop"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para o novo conteúdo."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "generation_id do vídeo Ray 3.2 anterior a ser estendido. Conecte a saída generation_id de outro nó Luma Ray 3.2."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "Gere um vídeo a partir de um quadro inicial e/ou final usando o modelo Ray 3.2 da Luma. As gerações ancoradas em imagem têm sempre 5 segundos.",
+    "display_name": "Luma Ray 3.2 Imagem para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Último quadro do vídeo gerado."
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Faz o vídeo repetir em loop de forma contínua. Não disponível quando um end_frame está definido."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para a geração do vídeo."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Primeiro quadro do vídeo gerado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "Ancore uma imagem guia a uma posição na linha do tempo do vídeo de saída do Ray 3.2. Conecte este nó à entrada 'keyframes' do nó Luma Ray 3.2 Keyframes to Video; encadeie vários juntos via a entrada opcional 'keyframes' abaixo.",
+    "display_name": "Luma Ray 3.2 Quadro-chave",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Imagem guia para posicionar no momento escolhido do vídeo de saída."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Quadros-chave anteriores opcionais para encadear com este."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "Como posicionar esta imagem na linha do tempo do vídeo de saída."
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "Gere um vídeo que interpola por uma sequência de imagens-guia, cada uma ancorada a uma posição na linha do tempo, usando Luma Ray 3.2. Construa a sequência com nós de Keyframe do Luma Ray 3.2 (mínimo de 2).",
+    "display_name": "Luma Ray 3.2 Keyframes para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Sequência de keyframes dos nós de Keyframe do Luma Ray 3.2 (mínimo de 2)."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para a geração do vídeo."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "Gere um vídeo a partir de um prompt de texto usando o modelo Ray 3.2 da Luma.",
+    "display_name": "Luma Ray 3.2 Texto para Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Fazer o vídeo em loop contínuo. Disponível apenas para duração de 5s."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para a geração do vídeo."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "Re-renderize um vídeo existente com um novo prompt usando Luma Ray 3.2 (restilize, relumine, adicione ou remova elementos) mantendo o movimento original. Vídeo de origem de até 18 segundos; o vídeo editado mantém o comprimento do original.",
+    "display_name": "Luma Ray 3.2 Edição de Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreve a edição desejada."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "strength": {
+        "name": "força",
+        "tooltip": "Quão fortemente preservar ou reinventar o original. 'auto' deixa o Ray 3.2 escolher; adhere_* preserva mais, flex_* é equilibrado, reimagine_* muda mais."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de origem para editar. Até 18 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "Altere a proporção de aspecto de um vídeo existente, usando Luma Ray 3.2 para preencher as novas áreas expostas do canvas. Vídeo de origem de até 30 segundos. Cobrança por segundo de saída.",
+    "display_name": "Luma Ray 3.2 Reenquadrar Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreve como as novas áreas expostas do canvas devem ser preenchidas."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de origem para reenquadrar. Até 30 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_geração",
         "tooltip": null
       }
     }
@@ -11663,6 +12135,131 @@
       },
       "vector_in_": {
         "name": "vector_in."
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocos.0."
+      },
+      "blocks_10_": {
+        "name": "blocos.10."
+      },
+      "blocks_11_": {
+        "name": "blocos.11."
+      },
+      "blocks_12_": {
+        "name": "blocos.12."
+      },
+      "blocks_13_": {
+        "name": "blocos.13."
+      },
+      "blocks_14_": {
+        "name": "blocos.14."
+      },
+      "blocks_15_": {
+        "name": "blocos.15."
+      },
+      "blocks_16_": {
+        "name": "blocos.16."
+      },
+      "blocks_17_": {
+        "name": "blocos.17."
+      },
+      "blocks_18_": {
+        "name": "blocos.18."
+      },
+      "blocks_19_": {
+        "name": "blocos.19."
+      },
+      "blocks_1_": {
+        "name": "blocos.1."
+      },
+      "blocks_20_": {
+        "name": "blocos.20."
+      },
+      "blocks_21_": {
+        "name": "blocos.21."
+      },
+      "blocks_22_": {
+        "name": "blocos.22."
+      },
+      "blocks_23_": {
+        "name": "blocos.23."
+      },
+      "blocks_24_": {
+        "name": "blocos.24."
+      },
+      "blocks_25_": {
+        "name": "blocos.25."
+      },
+      "blocks_26_": {
+        "name": "blocos.26."
+      },
+      "blocks_27_": {
+        "name": "blocos.27."
+      },
+      "blocks_2_": {
+        "name": "blocos.2."
+      },
+      "blocks_3_": {
+        "name": "blocos.3."
+      },
+      "blocks_4_": {
+        "name": "blocos.4."
+      },
+      "blocks_5_": {
+        "name": "blocos.5."
+      },
+      "blocks_6_": {
+        "name": "blocos.6."
+      },
+      "blocks_7_": {
+        "name": "blocos.7."
+      },
+      "blocks_8_": {
+        "name": "blocos.8."
+      },
+      "blocks_9_": {
+        "name": "blocos.9."
+      },
+      "first_": {
+        "name": "primeiro."
+      },
+      "last_": {
+        "name": "último."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
       }
     }
   },
@@ -14066,6 +14663,12 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "áudio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14119,6 +14722,11 @@
     "display_name": "Imagem de Pré-visualização",
     "inputs": {
       "images": {
+        "name": "imagens"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "imagens"
       }
     }
@@ -16240,6 +16848,9 @@
       "draw_hands": {
         "name": "desenhar_mãos"
       },
+      "draw_head": {
+        "name": "desenhar_cabeça"
+      },
       "face_point_size": {
         "name": "tamanho_do_ponto_do_rosto"
       },
@@ -16913,6 +17524,12 @@
       "images": {
         "name": "imagens"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16936,6 +17553,12 @@
       "quality": {
         "name": "qualidade"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16949,6 +17572,12 @@
       },
       "filename_prefix": {
         "name": "prefixo_do_arquivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "áudio",
+        "tooltip": null
       }
     }
   },
@@ -16971,6 +17600,12 @@
         "name": "format",
         "tooltip": "O formato de arquivo no qual salvar o áudio."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "áudio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16988,6 +17623,12 @@
       "quality": {
         "name": "qualidade"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "áudio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -17004,6 +17645,12 @@
       },
       "quality": {
         "name": "qualidade"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "áudio",
+        "tooltip": null
       }
     }
   },
@@ -17034,6 +17681,11 @@
         "name": "imagens",
         "tooltip": "As imagens a serem salvas."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -17057,6 +17709,12 @@
       "images": {
         "name": "imagens",
         "tooltip": "As imagens a serem salvas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens",
+        "tooltip": null
       }
     }
   },
@@ -17125,6 +17783,11 @@
       "samples": {
         "name": "amostras"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "amostras"
+      }
     }
   },
   "SaveLoRA": {
@@ -17154,6 +17817,12 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -17199,6 +17868,12 @@
         "name": "vídeo",
         "tooltip": "O vídeo a ser salvo."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeo",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17220,6 +17895,12 @@
       "images": {
         "name": "imagens",
         "tooltip": "Imagens RGBA são salvas com seu canal alfa como transparência (apenas codec vp9)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens",
+        "tooltip": null
       }
     }
   },
@@ -17251,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Seed",
+    "inputs": {
+      "fixed": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "semente",
         "tooltip": null
       }
     }
@@ -18799,6 +19497,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagem(ns) de referência para editar. O Boogu foca em uma referência por amostra; mais são permitidas."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -19586,6 +20315,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "Importe um modelo 3D externo (por exemplo, do Rodin, Hunyuan3D ou de um arquivo local) para o Tripo para usá-lo com os nós de pós-processamento do Tripo: Texture, Rig, Convert. GLB é recomendado: as texturas só permanecem após a importação quando estão incorporadas no arquivo. Observe que texturizar um modelo importado requer um prompt de textura.",
+    "display_name": "Tripo: Importar Modelo",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Modelo 3D para importar (GLB / FBX / OBJ / STL, até 150 MB). Arquivos OBJ e STL não possuem texturas incorporadas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multiview para Modelo",
     "inputs": {
@@ -20053,6 +20798,10 @@
       },
       "texture_alignment": {
         "name": "alinhamento_textura"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Orientação textual opcional para texturização. Necessário na prática para modelos importados (Tripo: Importar Modelo), que não possuem imagem de origem para inferir cores."
       },
       "texture_quality": {
         "name": "qualidade_textura"
@@ -21872,6 +22621,14 @@
       "model": {
         "name": "modelo",
         "tooltip": "O modelo ao qual aplicar as janelas de contexto durante a amostragem."
+      },
+      "retain_first_frame": {
+        "name": "reter_primeiro_quadro",
+        "tooltip": "Reter o primeiro quadro I2V em cada janela de contexto (pode ajudar a manter a referência inicial)."
+      },
+      "split_conds_to_windows": {
+        "name": "dividir_condições_para_janelas",
+        "tooltip": "Se deve dividir múltiplas condicionantes (criadas por ConditionCombine) para cada janela com base no índice da região."
       }
     },
     "outputs": {

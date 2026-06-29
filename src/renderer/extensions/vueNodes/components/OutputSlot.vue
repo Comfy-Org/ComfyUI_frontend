@@ -38,12 +38,13 @@ import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useN
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { NodeId } from '@/types/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {
   nodeType?: string
-  nodeId?: string
+  nodeId?: NodeId
   slotData: INodeSlot
   index: number
   connected?: boolean
@@ -88,7 +89,7 @@ onErrorCaptured((error) => {
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, false)
+  props.nodeId ? getSlotKey(props.nodeId, props.index, false) : ''
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
@@ -121,14 +122,14 @@ watchEffect(() => {
 })
 
 useSlotElementTracking({
-  nodeId: props.nodeId ?? '',
+  nodeId: props.nodeId,
   index: props.index,
   type: 'output',
   element: slotElRef
 })
 
 const { onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId ?? '',
+  nodeId: props.nodeId,
   index: props.index,
   type: 'output'
 })

@@ -2,12 +2,13 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
 
 import type { ComputedRef, EffectScope, MaybeRefOrGetter, Ref } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -154,7 +155,10 @@ function createInnerPreview(
     () => nodeRef.value?.graph?.rootGraph?.id as UUID | undefined
   )
 
-  const nodeId = computed(() => nodeRef.value?.id as NodeId | undefined)
+  const nodeId = computed(() => {
+    const id = nodeRef.value?.id
+    return id == null ? undefined : id
+  })
 
   const hasExecutionOutput = computed(() => {
     const node = nodeRef.value
@@ -194,17 +198,14 @@ function createInnerPreview(
     if (isGLSLNode.value) {
       const nId = nodeId.value
       if (nId == null) return undefined
-      return widgetValueStore.getWidget(gId, nId, 'fragment_shader')?.value as
-        | string
-        | undefined
+      return widgetValueStore.getWidget(widgetId(gId, nId, 'fragment_shader'))
+        ?.value as string | undefined
     }
 
     const inner = innerGLSLNode
     if (inner) {
       return widgetValueStore.getWidget(
-        gId,
-        inner.id as NodeId,
-        'fragment_shader'
+        widgetId(gId, inner.id, 'fragment_shader')
       )?.value as string | undefined
     }
 
@@ -286,27 +287,19 @@ function createInnerPreview(
     const gId = graphId.value
     if (!gId) return null
 
-    const sizeModeNodeId = innerGLSLNode
-      ? (innerGLSLNode.id as NodeId)
-      : nodeId.value
+    const sizeModeNodeId = innerGLSLNode ? innerGLSLNode.id : nodeId.value
     if (sizeModeNodeId == null) return null
 
     const sizeMode = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode'
+      widgetId(gId, sizeModeNodeId, 'size_mode')
     )
     if (sizeMode?.value !== 'custom') return null
 
     const widthWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.width'
+      widgetId(gId, sizeModeNodeId, 'size_mode.width')
     )
     const heightWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.height'
+      widgetId(gId, sizeModeNodeId, 'size_mode.height')
     )
     if (!widthWidget || !heightWidget) return null
 

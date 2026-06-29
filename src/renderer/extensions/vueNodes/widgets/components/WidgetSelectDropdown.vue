@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import { computed, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -150,6 +151,23 @@ function handleIsOpenUpdate(isOpen: boolean) {
     void outputMediaAssets.refresh()
   }
 }
+
+const handleApproachEnd = useDebounceFn(async () => {
+  if (
+    outputMediaAssets.hasMore.value &&
+    !outputMediaAssets.loading.value &&
+    !outputMediaAssets.isLoadingMore.value
+  ) {
+    await outputMediaAssets.loadMore()
+  }
+}, 300)
+
+const isUploading = ref(false)
+async function updateFiles(files: File[]) {
+  isUploading.value = true
+  await handleFilesUpdate(files)
+  isUploading.value = false
+}
 </script>
 
 <template>
@@ -171,11 +189,14 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :is-uploading
       v-bind="combinedProps"
+      :loading-more="outputMediaAssets.isLoadingMore.value"
       class="w-full"
       @update:selected="updateSelectedItems"
-      @update:files="handleFilesUpdate"
+      @update:files="updateFiles"
       @update:is-open="handleIsOpenUpdate"
+      @approach-end="handleApproachEnd"
     />
   </WidgetLayoutField>
 </template>

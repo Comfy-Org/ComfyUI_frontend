@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "Создайте JSON-промпт для модели Ideogram 4.",
+    "display_name": "Создать JSON-промпт (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "эстетика",
+        "tooltip": "Обязательные эстетические ключевые слова (например, мрачный, кинематографичный, обесцвеченный)."
+      },
+      "background": {
+        "name": "фон",
+        "tooltip": "Обязательное описание фона или окружения изображения."
+      },
+      "color_palette": {
+        "name": "цветовая_палитра",
+        "tooltip": "Hex-коды цветов, определяющие доминирующие цвета изображения. До 16 значений."
+      },
+      "element": {
+        "name": "элемент",
+        "tooltip": "Элементы промпта из узла Create Bounding Boxes."
+      },
+      "high_level_description": {
+        "name": "высокоуровневое_описание",
+        "tooltip": "Необязательное описание изображения в одном-двух предложениях. Настоятельно рекомендуется."
+      },
+      "lighting": {
+        "name": "освещение",
+        "tooltip": "Обязательное описание освещения (например, золотой час, контровой свет, драматичные тени)."
+      },
+      "medium": {
+        "name": "носитель",
+        "tooltip": "Обязательный тип носителя (например, фотография, иллюстрация, 3d_render, живопись, graphic_design). Если стиль = фото, установить как фотография."
+      },
+      "style": {
+        "name": "стиль"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "промпт",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Генерируйте видео с помощью Seedance 2.0, используя изображение первого кадра и, при необходимости, последнего кадра.",
     "display_name": "ByteDance Seedance 2.0: от первого и последнего кадра к видео",
@@ -2471,6 +2514,10 @@
         "name": "метод_объединения",
         "tooltip": "Метод объединения контекстных окон."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "Список индексов латентного пространства, которые нужно сохранить непосредственно в латентном шуме для каждого окна. Используется в рабочих процессах, где референсный контент (например, стартовое изображение) находится прямо в латентном шуме, а не в отдельных каналах кондиционирования (например, I2V в стиле inplace, как LTXV, AnimateDiff). Не зависит от cond_retain_index_list."
+      },
       "model": {
         "name": "модель",
         "tooltip": "Модель, к которой применяются контекстные окна во время сэмплирования."
@@ -2629,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Преобразовать массив в строку",
+    "inputs": {
+      "array": {
+        "name": "массив"
+      },
+      "indent": {
+        "name": "отступ",
+        "tooltip": "Количество пробелов на уровень отступа. 0 — компактная однострочная строка."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Преобразовать словарь в строку",
+    "inputs": {
+      "dictionary": {
+        "name": "словарь"
+      },
+      "indent": {
+        "name": "отступ",
+        "tooltip": "Количество пробелов на уровень отступа. 0 — компактная однострочная строка."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2687,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "Нарисуйте ограничивающие рамки на холсте. Выходные данные: элементы промпта Ideogram, ограничивающие рамки в пикселях и изображение предпросмотра.",
+    "display_name": "Создать ограничивающие рамки",
+    "inputs": {
+      "background": {
+        "name": "фон",
+        "tooltip": "Необязательное изображение, используемое как фон на холсте и в предпросмотре."
+      },
+      "editor_state": {
+        "name": "состояние_редактора",
+        "tooltip": "Нарисуйте ограничивающие рамки и задайте для каждой рамки тип, текст, описание, цветовую палитру. Начинайте с фонового элемента, затем передний план."
+      },
+      "height": {
+        "name": "высота",
+        "tooltip": "Высота холста и пиксельной сетки для ограничивающих рамок."
+      },
+      "width": {
+        "name": "ширина",
+        "tooltip": "Ширина холста и пиксельной сетки для ограничивающих рамок."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "предпросмотр",
+        "tooltip": null
+      },
+      "1": {
+        "name": "рамки",
+        "tooltip": null
+      },
+      "2": {
+        "name": "элементы",
         "tooltip": null
       }
     }
@@ -2903,6 +3020,10 @@
       "audio": {
         "name": "аудио",
         "tooltip": "Аудио, которое будет добавлено к видео."
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Глубина цвета создаваемого видео. 10-бит обеспечивает более плавные градиенты с меньшим количеством полос, но некоторые проигрыватели и последующие узлы могут не поддерживать этот формат."
       },
       "fps": {
         "name": "кадров в секунду"
@@ -5219,6 +5340,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8151,8 @@
         "name": "контроль после генерации"
       },
       "generate_audio": {
-        "name": "генерировать аудио"
+        "name": "генерировать аудио",
+        "tooltip": "'kling-3.0-turbo' всегда генерирует собственное аудио, поэтому переключатель аудио игнорируется."
       },
       "model": {
         "name": "модель",
@@ -8312,6 +8438,57 @@
       "1": {
         "name": "отрицательный",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVContextWindows": {
+    "description": "Установить окна контекста для моделей, подобных LTXV.",
+    "display_name": "Окна контекста LTXV",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "Замыкать ли цикл окна контекста; применяется только к циклическим расписаниям."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "Длина окна контекста в реальных кадрах. Должна быть 8*n + 1."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "Перекрытие окна контекста в реальных кадрах."
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "Зависимый от шага алгоритм планирования окон контекста."
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "Шаг окна контекста; применяется только к равномерным расписаниям."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Применять ли перемешивание шума FreeNoise, улучшает смешивание окон."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "Метод объединения окон контекста."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, к которой будут применяться окна контекста во время сэмплирования."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Сохранять первый латентный кадр в каждом окне контекста (может помочь сохранить начальный референс)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Разделять ли несколько кондиционирований (созданных ConditionCombine) по каждому окну на основе индекса региона."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Модель с применёнными окнами контекста во время сэмплирования."
       }
     }
   },
@@ -9075,6 +9252,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "Загрузить 3D (расширено)",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "Загрузить аудио",
     "inputs": {
@@ -9734,6 +9950,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "Продлите ранее сгенерированное Ray 3.2 видео вперёд (продолжить после него) или назад (добавить перед ним). Подключите выход generation_id предыдущего узла Luma Ray 3.2. Продление всегда составляет 5 секунд.",
+    "display_name": "Luma Ray 3.2 Продлить видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Вперёд — продолжить после предыдущего clip; назад — добавить перед ним."
+      },
+      "direction_loop": {
+        "name": "loop"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для нового контента."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; результат всегда недетерминированный, независимо от seed."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "generation_id предыдущего Ray 3.2 видео для продления. Подключите выход generation_id другого узла Luma Ray 3.2."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "Создайте видео из начального и/или конечного кадра с помощью модели Ray 3.2 от Luma. Генерация с привязкой к изображению всегда длится 5 секунд.",
+    "display_name": "Luma Ray 3.2 Изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Последний кадр сгенерированного видео."
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Сделать видео бесшовным по циклу. Недоступно, если задан end_frame."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для генерации видео."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; результат всегда недетерминированный, независимо от seed."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Первый кадр сгенерированного видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "Закрепите направляющее изображение на определённой позиции временной шкалы выходного видео Ray 3.2. Подключите этот узел к входу 'keyframes' узла Luma Ray 3.2 Keyframes to Video; объединяйте несколько узлов через дополнительный вход 'keyframes' ниже.",
+    "display_name": "Luma Ray 3.2 Ключевой кадр",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Направляющее изображение для размещения в выбранный момент выходного видео."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Необязательные предыдущие ключевые кадры для объединения с этим."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "Как разместить это изображение на временной шкале выходного видео."
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "Создайте видео, интерполируя последовательность направляющих изображений, каждое из которых привязано к определённой позиции на временной шкале, с помощью Luma Ray 3.2. Постройте последовательность с помощью узлов Luma Ray 3.2 Keyframe (не менее 2).",
+    "display_name": "Luma Ray 3.2: Ключевые кадры в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Последовательность ключевых кадров из узлов Luma Ray 3.2 Keyframe (не менее 2)."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для генерации видео."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; результат всегда недетерминирован, независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "Создайте видео по текстовому запросу с помощью модели Luma Ray 3.2.",
+    "display_name": "Luma Ray 3.2: Текст в видео",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "Сделать видео бесшовно зацикленным. Доступно только для длительности 5 секунд."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для генерации видео."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; результат всегда недетерминирован, независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "Перегенерируйте существующее видео по новому запросу с помощью Luma Ray 3.2 (смена стиля, освещения, добавление или удаление элементов), сохраняя исходное движение. Исходное видео — до 18 секунд; длина отредактированного видео совпадает с исходным.",
+    "display_name": "Luma Ray 3.2: Редактирование видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Опишите желаемое изменение."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; результат всегда недетерминирован, независимо от сида."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Степень сохранения или переосмысления исходника. 'auto' — выбор Ray 3.2; adhere_* — максимальное сохранение, flex_* — баланс, reimagine_* — максимальные изменения."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Исходное видео для редактирования. До 18 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "Измените соотношение сторон существующего видео, используя Luma Ray 3.2 для заполнения новых областей холста. Исходное видео до 30 секунд. Оплата за каждую секунду результата.",
+    "display_name": "Luma Ray 3.2 Видео Переформатирование",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Опишите, как должны быть заполнены новые области холста."
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; результаты недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Исходное видео для изменения формата. До 30 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
         "tooltip": null
       }
     }
@@ -11663,6 +12135,131 @@
       },
       "vector_in_": {
         "name": "vector_in."
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
       }
     }
   },
@@ -14066,6 +14663,12 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14119,6 +14722,11 @@
     "display_name": "Предварительный просмотр изображения",
     "inputs": {
       "images": {
+        "name": "изображения"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "изображения"
       }
     }
@@ -16240,6 +16848,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "рисовать_голову"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
@@ -16913,6 +17524,12 @@
       "images": {
         "name": "изображения"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16936,6 +17553,12 @@
       "quality": {
         "name": "качество"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16949,6 +17572,12 @@
       },
       "filename_prefix": {
         "name": "префикс_названия_файла"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
       }
     }
   },
@@ -16971,6 +17600,12 @@
         "name": "format",
         "tooltip": "Формат файла для сохранения аудио."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16988,6 +17623,12 @@
       "quality": {
         "name": "качество"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -17004,6 +17645,12 @@
       },
       "quality": {
         "name": "качество"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
+        "tooltip": null
       }
     }
   },
@@ -17034,6 +17681,11 @@
         "name": "изображения",
         "tooltip": "Изображения_для_сохранения."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -17057,6 +17709,12 @@
       "images": {
         "name": "изображения",
         "tooltip": "Изображения для сохранения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
       }
     }
   },
@@ -17125,6 +17783,11 @@
       "samples": {
         "name": "образцы"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
+      }
     }
   },
   "SaveLoRA": {
@@ -17154,6 +17817,12 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -17199,6 +17868,12 @@
         "name": "видео",
         "tooltip": "Видео для сохранения."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17220,6 +17895,12 @@
       "images": {
         "name": "изображения",
         "tooltip": "RGBA-изображения сохраняются с альфа-каналом как прозрачность (только кодек vp9)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
+        "tooltip": null
       }
     }
   },
@@ -17251,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Seed",
+    "inputs": {
+      "fixed": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "seed",
         "tooltip": null
       }
     }
@@ -18799,6 +19497,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Референсное изображение(я) для редактирования. Boogu фокусируется на одном референсе на выборку; допускается больше."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -19586,6 +20315,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "Импорт внешней 3D-модели (например, из Rodin, Hunyuan3D или локального файла) в Tripo для использования с постобработкой Tripo: Текстурирование, Скелетирование, Конвертация. Рекомендуется GLB: текстуры сохраняются только при встраивании в файл. Обратите внимание, что для текстурирования импортированной модели требуется текстурный запрос.",
+    "display_name": "Tripo: Импорт модели",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель для импорта (GLB / FBX / OBJ / STL, до 150 МБ). Файлы OBJ и STL не содержат встроенных текстур."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
     "inputs": {
@@ -20053,6 +20798,10 @@
       },
       "texture_alignment": {
         "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Необязательное текстовое описание для текстурирования. На практике требуется для импортированных моделей (Tripo: Импорт модели), которые не содержат исходного изображения для определения цветов."
       },
       "texture_quality": {
         "name": "texture_quality"
@@ -21872,6 +22621,14 @@
       "model": {
         "name": "модель",
         "tooltip": "Модель, к которой применяются контекстные окна во время сэмплирования."
+      },
+      "retain_first_frame": {
+        "name": "сохранить первый кадр",
+        "tooltip": "Сохранять первый кадр I2V в каждом контекстном окне (может помочь сохранить исходную ссылку)."
+      },
+      "split_conds_to_windows": {
+        "name": "разделить условия по окнам",
+        "tooltip": "Разделять ли несколько условий (созданных ConditionCombine) по каждому окну на основе индекса региона."
       }
     },
     "outputs": {

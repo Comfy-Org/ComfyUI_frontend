@@ -15,6 +15,8 @@ export interface PublishPrefill {
   description?: string
   tags?: string[]
   thumbnailType?: ThumbnailType
+  thumbnailUrl?: string
+  thumbnailComparisonUrl?: string
   sampleImageUrls?: string[]
 }
 

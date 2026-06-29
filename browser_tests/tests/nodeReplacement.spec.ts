@@ -12,6 +12,7 @@ import {
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
 
 const renderModes = [
   { name: 'vue nodes', vueNodesEnabled: true },
@@ -131,6 +132,14 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             'normal',
             1
           ])
+
+          if (mode.vueNodesEnabled) {
+            await expect(
+              comfyPage.vueNodes
+                .getWidgetByName('KSampler', 'denoise')
+                .locator('input')
+            ).toHaveValue(/^1(?:\.0+)?$/)
+          }
         })
 
         test('Success toast is shown after replacement', async ({
@@ -237,8 +246,10 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             .click()
 
           const replacedNodeOutputLinkCount = await comfyPage.page.evaluate(
-            () =>
-              window.app!.graph!.getNodeById(2)?.outputs[0]?.links?.length ?? 0
+            (nodeId) =>
+              window.app!.graph!.getNodeById(nodeId)?.outputs[0]?.links
+                ?.length ?? 0,
+            toNodeId(2)
           )
           expect(
             replacedNodeOutputLinkCount,

@@ -16,6 +16,14 @@ const translations = {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
   },
+  'cta.watchNow': {
+    en: 'Watch Now',
+    'zh-CN': '立即观看'
+  },
+  'cta.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
 
   // HeroSection
   'hero.title': {
@@ -1244,6 +1252,10 @@ const translations = {
     en: 'Add more credits anytime',
     'zh-CN': '可随时增加积分'
   },
+  'pricing.plan.standard.feature3': {
+    en: 'Run 1 workflow concurrently (via API)',
+    'zh-CN': '通过 API 并发运行 1 个工作流'
+  },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.summary': {
@@ -1272,8 +1284,8 @@ const translations = {
     'zh-CN': '导入你自己的 LoRA'
   },
   'pricing.plan.creator.feature2': {
-    en: '3 concurrent API jobs',
-    'zh-CN': '3 个并发 API 任务'
+    en: 'Run up to 3 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 3 个工作流'
   },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
@@ -1300,8 +1312,8 @@ const translations = {
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
   },
   'pricing.plan.pro.feature2': {
-    en: '5 concurrent API jobs',
-    'zh-CN': '5 个并发 API 任务'
+    en: 'Run up to 5 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 5 个工作流'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
@@ -1385,9 +1397,9 @@ const translations = {
     'zh-CN': '随时加购积分'
   },
   'pricing.included.feature5.description': {
-    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
+    en: 'Purchase additional credits at any time. Top-up credits are valid for 1 year from the date of purchase and do not roll over with your monthly plan.',
     'zh-CN':
-      '可随时购买额外积分。未使用的充值积分自动结转至下月，最长保留 1 年。'
+      '可随时购买额外积分。充值积分自购买之日起 1 年内有效，且不会随月度计划结转。'
   },
   'pricing.included.feature6.title': {
     en: 'Pre-installed models',
@@ -1433,10 +1445,19 @@ const translations = {
       'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
   },
   'pricing.included.feature11.title': {
+    en: 'Run Workflows via API',
+    'zh-CN': '通过 API 运行工作流'
+  },
+  'pricing.included.feature11.description': {
+    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines. For higher rate limits, reach out to <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
+    'zh-CN':
+      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
+  },
+  'pricing.included.feature12.title': {
     en: 'Parallel job execution',
     'zh-CN': '并行任务执行'
   },
-  'pricing.included.feature11.description': {
+  'pricing.included.feature12.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
   },
@@ -1828,12 +1849,72 @@ const translations = {
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
+  'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
+  'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
+  'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
+  'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
+  'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
+  'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
+  'nav.close': { en: 'Close', 'zh-CN': '关闭' },
+  'nav.mobileMenuDescription': {
+    en: 'Site navigation and quick links',
+    'zh-CN': '网站导航和快速链接'
+  },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
+  // Column headers used in HeaderMainDesktop dropdowns
+  'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
+  'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
+  'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
+  'nav.colMore': { en: 'More', 'zh-CN': '更多' },
+  // Dropdown items not yet covered above
+  'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },
+  'nav.x': { en: 'X', 'zh-CN': 'X' },
+  'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
+  'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
+  'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  // Featured dropdown cards — keys are keyed by parent nav item, not card content,
+  // so the copy can be swapped without renaming the key.
+  'nav.featuredProductsTitle': {
+    en: 'New Release: Seedance 2.0',
+    'zh-CN': '全新发布：Seedance 2.0'
+  },
+  'nav.featuredProductsAlt': {
+    en: 'Seedance 2.0 release feature image',
+    'zh-CN': 'Seedance 2.0 发布精选图片'
+  },
+  'nav.featuredProductsCtaAria': {
+    en: 'Try the Seedance 2.0 workflow',
+    'zh-CN': '试用 Seedance 2.0 工作流'
+  },
+  'nav.featuredCommunityTitle': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'nav.featuredCommunityAlt': {
+    en: 'Sky Replacement workflow demo image',
+    'zh-CN': '天空替换工作流演示图片'
+  },
+  'nav.featuredCommunityCtaAria': {
+    en: 'Watch the Sky Replacement demo',
+    'zh-CN': '观看天空替换演示'
+  },
+  'nav.featuredCompanyTitle': {
+    en: 'Customer story: Black Math',
+    'zh-CN': '客户故事：Black Math'
+  },
+  'nav.featuredCompanyAlt': {
+    en: 'Black Math customer story image',
+    'zh-CN': 'Black Math 客户故事图片'
+  },
+  'nav.featuredCompanyCtaAria': {
+    en: 'Watch the Black Math customer story',
+    'zh-CN': '观看 Black Math 客户故事'
+  },
 
   // SiteFooter
   'footer.tagline': {
@@ -4848,6 +4929,70 @@ const translations = {
   'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
     'zh-CN': '阅读联盟计划条款'
+  },
+
+  // Launches page (/launches) — head metadata
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.page.title': {
+    en: 'ComfyUI Live Demo & Q&A — June 29 Launch Livestream',
+    'zh-CN': 'ComfyUI 直播演示与问答 — 6 月 29 日发布直播'
+  },
+  'launches.page.description': {
+    en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',
+    'zh-CN':
+      '6 月 29 日加入 ComfyUI 直播，观看实操产品演示并参与实时问答。了解桌面、云端和社区的最新内容，并获得解答。'
+  },
+
+  // Launches page (/launches) — hero section
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.hero.title': {
+    en: 'Everything new in ComfyUI',
+    'zh-CN': 'ComfyUI 全新内容'
+  },
+  'launches.hero.primary': {
+    en: 'Download Desktop',
+    'zh-CN': '下载桌面版'
+  },
+  'launches.hero.secondary': {
+    en: 'Launch Cloud',
+    'zh-CN': '启动云端'
+  },
+  'launches.hero.visualAlt': {
+    en: 'Comfy',
+    'zh-CN': 'Comfy'
+  },
+
+  // Launches page (/launches) — subscribe banner
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.banner.text': {
+    en: 'Join the live stream. Get answers in real time.',
+    'zh-CN': '加入直播，实时获得解答。'
+  },
+  'launches.banner.cta': {
+    en: 'Join livestream',
+    'zh-CN': '加入直播'
+  },
+
+  // Launches page (/launches) — closing CTA
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.cta.heading': {
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
+  },
+  'launches.cta.primary': {
+    en: 'Open Comfy Cloud',
+    'zh-CN': '打开 Comfy Cloud'
+  },
+  'launches.cta.secondary': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
+  // Launches page (/launches) — launches grid
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.section.title': {
+    en: 'Latest Launches',
+    'zh-CN': '最新发布'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

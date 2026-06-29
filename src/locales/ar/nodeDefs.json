@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "إنشاء موجه JSON لنموذج Ideogram 4.",
+    "display_name": "إنشاء موجه JSON (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "الجماليات",
+        "tooltip": "كلمات مفتاحية جمالية إلزامية (مثل: مزاجي، سينمائي، باهت الألوان)."
+      },
+      "background": {
+        "name": "الخلفية",
+        "tooltip": "وصف إلزامي لخلفية الصورة أو البيئة المحيطة."
+      },
+      "color_palette": {
+        "name": "لوحة الألوان",
+        "tooltip": "رموز ألوان Hex لتوجيه الألوان السائدة في الصورة. حتى ١٦ إدخالاً."
+      },
+      "element": {
+        "name": "عنصر",
+        "tooltip": "عناصر الموجه من عقدة إنشاء الصناديق المحيطة."
+      },
+      "high_level_description": {
+        "name": "وصف عالي المستوى",
+        "tooltip": "وصف اختياري للصورة في جملة أو جملتين. يُنصح به بشدة."
+      },
+      "lighting": {
+        "name": "الإضاءة",
+        "tooltip": "وصف إلزامي للإضاءة (مثل: ساعة ذهبية، إضاءة حواف، ظلال درامية)."
+      },
+      "medium": {
+        "name": "الوسيط",
+        "tooltip": "نوع الوسيط الإلزامي (مثل: صورة فوتوغرافية، رسم توضيحي، ثلاثي الأبعاد، لوحة، تصميم جرافيكي). عند اختيار النمط = صورة، اختر صورة فوتوغرافية."
+      },
+      "style": {
+        "name": "النمط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "موجه",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
     "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
@@ -2471,6 +2514,10 @@
         "name": "fuse_method",
         "tooltip": "الطريقة المستخدمة لدمج نوافذ السياق."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "قائمة مؤشرات الـ latent التي سيتم الاحتفاظ بها داخل الضوضاء latent لكل نافذة. تُستخدم في سير العمل حيث يكون المحتوى المرجعي (مثل صورة البداية) موجودًا مباشرةً في الضوضاء latent بدلاً من قنوات التكييف المنفصلة (مثل أسلوب inplace في I2V مثل LTXV، AnimateDiff). مستقلة عن cond_retain_index_list."
+      },
       "model": {
         "name": "model",
         "tooltip": "النموذج المراد تطبيق نوافذ السياق عليه أثناء أخذ العينات."
@@ -2629,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "تحويل مصفوفة إلى نص",
+    "inputs": {
+      "array": {
+        "name": "مصفوفة"
+      },
+      "indent": {
+        "name": "المسافة البادئة",
+        "tooltip": "عدد المسافات لكل مستوى مسافة بادئة. ٠ ينتج نصاً مضغوطاً في سطر واحد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "تحويل قاموس إلى نص",
+    "inputs": {
+      "dictionary": {
+        "name": "قاموس"
+      },
+      "indent": {
+        "name": "المسافة البادئة",
+        "tooltip": "عدد المسافات لكل مستوى مسافة بادئة. ٠ ينتج نصاً مضغوطاً في سطر واحد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "تحويل صورة كوزموس إلى فيديو كامِن",
     "inputs": {
@@ -2687,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "رسم صناديق محيطة في لوحة الرسم. يخرج عناصر موجه Ideogram، وصناديق محيطة في مساحة البكسل، وصورة معاينة.",
+    "display_name": "إنشاء صناديق محيطة",
+    "inputs": {
+      "background": {
+        "name": "الخلفية",
+        "tooltip": "صورة اختيارية تُستخدم كخلفية في لوحة الرسم والمعاينة."
+      },
+      "editor_state": {
+        "name": "حالة المحرر",
+        "tooltip": "ارسم الصناديق المحيطة وحدد نوع كل صندوق، النص، الوصف، لوحة الألوان. ابدأ بعنصر الخلفية أولاً والعناصر الأمامية أخيراً."
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع لوحة الرسم وشبكة البكسل للصناديق المحيطة."
+      },
+      "width": {
+        "name": "العرض",
+        "tooltip": "عرض لوحة الرسم وشبكة البكسل للصناديق المحيطة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معاينة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "صناديق محيطة",
+        "tooltip": null
+      },
+      "2": {
+        "name": "عناصر",
         "tooltip": null
       }
     }
@@ -2903,6 +3020,10 @@
       "audio": {
         "name": "الصوت",
         "tooltip": "الصوت الذي سيتم إضافته للفيديو."
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "عمق البت للفيديو المُنشأ. عمق ١٠ بت يحافظ على تدرجات أكثر سلاسة مع تقليل التدرج اللوني، لكن بعض المشغلات والعُقد اللاحقة قد لا تدعمه."
       },
       "fps": {
         "name": "الإطارات في الثانية"
@@ -5219,6 +5340,10 @@
       },
       "2": {
         "name": "معدل_الإطارات",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8151,8 @@
         "name": "التحكم بعد التوليد"
       },
       "generate_audio": {
-        "name": "توليد الصوت"
+        "name": "توليد الصوت",
+        "tooltip": "‏'kling-3.0-turbo' يُولّد دائماً صوتاً أصلياً، لذلك يتم تجاهل تبديل الصوت."
       },
       "model": {
         "name": "النموذج",
@@ -8312,6 +8438,57 @@
       "1": {
         "name": "سلبي",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVContextWindows": {
+    "description": "تعيين نوافذ السياق لنماذج شبيهة بـ LTXV.",
+    "display_name": "نوافذ السياق LTXV",
+    "inputs": {
+      "closed_loop": {
+        "name": "حلقة مغلقة",
+        "tooltip": "ما إذا كان سيتم إغلاق حلقة نافذة السياق؛ تنطبق فقط على الجداول الدائرية."
+      },
+      "context_length": {
+        "name": "طول السياق",
+        "tooltip": "طول نافذة السياق بالإطارات الحقيقية. يجب أن يكون 8*n + 1."
+      },
+      "context_overlap": {
+        "name": "تداخل السياق",
+        "tooltip": "تداخل نافذة السياق بالإطارات الحقيقية."
+      },
+      "context_schedule": {
+        "name": "جدولة السياق",
+        "tooltip": "خوارزمية جدولة تعتمد على الخطوات لنوافذ السياق."
+      },
+      "context_stride": {
+        "name": "خطوة السياق",
+        "tooltip": "خطوة نافذة السياق؛ تنطبق فقط على الجداول الموحدة."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "ما إذا كان سيتم تطبيق خلط ضوضاء FreeNoise، يحسن دمج النوافذ."
+      },
+      "fuse_method": {
+        "name": "طريقة الدمج",
+        "tooltip": "طريقة دمج نوافذ السياق."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج الذي سيتم تطبيق نوافذ السياق عليه أثناء التوليد."
+      },
+      "retain_first_frame": {
+        "name": "الاحتفاظ بالإطار الأول",
+        "tooltip": "الاحتفاظ بأول إطار latent في كل نافذة سياق (قد يساعد في الحفاظ على المرجع الأولي)."
+      },
+      "split_conds_to_windows": {
+        "name": "تقسيم الشروط للنوافذ",
+        "tooltip": "ما إذا كان سيتم تقسيم الشروط المتعددة (التي تم إنشاؤها بواسطة ConditionCombine) لكل نافذة بناءً على مؤشر المنطقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "النموذج مع تطبيق نوافذ السياق أثناء التوليد."
       }
     }
   },
@@ -9075,6 +9252,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "تحميل ثلاثي الأبعاد (متقدم)",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج ثلاثي الأبعاد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معلومات النموذج ثلاثي الأبعاد",
+        "tooltip": null
+      },
+      "2": {
+        "name": "معلومات الكاميرا",
+        "tooltip": null
+      },
+      "3": {
+        "name": "العرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "تحميل الصوت",
     "inputs": {
@@ -9734,6 +9950,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "قم بتمديد جيل Ray 3.2 السابق للأمام (استمر بعده) أو للخلف (مقدمة قبله). قم بتوصيل مخرج generation_id من عقدة Luma Ray 3.2 السابقة. الامتدادات دائماً مدتها ٥ ثوانٍ.",
+    "display_name": "Luma Ray 3.2 تمديد الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "direction": {
+        "name": "الاتجاه",
+        "tooltip": "الأمام تعني الاستمرار بعد المقطع السابق؛ الخلف تعني الإضافة قبله."
+      },
+      "direction_loop": {
+        "name": "تكرار"
+      },
+      "prompt": {
+        "name": "الموجه النصي",
+        "tooltip": "موجه نصي للمحتوى الجديد."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "generation_id لفيديو Ray 3.2 السابق الذي تريد تمديده. قم بتوصيل مخرج generation_id من عقدة Luma Ray 3.2 أخرى."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "إنشاء فيديو من إطار بداية و/أو نهاية باستخدام نموذج Ray 3.2 من Luma. عمليات التوليد المرتكزة على الصور دائماً مدتها ٥ ثوانٍ.",
+    "display_name": "Luma Ray 3.2 من صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "end_frame": {
+        "name": "إطار النهاية",
+        "tooltip": "الإطار الأخير للفيديو المُنتج."
+      },
+      "loop": {
+        "name": "تكرار",
+        "tooltip": "اجعل الفيديو يتكرر بسلاسة. غير متاح عند تعيين end_frame."
+      },
+      "prompt": {
+        "name": "الموجه النصي",
+        "tooltip": "موجه نصي لتوليد الفيديو."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "start_frame": {
+        "name": "إطار البداية",
+        "tooltip": "الإطار الأول للفيديو المُنتج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "ثبت صورة إرشادية في موضع على خط زمن فيديو Ray 3.2 الناتج. قم بتوصيل هذه العقدة بمدخل 'keyframes' في عقدة Luma Ray 3.2 Keyframes to Video؛ يمكنك ربط عدة عقد معاً عبر مدخل 'keyframes' الاختياري أدناه.",
+    "display_name": "Luma Ray 3.2 إطار رئيسي",
+    "inputs": {
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة إرشادية لوضعها في اللحظة المختارة من الفيديو الناتج."
+      },
+      "keyframes": {
+        "name": "الإطارات الرئيسية",
+        "tooltip": "إطارات رئيسية سابقة اختيارية لربطها مع هذه."
+      },
+      "position": {
+        "name": "الموضع",
+        "tooltip": "كيفية وضع هذه الصورة على خط زمن الفيديو الناتج."
+      },
+      "position_fraction": {
+        "name": "النسبة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الإطارات الرئيسية",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "إنشاء فيديو يقوم بعمل استيفاء بين سلسلة من صور الدليل، كل واحدة منها مرتبطة بموقع على الخط الزمني، باستخدام Luma Ray 3.2. قم ببناء التسلسل باستخدام عقد Luma Ray 3.2 Keyframe (على الأقل ٢).",
+    "display_name": "Luma Ray 3.2 تحويل الإطارات الرئيسية إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "keyframes": {
+        "name": "الإطارات الرئيسية",
+        "tooltip": "تسلسل الإطارات الرئيسية من عقد Luma Ray 3.2 Keyframe (على الأقل ٢)."
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "الوصف النصي لإنشاء الفيديو."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرّف التوليد",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "إنشاء فيديو من وصف نصي باستخدام نموذج Luma Ray 3.2.",
+    "display_name": "Luma Ray 3.2 تحويل النص إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "loop": {
+        "name": "تكرار",
+        "tooltip": "اجعل الفيديو يتكرر بسلاسة. متوفر فقط لمدة ٥ ثوانٍ."
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "الوصف النصي لإنشاء الفيديو."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرّف التوليد",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "إعادة إنتاج فيديو موجود بناءً على وصف نصي جديد باستخدام Luma Ray 3.2 (تغيير النمط، إعادة الإضاءة، إضافة أو إزالة عناصر) مع الحفاظ على الحركة الأصلية. الفيديو المصدر حتى ١٨ ثانية؛ الفيديو المعدل يحتفظ بطول المصدر.",
+    "display_name": "Luma Ray 3.2 تحرير الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "يصف التعديل المطلوب."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "strength": {
+        "name": "القوة",
+        "tooltip": "مدى قوة الحفاظ على المصدر مقابل إعادة تخيله. 'تلقائي' يتيح لـ Ray 3.2 الاختيار؛ adhere_* يحافظ على الأصل أكثر، flex_* متوازن، reimagine_* يغير أكثر."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو المصدر للتحرير. حتى ١٨ ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرّف التوليد",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "تغيير نسبة العرض إلى الارتفاع لفيديو موجود، باستخدام Luma Ray 3.2 لملء المناطق الجديدة المكشوفة من اللوحة. الفيديو المصدر حتى ٣٠ ثانية. يتم احتساب التكلفة لكل ثانية من الناتج.",
+    "display_name": "إعادة تأطير الفيديو Luma Ray 3.2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "موجه",
+        "tooltip": "يصف كيفية ملء المناطق الجديدة المكشوفة من اللوحة."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "فيديو المصدر لإعادة التأطير. حتى ٣٠ ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرّف التوليد",
         "tooltip": null
       }
     }
@@ -11663,6 +12135,131 @@
       },
       "vector_in_": {
         "name": "متجه الإدخال"
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "الكتل.0."
+      },
+      "blocks_10_": {
+        "name": "الكتل.10."
+      },
+      "blocks_11_": {
+        "name": "الكتل.11."
+      },
+      "blocks_12_": {
+        "name": "الكتل.12."
+      },
+      "blocks_13_": {
+        "name": "الكتل.13."
+      },
+      "blocks_14_": {
+        "name": "الكتل.14."
+      },
+      "blocks_15_": {
+        "name": "الكتل.15."
+      },
+      "blocks_16_": {
+        "name": "الكتل.16."
+      },
+      "blocks_17_": {
+        "name": "الكتل.17."
+      },
+      "blocks_18_": {
+        "name": "الكتل.18."
+      },
+      "blocks_19_": {
+        "name": "الكتل.19."
+      },
+      "blocks_1_": {
+        "name": "الكتل.1."
+      },
+      "blocks_20_": {
+        "name": "الكتل.20."
+      },
+      "blocks_21_": {
+        "name": "الكتل.21."
+      },
+      "blocks_22_": {
+        "name": "الكتل.22."
+      },
+      "blocks_23_": {
+        "name": "الكتل.23."
+      },
+      "blocks_24_": {
+        "name": "الكتل.24."
+      },
+      "blocks_25_": {
+        "name": "الكتل.25."
+      },
+      "blocks_26_": {
+        "name": "الكتل.26."
+      },
+      "blocks_27_": {
+        "name": "الكتل.27."
+      },
+      "blocks_2_": {
+        "name": "الكتل.2."
+      },
+      "blocks_3_": {
+        "name": "الكتل.3."
+      },
+      "blocks_4_": {
+        "name": "الكتل.4."
+      },
+      "blocks_5_": {
+        "name": "الكتل.5."
+      },
+      "blocks_6_": {
+        "name": "الكتل.6."
+      },
+      "blocks_7_": {
+        "name": "الكتل.7."
+      },
+      "blocks_8_": {
+        "name": "الكتل.8."
+      },
+      "blocks_9_": {
+        "name": "الكتل.9."
+      },
+      "first_": {
+        "name": "الأول."
+      },
+      "last_": {
+        "name": "الأخير."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
       }
     }
   },
@@ -14066,6 +14663,12 @@
       "audioUI": {
         "name": "واجهة المستخدم للصوت"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصوت",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14119,6 +14722,11 @@
     "display_name": "معاينة الصورة",
     "inputs": {
       "images": {
+        "name": "الصور"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "الصور"
       }
     }
@@ -16240,6 +16848,9 @@
       "draw_hands": {
         "name": "رسم اليدين"
       },
+      "draw_head": {
+        "name": "رسم الرأس"
+      },
       "face_point_size": {
         "name": "حجم نقطة الوجه"
       },
@@ -16913,6 +17524,12 @@
       "images": {
         "name": "الصور"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصور",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16936,6 +17553,12 @@
       "quality": {
         "name": "الجودة"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصور",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16949,6 +17572,12 @@
       },
       "filename_prefix": {
         "name": "بادئة اسم الملف"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصوت",
+        "tooltip": null
       }
     }
   },
@@ -16971,6 +17600,12 @@
         "name": "الصيغة",
         "tooltip": "صيغة الملف التي سيتم حفظ الصوت بها."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصوت",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16988,6 +17623,12 @@
       "quality": {
         "name": "الجودة"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصوت",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -17004,6 +17645,12 @@
       },
       "quality": {
         "name": "الجودة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصوت",
+        "tooltip": null
       }
     }
   },
@@ -17034,6 +17681,11 @@
         "name": "الصور",
         "tooltip": "الصور التي سيتم حفظها."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصور"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -17057,6 +17709,12 @@
       "images": {
         "name": "الصور",
         "tooltip": "الصور المراد حفظها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصور",
+        "tooltip": null
       }
     }
   },
@@ -17125,6 +17783,11 @@
       "samples": {
         "name": "عينات"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "عينات"
+      }
     }
   },
   "SaveLoRA": {
@@ -17154,6 +17817,12 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -17199,6 +17868,12 @@
         "name": "الفيديو",
         "tooltip": "الفيديو الذي سيتم حفظه."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديو",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17220,6 +17895,12 @@
       "images": {
         "name": "الصور",
         "tooltip": "يتم حفظ صور RGBA مع قناة ألفا الخاصة بها كشفافية (ترميز vp9 فقط)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصور",
+        "tooltip": null
       }
     }
   },
@@ -17251,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "البذرة",
+    "inputs": {
+      "fixed": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "البذرة",
         "tooltip": null
       }
     }
@@ -18799,6 +19497,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة مرجعية (أو صور) للتعديل. يركّز Boogu على مرجع واحد لكل عينة؛ يمكن إضافة المزيد."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "ترميز النص لفيديو Hunyuan - من صورة إلى فيديو",
     "inputs": {
@@ -19586,6 +20315,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "استيراد نموذج ثلاثي الأبعاد خارجي (مثلاً من Rodin، Hunyuan3D أو ملف محلي) إلى Tripo لاستخدامه مع عُقد المعالجة اللاحقة في Tripo: الإكساء، التحريك، التحويل. يُوصى باستخدام GLB: تبقى الخامات محفوظة فقط إذا كانت مضمنة داخل الملف. يرجى ملاحظة أن إكساء نموذج مستورد يتطلب مطالبة إكساء.",
+    "display_name": "Tripo: استيراد نموذج",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "نموذج ثلاثي الأبعاد للاستيراد (GLB / FBX / OBJ / STL، حتى ١٥٠ ميجابايت). ملفات OBJ و STL لا تحتوي على خامات مضمنة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: متعدد المناظر إلى نموذج",
     "inputs": {
@@ -20053,6 +20798,10 @@
       },
       "texture_alignment": {
         "name": "محاذاة_الملمس"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "إرشادات نصية اختيارية للإكساء. مطلوبة عملياً للنماذج المستوردة (Tripo: استيراد نموذج)، والتي لا تحتوي على صورة مصدر لاستنتاج الألوان منها."
       },
       "texture_quality": {
         "name": "جودة_الملمس"
@@ -21872,6 +22621,14 @@
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المراد تطبيق نوافذ السياق عليه أثناء أخذ العينات."
+      },
+      "retain_first_frame": {
+        "name": "الاحتفاظ بالإطار الأول",
+        "tooltip": "الاحتفاظ بأول إطار I2V في كل نافذة سياق (قد يساعد في الحفاظ على المرجع الأولي)."
+      },
+      "split_conds_to_windows": {
+        "name": "تقسيم الشروط للنوافذ",
+        "tooltip": "ما إذا كان يجب تقسيم الشروط المتعددة (التي تم إنشاؤها بواسطة ConditionCombine) إلى كل نافذة بناءً على مؤشر المنطقة."
       }
     },
     "outputs": {

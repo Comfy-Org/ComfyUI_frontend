@@ -24,6 +24,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 const INLINE_INPUTS = false
 
@@ -76,6 +77,7 @@ function dynamicComboWidget(
   widgetName?: string
 ) {
   const { addNodeInput } = useLitegraphService()
+  const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
   const inputData = parseResult.data
@@ -98,7 +100,10 @@ function dynamicComboWidget(
     const newSpec = value ? options[value] : undefined
 
     const removedInputs = remove(node.inputs, isInGroup)
-    for (const widget of remove(node.widgets, isInGroup)) widget.onRemove?.()
+    for (const widget of remove(node.widgets, isInGroup)) {
+      widget.onRemove?.()
+      if (widget.widgetId) deleteWidget(widget.widgetId)
+    }
 
     if (!newSpec) return
 
@@ -190,7 +195,9 @@ function dynamicComboWidget(
   const getState = () => {
     const graphId = resolveNodeRootGraphId(node)
     if (!graphId) return undefined
-    return useWidgetValueStore().getWidget(graphId, node.id, widget.name)
+    return useWidgetValueStore().getWidget(
+      widgetId(graphId, node.id, widget.name)
+    )
   }
   Object.defineProperty(widget, 'value', {
     get() {
