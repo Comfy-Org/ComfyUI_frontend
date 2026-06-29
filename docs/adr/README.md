@@ -24,6 +24,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0012](0012-cloud-release-notes-use-comfyui-version.md)                     | Cloud Release Notes Use the ComfyUI Version                 | Accepted | 2026-07-13 |
 | [0013](0013-telemetry-service-selection.md)                                 | Telemetry Service Selection                                 | Accepted | 2026-07-28 |
 | [0014](0014-billing-telemetry-attempt-correlation-and-workspace-scoping.md) | Billing Telemetry Attempt Correlation and Workspace Scoping | Proposed | 2026-07-28 |
+| [0015](0015-adopt-fallow.md)                                                     | Adopt Fallow                                                | Proposed | 2026-06-29 |
 
 ## Creating a New ADR
 
