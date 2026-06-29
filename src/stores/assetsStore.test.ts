@@ -754,9 +754,12 @@ describe('assetsStore - Refactored (Option A)', () => {
       await store.updateHistory()
       await store.loadMoreHistory()
 
-      // No offset fallback for transient failures, just a recorded error
+      // No offset fallback for transient failures, just a recorded error.
+      // Asserting the concrete 500 guards the recover-vs-not classification:
+      // only a 400 should drop to the offset fallback.
       expect(fetchHistoryPage).toHaveBeenCalledTimes(2)
-      expect(store.historyError).toBeInstanceOf(Error)
+      expect(store.historyError).toBeInstanceOf(JobsApiError)
+      expect(store.historyError).toMatchObject({ status: 500 })
       expect(store.hasMoreHistory).toBe(true)
 
       // The still-valid cursor is retried on the next attempt
