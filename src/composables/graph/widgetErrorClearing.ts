@@ -13,6 +13,7 @@ interface WidgetErrorScope {
   widgetName: string
 }
 
+// Keep this signature aligned with executionErrorStore.clearWidgetRelatedErrors.
 type ClearWidgetRelatedErrors = (
   executionId: NodeExecutionId,
   errorInputName: string,
@@ -31,7 +32,7 @@ interface ClearWidgetRelatedErrorScopesOptions {
 
 /**
  * Clear the interior promoted-widget source first, then the host widget.
- * The range belongs to the widget surface that emitted the value.
+ * The host widget's range is applied to both scopes, matching prior behavior.
  */
 export function clearWidgetRelatedErrorScopes({
   clearWidgetRelatedErrors,
