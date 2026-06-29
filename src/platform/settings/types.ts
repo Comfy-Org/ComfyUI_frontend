@@ -26,10 +26,15 @@ export interface SettingOption {
   value?: string | number
 }
 
-interface SettingTelemetryOptions {
-  trackChanges?: boolean
-  includeValues?: boolean
-}
+type SettingTelemetryOptions =
+  | {
+      trackChanges: false
+      includeValues?: never
+    }
+  | {
+      trackChanges?: true
+      includeValues?: boolean
+    }
 
 export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings
