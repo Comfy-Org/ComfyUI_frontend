@@ -15,6 +15,7 @@ type CardAction =
       href: string
       target?: '_blank'
       icon?: Component
+      variant?: 'default' | 'outline'
     }
   | { type: 'code'; value: string }
 
@@ -26,25 +27,27 @@ export interface FeatureCard {
   action?: CardAction
 }
 
+type ColumnCount = 2 | 3 | 4
+
 const {
+  cards,
+  columns = 3,
+  copiedLabel,
+  copyLabel,
   eyebrow,
   heading,
-  subtitle,
-  columns = 3,
-  cards,
-  copyLabel,
-  copiedLabel
+  subtitle
 } = defineProps<{
+  cards: readonly FeatureCard[]
+  columns?: ColumnCount
+  copiedLabel?: string
+  copyLabel?: string
   eyebrow?: string
   heading: string
   subtitle?: string
-  columns?: 2 | 3 | 4
-  cards: readonly FeatureCard[]
-  copyLabel?: string
-  copiedLabel?: string
 }>()
 
-const columnClass: Record<2 | 3 | 4, string> = {
+const columnClass: Record<ColumnCount, string> = {
   2: 'lg:grid-cols-2',
   3: 'lg:grid-cols-3',
   4: 'lg:grid-cols-4'
@@ -99,7 +102,7 @@ const columnClass: Record<2 | 3 | 4, string> = {
                 ? 'noopener noreferrer'
                 : undefined
             "
-            variant="outline"
+            :variant="card.action.variant ?? 'outline'"
             :append-icon="card.action.icon"
           >
             {{ card.action.label }}

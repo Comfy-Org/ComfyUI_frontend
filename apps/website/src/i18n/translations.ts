@@ -1895,31 +1895,31 @@ const translations = {
     'zh-CN': '三步完成 Comfy MCP 配置'
   },
   'mcp.setup.subtitle': {
-    en: 'Add Comfy Cloud as a built-in connector in Claude, and the full ComfyUI toolset is available right in your chat.',
+    en: 'Add Comfy Cloud as a custom connector in Claude, Cursor, Codex, or any MCP-compatible client. Sign in once, and the full ComfyUI toolset is available right in your chat.',
     'zh-CN':
-      '将 Comfy Cloud 添加为 Claude 的内置连接器，ComfyUI 全套工具即可直接在对话中使用。'
+      '将 Comfy Cloud 添加为 Claude、Cursor、Codex 或任意兼容 MCP 客户端的自定义连接器。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
   },
   'mcp.setup.step1.label': { en: 'STEP 1', 'zh-CN': '第 1 步' },
   'mcp.setup.step1.title': {
-    en: 'Open Claude settings',
-    'zh-CN': '打开 Claude 设置'
+    en: 'Copy the MCP URL',
+    'zh-CN': '复制 MCP URL'
   },
   'mcp.setup.step1.description': {
-    en: 'Launch the app or open claude.ai and go to Settings > Connections',
-    'zh-CN': '启动应用或打开 claude.ai，前往"设置 > 连接"'
-  },
-  'mcp.setup.step1.cta': {
-    en: 'SETTINGS → CONNECTIONS',
-    'zh-CN': '设置 > 连接'
+    en: "Click the copy button below. You'll paste it into your client in the next step.",
+    'zh-CN': '点击下方的复制按钮，下一步将其粘贴到你的客户端中。'
   },
   'mcp.setup.step2.label': { en: 'STEP 2', 'zh-CN': '第 2 步' },
   'mcp.setup.step2.title': {
-    en: 'Add the Comfy Cloud custom connector',
-    'zh-CN': '添加 Comfy Cloud 自定义连接器'
+    en: 'Add the connector',
+    'zh-CN': '添加连接器'
   },
   'mcp.setup.step2.description': {
-    en: 'Name it Comfy Cloud and paste the URL',
-    'zh-CN': '将其命名为 Comfy Cloud 并粘贴 URL'
+    en: 'Name it Comfy Cloud and paste the URL. The docs below cover every client.',
+    'zh-CN': '将其命名为 Comfy Cloud 并粘贴 URL。下方文档涵盖各类客户端。'
+  },
+  'mcp.setup.step2.cta': {
+    en: 'COMFY CLOUD MCP DOCS',
+    'zh-CN': 'COMFY CLOUD MCP 文档'
   },
   'mcp.setup.step3.label': { en: 'STEP 3', 'zh-CN': '第 3 步' },
   'mcp.setup.step3.title': {
@@ -1927,9 +1927,12 @@ const translations = {
     'zh-CN': '连接并登录'
   },
   'mcp.setup.step3.description': {
-    en: "Click Add > Connect, sign in with your Comfy account. You're all set. Now just ask Claude to generate an image.",
-    'zh-CN':
-      '点击"添加 > 连接"，使用 Comfy 账户登录。配置完成。现在直接让 Claude 生成图像即可。'
+    en: 'Click Connect, sign in, and every Comfy Cloud skill is ready in your client.',
+    'zh-CN': '点击"连接"并登录，所有 Comfy Cloud 技能即可在你的客户端中使用。'
+  },
+  'mcp.setup.step3.cta': {
+    en: 'COMFY CLOUD SKILLS',
+    'zh-CN': 'COMFY CLOUD 技能'
   },
 
   // MCP – WhyBuildSection

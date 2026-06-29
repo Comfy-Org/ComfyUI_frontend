@@ -16,11 +16,8 @@ const cards: FeatureCard[] = [
     title: t('mcp.setup.step1.title', locale),
     description: t('mcp.setup.step1.description', locale),
     action: {
-      type: 'link',
-      label: t('mcp.setup.step1.cta', locale),
-      href: `${externalLinks.cloud}/settings/connections`,
-      target: '_blank',
-      icon: ArrowUpRight
+      type: 'code',
+      value: externalLinks.mcpServer
     }
   },
   {
@@ -29,15 +26,27 @@ const cards: FeatureCard[] = [
     title: t('mcp.setup.step2.title', locale),
     description: t('mcp.setup.step2.description', locale),
     action: {
-      type: 'code',
-      value: externalLinks.mcpServer
+      type: 'link',
+      label: t('mcp.setup.step2.cta', locale),
+      href: externalLinks.docsMcp,
+      target: '_blank',
+      icon: ArrowUpRight,
+      variant: 'default'
     }
   },
   {
     id: 'step3',
     label: t('mcp.setup.step3.label', locale),
     title: t('mcp.setup.step3.title', locale),
-    description: t('mcp.setup.step3.description', locale)
+    description: t('mcp.setup.step3.description', locale),
+    action: {
+      type: 'link',
+      label: t('mcp.setup.step3.cta', locale),
+      href: externalLinks.mcpSkills,
+      target: '_blank',
+      icon: ArrowUpRight,
+      variant: 'default'
+    }
   }
 ]
 </script>
