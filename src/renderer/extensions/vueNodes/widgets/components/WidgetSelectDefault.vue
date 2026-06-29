@@ -11,43 +11,52 @@
       @update:open="handleOpenChange"
     >
       <ComboboxAnchor as-child>
-        <ComboboxTrigger as-child>
-          <button
-            type="button"
-            role="combobox"
-            aria-haspopup="listbox"
-            :aria-label="widget.label || widget.name"
-            :aria-invalid="isInvalid || undefined"
-            :aria-expanded="isOpen"
-            :disabled
-            tabindex="0"
-            data-capture-wheel="true"
-            data-testid="widget-select-default-trigger"
-            :class="
-              cn(
-                WidgetInputBaseClass,
-                'flex h-7 w-full min-w-0 cursor-pointer items-center overflow-hidden outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
-                isInvalid && 'ring-1 ring-destructive-background'
-              )
-            "
-          >
-            <span
-              :class="
-                cn(
-                  'min-w-[4ch] flex-1 truncate pr-3 pl-1 text-left',
-                  $slots.default && 'mr-5'
-                )
-              "
+        <div
+          data-capture-wheel="true"
+          :class="
+            cn(
+              WidgetInputBaseClass,
+              'flex w-full min-w-0 items-center overflow-hidden',
+              useWidgetHeight(),
+              !disabled && 'hover:bg-component-node-widget-background-hovered',
+              disabled && 'opacity-50',
+              isInvalid && 'ring-1 ring-destructive-background'
+            )
+          "
+        >
+          <ComboboxTrigger as-child>
+            <button
+              type="button"
+              role="combobox"
+              aria-haspopup="listbox"
+              :aria-label="widget.label || widget.name"
+              :aria-invalid="isInvalid || undefined"
+              :aria-expanded="isOpen"
+              :disabled
+              tabindex="0"
+              data-testid="widget-select-default-trigger"
+              class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
             >
-              {{ selectedLabel || placeholder || '\u00a0' }}
-            </span>
-            <span
-              class="flex h-full w-8 shrink-0 items-center justify-center rounded-r-lg"
+              <span
+                class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs"
+              >
+                {{ selectedLabel || placeholder || '\u00a0' }}
+              </span>
+            </button>
+          </ComboboxTrigger>
+          <slot />
+          <ComboboxTrigger as-child>
+            <button
+              type="button"
+              tabindex="-1"
+              aria-hidden="true"
+              :disabled
+              class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
             >
               <i
                 :class="
                   cn(
-                    'icon-[lucide--chevron-down] size-4 translate-x-1.5',
+                    'icon-[lucide--chevron-down] size-4',
                     disabled
                       ? 'bg-component-node-foreground-secondary'
                       : 'bg-muted-foreground'
@@ -55,9 +64,9 @@
                 "
                 aria-hidden="true"
               />
-            </span>
-          </button>
-        </ComboboxTrigger>
+            </button>
+          </ComboboxTrigger>
+        </div>
       </ComboboxAnchor>
 
       <ComboboxPortal>
@@ -140,10 +149,6 @@
         </ComboboxContent>
       </ComboboxPortal>
     </ComboboxRoot>
-
-    <div class="absolute top-5 right-8 flex h-4 w-7 -translate-y-4/5">
-      <slot />
-    </div>
   </WidgetLayoutField>
 </template>
 
@@ -163,6 +168,7 @@ import type { CSSProperties } from 'vue'
 
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
