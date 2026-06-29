@@ -7,7 +7,8 @@ import type {
   SubgraphId
 } from '../LGraph'
 import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
-import type { NodeId, NodeProperty } from '../LGraphNode'
+import type { NodeProperty } from '../LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { LinkId, SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
 import type {
@@ -79,7 +80,7 @@ export type ISerialisableNodeOutput = Omit<
 /** Serialised LGraphNode */
 export interface ISerialisedNode {
   title?: string
-  id: NodeId
+  id: SerializedNodeId
   type: string
   pos: Point
   size: Size
@@ -125,7 +126,7 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
  * Maintained for backwards compat
  */
 export interface ISerialisedGraph extends BaseExportedGraph {
-  last_node_id: NodeId
+  last_node_id: SerializedNodeId
   last_link_id: LinkId
   nodes: ISerialisedNode[]
   links: SerialisedLLinkArray[]
@@ -175,7 +176,7 @@ export interface SubgraphIO extends SubgraphIOShared {
 /** A reference to a node widget shown in the parent graph */
 export interface ExposedWidget {
   /** The ID of the node (inside the subgraph) that the widget belongs to. */
-  id: NodeId
+  id: SerializedNodeId
   /** The name of the widget to show in the parent graph. */
   name: string
 }
@@ -211,11 +212,11 @@ export interface SerialisableLLink {
   /** Link ID */
   id: LinkId
   /** Output node ID */
-  origin_id: NodeId
+  origin_id: SerializedNodeId
   /** Output slot index */
   origin_slot: number
   /** Input node ID */
-  target_id: NodeId
+  target_id: SerializedNodeId
   /** Input slot index */
   target_slot: number
   /** Data type of the link */
@@ -225,7 +226,7 @@ export interface SerialisableLLink {
 }
 
 export interface ExportedSubgraphIONode {
-  id: NodeId
+  id: SerializedNodeId
   bounding: [number, number, number, number]
   pinned?: boolean
 }

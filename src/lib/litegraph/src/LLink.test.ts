@@ -14,4 +14,10 @@ describe('LLink', () => {
     const link = new LLink(1, 'float', 4, 2, 5, 3)
     expect(link.serialize()).toMatchSnapshot('Basic')
   })
+  test('matches numeric caller ids after endpoint normalization', () => {
+    const link = new LLink(1, 'float', 4, 2, 5, 3)
+
+    expect(link.hasOrigin(4, 2)).toBe(true)
+    expect(link.hasTarget(5, 3)).toBe(true)
+  })
 })
