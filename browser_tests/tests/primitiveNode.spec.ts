@@ -75,4 +75,46 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     )
     await expect(errorOverlay).toBeVisible()
   })
+
+  test('Can serialize to forced inputs @vue-nodes', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
+
+    await test.step('Add nodes', async () => {
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.nextFrame()
+
+      await comfyPage.page.mouse.dblclick(250, 500, { delay: 5 })
+      await comfyPage.searchBox.fillAndSelectFirstNode('Primitive')
+      await expect(comfyPage.searchBox.input).toBeHidden()
+      await comfyPage.page.mouse.dblclick(600, 500, { delay: 5 })
+      await comfyPage.searchBox.fillAndSelectFirstNode('Node With Force Input')
+    })
+
+    const primitive = await comfyPage.vueNodes.getFixtureByTitle('Primitive')
+    const node = await comfyPage.vueNodes.getFixtureByTitle(
+      'Node With Force Input'
+    )
+
+    await test.step('Link nodes', async () => {
+      await primitive.getSlot('').dragTo(node.getSlot('int_input').first())
+      await expect
+        .poll(() => comfyPage.vueNodes.isSlotConnected(primitive.getSlot('')))
+        .toBe(true)
+    })
+
+    const { input } = comfyPage.vueNodes.getInputNumberControls(
+      await comfyPage.vueNodes.getWidgetByName('Primitive', 'value')
+    )
+    await input.fill('5')
+    await input.blur()
+    const serializedValue = await comfyPage.page.evaluate(async () => {
+      const { output } = await app!.graphToPrompt()
+      return output[2].inputs.int_input
+    })
+    expect(serializedValue, 'Serialized prompt has primitive value').toBe(5)
+  })
 })
