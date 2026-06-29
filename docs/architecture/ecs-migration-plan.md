@@ -10,6 +10,14 @@ target architecture, see [ECS Target Architecture](ecs-target-architecture.md).
 For verified accuracy of these documents, see
 [Appendix: Critical Analysis](appendix-critical-analysis.md).
 
+> **Target end-state (revised):** N dedicated Pinia stores keyed by composite
+> string IDs, one store per concern (widget values, DOM widgets, layout, node
+> outputs, subgraph navigation, preview exposure). The earlier "single unified
+> World with branded numeric entity IDs and `getComponent`/`setComponent`" model
+> was rejected. PR 12617 shipped the first stores against composite
+> `graphId:nodeId:name` string keys (`WidgetId`). Phases below are reframed
+> around dedicated stores; shipped work is marked ✅.
+
 ## Planning assumptions
 
 - The bridge period is expected to span 2-3 release cycles.
@@ -23,36 +31,16 @@ For verified accuracy of these documents, see
 Zero behavioral risk. Prepares the codebase for extraction without changing
 runtime semantics. All items are independently shippable.
 
-### 0a. Centralize version counter
+### 0a. Centralize version counter ✅ Shipped
 
-`graph._version++` appears in 19 locations across 7 files. The counter is only
-read once — for debug display in `LGraphCanvas.renderInfo()` (line 5389). It
-is not used for dirty-checking, caching, or reactivity.
+`LGraph.incrementVersion()` exists and is used everywhere. The counter is only
+read for debug display in `LGraphCanvas.renderInfo()`; it is not used for
+dirty-checking, caching, or reactivity.
 
-**Change:** Add `LGraph.incrementVersion()` and replace all 19 direct
-increments.
+**Remaining cleanup:** One stray direct `_version++` at `LGraph.ts:831` should
+be replaced with `incrementVersion()`.
 
-```
-incrementVersion(): void {
-  this._version++
-}
-```
-
-| File                   | Sites                                                   |
-| ---------------------- | ------------------------------------------------------- |
-| `LGraph.ts`            | 5 (lines 956, 989, 1042, 1109, 2643)                    |
-| `LGraphNode.ts`        | 8 (lines 833, 2989, 3138, 3176, 3304, 3539, 3550, 3567) |
-| `LGraphCanvas.ts`      | 2 (lines 3084, 7880)                                    |
-| `BaseWidget.ts`        | 1 (line 439)                                            |
-| `SubgraphInput.ts`     | 1 (line 137)                                            |
-| `SubgraphInputNode.ts` | 1 (line 190)                                            |
-| `SubgraphOutput.ts`    | 1 (line 102)                                            |
-
-**Why first:** Creates the seam where a VersionSystem can later intercept,
-batch, or replace the mechanism. Mechanical find-and-replace with zero
-behavioral change.
-
-**Risk:** None. Existing null guards at call sites are preserved.
+**Risk:** None. Mechanical one-line change; existing null guards preserved.
 
 ### 0b. Add missing ID type aliases
 
@@ -79,246 +67,198 @@ Five factual errors verified during code review (see
 - `entity-problems.md`: `toJSON()` should be `toString()`, `execute()` should
   be `doExecute()`, method count ~539 should be ~848, `configure()` is ~240
   lines not ~180
-- `proto-ecs-stores.md`: `resolveDeepest()` does not exist on
-  PromotedWidgetViewManager; actual methods are `reconcile()` / `getOrCreate()`
 
 ---
 
-## Phase 1: Types and World Shell
+## Phase 1: Types and Dedicated Stores
 
-Introduces the ECS type vocabulary and an empty World. No migration of existing
-code — new types coexist with old ones.
+Introduces the ID type vocabulary and the dedicated stores. Phase 1 end-state is
+N dedicated Pinia stores, each keyed by a composite string ID, coexisting with
+legacy class instances.
 
-### 1a. Branded entity ID types
+### 1a. Branded string ID types ✅ Shipped (PR 12617)
 
-Define branded types in a new `src/ecs/entityId.ts`:
-
-```
-type NodeEntityId = number & { readonly __brand: 'NodeEntityId' }
-type LinkEntityId = number & { readonly __brand: 'LinkEntityId' }
-type WidgetEntityId = number & { readonly __brand: 'WidgetEntityId' }
-type SlotEntityId = number & { readonly __brand: 'SlotEntityId' }
-type RerouteEntityId = number & { readonly __brand: 'RerouteEntityId' }
-type GroupEntityId = number & { readonly __brand: 'GroupEntityId' }
-type GraphId = string & { readonly __brand: 'GraphId' }  // scope, not entity
-```
-
-Add cast helpers (`asNodeEntityId(id: number): NodeEntityId`) for use at
-system boundaries (deserialization, legacy bridge).
-
-**Does NOT change existing code.** The branded types are new exports consumed
-only by new ECS code.
-
-**Risk:** Low. New files, no modifications to existing code.
-
-**Consideration:** `NodeId = number | string` is the current type. The branded
-`NodeEntityId` narrows to `number`. The `string` branch exists solely for
-subgraph-related nodes (GroupNode hack). The migration must decide whether to:
-
-- Keep `NodeEntityId = number` and handle the string case at the bridge layer
-- Or define `NodeEntityId = number | string` with branding (less safe)
-
-Recommend the former: the bridge layer coerces string IDs to a numeric
-mapping, and only branded numeric IDs enter the World.
-
-### 1b. Component interfaces
-
-Define component interfaces in `src/ecs/components/`:
-
-```
-src/ecs/
-  entityId.ts          # Branded ID types
-  components/
-    position.ts        # Position (shared by Node, Reroute, Group)
-    nodeType.ts        # NodeType
-    nodeVisual.ts      # NodeVisual
-    connectivity.ts    # Connectivity
-    execution.ts       # Execution
-    properties.ts      # Properties
-    widgetContainer.ts # WidgetContainer
-    linkEndpoints.ts   # LinkEndpoints
-    ...
-  world.ts             # World type and factory
-```
-
-Components are TypeScript interfaces only — no runtime code. They mirror
-the decomposition in ADR 0008 Section "Component Decomposition."
-
-**Risk:** None. Interface-only files.
-
-### 1c. World type
-
-Define the World as a typed container:
+`src/types/widgetId.ts` ships the branded string `WidgetId`:
 
 ```ts
-interface World {
-  nodes: Map<NodeEntityId, NodeComponents>
-  links: Map<LinkEntityId, LinkComponents>
-  widgets: Map<WidgetEntityId, WidgetComponents>
-  slots: Map<SlotEntityId, SlotComponents>
-  reroutes: Map<RerouteEntityId, RerouteComponents>
-  groups: Map<GroupEntityId, GroupComponents>
-  scopes: Map<GraphId, GraphId | null> // graph scope DAG (parent or null for root)
-
-  createEntity<K extends EntityKind>(kind: K): EntityIdFor<K>
-  deleteEntity<K extends EntityKind>(kind: K, id: EntityIdFor<K>): void
-  getComponent<C>(id: EntityId, component: ComponentKey<C>): C | undefined
-  setComponent<C>(id: EntityId, component: ComponentKey<C>, data: C): void
-}
+type WidgetId = string & { readonly __brand: 'WidgetId' }
 ```
 
-Subgraphs are not a separate entity kind. A node with a `SubgraphStructure`
-component represents a subgraph. The `scopes` map tracks the graph nesting DAG.
-See [Subgraph Boundaries](subgraph-boundaries-and-promotion.md) for the full
-model.
+Format: `graphId:nodeId:name`. A `parseWidgetId()` helper splits a `WidgetId`
+back into its `{ graphId, nodeId, name }` parts at store boundaries.
 
-World scope is per workflow instance. Linked subgraph definitions can be reused
+The composite string key carries the structural relationship (graph -> node ->
+widget) directly in the key. There is no synthetic opaque number and no reverse
+lookup index.
+
+**Consideration:** `NodeId = number | string`. The `string` branch exists for
+subgraph-related nodes (GroupNode hack). The `WidgetId` format stringifies the
+`nodeId` segment, so both numeric and string node IDs flow through unchanged.
+
+### 1b. Plain-data store state shapes
+
+Each dedicated store holds plain-data records for its concern — no methods on the
+records, behavior lives in store actions and composables. State shapes mirror the
+decomposition in ADR 0008 Section "Component Decomposition" (position, node type,
+node visual, connectivity, execution, properties, widget container, link
+endpoints).
+
+**Risk:** None. Type-only definitions.
+
+### 1c. Dedicated stores
+
+Phase 1 end-state is a set of dedicated Pinia stores, one per concern, each
+keyed by its own composite string ID. Each store owns its data and exposes a
+narrow accessor surface. There is no single container that fronts all entities.
+
+Shipped stores:
+
+| Store                     | File                                            |
+| ------------------------- | ----------------------------------------------- |
+| `widgetValueStore`        | `src/stores/widgetValueStore.ts`                |
+| `domWidgetStore`          | `src/stores/domWidgetStore.ts`                  |
+| `layoutStore`             | `src/renderer/core/layout/store/layoutStore.ts` |
+| `nodeOutputStore`         | `src/stores/nodeOutputStore.ts`                 |
+| `subgraphNavigationStore` | `src/stores/subgraphNavigationStore.ts`         |
+| `previewExposureStore`    | `src/stores/previewExposureStore.ts`            |
+
+`widgetValueStore` exposes `registerWidget`, `getWidget`, `setValue`,
+`deleteWidget`, `getNodeWidgets`, and `clearGraph`, all `WidgetId`-native. There
+is no shared `lastWidgetId` counter; identity comes from the composite key.
+
+Store scope is per workflow instance. Linked subgraph definitions can be reused
 across instances, but mutable runtime state (widget values, execution state,
-selection/transient view state) remains instance-scoped through `graphId`.
+selection/transient view state) stays instance-scoped through `graphId` embedded
+in each composite key.
 
-Initial implementation: plain `Map`-backed. No reactivity, no CRDT, no
-persistence. The World exists but nothing populates it yet.
+Subgraphs are not a separate store. Subgraph nesting is tracked in
+`subgraphNavigationStore`. See
+[Subgraph Boundaries](subgraph-boundaries-and-promotion.md) for the full model.
 
-**Risk:** Low. New code, no integration points.
+**Risk:** Low. Stores are additive; integration happens in Phase 2.
 
 ---
 
-## Phase 2: Bridge Layer
+## Phase 2: Store Integration
 
-Connects the legacy class instances to the World. Both old and new code can
-read entity state; writes still go through legacy classes.
+Connects the legacy class instances to the dedicated stores. Both old and new
+code can read entity state; writes for not-yet-migrated concerns still go through
+legacy classes.
 
-### 2a. Read-only bridge for Position
+### 2a. Position reads through layoutStore
 
-The LayoutStore (`src/renderer/core/layout/store/layoutStore.ts`) already
-extracts position data for nodes, links, and reroutes into Y.js CRDTs. The
-bridge reads from LayoutStore and populates the World's `Position` component.
+`layoutStore` (`src/renderer/core/layout/store/layoutStore.ts`) already extracts
+position data for nodes, links, and reroutes into Y.js CRDTs and is the source of
+truth for layout.
 
-**Approach:** A `PositionBridge` that observes LayoutStore changes and mirrors
-them into the World. New code reads `world.getComponent(nodeId, Position)`;
-legacy code continues to read `node.pos` / LayoutStore directly.
+**Approach:** New code reads position via `layoutStore` queries (and
+`useLayoutMutations()` for writes); legacy code continues to read `node.pos`
+directly during the transition. No second copy of position data is introduced —
+`layoutStore` stays authoritative.
 
-**Open question:** Should the World wrap the Y.js maps or maintain its own
-plain-data copy? Options:
+**Risk:** Medium. The legacy `node.pos` read path must stay consistent with
+`layoutStore` during the transition. Watch for stale reads during render.
 
-| Approach               | Pros                                  | Cons                                            |
-| ---------------------- | ------------------------------------- | ----------------------------------------------- |
-| World wraps Y.js       | Single source of truth; no sync lag   | World API becomes CRDT-aware; harder to test    |
-| World copies from Y.js | Clean World API; easy to test         | Two copies of position data; sync overhead      |
-| World replaces Y.js    | Pure ECS; no CRDT dependency in World | Breaks collaboration (ADR 0003); massive change |
+### 2b. Consolidate widget callers onto widgetValueStore ✅ Largely shipped (PR 12617)
 
-**Recommendation:** Start with "World copies from Y.js" for simplicity. The
-copy is cheap (position is small data). Revisit if sync overhead becomes
-measurable.
+`widgetValueStore` (`src/stores/widgetValueStore.ts`) holds widget state in
+plain records keyed by `WidgetId` (`graphId:nodeId:name`) and is the source of
+truth for widget values. PR 12617 reverted the earlier synthetic-numeric-ID
+bridge approach.
 
-**Risk:** Medium. Introduces a sync point between two state systems. Must
-ensure the bridge doesn't create subtle ordering bugs (e.g., World reads stale
-position during render).
+**Remaining work:** Consolidate the remaining widget callers onto
+`widgetValueStore`. Reads use `getWidget(widgetId)` / `getNodeWidgets(graphId,
+nodeId)`; writes use `setValue(widgetId, value)`; `parseWidgetId()` recovers the
+`{ graphId, nodeId, name }` parts at boundaries.
 
-### 2b. Read-only bridge for WidgetValue
-
-WidgetValueStore (`src/stores/widgetValueStore.ts`) already extracts widget
-state into plain `WidgetState` objects keyed by `graphId:nodeId:name`. This is
-the closest proto-ECS store.
-
-**Approach:** A `WidgetBridge` that maps `WidgetValueStore` entries into
-`WidgetValue` components in the World, keyed by `WidgetEntityId`. Requires
-assigning synthetic widget IDs (via `lastWidgetId` counter on LGraphState).
-
-**Dependency:** Requires 1a (branded IDs) for `WidgetEntityId`.
-
-**Risk:** Low-Medium. WidgetValueStore is well-structured. Main complexity is
-the ID mapping — widgets currently lack independent IDs, so the bridge must
-maintain a `(nodeId, widgetName) -> WidgetEntityId` lookup.
+**Risk:** Low. The store is well-structured and `WidgetId`-native; identity comes
+from the composite key with no separate lookup index.
 
 **Promoted-widget caveat:** ADR 0009 assigns promoted value widgets a
 host-boundary identity (`host node locator + SubgraphInput.name`). Interior
 source node/widget identity is preserved only as migration and diagnostic
 metadata.
 
-### 2c. Read-only bridge for Node metadata
+### 2c. Node metadata stores
 
-Populate `NodeType`, `NodeVisual`, `Properties`, `Execution` components by
-reading from `LGraphNode` instances. These are simple property copies.
+Populate node-metadata records (node type, visual, properties, execution) by
+reading from `LGraphNode` instances. These are simple property copies into the
+relevant store.
 
-**Approach:** When a node is added to the graph (`LGraph.add()`), the bridge
-creates the corresponding entity in the World and populates its components.
-When a node is removed, the bridge deletes the entity.
-
-The `incrementVersion()` method from Phase 0a becomes the hook point — when
-version increments, the bridge can re-sync changed components. (This is why
-centralizing version first matters.)
+**Approach:** When a node is added to the graph (`LGraph.add()`), the store
+records its metadata. When a node is removed, the store drops it. The
+`incrementVersion()` seam from Phase 0a is a candidate hook point for re-sync
+when changed.
 
 **Risk:** Medium. Must handle the full node lifecycle (add, configure, remove)
-without breaking existing behavior. The bridge is read-only (World mirrors
-classes, not the reverse), which limits blast radius.
+without breaking existing behavior. Stores mirror the classes during the
+transition, which limits blast radius.
 
-### Bridge sunset criteria (applies to every Phase 2 bridge)
+### Store sunset criteria (applies to every Phase 2 concern)
 
-A bridge can move from "transitional" to "removal candidate" only when:
+A legacy path can move from "transitional" to "removal candidate" only when:
 
-- All production reads for that concern flow through World component queries.
-- All production writes for that concern flow through system APIs.
-- Serialization parity tests show no diff between legacy and World paths.
-- Extension compatibility tests pass without bridge-only fallback paths.
+- All production reads for that concern flow through store accessors.
+- All production writes for that concern flow through store actions.
+- Serialization parity tests show no diff between legacy and store-driven paths.
+- Extension compatibility tests pass without legacy-only fallback paths.
 
-These criteria prevent the bridge from becoming permanent by default.
+These criteria prevent the dual path from becoming permanent by default.
 
-### Bridge duration and maintenance controls
+### Dual-path duration and maintenance controls
 
 To contain dual-path maintenance cost during Phases 2-4:
 
-- Every bridge concern has a named owner and target sunset release.
-- Every PR touching bridge-covered data paths must include parity tests for both
-  legacy and World-driven execution.
-- Bridge fallback usage is instrumented in integration/e2e and reviewed every
-  milestone; upward trends block new bridge expansion.
-- Any bridge that misses its target sunset release requires an explicit risk
+- Every concern has a named owner and target sunset release.
+- Every PR touching store-covered data paths must include parity tests for both
+  legacy and store-driven execution.
+- Legacy fallback usage is instrumented in integration/e2e and reviewed every
+  milestone; upward trends block new dual-path expansion.
+- Any concern that misses its target sunset release requires an explicit risk
   review and revised removal plan.
 
 ---
 
 ## Phase 3: Systems
 
-Introduce system functions that operate on World data. Systems coexist with
+Introduce system functions that operate on store data. Systems coexist with
 legacy methods — they don't replace them yet.
 
 ### 3a. SerializationSystem (read-only)
 
-A function `serializeFromWorld(world: World): SerializedGraph` that produces
-workflow JSON by querying World components. Run alongside the existing
-`LGraph.serialize()` in tests to verify equivalence.
+A function `serializeFromStores(): SerializedGraph` that produces workflow JSON
+by querying the dedicated stores. Run alongside the existing `LGraph.serialize()`
+in tests to verify equivalence.
 
 **Why first:** Serialization is read-only and has a clear correctness check
-(output must match existing serialization). It exercises every component type
-and proves the World contains sufficient data.
+(output must match existing serialization). It exercises every store and proves
+the stores contain sufficient data.
 
 **Risk:** Low. Runs in parallel with existing code; does not replace it.
 
 ### 3b. VersionSystem
 
-Replace the `incrementVersion()` method with a system that owns all change
-tracking. The system observes component mutations on the World and
-auto-increments the version counter.
+Move change tracking behind a system that observes store mutations and
+auto-increments the version counter, replacing scattered explicit increment
+calls.
 
-**Dependency:** Requires Phase 2 bridges to be in place (otherwise the World
-doesn't see changes).
+**Dependency:** Requires Phase 2 store integration (otherwise the system doesn't
+see changes).
 
 **Risk:** Medium. Must not miss any change that the scattered `_version++`
-currently catches. The 19-site inventory from Phase 0a serves as the test
-matrix.
+historically caught.
 
 ### 3c. ConnectivitySystem (queries only)
 
-A system that can answer connectivity queries by reading `Connectivity`,
-`SlotConnection`, and `LinkEndpoints` components from the World:
+A system that answers connectivity queries by reading connectivity, slot, and
+link-endpoint records from the relevant stores:
 
 - "What nodes are connected to this node's inputs?"
 - "What links pass through this reroute?"
 - "What is the execution order?"
 
-Does not perform mutations yet — just queries. Validates that the World's
-connectivity data is complete and consistent with the class-based graph.
+Does not perform mutations yet — just queries. Validates that store connectivity
+data is complete and consistent with the class-based graph.
 
 **Risk:** Low. Read-only system with equivalence tests.
 
@@ -326,27 +266,27 @@ connectivity data is complete and consistent with the class-based graph.
 
 ## Phase 4: Write Path Migration
 
-Systems begin owning mutations. Legacy class methods delegate to systems.
-This is the highest-risk phase.
+Systems begin owning mutations. Legacy class methods delegate to stores and
+systems. This is the highest-risk phase.
 
-### 4a. Position writes through World
+### 4a. Position writes through layoutStore
 
-New code writes position via `world.setComponent(nodeId, Position, ...)`.
-The bridge propagates changes back to LayoutStore and `LGraphNode.pos`.
+New code writes position via `useLayoutMutations()` against `layoutStore`. A
+compatibility shim propagates changes back to `LGraphNode.pos` for legacy
+readers.
 
-**This inverts the data flow:** Phase 2 had legacy -> World (read bridge).
-Phase 4 has World -> legacy (write bridge). Both paths must work during the
-transition.
+**This inverts the data flow:** Phase 2 had legacy -> store (read path). Phase 4
+has store -> legacy (write path). Both must work during the transition.
 
-**Risk:** High. Two-way sync between World and legacy state. Must handle
-re-entrant updates (World write triggers bridge, which writes to legacy,
-which must NOT trigger another World write).
+**Risk:** High. Two-way sync between `layoutStore` and legacy state. Must handle
+re-entrant updates (store write triggers the shim, which writes to legacy, which
+must NOT trigger another store write).
 
 ### 4b. ConnectivitySystem mutations
 
 `connect()`, `disconnect()`, `removeNode()` operations implemented as system
-functions on the World. Legacy `LGraphNode.connect()` etc. delegate to the
-system.
+functions over the connectivity stores. Legacy `LGraphNode.connect()` etc.
+delegate to the system.
 
 **Extension API concern:** The current system fires callbacks at each step:
 
@@ -363,8 +303,8 @@ the system knowing about the callback API.
 
 **Phase 4 callback contract (locked):**
 
-- `onConnectOutput()` and `onConnectInput()` run before any World mutation.
-- If either callback rejects, abort with no component writes, no version bump,
+- `onConnectOutput()` and `onConnectInput()` run before any store mutation.
+- If either callback rejects, abort with no store writes, no version bump,
   and no lifecycle events.
 - `onConnectionsChange()` fires synchronously after commit, preserving current
   source-then-target ordering.
@@ -374,14 +314,14 @@ the system knowing about the callback API.
 **Risk:** High. Extensions depend on callback ordering and timing. Must be
 validated against real-world extensions.
 
-### 4c. Widget write path
+### 4c. Widget write path ✅ Largely shipped (PR 12617)
 
-Widget value changes go through the World instead of directly through
-WidgetValueStore. The World's `WidgetValue` component becomes the single
-source of truth; WidgetValueStore becomes a read-through cache or is removed.
+`widgetValueStore.setValue()` is already the widget write path and the source of
+truth for widget values. Remaining work routes the last legacy widget writers
+through `setValue()` rather than mutating widget instances directly.
 
-**Risk:** Medium. WidgetValueStore is already well-abstracted. The main
-change is routing writes through the World instead of the store.
+**Risk:** Medium. The store is well-abstracted and `WidgetId`-native. The main
+change is migrating the remaining direct-mutation call sites onto `setValue()`.
 
 ### 4d. Layout write path and render decoupling
 
@@ -407,25 +347,25 @@ Before enabling ECS render reads as default for any migrated family:
 - Compare legacy vs ECS p95 frame time and mean draw cost.
 - Block rollout on statistically significant regression beyond agreed budget
   (default budget: 5% p95 frame-time regression ceiling).
-- Capture profiler traces proving the dominant cost is not repeated
-  `world.getComponent()` lookups.
+- Capture profiler traces proving the dominant cost is not repeated store
+  accessor lookups.
 
 ### Phase 3 -> 4 gate (required)
 
 Phase 4 starts only when all of the following are true:
 
-- A transaction wrapper API exists on the World and is used by connectivity and
-  widget write paths in integration tests.
+- A store/command-executor transaction wrapper exists and is used by connectivity
+  and widget write paths in integration tests.
 - Undo batching parity is proven: one logical user action yields one undo
-  checkpoint in both legacy and ECS paths.
+  checkpoint in both legacy and store-driven paths.
 - Callback timing and rejection semantics from Phase 4b are covered by
   integration tests.
 - A representative extension suite passes, including `rgthree-comfy`.
-- Write bridge re-entrancy tests prove there is no World <-> legacy feedback
+- Write-path re-entrancy tests prove there is no store <-> legacy feedback
   loop.
 - Layout migration for any enabled node family passes read-only render checks
   (no `arrange()` writes during draw).
-- Render hot-path benchmark gate passes for every family moving to ECS-first
+- Render hot-path benchmark gate passes for every family moving to store-first
   reads.
 
 ---
@@ -435,10 +375,11 @@ Phase 4 starts only when all of the following are true:
 Remove bridge layers and deprecated class properties. This phase happens
 per-component, not all at once.
 
-### 5a. Remove Position bridge
+### 5a. Remove Position compatibility shim
 
-Once all position reads and writes go through the World, remove the bridge
-and the `pos`/`size` properties from `LGraphNode`, `Reroute`, `LGraphGroup`.
+Once all position reads and writes go through `layoutStore`, remove the
+compatibility shim and the `pos`/`size` properties from `LGraphNode`, `Reroute`,
+`LGraphGroup`.
 
 ### 5b. Remove widget class hierarchy
 
@@ -448,9 +389,9 @@ replaced with component data + system functions. `BaseWidget`, `NumberWidget`,
 
 ### 5c. Dissolve god objects
 
-`LGraphNode`, `LLink`, `LGraph` become thin shells — their only role is
-holding the entity ID and delegating to the World. Eventually, they can be
-removed entirely, replaced by entity ID + component queries.
+`LGraphNode`, `LLink`, `LGraph` become thin shells — their only role is holding
+the composite ID and delegating to the stores. Eventually, they can be removed
+entirely, replaced by composite IDs + store queries.
 
 **Risk:** Very High. This is the irreversible step. Must be done only after
 thorough validation that all consumers (including extensions) work with the
@@ -460,8 +401,8 @@ ECS path.
 
 Legacy removal starts only when all of the following are true:
 
-- The component being removed has no remaining direct reads or writes outside
-  World/system APIs.
+- The concern being removed has no remaining direct reads or writes outside
+  store/system APIs.
 - Serialization equivalence tests pass continuously for one release cycle.
 - A representative extension compatibility matrix is green, including
   `rgthree-comfy`.
@@ -489,20 +430,20 @@ The team prepares a single go/no-go packet containing:
 
 ### CRDT / ECS coexistence
 
-The LayoutStore uses Y.js CRDTs for collaboration-ready position data
-(per [ADR 0003](../adr/0003-crdt-based-layout-system.md)). The ECS World
-uses plain `Map`s. These must coexist.
+`layoutStore` uses Y.js CRDTs for collaboration-ready position data
+(per [ADR 0003](../adr/0003-crdt-based-layout-system.md)). The other dedicated
+stores hold plain reactive data. These must coexist.
 
-**Options explored in Phase 2a.** The recommended path (World copies from Y.js)
-defers the hard question. Eventually, the World may need to be CRDT-native —
-but this requires a separate ADR.
+`layoutStore` stays authoritative for layout (Phase 2a), so position data has a
+single CRDT-backed home. Whether other stores need CRDT backing is open and
+requires a separate ADR.
 
 **Questions to resolve:**
 
-- Should non-position components also be CRDT-backed for collaboration?
-- Does the World need an operation log for undo/redo, or can that remain
-  external (Y.js undo manager)?
-- How does conflict resolution work when two users modify the same component?
+- Should non-position stores also be CRDT-backed for collaboration?
+- Do the stores need an operation log for undo/redo, or can that remain external
+  (Y.js undo manager)?
+- How does conflict resolution work when two users modify the same record?
 
 ### Extension API preservation
 
@@ -529,7 +470,7 @@ event listeners instead of callbacks.
 
 **Phase 4 decisions:**
 
-- Rejection callbacks act as pre-commit guards (reject before World mutation).
+- Rejection callbacks act as pre-commit guards (reject before store mutation).
 - Callback dispatch remains synchronous during the bridge period.
 - Callback order remains: output validation -> input validation -> commit ->
   output change notification -> input change notification.
@@ -546,16 +487,12 @@ incrementally to ECS-native patterns.
 const seedWidget = node.widgets?.find((w) => w.name === 'seed')
 seedWidget?.setValue(42)
 
-// ECS pattern (using the bridge/world widget lookup index)
-const seedWidgetId = world.widgetIndex.getByNodeAndName(nodeId, 'seed')
+// Store pattern (composite WidgetId, no reverse-lookup index needed)
+const seedWidgetId = widgetValueStore
+  .getNodeWidgets(graphId, nodeId)
+  .find((id) => parseWidgetId(id).name === 'seed')
 if (seedWidgetId) {
-  const widgetValue = world.getComponent(seedWidgetId, WidgetValue)
-  if (widgetValue) {
-    world.setComponent(seedWidgetId, WidgetValue, {
-      ...widgetValue,
-      value: 42
-    })
-  }
+  widgetValueStore.setValue(seedWidgetId, 42)
 }
 ```
 
@@ -606,17 +543,15 @@ lifecycleEvents.on('entity.removed', (event) => {
 // Legacy pattern (do not add new usages)
 graph._version++
 
-// Bridge-safe transitional pattern (Phase 0a)
+// Transitional pattern (Phase 0a)
 graph.incrementVersion()
 
-// ECS-native pattern: mutate through command/system API.
+// Store-native pattern: mutate through the command/system API.
 // VersionSystem bumps once at transaction commit.
 executor.run({
   type: 'SetWidgetValue',
-  execute(world) {
-    const value = world.getComponent(widgetId, WidgetValue)
-    if (!value) return
-    world.setComponent(widgetId, WidgetValue, { ...value, value: 42 })
+  execute() {
+    widgetValueStore.setValue(widgetId, 42)
   }
 })
 ```
@@ -628,9 +563,11 @@ executor.run({
 
 ### Atomicity and transactions
 
-The ECS lifecycle scenarios claim operations are "atomic." This requires
-the World to support transactions — the ability to batch multiple component
-writes and commit or rollback as a unit.
+The lifecycle scenarios claim operations are "atomic." This requires a
+store/command-executor transaction — the ability to batch multiple store writes
+and commit or rollback as a unit. `layoutStore` already wraps its mutations in
+Y.js transactions; the command executor extends the same discipline across
+stores.
 
 **Current state:** `beforeChange()` / `afterChange()` provide undo/redo
 checkpoints but not true transactions. The graph can be in an inconsistent
@@ -638,10 +575,10 @@ state between these calls.
 
 **Phase 4 baseline semantics:**
 
-- Mutating systems run inside `world.transaction(label, fn)`.
-- The bridge maps one World transaction to one `beforeChange()` /
+- Mutating systems run inside a single command-executor transaction.
+- The bridge maps one executor transaction to one `beforeChange()` /
   `afterChange()` bracket.
-- Operations with multiple component writes (for example `connect()` touching
+- Operations with multiple store writes (for example `connect()` touching
   slots, links, and node metadata) still commit as one transaction and therefore
   one undo entry.
 - Failed transactions do not publish partial writes, lifecycle events, or
@@ -649,65 +586,64 @@ state between these calls.
 
 **Questions to resolve:**
 
-- How should `world.transaction()` interact with Y.js transactions when a
-  component is CRDT-backed?
+- How should the command-executor transaction interact with the Y.js
+  transactions that `layoutStore` already runs?
 - Is eventual consistency acceptable for derived data updates between
   transactions, or must post-transaction state always be immediately
   consistent?
 
 ### Keying strategy unification
 
-The 6 proto-ECS stores use 6 different keying strategies:
+The dedicated stores use per-concern keying strategies:
 
-| Store                   | Key Format                        |
-| ----------------------- | --------------------------------- |
-| WidgetValueStore        | `"${nodeId}:${widgetName}"`       |
-| PromotionStore          | `"${sourceNodeId}:${widgetName}"` |
-| DomWidgetStore          | Widget UUID                       |
-| LayoutStore             | Raw nodeId/linkId/rerouteId       |
-| NodeOutputStore         | `"${subgraphId}:${nodeId}"`       |
-| SubgraphNavigationStore | subgraphId or `'root'`            |
+| Store                     | Key Format                         |
+| ------------------------- | ---------------------------------- |
+| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`) |
+| `domWidgetStore`          | Widget UUID                        |
+| `layoutStore`             | Raw nodeId/linkId/rerouteId        |
+| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`        |
+| `subgraphNavigationStore` | subgraphId or `'root'`             |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior
 source node/widget identity.
 
-The World unifies these under branded entity IDs. But stores that use
-composite keys (e.g., `nodeId:widgetName`) reflect a genuine structural
-reality — a widget is identified by its relationship to a node. Synthetic
-`WidgetEntityId`s replace this with an opaque number, requiring a reverse
-lookup index.
+Composite string keys won over synthetic numeric IDs. A widget is identified by
+its relationship to a graph and node, and the `graphId:nodeId:name` key carries
+that relationship directly. PR 12617 kept the composite string instead of an
+opaque number, so no reverse lookup index is required — `parseWidgetId()`
+recovers the parts on demand.
 
-**Trade-off:** Type safety and uniformity vs. self-documenting keys. The
-World should maintain a lookup index (`(nodeId, widgetName) -> WidgetEntityId`)
-for the transition period.
+**Resolution:** Self-documenting composite keys, parsed at boundaries. Each store
+keeps the key format that matches its concern; there is no forced unification
+under a single ID space.
 
 ---
 
 ## Dependency Graph
 
 ```
-Phase 0a (incrementVersion)  ──┐
-Phase 0b (ID type aliases)  ───┤
+Phase 0a (incrementVersion)  ──── ✅ shipped (one stray cleanup remaining)
+Phase 0b (ID type aliases)  ───┐
 Phase 0c (doc fixes)  ─────────┤── no dependencies between these
-                                │
-Phase 1a (branded IDs)  ────────┤
-Phase 1b (component interfaces) ┤── 1b depends on 1a
-Phase 1c (World type)  ─────────┘── 1c depends on 1a, 1b
 
-Phase 2a (Position bridge)  ────┐── depends on 1c
-Phase 2b (Widget bridge)  ──────┤── depends on 1a, 1c
-Phase 2c (Node metadata bridge) ┘── depends on 0a, 1c
+Phase 1a (branded WidgetId)  ── ✅ shipped (PR 12617)
+Phase 1b (store state shapes) ─┐── depends on 1a
+Phase 1c (dedicated stores)  ──┘── widgetValueStore + 5 others shipped (PR 12617)
+
+Phase 2a (Position via layoutStore) ─┐── depends on 1c
+Phase 2b (Widget consolidation)  ────┤── ✅ largely shipped; depends on 1a, 1c
+Phase 2c (Node metadata stores)  ────┘── depends on 1c
 
 Phase 3a (SerializationSystem)  ─── depends on 2a, 2b, 2c
-Phase 3b (VersionSystem)  ──────── depends on 0a, 2c
+Phase 3b (VersionSystem)  ──────── depends on 2c (store-level change tracking)
 Phase 3c (ConnectivitySystem)  ──── depends on 2c
 
 Phase 3->4 gate checklist  ──────── depends on 3a, 3b, 3c
 
 Phase 4a (Position writes)  ────── depends on 2a, 3b
 Phase 4b (Connectivity mutations) ─ depends on 3c, 3->4 gate
-Phase 4c (Widget writes)  ─────── depends on 2b
+Phase 4c (Widget writes)  ─────── ✅ largely shipped; depends on 2b
 Phase 4d (Layout decoupling)  ─── depends on 2a, 3->4 gate
 
 Phase 4->5 exit criteria  ──────── depends on all of Phase 4
@@ -715,16 +651,19 @@ Phase 4->5 exit criteria  ──────── depends on all of Phase 4
 Phase 5 (legacy removal)  ─────── depends on 4->5 exit criteria
 ```
 
+The dedicated stores (1c) are the hub: Phase 2 routes legacy data into them,
+Phase 3 systems read from them, Phase 4 routes writes through them.
+
 ## Risk Summary
 
-| Phase              | Risk       | Reversibility           | Extension Impact            |
-| ------------------ | ---------- | ----------------------- | --------------------------- |
-| 0 (Foundation)     | None       | Fully reversible        | None                        |
-| 1 (Types/World)    | Low        | New files, deletable    | None                        |
-| 2 (Bridge)         | Low-Medium | Bridge is additive      | None                        |
-| 3 (Systems)        | Low-Medium | Systems run in parallel | None                        |
-| 4 (Write path)     | High       | Two-way sync is fragile | Callbacks must be preserved |
-| 5 (Legacy removal) | Very High  | Irreversible            | Extensions must migrate     |
+| Phase                 | Risk       | Reversibility           | Extension Impact            |
+| --------------------- | ---------- | ----------------------- | --------------------------- |
+| 0 (Foundation)        | None       | Fully reversible        | None                        |
+| 1 (Types/Stores)      | Low        | New files, deletable    | None                        |
+| 2 (Store integration) | Low-Medium | Additive store reads    | None                        |
+| 3 (Systems)           | Low-Medium | Systems run in parallel | None                        |
+| 4 (Write path)        | High       | Two-way sync is fragile | Callbacks must be preserved |
+| 5 (Legacy removal)    | Very High  | Irreversible            | Extensions must migrate     |
 
 The plan is designed so that Phases 0-3 can ship without any risk to
 extensions or existing behavior. Phase 4 is where the real migration begins,

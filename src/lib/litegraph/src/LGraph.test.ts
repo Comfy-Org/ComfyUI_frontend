@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphGroup,
@@ -17,6 +17,7 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
@@ -79,6 +80,25 @@ describe('LGraph', () => {
 
     expect(result).toBeUndefined()
     expect(graph.nodes.length).toBe(initialNodeCount)
+  })
+  it('normalizes legacy numeric node ids when adding nodes', () => {
+    const graph = new LGraph()
+    const unassignedNode = new LGraphNode('legacy-unassigned')
+    Reflect.set(unassignedNode, 'id', -1)
+
+    graph.add(unassignedNode)
+
+    expect(unassignedNode.id).toBe(toNodeId(1))
+    expect(graph.getNodeById(toNodeId(1))).toBe(unassignedNode)
+
+    const preassignedNode = new LGraphNode('legacy-preassigned')
+    Reflect.set(preassignedNode, 'id', 7)
+
+    graph.add(preassignedNode)
+
+    expect(preassignedNode.id).toBe(toNodeId(7))
+    expect(graph.getNodeById(toNodeId(7))).toBe(preassignedNode)
+    expect(graph.last_node_id).toBe(7)
   })
 
   test('can be instantiated', ({ expect }) => {
@@ -298,7 +318,7 @@ describe('Graph Clearing and Callbacks', () => {
     })
 
     const widgetValueStore = useWidgetValueStore()
-    const seedWidgetId = widgetId(graphId, '10' as NodeId, 'seed')
+    const seedWidgetId = widgetId(graphId, toNodeId('10'), 'seed')
     widgetValueStore.registerWidget(seedWidgetId, {
       type: 'number',
       value: 1,
@@ -667,7 +687,7 @@ describe('ensureGlobalIdUniqueness', () => {
 
     expect(subNode.id).not.toBe(rootNode.id)
     expect(subgraph._nodes_by_id[subNode.id]).toBe(subNode)
-    expect(subgraph._nodes_by_id[rootNode.id as number]).toBeUndefined()
+    expect(subgraph._nodes_by_id[rootNode.id]).toBeUndefined()
   })
 
   it('preserves root graph node IDs as canonical', () => {
@@ -703,7 +723,7 @@ describe('ensureGlobalIdUniqueness', () => {
     rootGraph.ensureGlobalIdUniqueness()
 
     expect(rootGraph.state.lastNodeId).toBeGreaterThanOrEqual(
-      subNode.id as number
+      Number(subNode.id)
     )
   })
 
@@ -720,7 +740,7 @@ describe('ensureGlobalIdUniqueness', () => {
     subgraph._nodes_by_id[subNodeA.id] = subNodeA
 
     const subNodeB = new DummyNode()
-    subNodeB.id = 999
+    subNodeB.id = toNodeId(999)
     subgraph._nodes.push(subNodeB)
     subgraph._nodes_by_id[subNodeB.id] = subNodeB
 
@@ -739,7 +759,7 @@ describe('ensureGlobalIdUniqueness', () => {
     const subgraph = createSubgraphOnGraph(rootGraph)
 
     const subNode = new DummyNode()
-    subNode.id = 42
+    subNode.id = toNodeId(42)
     subgraph._nodes.push(subNode)
     subgraph._nodes_by_id[subNode.id] = subNode
 
@@ -1051,7 +1071,7 @@ describe('Subgraph Unpacking', () => {
 
     const firstInstance = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     const secondInstance = createTestSubgraphNode(subgraph, { pos: [300, 100] })
-    secondInstance.id = 2
+    secondInstance.id = toNodeId(2)
     rootGraph.add(firstInstance)
     rootGraph.add(secondInstance)
 
@@ -1099,7 +1119,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const id of SHARED_NODE_IDS) {
-      expect(idsA.has(id as NodeId)).toBe(true)
+      expect(idsA.has(toNodeId(id))).toBe(true)
     }
     for (const id of idsA) {
       expect(idsB.has(id)).toBe(false)
@@ -1111,8 +1131,10 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const link of graph.subgraphs.get(SUBGRAPH_B)!.links.values()) {
-      expect(idsB.has(link.origin_id)).toBe(true)
-      expect(idsB.has(link.target_id)).toBe(true)
+      if (link.origin_id !== UNASSIGNED_NODE_ID)
+        expect(idsB.has(link.origin_id)).toBe(true)
+      if (link.target_id !== UNASSIGNED_NODE_ID)
+        expect(idsB.has(link.target_id)).toBe(true)
     }
   })
 
@@ -1121,7 +1143,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const widget of graph.subgraphs.get(SUBGRAPH_B)!.widgets) {
-      expect(idsB.has(widget.id)).toBe(true)
+      expect(idsB.has(toNodeId(widget.id))).toBe(true)
     }
   })
 
@@ -1135,14 +1157,14 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
     )
 
-    const pw102 = graph.getNodeById(102 as NodeId)?.properties?.proxyWidgets
+    const pw102 = graph.getNodeById(toNodeId(102))?.properties?.proxyWidgets
     expect(Array.isArray(pw102)).toBe(true)
     for (const entry of pw102 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
       expect(idsA.has(String(entry[0]))).toBe(true)
     }
 
-    const pw103 = graph.getNodeById(103 as NodeId)?.properties?.proxyWidgets
+    const pw103 = graph.getNodeById(toNodeId(103))?.properties?.proxyWidgets
     expect(Array.isArray(pw103)).toBe(true)
     for (const entry of pw103 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
@@ -1160,7 +1182,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     const innerNode = graph.subgraphs
       .get(SUBGRAPH_A)!
-      .nodes.find((n) => n.id === (50 as NodeId))
+      .nodes.find((n) => n.id === toNodeId(50))
     const pw = innerNode?.properties?.proxyWidgets
     expect(Array.isArray(pw)).toBe(true)
     for (const entry of pw as unknown[][]) {
@@ -1200,7 +1222,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       expect(migrationCall).toBeDefined()
       expect(migrationCall![1]).toEqual(
         expect.objectContaining({
-          hostNodeId: expect.any(Number),
+          hostNodeId: expect.any(String),
           proxyWidgets: expect.anything()
         })
       )
@@ -1222,8 +1244,12 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const graph = new LGraph()
     graph.configure(structuredClone(uniqueSubgraphNodeIds))
 
-    expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
-    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
+    expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(
+      new Set([toNodeId(10), toNodeId(11), toNodeId(12)])
+    )
+    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
+      new Set([toNodeId(20), toNodeId(21), toNodeId(22)])
+    )
   })
 })
 

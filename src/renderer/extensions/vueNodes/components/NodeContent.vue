@@ -52,8 +52,7 @@ const props = defineProps<NodeContentProps>()
 
 const hasMedia = computed(() => props.media && props.media.urls.length > 0)
 
-// Get node ID from nodeData
-const nodeId = computed(() => props.nodeData?.id?.toString())
+const nodeId = computed(() => props.nodeData?.id)
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)

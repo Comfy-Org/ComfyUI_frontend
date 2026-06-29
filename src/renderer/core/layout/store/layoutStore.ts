@@ -10,6 +10,7 @@ import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import { toNodeId } from '@/types/nodeId'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -127,8 +128,8 @@ class LayoutStoreImpl implements LayoutStore {
   private isGlobalDispatchQueued = false
 
   // CustomRef cache and trigger functions
-  private nodeRefs = new Map<string, Ref<NodeLayout | null>>()
-  private nodeTriggers = new Map<string, () => void>()
+  private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
+  private nodeTriggers = new Map<NodeId, () => void>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -184,7 +185,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        const trigger = this.nodeTriggers.get(key)
+        const trigger = this.nodeTriggers.get(toNodeId(key))
         if (trigger) {
           trigger()
         }
@@ -230,7 +231,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Get or create a customRef for a node layout
    */
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
-    const nodeKey = String(nodeId)
+    const nodeKey = nodeId
     let nodeRef = this.nodeRefs.get(nodeKey)
 
     if (!nodeRef) {
@@ -341,7 +342,8 @@ class LayoutStoreImpl implements LayoutStore {
       void this.version
 
       const result: NodeId[] = []
-      for (const [nodeId, ynode] of this.ynodes) {
+      for (const [rawNodeId, ynode] of this.ynodes) {
+        const nodeId = toNodeId(rawNodeId)
         const layout = yNodeToLayout(ynode)
         if (boundsIntersect(layout.bounds, bounds)) {
           result.push(nodeId)
@@ -360,7 +362,8 @@ class LayoutStoreImpl implements LayoutStore {
       void this.version
 
       const result = new Map<NodeId, NodeLayout>()
-      for (const [nodeId, ynode] of this.ynodes) {
+      for (const [rawNodeId, ynode] of this.ynodes) {
+        const nodeId = toNodeId(rawNodeId)
         const layout = yNodeToLayout(ynode)
         result.set(nodeId, layout)
       }
@@ -381,7 +384,8 @@ class LayoutStoreImpl implements LayoutStore {
   queryNodeAtPoint(point: Point): NodeId | null {
     const nodes: Array<[NodeId, NodeLayout]> = []
 
-    for (const [nodeId, ynode] of this.ynodes) {
+    for (const [rawNodeId, ynode] of this.ynodes) {
+      const nodeId = toNodeId(rawNodeId)
       const layout = yNodeToLayout(ynode)
       nodes.push([nodeId, layout])
     }
@@ -848,40 +852,37 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     switch (operation.type) {
       case 'moveNode':
-        this.handleMoveNode(operation as MoveNodeOperation, change)
+        this.handleMoveNode(operation, change)
         break
       case 'resizeNode':
-        this.handleResizeNode(operation as ResizeNodeOperation, change)
+        this.handleResizeNode(operation, change)
         break
       case 'setNodeZIndex':
-        this.handleSetNodeZIndex(operation as SetNodeZIndexOperation, change)
+        this.handleSetNodeZIndex(operation, change)
         break
       case 'createNode':
-        this.handleCreateNode(operation as CreateNodeOperation, change)
+        this.handleCreateNode(operation, change)
         break
       case 'deleteNode':
-        this.handleDeleteNode(operation as DeleteNodeOperation, change)
+        this.handleDeleteNode(operation, change)
         break
       case 'batchUpdateBounds':
-        this.handleBatchUpdateBounds(
-          operation as BatchUpdateBoundsOperation,
-          change
-        )
+        this.handleBatchUpdateBounds(operation, change)
         break
       case 'createLink':
-        this.handleCreateLink(operation as CreateLinkOperation, change)
+        this.handleCreateLink(operation, change)
         break
       case 'deleteLink':
-        this.handleDeleteLink(operation as DeleteLinkOperation, change)
+        this.handleDeleteLink(operation, change)
         break
       case 'createReroute':
-        this.handleCreateReroute(operation as CreateRerouteOperation, change)
+        this.handleCreateReroute(operation, change)
         break
       case 'deleteReroute':
-        this.handleDeleteReroute(operation as DeleteRerouteOperation, change)
+        this.handleDeleteReroute(operation, change)
         break
       case 'moveReroute':
-        this.handleMoveReroute(operation as MoveRerouteOperation, change)
+        this.handleMoveReroute(operation, change)
         break
     }
   }
@@ -896,7 +897,7 @@ class LayoutStoreImpl implements LayoutStore {
     // Manually trigger affected node refs after transaction
     // This is needed because Yjs observers don't fire for property changes
     change.nodeIds.forEach((nodeId) => {
-      const trigger = this.nodeTriggers.get(String(nodeId))
+      const trigger = this.nodeTriggers.get(nodeId)
       if (trigger) {
         trigger()
       }
@@ -968,16 +969,19 @@ class LayoutStoreImpl implements LayoutStore {
    * This should be called from the component's onUnmounted hook.
    */
   cleanupNodeRef(nodeId: NodeId): void {
-    const nodeKey = String(nodeId)
-    this.nodeRefs.delete(nodeKey)
-    this.nodeTriggers.delete(nodeKey)
+    this.nodeRefs.delete(nodeId)
+    this.nodeTriggers.delete(nodeId)
   }
 
   /**
    * Initialize store with existing nodes
    */
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{
+      id: NodeId
+      pos: [number, number]
+      size: [number, number]
+    }>
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
@@ -998,7 +1002,8 @@ class LayoutStoreImpl implements LayoutStore {
       this.isGlobalDispatchQueued = false
 
       nodes.forEach((node, index) => {
-        const nodeId = String(node.id)
+        const nodeId = node.id
+        const nodeKey = String(nodeId)
         const layout: NodeLayout = {
           id: nodeId,
           position: { x: node.pos[0], y: node.pos[1] },
@@ -1013,7 +1018,7 @@ class LayoutStoreImpl implements LayoutStore {
           }
         }
 
-        this.ynodes.set(nodeId, layoutToYNode(layout))
+        this.ynodes.set(nodeKey, layoutToYNode(layout))
 
         // Add to spatial index
         this.spatialIndex.insert(nodeId, layout.bounds)
@@ -1029,7 +1034,8 @@ class LayoutStoreImpl implements LayoutStore {
     operation: MoveNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(String(operation.nodeId))
+    const { nodeId } = operation
+    const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) {
       return
     }
@@ -1044,20 +1050,21 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(operation.nodeId, newBounds)
+    this.spatialIndex.update(nodeId, newBounds)
 
     // Then update CRDT
     ynode.set('position', operation.position)
     this.updateNodeBounds(ynode, operation.position, size)
 
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleResizeNode(
     operation: ResizeNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(String(operation.nodeId))
+    const { nodeId } = operation
+    const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
     const position = yNodeToLayout(ynode).position
@@ -1070,45 +1077,48 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(operation.nodeId, newBounds)
+    this.spatialIndex.update(nodeId, newBounds)
 
     // Then update CRDT
     ynode.set('size', operation.size)
     this.updateNodeBounds(ynode, position, operation.size)
 
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleSetNodeZIndex(
     operation: SetNodeZIndexOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(String(operation.nodeId))
+    const { nodeId } = operation
+    const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleCreateNode(
     operation: CreateNodeOperation,
     change: LayoutChange
   ): void {
+    const { nodeId } = operation
     const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(String(operation.nodeId), ynode)
+    this.ynodes.set(String(nodeId), ynode)
 
     // Add to spatial index
-    this.spatialIndex.insert(operation.nodeId, operation.layout.bounds)
+    this.spatialIndex.insert(nodeId, operation.layout.bounds)
 
     change.type = 'create'
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleDeleteNode(
     operation: DeleteNodeOperation,
     change: LayoutChange
   ): void {
-    const nodeKey = String(operation.nodeId)
+    const { nodeId } = operation
+    const nodeKey = String(nodeId)
     if (!this.ynodes.has(nodeKey)) return
 
     this.ynodes.delete(nodeKey)
@@ -1119,9 +1129,9 @@ class LayoutStoreImpl implements LayoutStore {
     // We also intentionally do NOT delete slot layouts here for the same reason,
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
     // Remove from spatial index
-    this.spatialIndex.remove(operation.nodeId)
+    this.spatialIndex.remove(nodeId)
     // Clean up associated links
-    const linksToDelete = this.findLinksConnectedToNode(operation.nodeId)
+    const linksToDelete = this.findLinksConnectedToNode(nodeId)
 
     // Delete the associated links
     for (const linkId of linksToDelete) {
@@ -1134,7 +1144,7 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     change.type = 'delete'
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleBatchUpdateBounds(

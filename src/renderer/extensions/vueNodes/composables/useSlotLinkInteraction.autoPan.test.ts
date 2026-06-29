@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import { toNodeId } from '@/types/nodeId'
+
 const {
   capturedOnPan,
   capturedAutoPan,
@@ -223,7 +225,7 @@ function pointerEvent(
 
 function startDrag() {
   const { onPointerDown } = useSlotLinkInteraction({
-    nodeId: 'node1',
+    nodeId: toNodeId('node1'),
     index: 0,
     type: 'output'
   })

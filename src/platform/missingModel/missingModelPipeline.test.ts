@@ -10,8 +10,18 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const { mockHandles } = vi.hoisted(() => {
+  const isAncestorPathActive = vi.fn((_graph: LGraph, _nodeId: string) => true)
+  const isCandidateScopeActive = vi.fn(
+    (graph: LGraph, candidate: MissingModelCandidate) => {
+      const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+      return (
+        executionId == null || isAncestorPathActive(graph, String(executionId))
+      )
+    }
+  )
   const state = {
     enrichedCandidates: [] as MissingModelCandidate[]
   }
@@ -66,7 +76,8 @@ const { mockHandles } = vi.hoisted(() => {
         getFolderPaths: vi.fn()
       },
       fetchModelMetadata: vi.fn(),
-      isAncestorPathActive: vi.fn((_graph: LGraph, _nodeId: string) => true),
+      isAncestorPathActive,
+      isCandidateScopeActive,
       isMissingCandidateActive: vi.fn(
         (_graph: LGraph, _candidate: MissingModelCandidate) => true
       )
@@ -133,6 +144,8 @@ vi.mock('@/platform/missingModel/missingModelDownload', () => ({
 vi.mock('@/utils/graphTraversalUtil', () => ({
   isAncestorPathActive: (graph: LGraph, nodeId: string) =>
     mockHandles.isAncestorPathActive(graph, nodeId),
+  isCandidateScopeActive: (graph: LGraph, candidate: MissingModelCandidate) =>
+    mockHandles.isCandidateScopeActive(graph, candidate),
   isMissingCandidateActive: (graph: LGraph, candidate: MissingModelCandidate) =>
     mockHandles.isMissingCandidateActive(graph, candidate)
 }))
@@ -172,6 +185,15 @@ describe('missingModelPipeline', () => {
     mockHandles.api.getFolderPaths.mockResolvedValue({})
     mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: null })
     mockHandles.isAncestorPathActive.mockReturnValue(true)
+    mockHandles.isCandidateScopeActive.mockImplementation(
+      (graph: LGraph, candidate: MissingModelCandidate) => {
+        const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+        return (
+          executionId == null ||
+          mockHandles.isAncestorPathActive(graph, String(executionId))
+        )
+      }
+    )
     mockHandles.isMissingCandidateActive.mockReturnValue(true)
   })
 
@@ -523,6 +545,38 @@ describe('missingModelPipeline', () => {
         missingModelCandidates: [activeCandidate],
         missingMediaCandidates: undefined
       })
+    })
+
+    it('drops host-keyed promoted candidates whose source path is inactive', async () => {
+      const promotedCandidate = {
+        nodeId: '65',
+        sourceExecutionId: createNodeExecutionId([65, 77, 42]),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'outer_ckpt',
+        name: 'inactive-source.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      }
+      const activeWorkflow = {
+        activeState: null,
+        pendingWarnings: null
+      }
+      const graph = createGraph()
+      mockHandles.state.enrichedCandidates = [promotedCandidate]
+      mockHandles.workspaceWorkflow.activeWorkflow = activeWorkflow
+      mockHandles.isAncestorPathActive.mockImplementation(
+        (_graph: LGraph, nodeId: string) => nodeId !== '65:77:42'
+      )
+
+      const result = await runMissingModelPipeline({
+        graph,
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+
+      expect(result.confirmedCandidates).toEqual([])
+      expect(activeWorkflow.pendingWarnings).toBeNull()
     })
 
     it('skips post-fetch surface when folder path refresh is aborted', async () => {
