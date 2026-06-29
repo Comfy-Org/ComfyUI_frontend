@@ -122,8 +122,9 @@ export class ComfyNodeSearchBoxV2 {
     await this.comfyPage.page.mouse.click(position.x, position.y)
 
     const { vueNodes } = this.comfyPage
-    const selectedNode = vueNodes.selectedNodes.first()
-    const nodeId = await vueNodes.getNodeId(selectedNode)
+    const nodeId = await this.comfyPage.page.evaluate(
+      () => graph!.nodes.at(-1)!.id
+    )
     return new VueNodeFixture(vueNodes.getNodeLocator(nodeId))
   }
 }
