@@ -32,40 +32,19 @@ const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 const COVERAGE_CRITICAL = process.env.COVERAGE_CRITICAL === 'true'
 
 const CRITICAL_COVERAGE_INCLUDE = [
-  'src/base/common/async.ts',
-  'src/base/credits/comfyCredits.ts',
-  'src/composables/graph/useGroupContextMenu.ts',
-  'src/composables/graph/useGroupMenuOptions.ts',
-  'src/composables/graph/useMoreOptionsMenu.ts',
-  'src/composables/graph/useNodeCustomization.ts',
-  'src/composables/graph/useNodeMenuOptions.ts',
-  'src/composables/graph/useSelectionMenuOptions.ts',
-  'src/composables/graph/useSelectionOperations.ts',
-  'src/composables/graph/useSelectionState.ts',
-  'src/composables/node/useNodePricing.ts',
-  'src/scripts/metadata/parser.ts',
-  'src/stores/aboutPanelStore.ts',
-  'src/stores/executionStore.ts',
-  'src/stores/nodeBookmarkStore.ts',
-  'src/stores/queueStore.ts',
-  'src/utils/fuseUtil.ts',
-  'src/utils/gridUtil.ts',
-  'src/utils/mouseDownUtil.ts',
-  'src/utils/nodeTitleUtil.ts',
-  'src/utils/objectUrlUtil.ts',
-  'src/utils/queueDisplay.ts',
-  'src/utils/rafBatch.ts',
-  'src/utils/treeUtil.ts',
-  'src/utils/typeGuardUtil.ts',
-  'src/workbench/extensions/manager/composables/nodePack/usePackInstall.ts',
-  'src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts'
+  'src/base/**/*.{ts,vue}',
+  'src/composables/**/*.{ts,vue}',
+  'src/scripts/**/*.{ts,vue}',
+  'src/stores/**/*.{ts,vue}',
+  'src/utils/**/*.{ts,vue}',
+  'src/workbench/extensions/manager/composables/**/*.{ts,vue}'
 ]
 
 const CRITICAL_COVERAGE_THRESHOLDS = {
-  statements: 58,
-  branches: 47,
-  functions: 54,
-  lines: 58
+  statements: 66,
+  branches: 56,
+  functions: 64,
+  lines: 68
 }
 
 // Open Graph / Twitter Meta Tags Constants
