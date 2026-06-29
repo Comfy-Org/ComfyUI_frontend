@@ -29,6 +29,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
+import { templateAttribution } from '@/platform/telemetry/utils/templateAttribution'
 import type {
   TemplateOpenTrigger,
   WorkflowOpenSource
@@ -1478,9 +1479,7 @@ export class ComfyApp {
         ),
         missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
         open_source: openSource ?? 'unknown',
-        ...(openSource === 'template' && templateId && openTrigger
-          ? { template_id: templateId, open_trigger: openTrigger }
-          : {}),
+        ...templateAttribution(openSource, templateId, openTrigger),
         ...(effectiveShareId ? { share_id: effectiveShareId } : {})
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
