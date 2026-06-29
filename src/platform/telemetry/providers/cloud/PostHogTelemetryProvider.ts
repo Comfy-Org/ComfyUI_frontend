@@ -48,8 +48,6 @@ import type {
   WorkspaceInviteMetadata
 } from '../../types'
 import { OnboardingTourEvents, TelemetryEvents } from '../../types'
-import { getActionbarDockState } from '../../utils/getActionbarDockState'
-import { getExecutionContext } from '../../utils/getExecutionContext'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [

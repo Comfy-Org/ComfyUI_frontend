@@ -47,7 +47,6 @@ import type {
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { OnboardingTourEvents, TelemetryEvents } from '../../types'
-import { getActionbarDockState } from '../../utils/getActionbarDockState'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
