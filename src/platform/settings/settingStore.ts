@@ -60,10 +60,12 @@ function settingChangedEvent<K extends keyof Settings>(
   if (!setting) return undefined
 
   const telemetry = setting.telemetry
-  const trackChanges = telemetry?.trackChanges ?? setting.type !== 'hidden'
+  const isVisible = setting.type !== 'hidden'
+  const trackChanges = telemetry?.trackChanges ?? isVisible
   if (!trackChanges) return undefined
 
-  return telemetry?.includeValues
+  const includeValues = telemetry?.includeValues ?? isVisible
+  return includeValues
     ? {
         setting_id: key,
         previous_value: applied.previousValue,
