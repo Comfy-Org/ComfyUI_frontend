@@ -2,7 +2,9 @@
 
 This document walks through the major entity lifecycle operations — showing the current imperative implementation and how each transforms under the ECS architecture from [ADR 0008](../adr/0008-entity-component-system.md).
 
-Each scenario follows the same structure: **Current Flow** (what happens today), **ECS Flow** (what it looks like with the World), and a **Key Differences** table.
+ECS principles are realized across a set of dedicated Pinia stores keyed by string IDs (shipped in PR 12617): `widgetValueStore` (keyed by `WidgetId` = `graphId:nodeId:name`, see `src/types/widgetId.ts`), `layoutStore` (mutated via `useLayoutMutations()`), `nodeOutputStore`, `domWidgetStore`, `subgraphNavigationStore`, and `previewExposureStore`. Components live as plain-data entries in these stores; systems read and mutate them through store getters and command-style mutations.
+
+Each scenario follows the same structure: **Current Flow** (what happens today), **ECS Flow** (the store-backed target), and a **Key Differences** table.
 
 ## 1. Node Removal
 
@@ -63,47 +65,43 @@ Problems: the graph method manually disconnects every slot, cleans up reroutes, 
 sequenceDiagram
     participant Caller
     participant CS as ConnectivitySystem
-    participant W as World
-    participant VS as VersionSystem
+    participant LM as useLayoutMutations()
+    participant LS as layoutStore
+    participant WVS as widgetValueStore
+    participant NOS as nodeOutputStore
+    participant DWS as domWidgetStore
 
-    Caller->>CS: removeNode(world, nodeId)
+    Caller->>CS: removeNode(nodeId)
 
-    CS->>W: getComponent(nodeId, Connectivity)
-    W-->>CS: { inputSlotIds, outputSlotIds }
+    CS->>LS: read node links (incoming + outgoing)
+    LS-->>CS: linkIds
 
-    loop each slotId
-        CS->>W: getComponent(slotId, SlotConnection)
-        W-->>CS: { linkIds }
-        loop each linkId
-            CS->>CS: removeLink(world, linkId)
-            Note over CS,W: removes Link entity + updates remote slots
-        end
-        CS->>W: deleteEntity(slotId)
+    loop each linkId
+        CS->>LM: deleteLink(linkId)
+        Note over LM,LS: removes link entry +<br/>updates both slot endpoints
     end
 
-    CS->>W: getComponent(nodeId, WidgetContainer)
-    W-->>CS: { widgetIds }
-    loop each widgetId
-        CS->>W: deleteEntity(widgetId)
+    loop each widget on node
+        CS->>WVS: deleteWidget(widgetId)
+        CS->>DWS: unregisterWidget(widgetId)
     end
 
-    CS->>W: deleteEntity(nodeId)
-    Note over W: removes Position, NodeVisual, NodeType,<br/>Connectivity, Execution, Properties,<br/>WidgetContainer — all at once
-
-    CS->>VS: markChanged()
+    CS->>NOS: removeNodeOutputs(nodeId)
+    CS->>LM: deleteNode(nodeId)
+    Note over CS,LS: coordinated cleanup across stores —<br/>each store drops its entry for the node
 ```
 
 ### Key Differences
 
-| Aspect              | Current                                          | ECS                                                    |
-| ------------------- | ------------------------------------------------ | ------------------------------------------------------ |
-| Lines of code       | ~107 in one method                               | ~30 in system function                                 |
-| Entity types known  | Graph knows about all 6+ types                   | ConnectivitySystem knows Connectivity + SlotConnection |
-| Cleanup             | Manual per-slot, per-link, per-reroute           | `deleteEntity()` removes all components atomically     |
-| Canvas notification | `setDirtyCanvas()` called explicitly             | RenderSystem sees missing entity on next frame         |
-| Store cleanup       | WidgetValueStore/LayoutStore NOT cleaned up      | World deletion IS the cleanup                          |
-| Undo/redo           | `beforeChange()`/`afterChange()` manually placed | System snapshots affected components before deletion   |
-| Testability         | Needs full LGraph + LGraphCanvas                 | Needs only World + ConnectivitySystem                  |
+| Aspect              | Current                                          | ECS                                                                                             |
+| ------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Lines of code       | ~107 in one method                               | ~30 in system function                                                                          |
+| Entity types known  | Graph knows about all 6+ types                   | ConnectivitySystem coordinates layoutStore + widget/output stores                               |
+| Cleanup             | Manual per-slot, per-link, per-reroute           | `deleteLink()`/`deleteNode()` mutations per layout entry                                        |
+| Canvas notification | `setDirtyCanvas()` called explicitly             | Vue reactivity: components re-render when store entries change                                  |
+| Store cleanup       | WidgetValueStore/LayoutStore NOT cleaned up      | Coordinated: `deleteWidget`, `deleteLink`/`deleteNode`, `removeNodeOutputs`, `unregisterWidget` |
+| Undo/redo           | `beforeChange()`/`afterChange()` manually placed | Layout mutations are command records, replayable and undoable                                   |
+| Testability         | Needs full LGraph + LGraphCanvas                 | Needs only the relevant stores + ConnectivitySystem                                             |
 
 ## 2. Serialization
 
@@ -165,41 +163,37 @@ Problems: serialization logic lives in 6 different `serialize()` methods across 
 sequenceDiagram
     participant Caller
     participant SS as SerializationSystem
-    participant W as World
+    participant LS as layoutStore
+    participant WVS as widgetValueStore
+    participant CLS as node class state
 
-    Caller->>SS: serialize(world)
+    Caller->>SS: serialize(graphId)
 
-    SS->>W: queryAll(NodeType, Position, Properties, WidgetContainer, Connectivity)
-    W-->>SS: all node entities with their components
+    SS->>LS: read node layouts (position, size, z-index)
+    LS-->>SS: layout entries for graphId
 
-    SS->>W: queryAll(LinkEndpoints)
-    W-->>SS: all link entities
+    SS->>LS: read links + reroutes for graphId
+    LS-->>SS: link / reroute entries
 
-    SS->>W: queryAll(SlotIdentity, SlotConnection)
-    W-->>SS: all slot entities
+    SS->>WVS: getWidget(widgetId) per node widget
+    WVS-->>SS: WidgetState values
 
-    SS->>W: queryAll(RerouteLinks, Position)
-    W-->>SS: all reroute entities
+    SS->>CLS: read type / properties / flags
+    CLS-->>SS: per-node class data
 
-    SS->>W: queryAll(GroupMeta, GroupChildren, Position)
-    W-->>SS: all group entities
-
-    SS->>W: queryAll(SubgraphStructure, SubgraphMeta)
-    W-->>SS: all subgraph entities
-
-    SS->>SS: assemble JSON from component data
+    SS->>SS: assemble JSON from store entries + class state
     SS-->>Caller: SerializedGraph
 ```
 
 ### Key Differences
 
-| Aspect                 | Current                                         | ECS                                            |
-| ---------------------- | ----------------------------------------------- | ---------------------------------------------- |
-| Serialization logic    | Spread across 6 classes (`serialize()` on each) | Single SerializationSystem                     |
-| Widget values          | Collected inline during `node.serialize()`      | WidgetValue component queried directly         |
-| Subgraph recursion     | `asSerialisable()` recursively calls itself     | Flat query — SubgraphStructure has entity refs |
-| Adding a new component | Modify the entity's `serialize()` method        | Add component to query in SerializationSystem  |
-| Testing                | Need full object graph to test serialization    | Mock World with test components                |
+| Aspect                 | Current                                         | ECS                                                       |
+| ---------------------- | ----------------------------------------------- | --------------------------------------------------------- |
+| Serialization logic    | Spread across 6 classes (`serialize()` on each) | Single SerializationSystem reading the stores             |
+| Widget values          | Collected inline during `node.serialize()`      | `widgetValueStore.getWidget(widgetId)` read directly      |
+| Subgraph recursion     | `asSerialisable()` recursively calls itself     | Flat read — layout entries carry scope tags, no recursion |
+| Adding a new component | Modify the entity's `serialize()` method        | Read one more store in SerializationSystem                |
+| Testing                | Need full object graph to test serialization    | Seed the stores with test entries                         |
 
 ## 3. Deserialization
 
@@ -274,64 +268,48 @@ Problems: two-phase creation is necessary because nodes need to reference each o
 sequenceDiagram
     participant Caller
     participant SS as SerializationSystem
-    participant W as World
-    participant LS as LayoutSystem
+    participant LM as useLayoutMutations()
+    participant WVS as widgetValueStore
     participant ES as ExecutionSystem
 
-    Caller->>SS: deserialize(world, data)
+    Caller->>SS: deserialize(graphId, data)
 
-    SS->>W: clear() [remove all entities]
+    SS->>WVS: clearGraph(graphId)
+    Note over SS,WVS: drop stale widget entries for this graph
 
-    Note over SS,W: All entities created in one pass — no two-phase needed
+    Note over SS,LM: All entries created in one pass — no two-phase needed
 
     loop each node in data
-        SS->>W: createEntity(NodeEntityId)
-        SS->>W: setComponent(id, Position, {...})
-        SS->>W: setComponent(id, NodeType, {...})
-        SS->>W: setComponent(id, NodeVisual, {...})
-        SS->>W: setComponent(id, Properties, {...})
-        SS->>W: setComponent(id, Execution, {...})
+        SS->>LM: createNode(nodeId, { position, size, ... })
     end
-
-    loop each slot in data
-        SS->>W: createEntity(SlotEntityId)
-        SS->>W: setComponent(id, SlotIdentity, {...})
-        SS->>W: setComponent(id, SlotConnection, {...})
-    end
-
-    Note over SS,W: Slots reference links by ID — no resolution needed yet
 
     loop each link in data
-        SS->>W: createEntity(LinkEntityId)
-        SS->>W: setComponent(id, LinkEndpoints, {...})
+        SS->>LM: createLink(linkId, source, target)
     end
 
-    Note over SS,W: Connectivity assembled from slot/link components
+    Note over SS,LM: links reference node + slot IDs directly,<br/>no instance resolution needed
 
     loop each widget in data
-        SS->>W: createEntity(WidgetEntityId)
-        SS->>W: setComponent(id, WidgetIdentity, {...})
-        SS->>W: setComponent(id, WidgetValue, {...})
+        SS->>WVS: registerWidget(widgetId, { value, ... })
     end
 
-    SS->>SS: create reroutes, groups, subgraphs similarly
+    SS->>SS: create reroutes, groups via layout mutations;<br/>subgraph scopes tagged on entries
 
-    Note over SS,W: Systems react to populated World
+    Note over SS,ES: Systems read the populated stores
 
-    SS->>LS: runLayout(world)
-    SS->>ES: computeExecutionOrder(world)
+    SS->>ES: computeExecutionOrder(graphId)
 ```
 
 ### Key Differences
 
 | Aspect             | Current                                                                    | ECS                                                          |
 | ------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Two-phase creation | Required (nodes must exist before link resolution)                         | Not needed — components reference IDs, not instances         |
-| Widget restoration | Hidden inside `node.configure()` line ~900                                 | Explicit: WidgetValue component written directly             |
-| Store population   | Side effect of `widget.setNodeId()`                                        | World IS the store — writing component IS population         |
-| Callback cascade   | `onConnectionsChange`, `onInputAdded`, `onConfigure` fire during configure | No callbacks — systems query World after deserialization     |
-| Subgraph ordering  | Topological sort required                                                  | Flat write — SubgraphStructure just holds entity IDs         |
-| Error handling     | Failed node → placeholder with `has_errors=true`                           | Failed entity → skip; components that loaded are still valid |
+| Two-phase creation | Required (nodes must exist before link resolution)                         | Not needed — links reference string IDs, not instances       |
+| Widget restoration | Hidden inside `node.configure()` line ~900                                 | Explicit: `widgetValueStore.registerWidget(widgetId, state)` |
+| Store population   | Side effect of `widget.setNodeId()`                                        | Direct: writing the store entry is the population            |
+| Callback cascade   | `onConnectionsChange`, `onInputAdded`, `onConfigure` fire during configure | No callbacks — systems read the stores after deserialization |
+| Subgraph ordering  | Topological sort required                                                  | Flat write — scope tags on entries, no instance ordering     |
+| Error handling     | Failed node → placeholder with `has_errors=true`                           | Failed entry → skip; entries that loaded are still valid     |
 
 ## 4. Pack Subgraph
 
@@ -394,50 +372,50 @@ Problems: 200+ lines in one method. Manual boundary link analysis. Clone-seriali
 sequenceDiagram
     participant Caller
     participant CS as ConnectivitySystem
-    participant W as World
+    participant LS as layoutStore
+    participant LM as useLayoutMutations()
+    participant SNS as subgraphNavigationStore
 
-    Caller->>CS: packSubgraph(world, selectedEntityIds)
+    Caller->>CS: packSubgraph(selectedNodeIds)
 
-    CS->>W: query Connectivity + SlotConnection for selected nodes
+    CS->>LS: read links for selected nodes
     CS->>CS: classify links as internal vs boundary
 
-    CS->>W: create new GraphId scope in scopes registry
+    CS->>SNS: register new subgraph graphId
 
-    Note over CS,W: Create SubgraphNode entity in parent scope
+    Note over CS,LM: Create SubgraphNode layout entry in parent graph
 
-    CS->>W: createEntity(NodeEntityId) [the SubgraphNode]
-    CS->>W: setComponent(nodeId, Position, { center of selection })
-    CS->>W: setComponent(nodeId, SubgraphStructure, { graphId, interface })
-    CS->>W: setComponent(nodeId, SubgraphMeta, { name: 'New Subgraph' })
+    CS->>LM: createNode(subgraphNodeId, { position: center of selection })
+    CS->>CS: record SubgraphNode interface (boundary slots)
 
-    Note over CS,W: Re-parent selected entities into new graph scope
+    Note over CS,LS: Re-tag selected entries into new graph scope
 
-    loop each selected entity
-        CS->>W: update graphScope to new graphId
+    loop each selected node + link
+        CS->>LS: set graphId scope tag to new subgraph graphId
     end
 
-    Note over CS,W: Create boundary slots on SubgraphNode
+    Note over CS,LM: Reconnect boundary links to SubgraphNode slots
 
     loop each boundary input link
-        CS->>W: create SlotEntity on SubgraphNode
-        CS->>W: update LinkEndpoints to target new slot
+        CS->>LM: deleteLink(oldLinkId)
+        CS->>LM: createLink(newLinkId, source, subgraphNode input slot)
     end
 
     loop each boundary output link
-        CS->>W: create SlotEntity on SubgraphNode
-        CS->>W: update LinkEndpoints to source from new slot
+        CS->>LM: deleteLink(oldLinkId)
+        CS->>LM: createLink(newLinkId, subgraphNode output slot, target)
     end
 ```
 
 ### Key Differences
 
-| Aspect                     | Current                                           | ECS                                                     |
-| -------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
-| Entity movement            | Clone → serialize → configure → remove originals  | Re-parent entities: update graphScope to new GraphId    |
-| Boundary links             | Disconnect → remove → recreate → reconnect        | Update LinkEndpoints to point at new SubgraphNode slots |
-| Intermediate inconsistency | Graph is partially disconnected during operation  | Atomic: all component writes happen together            |
-| Code size                  | 200+ lines                                        | ~50 lines in system                                     |
-| Undo                       | `beforeChange()`/`afterChange()` wraps everything | Snapshot affected components before mutation            |
+| Aspect                     | Current                                           | ECS                                                          |
+| -------------------------- | ------------------------------------------------- | ------------------------------------------------------------ |
+| Entity movement            | Clone → serialize → configure → remove originals  | Re-tag entries: change graphId scope tag on store entries    |
+| Boundary links             | Disconnect → remove → recreate → reconnect        | `deleteLink`/`createLink` against the new SubgraphNode slots |
+| Intermediate inconsistency | Graph is partially disconnected during operation  | Mutations batch together as one command sequence             |
+| Code size                  | 200+ lines                                        | ~50 lines in system                                          |
+| Undo                       | `beforeChange()`/`afterChange()` wraps everything | Layout mutation commands replay and undo as a batch          |
 
 ## 5. Unpack Subgraph
 
@@ -496,48 +474,49 @@ Problems: ID remapping is complex and error-prone. Magic IDs (SUBGRAPH_INPUT_ID 
 sequenceDiagram
     participant Caller
     participant CS as ConnectivitySystem
-    participant W as World
+    participant LS as layoutStore
+    participant LM as useLayoutMutations()
+    participant SNS as subgraphNavigationStore
 
-    Caller->>CS: unpackSubgraph(world, subgraphNodeId)
+    Caller->>CS: unpackSubgraph(subgraphNodeId)
 
-    CS->>W: getComponent(subgraphNodeId, SubgraphStructure)
-    W-->>CS: { graphId, interface }
+    CS->>CS: read SubgraphNode interface (boundary slots)
 
-    CS->>W: query entities where graphScope = graphId
-    W-->>CS: all child entities (nodes, links, reroutes, etc.)
+    CS->>LS: query entries where graphId scope = subgraph graphId
+    LS-->>CS: child entries (nodes, links, reroutes)
 
-    Note over CS,W: Re-parent entities to containing graph scope
+    Note over CS,LS: Re-tag entries to containing graph scope
 
-    loop each child entity
-        CS->>W: update graphScope to parent scope
+    loop each child entry
+        CS->>LS: set graphId scope tag to parent scope
     end
 
-    Note over CS,W: Reconnect boundary links
+    Note over CS,LM: Reconnect boundary links
 
     loop each boundary slot in interface
-        CS->>W: getComponent(slotId, SlotConnection)
-        CS->>W: update LinkEndpoints: SubgraphNode slot → internal node slot
+        CS->>LM: deleteLink(boundaryLinkId)
+        CS->>LM: createLink(newLinkId, external slot → internal node slot)
     end
 
-    CS->>W: deleteEntity(subgraphNodeId)
-    CS->>W: remove graphId from scopes registry
+    CS->>LM: deleteNode(subgraphNodeId)
+    CS->>SNS: drop subgraph graphId
 
-    Note over CS,W: Offset positions
+    Note over CS,LM: Offset positions
 
-    loop each moved entity
-        CS->>W: update Position component
+    loop each moved node
+        CS->>LM: moveNode(nodeId, position + offset)
     end
 ```
 
 ### Key Differences
 
-| Aspect            | Current                                             | ECS                                                             |
-| ----------------- | --------------------------------------------------- | --------------------------------------------------------------- |
-| ID remapping      | `nodeIdMap[oldId] = newId` for every node and link  | No remapping — entities keep their IDs, only graphScope changes |
-| Magic IDs         | SUBGRAPH_INPUT_ID = -10, SUBGRAPH_OUTPUT_ID = -20   | No magic IDs — boundary modeled as slot entities                |
-| Clone vs move     | Clone nodes, assign new IDs, configure from scratch | Move entity references between scopes                           |
-| Link reconnection | Remap origin_id/target_id, create new LLink objects | Update LinkEndpoints component in place                         |
-| Complexity        | ~200 lines with deduplication and reroute remapping | ~40 lines, no remapping needed                                  |
+| Aspect            | Current                                             | ECS                                                               |
+| ----------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| ID remapping      | `nodeIdMap[oldId] = newId` for every node and link  | No remapping — entries keep their IDs, only the scope tag changes |
+| Magic IDs         | SUBGRAPH_INPUT_ID = -10, SUBGRAPH_OUTPUT_ID = -20   | No magic IDs — boundary modeled as SubgraphNode interface slots   |
+| Clone vs move     | Clone nodes, assign new IDs, configure from scratch | Re-tag store entries between scopes                               |
+| Link reconnection | Remap origin_id/target_id, create new LLink objects | `deleteLink`/`createLink` against the resolved endpoints          |
+| Complexity        | ~200 lines with deduplication and reroute remapping | ~40 lines, no remapping needed                                    |
 
 ## 6. Connect Slots
 
@@ -591,33 +570,28 @@ Problems: the source node orchestrates everything — it reaches into the graph'
 sequenceDiagram
     participant Caller
     participant CS as ConnectivitySystem
-    participant W as World
-    participant VS as VersionSystem
+    participant LS as layoutStore
+    participant LM as useLayoutMutations()
 
-    Caller->>CS: connect(world, outputSlotId, inputSlotId)
+    Caller->>CS: connect(outputSlot, inputSlot)
 
-    CS->>W: getComponent(inputSlotId, SlotConnection)
+    CS->>LS: read input slot link
     opt already connected
-        CS->>CS: removeLink(world, existingLinkId)
+        CS->>LM: deleteLink(existingLinkId)
     end
 
-    CS->>W: createEntity(LinkEntityId)
-    CS->>W: setComponent(linkId, LinkEndpoints, {<br/>  originNodeId, originSlotIndex,<br/>  targetNodeId, targetSlotIndex, type<br/>})
-
-    CS->>W: update SlotConnection on outputSlotId (add linkId)
-    CS->>W: update SlotConnection on inputSlotId (set linkId)
-
-    CS->>VS: markChanged()
+    CS->>LM: createLink(linkId, {<br/>  originNodeId, originSlotIndex,<br/>  targetNodeId, targetSlotIndex, type<br/>})
+    Note over LM,LS: createLink updates both slot endpoints<br/>and emits a command record
 ```
 
 ### Key Differences
 
 | Aspect           | Current                                                      | ECS                                                           |
 | ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------- |
-| Orchestrator     | Source node (reaches into graph, target, reroutes)           | ConnectivitySystem (queries World)                            |
-| Side effects     | `_version++`, `setDirtyCanvas()`, `afterChange()`, callbacks | `markChanged()` — one call                                    |
-| Reroute handling | Manual: iterate chain, add linkId to each                    | RerouteLinks component updated by system                      |
-| Slot mutation    | Direct: `output.links.push()`, `input.link = id`             | Component update: `setComponent(slotId, SlotConnection, ...)` |
+| Orchestrator     | Source node (reaches into graph, target, reroutes)           | ConnectivitySystem (reads layoutStore)                        |
+| Side effects     | `_version++`, `setDirtyCanvas()`, `afterChange()`, callbacks | `createLink()` command — endpoints + change tracking included |
+| Reroute handling | Manual: iterate chain, add linkId to each                    | Reroute entries updated via layout mutations                  |
+| Slot mutation    | Direct: `output.links.push()`, `input.link = id`             | `createLink(linkId, ...)` updates both endpoints              |
 | Validation       | `onConnectInput`/`onConnectOutput` callbacks on nodes        | Validation system or guard function                           |
 
 ## 7. Copy / Paste
@@ -688,57 +662,61 @@ parent IDs all remapped independently. ~300 lines across multiple methods.
 sequenceDiagram
     participant User
     participant CS as ClipboardSystem
-    participant W as World
+    participant LS as layoutStore
+    participant WVS as widgetValueStore
+    participant LM as useLayoutMutations()
     participant CB as Clipboard
 
     rect rgb(40, 40, 60)
         Note over User,CB: Copy
-        User->>CS: copy(world, selectedEntityIds)
-        CS->>W: snapshot all components for selected entities
-        CS->>W: snapshot components for child entities (slots, widgets)
-        CS->>W: snapshot connected links (LinkEndpoints)
-        CS->>CB: store component snapshot
+        User->>CS: copy(selectedNodeIds)
+        CS->>LS: snapshot layout entries (nodes, links, reroutes)
+        CS->>WVS: snapshot WidgetState for each widgetId
+        CS->>CB: store cross-store snapshot
     end
 
     rect rgb(40, 60, 40)
         Note over User,CB: Paste
-        User->>CS: paste(world, position)
+        User->>CS: paste(position)
         CS->>CB: retrieve snapshot
 
-        CS->>CS: generate ID remap table (old → new branded IDs)
+        CS->>CS: build ID remap table (old → new nodeId / WidgetId)
 
-        loop each entity in snapshot
-            CS->>W: createEntity(newId)
-            loop each component
-                CS->>W: setComponent(newId, type, remappedData)
-                Note over CS,W: entity ID refs in component data<br/>are remapped via table
-            end
+        loop each node in snapshot
+            CS->>LM: createNode(newNodeId, remapped layout)
+        end
+        loop each link in snapshot
+            CS->>LM: createLink(newLinkId, remapped endpoints)
+            Note over CS,LM: node + slot refs remapped via table
+        end
+        loop each widget in snapshot
+            CS->>WVS: registerWidget(newWidgetId, WidgetState)
         end
 
-        CS->>CS: offset all Position components to cursor
+        CS->>LM: batchMoveNodes(offset all to cursor)
     end
 ```
 
 ### Key Differences
 
-| Aspect               | Current                                                            | ECS                                                                |
-| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| Copy format          | Clone → serialize → JSON (format depends on class)                 | Component snapshot (uniform format for all entities)               |
-| ID remapping         | Separate logic per entity type (nodes, reroutes, subgraphs, links) | Single remap table applied to all entity ID refs in all components |
-| Paste reconstruction | `createNode()` → `add()` → `configure()` → `connect()` per node    | `createEntity()` → `setComponent()` per entity (flat)              |
-| Subgraph handling    | Recursive clone + UUID remap + deduplication                       | Snapshot includes SubgraphStructure component with entity refs     |
-| Code complexity      | ~300 lines across 4 methods                                        | ~60 lines in one system                                            |
+| Aspect               | Current                                                            | ECS                                                           |
+| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Copy format          | Clone → serialize → JSON (format depends on class)                 | Store-entry snapshot (uniform shape across stores)            |
+| ID remapping         | Separate logic per entity type (nodes, reroutes, subgraphs, links) | One remap table applied to string keys (`nodeId`, `WidgetId`) |
+| Paste reconstruction | `createNode()` → `add()` → `configure()` → `connect()` per node    | `createNode`/`createLink`/`registerWidget` per entry (flat)   |
+| Subgraph handling    | Recursive clone + UUID remap + deduplication                       | Snapshot carries scope tags; remap rewrites graphId keys      |
+| Code complexity      | ~300 lines across 4 methods                                        | ~60 lines in one system                                       |
 
 ## Summary: Cross-Cutting Benefits
 
-| Benefit                       | Scenarios Where It Applies                                                 |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| **Atomic operations**         | Node Removal, Pack/Unpack — no intermediate inconsistent state             |
-| **No scattered `_version++`** | All scenarios — VersionSystem handles change tracking                      |
-| **No callback cascades**      | Deserialization, Connect — systems query World instead of firing callbacks |
-| **Uniform ID handling**       | Copy/Paste, Unpack — one remap table instead of per-type logic             |
-| **Entity deletion = cleanup** | Node Removal — `deleteEntity()` removes all components                     |
-| **No two-phase creation**     | Deserialization — components reference IDs, not instances                  |
-| **Move instead of clone**     | Pack/Unpack — entities keep their IDs, just change scope                   |
-| **Testable in isolation**     | All scenarios — mock World, test one system                                |
-| **Undo/redo for free**        | All scenarios — snapshot components before mutation, restore on undo       |
+| Benefit                       | Scenarios Where It Applies                                                                           |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Batched operations**        | Node Removal, Pack/Unpack — mutations apply together as one command sequence                         |
+| **No scattered `_version++`** | All scenarios — layout mutation commands carry change tracking                                       |
+| **No callback cascades**      | Deserialization, Connect — systems read the stores instead of firing callbacks                       |
+| **Uniform ID handling**       | Copy/Paste, Unpack — one remap table over string keys instead of per-type logic                      |
+| **Coordinated cleanup**       | Node Removal — `deleteWidget` + `deleteLink`/`deleteNode` + `removeNodeOutputs` + `unregisterWidget` |
+| **No two-phase creation**     | Deserialization — store entries reference string IDs, not instances                                  |
+| **Move instead of clone**     | Pack/Unpack — entries keep their IDs, only the scope tag changes                                     |
+| **Testable in isolation**     | All scenarios — seed the relevant stores, test one system                                            |
+| **Undo/redo for free**        | All scenarios — layout mutation commands replay and undo                                             |

@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getHeaderPos = async (
@@ -355,6 +356,55 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await comfyPage.page.mouse.move(10, 10, { steps: 20 })
     await comfyPage.nextFrame()
     expect(await getOffset(), 'drag canceled').toEqual(secondaryOffset)
+  })
+
+  test('dragging a node moves all selected items', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const samplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const ksampler = new VueNodeFixture(samplerLocator)
+    const loaderLocator = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const loader = new VueNodeFixture(loaderLocator)
+
+    await test.step('create graph with group and reroute', async () => {
+      await comfyPage.nodeOps.clearGraph()
+      await comfyPage.searchBoxV2.addNode('Load Checkpoint')
+      const samplerOptions = { position: { x: 800, y: 200 } }
+      await comfyPage.searchBoxV2.addNode('KSampler', samplerOptions)
+      await ksampler.getSlot('model').dragTo(loader.getSlot('MODEL'))
+
+      await test.step('add reroute', async () => {
+        const b1 = await ksampler.getSlot('model').boundingBox()
+        const b2 = await loader.getSlot('MODEL').boundingBox()
+        if (!b1 || !b2) throw new Error('Failed to get bounds')
+
+        const x = (b1.x + b2.x + (b1.width + b2.width) / 2) / 2
+        const y = (b1.y + b2.y + (b1.height + b2.height) / 2) / 2
+        await comfyPage.page.keyboard.down('Alt')
+        await comfyPage.page.mouse.click(x, y)
+        await comfyPage.page.keyboard.up('Alt')
+
+        const rerouteCount = () =>
+          comfyPage.page.evaluate(() => graph!.reroutes.size)
+        await expect.poll(rerouteCount).toBe(1)
+      })
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.page.keyboard.press('Control+G')
+      await comfyPage.keyboard.selectAll()
+    })
+
+    const getReroutePos = () =>
+      comfyPage.page.evaluate(() => [...graph!.reroutes.values()][0])
+    const getGroupPos = () =>
+      comfyPage.page.evaluate(() => graph!.groups[0].pos)
+    const initialReroutePos = await getReroutePos()
+    const initialGroupPos = await getGroupPos()
+    await comfyMouse.dragElementBy(ksampler.title, { x: 100 })
+
+    await expect.poll(getReroutePos).not.toEqual(initialReroutePos)
+    await expect.poll(getGroupPos).not.toEqual(initialGroupPos)
   })
 
   test(

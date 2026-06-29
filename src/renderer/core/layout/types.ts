@@ -6,7 +6,7 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
-import type { NodeId as WorkflowNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -39,7 +39,7 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
-export type NodeId = WorkflowNodeId
+export type { NodeId }
 export type LinkId = number
 export type RerouteId = number
 
@@ -327,7 +327,11 @@ export interface LayoutStore {
 
   // Initialization
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{
+      id: NodeId
+      pos: [number, number]
+      size: [number, number]
+    }>
   ): void
 
   // Source and actor management
@@ -337,9 +341,7 @@ export interface LayoutStore {
   getCurrentActor(): string
 
   // Batch updates
-  batchUpdateNodeBounds(
-    updates: Array<{ nodeId: NodeId; bounds: Bounds }>
-  ): void
+  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void
 
   batchUpdateSlotLayouts(
     updates: Array<{ key: string; layout: SlotLayout }>
