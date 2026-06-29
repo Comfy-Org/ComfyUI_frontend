@@ -9,10 +9,11 @@
       v-model:end-frame="endFrame"
       v-model:playhead-frame="playheadFrame"
       :video-url="videoUrl"
-      :uploading="isProcessing"
+      :uploading="isUploading"
       :on-drag-over="handleDragOver"
       :on-drag-drop="handleDragDrop"
       @browse="handleBrowse"
+      @remove="handleRemove"
     />
   </div>
 </template>
@@ -27,6 +28,9 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { cn } from '@comfyorg/tailwind-utils'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 const { nodeId } = defineProps<{
   widget: SimplifiedWidget<VideoTrimValue>
@@ -48,19 +52,6 @@ const node = computed(() => app.canvas.graph?.getNodeById(nodeId))
 const { videoUrl } = useLoadVideoPreview(node)
 
 const isUploading = computed(() => node.value?.isUploading ?? false)
-
-const hasSelectedFile = computed(() => {
-  const fileWidget = node.value?.widgets?.find(
-    (widget) => widget.name === 'file'
-  )
-  const value = fileWidget?.value
-  if (typeof value === 'string') return value.length > 0
-  return Boolean(value)
-})
-
-const isProcessing = computed(
-  () => isUploading.value || (!videoUrl.value && hasSelectedFile.value)
-)
 
 const trimEnabled = computed({
   get: () => modelValue.value.trimEnabled,
@@ -87,6 +78,41 @@ function handleBrowse() {
   node.value?.widgets
     ?.find((widget) => widget.name === 'upload')
     ?.callback?.(undefined)
+}
+
+function handleRemove() {
+  const currentNode = node.value
+  if (!currentNode) return
+
+  const fileWidget = currentNode.widgets?.find(
+    (widget) => widget.name === 'file'
+  )
+  if (!fileWidget) return
+
+  const oldValue = fileWidget.value
+  fileWidget.value = ''
+  fileWidget.callback?.('')
+  currentNode.onWidgetChanged?.('file', '', oldValue, fileWidget)
+
+  const graphId = currentNode.graph?.rootGraph?.id
+  if (graphId) {
+    useWidgetValueStore().setValue(
+      widgetId(graphId, currentNode.id, 'file'),
+      ''
+    )
+  }
+
+  useNodeOutputStore().removeNodeOutputsForNode(currentNode)
+  currentNode.imgs = undefined
+  currentNode.videoContainer = undefined
+
+  modelValue.value = {
+    trimEnabled: false,
+    startFrame: 0,
+    endFrame: 0
+  }
+  playheadFrame.value = 0
+  currentNode.graph?.setDirtyCanvas(true)
 }
 
 function handleDragOver(event: DragEvent) {

@@ -25,7 +25,10 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
-const getDefaultValue = (inputSpec: ComboInputSpec) => {
+const getDefaultValue = (inputSpec: ComboInputSpec, nodeType?: string) => {
+  if (nodeType === 'LoadVideo' && inputSpec.name === 'file') {
+    return ''
+  }
   if (inputSpec.default) return inputSpec.default
   if (inputSpec.options?.length) return inputSpec.options[0]
   if (inputSpec.remote) return 'Loading...'
@@ -158,6 +161,8 @@ function resolveCloudInputDefault(
     if (matchingAsset) return getCloudInputAssetValue(matchingAsset)
   }
 
+  if (nodeType === 'LoadVideo') return undefined
+
   return assets[0] ? getCloudInputAssetValue(assets[0]) : undefined
 }
 
@@ -238,7 +243,7 @@ const addComboWidget = (
   node: LGraphNode,
   inputSpec: ComboInputSpec
 ): IBaseWidget => {
-  const defaultValue = getDefaultValue(inputSpec)
+  const defaultValue = getDefaultValue(inputSpec, node.comfyClass)
 
   if (isCloud) {
     if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {

@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/prefer-user-event -- pointer capture scrubbing needs low-level pointer events */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue';
-import type { Ref } from 'vue';
+import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 const { activeHandle } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -186,7 +186,7 @@ describe('VideoFilmstripTrim', () => {
     expect(emitted().scrub).toEqual([[expectedFrameAt(100)]])
   })
 
-  it('scrubs to frames outside the trim selection', async () => {
+  it('clamps scrubbing to the trim selection when trim is enabled', async () => {
     const playheadFrame = ref(50)
     const { emitted } = render(VideoFilmstripTrim, {
       props: {
@@ -209,8 +209,13 @@ describe('VideoFilmstripTrim', () => {
 
     await fireEvent.pointerDown(track, { clientX: 20, button: 0 })
 
-    expect(playheadFrame.value).toBe(expectedFrameAt(20))
-    expect(emitted().scrub).toEqual([[expectedFrameAt(20)]])
+    expect(playheadFrame.value).toBe(10)
+    expect(emitted().scrub).toEqual([[10]])
+
+    await fireEvent.pointerDown(track, { clientX: 180, button: 0 })
+
+    expect(playheadFrame.value).toBe(80)
+    expect(emitted().scrub).toEqual([[10], [80]])
   })
 
   it('updates playhead while dragging across the filmstrip', async () => {

@@ -266,6 +266,9 @@
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-400);
 
+  --video-trim-selection-background: var(--color-datatype-CLIP, #ffd500);
+  --video-trim-playhead-background: #f0513b;
+
   /* Default UI element color palette variables */
   --palette-contrast-mix-color: #fff;
   --palette-interface-panel-surface: var(--comfy-menu-bg);
@@ -549,6 +552,8 @@
   );
   --color-component-node-widget-promoted: var(--component-node-widget-promoted);
   --color-component-node-widget-advanced: var(--component-node-widget-advanced);
+  --color-video-trim-selection-background: var(--video-trim-selection-background);
+  --color-video-trim-playhead-background: var(--video-trim-playhead-background);
 
   /* Semantic tokens */
   --color-base-foreground: var(--base-foreground);

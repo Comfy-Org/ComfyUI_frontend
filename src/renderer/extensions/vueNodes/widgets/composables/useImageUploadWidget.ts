@@ -123,7 +123,10 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
+      const value = String(fileComboWidget.value)
+      if (!value || value === 'Loading...') return
+
+      nodeOutputStore.setNodeOutputs(node, value, {
         isAnimated
       })
       showPreview({ block: false })

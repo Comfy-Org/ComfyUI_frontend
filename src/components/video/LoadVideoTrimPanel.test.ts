@@ -28,14 +28,15 @@ const i18n = createI18n({
     en: {
       g: {
         increment: 'Increment',
-        decrement: 'Decrement'
+        decrement: 'Decrement',
+        remove: 'Remove'
       },
       loadVideoTrim: {
         trimVideo: 'Trim Video',
         startFrame: 'Start Frame',
         endFrame: 'End Frame',
-        setStartFrame: 'Reset start to beginning',
-        setEndFrame: 'Reset end to last frame',
+        setStartFrame: 'Set start frame',
+        setEndFrame: 'Set end frame',
         play: 'Play',
         pause: 'Pause',
         adjustStartFrame: 'Adjust start frame',
@@ -46,6 +47,7 @@ const i18n = createI18n({
         resolution: '{width} × {height}',
         dragAndDropVideos: 'Drag and drop videos here to upload',
         uploadFromDevice: 'Upload from device',
+        uploading: 'Uploading…',
         loadingVideo: 'Loading video preview'
       }
     }
@@ -96,6 +98,43 @@ describe('LoadVideoTrimPanel', () => {
     expect(screen.getByTestId('trim-track')).toBeTruthy()
     expect(screen.queryByText('Start Frame')).toBeNull()
     expect(screen.queryByText('End Frame')).toBeNull()
+  })
+
+  it('shows drag and drop empty state while not uploading', () => {
+    renderPanel({
+      videoUrl: undefined,
+      uploading: false
+    })
+
+    expect(screen.getByTestId('media-upload-browse-button')).toBeTruthy()
+    expect(screen.queryByText('Uploading…')).toBeNull()
+  })
+
+  it('shows uploading state only while an upload is in progress', () => {
+    renderPanel({
+      videoUrl: undefined,
+      uploading: true
+    })
+
+    expect(screen.queryByTestId('media-upload-browse-button')).toBeNull()
+    expect(screen.getByText('Uploading…')).toBeTruthy()
+  })
+
+  it('shows remove button on hover and emits remove when clicked', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel({
+      videoUrl: 'https://example.com/video.mp4'
+    })
+
+    expect(screen.queryByTestId('video-remove-button')).toBeNull()
+
+    await user.hover(screen.getByTestId('video-preview-container'))
+    const removeButton = screen.getByTestId('video-remove-button')
+    expect(removeButton).toBeTruthy()
+    expect(removeButton).toHaveAttribute('aria-label', 'Remove')
+
+    await user.click(removeButton)
+    expect(emitted().remove).toHaveLength(1)
   })
 
   it('forwards browse event from empty state', async () => {
@@ -245,7 +284,7 @@ describe('LoadVideoTrimPanel', () => {
 
     render(Host, { global: { plugins: [i18n] } })
 
-    await user.click(screen.getByLabelText('Reset start to beginning'))
+    await user.click(screen.getByLabelText('Set start frame'))
 
     expect(startFrame.value).toBe(0)
     expect(playheadFrame.value).toBe(0)
@@ -281,7 +320,7 @@ describe('LoadVideoTrimPanel', () => {
 
     render(Host, { global: { plugins: [i18n] } })
 
-    await user.click(screen.getByLabelText('Reset end to last frame'))
+    await user.click(screen.getByLabelText('Set end frame'))
 
     expect(endFrame.value).toBe(100)
     expect(playheadFrame.value).toBe(100)

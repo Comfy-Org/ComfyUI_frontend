@@ -127,7 +127,7 @@
           :class="
             cn(
               'pointer-events-auto flex w-4 shrink-0 cursor-ew-resize',
-              'items-center justify-center bg-warning-background',
+              'items-center justify-center bg-video-trim-selection-background',
               'rounded-l-lg border-none p-0'
             )
           "
@@ -150,7 +150,7 @@
           :class="
             cn(
               'pointer-events-auto flex w-4 shrink-0 cursor-ew-resize',
-              'items-center justify-center bg-warning-background',
+              'items-center justify-center bg-video-trim-selection-background',
               'rounded-r-lg border-none p-0'
             )
           "
@@ -168,7 +168,7 @@
         @pointerdown.stop="startScrubDrag"
       >
         <div
-          class="pointer-events-none w-px bg-base-foreground ring-1 ring-base-background"
+          class="pointer-events-none w-0.5 bg-video-trim-playhead-background"
         />
       </div>
     </div>
@@ -249,7 +249,7 @@ const isFilmstripLoading = computed(() => thumbnails.length === 0)
 const trimSelectionBarClass = computed(() =>
   isFilmstripLoading.value
     ? 'bg-component-node-widget-background'
-    : 'bg-warning-background'
+    : 'bg-video-trim-selection-background'
 )
 
 function pointerToFrame(event: PointerEvent) {
@@ -266,9 +266,15 @@ function pointerToFrame(event: PointerEvent) {
   return Math.round(denormalize(normalized, 0, frameMax.value))
 }
 
+const scrubFrameMin = computed(() => (trimEnabled ? startFrame.value : 0))
+const scrubFrameMax = computed(() =>
+  trimEnabled ? endFrame.value : frameMax.value
+)
+
 function scrubToFrame(frame: number) {
-  playheadFrame.value = frame
-  emit('scrub', frame)
+  const clamped = clamp(frame, scrubFrameMin.value, scrubFrameMax.value)
+  playheadFrame.value = clamped
+  emit('scrub', clamped)
 }
 
 function updateScrubFromPointer(event: PointerEvent) {

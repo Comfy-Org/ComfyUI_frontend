@@ -71,4 +71,21 @@ describe('useLoadVideoPreview', () => {
       } as never)
     ).toBe(true)
   })
+
+  it('ignores remote widget placeholder values', () => {
+    getNodeImageUrlsMock.mockReturnValue(undefined)
+
+    const node = computed(() => ({
+      widgets: [{ name: 'file', value: 'Loading...' }]
+    }))
+
+    const { videoUrl } = useLoadVideoPreview(node as never)
+
+    expect(videoUrl.value).toBeUndefined()
+    expect(
+      nodeHasLoadVideoPreview({
+        widgets: [{ name: 'file', value: 'Loading...' }]
+      } as never)
+    ).toBe(false)
+  })
 })

@@ -1,7 +1,7 @@
 <template>
   <div
     class="flex flex-col gap-2"
-    :class="!videoUrl && 'min-h-0 flex-1 pb-0'"
+    :class="!videoUrl && 'min-h-0 flex-1 pb-3'"
     @pointerdown.stop
   >
     <MediaUploadEmpty
@@ -16,32 +16,54 @@
     />
     <div
       v-else
-      class="relative w-full overflow-hidden rounded-lg bg-node-component-surface"
+      data-testid="video-preview-container"
+      class="relative w-full"
       :style="videoAspectRatioStyle"
+      @mouseenter="isVideoHovered = true"
+      @mouseleave="isVideoHovered = false"
     >
-      <video
-        ref="videoRef"
-        data-testid="video-preview"
-        :src="videoUrl"
-        class="size-full object-contain"
-        preload="auto"
-        muted
-        playsinline
-        @loadedmetadata="handleVideoMetadata"
-        @timeupdate="handleTimeUpdate"
-      />
       <div
-        v-if="filmstripLoading"
-        class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-node-component-surface"
-        data-testid="video-preview-loading"
-        :aria-busy="true"
-        :aria-label="t('loadVideoTrim.loadingVideo')"
+        class="relative size-full overflow-hidden rounded-lg bg-node-component-surface"
       >
-        <Loader size="md" variant="loader-circle" />
-        <p class="text-sm text-muted-foreground">
-          {{ t('loadVideoTrim.loadingVideo') }}
-        </p>
+        <video
+          ref="videoRef"
+          data-testid="video-preview"
+          :src="videoUrl"
+          class="size-full object-contain"
+          preload="auto"
+          muted
+          playsinline
+          @loadedmetadata="handleVideoMetadata"
+          @timeupdate="handleTimeUpdate"
+        />
+        <div
+          v-if="filmstripLoading"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-node-component-surface"
+          data-testid="video-preview-loading"
+          :aria-busy="true"
+          :aria-label="t('loadVideoTrim.loadingVideo')"
+        >
+          <Loader size="md" variant="loader-circle" />
+          <p class="text-sm text-muted-foreground">
+            {{ t('loadVideoTrim.loadingVideo') }}
+          </p>
+        </div>
       </div>
+      <TooltipHint
+        v-if="isVideoHovered && !filmstripLoading"
+        :content="t('g.remove')"
+      >
+        <button
+          type="button"
+          data-testid="video-remove-button"
+          :class="removeButtonClass"
+          :aria-label="t('g.remove')"
+          @pointerdown.stop
+          @click.stop="emit('remove')"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </button>
+      </TooltipHint>
     </div>
 
     <div
@@ -81,34 +103,44 @@
       />
 
       <div v-if="trimEnabled" class="col-span-full grid grid-cols-2 gap-1">
-        <button
-          type="button"
-          :class="
-            cn(
-              WidgetInputBaseClass,
-              'flex h-8 cursor-pointer items-center justify-center not-disabled:hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50'
-            )
-          "
+        <TooltipHint
+          :content="t('loadVideoTrim.setStartFrame')"
           :disabled="controlsDisabled"
-          :aria-label="t('loadVideoTrim.setStartFrame')"
-          @click="setStartFrame"
         >
-          <i class="icon-[lucide--skip-back] size-4" />
-        </button>
-        <button
-          type="button"
-          :class="
-            cn(
-              WidgetInputBaseClass,
-              'flex h-8 cursor-pointer items-center justify-center not-disabled:hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50'
-            )
-          "
+          <button
+            type="button"
+            :class="
+              cn(
+                WidgetInputBaseClass,
+                'flex h-8 cursor-pointer items-center justify-center not-disabled:hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50'
+              )
+            "
+            :disabled="controlsDisabled"
+            :aria-label="t('loadVideoTrim.setStartFrame')"
+            @click="setStartFrame"
+          >
+            <i class="icon-[lucide--skip-back] size-4" />
+          </button>
+        </TooltipHint>
+        <TooltipHint
+          :content="t('loadVideoTrim.setEndFrame')"
           :disabled="controlsDisabled"
-          :aria-label="t('loadVideoTrim.setEndFrame')"
-          @click="setEndFrame"
         >
-          <i class="icon-[lucide--skip-forward] size-4" />
-        </button>
+          <button
+            type="button"
+            :class="
+              cn(
+                WidgetInputBaseClass,
+                'flex h-8 cursor-pointer items-center justify-center not-disabled:hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50'
+              )
+            "
+            :disabled="controlsDisabled"
+            :aria-label="t('loadVideoTrim.setEndFrame')"
+            @click="setEndFrame"
+          >
+            <i class="icon-[lucide--skip-forward] size-4" />
+          </button>
+        </TooltipHint>
       </div>
 
       <div
@@ -141,6 +173,7 @@ import { useI18n } from 'vue-i18n'
 import Loader from '@/components/loader/Loader.vue'
 import MediaUploadEmpty from '@/components/video/MediaUploadEmpty.vue'
 import VideoFilmstripTrim from '@/components/video/VideoFilmstripTrim.vue'
+import TooltipHint from '@/components/ui/tooltip/TooltipHint.vue'
 import {
   DEFAULT_VIDEO_FPS,
   useVideoFilmstrip
@@ -167,7 +200,11 @@ const {
 
 const emit = defineEmits<{
   browse: []
+  remove: []
 }>()
+
+const removeButtonClass =
+  'absolute top-2 right-2 z-10 flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent'
 
 const trimEnabled = defineModel<boolean>('trimEnabled', { default: false })
 const startFrame = defineModel<number>('startFrame', { default: 0 })
@@ -176,6 +213,7 @@ const playheadFrame = defineModel<number>('playheadFrame', { default: 0 })
 
 const { t } = useI18n()
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
+const isVideoHovered = ref(false)
 const isPlaying = ref(false)
 const isSeeking = ref(false)
 const videoIntrinsicSize = ref<{ width: number; height: number } | null>(null)
