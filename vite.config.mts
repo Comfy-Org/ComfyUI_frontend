@@ -34,17 +34,48 @@ const COVERAGE_CRITICAL = process.env.COVERAGE_CRITICAL === 'true'
 const CRITICAL_COVERAGE_INCLUDE = [
   'src/base/**/*.{ts,vue}',
   'src/composables/**/*.{ts,vue}',
+  'src/core/**/*.{ts,vue}',
+  'src/lib/litegraph/src/node/**/*.{ts,vue}',
+  'src/lib/litegraph/src/subgraph/**/*.{ts,vue}',
+  'src/lib/litegraph/src/utils/**/*.{ts,vue}',
+  'src/platform/assets/composables/**/*.{ts,vue}',
+  'src/platform/assets/mappings/**/*.{ts,vue}',
+  'src/platform/assets/schemas/**/*.{ts,vue}',
+  'src/platform/assets/services/**/*.{ts,vue}',
+  'src/platform/assets/utils/**/*.{ts,vue}',
+  'src/platform/errorCatalog/**/*.{ts,vue}',
+  'src/platform/keybindings/**/*.{ts,vue}',
+  'src/platform/missingMedia/**/*.{ts,vue}',
+  'src/platform/missingModel/**/*.{ts,vue}',
+  'src/platform/navigation/**/*.{ts,vue}',
+  'src/platform/nodeReplacement/**/*.{ts,vue}',
+  'src/platform/remote/**/*.{ts,vue}',
+  'src/platform/remoteConfig/**/*.{ts,vue}',
+  'src/platform/secrets/**/*.{ts,vue}',
+  'src/platform/settings/**/*.{ts,vue}',
+  'src/platform/workflow/**/*.{ts,vue}',
+  'src/platform/workspace/api/**/*.{ts,vue}',
+  'src/platform/workspace/auth/**/*.{ts,vue}',
+  'src/platform/workspace/composables/**/*.{ts,vue}',
+  'src/platform/workspace/stores/**/*.{ts,vue}',
+  'src/platform/workspace/utils/**/*.{ts,vue}',
+  'src/schemas/**/*.{ts,vue}',
   'src/scripts/**/*.{ts,vue}',
+  'src/services/**/*.{ts,vue}',
   'src/stores/**/*.{ts,vue}',
   'src/utils/**/*.{ts,vue}',
-  'src/workbench/extensions/manager/composables/**/*.{ts,vue}'
+  'src/workbench/extensions/manager/composables/**/*.{ts,vue}',
+  'src/workbench/extensions/manager/services/**/*.{ts,vue}',
+  'src/workbench/extensions/manager/stores/**/*.{ts,vue}',
+  'src/workbench/extensions/manager/utils/**/*.{ts,vue}',
+  'src/workbench/utils/**/*.{ts,vue}'
 ]
 
 const CRITICAL_COVERAGE_THRESHOLDS = {
-  statements: 66,
-  branches: 56,
-  functions: 64,
-  lines: 68
+  statements: 69,
+  branches: 60,
+  functions: 67,
+  lines: 70
 }
 
 // Open Graph / Twitter Meta Tags Constants
@@ -694,7 +725,7 @@ export default defineConfig({
         'src/**/*.stories.ts',
         'src/**/*.d.ts',
         'src/locales/**',
-        'src/lib/litegraph/**',
+        ...(COVERAGE_CRITICAL ? [] : ['src/lib/litegraph/**']),
         'src/assets/**'
       ],
       ...(COVERAGE_CRITICAL ? { thresholds: CRITICAL_COVERAGE_THRESHOLDS } : {})
