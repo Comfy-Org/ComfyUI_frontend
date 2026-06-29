@@ -7,34 +7,35 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const PROMPT = t('mcp.hero.demoPrompt', locale)
+const generateLabel = t('mcp.hero.demoGenerate', locale)
 
 const cards = [
   {
-    action: 'GENERATE-IMAGE',
+    actionKey: 'mcp.hero.demoActionGenerateImage',
     file: 'moodboard_v1.png · 6-up',
     tag: 'Gmail',
     thumb: '/images/mcp/mcp-thumb-moodboard.webp'
   },
   {
-    action: 'GENERATE-IMAGE',
+    actionKey: 'mcp.hero.demoActionGenerateImage',
     file: 'concepts_01–03.png',
     tag: 'Notion',
     thumb: '/images/mcp/mcp-thumb-concepts.webp'
   },
   {
-    action: 'GENERATE-IMAGE',
+    actionKey: 'mcp.hero.demoActionGenerateImage',
     file: 'hero_keyart.png',
     tag: 'Figma',
     thumb: '/images/mcp/mcp-thumb-keyart.webp'
   },
   {
-    action: 'GENERATE-3D ASSET',
+    actionKey: 'mcp.hero.demoActionGenerate3d',
     file: 'asphalt_pbr/ · 5 maps',
     tag: 'Blender',
     thumb: '/images/mcp/mcp-thumb-asphalt.webp'
   },
   {
-    action: 'UPSCALE-IMAGE',
+    actionKey: 'mcp.hero.demoActionUpscale',
     file: 'kaiju_neon_4k.png · 4096',
     tag: null,
     thumb: '/images/mcp/mcp-thumb-kaiju.webp'
@@ -45,7 +46,11 @@ const visibleCount = ref(0)
 const displayedPrompt = ref('')
 const promptDone = ref(false)
 
-const displayedCards = computed(() => cards.slice(0, visibleCount.value))
+const displayedCards = computed(() =>
+  cards
+    .slice(0, visibleCount.value)
+    .map((card) => ({ ...card, action: t(card.actionKey, locale) }))
+)
 
 let timer: ReturnType<typeof setTimeout> | null = null
 let active = false
@@ -124,7 +129,7 @@ onUnmounted(() => {
         <div
           class="bg-primary-comfy-yellow font-formula rounded-2xl px-4 py-3 text-sm font-extrabold tracking-[0.7px] text-primary-comfy-ink uppercase"
         >
-          GENERATE
+          {{ generateLabel }}
         </div>
       </div>
     </div>

@@ -1868,6 +1868,22 @@ const translations = {
     en: 'RUN A WORKFLOW',
     'zh-CN': '运行工作流'
   },
+  'mcp.hero.demoGenerate': {
+    en: 'GENERATE',
+    'zh-CN': '生成'
+  },
+  'mcp.hero.demoActionGenerateImage': {
+    en: 'GENERATE-IMAGE',
+    'zh-CN': '生成图像'
+  },
+  'mcp.hero.demoActionGenerate3d': {
+    en: 'GENERATE-3D ASSET',
+    'zh-CN': '生成 3D 资产'
+  },
+  'mcp.hero.demoActionUpscale': {
+    en: 'UPSCALE-IMAGE',
+    'zh-CN': '放大图像'
+  },
 
   // MCP – SetupStepsSection
   'mcp.setup.label': {
