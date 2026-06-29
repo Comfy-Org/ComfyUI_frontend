@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -149,13 +150,32 @@ type SubscriptionTransitionType =
 
 interface PreviewSubscribeRequest {
   plan_slug: string
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
 }
+
+type SubscribeBillingCycle = 'monthly' | 'yearly'
 
 interface SubscribeRequest {
   plan_slug: string
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  /** Required for the per-credit Team plan; selects the slider stop. */
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
+}
+
+export interface SubscribeOptions {
+  returnUrl?: string
+  cancelUrl?: string
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
+}
+
+export interface PreviewSubscribeOptions {
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -321,6 +341,9 @@ const workspaceApiClient = axios.create({
   }
 })
 
+// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
+attachUnifiedRemintInterceptor(workspaceApiClient)
+
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
@@ -458,6 +481,24 @@ export const workspaceApi = {
   },
 
   /**
+   * Change a member's role (member ↔ owner).
+   * PATCH /api/workspace/members/:userId
+   */
+  async updateMemberRole(userId: UserId, role: WorkspaceRole): Promise<Member> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.patch<Member>(
+        api.apiURL(`/workspace/members/${userId}`),
+        { role },
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * List pending invites for the workspace.
    * GET /api/workspace/invites
    */
@@ -519,7 +560,7 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),
         null,
-        { headers }
+        { headers, __skipUnifiedRemint: true }
       )
       return response.data
     } catch (err) {
@@ -582,12 +623,19 @@ export const workspaceApi = {
    * Preview subscription change
    * POST /api/billing/preview-subscribe
    */
-  async previewSubscribe(planSlug: string): Promise<PreviewSubscribeResponse> {
+  async previewSubscribe(
+    planSlug: string,
+    options: PreviewSubscribeOptions = {}
+  ): Promise<PreviewSubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PreviewSubscribeResponse>(
         api.apiURL('/billing/preview-subscribe'),
-        { plan_slug: planSlug } satisfies PreviewSubscribeRequest,
+        {
+          plan_slug: planSlug,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
+        } satisfies PreviewSubscribeRequest,
         { headers }
       )
       return response.data
@@ -602,8 +650,7 @@ export const workspaceApi = {
    */
   async subscribe(
     planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
+    options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -611,8 +658,10 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
-          return_url: returnUrl,
-          cancel_url: cancelUrl
+          return_url: options.returnUrl,
+          cancel_url: options.cancelUrl,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
         } satisfies SubscribeRequest,
         { headers }
       )

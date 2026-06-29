@@ -16,7 +16,6 @@ export interface ErrorCardData {
   nodeId?: NodeExecutionId
   nodeTitle?: string
   graphNodeId?: string
-  isSubgraphNode?: boolean
   errors: ErrorItem[]
 }
 

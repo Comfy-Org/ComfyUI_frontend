@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "ساخت یک پرامپت JSON برای مدل Ideogram 4.",
+    "display_name": "ساخت پرامپت JSON (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "aesthetics",
+        "tooltip": "کلمات کلیدی زیبایی‌شناسی اجباری (مثلاً: moody، cinematic، desaturated)."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "توضیح اجباری درباره پس‌زمینه یا محیط تصویر."
+      },
+      "color_palette": {
+        "name": "color_palette",
+        "tooltip": "کدهای رنگ Hex که رنگ‌های غالب تصویر را تعیین می‌کنند. تا ۱۶ ورودی."
+      },
+      "element": {
+        "name": "element",
+        "tooltip": "عناصر پرامپت از node ایجاد جعبه‌های مرزی."
+      },
+      "high_level_description": {
+        "name": "high_level_description",
+        "tooltip": "توضیح اختیاری درباره تصویر در یک یا دو جمله. به شدت توصیه می‌شود."
+      },
+      "lighting": {
+        "name": "lighting",
+        "tooltip": "توضیح اجباری نورپردازی (مثلاً: golden hour، rim light، dramatic shadows)."
+      },
+      "medium": {
+        "name": "medium",
+        "tooltip": "نوع مدیوم اجباری (مثلاً: photograph، illustration، 3d_render، painting، graphic_design). زمانی که style = photo باشد، مقدار را photograph قرار دهید."
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
     "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
@@ -2633,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "تبدیل آرایه به رشته",
+    "inputs": {
+      "array": {
+        "name": "array"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "تعداد فاصله برای هر سطح تورفتگی. مقدار ۰ یک رشته تک‌خطی فشرده تولید می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "تبدیل دیکشنری به رشته",
+    "inputs": {
+      "dictionary": {
+        "name": "dictionary"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "تعداد فاصله برای هر سطح تورفتگی. مقدار ۰ یک رشته تک‌خطی فشرده تولید می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2691,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "کشیدن جعبه‌های مرزی در یک بوم. خروجی شامل عناصر پرامپت Ideogram، جعبه‌های مرزی در فضای پیکسلی و یک تصویر پیش‌نمایش است.",
+    "display_name": "ایجاد جعبه‌های مرزی",
+    "inputs": {
+      "background": {
+        "name": "background",
+        "tooltip": "تصویر اختیاری که به عنوان پس‌زمینه در بوم و پیش‌نمایش استفاده می‌شود."
+      },
+      "editor_state": {
+        "name": "editor_state",
+        "tooltip": "جعبه‌های مرزی را رسم کنید و نوع هر جعبه، متن، توضیح و پالت رنگ را تعیین کنید. با عنصر پس‌زمینه شروع و با پیش‌زمینه پایان دهید."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "ارتفاع بوم و شبکه پیکسلی برای جعبه‌های مرزی."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "عرض بوم و شبکه پیکسلی برای جعبه‌های مرزی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "preview",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "elements",
         "tooltip": null
       }
     }
@@ -12025,6 +12138,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "ModelMergeLTXV",
     "inputs": {
@@ -17694,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "بذر",
+    "inputs": {
+      "fixed": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "بذر",
         "tooltip": null
       }
     }

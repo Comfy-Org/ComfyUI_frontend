@@ -18,6 +18,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
+import type { NodeId } from '@/types/nodeId'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
 
 const HANDLE_PX = 8
@@ -39,7 +40,7 @@ interface UseBoundingBoxesOptions {
 }
 
 export function useBoundingBoxes(
-  nodeId: string,
+  nodeId: NodeId,
   {
     canvasEl,
     canvasContainer,
@@ -63,9 +64,7 @@ export function useBoundingBoxes(
     nodeId && app.canvas?.graph ? app.canvas.graph.getNodeById(nodeId) : null
   )
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
-  const isNodeSelected = computed(() =>
-    selectedNodeIds.value.has(String(nodeId))
-  )
+  const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
 
   function dimWidget(name: 'width' | 'height'): number | undefined {
     const v = litegraphNode.value?.widgets?.find((w) => w.name === name)?.value

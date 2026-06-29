@@ -26,12 +26,8 @@
         <template v-if="showDescription">
           <div class="flex-1" />
           <div class="flex shrink-0 items-center gap-1">
-            <span
-              v-if="showSourceBadge && isCore"
-              aria-hidden="true"
-              class="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-secondary-background-hover/80"
-            >
-              <ComfyLogo :size="10" mode="fill" color="currentColor" />
+            <span v-if="showSourceBadge && isCore" :class="badgePillClass">
+              <span class="truncate text-2xs">{{ $t('g.comfy') }}</span>
             </span>
             <span
               v-else-if="
@@ -43,6 +39,10 @@
               <span class="truncate text-2xs">
                 {{ nodeDef.nodeSource.displayText }}
               </span>
+            </span>
+
+            <span v-if="isEssential" :class="badgePillClass">
+              <span class="truncate text-2xs">{{ $t('g.essentials') }}</span>
             </span>
 
             <span
@@ -122,9 +122,9 @@
 import { computed } from 'vue'
 
 import TextTicker from '@/components/common/TextTicker.vue'
-import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
+import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -174,4 +174,5 @@ const providerName = computed(() => getProviderName(nodeDef.category))
 const isCore = computed(() =>
   CORE_NODE_MODULES.includes(nodeDef.python_module.split('.')[0])
 )
+const isEssential = computed(() => !!NODE_TO_ESSENTIALS_CATEGORY[nodeDef.name])
 </script>
