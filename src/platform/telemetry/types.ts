@@ -160,6 +160,21 @@ export interface MissingNodePack {
   node_types: string[]
 }
 
+/**
+ * How a template open was triggered (only when `open_source` is `'template'`):
+ * - `StarterTemplate` — desktop install/onboarding deeplink (`?template=` on first launch)
+ * - `LibraryTemplate` — in-app template picker
+ * - `SharedUrl` — a `?template=` link opened in the browser
+ */
+export const TemplateOpenTrigger = {
+  StarterTemplate: 'starter_template',
+  LibraryTemplate: 'library_template',
+  SharedUrl: 'shared_url'
+} as const
+
+export type TemplateOpenTrigger =
+  (typeof TemplateOpenTrigger)[keyof typeof TemplateOpenTrigger]
+
 export interface WorkflowImportMetadata {
   missing_node_count: number
   missing_node_types: string[]
@@ -177,6 +192,10 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  /** Set only when `open_source` is `'template'`; lets activation break down per template. */
+  template_id?: string
+  /** Set only when `open_source` is `'template'`. See {@link TemplateOpenTrigger}. */
+  open_trigger?: TemplateOpenTrigger
   share_id?: string
 }
 

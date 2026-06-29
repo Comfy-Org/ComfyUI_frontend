@@ -2,9 +2,11 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isDesktop } from '@/platform/distribution/types'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { TemplateOpenTrigger } from '@/platform/telemetry/types'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -110,7 +112,10 @@ export function useTemplateUrlLoader() {
 
       const success = await templateWorkflows.loadWorkflowTemplate(
         templateParam,
-        sourceParam
+        sourceParam,
+        isDesktop
+          ? TemplateOpenTrigger.StarterTemplate
+          : TemplateOpenTrigger.SharedUrl
       )
 
       if (!success) {

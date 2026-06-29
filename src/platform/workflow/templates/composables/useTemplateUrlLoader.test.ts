@@ -106,7 +106,8 @@ describe('useTemplateUrlLoader', () => {
     expect(mockLoadTemplates).toHaveBeenCalledTimes(1)
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
-      'default'
+      'default',
+      'shared_url'
     )
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledTimes(1)
   })
@@ -119,7 +120,8 @@ describe('useTemplateUrlLoader', () => {
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
-      'default'
+      'default',
+      'shared_url'
     )
   })
 
@@ -131,7 +133,8 @@ describe('useTemplateUrlLoader', () => {
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'custom-template',
-      'custom-module'
+      'custom-module',
+      'shared_url'
     )
   })
 
@@ -197,7 +200,11 @@ describe('useTemplateUrlLoader', () => {
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
 
-      expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(template, 'default')
+      expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
+        template,
+        'default',
+        'shared_url'
+      )
     }
   })
 
@@ -223,7 +230,8 @@ describe('useTemplateUrlLoader', () => {
 
       expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
         'flux_simple',
-        source
+        source,
+        'shared_url'
       )
     }
   })
@@ -290,7 +298,8 @@ describe('useTemplateUrlLoader', () => {
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
-      'default'
+      'default',
+      'shared_url'
     )
     expect(mockCanvasStore.linearMode).toBe(true)
   })
@@ -313,7 +322,8 @@ describe('useTemplateUrlLoader', () => {
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
-      'default'
+      'default',
+      'shared_url'
     )
     expect(mockCanvasStore.linearMode).toBe(false)
   })
@@ -353,7 +363,8 @@ describe('useTemplateUrlLoader', () => {
     )
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
-      'default'
+      'default',
+      'shared_url'
     )
     expect(mockCanvasStore.linearMode).toBe(false)
 
@@ -368,7 +379,8 @@ describe('useTemplateUrlLoader', () => {
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
-      'default'
+      'default',
+      'shared_url'
     )
     expect(mockCanvasStore.linearMode).toBe(true)
   })
@@ -391,7 +403,8 @@ describe('useTemplateUrlLoader', () => {
       )
       expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
         'flux_simple',
-        'default'
+        'default',
+        'shared_url'
       )
       expect(mockCanvasStore.linearMode).toBe(false)
     }

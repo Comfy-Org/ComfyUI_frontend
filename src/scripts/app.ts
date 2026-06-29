@@ -29,7 +29,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
+import type {
+  TemplateOpenTrigger,
+  WorkflowOpenSource
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -1174,6 +1177,8 @@ export class ComfyApp {
     options: {
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      templateId?: string
+      openTrigger?: TemplateOpenTrigger
       shareId?: string
       deferWarnings?: boolean
       skipAssetScans?: boolean
@@ -1183,6 +1188,8 @@ export class ComfyApp {
     const {
       checkForRerouteMigration = false,
       openSource,
+      templateId,
+      openTrigger,
       shareId,
       deferWarnings = false,
       skipAssetScans = false,
@@ -1471,6 +1478,9 @@ export class ComfyApp {
         ),
         missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
         open_source: openSource ?? 'unknown',
+        ...(openSource === 'template' && templateId && openTrigger
+          ? { template_id: templateId, open_trigger: openTrigger }
+          : {}),
         ...(effectiveShareId ? { share_id: effectiveShareId } : {})
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
