@@ -28,6 +28,8 @@ const formatNumber = ({
   return new Intl.NumberFormat(locale, merged).format(value)
 }
 
+export const CREDITS_ICON = 'icon-[lucide--coins]'
+
 export const CREDITS_PER_USD = 211
 export const COMFY_CREDIT_RATE_CENTS = CREDITS_PER_USD / 100 // credits per cent
 

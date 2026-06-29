@@ -129,7 +129,7 @@
                 {{ t('subscription.monthlyCreditsPerMemberLabel') }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-sm text-amber-400" />
+                <i :class="cn(CREDITS_ICON, 'text-sm text-amber-400')" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
@@ -303,6 +303,7 @@ import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
