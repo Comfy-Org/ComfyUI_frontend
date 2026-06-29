@@ -307,41 +307,24 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
       </div>
     </div>
 
-    <!-- Mobile / tablet: headline + nodes reflow into a centered column -->
-    <div class="flex flex-col items-center px-6 py-12 lg:hidden">
+    <!-- Mobile / tablet: one card leads with the OUTPUT result and keeps the
+         input thumbnails directly beneath it, so a tap swaps the visible result
+         with no scroll. -->
+    <div class="flex flex-col items-center px-6 pt-6 pb-10 lg:hidden">
       <HeroHeadline :locale compact />
 
-      <div class="mt-10 flex w-full max-w-sm flex-col gap-6 md:max-w-md">
-        <HeroGraphNode :label="t('hero.node.image', locale)" accent>
+      <div class="mt-7 w-full max-w-sm md:max-w-md">
+        <HeroGraphNode :label="t('hero.node.output', locale)" accent>
           <HeroImagePicker
             :variants="imageVariants"
             :active-id="activeId"
             :locale
+            :preview-src="activeVariant.output.src"
+            :preview-alt="t(activeVariant.output.altKey, locale)"
+            preview-test-id="hero-output-image"
+            :hint="t('hero.image.hint', locale)"
             @select="(id) => (activeId = id)"
           />
-        </HeroGraphNode>
-
-        <HeroGraphNode :label="t('hero.node.output', locale)">
-          <div class="relative aspect-square w-full overflow-hidden rounded-xl">
-            <Transition name="hero-glitch">
-              <img
-                :key="activeVariant.output.src"
-                :src="activeVariant.output.src"
-                :alt="t(activeVariant.output.altKey, locale)"
-                class="absolute inset-0 size-full object-cover"
-              />
-            </Transition>
-          </div>
-        </HeroGraphNode>
-
-        <HeroGraphNode :label="t('hero.node.texture', locale)" accent>
-          <div class="aspect-square w-full overflow-hidden rounded-xl">
-            <img
-              :src="textureImage.src"
-              :alt="t(textureImage.altKey, locale)"
-              class="size-full object-cover"
-            />
-          </div>
         </HeroGraphNode>
       </div>
     </div>
