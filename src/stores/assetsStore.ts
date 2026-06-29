@@ -386,7 +386,12 @@ export const useAssetsStore = defineStore('assets', () => {
         return
       }
 
-      if (page.hasMore) {
+      // Merging only preserves scroll-loaded items safely in cursor mode.
+      // In offset fallback mode, prepending new head rows without advancing
+      // historyOffset would drift the next offset request (the server timeline
+      // shifted down by the new completions), so rebuild from the head page —
+      // which resets historyOffset to a position consistent with that page.
+      if (page.hasMore && historyNextCursor.value != null) {
         mergeHistoryAssets(mapHistoryToAssets(page.jobs))
         trimHistoryToLimit()
       } else {

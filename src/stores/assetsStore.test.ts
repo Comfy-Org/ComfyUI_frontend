@@ -1053,6 +1053,44 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
     })
 
+    it('rebuilds from the head page in offset mode so the next page request does not drift', async () => {
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      const secondBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      const headPage = [
+        createMockJobItem(400),
+        ...Array.from({ length: 199 }, (_, i) => createMockJobItem(i))
+      ]
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(mockHistoryPage(firstBatch, { hasMore: true }))
+        .mockResolvedValueOnce(mockHistoryPage(secondBatch, { hasMore: true }))
+        .mockResolvedValueOnce(mockHistoryPage(headPage, { hasMore: true }))
+        .mockResolvedValueOnce(mockHistoryPage([], { hasMore: false }))
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+      await store.refreshHistoryHead()
+
+      // The new completion is surfaced, and rows below the head page are
+      // dropped because offset paging can't safely keep them once the
+      // timeline shifts.
+      expect(store.historyAssets.some((a) => a.id === 'prompt_400')).toBe(true)
+      expect(store.historyAssets.some((a) => a.id === 'prompt_399')).toBe(false)
+
+      await store.loadMoreHistory()
+
+      // historyOffset was rebuilt to the head page length (200), not left at
+      // the pre-refresh 400 that the shifted timeline would have skipped past.
+      expect(fetchHistoryPage).toHaveBeenLastCalledWith(
+        expect.any(Function),
+        200,
+        { offset: 200 }
+      )
+    })
+
     it('coalesces a burst into a leading fetch plus one trailing refresh', async () => {
       vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
         mockHistoryPage([createMockJobItem(0)], {
