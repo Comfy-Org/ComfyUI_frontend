@@ -32,6 +32,7 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -116,7 +117,7 @@ function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
-    const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
+    const sourceNode = node.subgraph.getNodeById(exposure.sourceNodeId)
     if (!sourceNode) return []
     const realWidget = getPromotableWidgets(sourceNode).find(
       (candidate) => candidate.name === exposure.sourcePreviewName
@@ -248,7 +249,7 @@ function rowDisplayName(row: ActiveRow): string {
 
 function isRowLinked(row: ActiveRow): boolean {
   if (row.kind !== 'promoted') return false
-  if (row.node.id === -1) return true
+  if (row.node.id === UNASSIGNED_NODE_ID) return true
   const source = promotedRowSource(row)
   return (
     !!activeNode.value &&

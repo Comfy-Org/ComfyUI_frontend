@@ -318,6 +318,7 @@ import {
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+import { toNodeId } from '@/types/nodeId'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -349,7 +350,7 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-const nodeId = computed(() => String(nodeData.id))
+const nodeId = computed(() => nodeData.id)
 
 useVueElementTracking(nodeId.value, 'node')
 
@@ -358,7 +359,9 @@ const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeId.value)
 })
 
-const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
+const nodeLocatorId = computed(
+  () => getLocatorIdFromNodeData(nodeData) ?? undefined
+)
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
@@ -368,16 +371,24 @@ const hasExecutionError = computed(
 )
 
 const hasAnyError = computed((): boolean => {
+  const locatorId = nodeLocatorId.value
+  const node = lgraphNode.value
+  const hasNodeScopedError =
+    locatorId !== undefined &&
+    (executionErrorStore.getNodeErrors(locatorId) ||
+      missingModelStore.hasMissingModelOnNode(locatorId))
+  const hasContainerError =
+    node !== null &&
+    (executionErrorStore.isContainerWithInternalError(node) ||
+      missingNodesErrorStore.isContainerWithMissingNode(node) ||
+      missingModelStore.isContainerWithMissingModel(node))
+
   return !!(
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
-    missingModelStore.hasMissingModelOnNode(nodeLocatorId.value) ||
-    (lgraphNode.value &&
-      (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        missingNodesErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
-        missingModelStore.isContainerWithMissingModel(lgraphNode.value)))
+    hasNodeScopedError ||
+    hasContainerError
   )
 })
 
@@ -435,10 +446,12 @@ async function nodeOnPointerdown(event: PointerEvent) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
       const [newNode] = result.created
-      startDrag(event, `${newNode.id}`)
+      const newNodeId =
+        typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
+      startDrag(event, newNodeId)
       layoutStore.isDraggingVueNodes.value = true
       await nextTick()
-      bringNodeToFront(`${newNode.id}`)
+      bringNodeToFront(newNodeId)
       return
     }
   }
@@ -700,6 +713,7 @@ const handleEnterSubgraph = () => {
   }
 
   const locatorId = getLocatorIdFromNodeData(nodeData)
+  if (!locatorId) return
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
 
@@ -725,6 +739,8 @@ const nodeOutputLocatorId = computed(() =>
 
 const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
+  if (!locatorId) return null
+
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
