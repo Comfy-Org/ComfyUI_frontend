@@ -1,13 +1,22 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as AssetServiceModule from '@/platform/assets/services/assetService'
 import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
   scanAllMediaCandidates,
@@ -32,13 +41,43 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
-  getExecutionIdByNode: (
-    _graph: unknown,
-    node: { _testExecutionId?: string; id: number }
-  ) => node._testExecutionId ?? String(node.id)
-}))
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
+
+vi.mock('@/utils/graphTraversalUtil', () => {
+  type TestNode = LGraphNode & {
+    _testExecutionId?: string
+  }
+  type TestGraph = { _testNodes: TestNode[] }
+  const findNodeByExecutionId = (graph: TestGraph, executionId: string) =>
+    graph._testNodes.find(
+      (node) => (node._testExecutionId ?? String(node.id)) === executionId
+    )
+  const isInactive = (node: LGraphNode | undefined) =>
+    node?.mode === 2 || node?.mode === 4
+  const isAncestorPathActive = (graph: TestGraph, executionId: string) => {
+    const path = executionId.split(':')
+    const prefixes = path
+      .slice(0, -1)
+      .map((_, index) => path.slice(0, index + 1).join(':'))
+    return prefixes.every((prefix) => {
+      const node = findNodeByExecutionId(graph, prefix)
+      return !isInactive(node)
+    })
+  }
+  return {
+    collectAllNodes: (graph: TestGraph) => graph._testNodes,
+    getExecutionIdByNode: (_graph: unknown, node: TestNode) =>
+      node._testExecutionId ?? String(node.id),
+    isExecutionPathActive: (graph: TestGraph, executionId: string) => {
+      const node = findNodeByExecutionId(graph, executionId)
+      return (
+        !!node && !isInactive(node) && isAncestorPathActive(graph, executionId)
+      )
+    }
+  }
+})
 
 vi.mock('@/platform/assets/services/assetService', async () => {
   const actual = await vi.importActual<typeof AssetServiceModule>(
@@ -113,6 +152,106 @@ function makeMediaNode(
 
 function makeGraph(nodes: LGraphNode[]): LGraph {
   return fromAny<LGraph, unknown>({ _testNodes: nodes })
+}
+
+function makeNestedPromotedMediaGraph({
+  hostValue = 'missing.png',
+  innerMode = 0,
+  sourceOptions = ['existing.png'],
+  sourceValue = 'stale.png'
+}: {
+  hostValue?: string
+  innerMode?: number
+  sourceOptions?: string[]
+  sourceValue?: string
+} = {}): LGraph {
+  const outerLinkId = 12
+  const innerLinkId = 13
+  const sourceWidget = makeMediaCombo('image', sourceValue, sourceOptions)
+  const sourceInput = fromAny<INodeInputSlot, unknown>({
+    name: 'image',
+    link: innerLinkId
+  })
+  const leafNode = makeMediaNode(42, 'LoadImage', [sourceWidget], 0, '65:77:42')
+  Object.assign(leafNode, {
+    inputs: [sourceInput],
+    isSubgraphNode: () => false,
+    getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+      widget?.name === sourceWidget.name ? sourceInput : undefined,
+    getWidgetFromSlot: (input: INodeInputSlot | undefined) =>
+      input === sourceInput ? sourceWidget : undefined
+  })
+
+  const innerWidgetId = widgetId('graph', toNodeId(77), 'inner_image')
+  const innerInput = fromAny<INodeInputSlot, unknown>({
+    name: 'inner_image',
+    link: outerLinkId,
+    widget: { name: 'inner_image' },
+    widgetId: innerWidgetId
+  })
+  const innerNode = fromAny<LGraphNode, unknown>({
+    id: toNodeId(77),
+    type: 'inner-subgraph-uuid',
+    mode: innerMode,
+    inputs: [innerInput],
+    isSubgraphNode: () => true,
+    getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+      widget?.widgetId === innerInput.widgetId ||
+      widget?.name === innerInput.name
+        ? innerInput
+        : undefined,
+    subgraph: {
+      inputNode: {
+        slots: [{ name: 'inner_image', linkIds: [innerLinkId] }]
+      },
+      getLink: (id: number) =>
+        id === innerLinkId
+          ? { resolve: () => ({ inputNode: leafNode }) }
+          : null,
+      getNodeById: (id: string | number) =>
+        String(id) === String(leafNode.id) ? leafNode : null
+    },
+    _testExecutionId: '65:77'
+  })
+
+  const outerWidgetId = widgetId('graph', toNodeId(65), 'outer_image')
+  useWidgetValueStore().registerWidget(outerWidgetId, {
+    type: 'combo',
+    value: hostValue,
+    options: {},
+    label: 'Outer image'
+  })
+  const outerInput = fromAny<INodeInputSlot, unknown>({
+    name: 'outer_image',
+    link: null,
+    widget: { name: 'outer_image' },
+    widgetId: outerWidgetId
+  })
+  const outerNode = fromAny<LGraphNode, unknown>({
+    id: toNodeId(65),
+    type: 'outer-subgraph-uuid',
+    inputs: [outerInput],
+    isSubgraphNode: () => true,
+    getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+      widget?.widgetId === outerInput.widgetId ||
+      widget?.name === outerInput.name
+        ? outerInput
+        : undefined,
+    subgraph: {
+      inputNode: {
+        slots: [{ name: 'outer_image', linkIds: [outerLinkId] }]
+      },
+      getLink: (id: number) =>
+        id === outerLinkId
+          ? { resolve: () => ({ inputNode: innerNode }) }
+          : null,
+      getNodeById: (id: string | number) =>
+        String(id) === String(innerNode.id) ? innerNode : null
+    },
+    _testExecutionId: '65'
+  })
+
+  return makeGraph([outerNode, innerNode, leafNode])
 }
 
 function makeAsset(name: string, assetHash: string | null = null): AssetItem {
@@ -202,6 +341,25 @@ describe('scanNodeMediaCandidates', () => {
   it('returns empty for node with no widgets', () => {
     const graph = makeGraph([])
     const node = makeMediaNode(1, 'LoadImage', [], 0)
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
+  it('skips plain media widgets backed by linked inputs', () => {
+    const graph = makeGraph([])
+    const widget = makeMediaCombo('image', 'photo.png', [])
+    const linkedInput = fromAny<INodeInputSlot, unknown>({
+      name: 'image',
+      link: 12,
+      widget: { name: 'image' }
+    })
+    const node = makeMediaNode(1, 'LoadImage', [widget], 0)
+    Object.assign(node, {
+      getSlotFromWidget: (candidate: IBaseWidget | undefined) =>
+        candidate === widget ? linkedInput : undefined
+    })
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -409,6 +567,50 @@ describe('scanAllMediaCandidates', () => {
     const result = scanAllMediaCandidates(makeGraph([node]), false)
     expect(result).toHaveLength(1)
     expect(result[0].isMissing).toBe(true)
+  })
+
+  it('scans nested promoted media widgets through the outer host identity', () => {
+    const result = scanAllMediaCandidates(makeNestedPromotedMediaGraph(), false)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      nodeId: '65',
+      sourceExecutionId: '65:77:42',
+      nodeType: 'LoadImage',
+      widgetName: 'outer_image',
+      mediaType: 'image',
+      name: 'missing.png',
+      isMissing: true
+    })
+  })
+
+  it('uses the host value with source options for resolved promoted media', () => {
+    const result = scanAllMediaCandidates(
+      makeNestedPromotedMediaGraph({
+        hostValue: 'existing.png',
+        sourceOptions: ['existing.png'],
+        sourceValue: 'missing.png'
+      }),
+      false
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      nodeId: '65',
+      sourceExecutionId: '65:77:42',
+      widgetName: 'outer_image',
+      name: 'existing.png',
+      isMissing: false
+    })
+  })
+
+  it('skips promoted media when an intermediate subgraph is bypassed', () => {
+    const result = scanAllMediaCandidates(
+      makeNestedPromotedMediaGraph({ innerMode: 4 }),
+      false
+    )
+
+    expect(result).toHaveLength(0)
   })
 })
 

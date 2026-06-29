@@ -1,3 +1,4 @@
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 export type MediaType = 'image' | 'video' | 'audio'
@@ -8,6 +9,7 @@ export type MediaType = 'image' | 'video' | 'audio'
  */
 export interface MissingMediaCandidate {
   nodeId: SerializedNodeId
+  sourceExecutionId?: NodeExecutionId
   nodeType: string
   widgetName: string
   mediaType: MediaType

@@ -266,14 +266,6 @@ function isModelCandidateStillActive(
   return isMissingCandidateActive(app.rootGraph, candidate)
 }
 
-function isNodeCandidateStillActive(nodeId: unknown): boolean {
-  return (
-    app.rootGraph != null &&
-    nodeId != null &&
-    isExecutionPathActive(app.rootGraph, String(nodeId))
-  )
-}
-
 async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[]
 ): Promise<void> {
@@ -301,7 +293,7 @@ async function verifyAndAddPendingMedia(
     await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isNodeCandidateStillActive(c.nodeId)
+      (c) => c.isMissing === true && isMissingCandidateActive(app.rootGraph, c)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -383,6 +375,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   modelStore.removeMissingModelsByNodeId(execId)
   modelStore.removeMissingModelsBySourceScope(execId)
   mediaStore.removeMissingMediaByNodeId(execId)
+  mediaStore.removeMissingMediaBySourceScope(execId)
   nodesStore.removeMissingNodesByNodeId(execId)
 
   // For subgraph containers, also remove errors from interior nodes.

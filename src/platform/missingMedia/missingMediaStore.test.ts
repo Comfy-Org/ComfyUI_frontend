@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
@@ -305,6 +307,74 @@ describe('useMissingMediaStore', () => {
 
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('orphan.png')
+    })
+  })
+
+  describe('removeMissingMediaBySourceScope', () => {
+    it('removes host-keyed candidates whose source path is in the scope', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        {
+          ...makeCandidate('65', 'a.png'),
+          sourceExecutionId: createNodeExecutionId([65, 77, 42])
+        },
+        {
+          ...makeCandidate('80', 'b.png'),
+          sourceExecutionId: createNodeExecutionId([80, 77, 42])
+        }
+      ])
+
+      store.removeMissingMediaBySourceScope('65:77')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('b.png')
+    })
+
+    it('does not remove candidates by host nodeId alone', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([makeCandidate('65', 'a.png')])
+
+      store.removeMissingMediaBySourceScope('65')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+    })
+
+    it('removes candidates whose source path exactly matches the scope', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        {
+          ...makeCandidate('65', 'a.png'),
+          sourceExecutionId: createNodeExecutionId([65, 77])
+        },
+        {
+          ...makeCandidate('80', 'b.png'),
+          sourceExecutionId: createNodeExecutionId([80, 77])
+        }
+      ])
+
+      store.removeMissingMediaBySourceScope('65:77')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('b.png')
+    })
+
+    it('does not match sibling source paths sharing a numeric prefix', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        {
+          ...makeCandidate('6', 'a.png'),
+          sourceExecutionId: createNodeExecutionId([6, 77, 42])
+        },
+        {
+          ...makeCandidate('60', 'b.png'),
+          sourceExecutionId: createNodeExecutionId([60, 77, 42])
+        }
+      ])
+
+      store.removeMissingMediaBySourceScope('6')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('b.png')
     })
   })
 })
