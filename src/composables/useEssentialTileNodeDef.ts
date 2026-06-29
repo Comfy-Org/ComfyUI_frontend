@@ -6,25 +6,17 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
-const defsByDisplayName = computed(() => {
-  const nodeDefStore = useNodeDefStore()
-  return Object.fromEntries(
-    nodeDefStore.nodeDefs.map((def) => [def.display_name, def])
-  )
-})
-
 export function resolveEssentialTileNodeDef(
   tile: EssentialTile,
   nodeDefStore: ReturnType<typeof useNodeDefStore>
 ): ComfyNodeDefImpl | undefined {
   const name = tile.nodeName
   if (!name) return undefined
-  const byName = nodeDefStore.allNodeDefsByName[name]
-  if (byName) return byName
-  const target = name.startsWith(BLUEPRINT_TYPE_PREFIX)
-    ? name.slice(BLUEPRINT_TYPE_PREFIX.length)
-    : name
-  return defsByDisplayName.value[target]
+  if (!name.startsWith(BLUEPRINT_TYPE_PREFIX))
+    return nodeDefStore.allNodeDefsByName[name]
+
+  const subgraphName = name.slice(BLUEPRINT_TYPE_PREFIX.length)
+  return nodeDefStore.allNodeDefsByDisplayName[subgraphName]
 }
 
 export function useEssentialTileNodeDef(tile: MaybeRefOrGetter<EssentialTile>) {
