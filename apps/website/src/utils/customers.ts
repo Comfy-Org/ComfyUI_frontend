@@ -1,0 +1,49 @@
+import type { CollectionEntry } from 'astro:content'
+
+import type { CustomerStoryFrontmatter } from '../content/customers.schema'
+
+export type Locale = 'en' | 'zh-CN'
+
+export type CustomerStoryEntry = CollectionEntry<'customers'>
+
+export function storySlug(id: string): string {
+  const separator = id.indexOf('/')
+  return separator === -1 ? id : id.slice(separator + 1)
+}
+
+export function sortStories<T extends { data: { order: number } }>(
+  stories: T[]
+): T[] {
+  return [...stories].sort((a, b) => a.data.order - b.data.order)
+}
+
+export function nextStory<T extends { id: string }>(
+  ordered: T[],
+  slug: string
+): T {
+  const index = ordered.findIndex((story) => storySlug(story.id) === slug)
+  return ordered[(index + 1) % ordered.length]
+}
+
+export interface StoryCard {
+  slug: string
+  title: string
+  category: string
+  description: string
+  cover: string
+  coverAlt?: string
+}
+
+export function toCardProps(entry: {
+  id: string
+  data: CustomerStoryFrontmatter
+}): StoryCard {
+  return {
+    slug: storySlug(entry.id),
+    title: entry.data.title,
+    category: entry.data.category,
+    description: entry.data.description,
+    cover: entry.data.cover,
+    coverAlt: entry.data.coverAlt
+  }
+}

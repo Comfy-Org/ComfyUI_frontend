@@ -1,0 +1,20 @@
+---
+interface Props {
+  items: string[]
+}
+
+const { items } = Astro.props
+---
+
+<ol class="mt-4 space-y-1 pl-1 text-sm">
+  {
+    items.map((item, j) => (
+      <li class="flex items-start gap-3 text-primary-comfy-canvas">
+        <span class="text-primary-comfy-yellow shrink-0 font-semibold tabular-nums">
+          {String(j + 1).padStart(2, '0')}
+        </span>
+        {item}
+      </li>
+    ))
+  }
+</ol>
