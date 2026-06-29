@@ -15,6 +15,7 @@ type CardAction =
       href: string
       target?: '_blank'
       icon?: Component
+      variant?: 'default' | 'outline'
     }
   | { type: 'code'; value: string }
 
@@ -99,7 +100,7 @@ const columnClass: Record<2 | 3 | 4, string> = {
                 ? 'noopener noreferrer'
                 : undefined
             "
-            variant="outline"
+            :variant="card.action.variant ?? 'outline'"
             :append-icon="card.action.icon"
           >
             {{ card.action.label }}
