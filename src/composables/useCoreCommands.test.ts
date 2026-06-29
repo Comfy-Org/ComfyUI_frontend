@@ -85,10 +85,6 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuth', () => ({
-  useFirebaseAuth: vi.fn(() => null)
-}))
-
 vi.mock('firebase/auth', () => ({
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -131,10 +127,6 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({}))
-}))
-
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: vi.fn(() => ({}))
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())

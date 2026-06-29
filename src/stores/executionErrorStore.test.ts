@@ -16,12 +16,6 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
-}))
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => mockShowErrorsTab.value)

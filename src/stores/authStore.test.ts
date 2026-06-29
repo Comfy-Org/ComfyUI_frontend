@@ -111,13 +111,6 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-// Mock useToastStore
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)

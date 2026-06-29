@@ -18,10 +18,6 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/config/version', () => ({
-  __COMFYUI_FRONTEND_VERSION__: '1.24.0'
-}))
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettingStore
 }))
