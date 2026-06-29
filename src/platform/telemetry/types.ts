@@ -161,7 +161,7 @@ export interface MissingNodePack {
 }
 
 /**
- * How a template open was triggered (only when `open_source` is `'template'`):
+ * How a template open was triggered:
  * - `StarterTemplate` — desktop install/onboarding deeplink (`?template=` on first launch)
  * - `LibraryTemplate` — in-app template picker
  * - `SharedUrl` — a `?template=` link opened in the browser
