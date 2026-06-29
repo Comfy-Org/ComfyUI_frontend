@@ -194,9 +194,12 @@ describe('SideToolbar', () => {
   })
 
   it('renders the logout icon only on a multi-user server', () => {
+    const { unmount } = renderToolbar()
+    expect(screen.queryByTestId('logout')).not.toBeInTheDocument()
+    unmount()
+
     state.isMultiUserServer = true
     renderToolbar()
-
     expect(screen.getByTestId('logout')).toBeInTheDocument()
   })
 })

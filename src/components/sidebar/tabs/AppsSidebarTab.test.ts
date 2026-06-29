@@ -30,15 +30,14 @@ const i18n = createI18n({
   }
 })
 
-function renderTab() {
+function renderTab({ hasResults = true }: { hasResults?: boolean } = {}) {
   const user = userEvent.setup()
   const result = render(AppsSidebarTab, {
     global: {
       plugins: [i18n],
       stubs: {
         BaseWorkflowsSidebarTab: {
-          template:
-            '<div><slot name="header-actions" :has-results="true" /><slot name="empty-state" /></div>'
+          template: `<div><slot name="header-actions" :has-results="${hasResults}" /><slot name="empty-state" /></div>`
         },
         Button: {
           inheritAttrs: false,
@@ -46,8 +45,10 @@ function renderTab() {
             '<button v-bind="$attrs" @click="$emit(\'click\', $event)"><slot /></button>'
         },
         NoResultsPlaceholder: {
+          props: ['buttonLabel'],
           emits: ['action'],
-          template: '<button @click="$emit(\'action\')">empty</button>'
+          template:
+            '<button @click="$emit(\'action\')">{{ buttonLabel }}</button>'
         }
       }
     }
@@ -60,8 +61,19 @@ describe('AppsSidebarTab', () => {
     vi.clearAllMocks()
   })
 
+  it('shows the create action only when there are results', () => {
+    const { unmount } = renderTab({ hasResults: false })
+    expect(
+      screen.queryByRole('button', { name: 'Create' })
+    ).not.toBeInTheDocument()
+    unmount()
+
+    renderTab({ hasResults: true })
+    expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
+  })
+
   it('runs the new-workflow command when the create action is clicked', async () => {
-    const { user } = renderTab()
+    const { user } = renderTab({ hasResults: true })
 
     await user.click(screen.getByRole('button', { name: 'Create' }))
 
@@ -69,9 +81,9 @@ describe('AppsSidebarTab', () => {
   })
 
   it('runs the new-workflow command from the empty-state action', async () => {
-    const { user } = renderTab()
+    const { user } = renderTab({ hasResults: false })
 
-    await user.click(screen.getByRole('button', { name: 'empty' }))
+    await user.click(screen.getByRole('button', { name: 'Create app' }))
 
     expect(execute).toHaveBeenCalledWith('Comfy.NewBlankWorkflow')
   })
