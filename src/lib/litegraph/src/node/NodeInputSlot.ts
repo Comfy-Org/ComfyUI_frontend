@@ -16,7 +16,7 @@ import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
-  link: LinkId | null
+  link: LinkId | number | null
   alwaysVisible?: boolean
 
   get isWidgetInputSlot(): boolean {

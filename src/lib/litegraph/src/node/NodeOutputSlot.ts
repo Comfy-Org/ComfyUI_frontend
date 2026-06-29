@@ -15,7 +15,7 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
-  links: LinkId[] | null
+  links: Array<LinkId | number> | null
   _data?: unknown
   slot_index?: number
 

@@ -6,11 +6,15 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
+import type { LinkId } from '@/types/linkId'
+import type { RerouteId } from '@/types/rerouteId'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import type { Reroute, RerouteId } from './Reroute'
+import type { Reroute } from './Reroute'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -25,9 +29,9 @@ import type { Serialisable, SerialisableLLink } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 
-export type LinkId = number
+export type { LinkId } from '@/types/linkId'
 export type SerialisedLLinkArray = [
-  id: LinkId,
+  id: number,
   origin_id: SerializedNodeId,
   origin_slot: number,
   target_id: SerializedNodeId,
@@ -153,21 +157,21 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   constructor(
-    id: LinkId,
+    id: LinkId | number,
     type: ISlotType,
     origin_id: SerializedNodeId,
     origin_slot: number,
     target_id: SerializedNodeId,
     target_slot: number,
-    parentId?: RerouteId
+    parentId?: RerouteId | number
   ) {
-    this.id = id
+    this.id = toLinkId(id)
     this.type = type
     this.origin_id = toNodeId(origin_id)
     this.origin_slot = origin_slot
     this.target_id = toNodeId(target_id)
     this.target_slot = target_slot
-    this.parentId = parentId
+    this.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
 
     this._data = null
     // center
@@ -273,7 +277,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * it is recommended to use simpler methods where appropriate.
    */
   static resolve(
-    linkId: LinkId | null | undefined,
+    linkId: LinkId | number | null | undefined,
     network: BasicReadonlyNetwork
   ): ResolvedConnection | undefined {
     return network.getLink(linkId)?.resolve(network)
@@ -288,12 +292,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @see {@link LLink.resolve}
    */
   static resolveMany(
-    linkIds: Iterable<LinkId>,
+    linkIds: Iterable<LinkId | number>,
     network: BasicReadonlyNetwork
   ): ResolvedConnection[] {
     const resolved: ResolvedConnection[] = []
     for (const id of linkIds) {
-      const r = network.getLink(id)?.resolve(network)
+      const r = network.getLink(toLinkId(id))?.resolve(network)
       if (r) resolved.push(r)
     }
     return resolved
@@ -351,20 +355,21 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   configure(o: LLink | SerialisedLLinkArray) {
     if (Array.isArray(o)) {
-      this.id = o[0]
+      this.id = toLinkId(o[0])
       this.origin_id = toNodeId(o[1])
       this.origin_slot = o[2]
       this.target_id = toNodeId(o[3])
       this.target_slot = o[4]
       this.type = o[5]
     } else {
-      this.id = o.id
+      this.id = toLinkId(o.id)
       this.type = o.type
       this.origin_id = o.origin_id
       this.origin_slot = o.origin_slot
       this.target_id = o.target_id
       this.target_slot = o.target_slot
-      this.parentId = o.parentId
+      this.parentId =
+        o.parentId === undefined ? undefined : toRerouteId(o.parentId)
     }
   }
 
@@ -400,7 +405,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   toFloating(slotType: 'input' | 'output', parentId: RerouteId): LLink {
     const exported = this.asSerialisable()
-    exported.id = -1
+    exported.id = toLinkId(-1)
     exported.parentId = parentId
 
     if (slotType === 'input') {
@@ -434,7 +439,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     // When floating from inputs, the final (input side) reroute may have many floating links
     if (outputFloating || (keepReroutes === 'input' && lastReroute)) {
       const newLink = LLink.create(this)
-      newLink.id = -1
+      newLink.id = toLinkId(-1)
 
       if (keepReroutes === 'input') {
         newLink.origin_id = UNASSIGNED_NODE_ID

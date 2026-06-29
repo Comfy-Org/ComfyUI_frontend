@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
@@ -853,7 +854,7 @@ describe('layoutStore link layout updates', () => {
 
   const stubPath = () => ({}) as unknown as Path2D
   const baseLink = (path = stubPath()) => ({
-    id: 1 as const,
+    id: toLinkId(1),
     path,
     bounds: { x: 0, y: 0, width: 50, height: 50 },
     centerPos: { x: 25, y: 25 },
@@ -893,7 +894,7 @@ describe('layoutStore link layout updates', () => {
     })
 
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toEqual({
-      linkId: 1,
+      linkId: toLinkId(1),
       rerouteId: null
     })
 

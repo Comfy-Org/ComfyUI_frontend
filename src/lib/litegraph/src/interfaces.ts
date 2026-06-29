@@ -3,6 +3,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { WidgetId } from '@/types/widgetId'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
+import type { SlotIndex } from '@/types/slotId'
 
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeProperty } from './LGraphNode'
@@ -160,12 +161,12 @@ export interface IPinnable {
 }
 
 export interface ReadonlyLinkNetwork {
-  readonly links: ReadonlyMap<LinkId, LLink>
-  readonly reroutes: ReadonlyMap<RerouteId, Reroute>
-  readonly floatingLinks: ReadonlyMap<LinkId, LLink>
+  readonly links: ReadonlyMap<LinkId | number, LLink>
+  readonly reroutes: ReadonlyMap<RerouteId | number, Reroute>
+  readonly floatingLinks: ReadonlyMap<LinkId | number, LLink>
   getNodeById(id: NodeId | null | undefined): LGraphNode | null
   getLink(id: null | undefined): undefined
-  getLink(id: LinkId | null | undefined): LLink | undefined
+  getLink(id: LinkId | number | null | undefined): LLink | undefined
   getReroute(parentId: null | undefined): undefined
   getReroute(parentId: RerouteId | null | undefined): Reroute | undefined
 
@@ -177,8 +178,8 @@ export interface ReadonlyLinkNetwork {
  * Contains a list of links, reroutes, and nodes.
  */
 export interface LinkNetwork extends ReadonlyLinkNetwork {
-  readonly links: Map<LinkId, LLink>
-  readonly reroutes: Map<RerouteId, Reroute>
+  readonly links: Map<LinkId | number, LLink>
+  readonly reroutes: Map<RerouteId | number, Reroute>
   addFloatingLink(link: LLink): LLink
   removeReroute(id: RerouteId): unknown
   removeFloatingLink(link: LLink): void
@@ -237,8 +238,7 @@ export interface IFoundSlot extends IInputOrOutput {
   link_pos: Point
 }
 
-/** Index of an input or output slot on a node. */
-export type SlotIndex = number
+export type { SlotIndex } from '@/types/slotId'
 
 /** A point represented as `[x, y]` co-ordinates */
 export type Point = [x: number, y: number]
@@ -362,7 +362,7 @@ export interface IWidgetLocator {
 }
 
 export interface INodeInputSlot extends INodeSlot {
-  link: LinkId | null
+  link: LinkId | number | null
   widget?: IWidgetLocator
   widgetId?: WidgetId
   alwaysVisible?: boolean
@@ -378,7 +378,7 @@ export interface IWidgetInputSlot extends INodeInputSlot {
 }
 
 export interface INodeOutputSlot extends INodeSlot {
-  links: LinkId[] | null
+  links: Array<LinkId | number> | null
   _data?: unknown
   slot_index?: SlotIndex
 }

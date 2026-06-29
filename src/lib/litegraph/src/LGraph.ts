@@ -9,6 +9,8 @@ import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -226,7 +228,7 @@ export class LGraph
 
   _version: number = -1
   /** The backing store for links.  Keys are wrapped in String() */
-  _links: Map<LinkId, LLink> = new Map()
+  _links: Map<LinkId | number, LLink> = new Map()
   /**
    * Indexed property access is deprecated.
    * Backwards compatibility with a Proxy has been added, but will eventually be removed.
@@ -238,15 +240,17 @@ export class LGraph
    * // Deprecated: const link = graph.links[linkId]
    * ```
    */
-  links: Map<LinkId, LLink> & Record<LinkId, LLink>
+  links: Map<LinkId | number, LLink> &
+    Record<LinkId, LLink> &
+    Record<number, LLink>
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
   private _state: LGraphState = {
     lastGroupId: 0,
     lastNodeId: 0,
-    lastLinkId: 0,
-    lastRerouteId: 0
+    lastLinkId: toLinkId(0),
+    lastRerouteId: toRerouteId(0)
   }
 
   get state(): LGraphState {
@@ -308,14 +312,15 @@ export class LGraph
   /** Internal only.  Not required for serialisation; calculated on deserialise. */
   private _lastFloatingLinkId: number = 0
 
-  private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
-  get floatingLinks(): ReadonlyMap<LinkId, LLink> {
+  private readonly floatingLinksInternal: Map<LinkId | number, LLink> =
+    new Map()
+  get floatingLinks(): ReadonlyMap<LinkId | number, LLink> {
     return this.floatingLinksInternal
   }
 
-  private readonly reroutesInternal = new Map<RerouteId, Reroute>()
+  private readonly reroutesInternal = new Map<RerouteId | number, Reroute>()
   /** All reroutes in this graph. */
-  public get reroutes(): Map<RerouteId, Reroute> {
+  public get reroutes(): Map<RerouteId | number, Reroute> {
     return this.reroutesInternal
   }
 
@@ -342,7 +347,7 @@ export class LGraph
   }
 
   set last_link_id(value) {
-    this.state.lastLinkId = value
+    this.state.lastLinkId = toLinkId(value)
   }
 
   onNodeAdded?(node: LGraphNode): void
@@ -371,8 +376,9 @@ export class LGraph
     const links = this._links
     MapProxyHandler.bindAllMethods(links)
     const handler = new MapProxyHandler<LLink>()
-    this.links = new Proxy(links, handler) as Map<LinkId, LLink> &
-      Record<LinkId, LLink>
+    this.links = new Proxy(links, handler) as Map<LinkId | number, LLink> &
+      Record<LinkId, LLink> &
+      Record<number, LLink>
 
     this.list_of_graphcanvas = null
     this.clear()
@@ -399,8 +405,8 @@ export class LGraph
     this.state = {
       lastGroupId: 0,
       lastNodeId: 0,
-      lastLinkId: 0,
-      lastRerouteId: 0
+      lastLinkId: toLinkId(0),
+      lastRerouteId: toRerouteId(0)
     }
 
     // used to detect changes
@@ -1415,7 +1421,7 @@ export class LGraph
 
   addFloatingLink(link: LLink): LLink {
     if (link.id === -1) {
-      link.id = ++this._lastFloatingLinkId
+      link.id = toLinkId(++this._lastFloatingLinkId)
     }
     this.floatingLinksInternal.set(link.id, link)
 
@@ -1467,9 +1473,9 @@ export class LGraph
    * @returns The link with the provided {@link id}, otherwise `undefined`. Always returns `undefined` if `id` is nullish.
    */
   getLink(id: null | undefined): undefined
-  getLink(id: LinkId | null | undefined): LLink | undefined
-  getLink(id: LinkId | null | undefined): LLink | undefined {
-    return id == null ? undefined : this._links.get(id)
+  getLink(id: LinkId | number | null | undefined): LLink | undefined
+  getLink(id: LinkId | number | null | undefined): LLink | undefined {
+    return id == null ? undefined : this._links.get(toLinkId(id))
   }
 
   /**
@@ -1478,9 +1484,9 @@ export class LGraph
    * @returns The reroute with the provided {@link id}, otherwise `undefined`. Always returns `undefined` if `id` is nullish.
    */
   getReroute(id: null | undefined): undefined
-  getReroute(id: RerouteId | null | undefined): Reroute | undefined
-  getReroute(id: RerouteId | null | undefined): Reroute | undefined {
-    return id == null ? undefined : this.reroutes.get(id)
+  getReroute(id: RerouteId | number | null | undefined): Reroute | undefined
+  getReroute(id: RerouteId | number | null | undefined): Reroute | undefined {
+    return id == null ? undefined : this.reroutes.get(toRerouteId(id))
   }
 
   /**
@@ -1495,12 +1501,20 @@ export class LGraph
     linkIds,
     floating
   }: OptionalProps<SerialisableReroute, 'id'>): Reroute {
-    id ??= ++this.state.lastRerouteId
-    if (id > this.state.lastRerouteId) this.state.lastRerouteId = id
+    const rerouteId =
+      id === undefined
+        ? toRerouteId(Number(this.state.lastRerouteId) + 1)
+        : toRerouteId(id)
+    if (rerouteId > this.state.lastRerouteId) {
+      this.state.lastRerouteId = rerouteId
+    }
 
-    const reroute = this.reroutes.get(id) ?? new Reroute(id, this)
-    reroute.update(parentId, pos, linkIds, floating)
-    this.reroutes.set(id, reroute)
+    const reroute = this.reroutes.get(rerouteId) ?? new Reroute(rerouteId, this)
+    const typedParentId =
+      parentId === undefined ? undefined : toRerouteId(parentId)
+    const typedLinkIds = linkIds?.map(toLinkId)
+    reroute.update(typedParentId, pos, typedLinkIds, floating)
+    this.reroutes.set(rerouteId, reroute)
     return reroute
   }
 
@@ -1513,10 +1527,12 @@ export class LGraph
    */
   createReroute(pos: Point, before: LinkSegment): Reroute {
     const layoutMutations = useLayoutMutations()
-    const rerouteId = ++this.state.lastRerouteId
-    const linkIds = before instanceof Reroute ? before.linkIds : [before.id]
+    const rerouteId = toRerouteId(Number(this.state.lastRerouteId) + 1)
+    this.state.lastRerouteId = rerouteId
+    const linkIds =
+      before instanceof Reroute ? before.linkIds : [toLinkId(before.id)]
     const floatingLinkIds =
-      before instanceof Reroute ? before.floatingLinkIds : [before.id]
+      before instanceof Reroute ? before.floatingLinkIds : [toLinkId(before.id)]
     const reroute = new Reroute(
       rerouteId,
       this,
@@ -1729,7 +1745,9 @@ export class LGraph
 
     const internalReroutes = new Map([...reroutes].map((r) => [r.id, r]))
     const externalReroutes = new Map(
-      [...this.reroutes].filter(([id]) => !internalReroutes.has(id))
+      [...this.reroutes]
+        .filter(([id]) => !internalReroutes.has(toRerouteId(id)))
+        .map(([id, reroute]) => [toRerouteId(id), reroute])
     )
     const inputs = mapSubgraphInputsAndLinks(
       resolvedInputLinks,
@@ -2192,7 +2210,11 @@ export class LGraph
       ) {
         console.error('Missing Parent ID')
       }
-      const migratedReroute = new Reroute(++this.state.lastRerouteId, this, [
+      const migratedRerouteId = toRerouteId(
+        Number(this.state.lastRerouteId) + 1
+      )
+      this.state.lastRerouteId = migratedRerouteId
+      const migratedReroute = new Reroute(migratedRerouteId, this, [
         reroute.pos[0] + offsetX,
         reroute.pos[1] + offsetY
       ])
@@ -2503,11 +2525,13 @@ export class LGraph
           if (lastGroupId != null)
             state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
           if (lastLinkId != null)
-            state.lastLinkId = Math.max(state.lastLinkId, lastLinkId)
+            state.lastLinkId = toLinkId(Math.max(state.lastLinkId, lastLinkId))
           if (lastNodeId != null)
             state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
           if (lastRerouteId != null)
-            state.lastRerouteId = Math.max(state.lastRerouteId, lastRerouteId)
+            state.lastRerouteId = toRerouteId(
+              Math.max(state.lastRerouteId, lastRerouteId)
+            )
         }
 
         // Links
@@ -3149,7 +3173,7 @@ export class Subgraph
 }
 
 function patchLinkNodeIds(
-  links: Map<LinkId, LLink>,
+  links: Map<LinkId | number, LLink>,
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const link of links.values()) {

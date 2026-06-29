@@ -7,11 +7,19 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { SlotId } from '@/types/slotId'
 
 interface DropResolutionContext {
   adapter: LinkConnectorAdapter | null
   graph: LGraph | null
   session: SlotLinkDragContext
+}
+
+function findSlotId(key: string): SlotId | null {
+  return (
+    layoutStore.getAllSlotKeys().find((slotKey) => String(slotKey) === key) ??
+    null
+  )
 }
 
 export const resolveSlotTargetCandidate = (
@@ -24,7 +32,10 @@ export const resolveSlotTargetCandidate = (
   const elWithKey = target
     .closest('.lg-slot, .lg-node-widget')
     ?.querySelector<HTMLElement>('[data-slot-key]')
-  const key = elWithKey?.dataset['slotKey']
+  const rawKey = elWithKey?.dataset['slotKey']
+  if (!rawKey) return null
+
+  const key = findSlotId(rawKey)
   if (!key) return null
 
   const layout = layoutStore.getSlotLayout(key)

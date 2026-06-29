@@ -23,7 +23,7 @@ interface TestContext {
   connector: LinkConnector
   setConnectingLinks: (value: ConnectingLink[]) => void
   createTestNode: (id: number) => LGraphNode
-  reroutesBeforeTest: [rerouteId: RerouteId, reroute: Reroute][]
+  reroutesBeforeTest: [rerouteId: RerouteId | number, reroute: Reroute][]
   validateIntegrityNoChanges: () => void
   validateIntegrityFloatingRemoved: () => void
   validateLinkIntegrity: () => void
