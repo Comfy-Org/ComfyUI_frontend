@@ -9,15 +9,6 @@ import { i18n } from '@/i18n'
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-const { trackSettingChanged } = vi.hoisted(() => ({
-  trackSettingChanged: vi.fn()
-}))
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackSettingChanged
-  }))
-}))
-
 const mockGet = vi.fn()
 const mockSet = vi.fn()
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -63,7 +54,7 @@ describe('SettingItem', () => {
     })
   }
 
-  it('tracks telemetry when value changes via UI (uses normalized value)', async () => {
+  it('persists setting updates through the setting store', async () => {
     const settingParams: SettingParams = {
       id: 'main.sub.setting.name',
       name: 'Visible Setting',
@@ -71,7 +62,7 @@ describe('SettingItem', () => {
       defaultValue: 'default'
     }
 
-    mockGet.mockReturnValueOnce('default').mockReturnValueOnce('normalized')
+    mockGet.mockReturnValue('default')
     mockSet.mockResolvedValue(undefined)
 
     renderComponent(settingParams)
@@ -81,33 +72,5 @@ describe('SettingItem', () => {
     await flushPromises()
 
     expect(mockSet).toHaveBeenCalledWith('main.sub.setting.name', 'newvalue')
-    expect(trackSettingChanged).toHaveBeenCalledTimes(1)
-    expect(trackSettingChanged).toHaveBeenCalledWith(
-      expect.objectContaining({
-        setting_id: 'main.sub.setting.name',
-        previous_value: 'default',
-        new_value: 'normalized'
-      })
-    )
-  })
-
-  it('does not track telemetry when normalized value does not change', async () => {
-    const settingParams: SettingParams = {
-      id: 'main.sub.setting.name',
-      name: 'Visible Setting',
-      type: 'text',
-      defaultValue: 'same'
-    }
-
-    mockGet.mockReturnValue('same')
-    mockSet.mockResolvedValue(undefined)
-
-    renderComponent(settingParams)
-
-    emitFormValue!('same')
-
-    await flushPromises()
-
-    expect(trackSettingChanged).not.toHaveBeenCalled()
   })
 })

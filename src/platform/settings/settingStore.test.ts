@@ -420,7 +420,7 @@ describe('useSettingStore', () => {
       )
     })
 
-    it('does not track settings that have not opted in', async () => {
+    it('tracks visible settings without values by default', async () => {
       store.addSetting({
         id: 'test.setting',
         name: 'test.setting',
@@ -430,14 +430,43 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
+      expect(trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'test.setting'
+      })
+    })
+
+    it('does not track hidden settings by default', async () => {
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'hidden',
+        defaultValue: 'default'
+      })
+
+      await store.set('test.setting', 'newvalue')
+
       expect(trackSettingChanged).not.toHaveBeenCalled()
     })
 
-    it('tracks settings that opt in, without shipping values by default', async () => {
+    it('does not track visible settings that opt out', async () => {
       store.addSetting({
         id: 'test.setting',
         name: 'test.setting',
         type: 'text',
+        defaultValue: 'default',
+        telemetry: { trackChanges: false }
+      })
+
+      await store.set('test.setting', 'newvalue')
+
+      expect(trackSettingChanged).not.toHaveBeenCalled()
+    })
+
+    it('tracks hidden settings that opt in, without shipping values by default', async () => {
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'hidden',
         defaultValue: 'default',
         telemetry: { trackChanges: true }
       })

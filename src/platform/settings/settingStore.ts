@@ -57,10 +57,13 @@ function settingChangedEvent<K extends keyof Settings>(
   key: K,
   applied: AppliedSetting<Settings[K]>
 ): SettingChangedMetadata | undefined {
-  const telemetry = setting?.telemetry
-  if (!telemetry?.trackChanges) return undefined
+  if (!setting) return undefined
 
-  return telemetry.includeValues
+  const telemetry = setting.telemetry
+  const trackChanges = telemetry?.trackChanges ?? setting.type !== 'hidden'
+  if (!trackChanges) return undefined
+
+  return telemetry?.includeValues
     ? {
         setting_id: key,
         previous_value: applied.previousValue,
