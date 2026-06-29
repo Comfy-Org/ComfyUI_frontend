@@ -11,6 +11,16 @@ const translations = {
     'zh-CN': '图像生成视频'
   },
 
+  // UI (global, reusable across sections)
+  'ui.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  },
+  'ui.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
+
   // CTAs (global, reusable across sections)
   'cta.tryWorkflow': {
     en: 'Try Workflow',

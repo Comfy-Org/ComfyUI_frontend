@@ -5,7 +5,11 @@ import { useClipboard } from '@vueuse/core'
 // Interactive: the copy button is inert until its host island is hydrated.
 // Render under a `client:*` directive (e.g. `client:visible`) when the page
 // needs it to work.
-const { value } = defineProps<{ value: string }>()
+const {
+  value,
+  copyLabel = 'Copy',
+  copiedLabel = 'Copied'
+} = defineProps<{ value: string; copyLabel?: string; copiedLabel?: string }>()
 
 const { copy, copied } = useClipboard({ copiedDuring: 2000 })
 
@@ -23,7 +27,7 @@ function handleCopy() {
     </span>
     <button
       type="button"
-      :aria-label="copied ? 'Copied' : 'Copy'"
+      :aria-label="copied ? copiedLabel : copyLabel"
       class="text-primary-warm-gray shrink-0 cursor-pointer transition-colors hover:text-primary-comfy-canvas"
       @click="handleCopy"
     >

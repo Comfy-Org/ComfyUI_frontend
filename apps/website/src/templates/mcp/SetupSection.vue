@@ -49,5 +49,7 @@ const cards: FeatureCard[] = [
     :subtitle="t('mcp.setup.subtitle', locale)"
     :columns="3"
     :cards="cards"
+    :copy-label="t('ui.copy', locale)"
+    :copied-label="t('ui.copied', locale)"
   />
 </template>

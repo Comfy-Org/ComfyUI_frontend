@@ -31,13 +31,17 @@ const {
   heading,
   subtitle,
   columns = 3,
-  cards
+  cards,
+  copyLabel,
+  copiedLabel
 } = defineProps<{
   eyebrow?: string
   heading: string
   subtitle?: string
   columns?: 2 | 3 | 4
   cards: readonly FeatureCard[]
+  copyLabel?: string
+  copiedLabel?: string
 }>()
 
 const columnClass: Record<2 | 3 | 4, string> = {
@@ -100,7 +104,12 @@ const columnClass: Record<2 | 3 | 4, string> = {
           >
             {{ card.action.label }}
           </Button>
-          <CopyableField v-else :value="card.action.value" />
+          <CopyableField
+            v-else
+            :value="card.action.value"
+            :copy-label="copyLabel"
+            :copied-label="copiedLabel"
+          />
         </div>
       </div>
     </div>
