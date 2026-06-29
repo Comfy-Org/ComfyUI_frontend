@@ -684,7 +684,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       include: COVERAGE_CRITICAL
         ? CRITICAL_COVERAGE_INCLUDE
         : ['src/**/*.{ts,vue}'],
