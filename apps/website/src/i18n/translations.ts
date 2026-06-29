@@ -94,6 +94,10 @@ const translations = {
     en: 'Choose input image variant',
     'zh-CN': '选择输入图像变体'
   },
+  'hero.image.hint': {
+    en: 'Tap a source image to remix the result',
+    'zh-CN': '点按源图像以重新生成结果'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {

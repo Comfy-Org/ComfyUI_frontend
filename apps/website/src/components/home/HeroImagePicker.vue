@@ -10,11 +10,21 @@ import { t } from '../../i18n/translations'
 const {
   variants,
   activeId,
-  locale = 'en'
+  locale = 'en',
+  previewSrc,
+  previewAlt,
+  previewTestId = 'hero-active-image',
+  hint
 } = defineProps<{
   variants: readonly ImageVariant[]
   activeId: string
   locale?: Locale
+  // Override the large preview with the result the active input produces, so the
+  // mobile card can lead with the OUTPUT while the thumbnails stay the selector.
+  previewSrc?: string
+  previewAlt?: string
+  previewTestId?: string
+  hint?: string
 }>()
 
 const emit = defineEmits<{ select: [id: string] }>()
@@ -22,6 +32,11 @@ const emit = defineEmits<{ select: [id: string] }>()
 const active = computed(
   () => variants.find((v) => v.id === activeId) ?? variants[0]
 )
+
+const preview = computed(() => ({
+  src: previewSrc ?? active.value.src,
+  alt: previewAlt ?? t(active.value.altKey, locale)
+}))
 
 // Hover (mouse) and focus (keyboard) both swap the active variant. Click stays
 // as the activation path for touch, where there is no hover.
@@ -35,15 +50,19 @@ function selectOnHover(id: string, e: PointerEvent) {
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <Transition name="hero-glitch">
         <img
-          :key="active.id"
-          :src="active.src"
-          :alt="t(active.altKey, locale)"
-          data-testid="hero-active-image"
+          :key="preview.src"
+          :src="preview.src"
+          :alt="preview.alt"
+          :data-testid="previewTestId"
           draggable="false"
           class="absolute inset-0 size-full object-cover"
         />
       </Transition>
     </div>
+
+    <p v-if="hint" class="text-primary-warm-gray mt-3 pl-1 text-xs/relaxed">
+      {{ hint }}
+    </p>
 
     <div
       class="mt-2 flex gap-2"
