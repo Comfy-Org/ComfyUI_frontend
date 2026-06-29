@@ -1,5 +1,5 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * Slot link drag context

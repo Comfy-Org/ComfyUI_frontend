@@ -1,5 +1,5 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeError, PromptError } from '@/schemas/apiSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 /**
  * The standard prompt validation response shape (`{ error, node_errors }`).
@@ -9,7 +9,7 @@ import type { NodeError, PromptError } from '@/schemas/apiSchema'
  */
 interface CloudValidationError {
   error?: { type?: string; message?: string; details?: string } | string
-  node_errors?: Record<NodeId, NodeError>
+  node_errors?: Record<SerializedNodeId, NodeError>
 }
 
 export function isCloudValidationError(
@@ -48,7 +48,7 @@ export function tryExtractValidationError(
 }
 
 type CloudValidationResult =
-  | { kind: 'nodeErrors'; nodeErrors: Record<NodeId, NodeError> }
+  | { kind: 'nodeErrors'; nodeErrors: Record<SerializedNodeId, NodeError> }
   | { kind: 'promptError'; promptError: PromptError }
 
 /**

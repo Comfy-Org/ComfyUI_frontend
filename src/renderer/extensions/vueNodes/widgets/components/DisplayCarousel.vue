@@ -167,6 +167,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -190,7 +191,7 @@ const value = defineModel<GalleryValue>({ required: true })
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget<GalleryValue>
-  nodeId?: string
+  nodeId?: NodeId
 }>()
 
 const { t } = useI18n()
@@ -341,7 +342,7 @@ function selectFromGrid(index: number) {
 
 function handleEditMask() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(nodeId)
   if (!node) return
   maskEditor.openMaskEditor(node)
 }
@@ -362,7 +363,7 @@ function handleDownload() {
 
 function handleRemove() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(nodeId)
   nodeOutputStore.removeNodeOutputs(nodeId)
   if (node) {
     node.imgs = undefined
