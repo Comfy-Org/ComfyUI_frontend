@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -112,14 +113,14 @@ onUnmounted(() => {
   <div class="flex flex-col gap-6">
     <!-- Prompt panel -->
     <div
-      class="flex flex-col justify-between gap-8 overflow-hidden rounded-[40px] bg-white/4 p-8"
+      class="rounded-5xl flex flex-col justify-between gap-8 overflow-hidden bg-white/4 p-8"
     >
       <p
         class="font-formula text-[17px] leading-relaxed font-light text-primary-comfy-canvas"
       >
         {{ displayedPrompt
         }}<span
-          class="bg-primary-comfy-yellow ml-0.5 inline-block h-[22px] w-2 translate-y-0.5"
+          class="bg-primary-comfy-yellow ml-0.5 inline-block h-5.5 w-2 translate-y-0.5"
           :class="promptDone ? 'animate-cursor-blink' : ''"
         />
       </p>
@@ -146,7 +147,7 @@ onUnmounted(() => {
           <img
             :src="card.thumb"
             :alt="card.action"
-            class="size-[54px] shrink-0 rounded-[14px] object-cover"
+            class="size-13.5 shrink-0 rounded-[14px] object-cover"
           />
 
           <div class="flex min-w-0 flex-1 flex-col gap-1">
@@ -164,32 +165,17 @@ onUnmounted(() => {
 
           <span
             v-if="card.tag"
-            class="font-formula inline-flex h-8 shrink-0 items-center bg-white/20 px-5 text-xs font-extrabold tracking-[0.7px] text-white/60 uppercase"
-            style="
-              clip-path: polygon(
-                0.875rem 0%,
-                100% 0%,
-                calc(100% - 0.875rem) 100%,
-                0% 100%
-              );
-            "
+            class="font-formula relative isolate inline-flex h-8 shrink-0 items-center justify-center overflow-visible bg-transparent px-5 text-sm font-extrabold tracking-[0.7px] text-white/60 uppercase before:absolute before:inset-0 before:-z-10 before:-skew-x-12 before:rounded-sm before:bg-white/20"
           >
-            {{ card.tag }}
+            <span class="ppformula-text-center">
+              {{ card.tag }}
+            </span>
           </span>
 
-          <svg
+          <Check
             class="size-4 shrink-0 text-primary-comfy-canvas/60"
-            viewBox="0 0 16 16"
-            fill="none"
-          >
-            <path
-              d="M3 8.5l3 3L13 5"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+            :stroke-width="1.5"
+          />
         </div>
       </TransitionGroup>
     </div>
