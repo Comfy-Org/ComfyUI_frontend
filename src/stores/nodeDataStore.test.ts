@@ -6,6 +6,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 import type { NodeDataStateInit } from '@/types/nodeData'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -83,6 +84,78 @@ describe('useNodeDataStore', () => {
     expect(
       store.patchNodeData(graphA, toNodeId('missing'), { title: 'Missing' })
     ).toBe(false)
+  })
+
+  it('patches node data from LiteGraph property names', () => {
+    const store = useNodeDataStore()
+    const badge = new LGraphBadge({ text: 'badge' })
+
+    store.registerNodeData(graphA, nodeA, nodeData('First'))
+
+    expect(store.patchNodeProperty(graphA, nodeA, 'title', 'Renamed')).toBe(
+      true
+    )
+    expect(store.patchNodeProperty(graphA, nodeA, 'has_errors', 1)).toBe(true)
+    expect(store.patchNodeProperty(graphA, nodeA, 'mode', 4)).toBe(true)
+    expect(store.patchNodeProperty(graphA, nodeA, 'color', '#111111')).toBe(
+      true
+    )
+    expect(store.patchNodeProperty(graphA, nodeA, 'bgcolor', '#222222')).toBe(
+      true
+    )
+    expect(store.patchNodeProperty(graphA, nodeA, 'shape', 2)).toBe(true)
+    expect(store.patchNodeProperty(graphA, nodeA, 'showAdvanced', true)).toBe(
+      true
+    )
+    expect(store.patchNodeProperty(graphA, nodeA, 'badges', [badge])).toBe(true)
+
+    expect(store.getNodeData(graphA, nodeA)).toMatchObject({
+      title: 'Renamed',
+      hasErrors: true,
+      mode: 4,
+      color: '#111111',
+      bgcolor: '#222222',
+      shape: 2,
+      showAdvanced: true,
+      badges: [badge]
+    })
+  })
+
+  it('merges flag property patches with existing flags', () => {
+    const store = useNodeDataStore()
+    store.registerNodeData(
+      graphA,
+      nodeA,
+      nodeData('First', { flags: { collapsed: false, ghost: true } })
+    )
+
+    expect(
+      store.patchNodeProperty(graphA, nodeA, 'flags.collapsed', true)
+    ).toBe(true)
+    expect(store.patchNodeProperty(graphA, nodeA, 'flags.pinned', 1)).toBe(true)
+
+    expect(store.getNodeData(graphA, nodeA)?.flags).toEqual({
+      collapsed: true,
+      ghost: true,
+      pinned: true
+    })
+  })
+
+  it('ignores unknown node properties without creating node data', () => {
+    const store = useNodeDataStore()
+    const missingNode = toNodeId('missing')
+    store.registerNodeData(graphA, nodeA, nodeData('First'))
+
+    expect(
+      store.patchNodeProperty(graphA, nodeA, 'unknown.property', 'Ignored')
+    ).toBe(false)
+    expect(
+      store.patchNodeProperty(graphA, missingNode, 'title', 'Missing')
+    ).toBe(false)
+
+    expect(store.getNodeData(graphA, nodeA)?.title).toBe('First')
+    expect(store.getNodeData(graphA, missingNode)).toBeUndefined()
+    expect(store.getGraphNodes(graphA)).toHaveLength(1)
   })
 
   it('deletes existing nodes and reports missing nodes', () => {

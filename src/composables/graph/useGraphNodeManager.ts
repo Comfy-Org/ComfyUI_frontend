@@ -1,30 +1,22 @@
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type {
   LGraph,
   LGraphNode,
   LGraphTriggerEvent
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   buildSlotMetadata,
-  extractVueNodeData,
-  installReactiveNodeArrays
+  extractVueNodeData
 } from '@/renderer/extensions/vueNodes/utils/nodeDataExtraction'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import type { Badges } from '@/types/nodeData'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 export function useGraphNodeManager(graph: LGraph): () => void {
-  const { createNode, deleteNode, setSource } = useLayoutMutations()
   const nodeDataStore = useNodeDataStore()
-  const nodeRefs = new Map<NodeId, LGraphNode>()
 
   const refreshNodeSlots = (nodeId: NodeId) => {
-    const nodeRef = nodeRefs.get(nodeId)
+    const nodeRef = graph.getNodeById(nodeId)
     const currentData = nodeDataStore.getNodeData(graph.id, nodeId)
     if (!nodeRef || !currentData) return
 
@@ -35,7 +27,6 @@ export function useGraphNodeManager(graph: LGraph): () => void {
   }
 
   const upsertNodeData = (node: LGraphNode) => {
-    installReactiveNodeArrays(node)
     const data = extractVueNodeData(node)
     if (!nodeDataStore.patchNodeData(graph.id, node.id, data)) {
       nodeDataStore.registerNodeData(graph.id, node.id, data)
@@ -49,13 +40,11 @@ export function useGraphNodeManager(graph: LGraph): () => void {
 
     for (const { id } of nodeDataStore.getGraphNodes(graph.id)) {
       if (!currentNodes.has(id)) {
-        nodeRefs.delete(id)
         nodeDataStore.deleteNodeData(graph.id, id)
       }
     }
 
     graph._nodes.forEach((node) => {
-      nodeRefs.set(node.id, node)
       upsertNodeData(node)
     })
   }
@@ -64,42 +53,11 @@ export function useGraphNodeManager(graph: LGraph): () => void {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = node.id
-    nodeRefs.set(id, node)
     upsertNodeData(node)
-
-    const initializeVueNodeLayout = () => {
-      if (!nodeRefs.has(id)) return
-
-      const existingLayout = layoutStore.getNodeLayoutRef(id).value
-      if (existingLayout) return
-
-      setSource(LayoutSource.Canvas)
-      void createNode(id, {
-        position: { x: node.pos[0], y: node.pos[1] },
-        size: { width: node.size[0], height: node.size[1] },
-        zIndex: node.order || 0,
-        visible: true
-      })
-    }
-
-    if (window.app?.configuringGraph) {
-      node.onAfterGraphConfigured = useChainCallback(
-        node.onAfterGraphConfigured,
-        () => {
-          upsertNodeData(node)
-          initializeVueNodeLayout()
-        }
-      )
-    } else {
-      initializeVueNodeLayout()
-    }
-
     originalCallback?.(node)
   }
 
   const dropNodeReferences = (id: NodeId) => {
-    nodeRefs.delete(id)
     nodeDataStore.deleteNodeData(graph.id, id)
   }
 
@@ -107,8 +65,6 @@ export function useGraphNodeManager(graph: LGraph): () => void {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    setSource(LayoutSource.Canvas)
-    void deleteNode(node.id)
     dropNodeReferences(node.id)
     originalCallback?.(node)
   }
@@ -135,82 +91,14 @@ export function useGraphNodeManager(graph: LGraph): () => void {
 
   graph.onTrigger = (event: LGraphTriggerEvent) => {
     switch (event.type) {
-      case 'node:property:changed': {
-        const nodeId = toNodeId(event.nodeId)
-        const currentData = nodeDataStore.getNodeData(graph.id, nodeId)
-        if (!currentData) break
-
-        switch (event.property) {
-          case 'title':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              title: String(event.newValue)
-            })
-            break
-          case 'has_errors':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              hasErrors: Boolean(event.newValue)
-            })
-            break
-          case 'flags.collapsed':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              flags: {
-                ...currentData.flags,
-                collapsed: Boolean(event.newValue)
-              }
-            })
-            break
-          case 'flags.ghost':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              flags: {
-                ...currentData.flags,
-                ghost: Boolean(event.newValue)
-              }
-            })
-            break
-          case 'flags.pinned':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              flags: {
-                ...currentData.flags,
-                pinned: Boolean(event.newValue)
-              }
-            })
-            break
-          case 'mode':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              mode: typeof event.newValue === 'number' ? event.newValue : 0
-            })
-            break
-          case 'color':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              color:
-                typeof event.newValue === 'string' ? event.newValue : undefined
-            })
-            break
-          case 'bgcolor':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              bgcolor:
-                typeof event.newValue === 'string' ? event.newValue : undefined
-            })
-            break
-          case 'shape':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              shape:
-                typeof event.newValue === 'number' ? event.newValue : undefined
-            })
-            break
-          case 'showAdvanced':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              showAdvanced: Boolean(event.newValue)
-            })
-            break
-          case 'badges':
-            nodeDataStore.patchNodeData(graph.id, nodeId, {
-              badges: event.newValue as Badges
-            })
-            break
-        }
+      case 'node:property:changed':
+        nodeDataStore.patchNodeProperty(
+          graph.id,
+          toNodeId(event.nodeId),
+          event.property,
+          event.newValue
+        )
         break
-      }
       case 'node:slot-errors:changed':
         refreshNodeSlots(toNodeId(event.nodeId))
         break
@@ -221,16 +109,19 @@ export function useGraphNodeManager(graph: LGraph): () => void {
         break
       case 'node:slot-label:changed': {
         const nodeId = toNodeId(event.nodeId)
-        const nodeRef = nodeRefs.get(nodeId)
+        const nodeRef = graph.getNodeById(nodeId)
         if (!nodeRef) break
 
         if (event.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
-          nodeRef.inputs = [...nodeRef.inputs]
+          nodeDataStore.patchNodeData(graph.id, nodeId, {
+            inputs: [...nodeRef.inputs]
+          })
         }
         if (event.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
-          nodeRef.outputs = [...nodeRef.outputs]
+          nodeDataStore.patchNodeData(graph.id, nodeId, {
+            outputs: [...nodeRef.outputs]
+          })
         }
-        upsertNodeData(nodeRef)
         break
       }
     }
@@ -252,7 +143,6 @@ export function useGraphNodeManager(graph: LGraph): () => void {
       'node:before-removed',
       beforeNodeRemovedListener
     )
-    nodeRefs.clear()
     nodeDataStore.clearGraph(graph.id)
   }
 }

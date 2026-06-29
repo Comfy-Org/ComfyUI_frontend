@@ -1,13 +1,9 @@
 import { reactiveComputed } from '@vueuse/core'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import { shallowReactive } from 'vue'
 
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraph,
   LGraphNode,
@@ -224,72 +220,6 @@ export function buildSlotMetadata(
     if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
   })
   return metadata
-}
-
-const nodesWithReactiveArrays = new WeakSet<LGraphNode>()
-
-export function installReactiveNodeArrays(node: LGraphNode): void {
-  if (nodesWithReactiveArrays.has(node)) return
-  nodesWithReactiveArrays.add(node)
-
-  const existingWidgetsDescriptor = Object.getOwnPropertyDescriptor(
-    node,
-    'widgets'
-  )
-  const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
-  if (existingWidgetsDescriptor?.get) {
-    // Node has a custom widgets getter (e.g. SubgraphNode's synthetic getter).
-    // Preserve it but sync results into a reactive array for Vue.
-    const originalGetter = existingWidgetsDescriptor.get
-    Object.defineProperty(node, 'widgets', {
-      get() {
-        const current: IBaseWidget[] = originalGetter.call(node) ?? []
-        if (
-          current.length !== reactiveWidgets.length ||
-          current.some((w, i) => w !== reactiveWidgets[i])
-        ) {
-          reactiveWidgets.splice(0, reactiveWidgets.length, ...current)
-        }
-        return reactiveWidgets
-      },
-      set: existingWidgetsDescriptor.set ?? (() => {}),
-      configurable: true,
-      enumerable: true
-    })
-  } else {
-    Object.defineProperty(node, 'widgets', {
-      get() {
-        return reactiveWidgets
-      },
-      set(v) {
-        reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-      },
-      configurable: true,
-      enumerable: true
-    })
-  }
-  const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
-  Object.defineProperty(node, 'inputs', {
-    get() {
-      return reactiveInputs
-    },
-    set(v) {
-      reactiveInputs.splice(0, reactiveInputs.length, ...v)
-    },
-    configurable: true,
-    enumerable: true
-  })
-  const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
-  Object.defineProperty(node, 'outputs', {
-    get() {
-      return reactiveOutputs
-    },
-    set(v) {
-      reactiveOutputs.splice(0, reactiveOutputs.length, ...v)
-    },
-    configurable: true,
-    enumerable: true
-  })
 }
 
 export function extractVueNodeData(node: LGraphNode): NodeDataState {

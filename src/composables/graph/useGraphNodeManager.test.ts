@@ -304,7 +304,8 @@ describe('Subgraph output slot label reactivity', () => {
     expect(nodeData.outputs[0].label).toBeUndefined()
     expect(nodeData.outputs[1].label).toBeUndefined()
 
-    // Simulate what SubgraphNode does: set the label, then fire the trigger
+    const originalType = nodeData.type
+    node.type = 'type_from_broad_sync'
     node.outputs[0].label = 'custom_label'
     graph.trigger('node:slot-label:changed', {
       nodeId: node.id,
@@ -316,6 +317,7 @@ describe('Subgraph output slot label reactivity', () => {
     const updatedData = getStoredNodeData(graph, nodeId)
     expect(updatedData?.outputs?.[0]?.label).toBe('custom_label')
     expect(updatedData?.outputs?.[1]?.label).toBeUndefined()
+    expect(updatedData?.type).toBe(originalType)
   })
 
   it('updates input slot labels when node:slot-label:changed is triggered', async () => {
@@ -331,6 +333,8 @@ describe('Subgraph output slot label reactivity', () => {
 
     expect(nodeData.inputs[0].label).toBeUndefined()
 
+    const originalType = nodeData.type
+    node.type = 'type_from_broad_sync'
     node.inputs[0].label = 'custom_label'
     graph.trigger('node:slot-label:changed', {
       nodeId: node.id,
@@ -341,6 +345,7 @@ describe('Subgraph output slot label reactivity', () => {
 
     const updatedData = getStoredNodeData(graph, nodeId)
     expect(updatedData?.inputs?.[0]?.label).toBe('custom_label')
+    expect(updatedData?.type).toBe(originalType)
   })
 
   it('ignores node:slot-label:changed for unknown node ids', () => {
@@ -737,17 +742,17 @@ describe('Pre-remove node data store drain', () => {
 
     expect(hasStoredNodeData(graph, id)).toBe(true)
 
-    let dataPresentInOnRemoved: boolean | undefined
-    node.onRemoved = () => {
-      dataPresentInOnRemoved = hasStoredNodeData(graph, id)
-    }
+    const onRemoved = vi.fn(() => {
+      expect(
+        hasStoredNodeData(graph, id),
+        'node data must be cleared before node.onRemoved fires so reactive consumers cannot observe the detached node'
+      ).toBe(false)
+    })
+    node.onRemoved = onRemoved
 
     graph.remove(node)
 
-    expect(
-      dataPresentInOnRemoved,
-      'node data must be cleared before node.onRemoved fires so reactive consumers cannot observe the detached node'
-    ).toBe(false)
+    expect(onRemoved).toHaveBeenCalledTimes(1)
   })
 
   it('clears node data when LGraph.clear() dispatches node:before-removed for each node', () => {

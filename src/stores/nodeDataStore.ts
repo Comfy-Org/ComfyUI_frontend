@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
 import type {
+  Badges,
   NodeDataPatch,
   NodeDataState,
   NodeDataStateInit,
@@ -46,6 +47,55 @@ function copyNodeDataPatch(patch: NodeDataPatch): NodeDataPatch {
   return copied
 }
 
+function flagPatch(
+  state: NodeDataState,
+  flag: keyof NonNullable<NodeDataState['flags']>,
+  value: unknown
+): NodeDataPatch {
+  return {
+    flags: {
+      ...state.flags,
+      [flag]: Boolean(value)
+    }
+  }
+}
+
+function isBadges(value: unknown): value is Badges {
+  return Array.isArray(value)
+}
+
+function nodePropertyPatch(
+  state: NodeDataState,
+  property: string,
+  newValue: unknown
+): NodeDataPatch | undefined {
+  switch (property) {
+    case 'title':
+      return { title: String(newValue) }
+    case 'has_errors':
+      return { hasErrors: Boolean(newValue) }
+    case 'flags.collapsed':
+      return flagPatch(state, 'collapsed', newValue)
+    case 'flags.ghost':
+      return flagPatch(state, 'ghost', newValue)
+    case 'flags.pinned':
+      return flagPatch(state, 'pinned', newValue)
+    case 'mode':
+      return { mode: typeof newValue === 'number' ? newValue : 0 }
+    case 'color':
+      return { color: typeof newValue === 'string' ? newValue : undefined }
+    case 'bgcolor':
+      return { bgcolor: typeof newValue === 'string' ? newValue : undefined }
+    case 'shape':
+      return { shape: typeof newValue === 'number' ? newValue : undefined }
+    case 'showAdvanced':
+      return { showAdvanced: Boolean(newValue) }
+    case 'badges':
+      return {
+        badges: isBadges(newValue) ? newValue : undefined
+      }
+  }
+}
 export const useNodeDataStore = defineStore('nodeData', () => {
   const graphNodeData = ref(new Map<UUID, Map<NodeId, NodeDataState>>())
 
@@ -94,6 +144,22 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     return true
   }
 
+  function patchNodeProperty(
+    graphId: UUID,
+    nodeId: NodeId,
+    property: string,
+    newValue: unknown
+  ): boolean {
+    const state = getNodeData(graphId, nodeId)
+    if (!state) return false
+
+    const patch = nodePropertyPatch(state, property, newValue)
+    if (!patch) return false
+
+    Object.assign(state, copyNodeDataPatch(patch))
+    return true
+  }
+
   function deleteNodeData(graphId: UUID, nodeId: NodeId): boolean {
     return graphNodeData.value.get(graphId)?.delete(nodeId) ?? false
   }
@@ -107,6 +173,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     getNodeData,
     getGraphNodes,
     patchNodeData,
+    patchNodeProperty,
     deleteNodeData,
     clearGraph
   }

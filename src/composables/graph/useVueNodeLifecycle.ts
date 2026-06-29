@@ -1,6 +1,7 @@
 import { createSharedComposable, whenever } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
+import { useGraphLayoutManager } from '@/composables/graph/useGraphLayoutManager'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -16,6 +17,7 @@ function useVueNodeLifecycleIndividual() {
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const cleanupNodeManager = ref<(() => void) | null>(null)
+  const cleanupLayoutManager = ref<(() => void) | null>(null)
   const { startSync, stopSync } = useLayoutSync()
 
   const initializeNodeManager = () => {
@@ -57,6 +59,8 @@ function useVueNodeLifecycleIndividual() {
       )
     }
 
+    cleanupLayoutManager.value = useGraphLayoutManager(activeGraph)
+
     // Start sync AFTER seeding so bootstrap operations don't trigger
     // the Layout→LiteGraph writeback loop redundantly.
     startSync(canvasStore.canvas)
@@ -64,6 +68,14 @@ function useVueNodeLifecycleIndividual() {
 
   const disposeNodeManagerAndSyncs = () => {
     stopSync()
+    if (cleanupLayoutManager.value) {
+      try {
+        cleanupLayoutManager.value()
+      } catch {
+        /* empty */
+      }
+      cleanupLayoutManager.value = null
+    }
     if (!cleanupNodeManager.value) return
 
     try {
@@ -148,6 +160,10 @@ function useVueNodeLifecycleIndividual() {
 
   // Cleanup function for component unmounting
   const cleanup = () => {
+    if (cleanupLayoutManager.value) {
+      cleanupLayoutManager.value()
+      cleanupLayoutManager.value = null
+    }
     if (cleanupNodeManager.value) {
       cleanupNodeManager.value()
       cleanupNodeManager.value = null
