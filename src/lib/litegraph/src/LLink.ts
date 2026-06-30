@@ -119,6 +119,11 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _dragging?: boolean
 
+  /** When `true`, the curve is not drawn; renamable end badges are shown instead. */
+  hidden?: boolean
+  /** Custom label shown on the link's end badges when hidden. Defaults to the link type. */
+  label?: string
+
   private _color?: CanvasColour | null
   /** Custom colour for this link only */
   public get color(): CanvasColour | null | undefined {
@@ -184,7 +189,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @returns A new LLink
    */
   static create(data: SerialisableLLink): LLink {
-    return new LLink(
+    const link = new LLink(
       data.id,
       data.type,
       data.origin_id,
@@ -193,6 +198,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       data.target_slot,
       data.parentId
     )
+    link.hidden = data.hidden
+    link.label = data.label
+    return link
   }
 
   /**
@@ -364,6 +372,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.target_id = o.target_id
       this.target_slot = o.target_slot
       this.parentId = o.parentId
+      this.hidden = o.hidden
+      this.label = o.label
     }
   }
 
@@ -486,6 +496,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       type: this.type
     }
     if (this.parentId !== undefined) copy.parentId = this.parentId
+    if (this.hidden) copy.hidden = this.hidden
+    if (this.label !== undefined) copy.label = this.label
     return copy
   }
 }

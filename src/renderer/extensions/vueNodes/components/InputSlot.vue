@@ -16,6 +16,8 @@
         props.socketless && 'pointer-events-none invisible'
       )
     "
+    @pointerenter="revealNoodles"
+    @pointerleave="hideNoodles"
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -65,6 +67,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotNoodlePreview } from '@/renderer/extensions/vueNodes/composables/useSlotNoodlePreview'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
@@ -138,6 +141,12 @@ useSlotElementTracking({
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
+  nodeId: props.nodeId ?? '',
+  index: props.index,
+  type: 'input'
+})
+
+const { revealNoodles, hideNoodles } = useSlotNoodlePreview({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'input'

@@ -28,6 +28,15 @@ import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
+import {
+  clearLinkBadgeHitAreas,
+  drawPendingLinkBadges,
+  enqueueHiddenLinkBadges,
+  isLinkRevealed,
+  promptRenameLinkBadge,
+  queryLinkBadgeAtPoint,
+  setRevealedLinks
+} from './canvas/linkBadges'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import {
@@ -2339,37 +2348,57 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node) {
           this.processSelect(node, e, true)
         } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-          // Reroutes
-          // Try layout store first, fallback to old method
-          const rerouteLayout = layoutStore.queryRerouteAtPoint({
-            x: e.canvasX,
-            y: e.canvasY
-          })
-
-          let reroute: Reroute | undefined
-          if (rerouteLayout) {
-            reroute = graph.getReroute(rerouteLayout.id)
+          // Badge of a hidden link → its rename / show-noodle menu.
+          // (Double-click rename is wired in _processPrimaryButton.)
+          const badgeLink = graph.getLink(
+            queryLinkBadgeAtPoint(e.canvasX, e.canvasY)
+          )
+          if (badgeLink) {
+            if (e.button === 2) {
+              pointer.onClick = () => this.showLinkMenu(badgeLink, e)
+            }
           } else {
-            reroute = graph.getRerouteOnPos(
-              e.canvasX,
-              e.canvasY,
-              this._visibleReroutes
-            )
-          }
-          if (reroute) {
-            if (e.altKey) {
-              pointer.onClick = (upEvent) => {
-                if (upEvent.altKey) {
-                  // Ensure deselected
-                  if (reroute.selected) {
-                    this.deselect(reroute)
-                    this.onSelectionChange?.(this.selected_nodes)
+            // Reroutes
+            // Try layout store first, fallback to old method
+            const rerouteLayout = layoutStore.queryRerouteAtPoint({
+              x: e.canvasX,
+              y: e.canvasY
+            })
+
+            let reroute: Reroute | undefined
+            if (rerouteLayout) {
+              reroute = graph.getReroute(rerouteLayout.id)
+            } else {
+              reroute = graph.getRerouteOnPos(
+                e.canvasX,
+                e.canvasY,
+                this._visibleReroutes
+              )
+            }
+            if (reroute) {
+              if (e.altKey) {
+                pointer.onClick = (upEvent) => {
+                  if (upEvent.altKey) {
+                    // Ensure deselected
+                    if (reroute.selected) {
+                      this.deselect(reroute)
+                      this.onSelectionChange?.(this.selected_nodes)
+                    }
+                    reroute.remove()
                   }
-                  reroute.remove()
                 }
+              } else {
+                this.processSelect(reroute, e, true)
               }
             } else {
-              this.processSelect(reroute, e, true)
+              // Visible noodle → offer to hide it
+              const link = graph.getLink(
+                layoutStore.queryLinkAtPoint(
+                  { x: e.canvasX, y: e.canvasY },
+                  this.ctx
+                )
+              )
+              if (link) pointer.onClick = () => this.showLinkMenu(link, e)
             }
           }
         }
@@ -2483,6 +2512,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       this._processNodeClick(e, ctrlOrMeta, node)
     } else {
+      // Badge of a hidden link → double-click to rename
+      const badgeLink = graph.getLink(queryLinkBadgeAtPoint(x, y))
+      if (badgeLink) {
+        pointer.onDoubleClick = () => promptRenameLinkBadge(this, badgeLink, e)
+        return
+      }
+
       // Subgraph IO nodes
       if (subgraph) {
         const { inputNode, outputNode } = subgraph
@@ -3284,6 +3320,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
+    // Hovering a hidden link's badge reveals its noodle (see drawConnection).
+    // Socket hover is wired from the Vue slot components (useSlotNoodlePreview),
+    // since those pointer events never reach this canvas handler.
+    const hoveredBadge = queryLinkBadgeAtPoint(x, y)
+    if (setRevealedLinks(hoveredBadge === undefined ? [] : [hoveredBadge])) {
+      this.dirty_bgcanvas = true
+    }
+
     if (e.isPrimary) pointer.move(e)
 
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
@@ -3894,6 +3938,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // TODO: Check if document.contains(e.relatedTarget) - handle mouseover node textarea etc.
     this.adjustMouseEvent(e)
     this.updateMouseOverNodes(null, e)
+    // Pointer left the canvas — stop revealing any hovered hidden-link noodles.
+    if (setRevealedLinks([])) this.dirty_bgcanvas = true
   }
 
   processMouseCancel(): void {
@@ -5989,6 +6035,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   drawConnections(ctx: CanvasRenderingContext2D): void {
     this.renderedPaths.clear()
+    clearLinkBadgeHitAreas()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
     // Skip link rendering while waiting for slot positions to sync after reconfigure
@@ -6177,6 +6224,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
+    // Badges last, so hidden-link labels sit above every noodle.
+    drawPendingLinkBadges(ctx)
+
     ctx.globalAlpha = 1
   }
 
@@ -6288,6 +6338,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // skip links outside of the visible area of the canvas
     if (!overlapBounding(link_bounding, margin_area)) return
+
+    // Hidden links: badges replace the curve and are painted on top of the
+    // noodles afterwards (see drawPendingLinkBadges). Hovering a badge or a
+    // connected socket reveals the noodle, so fall through to draw the curve.
+    if (link.hidden) {
+      const badgeColor =
+        (typeof link.color === 'string' && link.color) ||
+        LGraphCanvas.link_type_colors[link.type] ||
+        this.default_link_color
+      enqueueHiddenLinkBadges(link, startPos, endPos, badgeColor)
+      if (!isLinkRevealed(link.id)) return
+    }
 
     const start_dir = startDirection || LinkDirection.RIGHT
     const end_dir = endDirection || LinkDirection.LEFT
@@ -6632,7 +6694,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const node_left = graph.getNodeById(origin_id)
     const fromType = node_left?.outputs?.[origin_slot]?.type
 
-    const options = ['Add Node', 'Add Reroute', null, 'Delete', null]
+    const link = segment instanceof LLink ? segment : undefined
+    const badgeOptions: (string | null)[] = !link
+      ? []
+      : link.hidden
+        ? ['Rename', 'Show Link', null]
+        : ['Hide Link', null]
+    const options: (string | null)[] = [
+      ...badgeOptions,
+      'Add Node',
+      // Hidden links return before renderLink, so segment._pos is unset — a
+      // reroute would be created at the wrong place. Only offer it when visible.
+      ...(link?.hidden ? [] : ['Add Reroute']),
+      null,
+      'Delete',
+      null
+    ]
+    const promptEvent = e
 
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
@@ -6702,6 +6780,29 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
           break
         }
+
+        case 'Hide Link':
+          if (link) {
+            this.emitBeforeChange()
+            link.hidden = true
+            this.setDirty(false, true)
+            this.emitAfterChange()
+          }
+          break
+
+        case 'Show Link':
+          if (link) {
+            this.emitBeforeChange()
+            link.hidden = false
+            this.setDirty(false, true)
+            this.emitAfterChange()
+          }
+          break
+
+        case 'Rename':
+          if (link) promptRenameLinkBadge(this, link, promptEvent)
+          break
+
         default:
       }
     }

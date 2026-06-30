@@ -222,6 +222,10 @@ export interface SerialisableLLink {
   type: ISlotType
   /** ID of the last reroute (from input to output) that this link passes through, otherwise `undefined` */
   parentId?: RerouteId
+  /** When `true`, the link curve is not drawn; renamable end badges are shown instead. */
+  hidden?: boolean
+  /** Custom label shown on the link's badges when hidden. Defaults to the link type. */
+  label?: string
 }
 
 export interface ExportedSubgraphIONode {

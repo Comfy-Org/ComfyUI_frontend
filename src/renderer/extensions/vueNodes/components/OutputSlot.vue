@@ -1,6 +1,12 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
+  <div
+    v-else
+    v-tooltip.right="tooltipConfig"
+    :class="slotWrapperClass"
+    @pointerenter="revealNoodles"
+    @pointerleave="hideNoodles"
+  >
     <div class="relative flex h-full min-w-0 items-center">
       <!-- Slot Name -->
       <span
@@ -37,6 +43,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotNoodlePreview } from '@/renderer/extensions/vueNodes/composables/useSlotNoodlePreview'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
@@ -128,6 +135,12 @@ useSlotElementTracking({
 })
 
 const { onPointerDown } = useSlotLinkInteraction({
+  nodeId: props.nodeId ?? '',
+  index: props.index,
+  type: 'output'
+})
+
+const { revealNoodles, hideNoodles } = useSlotNoodlePreview({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'output'

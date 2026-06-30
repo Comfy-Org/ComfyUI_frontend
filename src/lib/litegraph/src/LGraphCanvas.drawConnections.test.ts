@@ -8,6 +8,10 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import {
+  queryLinkBadgeAtPoint,
+  setRevealedLinks
+} from '@/lib/litegraph/src/canvas/linkBadges'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -203,5 +207,34 @@ describe('drawConnections widget-input slot positioning', () => {
     expect(input.pos).toBeDefined()
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     expect(input.pos![1]).toBe(widget.y + offset)
+  })
+
+  it('draws hidden links as end badges instead of a curve', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [0, 100]
+    sourceNode.size = [150, 60]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const targetNode = new LGraphNode('Target')
+    targetNode.pos = [300, 100]
+    targetNode.size = [150, 60]
+    targetNode.addInput('in', 'STRING')
+    graph.add(targetNode)
+
+    const link = createTestLink(graph, sourceNode, 0, targetNode, 0)
+    link.hidden = true
+
+    // Hidden, not revealed: a revealed link would fall through to the curve.
+    setRevealedLinks([])
+    // Viewport must cover the nodes so the link passes the on-screen cull.
+    canvas.visible_area.set([0, 0, 800, 600])
+    canvas.drawConnections(createMockCtx())
+
+    // The badge branch returns before the link is recorded as a drawn curve...
+    expect(canvas.renderedPaths.has(link)).toBe(false)
+    // ...and registers a badge hit area at the output socket instead.
+    const [outputX, outputY] = sourceNode.getOutputPos(0)
+    expect(queryLinkBadgeAtPoint(outputX + 20, outputY)).toBe(link.id)
   })
 })
