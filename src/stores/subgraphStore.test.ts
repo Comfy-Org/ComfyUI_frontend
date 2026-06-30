@@ -285,6 +285,26 @@ describe('useSubgraphStore', () => {
     consoleSpy.mockRestore()
   })
 
+  it('should reject blueprints without a root node', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch({
+      'empty-node.json': {
+        ...mockGraph,
+        nodes: []
+      }
+    })
+
+    const error = consoleSpy.mock.calls.find(
+      ([message]) => message === 'Failed to load subgraph blueprint'
+    )?.[1]
+    expect(error).toBeInstanceOf(TypeError)
+    expect((error as Error).message).toBe(
+      "Subgraph blueprint 'empty-node' must contain a root node"
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
   it('should handle global blueprint with rejected data promise gracefully', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
