@@ -60,8 +60,14 @@ test.describe('Customer story detail @smoke', () => {
     page
   }) => {
     await page.goto('/customers/series-entertainment')
-    await expect(
-      page.getByRole('link', { name: /view article/i })
-    ).toHaveAttribute('href', '/customers/open-story-movement')
+    const nextLink = page.getByRole('link', { name: /view article/i })
+    await expect(nextLink).toBeVisible()
+    // Links to another customer story, without coupling the test to the
+    // specific slug or sort order.
+    await expect(nextLink).toHaveAttribute('href', /^\/customers\/[a-z0-9-]+$/)
+    await expect(nextLink).not.toHaveAttribute(
+      'href',
+      '/customers/series-entertainment'
+    )
   })
 })

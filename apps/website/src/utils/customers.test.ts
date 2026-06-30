@@ -97,6 +97,14 @@ describe('nextStory', () => {
   it('wraps around from the last story to the first', () => {
     expect(nextStory(ordered, 'c').id).toBe('en/a')
   })
+
+  it('throws when no story matches the slug', () => {
+    expect(() => nextStory(ordered, 'missing')).toThrow()
+  })
+
+  it('throws when the list is empty', () => {
+    expect(() => nextStory([], 'a')).toThrow()
+  })
 })
 
 describe('toCardProps', () => {

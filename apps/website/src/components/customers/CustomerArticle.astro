@@ -48,7 +48,10 @@ const contentComponents = {
   <div class="lg:flex lg:gap-16">
     <aside class="hidden scrollbar-none lg:block lg:w-48 lg:shrink-0">
       <div class="sticky top-32">
-        <ArticleNav categories={categories} client:load />
+        <ArticleNav
+          categories={categories}
+          client:media="(min-width: 1024px)"
+        />
       </div>
     </aside>
 

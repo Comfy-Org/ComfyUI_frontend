@@ -22,6 +22,11 @@ export function nextStory<T extends { id: string }>(
   slug: string
 ): T {
   const index = ordered.findIndex((story) => storySlug(story.id) === slug)
+  // Fail loud on a bad slug or empty list rather than silently returning the
+  // first story, which would link to the wrong "what's next" article.
+  if (index === -1) {
+    throw new Error(`nextStory: no story found for slug "${slug}"`)
+  }
   return ordered[(index + 1) % ordered.length]
 }
 
