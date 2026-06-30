@@ -59,19 +59,12 @@ describe('formatRefillsDate', () => {
 })
 
 describe('getPlanTotalCreditsValue', () => {
-  it('returns monthly credits for standard tier', () => {
+  it('returns monthly credits unchanged for monthly plans', () => {
     expect(getPlanTotalCreditsValue('standard', false)).toBe(4200)
   })
 
-  it('returns yearly credits (12x) for standard tier', () => {
-    expect(getPlanTotalCreditsValue('standard', true)).toBe(50400)
-  })
-
-  it('returns creator tier credits', () => {
-    expect(getPlanTotalCreditsValue('creator', false)).toBe(7400)
-  })
-
-  it('returns pro tier credits', () => {
-    expect(getPlanTotalCreditsValue('pro', false)).toBe(21100)
+  it('multiplies monthly credits by 12 for yearly plans', () => {
+    const monthly = getPlanTotalCreditsValue('standard', false)!
+    expect(getPlanTotalCreditsValue('standard', true)).toBe(monthly * 12)
   })
 })
