@@ -324,7 +324,7 @@ export class DragAndScale {
         const currentWidth = Math.abs(currentX2 - currentX)
         const currentHeight = Math.abs(currentY2 - currentY)
 
-        this.scale = Math.min(cw / currentWidth, ch / currentHeight)
+        this.scale = Math.min(fullCw / currentWidth, fullCh / currentHeight)
       }
 
       setDirty()
