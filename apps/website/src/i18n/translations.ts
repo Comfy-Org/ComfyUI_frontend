@@ -5247,6 +5247,41 @@ const translations = {
     'zh-CN': '阅读联盟计划条款'
   },
 
+  // Education page (/edu) — head metadata
+  'education.page.title': {
+    en: 'Comfy for Education — Student & Educator Discounts',
+    'zh-CN': 'Comfy 教育版 — 学生与教育工作者优惠'
+  },
+  'education.page.description': {
+    en: 'Up to 25% off Comfy Cloud for every student and educator. Sign up with your academic email for discounted access to cloud-powered ComfyUI workflows.',
+    'zh-CN':
+      '所有学生和教育工作者均可享受 Comfy Cloud 最高 25% 的折扣。使用您的学术邮箱注册，即可以优惠价格使用云端 ComfyUI 工作流。'
+  },
+
+  // EducationFAQSection
+  'education.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+
+  // EducationCtaSection
+  'education.cta.heading': {
+    en: 'Start creating with ComfyUI',
+    'zh-CN': '开始使用 ComfyUI 创作'
+  },
+  'education.cta.choosePlan': {
+    en: 'Choose your plan',
+    'zh-CN': '选择方案'
+  },
+  'education.cta.startLearning': {
+    en: 'Start learning',
+    'zh-CN': '开始学习'
+  },
+  'education.cta.termsLabel': {
+    en: 'For pricing, plans, credits and billing details, see the Pricing FAQs.',
+    'zh-CN': '有关定价、方案、额度和账单的详细信息，请参阅定价常见问题。'
+  },
+
   // Launches page (/launches) — head metadata
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.page.title': {
