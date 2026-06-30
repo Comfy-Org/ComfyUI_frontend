@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,7 +7,14 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  isInstantMode,
+  isInstantRunningMode,
+  ResultItemImpl,
+  TaskItemImpl,
+  useQueuePendingTaskCountStore,
+  useQueueStore
+} from '@/stores/queueStore'
 
 // Fixture factory for JobListItem
 function createJob(
@@ -67,6 +75,86 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 describe('TaskItemImpl', () => {
+  it('should default missing result URL fields', () => {
+    const output = new ResultItemImpl(
+      fromAny<ConstructorParameters<typeof ResultItemImpl>[0], unknown>({
+        nodeId: 'node-1',
+        mediaType: 'images'
+      })
+    )
+
+    expect(output.filename).toBe('')
+    expect(output.subfolder).toBe('')
+    expect(output.type).toBe('')
+    expect(output.url).toBe('')
+  })
+
+  it('should use the raw URL as preview URL for non-images', () => {
+    const output = new ResultItemImpl({
+      nodeId: 'node-1',
+      mediaType: 'video',
+      filename: 'clip.webm',
+      type: 'output',
+      subfolder: ''
+    })
+
+    expect(output.previewUrl).toBe(output.url)
+  })
+
+  it('should recognize VHS mp4 and unsupported video formats', () => {
+    const webm = new ResultItemImpl({
+      nodeId: 'node-1',
+      mediaType: 'gifs',
+      filename: 'clip',
+      type: 'output',
+      subfolder: '',
+      format: 'video/webm',
+      frame_rate: 24
+    })
+    const mp4 = new ResultItemImpl({
+      nodeId: 'node-1',
+      mediaType: 'gifs',
+      filename: 'clip',
+      type: 'output',
+      subfolder: '',
+      format: 'video/mp4',
+      frame_rate: 24
+    })
+    const avi = new ResultItemImpl({
+      nodeId: 'node-1',
+      mediaType: 'gifs',
+      filename: 'clip',
+      type: 'output',
+      subfolder: '',
+      format: 'video/avi',
+      frame_rate: 24
+    })
+
+    expect(webm.htmlVideoType).toBe('video/webm')
+    expect(mp4.htmlVideoType).toBe('video/mp4')
+    expect(avi.htmlVideoType).toBeUndefined()
+  })
+
+  it('should detect image media type without an image suffix', () => {
+    const image = new ResultItemImpl({
+      nodeId: 'node-1',
+      mediaType: 'images',
+      filename: 'generated',
+      type: 'output',
+      subfolder: ''
+    })
+    const audioFile = new ResultItemImpl({
+      nodeId: 'node-1',
+      mediaType: 'images',
+      filename: 'generated.wav',
+      type: 'output',
+      subfolder: ''
+    })
+
+    expect(image.isImage).toBe(true)
+    expect(audioFile.isImage).toBe(false)
+  })
+
   it('should exclude animated from flatOutputs', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
@@ -259,6 +347,41 @@ describe('TaskItemImpl', () => {
       expect(taskItem.executionError).toEqual(errorDetail)
     })
   })
+
+  it('should expose queue API task type for running tasks', () => {
+    const task = new TaskItemImpl(createRunningJob(1, 'run-1'))
+
+    expect(task.apiTaskType).toBe('queue')
+  })
+
+  it('should return empty flat outputs when outputs are missing', () => {
+    const task = new TaskItemImpl(
+      createHistoryJob(0, 'job-id'),
+      fromAny<TaskOutput, unknown>(null)
+    )
+
+    expect(task.calculateFlatOutputs()).toEqual([])
+  })
+
+  it('should calculate execution time in seconds', () => {
+    const task = new TaskItemImpl({
+      ...createHistoryJob(0, 'job-id'),
+      execution_start_time: 1000,
+      execution_end_time: 3500
+    })
+
+    expect(task.executionStartTimestamp).toBe(1000)
+    expect(task.executionEndTimestamp).toBe(3500)
+    expect(task.executionTime).toBe(2500)
+    expect(task.executionTimeInSeconds).toBe(2.5)
+  })
+
+  it('should return undefined execution seconds without both timestamps', () => {
+    const task = new TaskItemImpl(createHistoryJob(0, 'job-id'))
+
+    expect(task.executionTime).toBeUndefined()
+    expect(task.executionTimeInSeconds).toBeUndefined()
+  })
 })
 
 describe('useQueueStore', () => {
@@ -312,6 +435,19 @@ describe('useQueueStore', () => {
       expect(store.runningTasks[0].jobId).toBe('run-1')
       expect(store.pendingTasks[0].jobId).toBe('pend-2')
       expect(store.pendingTasks[1].jobId).toBe('pend-1')
+    })
+
+    it('should register workflow ids for active jobs', async () => {
+      const executionStore = useExecutionStore()
+      mockGetQueue.mockResolvedValue({
+        Running: [{ ...createRunningJob(1, 'run-1'), workflow_id: 'wf-1' }],
+        Pending: []
+      })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+
+      expect(executionStore.jobIdToWorkflowId.get('run-1')).toBe('wf-1')
     })
 
     it('should load history tasks from API', async () => {
@@ -1113,5 +1249,45 @@ describe('useQueueStore', () => {
       expect(store.historyTasks[0].jobId).toBe('hist-1')
       expect(store.isLoading).toBe(false)
     })
+  })
+})
+
+describe('useQueuePendingTaskCountStore', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('updates from status websocket messages', () => {
+    const store = useQueuePendingTaskCountStore()
+
+    store.update(
+      fromAny<CustomEvent, unknown>({
+        detail: { exec_info: { queue_remaining: 3 } }
+      })
+    )
+
+    expect(store.count).toBe(3)
+  })
+
+  it('falls back to zero when status details are missing', () => {
+    const store = useQueuePendingTaskCountStore()
+    store.count = 3
+
+    store.update(fromAny<CustomEvent, unknown>({}))
+
+    expect(store.count).toBe(0)
+  })
+})
+
+describe('queue mode helpers', () => {
+  it('detect instant queue modes', () => {
+    expect(isInstantMode('instant-idle')).toBe(true)
+    expect(isInstantMode('instant-running')).toBe(true)
+    expect(isInstantMode('change')).toBe(false)
+  })
+
+  it('detect instant running mode', () => {
+    expect(isInstantRunningMode('instant-running')).toBe(true)
+    expect(isInstantRunningMode('instant-idle')).toBe(false)
   })
 })
