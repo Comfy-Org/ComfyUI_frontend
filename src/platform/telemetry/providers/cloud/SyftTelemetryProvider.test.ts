@@ -70,6 +70,7 @@ describe('SyftTelemetryProvider', () => {
 
     new SyftTelemetryProvider()
 
+    expect(appendChild).toHaveBeenCalledTimes(1)
     const appended = appendChild.mock.calls[0]?.[0]
     if (!(appended instanceof HTMLScriptElement)) {
       throw new Error('Expected Syft script to be appended')
@@ -78,6 +79,36 @@ describe('SyftTelemetryProvider', () => {
     expect(window.syftc).toEqual({ sourceId: 'src-123' })
     expect(window.syft?.q).toEqual([])
     expect(appended.src).toBe(SYFT_SRC)
+  })
+
+  it('clears the stub after SDK load failure so later calls can retry', async () => {
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    const appendChild = mockScriptAppend()
+    const SyftTelemetryProvider = await importProvider()
+    const provider = new SyftTelemetryProvider()
+
+    const failedScript = appendChild.mock.calls[0]?.[0]
+    if (!(failedScript instanceof HTMLScriptElement)) {
+      throw new Error('Expected Syft script to be appended')
+    }
+
+    failedScript.dispatchEvent(new Event('error'))
+    await Promise.resolve()
+
+    expect(window.syft).toBeUndefined()
+
+    provider.trackAuth({
+      email: 'retry@example.com',
+      is_new_user: false,
+      method: 'email'
+    })
+
+    expect(appendChild).toHaveBeenCalledTimes(2)
+    expect(window.syft?.q).toContainEqual([
+      'identify',
+      'retry@example.com',
+      { source: 'login', method: 'email' }
+    ])
   })
 
   it('does not touch the current user store during construction', async () => {

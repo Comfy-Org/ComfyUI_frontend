@@ -52,7 +52,8 @@ function ensureSyftClient(): SyftDataClient | null {
   window.syftc = { sourceId }
   if (window.syft) return window.syft
 
-  window.syft = createSyftStub()
+  const stub = createSyftStub()
+  window.syft = stub
 
   const existingScript = document.querySelector<HTMLScriptElement>(
     `script[src="${SYFT_SRC}"]`
@@ -69,6 +70,9 @@ function ensureSyftClient(): SyftDataClient | null {
       'error',
       () => {
         scriptEl.remove()
+        if (window.syft === stub) {
+          delete window.syft
+        }
         scriptPromise = null
         reject(new Error('Syft script failed to load'))
       },
