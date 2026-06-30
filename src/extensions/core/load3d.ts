@@ -48,6 +48,7 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
 
 const inputSpecLoad3D: CustomInputSpec = {
@@ -287,8 +288,11 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     const VIEWPORT_STATE_NODES = new Set([
       'Preview3DAdvanced',
+      'Save3DAdvanced',
       'PreviewGaussianSplat',
-      'PreviewPointCloud'
+      'PreviewPointCloud',
+      'SaveGaussianSplat',
+      'SavePointCloud'
     ])
     return {
       LOAD_3D(node) {
@@ -679,155 +683,178 @@ useExtensionService().registerExtension({
   }
 })
 
-useExtensionService().registerExtension({
-  name: 'Comfy.Preview3DAdvanced',
+function createPreview3DAdvancedExtension(
+  comfyClass: string,
+  extensionName: string,
+  loadFolder: 'temp' | 'output'
+): ComfyExtension {
+  return {
+    name: extensionName,
 
-  getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
-    if (node.constructor.comfyClass !== 'Preview3DAdvanced') return []
+    getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
+      if (node.constructor.comfyClass !== comfyClass) return []
 
-    const load3d = useLoad3dService().getLoad3d(node)
-    if (!load3d) return []
+      const load3d = useLoad3dService().getLoad3d(node)
+      if (!load3d) return []
 
-    if (load3d.isSplatModel()) return []
+      if (load3d.isSplatModel()) return []
 
-    return createExportMenuItems(load3d)
-  },
+      return createExportMenuItems(load3d)
+    },
 
-  async nodeCreated(node: LGraphNode) {
-    if (node.constructor.comfyClass !== 'Preview3DAdvanced') return
+    async nodeCreated(node: LGraphNode) {
+      if (node.constructor.comfyClass !== comfyClass) return
 
-    const [oldWidth, oldHeight] = node.size
+      const [oldWidth, oldHeight] = node.size
 
-    node.setSize([Math.max(oldWidth, 400), Math.max(oldHeight, 550)])
+      node.setSize([Math.max(oldWidth, 400), Math.max(oldHeight, 550)])
 
-    await nextTick()
+      await nextTick()
 
-    const onExecuted = node.onExecuted
+      const onExecuted = node.onExecuted
 
-    useLoad3d(node).onLoad3dReady((load3d) => {
-      const lastTimeModelFile = node.properties['Last Time Model File']
-      if (!lastTimeModelFile) return
+      useLoad3d(node).onLoad3dReady((load3d) => {
+        const lastTimeModelFile = node.properties['Last Time Model File']
+        if (!lastTimeModelFile) return
 
-      const config = new Load3DConfiguration(load3d, node.properties)
-      config.configureForSaveMesh('temp', lastTimeModelFile as string, {
-        silentOnNotFound: true
-      })
-
-      const cameraConfig = node.properties['Camera Config'] as
-        | CameraConfig
-        | undefined
-      const cameraState = cameraConfig?.state
-      if (!cameraState) return
-
-      const targetGeneration = load3d.currentLoadGeneration
-      void load3d
-        .whenLoadIdle()
-        .then(() => {
-          if (load3d.currentLoadGeneration !== targetGeneration) return
-          load3d.setCameraState(cameraState)
-          load3d.forceRender()
-        })
-        .catch((error) => {
-          console.error(
-            'Failed to restore camera state for Preview3DAdvanced:',
-            error
-          )
-        })
-    })
-
-    useLoad3d(node).waitForLoad3d((load3d) => {
-      const sceneWidget = node.widgets?.find((w) => w.name === 'viewport_state')
-      if (!sceneWidget) return
-
-      const resolveLoad3d = () => nodeToLoad3dMap.get(node) ?? load3d
-
-      const widthWidget = node.widgets?.find((w) => w.name === 'width')
-      const heightWidget = node.widgets?.find((w) => w.name === 'height')
-      if (widthWidget && heightWidget) {
-        load3d.setTargetSize(
-          widthWidget.value as number,
-          heightWidget.value as number
-        )
-        widthWidget.callback = (value: number) => {
-          resolveLoad3d().setTargetSize(value, heightWidget.value as number)
-        }
-        heightWidget.callback = (value: number) => {
-          resolveLoad3d().setTargetSize(widthWidget.value as number, value)
-        }
-      }
-
-      sceneWidget.serializeValue = async () => {
-        const currentLoad3d = nodeToLoad3dMap.get(node)
-        if (!currentLoad3d) {
-          console.error('No load3d instance found for node')
-          return null
-        }
-
-        const cameraConfig: CameraConfig = (node.properties['Camera Config'] as
-          | CameraConfig
-          | undefined) || {
-          cameraType: currentLoad3d.getCurrentCameraType(),
-          fov: currentLoad3d.cameraManager.perspectiveCamera.fov
-        }
-        cameraConfig.state = currentLoad3d.getCameraState()
-        node.properties['Camera Config'] = cameraConfig
-
-        const modelInfo = currentLoad3d.getModelInfo()
-        const model_3d_info: Model3DInfo = modelInfo ? [modelInfo] : []
-
-        return {
-          image: '',
-          mask: '',
-          normal: '',
-          camera_info: cameraConfig.state || null,
-          recording: '',
-          model_3d_info
-        }
-      }
-
-      node.onExecuted = function (output: Preview3DAdvancedOutput) {
-        onExecuted?.call(this, output)
-
-        const result = output.result
-        const filePath = result?.[0]
-
-        if (!filePath) {
-          const msg = t('toastMessages.unableToGetModelFilePath')
-          console.error(msg)
-          useToastStore().addAlert(msg)
-          return
-        }
-
-        const normalizedPath = filePath.replaceAll('\\', '/')
-        node.properties['Last Time Model File'] = normalizedPath
-
-        const currentLoad3d = resolveLoad3d()
-        const config = new Load3DConfiguration(currentLoad3d, node.properties)
-        config.configureForSaveMesh('temp', normalizedPath, {
+        const config = new Load3DConfiguration(load3d, node.properties)
+        config.configureForSaveMesh(loadFolder, lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
-        const cameraState = result?.[1]
-        const modelTransform = result?.[2]?.[0]
-        if (cameraState || modelTransform) {
-          const targetGeneration = currentLoad3d.currentLoadGeneration
-          void currentLoad3d
-            .whenLoadIdle()
-            .then(() => {
-              if (currentLoad3d.currentLoadGeneration !== targetGeneration)
-                return
-              if (cameraState) currentLoad3d.setCameraState(cameraState)
-              if (modelTransform)
-                currentLoad3d.applyModelTransform(modelTransform)
-            })
-            .catch((error) => {
-              console.error(
-                'Failed to apply input camera_info / model_3d_info from Preview3DAdvanced:',
-                error
-              )
-            })
+        const cameraConfig = node.properties['Camera Config'] as
+          | CameraConfig
+          | undefined
+        const cameraState = cameraConfig?.state
+        if (!cameraState) return
+
+        const targetGeneration = load3d.currentLoadGeneration
+        void load3d
+          .whenLoadIdle()
+          .then(() => {
+            if (load3d.currentLoadGeneration !== targetGeneration) return
+            load3d.setCameraState(cameraState)
+            load3d.forceRender()
+          })
+          .catch((error) => {
+            console.error(
+              `Failed to restore camera state for ${comfyClass}:`,
+              error
+            )
+          })
+      })
+
+      useLoad3d(node).waitForLoad3d((load3d) => {
+        const sceneWidget = node.widgets?.find(
+          (w) => w.name === 'viewport_state'
+        )
+        if (!sceneWidget) return
+
+        const resolveLoad3d = () => nodeToLoad3dMap.get(node) ?? load3d
+
+        const widthWidget = node.widgets?.find((w) => w.name === 'width')
+        const heightWidget = node.widgets?.find((w) => w.name === 'height')
+        if (widthWidget && heightWidget) {
+          load3d.setTargetSize(
+            widthWidget.value as number,
+            heightWidget.value as number
+          )
+          widthWidget.callback = (value: number) => {
+            resolveLoad3d().setTargetSize(value, heightWidget.value as number)
+          }
+          heightWidget.callback = (value: number) => {
+            resolveLoad3d().setTargetSize(widthWidget.value as number, value)
+          }
         }
-      }
-    })
+
+        sceneWidget.serializeValue = async () => {
+          const currentLoad3d = nodeToLoad3dMap.get(node)
+          if (!currentLoad3d) {
+            console.error('No load3d instance found for node')
+            return null
+          }
+
+          const cameraConfig: CameraConfig = (node.properties[
+            'Camera Config'
+          ] as CameraConfig | undefined) || {
+            cameraType: currentLoad3d.getCurrentCameraType(),
+            fov: currentLoad3d.cameraManager.perspectiveCamera.fov
+          }
+          cameraConfig.state = currentLoad3d.getCameraState()
+          node.properties['Camera Config'] = cameraConfig
+
+          const modelInfo = currentLoad3d.getModelInfo()
+          const model_3d_info: Model3DInfo = modelInfo ? [modelInfo] : []
+
+          return {
+            image: '',
+            mask: '',
+            normal: '',
+            camera_info: cameraConfig.state || null,
+            recording: '',
+            model_3d_info
+          }
+        }
+
+        node.onExecuted = function (output: Preview3DAdvancedOutput) {
+          onExecuted?.call(this, output)
+
+          const result = output.result
+          const filePath = result?.[0]
+
+          if (!filePath) {
+            const msg = t('toastMessages.unableToGetModelFilePath')
+            console.error(msg)
+            useToastStore().addAlert(msg)
+            return
+          }
+
+          const normalizedPath = filePath.replaceAll('\\', '/')
+          node.properties['Last Time Model File'] = normalizedPath
+
+          const currentLoad3d = resolveLoad3d()
+          const config = new Load3DConfiguration(currentLoad3d, node.properties)
+          config.configureForSaveMesh(loadFolder, normalizedPath, {
+            silentOnNotFound: true
+          })
+
+          const cameraState = result?.[1]
+          const modelTransform = result?.[2]?.[0]
+          if (cameraState || modelTransform) {
+            const targetGeneration = currentLoad3d.currentLoadGeneration
+            void currentLoad3d
+              .whenLoadIdle()
+              .then(() => {
+                if (currentLoad3d.currentLoadGeneration !== targetGeneration)
+                  return
+                if (cameraState) currentLoad3d.setCameraState(cameraState)
+                if (modelTransform)
+                  currentLoad3d.applyModelTransform(modelTransform)
+              })
+              .catch((error) => {
+                console.error(
+                  `Failed to apply input camera_info / model_3d_info from ${comfyClass}:`,
+                  error
+                )
+              })
+          }
+        }
+      })
+    }
   }
-})
+}
+
+useExtensionService().registerExtension(
+  createPreview3DAdvancedExtension(
+    'Preview3DAdvanced',
+    'Comfy.Preview3DAdvanced',
+    'temp'
+  )
+)
+useExtensionService().registerExtension(
+  createPreview3DAdvancedExtension(
+    'Save3DAdvanced',
+    'Comfy.Save3DAdvanced',
+    'output'
+  )
+)

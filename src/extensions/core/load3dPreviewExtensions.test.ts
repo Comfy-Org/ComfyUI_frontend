@@ -76,14 +76,19 @@ type ExtCreated = ComfyExtension & {
 async function loadExtensionsFresh(): Promise<{
   splatExt: ExtCreated
   pointCloudExt: ExtCreated
+  saveSplatExt: ExtCreated
+  savePointCloudExt: ExtCreated
 }> {
   vi.resetModules()
   registerExtensionMock.mockClear()
   await import('@/extensions/core/load3dPreviewExtensions')
-  const [splatCall, pointCloudCall] = registerExtensionMock.mock.calls
+  const [splatCall, pointCloudCall, saveSplatCall, savePointCloudCall] =
+    registerExtensionMock.mock.calls
   return {
     splatExt: splatCall[0] as ExtCreated,
-    pointCloudExt: pointCloudCall[0] as ExtCreated
+    pointCloudExt: pointCloudCall[0] as ExtCreated,
+    saveSplatExt: saveSplatCall[0] as ExtCreated,
+    savePointCloudExt: savePointCloudCall[0] as ExtCreated
   }
 }
 
@@ -151,12 +156,43 @@ function setupBaseMocks() {
 describe('load3dPreviewExtensions module registration', () => {
   beforeEach(setupBaseMocks)
 
-  it('registers both preview extensions on import', async () => {
-    const { splatExt, pointCloudExt } = await loadExtensionsFresh()
+  it('registers preview and save extensions on import', async () => {
+    const { splatExt, pointCloudExt, saveSplatExt, savePointCloudExt } =
+      await loadExtensionsFresh()
 
-    expect(registerExtensionMock).toHaveBeenCalledTimes(2)
+    expect(registerExtensionMock).toHaveBeenCalledTimes(4)
     expect(splatExt.name).toBe('Comfy.PreviewGaussianSplat')
     expect(pointCloudExt.name).toBe('Comfy.PreviewPointCloud')
+    expect(saveSplatExt.name).toBe('Comfy.SaveGaussianSplat')
+    expect(savePointCloudExt.name).toBe('Comfy.SavePointCloud')
+  })
+
+  it('save extensions load the saved file from the output folder, not temp', async () => {
+    const { saveSplatExt, savePointCloudExt } = await loadExtensionsFresh()
+    const load3d = makeLoad3dMock()
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+
+    const splatNode = makePreviewNode({ comfyClass: 'SaveGaussianSplat' })
+    await saveSplatExt.nodeCreated(splatNode)
+    splatNode.onExecuted!({ result: ['3d/ComfyUI_00001_.ply'] })
+
+    expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
+      'output',
+      '3d/ComfyUI_00001_.ply',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+
+    const pcNode = makePreviewNode({ comfyClass: 'SavePointCloud' })
+    await savePointCloudExt.nodeCreated(pcNode)
+    pcNode.onExecuted!({ result: ['3d/ComfyUI_00002_.ply'] })
+
+    expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
+      'output',
+      '3d/ComfyUI_00002_.ply',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
   })
 })
 

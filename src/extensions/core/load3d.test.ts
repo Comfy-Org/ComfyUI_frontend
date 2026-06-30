@@ -143,6 +143,7 @@ async function loadExtensionsFresh(): Promise<{
   load3DExt: ExtCreated
   preview3DExt: ExtCreated
   preview3DAdvancedExt: ExtCreated
+  save3DAdvancedExt: ExtCreated
 }> {
   vi.resetModules()
   registerExtensionMock.mockClear()
@@ -150,7 +151,8 @@ async function loadExtensionsFresh(): Promise<{
   return {
     load3DExt: registerExtensionMock.mock.calls[0][0] as ExtCreated,
     preview3DExt: registerExtensionMock.mock.calls[1][0] as ExtCreated,
-    preview3DAdvancedExt: registerExtensionMock.mock.calls[2][0] as ExtCreated
+    preview3DAdvancedExt: registerExtensionMock.mock.calls[2][0] as ExtCreated,
+    save3DAdvancedExt: registerExtensionMock.mock.calls[3][0] as ExtCreated
   }
 }
 
@@ -264,14 +266,15 @@ function setupBaseMocks() {
 describe('load3d module registration', () => {
   beforeEach(setupBaseMocks)
 
-  it('registers Comfy.Load3D, Comfy.Preview3D, and Comfy.Preview3DAdvanced extensions on import', async () => {
-    const { load3DExt, preview3DExt, preview3DAdvancedExt } =
+  it('registers Comfy.Load3D, Comfy.Preview3D, Comfy.Preview3DAdvanced, and Comfy.Save3DAdvanced extensions on import', async () => {
+    const { load3DExt, preview3DExt, preview3DAdvancedExt, save3DAdvancedExt } =
       await loadExtensionsFresh()
 
-    expect(registerExtensionMock).toHaveBeenCalledTimes(3)
+    expect(registerExtensionMock).toHaveBeenCalledTimes(4)
     expect(load3DExt.name).toBe('Comfy.Load3D')
     expect(preview3DExt.name).toBe('Comfy.Preview3D')
     expect(preview3DAdvancedExt.name).toBe('Comfy.Preview3DAdvanced')
+    expect(save3DAdvancedExt.name).toBe('Comfy.Save3DAdvanced')
   })
 })
 
@@ -1029,6 +1032,50 @@ describe('Comfy.Preview3DAdvanced.getNodeMenuItems', () => {
     expect(preview3DAdvancedExt.getNodeMenuItems(node)).toEqual([
       { content: 'Export' }
     ])
+  })
+})
+
+describe('Comfy.Save3DAdvanced.nodeCreated', () => {
+  beforeEach(setupBaseMocks)
+
+  it('skips nodes whose comfyClass is not Save3DAdvanced', async () => {
+    const { save3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({ comfyClass: 'Preview3DAdvanced' })
+
+    await save3DAdvancedExt.nodeCreated(node)
+
+    expect(waitForLoad3dMock).not.toHaveBeenCalled()
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('restores persisted models from the output folder, not temp', async () => {
+    const { save3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({
+      comfyClass: 'Save3DAdvanced',
+      properties: { 'Last Time Model File': '3d/ComfyUI_00001_.glb' }
+    })
+
+    await save3DAdvancedExt.nodeCreated(node)
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/ComfyUI_00001_.glb',
+      { silentOnNotFound: true }
+    )
+  })
+
+  it('onExecuted loads the saved file from the output folder', async () => {
+    const { save3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
+
+    await save3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({ result: ['3d/ComfyUI_00002_.glb'] })
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/ComfyUI_00002_.glb',
+      { silentOnNotFound: true }
+    )
   })
 })
 

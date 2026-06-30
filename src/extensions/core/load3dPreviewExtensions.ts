@@ -29,7 +29,8 @@ function applyResultToLoad3d(
   node: LGraphNode,
   load3d: Load3d,
   filePath: string,
-  cameraState: CameraState | undefined
+  cameraState: CameraState | undefined,
+  loadFolder: 'temp' | 'output'
 ): void {
   const normalizedPath = filePath.replaceAll('\\', '/')
   node.properties['Last Time Model File'] = normalizedPath
@@ -46,7 +47,7 @@ function applyResultToLoad3d(
   }
 
   const config = new Load3DConfiguration(load3d, node.properties)
-  config.configureForSaveMesh('temp', normalizedPath, {
+  config.configureForSaveMesh(loadFolder, normalizedPath, {
     silentOnNotFound: true
   })
 
@@ -60,7 +61,8 @@ function applyResultToLoad3d(
 
 function createPreview3DExtension(
   comfyClass: string,
-  extensionName: string
+  extensionName: string,
+  loadFolder: 'temp' | 'output' = 'temp'
 ): ComfyExtension {
   const applyPreviewOutput = (
     node: LGraphNode,
@@ -71,7 +73,7 @@ function createPreview3DExtension(
     if (!filePath) return
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      applyResultToLoad3d(node, load3d, filePath, cameraState)
+      applyResultToLoad3d(node, load3d, filePath, cameraState, loadFolder)
     })
   }
 
@@ -119,7 +121,7 @@ function createPreview3DExtension(
         if (!lastTimeModelFile) return
 
         const config = new Load3DConfiguration(load3d, node.properties)
-        config.configureForSaveMesh('temp', lastTimeModelFile as string, {
+        config.configureForSaveMesh(loadFolder, lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
@@ -199,7 +201,7 @@ function createPreview3DExtension(
             return
           }
 
-          applyResultToLoad3d(node, load3d, filePath, result?.[1])
+          applyResultToLoad3d(node, load3d, filePath, result?.[1], loadFolder)
         }
       })
     }
@@ -211,4 +213,14 @@ useExtensionService().registerExtension(
 )
 useExtensionService().registerExtension(
   createPreview3DExtension('PreviewPointCloud', 'Comfy.PreviewPointCloud')
+)
+useExtensionService().registerExtension(
+  createPreview3DExtension(
+    'SaveGaussianSplat',
+    'Comfy.SaveGaussianSplat',
+    'output'
+  )
+)
+useExtensionService().registerExtension(
+  createPreview3DExtension('SavePointCloud', 'Comfy.SavePointCloud', 'output')
 )
