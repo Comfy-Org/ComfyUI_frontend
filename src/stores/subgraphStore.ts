@@ -153,14 +153,20 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       if (!force && this.isLoaded) return await super.load({ force })
       const loaded = await super.load({ force })
       const st = loaded.activeState
+      const rootNode = st.nodes[0]
+      if (!rootNode) {
+        throw new TypeError(
+          `Subgraph blueprint '${this.filename}' must contain a root node`
+        )
+      }
       const sg = (st.definitions?.subgraphs ?? []).find(
-        (sg) => sg.id == st.nodes[0].type
+        (sg) => sg.id == rootNode.type
       )
       if (!sg)
         throw new Error(
           'Loaded subgraph blueprint does not contain valid subgraph'
         )
-      sg.name = st.nodes[0].title = this.filename
+      sg.name = rootNode.title = this.filename
 
       // Copy blueprint metadata from workflow extra to subgraph extra
       // so it's available when editing via canvas.subgraph.extra
@@ -283,8 +289,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     overrides: Partial<ComfyNodeDefV1> = {},
     name: string = workflow.filename
   ) {
-    const subgraphNode = workflow.changeTracker.initialState
-      .nodes[0] as ComfyNode
+    const subgraphNode = workflow.changeTracker.initialState.nodes[0]
+    if (!subgraphNode) {
+      throw new TypeError(
+        `Subgraph blueprint '${name}' must contain a root node`
+      )
+    }
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
     //NOTE: Types are cast to string. This is only used for input coloring on previews
