@@ -34,7 +34,7 @@ function isControlOption(val: WidgetValue): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)
 }
 
-export function normalizeControlOption(val: WidgetValue): ControlOptions {
+function normalizeControlOption(val: WidgetValue): ControlOptions {
   if (isControlOption(val)) return val
   return 'randomize'
 }
