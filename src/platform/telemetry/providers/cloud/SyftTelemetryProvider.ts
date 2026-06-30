@@ -45,7 +45,7 @@ function createSyftStub(): SyftDataClient {
   }
 }
 
-function ensureSyftClient(): SyftDataClient | null {
+function bootstrapSyftClient(): SyftDataClient | null {
   const sourceId = remoteConfig.value.syftdata_source_id
   if (!sourceId) return window.syft ?? null
 
@@ -78,8 +78,7 @@ function ensureSyftClient(): SyftDataClient | null {
       },
       { once: true }
     )
-  })
-  void scriptPromise.catch((error) => {
+  }).catch((error) => {
     console.warn('[Syft] SDK failed to load', error)
   })
 
@@ -91,7 +90,7 @@ export class SyftTelemetryProvider implements TelemetryProvider {
   private lastHandledEmail: string | null = null
 
   constructor() {
-    ensureSyftClient()
+    bootstrapSyftClient()
   }
 
   trackAuth({ email, is_new_user, method }: AuthMetadata): void {
@@ -112,7 +111,7 @@ export class SyftTelemetryProvider implements TelemetryProvider {
   }
 
   private identify(email: string, traits: SyftDataTraits): void {
-    const syft = ensureSyftClient()
+    const syft = bootstrapSyftClient()
     if (!syft) return
 
     syft.identify(email, traits)
