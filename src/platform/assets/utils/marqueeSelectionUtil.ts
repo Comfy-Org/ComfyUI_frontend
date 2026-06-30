@@ -1,9 +1,6 @@
-export interface Box {
-  left: number
-  top: number
-  right: number
-  bottom: number
-}
+import type { RectEdges } from '@/utils/mathUtil'
+
+export type Box = RectEdges
 
 export interface MarqueeCard {
   id: string

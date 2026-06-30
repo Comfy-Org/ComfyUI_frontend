@@ -23,17 +23,22 @@ const selectionRect = ref<{
   w: number
   h: number
 } | null>(null)
+const panelBounds = ref<RectEdges | null>(null)
 
 useRafFn(() => {
   const canvas = canvasStore.canvas
   if (!canvas) {
     selectionRect.value = null
+    panelBounds.value = null
     return
   }
 
   const { pointer, dragging_rectangle } = canvas
 
   if (dragging_rectangle && pointer.eDown && pointer.eMove) {
+    if (!selectionRect.value) {
+      panelBounds.value = getCanvasPanelBounds()
+    }
     const x = pointer.eDown.safeOffsetX
     const y = pointer.eDown.safeOffsetY
     const w = pointer.eMove.safeOffsetX - x
@@ -42,6 +47,7 @@ useRafFn(() => {
     selectionRect.value = { x, y, w, h }
   } else {
     selectionRect.value = null
+    panelBounds.value = null
   }
 })
 
@@ -72,7 +78,7 @@ const rectangleStyle = computed(() => {
     right: rect.w >= 0 ? rect.x + rect.w : rect.x,
     bottom: rect.h >= 0 ? rect.y + rect.h : rect.y
   }
-  const bounds = getCanvasPanelBounds()
+  const bounds = panelBounds.value
   const { left, top, right, bottom } = bounds
     ? clampRectToBounds(edges, bounds)
     : edges

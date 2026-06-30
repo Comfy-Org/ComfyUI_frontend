@@ -14,6 +14,19 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ downloadAssets: vi.fn() })
 }))
 
+vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
+  getOutputAssetMetadata: () => ({
+    allOutputs: [
+      {
+        filename: 'a.png',
+        subfolder: '',
+        type: 'output',
+        display_name: 'Display A'
+      }
+    ]
+  })
+}))
+
 const asset: AssetItem = {
   id: 'a',
   name: 'a.png',
@@ -84,13 +97,21 @@ describe('MediaAssetCard', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    it('populates the drag payload for a normal drag', () => {
+    it('includes the asset metadata with display_name in the drag payload', () => {
       renderCard()
 
       const { event, add } = dispatchDragStart()
 
       expect(event.defaultPrevented).toBe(false)
-      expect(add).toHaveBeenCalled()
+      expect(add).toHaveBeenCalledWith(
+        JSON.stringify({
+          filename: 'a.png',
+          subfolder: '',
+          type: 'output',
+          display_name: 'Display A'
+        }),
+        expect.any(String)
+      )
     })
   })
 })

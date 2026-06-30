@@ -365,7 +365,8 @@ const { marqueeStyle } = useAssetGridSelection({
   getAssets: () => visibleAssets.value,
   getSelectedIds: () => [...selectedIds.value],
   setSelectedIds,
-  selectAll
+  selectAll,
+  isEnabled: () => !isListView.value
 })
 
 const previewableVisibleAssets = computed(() =>

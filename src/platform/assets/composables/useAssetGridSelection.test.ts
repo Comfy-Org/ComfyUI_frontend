@@ -455,6 +455,42 @@ describe('useAssetGridSelection', () => {
       expect(setSelectedIds).not.toHaveBeenCalled()
     })
 
+    it('does not start a marquee when disabled (e.g. list view)', async () => {
+      const setSelectedIds = vi.fn()
+      const Harness = defineComponent({
+        setup() {
+          const containerRef = ref<HTMLElement>()
+          useAssetGridSelection({
+            marqueeContainerRef: containerRef,
+            hoverTargetRef: containerRef,
+            getAssets: () => assets,
+            getSelectedIds: () => [],
+            setSelectedIds,
+            selectAll: vi.fn(),
+            isEnabled: () => false
+          })
+          return { containerRef }
+        },
+        template: `
+          <div ref="containerRef" data-testid="disabled-grid">
+            <div data-asset-id="a"></div>
+            <div data-asset-id="b"></div>
+          </div>
+        `
+      })
+      render(Harness)
+      await nextTick()
+
+      screen
+        .getByTestId('disabled-grid')
+        .dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
+      window.dispatchEvent(
+        pointer('pointermove', { clientX: 110, clientY: 50 })
+      )
+
+      expect(setSelectedIds).not.toHaveBeenCalled()
+    })
+
     it('ignores a reentrant pointer-down and does not leave text selection blocked', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
@@ -471,7 +507,7 @@ describe('useAssetGridSelection', () => {
       expect(selection.defaultPrevented).toBe(false)
     })
 
-    it('captures the pointer on a real marquee start, not on a plain card press', async () => {
+    it('captures the pointer once a marquee drag starts, not on press', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
       const capture = vi.spyOn(grid(), 'setPointerCapture')
@@ -482,7 +518,25 @@ describe('useAssetGridSelection', () => {
       expect(capture).not.toHaveBeenCalled()
 
       grid().dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
+      expect(capture).not.toHaveBeenCalled()
+
+      window.dispatchEvent(
+        pointer('pointermove', { clientX: 110, clientY: 50 })
+      )
       expect(capture).toHaveBeenCalledWith(1)
+    })
+
+    it('does not capture the pointer on a Ctrl/Cmd-click of a card', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+      const capture = vi.spyOn(grid(), 'setPointerCapture')
+
+      card('a').dispatchEvent(
+        pointer('pointerdown', { clientX: 5, clientY: 5, ctrlKey: true })
+      )
+      window.dispatchEvent(pointer('pointerup', { clientX: 5, clientY: 5 }))
+
+      expect(capture).not.toHaveBeenCalled()
     })
 
     it('still tracks a marquee when setPointerCapture throws', async () => {

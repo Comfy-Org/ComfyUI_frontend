@@ -22,6 +22,7 @@ interface AssetGridSelectionOptions {
   getSelectedIds: () => string[]
   setSelectedIds: (ids: string[], allAssets: AssetItem[]) => void
   selectAll: (assets: AssetItem[]) => void
+  isEnabled?: () => boolean
 }
 
 function isTextEntryTarget(element: Element | null): boolean {
@@ -39,7 +40,8 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     getAssets,
     getSelectedIds,
     setSelectedIds,
-    selectAll
+    selectAll,
+    isEnabled = () => true
   } = options
 
   const marqueeRect = ref<Box | null>(null)
@@ -47,11 +49,14 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
 
   let startX = 0
   let startY = 0
+  let pointerId = 0
   let baseIds: string[] = []
   let isTracking = false
   let isDragging = false
   let suppressNextClick = false
   let suppressClickResetTimeout: ReturnType<typeof setTimeout> | null = null
+  let dragCards: { id: string; rect: DOMRect }[] = []
+  let dragBounds: DOMRect | null = null
 
   function collectCards(container: HTMLElement) {
     return [...container.querySelectorAll<HTMLElement>(CARD_SELECTOR)].flatMap(
@@ -62,21 +67,24 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     )
   }
 
-  function applyMarquee(clientX: number, clientY: number) {
+  function snapshotDrag() {
     const container = marqueeContainerRef.value
     if (!container) return
+    dragCards = collectCards(container)
+    dragBounds = container.getBoundingClientRect()
+  }
+
+  function applyMarquee(clientX: number, clientY: number) {
+    if (!dragBounds) return
     const rect = clampRectToBounds(
       normalizeMarqueeRect(
         { x: startX, y: startY },
         { x: clientX, y: clientY }
       ),
-      container.getBoundingClientRect()
+      dragBounds
     )
     marqueeRect.value = rect
-    setSelectedIds(
-      [...selectMarqueeIds(collectCards(container), rect, baseIds)],
-      getAssets()
-    )
+    setSelectedIds([...selectMarqueeIds(dragCards, rect, baseIds)], getAssets())
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -87,14 +95,28 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     ) {
       return
     }
-    isDragging = true
+    if (!isDragging) {
+      isDragging = true
+      snapshotDrag()
+      capturePointer()
+    }
     applyMarquee(e.clientX, e.clientY)
+  }
+
+  function capturePointer() {
+    try {
+      marqueeContainerRef.value?.setPointerCapture(pointerId)
+    } catch {
+      // Stale/invalid pointerId: window listeners still end the drag.
+    }
   }
 
   function endDrag() {
     if (!isTracking) return
     isTracking = false
     marqueeRect.value = null
+    dragCards = []
+    dragBounds = null
     if (isDragging) scheduleSuppressNextClick()
     isDragging = false
   }
@@ -130,6 +152,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return
     if (isTracking) return
+    if (!isEnabled()) return
     suppressNextClick = false
     clearSuppressTimer()
     const container = marqueeContainerRef.value
@@ -144,14 +167,10 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
 
     startX = e.clientX
     startY = e.clientY
+    pointerId = e.pointerId
     baseIds = e.shiftKey || e.ctrlKey || e.metaKey ? getSelectedIds() : []
     isDragging = false
     isTracking = true
-    try {
-      container.setPointerCapture(e.pointerId)
-    } catch {
-      // Stale/invalid pointerId: window listeners still end the drag.
-    }
   }
 
   function onClickCapture(e: MouseEvent) {

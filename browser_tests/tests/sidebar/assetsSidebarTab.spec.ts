@@ -278,11 +278,13 @@ test.describe('FE-130 assets sidebar route mocks', () => {
 })
 
 test.describe('FE-910 marquee selection and select all', () => {
-  test.beforeEach(async ({ jobsRoutes, page }) => {
+  test.beforeEach(async ({ jobsRoutes, page, comfyPage }) => {
     await jobsRoutes.mockJobsQueue([])
     await jobsRoutes.mockJobsHistory(generatedJobs)
     await mockInputFiles(page, ['imported.png'])
     await mockViewFiles(page, viewFiles)
+    await comfyPage.setup()
+    await comfyPage.menu.assetsTab.open()
   })
 
   test('marquee-drag from empty space selects the covered cards', async ({
@@ -291,8 +293,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const { page } = comfyPage
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
     await expect(tab.selectedCards).toHaveCount(0)
 
@@ -320,8 +320,6 @@ test.describe('FE-910 marquee selection and select all', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
 
     await tab.getAssetCardByName('alpha').hover()
@@ -336,14 +334,10 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const { page } = comfyPage
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
     await expect(tab.selectedCards).toHaveCount(0)
 
-    const header = await page
-      .locator('.comfy-vue-side-bar-header')
-      .boundingBox()
+    const header = await tab.panelHeader.boundingBox()
     const beta = await tab.getAssetCardByName('beta').boundingBox()
     if (!header || !beta) {
       throw new Error('panel header or asset card has no layout box')
@@ -366,8 +360,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const { page } = comfyPage
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
 
     const viewport = page.viewportSize()
@@ -386,8 +378,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const { page } = comfyPage
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
 
     await tab.getAssetCardByName('alpha').click()
@@ -415,8 +405,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const { page } = comfyPage
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
     await expect(tab.selectedCards).toHaveCount(0)
 
@@ -444,8 +432,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const { page } = comfyPage
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
 
     const alpha = tab.getAssetCardByName('alpha')
@@ -470,8 +456,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const query = 'alpha'
 
-    await comfyPage.setup()
-    await tab.open()
     await tab.searchInput.fill(query)
     await expect(tab.assetCards).toHaveCount(1)
 
@@ -497,8 +481,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     const tab = comfyPage.menu.assetsTab
     const { page } = comfyPage
 
-    await comfyPage.setup()
-    await tab.open()
     await expect(tab.assetCards).toHaveCount(2)
 
     const search = await tab.searchInput.boundingBox()
@@ -517,5 +499,29 @@ test.describe('FE-910 marquee selection and select all', () => {
     await page.mouse.up()
 
     await expect(tab.selectedCards).toHaveCount(0)
+  })
+
+  test('Ctrl/Cmd+A does not select assets while an aria-modal dialog is open', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await comfyPage.page.evaluate(() => {
+      const dialog = document.createElement('div')
+      dialog.id = 'test-modal'
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('aria-modal', 'true')
+      document.body.appendChild(dialog)
+    })
+
+    await tab.getAssetCardByName('alpha').hover()
+    await comfyPage.page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(0)
+
+    await comfyPage.page.evaluate(() => {
+      document.getElementById('test-modal')?.remove()
+    })
   })
 })

@@ -1,5 +1,4 @@
 import { useKeyModifier } from '@vueuse/core'
-import { findLastIndex } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -109,7 +108,7 @@ export function useAssetSelection() {
   function setSelectedIds(ids: string[], allAssets: AssetItem[]) {
     selectionStore.setSelection(ids)
     const selected = new Set(ids)
-    const anchorIndex = findLastIndex(allAssets, (asset) =>
+    const anchorIndex = allAssets.findLastIndex((asset) =>
       selected.has(asset.id)
     )
     setAnchor(anchorIndex, anchorIndex >= 0 ? allAssets[anchorIndex].id : null)
