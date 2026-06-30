@@ -57,7 +57,7 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
-          hasAnyError ? 'inset-[-7px]' : 'inset-[-3px]',
+          hasAnyError ? '-inset-1.75' : '-inset-0.75',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
@@ -107,10 +107,10 @@
             multi
             class="absolute right-0 translate-x-1/2"
           />
-          <NodeSlots :node-data="nodeData" unified />
+          <NodeSlots :node-data unified />
         </template>
         <NodeHeader
-          :node-data="nodeData"
+          :node-data
           :collapsed="isCollapsed"
           :price-badges="badges.pricing"
           @collapse="handleCollapse"
@@ -130,7 +130,7 @@
       />
 
       <template v-if="!isCollapsed && isRerouteNode">
-        <NodeSlots :node-data="nodeData" />
+        <NodeSlots :node-data />
       </template>
 
       <template v-else-if="!isCollapsed">
@@ -157,24 +157,20 @@
           "
           :data-testid="`node-body-${nodeData.id}`"
         >
-          <NodeSlots :node-data="nodeData" />
+          <NodeSlots :node-data />
 
           <NodeWidgets
             v-if="hasRenderableWidgets"
-            :node-data="nodeData"
+            :node-data
             :node="lgraphNode"
           />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
-            <NodeContent
-              v-if="nodeMedia"
-              :node-data="nodeData"
-              :media="nodeMedia"
-            />
+            <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
             <NodeContent
               v-for="preview in promotedPreviews"
               :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-              :node-data="nodeData"
+              :node-data
               :media="preview"
             />
           </div>
