@@ -26,11 +26,11 @@ Ubisoft La Forge has open-sourced its PBR material estimation model, **CHORD (Ch
 
 The model weights and code are released with a Research-Only license. Beyond research, this is a significant step toward integrating ComfyUI into AAA-scale video game production workflows.
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/cover.webp"} alt={"CHORD PBR material generation in ComfyUI"} caption={"PBR materials generated using the CHORD model in ComfyUI."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/cover.webp" alt="CHORD PBR material generation in ComfyUI" caption="PBR materials generated using the CHORD model in ComfyUI." />
 
 </Section>
 
-<Section id="topic-2" title={"PBR Material Production in AAA Games Today"}>
+<Section id="topic-2" title="PBR Material Production in AAA Games Today">
 
 In AAA game development, PBR materials are the foundation of visual realism. Large-scale titles require hundreds of reusable materials, each with full Base Color, Normal, Height, Roughness, and Metalness maps that meet strict svBRDF standards.
 
@@ -40,19 +40,19 @@ Ubisoft's Generative Base Material prototype directly targets this production bo
 
 </Section>
 
-<Section id="topic-3" title={"Why Ubisoft Chose ComfyUI as The Workflow Platform"}>
+<Section id="topic-3" title="Why Ubisoft Chose ComfyUI as The Workflow Platform">
 
 Ubisoft's choice of ComfyUI is rooted in production realities. For large studios, the requirement is not another image generator — it is a controllable and integratable AI workflow platform that can meet the bespoke requirements of game development.
 
-<Quote name={"Ubisoft La Forge Blog"}>Considering the multi-stage nature of our prototype, ComfyUI provides us with an efficient framework to build integrated workflows doing texture image synthesis, material estimation and material upscaling. This also enables us to leverage state-of-the-art generative models and the powerful features of ComfyUI that provide fine-grain control to creators with ControlNets, image guidance, inpainting, and countless other options.</Quote>
+<Quote name="Ubisoft La Forge Blog">Considering the multi-stage nature of our prototype, ComfyUI provides us with an efficient framework to build integrated workflows doing texture image synthesis, material estimation and material upscaling. This also enables us to leverage state-of-the-art generative models and the powerful features of ComfyUI that provide fine-grain control to creators with ControlNets, image guidance, inpainting, and countless other options.</Quote>
 
 </Section>
 
-<Section id="topic-4" title={"3 Stages of The Generative Base Material Pipeline"}>
+<Section id="topic-4" title="3 Stages of The Generative Base Material Pipeline">
 
 The CHORD model is integrated into a broader pipeline consisting of 3 core stages.
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/pipeline.webp"} alt={"The 3-stage generative base material pipeline"} caption={"The 3-stage generative base material pipeline: texture generation, CHORD estimation, and upscaling."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/pipeline.webp" alt="The 3-stage generative base material pipeline" caption="The 3-stage generative base material pipeline: texture generation, CHORD estimation, and upscaling." />
 
 ### Stage 1 — Texture Image Generation
 
@@ -70,11 +70,11 @@ This complete pipeline enables artists to rapidly iterate on ideas and mix and m
 
 </Section>
 
-<Section id="topic-5" title={"How to Try CHORD in ComfyUI"}>
+<Section id="topic-5" title="How to Try CHORD in ComfyUI">
 
 Ubisoft has open-sourced the CHORD model weights, ComfyUI custom nodes, and example workflows covering the texture image generation stage and the image-to-material estimation stage of the pipeline.
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/workflow.webp"} alt={"CHORD example workflow in ComfyUI"} caption={"The CHORD example workflow in ComfyUI for end-to-end PBR material generation."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/workflow.webp" alt="CHORD example workflow in ComfyUI" caption="The CHORD example workflow in ComfyUI for end-to-end PBR material generation." />
 
 <Steps items={["Install or update ComfyUI to the latest version","Install the CHORD ComfyUI custom node from Ubisoft","Download the CHORD model and place it in ./ComfyUI/models/checkpoints","Load the CHORD example workflow in ComfyUI"]} />
 
@@ -82,20 +82,20 @@ You can switch the texture image generation model to any other image model, and 
 
 </Section>
 
-<Section id="topic-6" title={"Example Outputs"}>
+<Section id="topic-6" title="Example Outputs">
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/example1.webp"} alt={"CHORD PBR material example output 1"} caption={"Generated PBR material set showing Base Color, Normal, Height, Roughness, and Metalness maps."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example1.webp" alt="CHORD PBR material example output 1" caption="Generated PBR material set showing Base Color, Normal, Height, Roughness, and Metalness maps." />
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/example2.webp"} alt={"CHORD PBR material example output 2"} caption={"Another generated PBR material set demonstrating the variety of textures achievable with CHORD."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example2.webp" alt="CHORD PBR material example output 2" caption="Another generated PBR material set demonstrating the variety of textures achievable with CHORD." />
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/example3.webp"} alt={"CHORD PBR material example output 3"} caption={"Material generation output with full PBR channel decomposition."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example3.webp" alt="CHORD PBR material example output 3" caption="Material generation output with full PBR channel decomposition." />
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/example4.webp"} alt={"CHORD PBR material example output 4"} caption={"High-quality PBR texture set generated from a single input texture."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example4.webp" alt="CHORD PBR material example output 4" caption="High-quality PBR texture set generated from a single input texture." />
 
-<Figure src={"https://media.comfy.org/website/customers/ubisoft/example5.webp"} alt={"CHORD PBR material example output 5"} caption={"Final rendered PBR material demonstrating production-ready quality."} />
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example5.webp" alt="CHORD PBR material example output 5" caption="Final rendered PBR material demonstrating production-ready quality." />
 
 The release of CHORD demonstrates how ComfyUI has grown from a community-driven tool into a platform for real production. Studio users can build end-to-end pipelines from prompt or reference input through texture generation, material estimation, PBR upscaling, and finally export to DCC tools or game engines. Each stage can also operate independently and be embedded into an existing production system.
 
-<Contributors label={"AUTHOR"} people={[{"name":"Jo Zhang","role":"ComfyUI Blog"},{"name":"Daxiong (Lin)","role":"ComfyUI Blog"}]} />
+<Contributors label="AUTHOR" people={[{"name":"Jo Zhang","role":"ComfyUI Blog"},{"name":"Daxiong (Lin)","role":"ComfyUI Blog"}]} />
 
 </Section>

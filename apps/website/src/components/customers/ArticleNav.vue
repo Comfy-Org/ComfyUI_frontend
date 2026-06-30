@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { useEventListener, useIntersectionObserver } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { scrollTo } from '../../scripts/smoothScroll'
 import CategoryNav from '../common/CategoryNav.vue'
 
-interface Category {
-  label: string
-  value: string
-}
+type Category = ComponentProps<typeof CategoryNav>['categories'][number]
 
 const { categories } = defineProps<{
   categories: Category[]
@@ -95,7 +93,7 @@ useEventListener('scroll', activateLastIfAtBottom, { passive: true })
 
 <template>
   <CategoryNav
-    :categories="categories"
+    :categories
     :model-value="activeSection"
     @update:model-value="scrollToSection"
   />
