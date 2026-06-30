@@ -239,9 +239,9 @@ export class DragAndScale {
     // Calculate the target position to center the bounds in the visible area
     // Shift by insetLeft/insetTop so content is centered within the unobscured region
     const targetX =
-      -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 - insetLeft / targetScale
+      -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 + insetLeft / targetScale
     const targetY =
-      -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5 - insetTop / targetScale
+      -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5 + insetTop / targetScale
 
     // Apply the changes immediately
     this.offset[0] = targetX
@@ -302,9 +302,9 @@ export class DragAndScale {
     const scaledHeight = ch / targetScale
 
     const targetX =
-      -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 - insetLeft / targetScale
+      -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 + insetLeft / targetScale
     const targetY =
-      -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5 - insetTop / targetScale
+      -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5 + insetTop / targetScale
     const targetX2 = targetX - fullCw / targetScale
     const targetY2 = targetY - fullCh / targetScale
 
