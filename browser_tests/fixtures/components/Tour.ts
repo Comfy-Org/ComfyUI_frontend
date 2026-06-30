@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-export type CoachTour = 'blankCanvas' | 'appMode'
+export type CoachTour = 'appMode'
 
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 

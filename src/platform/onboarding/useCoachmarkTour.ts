@@ -7,14 +7,12 @@ import { useI18n } from 'vue-i18n'
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import { app } from '@/scripts/app'
 
 import { useCoachmarkController } from './coachmarkController'
-import { NODES_2_GATE_STEP, TOURS, resolveSteps } from './onboardingTours'
+import { TOURS, resolveSteps } from './onboardingTours'
 import type { CoachId, CoachStep, EntryPath } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 import { useFocusTrap } from './useFocusTrap'
@@ -223,9 +221,6 @@ export function useCoachmarkTour(refs: {
 
   async function onPrimary() {
     try {
-      if (step.value?.enablesNodes2) {
-        await settingStore.set('Comfy.VueNodes.Enabled', true)
-      }
       const templateId = step.value?.loadTemplate
       if (templateId) {
         await loadTemplates()
@@ -299,7 +294,6 @@ export function useCoachmarkTour(refs: {
     void settingStore.set(SEEN_SETTING, [...seen, entryPath])
   }
 
-  const { shouldRenderVueNodes } = useVueFeatureFlags()
   let forcedTour: ForcedTour | null = null
 
   async function startTour(entryPath: EntryPath, force = false) {
@@ -315,11 +309,7 @@ export function useCoachmarkTour(refs: {
         isMounted: targetMounted
       })
       if (!resolved.length) return
-      // Canvas guidance assumes Nodes 2.0; lead with the opt-in when it's off.
-      steps.value =
-        entryPath === 'blankCanvas' && !shouldRenderVueNodes.value
-          ? [NODES_2_GATE_STEP, ...resolved]
-          : resolved
+      steps.value = resolved
       activeTour = entryPath
       trackTour('started')
       void showStep(0)
@@ -330,17 +320,13 @@ export function useCoachmarkTour(refs: {
 
   onMounted(() => {
     if (!ownsInstance) return
-    // Snapshot `?coach=` at mount, before URL loaders strip their params.
+    // appMode opens via the isAppMode watcher; `?coach=` forces a tour at load.
+    // Snapshot it before URL loaders strip their params.
     const coachParam = new URLSearchParams(window.location.search).get('coach')
-    if (coachParam !== null) {
-      forcedTour = isEntryPath(coachParam) ? coachParam : 'any'
-    }
-    const forcedPath = coachParam && isEntryPath(coachParam) ? coachParam : null
-    // blankCanvas auto-detects at load; appMode opens via the watcher; `?coach=` forces at load.
-    const hasNodes = !!app.rootGraph?.nodes?.length
-    const mountPath = forcedPath ?? (hasNodes ? null : 'blankCanvas')
-    if (!mountPath) return
-    startTimer = setTimeout(() => void startTour(mountPath), START_DELAY_MS)
+    if (coachParam === null) return
+    forcedTour = isEntryPath(coachParam) ? coachParam : 'any'
+    if (!isEntryPath(coachParam)) return
+    startTimer = setTimeout(() => void startTour(coachParam), START_DELAY_MS)
   })
 
   // An explicit request (e.g. info button) replays the tour past its seen-flag and gates.

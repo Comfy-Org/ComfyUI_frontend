@@ -1,7 +1,6 @@
-import { hasNoSavedWorkflows, isNewUser } from './coachmarkGates'
 import type { CoachGate } from './coachmarkGates'
 
-export type EntryPath = 'blankCanvas' | 'appMode'
+export type EntryPath = 'appMode'
 
 type CoachPlacement =
   | 'left'
@@ -60,8 +59,6 @@ export interface CoachStep {
   primaryLabelKey?: string
   /** Overrides the secondary (Skip) button label. */
   skipLabelKey?: string
-  /** Enables Nodes 2.0 before advancing. */
-  enablesNodes2?: boolean
   /** Loads this core workflow template before advancing (e.g. the tutorial's app). */
   loadTemplate?: string
   /**
@@ -71,15 +68,6 @@ export interface CoachStep {
   landing?: boolean
   /** Image shown on the landing dialog's left panel. */
   image?: string
-}
-
-/** Prepended when Nodes 2.0 is off — the canvas guidance assumes the Vue renderer. */
-export const NODES_2_GATE_STEP: CoachStep = {
-  titleKey: 'onboardingCoachmarks.enableNodes2.title',
-  bodyKey: 'onboardingCoachmarks.enableNodes2.body',
-  placement: 'center',
-  primaryLabelKey: 'onboardingCoachmarks.enableNodes2.action',
-  enablesNodes2: true
 }
 
 /** Breathing room the spotlight glow adds around its rect. */
@@ -115,64 +103,7 @@ export async function resolveSteps(
   return candidates.filter((_, i) => verdicts[i])
 }
 
-const WORKFLOW_TABS = '[data-testid="topbar-workflow-tabs"]'
-
-/**
- * `#graph-canvas` spans the full viewport (sidebar/topbar float above it), so
- * spotlight the center splitter pane instead — top extended to the tab bar,
- * edges clamped so the whole ring stays on screen.
- */
-function visibleCanvasRect(): DOMRect | null {
-  const pane = document.querySelector(coachTarget(COACH_IDS.canvas))
-  if (!pane) return null
-  const rect = pane.getBoundingClientRect()
-  const tabs = document.querySelector(WORKFLOW_TABS)?.getBoundingClientRect()
-  const edgeInset = SPOTLIGHT_PAD + 6
-  const top = tabs ? tabs.bottom + SPOTLIGHT_PAD : rect.top
-  const left = Math.max(rect.left, edgeInset)
-  const right = Math.min(rect.right, window.innerWidth - edgeInset)
-  const bottom = Math.min(rect.bottom, window.innerHeight - edgeInset)
-  return new DOMRect(left, top, right - left, bottom - top)
-}
-
 export const TOURS: Record<EntryPath, CoachStep[]> = {
-  blankCanvas: [
-    {
-      coachId: COACH_IDS.canvas,
-      titleKey: 'onboardingCoachmarks.blankCanvas.canvas.title',
-      bodyKey: 'onboardingCoachmarks.blankCanvas.canvas.body',
-      placement: 'center',
-      rectOverride: visibleCanvasRect,
-      when: isNewUser
-    },
-    {
-      coachId: COACH_IDS.templatesButton,
-      titleKey: 'onboardingCoachmarks.blankCanvas.templates.title',
-      bodyKey: 'onboardingCoachmarks.blankCanvas.templates.body',
-      placement: 'right',
-      when: hasNoSavedWorkflows,
-      advanceOnTargetClick: true
-    },
-    {
-      coachId: COACH_IDS.templatesDialog,
-      titleKey: 'onboardingCoachmarks.blankCanvas.templatesDialog.title',
-      bodyKey: 'onboardingCoachmarks.blankCanvas.templatesDialog.body',
-      placement: 'topRight',
-      when: hasNoSavedWorkflows,
-      deferTarget: true,
-      elevated: true,
-      advanceOnTargetClose: true
-    },
-    {
-      // Workflow templates stay in the graph, app templates switch to app mode; spotlight whichever shows.
-      coachId: [COACH_IDS.runButton, COACH_IDS.appRunButton],
-      titleKey: 'onboardingCoachmarks.blankCanvas.run.title',
-      bodyKey: 'onboardingCoachmarks.blankCanvas.run.body',
-      placement: 'bottom',
-      when: hasNoSavedWorkflows,
-      deferTarget: true
-    }
-  ],
   appMode: [
     {
       landing: true,

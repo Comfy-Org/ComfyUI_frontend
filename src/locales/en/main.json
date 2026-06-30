@@ -4496,29 +4496,6 @@
     "skip": "Skip",
     "next": "Next",
     "done": "Done",
-    "enableNodes2": {
-      "title": "Turn on Nodes 2.0",
-      "body": "Placeholder: this guided tour uses the new Nodes 2.0 canvas. Enable it to continue, or skip the tour.",
-      "action": "Enable Nodes 2.0"
-    },
-    "blankCanvas": {
-      "canvas": {
-        "title": "This is your canvas",
-        "body": "Placeholder: scroll to zoom, drag to pan. You don't need to build from scratch."
-      },
-      "templates": {
-        "title": "Start from a template",
-        "body": "Placeholder: the fastest way to a first result is a ready-made template. Click the highlighted Templates button to browse them."
-      },
-      "templatesDialog": {
-        "title": "Select a template",
-        "body": "Placeholder: pick a ready-made workflow to load it onto your canvas."
-      },
-      "run": {
-        "title": "Now run it",
-        "body": "Placeholder: your template is loaded — click Run to generate your first result."
-      }
-    },
     "appMode": {
       "landing": {
         "title": "Welcome to Apps",

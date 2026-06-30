@@ -29,18 +29,9 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  // A non-empty graph means no blank-canvas tour auto-starts at mount, so each
-  // test drives the tour explicitly through the controller.
-  app: { rootGraph: { nodes: [{}] } }
-}))
 vi.mock('@/composables/useAppMode', async () => {
   const { ref: r } = await import('vue')
   return { useAppMode: () => ({ isAppMode: r(false) }) }
-})
-vi.mock('@/composables/useVueFeatureFlags', async () => {
-  const { ref: r } = await import('vue')
-  return { useVueFeatureFlags: () => ({ shouldRenderVueNodes: r(true) }) }
 })
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateWorkflows',
