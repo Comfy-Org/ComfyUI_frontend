@@ -29,9 +29,8 @@ import { promptRenameWidget } from '@/utils/widgetUtil'
 interface WidgetEntry {
   key: string
   persistedHeight: number | undefined
-  nodeData: ReturnType<typeof nodeToNodeData> & {
-    widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
-  }
+  node: LGraphNode
+  nodeData: ReturnType<typeof nodeToNodeData>
   action: { widget: IBaseWidget; node: LGraphNode }
 }
 
@@ -69,28 +68,35 @@ const mappedSelections = computed((): WidgetEntry[] => {
     }
     const fullNodeData = nodeDataByNode.get(node)!
 
-    const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
-      if (vueWidget.slotMetadata?.linked) return false
-      return vueWidget.widgetId === widgetId
-    })
-    if (!matchingWidget) return []
-
-    matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = node.id
+    if (widget.widgetId !== widgetId) return []
+    if (
+      node.inputs?.some(
+        (input) => input.widget?.name === widget.name && input.link != null
+      )
+    ) {
+      return []
+    }
 
     return [
       {
         key: widgetId,
         persistedHeight: config?.height,
-        nodeData: {
-          ...fullNodeData,
-          widgets: [matchingWidget]
-        },
+        node: nodeWithWidget(node, widget),
+        nodeData: fullNodeData,
         action: { widget, node }
       }
     ]
   })
 })
+
+function nodeWithWidget(node: LGraphNode, widget: IBaseWidget): LGraphNode {
+  const renderNode = Object.create(node) as LGraphNode
+  Object.defineProperty(renderNode, 'widgets', {
+    get: () => [widget],
+    configurable: true
+  })
+  return renderNode
+}
 
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
@@ -147,7 +153,7 @@ defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
-    v-for="{ key, persistedHeight, nodeData, action } in mappedSelections"
+    v-for="{ key, persistedHeight, node, nodeData, action } in mappedSelections"
     :key
     :class="
       cn(
@@ -234,6 +240,7 @@ defineExpose({ handleDragDrop })
       >
         <NodeWidgets
           :node-data
+          :node="node"
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',

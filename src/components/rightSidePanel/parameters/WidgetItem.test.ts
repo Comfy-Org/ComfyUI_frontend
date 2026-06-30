@@ -204,5 +204,20 @@ describe('WidgetItem', () => {
 
       expect(stub.value).toBe('model_a.safetensors')
     })
+
+    it('passes null from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, value: 'source value' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: null,
+        options: {}
+      })
+
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
+
+      expect(stub.value).toBe('null')
+    })
   })
 })

@@ -4,7 +4,7 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
@@ -268,7 +268,10 @@ export const isEssential = (type: string): boolean => {
   return widgets.get(canonicalType)?.essential || false
 }
 
-export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
+export const shouldRenderAsVue = (widget: {
+  options?: Pick<IWidgetOptions, 'canvasOnly'>
+  type?: string
+}): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
 }
 

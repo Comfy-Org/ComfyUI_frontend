@@ -85,7 +85,6 @@ describe('Vue Node - Subgraph Functionality', () => {
     selected: false,
     executing: false,
     subgraphId,
-    widgets: [],
     inputs: [],
     outputs: [],
     hasErrors: false,
