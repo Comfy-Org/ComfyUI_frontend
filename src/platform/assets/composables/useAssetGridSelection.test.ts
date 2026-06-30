@@ -298,7 +298,7 @@ describe('useAssetGridSelection', () => {
       expect(callbacks.setSelectedIds).toHaveBeenLastCalledWith([], assets)
     })
 
-    it('clears the overlay and restores body user-select on pointercancel', async () => {
+    it('prevents text selection during a marquee and releases it on pointercancel', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
 
@@ -306,14 +306,69 @@ describe('useAssetGridSelection', () => {
       window.dispatchEvent(pointer('pointermove', { clientX: 30, clientY: 40 }))
       await nextTick()
       expect(screen.getByTestId('marquee')).toBeTruthy()
-      expect(document.body.style.userSelect).toBe('none')
+
+      const duringDrag = new Event('selectstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      grid().dispatchEvent(duringDrag)
+      expect(duringDrag.defaultPrevented).toBe(true)
 
       window.dispatchEvent(
         pointer('pointercancel', { clientX: 30, clientY: 40 })
       )
       await nextTick()
       expect(screen.queryByTestId('marquee')).toBeNull()
-      expect(document.body.style.userSelect).toBe('')
+
+      const afterEnd = new Event('selectstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      grid().dispatchEvent(afterEnd)
+      expect(afterEnd.defaultPrevented).toBe(false)
+    })
+
+    it('auto-resets click suppression when a drag ends without a trailing click', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+
+      grid().dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
+      window.dispatchEvent(pointer('pointermove', { clientX: 80, clientY: 40 }))
+      window.dispatchEvent(
+        pointer('pointercancel', { clientX: 80, clientY: 40 })
+      )
+
+      await new Promise((resolve) => setTimeout(resolve))
+
+      const laterClick = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true
+      })
+      window.dispatchEvent(laterClick)
+      expect(laterClick.defaultPrevented).toBe(false)
+    })
+
+    it('only blocks text selection inside the grid container during a marquee', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+
+      grid().dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
+      window.dispatchEvent(pointer('pointermove', { clientX: 30, clientY: 40 }))
+      await nextTick()
+
+      const insideGrid = new Event('selectstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      card('a').dispatchEvent(insideGrid)
+      expect(insideGrid.defaultPrevented).toBe(true)
+
+      const outsideGrid = new Event('selectstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      screen.getByTestId('search').dispatchEvent(outsideGrid)
+      expect(outsideGrid.defaultPrevented).toBe(false)
     })
 
     it('does not suppress the click after a sub-threshold press', async () => {
@@ -363,16 +418,20 @@ describe('useAssetGridSelection', () => {
       expect(setSelectedIds).not.toHaveBeenCalled()
     })
 
-    it('ignores a reentrant pointer-down and does not leak body user-select', async () => {
+    it('ignores a reentrant pointer-down and does not leave text selection blocked', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
 
-      expect(document.body.style.userSelect).toBe('')
       grid().dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
       grid().dispatchEvent(pointer('pointerdown', { clientX: 5, clientY: 5 }))
       window.dispatchEvent(pointer('pointerup', { clientX: 5, clientY: 5 }))
 
-      expect(document.body.style.userSelect).toBe('')
+      const selection = new Event('selectstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      grid().dispatchEvent(selection)
+      expect(selection.defaultPrevented).toBe(false)
     })
 
     it('captures the pointer on a real marquee start, not on a plain card press', async () => {
@@ -387,6 +446,27 @@ describe('useAssetGridSelection', () => {
 
       grid().dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
       expect(capture).toHaveBeenCalledWith(1)
+    })
+
+    it('still tracks a marquee when setPointerCapture throws', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+      vi.spyOn(grid(), 'setPointerCapture').mockImplementation(() => {
+        throw new Error('stale pointer id')
+      })
+
+      grid().dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
+      window.dispatchEvent(
+        pointer('pointermove', { clientX: 110, clientY: 50 })
+      )
+      expect(callbacks.setSelectedIds).toHaveBeenLastCalledWith(
+        ['a', 'b'],
+        assets
+      )
+
+      window.dispatchEvent(pointer('pointerup', { clientX: 110, clientY: 50 }))
+      await nextTick()
+      expect(screen.queryByTestId('marquee')).toBeNull()
     })
   })
 
@@ -475,6 +555,24 @@ describe('useAssetGridSelection', () => {
       pressSelectAll()
 
       expect(callbacks.selectAll).not.toHaveBeenCalled()
+    })
+
+    it('does not hijack select-all while an aria-modal dialog is open', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+
+      panel().dispatchEvent(new MouseEvent('mouseenter'))
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('aria-modal', 'true')
+      document.body.appendChild(dialog)
+
+      const event = pressSelectAll()
+
+      expect(callbacks.selectAll).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
+
+      dialog.remove()
     })
   })
 })

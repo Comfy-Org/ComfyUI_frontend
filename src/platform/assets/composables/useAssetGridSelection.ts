@@ -51,7 +51,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   let isTracking = false
   let isDragging = false
   let suppressNextClick = false
-  let priorBodyUserSelect = ''
+  let suppressClickResetTimeout: ReturnType<typeof setTimeout> | null = null
 
   function collectCards(container: HTMLElement) {
     return [...container.querySelectorAll<HTMLElement>(CARD_SELECTOR)].flatMap(
@@ -94,20 +94,44 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   function endDrag() {
     if (!isTracking) return
     isTracking = false
-    document.body.style.userSelect = priorBodyUserSelect
     marqueeRect.value = null
-    if (isDragging) suppressNextClick = true
+    if (isDragging) scheduleSuppressNextClick()
     isDragging = false
+  }
+
+  function scheduleSuppressNextClick() {
+    suppressNextClick = true
+    clearSuppressTimer()
+    suppressClickResetTimeout = setTimeout(() => {
+      suppressNextClick = false
+      suppressClickResetTimeout = null
+    }, 0)
+  }
+
+  function clearSuppressTimer() {
+    if (suppressClickResetTimeout !== null) {
+      clearTimeout(suppressClickResetTimeout)
+      suppressClickResetTimeout = null
+    }
   }
 
   function preventDragStart(e: Event) {
     if (isTracking) e.preventDefault()
   }
 
+  function preventTextSelection(e: Event) {
+    if (!isTracking) return
+    const container = marqueeContainerRef.value
+    if (container && e.target instanceof Node && container.contains(e.target)) {
+      e.preventDefault()
+    }
+  }
+
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return
     if (isTracking) return
     suppressNextClick = false
+    clearSuppressTimer()
     const container = marqueeContainerRef.value
     if (!container) return
     if (!container.querySelector(CARD_SELECTOR)) return
@@ -123,21 +147,28 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     baseIds = e.shiftKey || e.ctrlKey || e.metaKey ? getSelectedIds() : []
     isDragging = false
     isTracking = true
-    container.setPointerCapture(e.pointerId)
-    priorBodyUserSelect = document.body.style.userSelect
-    document.body.style.userSelect = 'none'
+    try {
+      container.setPointerCapture(e.pointerId)
+    } catch {
+      // Stale/invalid pointerId: window listeners still end the drag.
+    }
   }
 
   function onClickCapture(e: MouseEvent) {
     if (!suppressNextClick) return
     suppressNextClick = false
+    clearSuppressTimer()
     e.stopImmediatePropagation()
     e.preventDefault()
   }
 
   function onKeydown(e: KeyboardEvent) {
     if (!(e.ctrlKey || e.metaKey) || (e.key !== 'a' && e.key !== 'A')) return
-    if (!isHoveringPanel.value || isTextEntryTarget(document.activeElement)) {
+    if (
+      !isHoveringPanel.value ||
+      isTextEntryTarget(document.activeElement) ||
+      document.querySelector('[role="dialog"][aria-modal="true"]')
+    ) {
       return
     }
     e.preventDefault()
@@ -153,10 +184,11 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   useEventListener(window, ['pointerup', 'pointercancel', 'dragend'], endDrag)
   useEventListener(window, 'click', onClickCapture, { capture: true })
   useEventListener(window, 'keydown', onKeydown, { capture: true })
-
-  onScopeDispose(() => {
-    if (isTracking) document.body.style.userSelect = priorBodyUserSelect
+  useEventListener(window, 'selectstart', preventTextSelection, {
+    capture: true
   })
+
+  onScopeDispose(clearSuppressTimer)
 
   const marqueeStyle = computed(() => {
     const rect = marqueeRect.value
