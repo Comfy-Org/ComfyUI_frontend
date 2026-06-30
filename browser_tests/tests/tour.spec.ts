@@ -69,8 +69,9 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       // (importing it would execute app modules outside the browser).
       const coach = onboarding
       // App-mode anchors only mount once a workflow is running in app mode.
-      // Wait for the template to populate the graph first — entering app mode
-      // with an empty graph shows the welcome screen, not the controls.
+      // Open the template browser and load one to populate the graph first —
+      // entering app mode with an empty graph shows the welcome screen, not the controls.
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await comfyPage.templates.loadTemplate('default')
       await expect
         .poll(() => comfyPage.nodeOps.getGraphNodesCount())
