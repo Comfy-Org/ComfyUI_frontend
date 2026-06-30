@@ -131,7 +131,8 @@
       :style="{ width: `${agentPanelWidth}px` }"
     >
       <div
-        class="absolute top-0 left-0 z-10 h-full w-2 cursor-col-resize transition-colors hover:bg-border-default"
+        class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+        :data-resizing="isResizing"
         @pointerdown="onResizePointerDown"
       />
       <slot name="agent-panel" />
@@ -146,7 +147,7 @@ import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -171,24 +172,24 @@ const agentPanelStore = useAgentPanelStore()
 const { isOpen: agentPanelVisible, width: agentPanelWidth } =
   storeToRefs(agentPanelStore)
 
-let isDragging = false
+const isResizing = ref(false)
 let resizeStartX = 0
 let resizeStartWidth = 0
 
 function onResizePointerDown(e: PointerEvent) {
-  isDragging = true
+  isResizing.value = true
   resizeStartX = e.clientX
   resizeStartWidth = agentPanelStore.width
   e.preventDefault()
 }
 
 useEventListener(document, 'pointermove', (e: PointerEvent) => {
-  if (!isDragging) return
+  if (!isResizing.value) return
   agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
 })
 
 useEventListener(document, 'pointerup', () => {
-  isDragging = false
+  isResizing.value = false
 })
 const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
@@ -346,5 +347,15 @@ const lastPanelStyle = computed(() => {
 
 .splitter-overlay-bottom :deep(.p-splitter-gutter) {
   transform: translateY(5px);
+}
+
+.agent-resize-handle:hover {
+  transition: background-color 0.2s ease 300ms;
+  background-color: var(--p-primary-color);
+}
+
+.agent-resize-handle[data-resizing='true'] {
+  transition: none;
+  background-color: var(--p-primary-color);
 }
 </style>

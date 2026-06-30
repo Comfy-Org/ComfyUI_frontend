@@ -17,7 +17,7 @@ const emit = defineEmits<{
     type="button"
     :class="
       cn(
-        'flex h-8 w-full items-center justify-center gap-1 rounded-full bg-secondary-background/40 px-3 text-xs font-medium text-base-foreground opacity-70 transition-opacity hover:opacity-100',
+        'text-foreground flex h-8 w-full items-center justify-start gap-2 rounded-full border-0 bg-secondary-background px-4 text-xs transition-colors outline-none hover:bg-secondary-background-hover',
         className
       )
     "

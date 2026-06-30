@@ -23,7 +23,7 @@ const suggestions = [
       :suggestion="$t(`agent.suggestions.${item.key}`)"
       @select="emit('select', $event)"
     >
-      <i :class="item.icon" class="size-3.5" />
+      <i :class="item.icon" class="size-3 shrink-0 text-muted-foreground" />
       <span>{{ $t(`agent.suggestions.${item.key}`) }}</span>
     </Suggestion>
   </Suggestions>

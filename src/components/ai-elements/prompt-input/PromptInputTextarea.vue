@@ -27,7 +27,7 @@ function onKeydown(event: KeyboardEvent) {
     :placeholder="placeholder"
     :class="
       cn(
-        'field-sizing-content max-h-48 min-h-16 w-full resize-none bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none',
+        'field-sizing-content max-h-48 min-h-20 w-full resize-none border-none bg-transparent px-4 py-3 text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none',
         className
       )
     "

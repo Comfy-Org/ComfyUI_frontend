@@ -11,7 +11,7 @@ const { class: className } = defineProps<{
   <div
     :class="
       cn(
-        'flex flex-col rounded-lg border border-border-default bg-secondary-background',
+        'flex flex-col rounded-2xl border border-border-default bg-secondary-background',
         className
       )
     "

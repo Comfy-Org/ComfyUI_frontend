@@ -2,6 +2,8 @@
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
 
@@ -11,7 +13,7 @@ const {
   class: className,
   status = 'ready',
   variant = 'inverted',
-  size = 'icon',
+  size = 'icon-lg',
   disabled = false
 } = defineProps<{
   class?: HTMLAttributes['class']
@@ -41,7 +43,7 @@ const iconClass = computed(() => {
     :variant="variant"
     :size="size"
     :disabled="disabled"
-    :class="className"
+    :class="cn('rounded-xl', className)"
     :aria-label="$t('agent.send')"
   >
     <slot>
