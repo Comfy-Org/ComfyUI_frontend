@@ -2,6 +2,7 @@ import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -21,24 +22,28 @@ type TourState = {
       : never
 }
 
-// `state` is populated by the vi.mock factory below; mutated in place so the
-// reference the component captured stays stable across tests.
+// `state` holds the mocked composable's refs/mocks; `seedState` (re)builds it in
+// one place — the factory seeds it once, and each test resets it via beforeEach.
 const mocks = vi.hoisted(() => ({ state: {} as TourState }))
+const seedState = vi.hoisted(
+  () => (makeRef: typeof ref) =>
+    Object.assign(mocks.state, {
+      step: makeRef<CoachStep | null>(null),
+      countedSteps: makeRef<CoachStep[]>([]),
+      countedStepIdx: makeRef(0),
+      targetRect: makeRef<DOMRect | null>(null),
+      primaryLabel: makeRef('Next'),
+      skipLabel: makeRef('Skip'),
+      expectsTargetInteraction: makeRef(false),
+      outlinePulsing: makeRef(false),
+      showSkip: makeRef(true),
+      next: vi.fn(),
+      end: vi.fn()
+    } satisfies TourState)
+)
 vi.mock('./useCoachmarkTour', async () => {
   const { ref } = await import('vue')
-  Object.assign(mocks.state, {
-    step: ref<CoachStep | null>(null),
-    countedSteps: ref<CoachStep[]>([]),
-    countedStepIdx: ref(0),
-    targetRect: ref<DOMRect | null>(null),
-    primaryLabel: ref('Next'),
-    skipLabel: ref('Skip'),
-    expectsTargetInteraction: ref(false),
-    outlinePulsing: ref(false),
-    showSkip: ref(true),
-    next: vi.fn(),
-    end: vi.fn()
-  } satisfies TourState)
+  seedState(ref)
   return { useCoachmarkTour: () => mocks.state }
 })
 
@@ -69,17 +74,7 @@ function renderOverlay() {
 
 describe('TourOverlay', () => {
   beforeEach(() => {
-    s.step.value = null
-    s.countedSteps.value = []
-    s.countedStepIdx.value = 0
-    s.targetRect.value = null
-    s.primaryLabel.value = 'Next'
-    s.skipLabel.value = 'Skip'
-    s.expectsTargetInteraction.value = false
-    s.outlinePulsing.value = false
-    s.showSkip.value = true
-    s.next.mockClear()
-    s.end.mockClear()
+    seedState(ref)
   })
 
   afterEach(cleanup)

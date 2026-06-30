@@ -26,6 +26,8 @@ export const CARD_WIDTH = 300
 export const VIEWPORT_MARGIN = 12
 // Breathing room the spotlight glow adds around its target rect.
 export const SPOTLIGHT_PAD = 8
+// Page dim: the spotlight's giant box-shadow and the no-target blocker fill.
+export const SCRIM_COLOR = 'rgba(0,0,0,0.62)'
 
 /** The spotlight box: the target rect grown by `pad`, clamped to the viewport. */
 export function clampSpotlight(

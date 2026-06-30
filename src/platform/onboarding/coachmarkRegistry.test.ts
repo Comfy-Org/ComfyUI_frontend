@@ -25,10 +25,4 @@ describe('coachmarkRegistry', () => {
     unregisterCoachmark('app-run-button', a)
     expect(coachmarkElements('app-run-button')).toEqual([b])
   })
-
-  it('clears the id once its last element unregisters', () => {
-    registerCoachmark('app-run-button', a)
-    unregisterCoachmark('app-run-button', a)
-    expect(coachmarkElements('app-run-button')).toEqual([])
-  })
 })

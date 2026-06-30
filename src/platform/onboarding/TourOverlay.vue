@@ -18,8 +18,8 @@
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_rgba(0,0,0,0.62)] motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
-      :style="spotlightStyle"
+      class="pointer-events-none absolute rounded-[10px] motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
+      :style="[spotlightStyle, dimShadow]"
     />
     <svg
       v-if="targetRect"
@@ -100,6 +100,7 @@ import CoachmarkCard from './CoachmarkCard.vue'
 import CoachmarkLanding from './CoachmarkLanding.vue'
 import {
   CARD_WIDTH,
+  SCRIM_COLOR,
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
   blockerClipPath,
@@ -150,6 +151,9 @@ const viewport = () => ({
   height: windowHeight.value
 })
 
+// A giant spread shadow in the scrim colour dims everything outside the spotlight.
+const dimShadow = { boxShadow: `0 0 0 9999px ${SCRIM_COLOR}` }
+
 const spotlightStyle = computed(() => {
   const r = targetRect.value
   if (!r) return { opacity: '0' }
@@ -161,7 +165,7 @@ const spotlightStyle = computed(() => {
 const blockerStyle = computed(() => {
   const r = targetRect.value
   // No target rect yet: the spotlight shadow isn't dimming anything, so dim here.
-  if (!r) return { background: 'rgba(0,0,0,0.62)' }
+  if (!r) return { background: SCRIM_COLOR }
   if (!expectsTargetInteraction.value) return {}
   return { clipPath: blockerClipPath(r) }
 })

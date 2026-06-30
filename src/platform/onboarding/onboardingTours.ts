@@ -59,13 +59,11 @@ export interface CoachStep {
  */
 export function resolveSteps(
   steps: CoachStep[],
-  options: {
-    isMounted: (id: CoachId | CoachId[]) => boolean
-  }
+  isMounted: (id: CoachId | CoachId[]) => boolean
 ): CoachStep[] {
   return steps.filter((s) => {
-    if (s.skipIfMounted && options.isMounted(s.skipIfMounted)) return false
-    return !s.coachId || s.deferTarget || options.isMounted(s.coachId)
+    if (s.skipIfMounted && isMounted(s.skipIfMounted)) return false
+    return !s.coachId || s.deferTarget || isMounted(s.coachId)
   })
 }
 

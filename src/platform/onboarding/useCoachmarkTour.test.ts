@@ -198,8 +198,8 @@ describe('useCoachmarkTour', () => {
   it('ignores a second concurrent request while the first tour is resolving', async () => {
     mountTour()
     const { requestTour } = useCoachmarkController()
-    // Both fire synchronously, before the first has finished resolving steps;
-    // the `starting` guard must drop the second.
+    // Both fire synchronously; the first resolves steps before the second runs,
+    // so the steps guard drops the second.
     void requestTour('appMode')
     void requestTour('appMode')
     await flush()

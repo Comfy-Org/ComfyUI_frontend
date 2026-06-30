@@ -8,6 +8,7 @@ import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import type { OnboardingTourStage } from '@/platform/telemetry/types'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 import { useCoachmarkController } from './coachmarkController'
@@ -21,8 +22,6 @@ const START_DELAY_MS = 800
 const DEFER_TIMEOUT_MS = 8000
 // How long a user can stall on an interaction step before the outline pulses.
 const PULSE_IDLE_MS = 4000
-
-type TourStage = 'started' | 'step_shown' | 'completed' | 'skipped'
 
 // `?coach=<path>` forces that tour; any non-path value forces the auto-detected one.
 type ForcedTour = EntryPath | 'any'
@@ -45,8 +44,6 @@ export function useCoachmarkTour(refs: {
   const stepIdx = ref(0)
   const pulsing = ref(false)
   let activeTour: EntryPath | null = null
-  // Set synchronously so a second trigger can't slip past the steps guard mid-resolution.
-  let starting = false
   let startTimer: ReturnType<typeof setTimeout> | undefined
   let pulseTimer: ReturnType<typeof setTimeout> | undefined
   // Cancels the step's in-flight async work when it advances, the tour ends, or unmounts.
@@ -87,7 +84,7 @@ export function useCoachmarkTour(refs: {
     onEscape: () => end('skipped')
   })
 
-  function trackTour(stage: TourStage) {
+  function trackTour(stage: OnboardingTourStage) {
     if (!activeTour) return
     const coachId = step.value?.coachId
     telemetry?.trackOnboardingTour(stage, {
@@ -262,23 +259,17 @@ export function useCoachmarkTour(refs: {
   }
 
   function startTour(entryPath: EntryPath, force = false) {
-    // A tour is already showing or mid-resolution this session.
-    if (steps.value.length || starting) return
-    starting = true
-    try {
-      const replay = force || forcedTour === 'any' || forcedTour === entryPath
-      if (!replay && hasSeenTour(entryPath)) return
-      const resolved = resolveSteps(TOURS[entryPath], {
-        isMounted: targetMounted
-      })
-      if (!resolved.length) return
-      steps.value = resolved
-      activeTour = entryPath
-      trackTour('started')
-      void showStep(0)
-    } finally {
-      starting = false
-    }
+    // A tour is already showing this session; startTour runs synchronously, so a
+    // second trigger always sees the steps set by the first.
+    if (steps.value.length) return
+    const replay = force || forcedTour === 'any' || forcedTour === entryPath
+    if (!replay && hasSeenTour(entryPath)) return
+    const resolved = resolveSteps(TOURS[entryPath], targetMounted)
+    if (!resolved.length) return
+    steps.value = resolved
+    activeTour = entryPath
+    trackTour('started')
+    void showStep(0)
   }
 
   onMounted(() => {
@@ -286,9 +277,12 @@ export function useCoachmarkTour(refs: {
     // Snapshot it before URL loaders strip their params.
     const coachParam = new URLSearchParams(window.location.search).get('coach')
     if (coachParam === null) return
-    forcedTour = isEntryPath(coachParam) ? coachParam : 'any'
-    if (!isEntryPath(coachParam)) return
-    startTimer = setTimeout(() => startTour(coachParam), START_DELAY_MS)
+    // A known path force-starts it directly; any other value forces the
+    // auto-detected tour once its controls appear.
+    const entry = isEntryPath(coachParam) ? coachParam : null
+    forcedTour = entry ?? 'any'
+    if (!entry) return
+    startTimer = setTimeout(() => startTour(entry), START_DELAY_MS)
   })
 
   // An explicit request (e.g. info button) replays the tour past its seen-flag.
