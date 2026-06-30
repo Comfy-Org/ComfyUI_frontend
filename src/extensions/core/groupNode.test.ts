@@ -7,6 +7,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import type { GroupNodeWorkflowData } from './groupNode'
@@ -552,6 +553,13 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
 
     expect(appMock.registerNodeDef).toHaveBeenCalledWith(
       'workflow>Complete',
+      expect.objectContaining({
+        category: 'group nodes>workflow',
+        display_name: 'Complete',
+        name: 'workflow>Complete'
+      })
+    )
+    expect(useNodeDefStore().nodeDefsByName['workflow>Complete']).toEqual(
       expect.objectContaining({
         category: 'group nodes>workflow',
         display_name: 'Complete',
