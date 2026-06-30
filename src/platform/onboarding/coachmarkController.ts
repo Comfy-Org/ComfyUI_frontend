@@ -5,7 +5,7 @@ import type { EntryPath } from './onboardingTours'
 /**
  * A tour the user has explicitly asked to (re)play — e.g. via an info button —
  * as opposed to one that auto-starts on detection. TourOverlay listens for the
- * request and starts the tour past its seen-flag and gates.
+ * request and starts the tour past its seen-flag.
  */
 const tourRequested = createEventHook<EntryPath>()
 

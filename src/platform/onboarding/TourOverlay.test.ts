@@ -7,19 +7,18 @@ import { createI18n } from 'vue-i18n'
 
 import TourOverlay from './TourOverlay.vue'
 import type { CoachStep } from './onboardingTours'
+import type { useCoachmarkTour } from './useCoachmarkTour'
 
-interface TourState {
-  step: Ref<CoachStep | null>
-  countedSteps: Ref<CoachStep[]>
-  countedStepIdx: Ref<number>
-  targetRect: Ref<DOMRect | null>
-  primaryLabel: Ref<string>
-  skipLabel: Ref<string>
-  expectsTargetInteraction: Ref<boolean>
-  outlinePulsing: Ref<boolean>
-  showSkip: Ref<boolean>
-  onPrimary: Mock
-  end: Mock
+// Derived from the composable's contract so the mock can't drift: each method
+// becomes a Mock and each reactive value a writable Ref (tests drive scenarios
+// by setting `.value`, which the real ComputedRefs wouldn't allow).
+type TourApi = ReturnType<typeof useCoachmarkTour>
+type TourState = {
+  [K in keyof TourApi]: TourApi[K] extends (...args: never[]) => unknown
+    ? Mock
+    : TourApi[K] extends { value: infer V }
+      ? Ref<V>
+      : never
 }
 
 // `state` is populated by the vi.mock factory below; mutated in place so the

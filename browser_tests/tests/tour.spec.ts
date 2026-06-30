@@ -67,14 +67,6 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       // Keep in sync with COACH_IDS in src/platform/onboarding/onboardingTours.ts
       // (importing it would execute app modules outside the browser).
       const coach = onboarding
-      // Graph-mode anchors.
-      for (const id of ['canvas', 'run-button', 'templates-button']) {
-        await expect(coach.coachAnchor(id)).toBeVisible()
-      }
-      // The dialog anchor only mounts with the templates dialog open.
-      await coach.coachAnchor('templates-button').click()
-      await expect(coach.coachAnchor('templates-dialog')).toBeVisible()
-
       // App-mode anchors only mount once a workflow is running in app mode.
       // Wait for the template to populate the graph first — entering app mode
       // with an empty graph shows the welcome screen, not the controls.

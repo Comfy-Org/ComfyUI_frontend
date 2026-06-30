@@ -18,13 +18,13 @@
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_rgba(0,0,0,0.62)] transition-all duration-300"
+      class="pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_rgba(0,0,0,0.62)] motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
       :style="spotlightStyle"
     />
     <svg
       v-if="targetRect"
       aria-hidden="true"
-      class="pointer-events-none absolute overflow-visible transition-all duration-300"
+      class="pointer-events-none absolute overflow-visible motion-safe:transition-[left,top,width,height] motion-safe:duration-300"
       :style="spotlightStyle"
     >
       <rect
@@ -48,8 +48,8 @@
       role="dialog"
       aria-modal="true"
       :aria-label="t(step.titleKey)"
-      :aria-describedby="bodyId"
-      class="pointer-events-auto absolute transition-[left,top] duration-300"
+      :aria-describedby="`${subtitleId} ${bodyId}`"
+      class="pointer-events-auto absolute max-h-[calc(100vh-72px)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
       :style="cardStyle"
     >
       <CoachmarkCard
@@ -59,6 +59,7 @@
             total: countedSteps.length
           })
         "
+        :subtitle-id="subtitleId"
         :title="t(step.titleKey)"
         :message="t(step.bodyKey)"
         :message-id="bodyId"
@@ -89,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from '@vueuse/core'
+import { useElementSize, useWindowSize } from '@vueuse/core'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -112,12 +113,14 @@ import { useCoachmarkTour } from './useCoachmarkTour'
 
 const { t } = useI18n()
 const bodyId = useId()
+const subtitleId = useId()
 
 const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { height: cardHeight } = useElementSize(cardRef, undefined, {
   box: 'border-box'
 })
+const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const {
   step,
@@ -143,8 +146,8 @@ const landingOpen = computed({
 })
 
 const viewport = () => ({
-  width: window.innerWidth,
-  height: window.innerHeight
+  width: windowWidth.value,
+  height: windowHeight.value
 })
 
 const spotlightStyle = computed(() => {
@@ -157,7 +160,7 @@ const spotlightStyle = computed(() => {
 // interaction steps punch a hole at the target's bounds so only it stays clickable.
 const blockerStyle = computed(() => {
   const r = targetRect.value
-  // No target (Nodes 2.0 gate): no spotlight shadow, so dim here.
+  // No target rect yet: the spotlight shadow isn't dimming anything, so dim here.
   if (!r) return { background: 'rgba(0,0,0,0.62)' }
   if (!expectsTargetInteraction.value) return {}
   return { clipPath: blockerClipPath(r) }
@@ -174,11 +177,11 @@ const cardStyle = computed(() => {
     return {
       width,
       maxWidth,
-      left: `${noTargetCardLeft(window.innerWidth)}px`,
+      left: `${noTargetCardLeft(windowWidth.value)}px`,
       top: '30%'
     }
   }
-  const placement = resolvePlacement(s.placement, r, window.innerWidth)
+  const placement = resolvePlacement(s.placement, r, windowWidth.value)
   const corner = cardCorner(placement, r, cardHeight.value)
   return {
     width,

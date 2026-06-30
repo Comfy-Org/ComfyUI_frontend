@@ -8,7 +8,6 @@
         value: queueButtonTooltip,
         showDelay: 600
       }"
-      v-coachmark="'run-button'"
       :variant="queueButtonVariant"
       size="unset"
       :class="queueActionButtonClass"
@@ -77,7 +76,6 @@ import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
-import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { isCloud } from '@/platform/distribution/types'

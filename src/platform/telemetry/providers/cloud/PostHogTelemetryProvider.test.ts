@@ -577,6 +577,25 @@ describe('PostHogTelemetryProvider', () => {
         shellLayoutMetadata
       )
     })
+
+    it('maps an onboarding tour stage to its event name', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        tour: 'appMode',
+        step_count: 6,
+        step_index: 2,
+        coach_id: 'app-run-button'
+      } as const
+
+      provider.trackOnboardingTour('step_shown', metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
+        metadata
+      )
+    })
   })
 
   describe('survey tracking', () => {

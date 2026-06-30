@@ -55,7 +55,7 @@ export type OnboardingTourStage =
   | 'completed'
   | 'skipped'
 
-/** `coach_id` is absent for steps with no target (the Nodes 2.0 gate). */
+/** `coach_id` is absent for steps with no spotlight target (e.g. the landing). */
 export interface OnboardingTourMetadata {
   tour: string
   step_count: number

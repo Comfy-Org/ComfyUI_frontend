@@ -34,40 +34,40 @@ describe('vCoachmark', () => {
   afterEach(cleanup)
 
   it('registers the element and mirrors the id to data-coach-id on mount', () => {
-    const { getByTestId } = mountHost('canvas')
+    const { getByTestId } = mountHost('app-run-button')
     const host = getByTestId('host')
-    expect(host.dataset.coachId).toBe('canvas')
-    expect(coachmarkElements('canvas')).toContain(host)
+    expect(host.dataset.coachId).toBe('app-run-button')
+    expect(coachmarkElements('app-run-button')).toContain(host)
   })
 
   it('does not register an element bound to a falsy id', () => {
     const { getByTestId } = mountHost(null)
     expect(getByTestId('host').dataset.coachId).toBeUndefined()
-    expect(coachmarkElements('canvas')).toHaveLength(0)
+    expect(coachmarkElements('app-run-button')).toHaveLength(0)
   })
 
   it('moves the element to the new id when the binding changes', async () => {
-    const { getByTestId, coachId } = mountHost('canvas')
+    const { getByTestId, coachId } = mountHost('app-run-button')
     const host = getByTestId('host')
     coachId.value = 'outputs'
     await nextTick()
     expect(host.dataset.coachId).toBe('outputs')
-    expect(coachmarkElements('canvas')).not.toContain(host)
+    expect(coachmarkElements('app-run-button')).not.toContain(host)
     expect(coachmarkElements('outputs')).toContain(host)
   })
 
   it('ignores a re-render that leaves the id unchanged', async () => {
-    const { getByTestId, rerender } = mountHost('canvas')
+    const { getByTestId, rerender } = mountHost('app-run-button')
     const host = getByTestId('host')
     await rerender()
-    expect(coachmarkElements('canvas')).toEqual([host])
+    expect(coachmarkElements('app-run-button')).toEqual([host])
   })
 
   it('unregisters and clears data-coach-id on unmount', () => {
-    const { getByTestId, unmount } = mountHost('canvas')
+    const { getByTestId, unmount } = mountHost('app-run-button')
     const host = getByTestId('host')
     unmount()
     expect(host.dataset.coachId).toBeUndefined()
-    expect(coachmarkElements('canvas')).not.toContain(host)
+    expect(coachmarkElements('app-run-button')).not.toContain(host)
   })
 })

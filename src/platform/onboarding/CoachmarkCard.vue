@@ -17,7 +17,11 @@
     </div>
     <div class="flex flex-col items-end justify-end gap-6 self-stretch">
       <div class="flex flex-col items-start gap-2 self-stretch">
-        <p v-if="subtitle" class="m-0 text-xs/normal text-base-foreground">
+        <p
+          v-if="subtitle"
+          :id="subtitleId"
+          class="m-0 text-xs/normal text-base-foreground"
+        >
           {{ subtitle }}
         </p>
         <h3 class="m-0 text-base/normal font-semibold text-base-foreground">
@@ -37,12 +41,14 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { title, message, subtitle, image, messageId, elevated } = defineProps<{
-  title: string
-  message: string
-  subtitle?: string
-  image?: string
-  messageId?: string
-  elevated?: boolean
-}>()
+const { title, message, subtitle, subtitleId, image, messageId, elevated } =
+  defineProps<{
+    title: string
+    message: string
+    subtitle?: string
+    subtitleId?: string
+    image?: string
+    messageId?: string
+    elevated?: boolean
+  }>()
 </script>

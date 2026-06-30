@@ -5,7 +5,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCoachmarkController } from './coachmarkController'
-import { registerCoachmark, unregisterCoachmark } from './coachmarkRegistry'
+import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
 import type { CoachId } from './onboardingTours'
 import { useCoachmarkTour } from './useCoachmarkTour'
 
@@ -87,6 +87,7 @@ function startedCount() {
 describe('useCoachmarkTour', () => {
   afterEach(() => {
     cleanup()
+    clearCoachmarks()
     settings.seen = []
     telemetry.track.mockClear()
     templates.loadTemplates.mockClear()
@@ -94,6 +95,17 @@ describe('useCoachmarkTour', () => {
     errorHandling.toastErrorHandler.mockClear()
     vi.useRealTimers()
   })
+
+  /** Register every app-mode target laid out, so deferred steps resolve at once. */
+  function registerAppModeTargets(): HTMLElement[] {
+    return APP_MODE_TARGETS.map((id) => {
+      const el = document.createElement('div')
+      el.getBoundingClientRect = () => new DOMRect(0, 0, 100, 100)
+      document.body.appendChild(el)
+      registerCoachmark(id, el)
+      return el
+    })
+  }
 
   it('marks the tour seen when it ends normally', async () => {
     const { api } = mountTour()
@@ -147,11 +159,7 @@ describe('useCoachmarkTour', () => {
   it('advances through every step to completion and marks the tour seen', async () => {
     // Register every app-mode target so each step resolves immediately as the
     // user advances (spotlight steps defer their targets).
-    const targets = APP_MODE_TARGETS.map((id) => {
-      const el = document.createElement('div')
-      registerCoachmark(id, el)
-      return el
-    })
+    const targets = registerAppModeTargets()
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
     await flush()
@@ -168,6 +176,46 @@ describe('useCoachmarkTour', () => {
       ([stage]) => stage === 'completed'
     )
     expect(completed).toBe(true)
-    targets.forEach((el, i) => unregisterCoachmark(APP_MODE_TARGETS[i], el))
+    targets.forEach((el) => el.remove())
+  })
+
+  it('advances a click-to-advance step when its spotlighted target is clicked', async () => {
+    const targets = registerAppModeTargets()
+    const { api } = mountTour()
+    void useCoachmarkController().requestTour('appMode')
+    await flush()
+
+    // Advance off the landing and through the spotlight steps up to the assets
+    // button, which advances only when its target is clicked (Next is hidden).
+    for (let i = 0; i < 4; i++) {
+      await api.onPrimary()
+      await flush()
+    }
+    expect(api.step.value?.advanceOnTargetClick).toBe(true)
+
+    const assetsButton = targets[APP_MODE_TARGETS.indexOf('assets-button')]
+    assetsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await flush()
+
+    expect(api.step.value?.coachId).toBe('assets-panel')
+    targets.forEach((el) => el.remove())
+  })
+
+  it('advancing off the landing does not mark the tour skipped', async () => {
+    const targets = registerAppModeTargets()
+    const { api } = mountTour()
+    void useCoachmarkController().requestTour('appMode')
+    await flush()
+    expect(api.step.value?.landing).toBe(true)
+
+    await api.onPrimary()
+    await flush()
+
+    expect(api.step.value?.landing).toBeFalsy()
+    const skipped = telemetry.track.mock.calls.some(
+      ([stage]) => stage === 'skipped'
+    )
+    expect(skipped).toBe(false)
+    targets.forEach((el) => el.remove())
   })
 })

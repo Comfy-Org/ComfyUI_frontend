@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
-import { registerCoachmark, unregisterCoachmark } from './coachmarkRegistry'
-import type { CoachStep } from './onboardingTours'
+import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
+import type { CoachId, CoachStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
 function setup() {
@@ -12,41 +12,39 @@ function setup() {
   return { scope, step, api }
 }
 
-function stepWithRect(rectOverride: () => DOMRect): CoachStep {
-  return { titleKey: 't', bodyKey: 'b', placement: 'center', rectOverride }
+function stepFor(coachId: CoachId): CoachStep {
+  return { titleKey: 't', bodyKey: 'b', placement: 'center', coachId }
+}
+
+/** Register an element whose measured rect is driven by `getRect`. */
+function mountTarget(coachId: CoachId, getRect: () => DOMRect): HTMLElement {
+  const el = document.createElement('div')
+  el.getBoundingClientRect = getRect
+  registerCoachmark(coachId, el)
+  return el
 }
 
 describe('useCoachmarkTarget.waitForTarget', () => {
-  const mounted = new Set<HTMLElement>()
-
   afterEach(() => {
-    for (const el of mounted) unregisterCoachmark('run-button', el)
-    mounted.clear()
+    clearCoachmarks()
     vi.useRealTimers()
   })
 
-  function mount(): HTMLElement {
-    const el = document.createElement('div')
-    registerCoachmark('run-button', el)
-    mounted.add(el)
-    return el
-  }
-
   it('resolves true immediately when the target is already mounted', async () => {
-    mount()
+    mountTarget('app-run-button', () => new DOMRect(0, 0, 10, 10))
     const { scope, api } = setup()
     const signal = new AbortController().signal
-    await expect(api.waitForTarget('run-button', signal, 1000)).resolves.toBe(
-      true
-    )
+    await expect(
+      api.waitForTarget('app-run-button', signal, 1000)
+    ).resolves.toBe(true)
     scope.stop()
   })
 
   it('resolves true once the target mounts before the timeout', async () => {
     const { scope, api } = setup()
     const signal = new AbortController().signal
-    const found = api.waitForTarget('run-button', signal, 1000)
-    mount()
+    const found = api.waitForTarget('app-run-button', signal, 1000)
+    mountTarget('app-run-button', () => new DOMRect(0, 0, 10, 10))
     await nextTick()
     await expect(found).resolves.toBe(true)
     scope.stop()
@@ -90,6 +88,7 @@ describe('useCoachmarkTarget.settle', () => {
   })
 
   afterEach(() => {
+    clearCoachmarks()
     vi.unstubAllGlobals()
   })
 
@@ -105,23 +104,25 @@ describe('useCoachmarkTarget.settle', () => {
   }
 
   it('stops once the rect holds steady for the stable-frame window', () => {
+    const getRect = vi.fn(() => new DOMRect(0, 0, 100, 100))
+    mountTarget('outputs', getRect)
     const { scope, step, api } = setup()
-    const rectOverride = vi.fn(() => new DOMRect(0, 0, 100, 100))
-    step.value = stepWithRect(rectOverride)
+    step.value = stepFor('outputs')
     api.settle(new AbortController().signal)
     runFrames()
     // First measure differs from the initial empty key (stable resets), then a
     // run of identical measures reaches the window and the loop returns.
-    expect(rectOverride.mock.calls.length).toBeGreaterThan(1)
+    expect(getRect.mock.calls.length).toBeGreaterThan(1)
     expect(frames).toHaveLength(0)
     scope.stop()
   })
 
   it('terminates at the cap even when the rect never settles', () => {
-    const { scope, step, api } = setup()
     let h = 0
-    const rectOverride = vi.fn(() => new DOMRect(0, 0, 100, ++h))
-    step.value = stepWithRect(rectOverride)
+    const getRect = vi.fn(() => new DOMRect(0, 0, 100, ++h))
+    mountTarget('outputs', getRect)
+    const { scope, step, api } = setup()
+    step.value = stepFor('outputs')
     api.settle(new AbortController().signal)
     const ran = runFrames()
     // Bounded by the cap, not the safety ceiling — the loop ends on its own.
@@ -131,8 +132,9 @@ describe('useCoachmarkTarget.settle', () => {
   })
 
   it('cancels the prior loop instead of stacking when called again', () => {
+    mountTarget('outputs', () => new DOMRect(0, 0, 100, 100))
     const { scope, step, api } = setup()
-    step.value = stepWithRect(() => new DOMRect(0, 0, 100, 100))
+    step.value = stepFor('outputs')
     const signal = new AbortController().signal
     api.settle(signal)
     expect(frames).toHaveLength(1)
@@ -143,16 +145,17 @@ describe('useCoachmarkTarget.settle', () => {
   })
 
   it('stops measuring once the signal aborts', () => {
+    const getRect = vi.fn(() => new DOMRect(0, 0, 100, 100))
+    mountTarget('outputs', getRect)
     const { scope, step, api } = setup()
-    const rectOverride = vi.fn(() => new DOMRect(0, 0, 100, 100))
-    step.value = stepWithRect(rectOverride)
+    step.value = stepFor('outputs')
     const controller = new AbortController()
     api.settle(controller.signal)
     runFrames(3)
-    const before = rectOverride.mock.calls.length
+    const before = getRect.mock.calls.length
     controller.abort()
     runFrames()
-    expect(rectOverride.mock.calls.length).toBe(before)
+    expect(getRect.mock.calls.length).toBe(before)
     scope.stop()
   })
 })

@@ -48,13 +48,7 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
   }
 
   function measure() {
-    const current = step.value
-    if (current?.rectOverride) {
-      targetEl.value = null
-      targetRect.value = current.rectOverride()
-      return
-    }
-    const id = current?.coachId
+    const id = step.value?.coachId
     if (!id) {
       targetEl.value = null
       targetRect.value = null

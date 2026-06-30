@@ -1,6 +1,5 @@
 <template>
   <BaseModalLayout
-    v-coachmark="'templates-dialog'"
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     size="md"
   >
@@ -421,7 +420,6 @@ import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSli
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
-import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'

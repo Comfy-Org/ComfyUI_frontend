@@ -38,6 +38,7 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  OnboardingTourMetadata,
   RunButtonProperties,
   ShareFlowMetadata,
   ShellLayoutMetadata,
@@ -457,6 +458,25 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     expect(mockMixpanel.track).toHaveBeenCalledWith(
       TelemetryEvents.RUN_BUTTON_CLICKED,
       properties
+    )
+  })
+
+  it('trackOnboardingTour maps the stage to its event name', async () => {
+    const provider = new MixpanelTelemetryProvider()
+    await waitForMixpanelInit()
+    mockMixpanel.track.mockClear()
+
+    const metadata: OnboardingTourMetadata = {
+      tour: 'appMode',
+      step_count: 6,
+      step_index: 2,
+      coach_id: 'app-run-button'
+    }
+    provider.trackOnboardingTour('step_shown', metadata)
+
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
+      metadata
     )
   })
 

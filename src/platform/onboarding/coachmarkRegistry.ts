@@ -26,3 +26,8 @@ export function unregisterCoachmark(id: CoachId, el: HTMLElement) {
 export function coachmarkElements(id: CoachId): readonly HTMLElement[] {
   return registry.get(id) ?? EMPTY
 }
+
+/** Drops every registered element; for resetting shared state between tests. */
+export function clearCoachmarks() {
+  registry.clear()
+}

@@ -88,10 +88,9 @@ describe('cardCorner', () => {
     expect(cardCorner('center', r, 120)).toEqual({ x: 275, y: 160 })
   })
 
-  it('places right, bottom and topRight relative to the target edges', () => {
+  it('places right and bottom relative to the target edges', () => {
     expect(cardCorner('right', r, 120)).toEqual({ x: 466, y: 208 })
     expect(cardCorner('bottom', r, 120)).toEqual({ x: 275, y: 256 })
-    expect(cardCorner('topRight', r, 120)).toEqual({ x: 134, y: 216 })
   })
 })
 

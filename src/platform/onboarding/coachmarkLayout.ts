@@ -99,9 +99,6 @@ export function cardCorner(
         x: r.left + r.width / 2 - CARD_WIDTH / 2,
         y: r.top + r.height / 2 - cardHeight / 2
       }
-    // Tuck into the target's top-right (over the close button) so only its contents advance.
-    case 'topRight':
-      return { x: r.right - CARD_WIDTH - CARD_GAP, y: r.top + CARD_GAP }
   }
   return placement satisfies never
 }
