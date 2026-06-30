@@ -240,7 +240,7 @@ export class LGraph
    * // Deprecated: const link = graph.links[linkId]
    * ```
    */
-  links: Map<LinkId, LLink> & Record<LinkId, LLink> & Record<number, LLink>
+  links: Map<LinkId, LLink> & Record<LinkId, LLink>
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
@@ -376,8 +376,7 @@ export class LGraph
       toLinkId(Number(value))
     )
     this.links = new Proxy(links, handler) as Map<LinkId, LLink> &
-      Record<LinkId, LLink> &
-      Record<number, LLink>
+      Record<LinkId, LLink>
 
     this.list_of_graphcanvas = null
     this.clear()
