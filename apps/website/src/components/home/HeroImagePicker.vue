@@ -14,7 +14,9 @@ const {
   previewSrc,
   previewAlt,
   previewTestId = 'hero-active-image',
-  hint
+  hint,
+  hidePreview = false,
+  thumbClass = 'aspect-square'
 } = defineProps<{
   variants: readonly ImageVariant[]
   activeId: string
@@ -25,6 +27,10 @@ const {
   previewAlt?: string
   previewTestId?: string
   hint?: string
+  // Render only the thumbnail strip, e.g. beneath a standalone output frame.
+  hidePreview?: boolean
+  // Sizing for each thumbnail; defaults to square, overridable for tight rows.
+  thumbClass?: string
 }>()
 
 const emit = defineEmits<{ select: [id: string] }>()
@@ -47,7 +53,10 @@ function selectOnHover(id: string, e: PointerEvent) {
 
 <template>
   <div>
-    <div class="relative aspect-square w-full overflow-hidden rounded-xl">
+    <div
+      v-if="!hidePreview"
+      class="relative aspect-square w-full overflow-hidden rounded-xl"
+    >
       <Transition name="hero-glitch">
         <img
           :key="preview.src"
@@ -60,7 +69,7 @@ function selectOnHover(id: string, e: PointerEvent) {
       </Transition>
     </div>
 
-    <p v-if="hint" class="text-primary-warm-gray mt-3 pl-1 text-xs/relaxed">
+    <p v-if="hint" class="text-primary-warm-gray pl-1 text-xs/relaxed">
       {{ hint }}
     </p>
 
@@ -77,7 +86,8 @@ function selectOnHover(id: string, e: PointerEvent) {
         :aria-label="t(variant.altKey, locale)"
         :class="
           cn(
-            'focus-visible:outline-primary-comfy-yellow relative aspect-square flex-1 overflow-hidden rounded-md transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2',
+            'focus-visible:outline-primary-comfy-yellow relative flex-1 overflow-hidden rounded-md transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2',
+            thumbClass,
             variant.id === activeId
               ? 'ring-primary-comfy-yellow opacity-100 ring-2'
               : 'opacity-50 hover:opacity-90'

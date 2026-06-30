@@ -88,6 +88,33 @@ const translations = {
     en: 'Tap a source image to remix the result',
     'zh-CN': '点按源图像以重新生成结果'
   },
+  'hero.color.preset.cyberpunk': { en: 'Cyberpunk', 'zh-CN': '赛博朋克' },
+  'hero.color.preset.film': { en: 'Film', 'zh-CN': '胶片' },
+  'hero.color.preset.dream': { en: 'Dream', 'zh-CN': '梦境' },
+  'hero.color.preset.editorial': { en: 'Editorial', 'zh-CN': '杂志' },
+  'hero.color.remix': { en: 'Remix', 'zh-CN': '重混' },
+  'hero.color.palette': { en: 'Choose accent color', 'zh-CN': '选择强调色' },
+  'hero.color.swatch.magenta': { en: 'Magenta', 'zh-CN': '品红' },
+  'hero.color.swatch.cyan': { en: 'Cyan', 'zh-CN': '青色' },
+  'hero.color.swatch.lime': { en: 'Lime', 'zh-CN': '青柠' },
+  'hero.color.swatch.amber': { en: 'Amber', 'zh-CN': '琥珀' },
+  'hero.color.swatch.violet': { en: 'Violet', 'zh-CN': '紫罗兰' },
+  'hero.light.mode.soft': { en: 'Soft', 'zh-CN': '柔光' },
+  'hero.light.mode.rim': { en: 'Rim', 'zh-CN': '轮廓光' },
+  'hero.light.mode.neon': { en: 'Neon', 'zh-CN': '霓虹' },
+  'hero.light.mode.studio': { en: 'Studio', 'zh-CN': '影棚' },
+  'hero.light.intensity': { en: 'Light', 'zh-CN': '光强' },
+  'hero.light.direction': { en: 'Light direction', 'zh-CN': '光照方向' },
+  'hero.output.grade': {
+    en: 'cinematic-grade_v2',
+    'zh-CN': 'cinematic-grade_v2'
+  },
+  'hero.output.colorActive': {
+    en: 'color remap active',
+    'zh-CN': '色彩重映射已启用'
+  },
+  'hero.output.lightingSuffix': { en: 'lighting', 'zh-CN': '光照' },
+  'hero.output.live': { en: 'Live preview', 'zh-CN': '实时预览' },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {

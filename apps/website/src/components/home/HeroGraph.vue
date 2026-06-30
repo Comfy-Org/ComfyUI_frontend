@@ -3,16 +3,23 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import HeroColorNode from './HeroColorNode.vue'
 import HeroGraphNode from './HeroGraphNode.vue'
 import HeroHeadline from './HeroHeadline.vue'
 import HeroImagePicker from './HeroImagePicker.vue'
+import HeroLightingNode from './HeroLightingNode.vue'
+import HeroOutputFrame from './HeroOutputFrame.vue'
 import { imageVariants, textureImage } from './heroGraphData'
 import { computeWires } from './heroGraphWires'
 import type { NodeId, Point, Rect } from './heroGraphWires'
+import { useHeroControls } from './useHeroControls'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const controls = useHeroControls()
+const { activeNode } = controls
 
 const activeId = ref<string>(imageVariants[0].id)
 const activeVariant = computed(
@@ -30,8 +37,8 @@ const MAX_SCALE = 1.3
 const NODE_W: Record<NodeId, number> = {
   image: 300,
   texture: 200,
-  color: 150,
-  lighting: 168,
+  color: 210,
+  lighting: 210,
   output: 760
 }
 
@@ -39,9 +46,9 @@ const NODE_W: Record<NodeId, number> = {
 // far off the right edge.
 const positions = ref<Record<NodeId, Point>>({
   image: { x: 16, y: 28 },
-  texture: { x: 52, y: 500 },
-  color: { x: 426, y: 470 },
-  lighting: { x: 676, y: 500 },
+  texture: { x: 52, y: 512 },
+  color: { x: 404, y: 446 },
+  lighting: { x: 662, y: 446 },
   output: { x: 956, y: 110 }
 })
 
@@ -196,6 +203,21 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
                 : 'rgba(255,255,255,0.3)'
             "
           />
+          <!-- Energy pulses that flow toward the OUTPUT while a control node is
+               engaged; idle-hidden via opacity, animated through CSS. -->
+          <g :class="cn(activeNode && 'hero-wire-active')">
+            <path
+              v-for="(wire, i) in wires"
+              :key="`p${i}`"
+              :d="wire.d"
+              class="hero-wire-pulse"
+              stroke="var(--color-primary-comfy-yellow)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              pathLength="1"
+              stroke-dasharray="0.18 0.82"
+            />
+          </g>
         </svg>
 
         <div class="absolute top-[150px] left-[636px] z-20 -translate-x-1/2">
@@ -256,9 +278,14 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           "
           :style="nodeStyle('color')"
           @pointerdown="onPointerDown('color', $event)"
+          @pointerenter="activeNode = 'color'"
+          @pointerleave="activeNode = null"
         >
-          <HeroGraphNode :label="t('hero.node.color', locale)">
-            <div class="h-28 w-full rounded-lg"></div>
+          <HeroGraphNode
+            :label="t('hero.node.color', locale)"
+            :active="activeNode === 'color'"
+          >
+            <HeroColorNode :controls :locale />
           </HeroGraphNode>
         </div>
 
@@ -272,9 +299,14 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           "
           :style="nodeStyle('lighting')"
           @pointerdown="onPointerDown('lighting', $event)"
+          @pointerenter="activeNode = 'lighting'"
+          @pointerleave="activeNode = null"
         >
-          <HeroGraphNode :label="t('hero.node.lighting', locale)">
-            <div class="h-32 w-full rounded-lg"></div>
+          <HeroGraphNode
+            :label="t('hero.node.lighting', locale)"
+            :active="activeNode === 'lighting'"
+          >
+            <HeroLightingNode :controls :locale />
           </HeroGraphNode>
         </div>
 
@@ -290,40 +322,116 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           @pointerdown="onPointerDown('output', $event)"
         >
           <HeroGraphNode :label="t('hero.node.output', locale)">
-            <div class="relative h-[560px] w-full overflow-hidden rounded-xl">
-              <Transition name="hero-glitch">
-                <img
-                  :key="activeVariant.output.src"
-                  :src="activeVariant.output.src"
-                  :alt="t(activeVariant.output.altKey, locale)"
-                  data-testid="hero-output-image"
-                  draggable="false"
-                  class="absolute inset-0 size-full object-cover"
-                />
-              </Transition>
-            </div>
+            <HeroOutputFrame
+              :controls
+              :variant="activeVariant"
+              :locale
+              class="h-[560px]"
+            />
           </HeroGraphNode>
         </div>
       </div>
     </div>
 
-    <!-- Mobile / tablet: one card leads with the OUTPUT result and keeps the
-         input thumbnails directly beneath it, so a tap swaps the visible result
-         with no scroll. -->
-    <div class="flex flex-col items-center px-6 pt-6 pb-10 lg:hidden">
+    <!-- Mobile / tablet: a compact connected graph that fits one screen — the
+         IMAGE selector forks into COLOR + LIGHTING, which merge into the live
+         OUTPUT. Connectors are decorative SVGs aligned to the 2-column grid. -->
+    <div class="flex flex-col items-center px-5 pt-3 pb-8 lg:hidden">
       <HeroHeadline :locale compact />
 
-      <div class="mt-7 w-full max-w-sm md:max-w-md">
-        <HeroGraphNode :label="t('hero.node.output', locale)" accent>
+      <div class="mt-3 w-full max-w-sm sm:max-w-md">
+        <HeroGraphNode :label="t('hero.node.image', locale)" accent>
           <HeroImagePicker
             :variants="imageVariants"
             :active-id="activeId"
             :locale
-            :preview-src="activeVariant.output.src"
-            :preview-alt="t(activeVariant.output.altKey, locale)"
-            preview-test-id="hero-output-image"
-            :hint="t('hero.image.hint', locale)"
+            hide-preview
+            thumb-class="h-14"
             @select="(id) => (activeId = id)"
+          />
+        </HeroGraphNode>
+
+        <div class="relative h-6 w-full" aria-hidden="true">
+          <svg
+            class="absolute inset-0 size-full"
+            viewBox="0 0 100 36"
+            preserveAspectRatio="none"
+            fill="none"
+          >
+            <path
+              d="M50 3 C 50 22 25 14 25 34"
+              stroke="rgba(255,255,255,0.22)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
+            />
+            <path
+              d="M50 3 C 50 22 75 14 75 34"
+              stroke="rgba(255,255,255,0.22)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+          <span
+            class="bg-primary-comfy-yellow absolute top-0 left-1/2 size-1.5 -translate-x-1/2 rounded-full"
+          />
+          <span
+            class="absolute bottom-0 left-1/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+          />
+          <span
+            class="absolute bottom-0 left-3/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 items-stretch gap-2">
+          <HeroGraphNode :label="t('hero.node.color', locale)">
+            <HeroColorNode :controls :locale />
+          </HeroGraphNode>
+          <HeroGraphNode :label="t('hero.node.lighting', locale)">
+            <HeroLightingNode :controls :locale />
+          </HeroGraphNode>
+        </div>
+
+        <div class="relative h-6 w-full" aria-hidden="true">
+          <svg
+            class="absolute inset-0 size-full"
+            viewBox="0 0 100 36"
+            preserveAspectRatio="none"
+            fill="none"
+          >
+            <path
+              d="M25 2 C 25 18 50 14 50 33"
+              stroke="rgba(255,255,255,0.22)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
+            />
+            <path
+              d="M75 2 C 75 18 50 14 50 33"
+              stroke="rgba(255,255,255,0.22)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+          <span
+            class="absolute top-0 left-1/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+          />
+          <span
+            class="absolute top-0 left-3/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+          />
+          <span
+            class="bg-primary-comfy-yellow absolute bottom-0 left-1/2 size-1.5 -translate-x-1/2 rounded-full"
+          />
+        </div>
+
+        <HeroGraphNode :label="t('hero.node.output', locale)" accent>
+          <HeroOutputFrame
+            :controls
+            :variant="activeVariant"
+            :locale
+            class="h-[150px]"
           />
         </HeroGraphNode>
       </div>
