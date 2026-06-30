@@ -47,6 +47,9 @@ export interface WidgetEventOptions {
 }
 
 function isDOMBackedWidget(widget: IBaseWidget): boolean {
+  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
+    return widget.isDOMWidget
+  }
   return (
     ('element' in widget && !!widget.element) ||
     ('component' in widget && !!widget.component)
@@ -158,6 +161,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const id = widgetId(graphId, nodeId, this.name)
     this._state = store.registerWidget(id, {
       ...this._state,
+      type: this.type,
       value: this.value
     })
     store.registerWidgetRenderState(id, {

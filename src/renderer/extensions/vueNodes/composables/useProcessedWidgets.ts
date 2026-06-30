@@ -150,6 +150,9 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
 }
 
 function isDOMBackedWidget(widget: IBaseWidget): boolean {
+  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
+    return widget.isDOMWidget
+  }
   return (
     ('element' in widget && !!widget.element) ||
     ('component' in widget && !!widget.component)

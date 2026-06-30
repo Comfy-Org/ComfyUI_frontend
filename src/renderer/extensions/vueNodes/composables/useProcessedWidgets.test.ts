@@ -12,6 +12,8 @@ import {
   hasWidgetError,
   isWidgetVisible
 } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
@@ -444,6 +446,16 @@ describe('computeProcessedWidgets', () => {
         name: 'display_slot'
       }
     })
+  })
+
+  it('treats explicit isDOMWidget false as authoritative', () => {
+    const widget = createMockWidget({ name: 'custom', type: 'unknown' })
+    Object.assign(widget, { component: {}, isDOMWidget: false })
+
+    const result = processWidgets({ widgets: [widget] })
+
+    expect(result[0].vueComponent).toBe(WidgetLegacy)
+    expect(result[0].vueComponent).not.toBe(WidgetDOM)
   })
 })
 
