@@ -416,8 +416,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Update link layout data (for geometry/debug, no separate spatial index)
    */
   updateLinkLayout(linkId: LinkId, layout: LinkLayout): void {
-    const id = linkId
-    const existing = this.linkLayouts.get(id)
+    const existing = this.linkLayouts.get(linkId)
 
     if (
       existing &&
@@ -430,17 +429,16 @@ class LayoutStoreImpl implements LayoutStore {
       return
     }
 
-    this.linkLayouts.set(id, { ...layout, id })
+    this.linkLayouts.set(linkId, { ...layout, id: linkId })
   }
 
   /**
    * Delete link layout data
    */
   deleteLinkLayout(linkId: LinkId): void {
-    const id = linkId
-    const deleted = this.linkLayouts.delete(id)
+    const deleted = this.linkLayouts.delete(linkId)
     if (deleted) {
-      this.cleanupLinkSegments(id)
+      this.cleanupLinkSegments(linkId)
     }
   }
   /**
@@ -589,8 +587,7 @@ class LayoutStoreImpl implements LayoutStore {
     rerouteId: RerouteId | null,
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void {
-    const id = linkId
-    const key = makeLinkSegmentKey(id, rerouteId)
+    const key = makeLinkSegmentKey(linkId, rerouteId)
     const existing = this.linkSegmentLayouts.get(key)
 
     if (
@@ -606,13 +603,13 @@ class LayoutStoreImpl implements LayoutStore {
 
     const fullLayout: LinkSegmentLayout = {
       ...layout,
-      linkId: id,
+      linkId: linkId,
       rerouteId
     }
 
     if (!existing) {
       logger.debug('Adding link segment:', {
-        linkId: id,
+        linkId: linkId,
         rerouteId,
         bounds: layout.bounds,
         hasPath: !!layout.path
@@ -632,8 +629,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Delete link segment layout data
    */
   deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void {
-    const id = linkId
-    const key = makeLinkSegmentKey(id, rerouteId)
+    const key = makeLinkSegmentKey(linkId, rerouteId)
     const deleted = this.linkSegmentLayouts.delete(key)
     if (deleted) {
       this.linkSegmentSpatialIndex.remove(key)
