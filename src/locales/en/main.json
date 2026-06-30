@@ -1,4 +1,28 @@
 {
+  "agent": {
+    "title": "Comfy Agent",
+    "label": "Agent",
+    "ask": "Ask Comfy Agent",
+    "alpha": "ALPHA",
+    "newChat": "New chat",
+    "togglePanel": "Toggle panel",
+    "greeting": "Hello,",
+    "greetingNamed": "Hello {name},",
+    "greetingQuestion": "What do you want to make?",
+    "placeholder": "Ask Comfy Agent…",
+    "attach": "Attach files",
+    "mention": "Mention",
+    "send": "Send",
+    "scrollToBottom": "Scroll to bottom",
+    "disclaimer": "Agent generation does not impact the graph.",
+    "suggestions": {
+      "duck": "Generate a yellow duck with a hockey mask",
+      "savedWorkflows": "List my saved workflows",
+      "skinUpscaling": "Find the best workflow for skin upscaling",
+      "explainNode": "Explain the selected node",
+      "imageToVideo": "Build a workflow for image to video with 3 models"
+    }
+  },
   "g": {
     "shortcutSuffix": " ({shortcut})",
     "user": "User",

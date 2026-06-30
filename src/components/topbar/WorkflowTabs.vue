@@ -84,6 +84,22 @@
       data-testid="integrated-tab-bar-actions"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
+      <button
+        type="button"
+        class="no-drag flex h-6 shrink-0 items-center gap-2 rounded-sm border px-2 text-xs text-base-foreground transition-colors"
+        :class="
+          cn(
+            isAgentPanelOpen
+              ? 'border-plum-500 bg-plum-600/20'
+              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
+          )
+        "
+        :aria-label="$t('agent.ask')"
+        @click="agentPanelStore.toggle()"
+      >
+        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
+        {{ $t('agent.ask') }}
+      </button>
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
@@ -93,7 +109,7 @@
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--message-square-text]" />
+        <i class="icon-[lucide--megaphone]" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton
@@ -106,7 +122,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
@@ -124,6 +142,7 @@ import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAgentPanelStore } from '@/platform/agent/stores/agentPanelStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
@@ -145,6 +164,8 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
+const agentPanelStore = useAgentPanelStore()
+const { isOpen: isAgentPanelOpen } = storeToRefs(agentPanelStore)
 const { isLoggedIn } = useCurrentUser()
 
 // Dismiss a tab's terminal status badge once it has been viewed

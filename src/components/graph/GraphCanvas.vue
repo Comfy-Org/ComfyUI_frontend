@@ -50,6 +50,15 @@
         class="pointer-events-auto"
       />
     </template>
+    <template #agent-panel>
+      <div class="size-full p-2">
+        <div
+          class="size-full overflow-hidden rounded-lg border border-(--interface-stroke)"
+        >
+          <AgentChatPanel />
+        </div>
+      </div>
+    </template>
   </LiteGraphCanvasSplitterOverlay>
   <canvas
     id="graph-canvas"
@@ -141,6 +150,7 @@ import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import AgentChatPanel from '@/platform/agent/components/AgentChatPanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'

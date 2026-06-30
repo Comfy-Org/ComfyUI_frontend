@@ -1,0 +1,22 @@
+<script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
+
+const {
+  class: className,
+  variant = 'muted-textonly',
+  size = 'icon'
+} = defineProps<{
+  class?: HTMLAttributes['class']
+  variant?: ButtonVariants['variant']
+  size?: ButtonVariants['size']
+}>()
+</script>
+
+<template>
+  <Button type="button" :variant="variant" :size="size" :class="className">
+    <slot />
+  </Button>
+</template>
