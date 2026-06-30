@@ -1,57 +1,49 @@
-import { ZIndex } from '@primeuix/utils/zindex'
-import { useEventListener } from '@vueuse/core'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { Ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
-import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { OnboardingTourStage } from '@/platform/telemetry/types'
-import { useAppModeStore } from '@/stores/appModeStore'
 
 import { useCoachmarkController } from './coachmarkController'
+import { targetMounted, waitForTarget } from './coachmarkRegistry'
 import { TOURS, resolveSteps } from './onboardingTours'
 import type { CoachStep, EntryPath } from './onboardingTours'
-import { useCoachmarkTarget } from './useCoachmarkTarget'
-import { useFocusTrap } from './useFocusTrap'
+import { useTourTriggers } from './useTourTriggers'
 
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 const START_DELAY_MS = 800
 const DEFER_TIMEOUT_MS = 8000
-// How long a user can stall on an interaction step before the outline pulses.
-const PULSE_IDLE_MS = 4000
 
-// `?coach=<path>` forces that tour; any non-path value forces the auto-detected one.
 type ForcedTour = EntryPath | 'any'
 
 /**
- * The onboarding tour state machine: resolves which steps run, drives the
- * advance/skip/complete lifecycle, and keeps the spotlight target, focus trap
- * and modal stacking in step. TourOverlay owns only rendering and placement.
+ * The onboarding tour state machine: decides which tour starts and when (auto-open
+ * triggers, `?coach=` forcing, explicit requests), resolves which steps run, and
+ * drives the advance/skip/complete lifecycle. TourSpotlight owns the spotlight,
+ * focus trap and modal stacking for whichever step is shown.
  */
-export function useCoachmarkTour(refs: {
-  cardRef: Ref<HTMLElement | null>
-  overlayRef: Ref<HTMLElement | null>
-}) {
-  const { cardRef, overlayRef } = refs
+export function useCoachmarkTour() {
   const { t } = useI18n()
-
   const settingStore = useSettingStore()
   const telemetry = useTelemetry()
+
   const steps = ref<CoachStep[]>([])
   const stepIdx = ref(0)
-  const pulsing = ref(false)
+  // Lets a deferred target autofocus without the spotlight pulling focus back.
+  const suspendFocusGuard = ref(false)
   let activeTour: EntryPath | null = null
   let startTimer: ReturnType<typeof setTimeout> | undefined
-  let pulseTimer: ReturnType<typeof setTimeout> | undefined
-  // Cancels the step's in-flight async work when it advances, the tour ends, or unmounts.
   let stepController: AbortController | null = null
-  // Suspends the focusin guard while a deferred target autofocuses, so we don't fight it.
-  let awaitingDeferredTarget = false
-  // `?coach=` override; declared here so the immediate auto-open watcher can read it.
-  let forcedTour: ForcedTour | null = null
+
+  // Read in setup, before the auto-open triggers fire and before URL loaders
+  // strip the param. A known path force-starts that tour; anything else replays
+  // whichever tour auto-detects.
+  const coachParam = new URLSearchParams(window.location.search).get('coach')
+  const forcedEntry =
+    coachParam !== null && isEntryPath(coachParam) ? coachParam : null
+  const forcedTour: ForcedTour | null =
+    coachParam === null ? null : (forcedEntry ?? 'any')
 
   const step = computed<CoachStep | null>(
     () => steps.value[stepIdx.value] ?? null
@@ -63,25 +55,6 @@ export function useCoachmarkTour(refs: {
   const countedStepIdx = computed(() => {
     const s = step.value
     return s ? countedSteps.value.indexOf(s) : 0
-  })
-
-  const {
-    targetRect,
-    targetEl,
-    candidateEls,
-    update,
-    settle,
-    targetMounted,
-    waitForTarget
-  } = useCoachmarkTarget(step)
-
-  // The landing Dialog owns its own focus trap, so ours runs only for spotlight steps.
-  const focusTrap = useFocusTrap({
-    cardRef,
-    getTarget: () => targetEl.value,
-    isActive: () => !!step.value && !step.value.landing,
-    isSuspended: () => awaitingDeferredTarget,
-    onEscape: () => end('skipped')
   })
 
   function trackTour(stage: OnboardingTourStage) {
@@ -109,34 +82,6 @@ export function useCoachmarkTour(refs: {
     t(step.value?.skipLabelKey ?? 'onboardingCoachmarks.skip')
   )
 
-  // Steps the user advances by interacting with the target (click/close), not Next.
-  const expectsTargetInteraction = computed(
-    () => !!step.value?.advanceOnTargetClick
-  )
-
-  const outlinePulsing = computed(
-    () => pulsing.value && expectsTargetInteraction.value
-  )
-
-  // Last step's "Done" already dismisses, so hide Skip unless the step has no primary button.
-  const showSkip = computed(
-    () => !isLast.value || expectsTargetInteraction.value
-  )
-
-  function clearPulse() {
-    clearTimeout(pulseTimer)
-    pulsing.value = false
-  }
-
-  /** Pulse the outline if the user stalls on a step they must interact with. */
-  function schedulePulse() {
-    clearPulse()
-    if (!expectsTargetInteraction.value) return
-    pulseTimer = setTimeout(() => {
-      pulsing.value = true
-    }, PULSE_IDLE_MS)
-  }
-
   async function showStep(idx: number) {
     const nextStep = steps.value[idx]
     if (!nextStep) return
@@ -144,41 +89,28 @@ export function useCoachmarkTour(refs: {
     const controller = new AbortController()
     stepController = controller
     const { signal } = controller
-    // This call now owns the suspend flag; a superseded call must not clear it.
-    awaitingDeferredTarget = false
+    suspendFocusGuard.value = false
     if (
       nextStep.deferTarget &&
       nextStep.coachId &&
       !targetMounted(nextStep.coachId)
     ) {
-      awaitingDeferredTarget = true
+      suspendFocusGuard.value = true
       const found = await waitForTarget(
         nextStep.coachId,
         signal,
         DEFER_TIMEOUT_MS
       )
       if (signal.aborted) return
-      awaitingDeferredTarget = false
-      // Target never appeared — abandon without setting the seen-flag, so the miss isn't permanent.
+      suspendFocusGuard.value = false
+      // Abandon without the seen-flag, so a missed target isn't permanent.
       if (!found) {
         end('skipped', false)
         return
       }
     }
     stepIdx.value = idx
-    update()
-    schedulePulse()
     trackTour('step_shown')
-    if (nextStep.deferTarget) settle(signal)
-    // Reclaim the top of the modal stack — a deferred dialog may have registered above us.
-    void raiseOverlay()
-    void focusTrap.focusCard()
-  }
-
-  async function raiseOverlay() {
-    await nextTick()
-    if (overlayRef.value)
-      ZIndex.set(MODAL_Z_KEY, overlayRef.value, MODAL_Z_BASE)
   }
 
   function next() {
@@ -191,9 +123,8 @@ export function useCoachmarkTour(refs: {
 
   function end(outcome: 'completed' | 'skipped', markSeen = true) {
     trackTour(outcome)
-    clearPulse()
     stepController?.abort()
-    if (overlayRef.value) ZIndex.clear(overlayRef.value)
+    suspendFocusGuard.value = false
     steps.value = []
     stepIdx.value = 0
     if (markSeen && activeTour) markTourSeen(activeTour)
@@ -202,50 +133,22 @@ export function useCoachmarkTour(refs: {
 
   onBeforeUnmount(() => {
     clearTimeout(startTimer)
-    clearPulse()
     stepController?.abort()
-    if (overlayRef.value) ZIndex.clear(overlayRef.value)
   })
 
-  // Advance click-to-advance steps when the spotlighted target is clicked.
-  useEventListener(
-    document,
-    'click',
-    (e: MouseEvent) => {
-      if (!step.value?.advanceOnTargetClick) return
-      const target = targetEl.value
-      if (target && e.composedPath().includes(target)) next()
-    },
-    { capture: true }
-  )
-
-  // Re-resolve the spotlight when the step's target mounts, unmounts or swaps.
-  watch(candidateEls, () => {
-    if (!stepController) return
-    const { signal } = stepController
-    void nextTick(() => {
-      if (signal.aborted) return
-      update()
-      if (step.value?.deferTarget) settle(signal)
-    })
-  })
-
-  // Auto-open the app-mode tour when entering a populated app
-  const { mode } = useAppMode()
-  const appModeStore = useAppModeStore()
-  const appControlsVisible = computed(
-    () => mode.value === 'app' && appModeStore.hasOutputs
-  )
-  watch(
-    appControlsVisible,
-    (visible) => {
-      if (visible) startTour('appMode')
-    },
-    { immediate: true }
-  )
+  // Each tour declares its own activation condition; the engine just watches them.
+  for (const [entryPath, active] of useTourTriggers()) {
+    watch(
+      active,
+      (visible) => {
+        if (visible) startTour(entryPath)
+      },
+      { immediate: true }
+    )
+  }
 
   function isEntryPath(value: string): value is EntryPath {
-    return value in TOURS
+    return Object.hasOwn(TOURS, value)
   }
 
   function hasSeenTour(entryPath: EntryPath): boolean {
@@ -259,8 +162,7 @@ export function useCoachmarkTour(refs: {
   }
 
   function startTour(entryPath: EntryPath, force = false) {
-    // A tour is already showing this session; startTour runs synchronously, so a
-    // second trigger always sees the steps set by the first.
+    // startTour is synchronous, so a concurrent trigger sees the first's steps.
     if (steps.value.length) return
     const replay = force || forcedTour === 'any' || forcedTour === entryPath
     if (!replay && hasSeenTour(entryPath)) return
@@ -273,16 +175,9 @@ export function useCoachmarkTour(refs: {
   }
 
   onMounted(() => {
-    // Tours open on explicit request (info button); `?coach=` forces one at load.
-    // Snapshot it before URL loaders strip their params.
-    const coachParam = new URLSearchParams(window.location.search).get('coach')
-    if (coachParam === null) return
-    // A known path force-starts it directly; any other value forces the
-    // auto-detected tour once its controls appear.
-    const entry = isEntryPath(coachParam) ? coachParam : null
-    forcedTour = entry ?? 'any'
-    if (!entry) return
-    startTimer = setTimeout(() => startTour(entry), START_DELAY_MS)
+    // A known path force-starts after a delay; any other value waits for its trigger.
+    if (forcedEntry)
+      startTimer = setTimeout(() => startTour(forcedEntry), START_DELAY_MS)
   })
 
   // An explicit request (e.g. info button) replays the tour past its seen-flag.
@@ -291,14 +186,12 @@ export function useCoachmarkTour(refs: {
 
   return {
     step,
-    countedSteps,
-    countedStepIdx,
-    targetRect,
+    isLast,
     primaryLabel,
     skipLabel,
-    expectsTargetInteraction,
-    outlinePulsing,
-    showSkip,
+    countedStepIdx,
+    countedSteps,
+    suspendFocusGuard,
     next,
     end
   }

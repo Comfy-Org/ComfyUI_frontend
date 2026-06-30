@@ -1,9 +1,9 @@
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import { computed, onScopeDispose, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { coachmarkElements } from './coachmarkRegistry'
-import type { CoachId, CoachStep } from './onboardingTours'
+import { elementsFor } from './coachmarkRegistry'
+import type { CoachStep } from './onboardingTours'
 
 // A deferred target animates in; trust the rect only after STABLE steady frames, capped at MAX.
 const SETTLE_STABLE_FRAMES = 10
@@ -19,22 +19,14 @@ function isLaidOut(el: HTMLElement): boolean {
   return r.width > 0 && r.height > 0
 }
 
-function elementsFor(id: CoachId | CoachId[]): readonly HTMLElement[] {
-  const ids = Array.isArray(id) ? id : [id]
-  return ids.flatMap((coachId) => [...coachmarkElements(coachId)])
-}
-
 /**
- * Tracks the on-screen rect of a coach step's target. The element itself comes
- * from the reactive registry (the `v-coachmark` directive registers it), so
- * mounts, unmounts and swaps arrive as reactivity rather than DOM observation.
- * Geometry — which the registry can't provide — is tracked by `useElementBounding`
- * (resize, window scroll and element swaps), extended to scrollable ancestors by
- * the capture-phase scroll listener, with a frame-settle for transform-driven
- * open animations a ResizeObserver can't see.
+ * Tracks the on-screen rect of a coach step's target. The element comes from the
+ * reactive registry (the `v-coachmark` directive), so mounts/unmounts/swaps arrive
+ * as reactivity rather than DOM observation; geometry is measured by
+ * `useElementBounding` plus the scroll listener and settle loop below. Re-measures
+ * itself on any change, so callers only read `targetRect`/`targetEl`.
  */
 export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
-  // Elements registered for the step's id(s); reactive, drives re-measure and close detection.
   const candidateEls = computed<readonly HTMLElement[]>(() => {
     const id = step.value?.coachId
     return id ? elementsFor(id) : []
@@ -57,20 +49,22 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
   )
   useEventListener(window, 'scroll', update, { capture: true, passive: true })
 
-  // A target swap can call settle() while a prior loop runs; cancel so one re-measure per frame.
   let settleFrame: number | null = null
-  onScopeDispose(() => {
+  function cancelSettle() {
     if (settleFrame !== null) cancelAnimationFrame(settleFrame)
-  })
+    settleFrame = null
+  }
+  onScopeDispose(cancelSettle)
 
-  function settle(signal: AbortSignal) {
-    if (settleFrame !== null) cancelAnimationFrame(settleFrame)
+  // Re-measure each frame until the rect holds steady for the stable window,
+  // capped so a never-settling rect still stops; cancels any prior loop first.
+  function settle() {
+    cancelSettle()
     let last = ''
     let stable = 0
     let frames = 0
     function tick() {
       settleFrame = null
-      if (signal.aborted) return
       update()
       const key = rectKey(targetRect.value)
       if (key === last) {
@@ -86,49 +80,15 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
     settleFrame = requestAnimationFrame(tick)
   }
 
-  /** Whether an element for the id is mounted (regardless of current size). */
-  function targetMounted(id: CoachId | CoachId[]): boolean {
-    return elementsFor(id).length > 0
-  }
-
-  /** Resolve once an element for the id mounts; false on timeout or abort. */
-  function waitForTarget(
-    id: CoachId | CoachId[],
-    signal: AbortSignal,
-    timeoutMs: number
-  ): Promise<boolean> {
-    if (targetMounted(id)) return Promise.resolve(true)
-    return new Promise((resolve) => {
-      let done = false
-      function finish(found: boolean) {
-        if (done) return
-        done = true
-        stop()
-        clearTimeout(timer)
-        signal.removeEventListener('abort', onAbort)
-        resolve(found)
-      }
-      function onAbort() {
-        finish(false)
-      }
-      const stop = watch(
-        () => elementsFor(id).length,
-        (count) => {
-          if (count > 0) finish(true)
-        }
-      )
-      const timer = setTimeout(() => finish(false), timeoutMs)
-      signal.addEventListener('abort', onAbort)
+  // Re-measure when the step changes or its target mounts/swaps; a deferred
+  // target additionally settles through its open animation.
+  watch([step, candidateEls], () => {
+    cancelSettle()
+    void nextTick(() => {
+      update()
+      if (step.value?.deferTarget) settle()
     })
-  }
+  })
 
-  return {
-    targetRect,
-    targetEl,
-    candidateEls,
-    update,
-    settle,
-    targetMounted,
-    waitForTarget
-  }
+  return { targetRect, targetEl }
 }

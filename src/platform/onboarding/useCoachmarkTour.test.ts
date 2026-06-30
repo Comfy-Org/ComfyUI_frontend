@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent } from 'vue'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -58,10 +58,6 @@ vi.mock('@/stores/appModeStore', async () => {
     })
   }
 })
-vi.mock('@primeuix/utils/zindex', () => ({
-  ZIndex: { set: vi.fn(), clear: vi.fn() }
-}))
-
 const APP_MODE_TARGETS: CoachId[] = [
   'inputs-list',
   'app-run-button',
@@ -79,12 +75,9 @@ function mountTour() {
   render(
     defineComponent({
       setup() {
-        const cardRef = ref<HTMLElement | null>(null)
-        const overlayRef = ref<HTMLElement | null>(null)
-        api = useCoachmarkTour({ cardRef, overlayRef })
-        return { cardRef, overlayRef }
-      },
-      template: '<div ref="overlayRef"><div ref="cardRef"></div></div>'
+        api = useCoachmarkTour()
+        return () => null
+      }
     }),
     { global: { plugins: [i18n, createTestingPinia({ stubActions: false })] } }
   )
@@ -110,6 +103,7 @@ describe('useCoachmarkTour', () => {
     if (appModeMock.mode) appModeMock.mode.value = 'graph'
     if (appModeMock.hasOutputs) appModeMock.hasOutputs.value = false
     telemetry.track.mockClear()
+    window.history.replaceState(null, '', '/')
     vi.useRealTimers()
   })
 
@@ -174,6 +168,17 @@ describe('useCoachmarkTour', () => {
     expect(startedCount()).toBe(0)
   })
 
+  it('replays a seen tour for an already-populated app when ?coach= forces it', async () => {
+    // The forcing param must be read in setup, before the immediate auto-open
+    // trigger fires; otherwise the replay is dropped against the seen-flag.
+    settings.seen = ['appMode']
+    window.history.replaceState(null, '', '/?coach=any')
+    enterApp('app', true)
+    mountTour()
+    await flush()
+    expect(startedCount()).toBe(1)
+  })
+
   it('marks the tour seen when it ends normally', async () => {
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
@@ -229,30 +234,28 @@ describe('useCoachmarkTour', () => {
     expect(completed).toBe(true)
   })
 
-  it('advances a click-to-advance step when its spotlighted target is clicked', async () => {
+  it('resolves the deferred assets panel after the click-to-advance step', async () => {
     // Every target except the assets panel — it's still closed, so the
-    // assets-button click step is shown rather than skipped.
-    const targets = registerAppModeTargets(
+    // assets-button click step is shown (all five spotlight steps run).
+    registerAppModeTargets(
       APP_MODE_TARGETS.filter((id) => id !== 'assets-panel')
     )
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
     await flush()
 
-    // Advance off the landing and through the spotlight steps up to the assets
-    // button, which advances only when its target is clicked (Next is hidden).
-    // All five spotlight steps run when the panel starts closed.
     expect(api.countedSteps.value.length).toBe(5)
     for (let i = 0; i < 4; i++) {
       api.next()
       await flush()
     }
+    // The assets-button step advances only on a target click (Next is hidden);
+    // TourSpotlight emits `advance`, which next() handles — drive it directly.
     expect(api.step.value?.advanceOnTargetClick).toBe(true)
 
-    // Clicking the button opens the panel and advances to spotlight it.
+    // The panel mounts when the button is clicked; advancing then spotlights it.
     mountTarget('assets-panel')
-    const assetsButton = targets.get('assets-button')!
-    assetsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    api.next()
     await flush()
 
     expect(api.step.value?.coachId).toBe('assets-panel')

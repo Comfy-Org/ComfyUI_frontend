@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -29,14 +29,12 @@ const seedState = vi.hoisted(
   () => (makeRef: typeof ref) =>
     Object.assign(mocks.state, {
       step: makeRef<CoachStep | null>(null),
-      countedSteps: makeRef<CoachStep[]>([]),
-      countedStepIdx: makeRef(0),
-      targetRect: makeRef<DOMRect | null>(null),
+      isLast: makeRef(false),
       primaryLabel: makeRef('Next'),
       skipLabel: makeRef('Skip'),
-      expectsTargetInteraction: makeRef(false),
-      outlinePulsing: makeRef(false),
-      showSkip: makeRef(true),
+      countedStepIdx: makeRef(0),
+      countedSteps: makeRef<CoachStep[]>([]),
+      suspendFocusGuard: makeRef(false),
       next: vi.fn(),
       end: vi.fn()
     } satisfies TourState)
@@ -47,6 +45,21 @@ vi.mock('./useCoachmarkTour', async () => {
   return { useCoachmarkTour: () => mocks.state }
 })
 
+// Stub the spotlight so this suite covers TourOverlay's own job — branching
+// between landing and spotlight and wiring their intents back to the composable.
+vi.mock('./TourSpotlight.vue', () => ({
+  default: defineComponent({
+    emits: ['advance', 'skip'],
+    setup(_, { emit }) {
+      return () =>
+        h('div', { 'data-testid': 'spotlight' }, [
+          h('button', { onClick: () => emit('advance') }, 'advance'),
+          h('button', { onClick: () => emit('skip') }, 'skip')
+        ])
+    }
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -54,8 +67,7 @@ const i18n = createI18n({
     en: {
       g: { close: 'Close' },
       tt: 'Canvas title',
-      bb: 'Canvas body',
-      onboardingCoachmarks: { stepLabel: 'Step {current} of {total}' }
+      bb: 'Canvas body'
     }
   }
 })
@@ -66,6 +78,10 @@ const spotlightStep: CoachStep = {
   titleKey: 'tt',
   bodyKey: 'bb',
   placement: 'right'
+}
+
+function landingStep(): CoachStep {
+  return { titleKey: 'tt', bodyKey: 'bb', placement: 'center', landing: true }
 }
 
 function renderOverlay() {
@@ -81,69 +97,27 @@ describe('TourOverlay', () => {
 
   it('renders nothing when no tour step is active', () => {
     renderOverlay()
-    expect(screen.queryByTestId('coach-spotlight')).toBeNull()
+    expect(screen.queryByTestId('spotlight')).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('renders the spotlight and card for a targeted step', () => {
-    s.step.value = spotlightStep
-    s.targetRect.value = new DOMRect(100, 100, 50, 40)
-    s.countedSteps.value = [spotlightStep]
-    renderOverlay()
-
-    expect(screen.getByTestId('coach-spotlight')).toBeTruthy()
-    const card = screen.getByRole('dialog')
-    expect(card).toHaveAttribute('aria-label', 'Canvas title')
-    expect(screen.getByText('Canvas body')).toBeTruthy()
-    expect(screen.getByText('Step 1 of 1')).toBeTruthy()
-  })
-
-  it('advances on the primary button and skips on the secondary button', async () => {
+  it('renders the spotlight for a non-landing step and wires its intents', async () => {
     const user = userEvent.setup()
     s.step.value = spotlightStep
-    s.targetRect.value = new DOMRect(100, 100, 50, 40)
     renderOverlay()
 
-    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(screen.getByTestId('spotlight')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'advance' }))
     expect(s.next).toHaveBeenCalledOnce()
 
-    await user.click(screen.getByRole('button', { name: 'Skip' }))
+    await user.click(screen.getByRole('button', { name: 'skip' }))
     expect(s.end).toHaveBeenCalledWith('skipped')
-  })
-
-  it('hides the primary button on steps the user advances by interacting with the target', () => {
-    s.step.value = spotlightStep
-    s.targetRect.value = new DOMRect(100, 100, 50, 40)
-    s.expectsTargetInteraction.value = true
-    renderOverlay()
-    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
-  })
-
-  it('pulses the spotlight outline only while the outline is pulsing', () => {
-    s.step.value = spotlightStep
-    s.targetRect.value = new DOMRect(100, 100, 50, 40)
-    s.outlinePulsing.value = true
-    renderOverlay()
-    expect(screen.getByTestId('coach-spotlight').getAttribute('class')).toMatch(
-      /coach-pulse/
-    )
-  })
-
-  it('hides the spotlight and dims via the blocker for a step with no target', () => {
-    s.step.value = { titleKey: 'tt', bodyKey: 'bb', placement: 'center' }
-    s.targetRect.value = null
-    renderOverlay()
-    expect(screen.getByTestId('coach-spotlight').style.opacity).toBe('0')
   })
 
   it('renders the landing step and starts the tour on its primary action', async () => {
     const user = userEvent.setup()
-    s.step.value = {
-      titleKey: 'tt',
-      bodyKey: 'bb',
-      placement: 'center',
-      landing: true
-    }
+    s.step.value = landingStep()
     s.primaryLabel.value = 'Start tutorial'
     s.skipLabel.value = 'Skip for now'
     renderOverlay()
@@ -156,12 +130,7 @@ describe('TourOverlay', () => {
 
   it('ends the tour when the landing is dismissed', async () => {
     const user = userEvent.setup()
-    s.step.value = {
-      titleKey: 'tt',
-      bodyKey: 'bb',
-      placement: 'center',
-      landing: true
-    }
+    s.step.value = landingStep()
     s.skipLabel.value = 'Skip for now'
     renderOverlay()
 

@@ -12,8 +12,14 @@ function setup() {
   return { scope, step, api }
 }
 
-function stepFor(coachId: CoachId): CoachStep {
-  return { titleKey: 't', bodyKey: 'b', placement: 'center', coachId }
+function deferredStep(coachId: CoachId): CoachStep {
+  return {
+    titleKey: 't',
+    bodyKey: 'b',
+    placement: 'center',
+    coachId,
+    deferTarget: true
+  }
 }
 
 /** Register an element whose measured rect is driven by `getRect`. */
@@ -24,53 +30,13 @@ function mountTarget(coachId: CoachId, getRect: () => DOMRect): HTMLElement {
   return el
 }
 
-describe('useCoachmarkTarget.waitForTarget', () => {
-  afterEach(() => {
-    clearCoachmarks()
-    vi.useRealTimers()
-  })
+// The watch defers its measure a tick, then settle() schedules its first frame.
+async function flushSettle() {
+  await nextTick()
+  await nextTick()
+}
 
-  it('resolves true immediately when the target is already mounted', async () => {
-    mountTarget('app-run-button', () => new DOMRect(0, 0, 10, 10))
-    const { scope, api } = setup()
-    const signal = new AbortController().signal
-    await expect(
-      api.waitForTarget('app-run-button', signal, 1000)
-    ).resolves.toBe(true)
-    scope.stop()
-  })
-
-  it('resolves true once the target mounts before the timeout', async () => {
-    const { scope, api } = setup()
-    const signal = new AbortController().signal
-    const found = api.waitForTarget('app-run-button', signal, 1000)
-    mountTarget('app-run-button', () => new DOMRect(0, 0, 10, 10))
-    await nextTick()
-    await expect(found).resolves.toBe(true)
-    scope.stop()
-  })
-
-  it('resolves false when the target never mounts (transient failure)', async () => {
-    vi.useFakeTimers()
-    const { scope, api } = setup()
-    const signal = new AbortController().signal
-    const found = api.waitForTarget('outputs', signal, 1000)
-    await vi.advanceTimersByTimeAsync(1000)
-    await expect(found).resolves.toBe(false)
-    scope.stop()
-  })
-
-  it('resolves false when the step is aborted before the target mounts', async () => {
-    const { scope, api } = setup()
-    const controller = new AbortController()
-    const found = api.waitForTarget('outputs', controller.signal, 10000)
-    controller.abort()
-    await expect(found).resolves.toBe(false)
-    scope.stop()
-  })
-})
-
-describe('useCoachmarkTarget.settle', () => {
+describe('useCoachmarkTarget settle', () => {
   let frames: Array<{ id: number; cb: FrameRequestCallback }>
   let nextFrameId: number
 
@@ -103,12 +69,12 @@ describe('useCoachmarkTarget.settle', () => {
     return ran
   }
 
-  it('stops once the rect holds steady for the stable-frame window', () => {
+  it('stops once the rect holds steady for the stable-frame window', async () => {
     const getRect = vi.fn(() => new DOMRect(0, 0, 100, 100))
     mountTarget('outputs', getRect)
-    const { scope, step, api } = setup()
-    step.value = stepFor('outputs')
-    api.settle(new AbortController().signal)
+    const { scope, step } = setup()
+    step.value = deferredStep('outputs')
+    await flushSettle()
     runFrames()
     // First measure differs from the initial empty key (stable resets), then a
     // run of identical measures reaches the window and the loop returns.
@@ -117,13 +83,13 @@ describe('useCoachmarkTarget.settle', () => {
     scope.stop()
   })
 
-  it('terminates at the cap even when the rect never settles', () => {
+  it('terminates at the cap even when the rect never settles', async () => {
     let h = 0
     const getRect = vi.fn(() => new DOMRect(0, 0, 100, ++h))
     mountTarget('outputs', getRect)
-    const { scope, step, api } = setup()
-    step.value = stepFor('outputs')
-    api.settle(new AbortController().signal)
+    const { scope, step } = setup()
+    step.value = deferredStep('outputs')
+    await flushSettle()
     const ran = runFrames()
     // Bounded by the cap, not the safety ceiling — the loop ends on its own.
     expect(ran).toBeLessThan(1000)
@@ -131,31 +97,30 @@ describe('useCoachmarkTarget.settle', () => {
     scope.stop()
   })
 
-  it('cancels the prior loop instead of stacking when called again', () => {
+  it('cancels the prior loop instead of stacking when the target swaps', async () => {
     mountTarget('outputs', () => new DOMRect(0, 0, 100, 100))
-    const { scope, step, api } = setup()
-    step.value = stepFor('outputs')
-    const signal = new AbortController().signal
-    api.settle(signal)
+    const { scope, step } = setup()
+    step.value = deferredStep('outputs')
+    await flushSettle()
     expect(frames).toHaveLength(1)
-    api.settle(signal)
+    // A second registered element changes the candidate set and re-settles.
+    mountTarget('outputs', () => new DOMRect(0, 0, 100, 100))
+    await flushSettle()
     // Still one queued frame, not two — the prior loop was cancelled.
     expect(frames).toHaveLength(1)
     scope.stop()
   })
 
-  it('stops measuring once the signal aborts', () => {
+  it('stops measuring once the scope is disposed', async () => {
     const getRect = vi.fn(() => new DOMRect(0, 0, 100, 100))
     mountTarget('outputs', getRect)
-    const { scope, step, api } = setup()
-    step.value = stepFor('outputs')
-    const controller = new AbortController()
-    api.settle(controller.signal)
+    const { scope, step } = setup()
+    step.value = deferredStep('outputs')
+    await flushSettle()
     runFrames(3)
     const before = getRect.mock.calls.length
-    controller.abort()
+    scope.stop()
     runFrames()
     expect(getRect.mock.calls.length).toBe(before)
-    scope.stop()
   })
 })
