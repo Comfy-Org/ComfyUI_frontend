@@ -22,13 +22,20 @@
       "explainNode": "Explain the selected node",
       "imageToVideo": "Build a workflow for image to video with 3 models"
     },
+    "thinking": "Thinking…",
+    "toolCalls": {
+      "summary": "Ran {count} tool calls for {duration}"
+    },
     "history": {
       "title": "Chat History",
       "current": "Current",
       "today": "Today",
       "yesterday": "Yesterday",
       "last7Days": "Last 7 days",
-      "last30Days": "Last 30 days"
+      "last30Days": "Last 30 days",
+      "emptyTitle": "No chats yet",
+      "emptyDescription": "Start a conversation and it will appear here.",
+      "startChat": "Start a chat"
     }
   },
   "g": {

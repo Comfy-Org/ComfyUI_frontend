@@ -27,7 +27,7 @@ const renderedHtml = computed(() => renderMarkdownToHtml(markdown.value))
   <div
     :class="
       cn(
-        'text-sm/relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+        'text-xs/relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
         className
       )
     "

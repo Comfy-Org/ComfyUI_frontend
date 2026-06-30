@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+
 const { active = false } = defineProps<{
   active?: boolean
 }>()
 
 const emit = defineEmits<{
   select: []
+  delete: []
+  copy: []
 }>()
 </script>
 
@@ -15,7 +21,7 @@ const emit = defineEmits<{
   >
     <button
       type="button"
-      class="flex flex-1 items-center gap-2 overflow-hidden border-0 bg-transparent text-left text-xs text-base-foreground"
+      class="flex flex-1 cursor-pointer items-center gap-2 overflow-hidden border-0 bg-transparent text-left text-xs text-base-foreground"
       @click="emit('select')"
     >
       <i
@@ -23,12 +29,33 @@ const emit = defineEmits<{
       />
       <slot />
     </button>
-    <button
-      type="button"
-      class="hidden shrink-0 items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-muted-foreground group-hover:flex hover:text-base-foreground"
-      :aria-label="$t('g.more')"
-    >
-      <i class="icon-[lucide--ellipsis] size-3.5" />
-    </button>
+    <div class="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+      <Tooltip :delay-duration="300">
+        <TooltipTrigger>
+          <button
+            type="button"
+            class="flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-muted-foreground hover:bg-secondary-background-hover hover:text-base-foreground"
+            :aria-label="$t('g.copy')"
+            @click.stop="emit('copy')"
+          >
+            <i class="icon-[lucide--copy] size-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">{{ $t('g.copy') }}</TooltipContent>
+      </Tooltip>
+      <Tooltip :delay-duration="300">
+        <TooltipTrigger>
+          <button
+            type="button"
+            class="hover:text-danger flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-muted-foreground hover:bg-destructive-background/10"
+            :aria-label="$t('g.delete')"
+            @click.stop="emit('delete')"
+          >
+            <i class="icon-[lucide--trash-2] size-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">{{ $t('g.delete') }}</TooltipContent>
+      </Tooltip>
+    </div>
   </li>
 </template>

@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import Conversation from '@/components/ai-elements/conversation/Conversation.vue'
 import ConversationContent from '@/components/ai-elements/conversation/ConversationContent.vue'
 import ConversationEmptyState from '@/components/ai-elements/conversation/ConversationEmptyState.vue'
 import ConversationScrollButton from '@/components/ai-elements/conversation/ConversationScrollButton.vue'
-import Loader from '@/components/ai-elements/loader/Loader.vue'
 import Message from '@/components/ai-elements/message/Message.vue'
 import MessageContent from '@/components/ai-elements/message/MessageContent.vue'
 import MessageResponse from '@/components/ai-elements/message/MessageResponse.vue'
+import MessageThinking from '@/components/ai-elements/message/MessageThinking.vue'
+import MessageToolCalls from '@/components/ai-elements/message/MessageToolCalls.vue'
 import PromptInput from '@/components/ai-elements/prompt-input/PromptInput.vue'
 import PromptInputBody from '@/components/ai-elements/prompt-input/PromptInputBody.vue'
 import PromptInputButton from '@/components/ai-elements/prompt-input/PromptInputButton.vue'
@@ -32,10 +33,13 @@ const {
   status,
   isEmpty,
   chatHistory,
+  currentConversationId,
   send,
   stop,
   applySuggestion,
-  startNewChat
+  startNewChat,
+  deleteConversation,
+  copyConversation
 } = useAgentChatPrototype()
 
 const authStore = useAuthStore()
@@ -43,6 +47,7 @@ const agentPanelStore = useAgentPanelStore()
 
 const model = ref('Auto')
 const showHistory = ref(false)
+const promptTextarea = ref<{ focus: () => void } | null>(null)
 
 const userName = computed(
   () => authStore.currentUser?.displayName?.split(' ')[0] ?? ''
@@ -76,9 +81,16 @@ function close() {
     <template v-if="showHistory">
       <AgentChatHistory
         :conversations="chatHistory"
-        :current-title="conversationTitle"
+        :active-id="currentConversationId"
         @back="showHistory = false"
         @select="showHistory = false"
+        @delete="deleteConversation"
+        @copy="copyConversation"
+        @new-chat="
+          startNewChat()
+          showHistory = false
+          nextTick(() => promptTextarea?.focus())
+        "
       />
     </template>
 
@@ -86,7 +98,7 @@ function close() {
       <div class="flex shrink-0 items-center px-2 py-1.5">
         <button
           type="button"
-          class="flex h-6 items-center gap-1 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
+          class="flex h-6 cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
           @click="showHistory = true"
         >
           <i class="icon-[lucide--align-justify] size-3.5" />
@@ -107,10 +119,18 @@ function close() {
             :from="message.role"
           >
             <MessageContent>
-              <MessageResponse :content="message.text" />
+              <MessageThinking v-if="message.thinking" />
+              <MessageToolCalls
+                v-else-if="message.toolCalls?.length"
+                :tool-calls="message.toolCalls"
+                :complete="
+                  status === 'ready' ||
+                  message !== messages[messages.length - 1]
+                "
+              />
+              <MessageResponse v-if="message.text" :content="message.text" />
             </MessageContent>
           </Message>
-          <Loader v-if="status === 'submitted'" />
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
@@ -124,6 +144,7 @@ function close() {
             <PromptInput @submit="onSubmit">
               <PromptInputBody>
                 <PromptInputTextarea
+                  ref="promptTextarea"
                   v-model="input"
                   :placeholder="$t('agent.placeholder')"
                 />

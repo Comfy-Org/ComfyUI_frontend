@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 const emit = defineEmits<{
   newChat: []
@@ -20,29 +23,32 @@ const emit = defineEmits<{
       </span>
     </div>
     <div class="flex items-center gap-1">
-      <Button
-        variant="textonly"
-        size="icon"
-        :aria-label="$t('agent.newChat')"
-        @click="emit('newChat')"
-      >
-        <i class="icon-[lucide--message-circle] size-4" />
-      </Button>
-      <Button
-        variant="textonly"
-        size="icon"
-        :aria-label="$t('agent.togglePanel')"
-      >
-        <i class="icon-[lucide--panel-right] size-4" />
-      </Button>
-      <Button
-        variant="textonly"
-        size="icon"
-        :aria-label="$t('g.close')"
-        @click="emit('close')"
-      >
-        <i class="icon-[lucide--x] size-4" />
-      </Button>
+      <Tooltip :delay-duration="300">
+        <TooltipTrigger>
+          <Button
+            variant="textonly"
+            size="icon"
+            :aria-label="$t('agent.newChat')"
+            @click="emit('newChat')"
+          >
+            <i class="icon-[lucide--message-circle-plus] size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{{ $t('agent.newChat') }}</TooltipContent>
+      </Tooltip>
+      <Tooltip :delay-duration="300">
+        <TooltipTrigger>
+          <Button
+            variant="textonly"
+            size="icon"
+            :aria-label="$t('g.close')"
+            @click="emit('close')"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{{ $t('g.close') }}</TooltipContent>
+      </Tooltip>
     </div>
   </div>
 </template>
