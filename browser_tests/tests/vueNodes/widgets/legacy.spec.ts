@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 
 test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   comfyPage,
@@ -17,7 +18,8 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
 
   const getWidth = () =>
     comfyPage.page.evaluate(
-      () => graph!.getNodeById(10)!.widgets![0].width ?? 0
+      (nodeId) => graph!.getNodeById(nodeId)!.widgets![0].width ?? 0,
+      toNodeId(10)
     )
 
   await test.step('Mouse clicks resolve to button regions', async () => {
@@ -40,11 +42,11 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
     const gutter = comfyPage.page.getByRole('separator')
 
     await expect(gutter).toBeVisible()
-    await comfyMouse.resizeByDragging(gutter, { x: -200 })
+    await comfyMouse.dragElementBy(gutter, { x: -200 })
     await expect.poll(getWidth).toBeGreaterThan(initialWidth)
     const intermediateWidth = await getWidth()
 
-    await comfyMouse.resizeByDragging(gutter, { x: 100 })
+    await comfyMouse.dragElementBy(gutter, { x: 100 })
     await expect.poll(getWidth).toBeLessThan(intermediateWidth)
   })
 })

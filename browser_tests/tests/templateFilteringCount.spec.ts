@@ -1,13 +1,13 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 
-const test = mergeTests(comfyPageFixture, templateApiFixture)
+const test = mergeTests(createCloudAssetsFixture([]), templateApiFixture)
 
 const Cloud = TemplateIncludeOnDistributionEnum.Cloud
 const Desktop = TemplateIncludeOnDistributionEnum.Desktop

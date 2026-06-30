@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { AppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/utils/appMode'
 
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 

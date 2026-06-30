@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { toNodeId } from '@/types/nodeId'
 
 const wstest = mergeTests(test, webSocketFixture)
 
@@ -31,6 +32,10 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await expect(dialog.locator('.maskEditor-ui-container')).toBeVisible()
       await expect(dialog.getByText('Save')).toBeVisible()
       await expect(dialog.getByText('Cancel')).toBeVisible()
+
+      await dialog.getByTestId('pointer-zone').hover()
+      await dialog.getByText('Brush Settings').hover()
+      await expect(dialog.getByTestId('brush-cursor')).toHaveCSS('opacity', '0')
 
       await comfyPage.expectScreenshot(dialog, 'mask-editor-dialog-open.png')
     }
@@ -250,21 +255,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   }) => {
     const dialog = await maskEditor.openDialog()
 
-    let maskUploadCount = 0
     let imageUploadCount = 0
 
-    await comfyPage.page.route('**/upload/mask', (route) => {
-      maskUploadCount++
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          name: `test-mask-${maskUploadCount}.png`,
-          subfolder: 'clipspace',
-          type: 'input'
-        })
-      })
-    })
     await comfyPage.page.route('**/upload/image', (route) => {
       imageUploadCount++
       return route.fulfill({
@@ -284,20 +276,17 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await expect(dialog).toBeHidden()
 
-    // The save pipeline uploads multiple layers (mask + image variants)
+    // The save pipeline uploads four layers (masked, paint, painted, paintedMasked)
+    // through the unified /upload/image endpoint.
     expect(
-      maskUploadCount + imageUploadCount,
-      'save should trigger upload calls'
-    ).toBeGreaterThan(0)
+      imageUploadCount,
+      'save should upload all four layers via /upload/image'
+    ).toBe(4)
   })
 
   test('save failure keeps dialog open', async ({ comfyPage, maskEditor }) => {
     const dialog = await maskEditor.openDialog()
 
-    // Fail all upload routes
-    await comfyPage.page.route('**/upload/mask', (route) =>
-      route.fulfill({ status: 500 })
-    )
     await comfyPage.page.route('**/upload/image', (route) =>
       route.fulfill({ status: 500 })
     )
@@ -343,7 +332,8 @@ wstest(
 
     async function getNodeOutput() {
       return await comfyPage.page.evaluate(
-        () => graph!.getNodeById('1')!.images?.[0]?.filename
+        (nodeId) => graph!.getNodeById(nodeId)!.images?.[0]?.filename,
+        toNodeId(1)
       )
     }
 

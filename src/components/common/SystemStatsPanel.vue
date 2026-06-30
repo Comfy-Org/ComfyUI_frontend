@@ -13,7 +13,7 @@
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemColumns" :key="col.field">
           <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
-            {{ col.header }}
+            {{ $t(col.headerKey) }}
           </div>
           <div :class="cn(isOutdated(col) && 'text-danger-100')">
             {{ getDisplayValue(col) }}
@@ -58,8 +58,10 @@ import { isCloud } from '@/platform/distribution/types'
 import type { SystemStats } from '@/schemas/apiSchema'
 import { formatCommitHash, formatSize } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useI18n } from 'vue-i18n'
 
 const frontendCommit = __COMFYUI_FRONTEND_COMMIT__
+const { t } = useI18n()
 
 const props = defineProps<{
   stats: SystemStats
@@ -78,7 +80,7 @@ type SystemInfoKey = keyof SystemStats['system']
 
 type ColumnDef = {
   field: SystemInfoKey
-  header: string
+  headerKey: string
   getValue?: () => string
   format?: (value: string) => string
   formatNumber?: (value: number) => string
@@ -86,31 +88,45 @@ type ColumnDef = {
 
 /** Columns for local distribution */
 const localColumns: ColumnDef[] = [
-  { field: 'os', header: 'OS' },
-  { field: 'python_version', header: 'Python Version' },
-  { field: 'embedded_python', header: 'Embedded Python' },
-  { field: 'pytorch_version', header: 'Pytorch Version' },
-  { field: 'argv', header: 'Arguments' },
-  { field: 'ram_total', header: 'RAM Total', formatNumber: formatSize },
-  { field: 'ram_free', header: 'RAM Free', formatNumber: formatSize },
-  { field: 'installed_templates_version', header: 'Templates Version' }
+  { field: 'os', headerKey: 'g.systemStatsOS' },
+  { field: 'python_version', headerKey: 'g.systemStatsPythonVersion' },
+  { field: 'embedded_python', headerKey: 'g.systemStatsEmbeddedPython' },
+  { field: 'pytorch_version', headerKey: 'g.systemStatsPyTorchVersion' },
+  { field: 'argv', headerKey: 'g.systemStatsArguments' },
+  {
+    field: 'ram_total',
+    headerKey: 'g.systemStatsRAMTotal',
+    formatNumber: formatSize
+  },
+  {
+    field: 'ram_free',
+    headerKey: 'g.systemStatsRAMFree',
+    formatNumber: formatSize
+  },
+  {
+    field: 'installed_templates_version',
+    headerKey: 'g.systemStatsTemplatesVersion'
+  }
 ]
 
 /** Columns for cloud distribution */
 const cloudColumns: ColumnDef[] = [
-  { field: 'cloud_version', header: 'Cloud Version' },
+  { field: 'cloud_version', headerKey: 'g.systemStatsCloudVersion' },
   {
     field: 'comfyui_version',
-    header: 'ComfyUI Version',
+    headerKey: 'g.systemStatsComfyUIVersion',
     format: formatCommitHash
   },
   {
     field: 'comfyui_frontend_version',
-    header: 'Frontend Version',
+    headerKey: 'g.systemStatsFrontendVersion',
     getValue: () => frontendCommit,
     format: formatCommitHash
   },
-  { field: 'workflow_templates_version', header: 'Templates Version' }
+  {
+    field: 'workflow_templates_version',
+    headerKey: 'g.systemStatsTemplatesVersion'
+  }
 ]
 
 const systemColumns = computed(() => (isCloud ? cloudColumns : localColumns))
@@ -141,7 +157,7 @@ function formatSystemInfoText(): string {
   for (const col of systemColumns.value) {
     const display = getDisplayValue(col)
     if (display !== undefined && display !== '') {
-      lines.push(`${col.header}: ${display}`)
+      lines.push(`${t(col.headerKey)}: ${display}`)
     }
   }
 

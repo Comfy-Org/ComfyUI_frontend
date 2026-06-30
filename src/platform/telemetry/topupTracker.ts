@@ -35,10 +35,12 @@ export function checkForCompletedTopup(
 
   if (!events || events.length === 0) return false
 
-  // Find credit_added event that occurred after our timestamp
+  // Find a credit top-up event that occurred after our timestamp.
+  // Legacy /customers/events emits `credit_added`; the unified
+  // /api/billing/events feed emits `topup_completed`.
   const completedTopup = events.find(
     (e) =>
-      e.event_type === 'credit_added' &&
+      (e.event_type === 'credit_added' || e.event_type === 'topup_completed') &&
       e.createdAt &&
       new Date(e.createdAt).getTime() > timestamp
   )
@@ -58,4 +60,17 @@ export function checkForCompletedTopup(
  */
 export function clearTopupTracking(): void {
   localStorage.removeItem(STORAGE_KEY)
+}
+
+/**
+ * Consume a pending top-up marker on window focus. Clears the marker and
+ * reports whether a non-expired purchase was awaiting a balance refresh.
+ */
+export function consumePendingTopup(): boolean {
+  const timestampStr = localStorage.getItem(STORAGE_KEY)
+  if (!timestampStr) return false
+
+  localStorage.removeItem(STORAGE_KEY)
+  const timestamp = parseInt(timestampStr, 10)
+  return Date.now() - timestamp <= MAX_AGE_MS
 }

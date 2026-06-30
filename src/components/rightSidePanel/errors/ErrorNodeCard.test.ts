@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockSerialize = vi.fn(() => ({ nodes: [] }))
@@ -78,7 +80,6 @@ describe('ErrorNodeCard.vue', () => {
           },
           rightSidePanel: {
             locateNode: 'Locate Node',
-            enterSubgraph: 'Enter Subgraph',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues for related problems',
             getHelpTooltip:
@@ -156,7 +157,7 @@ describe('ErrorNodeCard.vue', () => {
     return {
       id: `exec-${++cardIdCounter}`,
       title: 'KSampler',
-      nodeId: '10',
+      nodeId: createNodeExecutionId([toNodeId(10)]),
       nodeTitle: 'KSampler',
       errors: [
         {
@@ -249,7 +250,7 @@ describe('ErrorNodeCard.vue', () => {
     renderCard({
       id: `node-${++cardIdCounter}`,
       title: 'KSampler',
-      nodeId: '10',
+      nodeId: createNodeExecutionId([toNodeId(10)]),
       nodeTitle: 'KSampler',
       errors: [
         {
@@ -387,7 +388,7 @@ describe('ErrorNodeCard.vue', () => {
     const card: ErrorCardData = {
       id: `exec-${++cardIdCounter}`,
       title: 'KSampler',
-      nodeId: '10',
+      nodeId: createNodeExecutionId([toNodeId(10)]),
       nodeTitle: 'KSampler',
       errors: [
         {

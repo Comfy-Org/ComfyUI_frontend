@@ -7,9 +7,9 @@
         {{ title }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="focus-visible:ring-secondary-foreground -mr-1 flex size-8 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
-        @click="useDialogStore().closeDialog()"
+        @click="dialogStore.closeDialog()"
       >
         <i class="pi pi-times size-4" />
       </button>
@@ -44,4 +44,6 @@ defineProps<{
   title: string
   titleId?: string
 }>()
+
+const dialogStore = useDialogStore()
 </script>

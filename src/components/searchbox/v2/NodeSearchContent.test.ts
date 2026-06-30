@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
-import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import {
   createMockNodeDef,
   setViewport,
@@ -211,9 +210,8 @@ describe('NodeSearchContent', () => {
     it('should show only essential nodes when Essentials is selected', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
-          name: 'EssentialNode',
-          display_name: 'Essential Node',
-          essentials_category: 'basic'
+          name: 'LoadImage',
+          display_name: 'Load Image'
         }),
         createMockNodeDef({
           name: 'RegularNode',
@@ -227,52 +225,9 @@ describe('NodeSearchContent', () => {
       await waitFor(() => {
         const items = screen.getAllByTestId('node-item')
         expect(items).toHaveLength(1)
-        expect(items[0]).toHaveTextContent('Essential Node')
+        expect(items[0]).toHaveTextContent('Load Image')
       })
     })
-
-    it('should apply defaultRootFilter when provided and category is available', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'EssentialNode',
-          display_name: 'Essential Node',
-          essentials_category: 'basic'
-        }),
-        createMockNodeDef({
-          name: 'RegularNode',
-          display_name: 'Regular Node'
-        })
-      ])
-
-      renderComponent({ defaultRootFilter: RootCategory.Essentials })
-
-      await waitFor(() => {
-        const items = screen.getAllByTestId('node-item')
-        expect(items).toHaveLength(1)
-        expect(items[0]).toHaveTextContent('Essential Node')
-      })
-    })
-
-    it('should ignore defaultRootFilter of Essentials when no essentials exist', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'FrequentNode',
-          display_name: 'Frequent Node'
-        })
-      ])
-      vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
-        useNodeDefStore().nodeDefsByName['FrequentNode']
-      ])
-
-      renderComponent({ defaultRootFilter: RootCategory.Essentials })
-
-      await waitFor(() => {
-        const items = screen.getAllByTestId('node-item')
-        expect(items).toHaveLength(1)
-        expect(items[0]).toHaveTextContent('Frequent Node')
-      })
-    })
-
     it('should show only API nodes when Partner Nodes filter is active', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({

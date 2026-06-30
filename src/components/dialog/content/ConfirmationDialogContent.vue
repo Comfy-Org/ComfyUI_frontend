@@ -130,7 +130,7 @@ const props = defineProps<{
   title: string
   message: string
   type: ConfirmationDialogType
-  onConfirm: (value?: boolean) => void
+  onConfirm: (value: boolean) => void
   itemList?: string[]
   hint?: string
   denyLabel?: string

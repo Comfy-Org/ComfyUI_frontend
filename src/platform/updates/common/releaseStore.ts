@@ -266,12 +266,18 @@ export const useReleaseStore = defineStore('release', () => {
         await until(systemStatsStore.isInitialized)
       }
 
-      const fetchedReleases = await releaseService.getReleases({
-        project: isCloud ? 'cloud' : 'comfyui',
-        current_version: currentVersion.value,
-        form_factor: systemStatsStore.getFormFactor(),
-        locale: stringToLocale(locale.value)
-      })
+      const fetchedReleases = await releaseService.getReleases(
+        {
+          project: isCloud ? 'cloud' : 'comfyui',
+          current_version: currentVersion.value,
+          form_factor: systemStatsStore.getFormFactor(),
+          locale: stringToLocale(locale.value)
+        },
+        {
+          deployEnvironment:
+            systemStatsStore.systemStats?.system?.deploy_environment
+        }
+      )
 
       if (fetchedReleases !== null) {
         releases.value = fetchedReleases

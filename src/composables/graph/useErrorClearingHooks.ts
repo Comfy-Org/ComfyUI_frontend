@@ -6,12 +6,9 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -37,138 +34,18 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   getExecutionIdForNodeInGraph,
   getNodeByExecutionId,
-  isAncestorPathActive
+  isExecutionPathActive,
+  isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
-
-interface WidgetErrorClearingTarget {
-  executionId: string
-  validationInputName: string
-  assetWidgetName: string
-  currentValue: unknown
-  options?: { min?: number; max?: number }
-}
-
-function getWidgetRangeOptions(widget: IBaseWidget): {
-  min?: number
-  max?: number
-} {
-  return {
-    min: widget.options?.min,
-    max: widget.options?.max
-  }
-}
-
-function plainWidgetToErrorTarget(
-  widget: IBaseWidget,
-  hostExecId: string
-): WidgetErrorClearingTarget {
-  return {
-    executionId: hostExecId,
-    validationInputName: widget.name,
-    assetWidgetName: widget.name,
-    currentValue: widget.value,
-    options: getWidgetRangeOptions(widget)
-  }
-}
-
-function promotedWidgetToErrorTarget(
-  rootGraph: LGraph,
-  hostNode: LGraphNode,
-  widget: PromotedWidgetView,
-  hostExecId: string
-): WidgetErrorClearingTarget {
-  const result = resolveConcretePromotedWidget(
-    hostNode,
-    widget.sourceNodeId,
-    widget.sourceWidgetName
-  )
-  const execId =
-    result.status === 'resolved' && result.resolved.node
-      ? (getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId)
-      : hostExecId
-  const resolvedWidget =
-    result.status === 'resolved' ? result.resolved.widget : widget
-
-  return {
-    executionId: execId,
-    validationInputName: resolvedWidget.name,
-    assetWidgetName: widget.sourceWidgetName,
-    currentValue: resolvedWidget.value,
-    options: getWidgetRangeOptions(resolvedWidget)
-  }
-}
-
-function resolveCanvasPathPromotedWidgetTargets(
-  rootGraph: LGraph,
-  hostNode: LGraphNode,
-  widget: IBaseWidget,
-  hostExecId: string,
-  newValue: unknown
-): WidgetErrorClearingTarget[] {
-  if (!hostNode.isSubgraphNode?.() || isPromotedWidgetView(widget)) return []
-
-  // Canvas-path events lose promoted identity, so the post-write value
-  // disambiguates same-named promoted widgets.
-  return (hostNode.widgets ?? [])
-    .filter(isPromotedWidgetView)
-    .filter((promotedWidget) => promotedWidget.sourceWidgetName === widget.name)
-    .map((promotedWidget) =>
-      promotedWidgetToErrorTarget(
-        rootGraph,
-        hostNode,
-        promotedWidget,
-        hostExecId
-      )
-    )
-    .filter((target) => Object.is(target.currentValue, newValue))
-}
-
-function resolveWidgetErrorTargets(
-  rootGraph: LGraph,
-  hostNode: LGraphNode,
-  widget: IBaseWidget,
-  hostExecId: string,
-  newValue: unknown
-): WidgetErrorClearingTarget[] {
-  if (isPromotedWidgetView(widget)) {
-    return [
-      promotedWidgetToErrorTarget(rootGraph, hostNode, widget, hostExecId)
-    ]
-  }
-
-  const canvasPathTargets = resolveCanvasPathPromotedWidgetTargets(
-    rootGraph,
-    hostNode,
-    widget,
-    hostExecId,
-    newValue
-  )
-  return canvasPathTargets.length
-    ? canvasPathTargets
-    : [plainWidgetToErrorTarget(widget, hostExecId)]
-}
-
-function clearWidgetErrorTargets(
-  targets: WidgetErrorClearingTarget[],
-  newValue: unknown
-): void {
-  const store = useExecutionErrorStore()
-  for (const target of targets) {
-    store.clearWidgetRelatedErrors(
-      target.executionId,
-      target.validationInputName,
-      target.assetWidgetName,
-      newValue,
-      target.options
-    )
-  }
-}
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()
 
@@ -178,6 +55,14 @@ type OriginalCallbacks = {
 }
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
+
+function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
+  if (!app.rootGraph) return String(nodeId)
+
+  return (
+    getExecutionIdForNodeInGraph(app.rootGraph, graph, nodeId) ?? String(nodeId)
+  )
+}
 
 function installNodeHooks(node: LGraphNode): void {
   if (hookedNodes.has(node)) return
@@ -203,21 +88,30 @@ function installNodeHooks(node: LGraphNode): void {
 
   node.onWidgetChanged = useChainCallback(
     node.onWidgetChanged,
-    // _name is the LiteGraph callback arg; re-derive from the widget
-    // object to handle promoted widgets where sourceWidgetName differs.
-    function (_name, newValue, _oldValue, widget) {
+    function (name, newValue, _oldValue, widget) {
       if (!app.rootGraph) return
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
-      const targets = resolveWidgetErrorTargets(
-        app.rootGraph,
-        node,
-        widget,
+      const options = { min: widget.options?.min, max: widget.options?.max }
+      const source = resolvePromotedWidgetSource(app.rootGraph, node, widget)
+      if (source?.sourceExecutionId) {
+        useExecutionErrorStore().clearWidgetRelatedErrors(
+          source.sourceExecutionId,
+          source.sourceWidgetName,
+          source.sourceWidgetName,
+          newValue,
+          options
+        )
+      }
+
+      useExecutionErrorStore().clearWidgetRelatedErrors(
         hostExecId,
-        newValue
+        name,
+        widget.name,
+        newValue,
+        options
       )
-      clearWidgetErrorTargets(targets, newValue)
     }
   )
 }
@@ -260,8 +154,8 @@ function scanNodeErrorTargets(
   if (!app.rootGraph) return
 
   if (node.isSubgraphNode?.() && node.subgraph) {
+    scanNode(node)
     for (const innerNode of collectAllNodes(node.subgraph)) {
-      if (innerNode.isSubgraphNode?.()) continue
       if (isNodeInactive(innerNode.mode)) continue
       scanNode(innerNode)
     }
@@ -280,7 +174,7 @@ function getActiveExecutionId(node: LGraphNode): string | null {
   // execId means the node has no current graph (e.g. detached mid
   // lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
-  if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return null
+  if (!execId || !isExecutionPathActive(app.rootGraph, execId)) return null
   return execId
 }
 
@@ -320,6 +214,8 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
   if (pendingModels.length) {
     void verifyAndAddPendingModels(pendingModels)
   }
+
+  if (node.isSubgraphNode?.()) return
 
   const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
   if (!(originalType in LiteGraph.registered_node_types)) {
@@ -363,17 +259,18 @@ function scanSingleNodeMedia(node: LGraphNode): void {
  * have been bypassed, deleted, or belong to a workflow that is no
  * longer current — any of which would reintroduce stale errors.
  */
-function isCandidateStillActive(nodeId: unknown): boolean {
-  if (!app.rootGraph || nodeId == null) return false
-  const execId = String(nodeId)
-  const node = getNodeByExecutionId(app.rootGraph, execId)
-  if (!node) return false
-  if (isNodeInactive(node.mode)) return false
-  // Also reject if any enclosing subgraph was bypassed between scan
-  // kick-off and verification resolving — mirrors the pipeline-level
-  // ancestor post-filter so realtime and initial-load paths stay
-  // symmetric.
-  return isAncestorPathActive(app.rootGraph, execId)
+function isModelCandidateStillActive(
+  candidate: MissingModelCandidate
+): boolean {
+  return isMissingCandidateActive(app.rootGraph, candidate)
+}
+
+function isNodeCandidateStillActive(nodeId: unknown): boolean {
+  return (
+    app.rootGraph != null &&
+    nodeId != null &&
+    isExecutionPathActive(app.rootGraph, String(nodeId))
+  )
 }
 
 async function verifyAndAddPendingModels(
@@ -387,7 +284,7 @@ async function verifyAndAddPendingModels(
     await verifyAssetSupportedCandidates(pending)
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+      (c) => c.isMissing === true && isModelCandidateStillActive(c)
     )
     if (verified.length) useMissingModelStore().addMissingModels(verified)
   } catch (error: unknown) {
@@ -403,7 +300,7 @@ async function verifyAndAddPendingMedia(
     await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+      (c) => c.isMissing === true && isNodeCandidateStillActive(c.nodeId)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -432,7 +329,7 @@ function scheduleAddedNodeScan(node: LGraphNode): void {
 
 function handleNodeModeChange(
   localGraph: LGraph,
-  nodeId: number,
+  nodeId: NodeId,
   oldMode: number,
   newMode: number
 ): void {
@@ -455,6 +352,7 @@ function handleNodeModeChange(
     removeNodeErrors(node, execId)
   } else {
     scanAndAddNodeErrors(node)
+    scanAncestorSubgraphHosts(execId)
     if (
       useMissingModelStore().hasMissingModels ||
       useMissingMediaStore().hasMissingMedia ||
@@ -462,6 +360,15 @@ function handleNodeModeChange(
     ) {
       useExecutionErrorStore().showErrorOverlay()
     }
+  }
+}
+
+function scanAncestorSubgraphHosts(execId: string): void {
+  if (!app.rootGraph) return
+  for (const ancestorId of getParentExecutionIds(execId)) {
+    if (!isExecutionPathActive(app.rootGraph, ancestorId)) continue
+    const ancestor = getNodeByExecutionId(app.rootGraph, ancestorId)
+    if (ancestor?.isSubgraphNode?.()) scanSingleNodeErrors(ancestor)
   }
 }
 
@@ -473,6 +380,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   const nodesStore = useMissingNodesErrorStore()
 
   modelStore.removeMissingModelsByNodeId(execId)
+  modelStore.removeMissingModelsBySourceScope(execId)
   mediaStore.removeMissingMediaByNodeId(execId)
   nodesStore.removeMissingNodesByNodeId(execId)
 
@@ -518,9 +426,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors
     // are keyed; without this, removal falls back to the local ID and
     // misses subgraph entries.
-    const execId = app.rootGraph
-      ? getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id)
-      : String(node.id)
+    const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)
@@ -531,7 +437,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     if (event.type === 'node:property:changed' && event.property === 'mode') {
       handleNodeModeChange(
         graph,
-        event.nodeId as number,
+        toNodeId(event.nodeId),
         event.oldValue as number,
         event.newValue as number
       )

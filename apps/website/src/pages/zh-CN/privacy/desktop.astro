@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ContentSection from '../../../components/common/ContentSection.vue'
+import HeroSection from '../../../components/legal/HeroSection.vue'
+---
+
+<BaseLayout
+  title="Desktop 隐私政策 — Comfy"
+  description="Comfy Desktop 隐私政策。命名的数据处理方、GDPR/UK GDPR 下的合法依据、保留期限和您的权利。"
+>
+  <HeroSection title="Desktop 隐私政策" />
+  <ContentSection prefix="desktop_privacy" locale="zh-CN" client:load />
+</BaseLayout>

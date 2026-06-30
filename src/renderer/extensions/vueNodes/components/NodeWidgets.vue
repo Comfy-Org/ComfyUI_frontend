@@ -45,7 +45,7 @@
               type: widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
-            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :node-id="nodeData?.id"
             :has-error="widget.hasError"
             :index="widget.slotMetadata.index"
             :socketless="widget.simplified.spec?.socketless"
@@ -54,7 +54,7 @@
         </div>
         <!-- Widget Component -->
         <AppInput
-          :entity-id="widget.entityId"
+          :widget-id="widget.widgetId"
           :name="widget.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
         >
@@ -63,7 +63,7 @@
             v-model="widget.value"
             v-tooltip.left="widget.tooltipConfig"
             :widget="widget.simplified"
-            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :node-id="nodeData?.id"
             :node-type="nodeType"
             :class="
               cn(
@@ -113,7 +113,7 @@ function handleWidgetPointerEvent(event: PointerEvent) {
 
 function handleBringToFront() {
   if (nodeData?.id != null) {
-    bringNodeToFront(String(nodeData.id))
+    bringNodeToFront(nodeData.id)
   }
 }
 
@@ -133,6 +133,6 @@ const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
 
 // Tracks widget-row growth that the node-level RO can't see
 if (nodeData?.id != null) {
-  useVueElementTracking(String(nodeData.id), 'widgets-grid')
+  useVueElementTracking(nodeData.id, 'widgets-grid')
 }
 </script>

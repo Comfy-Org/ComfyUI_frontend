@@ -176,7 +176,6 @@ import {
   render
 } from 'vue'
 
-import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -190,6 +189,7 @@ import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   DEFAULT_GROUPING_ID,
@@ -301,9 +301,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 
     return {
       key: node.key,
-      label: node.leaf
-        ? (resolveEssentialsDisplayName(node.data) ?? node.data.display_name)
-        : node.label,
+      label: node.leaf ? node.data.display_name : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon() {
@@ -337,6 +335,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 })
 
 const filteredNodeDefs = ref<ComfyNodeDefImpl[]>([])
+useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 const filters: Ref<
   (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
 > = ref([])
