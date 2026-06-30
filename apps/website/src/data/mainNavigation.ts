@@ -69,10 +69,19 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         {
           header: t('nav.colFeatures', locale),
           items: [
+            {
+              label: t('nav.mcpServer', locale),
+              href: routes.mcp,
+              badge: 'new'
+            },
             // TODO: no page yet — re-enable when landing pages ship
-            // { label: t('nav.mcpServer', locale), href: '#', badge: 'new' },
             // { label: t('nav.appMode', locale), href: '#' },
             // { label: t('nav.agentSkills', locale), href: '#' },
+            {
+              label: t('nav.launches', locale),
+              href: routes.launches,
+              badge: 'new'
+            },
             {
               label: t('nav.docs', locale),
               href: externalLinks.docs,

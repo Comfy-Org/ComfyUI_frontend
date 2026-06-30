@@ -11,6 +11,16 @@ const translations = {
     'zh-CN': '图像生成视频'
   },
 
+  // UI (global, reusable across sections)
+  'ui.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  },
+  'ui.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
+
   // CTAs (global, reusable across sections)
   'cta.tryWorkflow': {
     en: 'Try Workflow',
@@ -1825,6 +1835,311 @@ const translations = {
       '我们尽力为经历面试流程的候选人提供有意义的反馈。由于申请量较大，在简历筛选阶段可能无法提供详细反馈。'
   },
 
+  // MCP – Meta
+  'mcp.meta.title': {
+    en: 'Comfy MCP — Drive ComfyUI from any AI agent',
+    'zh-CN': 'Comfy MCP — 让任何 AI 智能体驱动 ComfyUI'
+  },
+  'mcp.meta.description': {
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client.',
+    'zh-CN':
+      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎，可在 Claude Code、Claude Desktop 及任何兼容 MCP 的客户端中生成图像、视频、音频和 3D 内容。'
+  },
+
+  // MCP – HeroSection
+  'mcp.hero.heading': {
+    en: 'Drive ComfyUI from\nany AI agent.',
+    'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
+  },
+  'mcp.hero.subtitle': {
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'mcp.hero.demoPrompt': {
+    en: "match this frame's palette, make the hero key art",
+    'zh-CN': '匹配这一帧的配色，生成主视觉关键画面'
+  },
+  'mcp.hero.viewDocs': {
+    en: 'VIEW DOCS',
+    'zh-CN': '查看文档'
+  },
+  'mcp.hero.runWorkflow': {
+    en: 'RUN A WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'mcp.hero.demoGenerate': {
+    en: 'GENERATE',
+    'zh-CN': '生成'
+  },
+  'mcp.hero.demoActionGenerateImage': {
+    en: 'GENERATE-IMAGE',
+    'zh-CN': '生成图像'
+  },
+  'mcp.hero.demoActionGenerate3d': {
+    en: 'GENERATE-3D ASSET',
+    'zh-CN': '生成 3D 资产'
+  },
+  'mcp.hero.demoActionUpscale': {
+    en: 'UPSCALE-IMAGE',
+    'zh-CN': '放大图像'
+  },
+
+  // MCP – SetupStepsSection
+  'mcp.setup.label': {
+    en: 'GET STARTED',
+    'zh-CN': '快速开始'
+  },
+  'mcp.setup.heading': {
+    en: 'Set up Comfy MCP in three steps',
+    'zh-CN': '三步完成 Comfy MCP 配置'
+  },
+  'mcp.setup.subtitle': {
+    en: 'Add Comfy Cloud as a custom connector in Claude, Cursor, Codex, or any MCP-compatible client. Sign in once, and the full ComfyUI toolset is available right in your chat.',
+    'zh-CN':
+      '将 Comfy Cloud 添加为 Claude、Cursor、Codex 或任意兼容 MCP 客户端的自定义连接器。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
+  },
+  'mcp.setup.step1.label': { en: 'STEP 1', 'zh-CN': '第 1 步' },
+  'mcp.setup.step1.title': {
+    en: 'Copy the MCP URL',
+    'zh-CN': '复制 MCP URL'
+  },
+  'mcp.setup.step1.description': {
+    en: "Click the copy button below. You'll paste it into your client in the next step.",
+    'zh-CN': '点击下方的复制按钮，下一步将其粘贴到你的客户端中。'
+  },
+  'mcp.setup.step2.label': { en: 'STEP 2', 'zh-CN': '第 2 步' },
+  'mcp.setup.step2.title': {
+    en: 'Add the connector',
+    'zh-CN': '添加连接器'
+  },
+  'mcp.setup.step2.description': {
+    en: 'Name it Comfy Cloud and paste the URL. The docs below cover every client.',
+    'zh-CN': '将其命名为 Comfy Cloud 并粘贴 URL。下方文档涵盖各类客户端。'
+  },
+  'mcp.setup.step2.cta': {
+    en: 'COMFY CLOUD MCP DOCS',
+    'zh-CN': 'COMFY CLOUD MCP 文档'
+  },
+  'mcp.setup.step3.label': { en: 'STEP 3', 'zh-CN': '第 3 步' },
+  'mcp.setup.step3.title': {
+    en: 'Connect and sign in',
+    'zh-CN': '连接并登录'
+  },
+  'mcp.setup.step3.description': {
+    en: 'Click Connect, sign in, and every Comfy Cloud skill is ready in your client.',
+    'zh-CN': '点击"连接"并登录，所有 Comfy Cloud 技能即可在你的客户端中使用。'
+  },
+  'mcp.setup.step3.cta': {
+    en: 'COMFY CLOUD SKILLS',
+    'zh-CN': 'COMFY CLOUD 技能'
+  },
+
+  // MCP – WhyBuildSection
+  'mcp.why.heading': {
+    en: 'Why build on\n',
+    'zh-CN': '为什么选择\n'
+  },
+  'mcp.why.headingHighlight': {
+    en: 'Comfy MCP?',
+    'zh-CN': 'Comfy MCP？'
+  },
+  'mcp.why.subtitle': {
+    en: 'A trusted infrastructure that lets engineers and professionals ship faster.',
+    'zh-CN': '一套值得信赖的基础设施，让工程师和专业人士交付更快。'
+  },
+  'mcp.why.1.title': {
+    en: 'Open protocol,\nany client.',
+    'zh-CN': '开放协议，\n任意客户端。'
+  },
+  'mcp.why.1.description': {
+    en: 'MCP is an open standard, so any MCP-compatible client can connect. Today Comfy supports Claude Code and Claude Desktop, with more clients coming.',
+    'zh-CN':
+      'MCP 是开放标准，因此任何兼容 MCP 的客户端都能接入。目前 Comfy 支持 Claude Code 和 Claude Desktop，更多客户端即将推出。'
+  },
+  'mcp.why.2.title': {
+    en: 'The full engine,\nnot a sandbox.',
+    'zh-CN': '完整引擎，\n非沙箱环境。'
+  },
+  'mcp.why.2.description': {
+    en: 'Same tool your team uses. Fully connected multi-step, multi-GPU workflows. Everything available now and in the future.',
+    'zh-CN':
+      '与你团队使用的相同工具。完整连接的多步骤、多 GPU 工作流。当前及未来的所有功能均可使用。'
+  },
+  'mcp.why.3.title': {
+    en: 'Outputs you keep.',
+    'zh-CN': '输出归你所有。'
+  },
+  'mcp.why.3.description': {
+    en: 'Downloads go to your Comfy library — store, reuse, remix, and share without leaving the ecosystem.',
+    'zh-CN':
+      '下载内容保存到你的 Comfy 库——在生态系统内存储、复用、二次创作和分享。'
+  },
+  'mcp.why.4.title': {
+    en: 'Powered by\nComfy Cloud.',
+    'zh-CN': '由 Comfy Cloud\n提供支持。'
+  },
+  'mcp.why.4.description': {
+    en: 'Run without a local GPU through the same infrastructure your team already trusts.',
+    'zh-CN': '无需本地 GPU，通过你团队信赖的相同基础设施运行。'
+  },
+
+  // MCP – ToolsSection
+  'mcp.tools.heading': {
+    en: 'Everything ComfyUI can do,\nnow available as tools.',
+    'zh-CN': 'ComfyUI 能做的一切，\n现在都可作为工具调用。'
+  },
+  'mcp.tools.1.title': {
+    en: 'Generate anything',
+    'zh-CN': '生成任意内容'
+  },
+  'mcp.tools.1.description': {
+    en: 'Generate images, video, audio, 3D, upscale, or remove backgrounds. Add or remove elements in images, create or modify any visual, audio, or 3D asset at any scale.',
+    'zh-CN':
+      '生成图像、视频、音频、3D 内容，放大分辨率或移除背景。添加或删除图像元素，以任意规模创建或修改任何视觉、音频或 3D 资产。'
+  },
+  'mcp.tools.1.alt': {
+    en: 'Comfy MCP generating images, video, audio, and 3D assets from a single prompt',
+    'zh-CN': 'Comfy MCP 通过单个提示生成图像、视频、音频和 3D 资产'
+  },
+  'mcp.tools.2.title': {
+    en: 'Search the ecosystem',
+    'zh-CN': '搜索生态系统'
+  },
+  'mcp.tools.2.description': {
+    en: 'Query thousands of models, browse rankings, and choose workflow templates straight from your response.',
+    'zh-CN': '查询数千个模型，浏览排名，直接在对话中选择工作流模板。'
+  },
+  'mcp.tools.2.alt': {
+    en: 'Comfy MCP searching the ecosystem of models, rankings, and workflow templates',
+    'zh-CN': 'Comfy MCP 搜索模型、排名和工作流模板的生态系统'
+  },
+  'mcp.tools.3.title': {
+    en: 'Run real workflows',
+    'zh-CN': '运行真实工作流'
+  },
+  'mcp.tools.3.description': {
+    en: 'Turn any ComfyUI workflow into a callable tool. The full power of the engine, driven by your agent.',
+    'zh-CN':
+      '将任何 ComfyUI 工作流转换为可调用的工具。由你的智能体驱动完整的引擎能力。'
+  },
+  'mcp.tools.3.alt': {
+    en: 'Comfy MCP running a ComfyUI workflow as a callable tool from a chat',
+    'zh-CN': 'Comfy MCP 在对话中将 ComfyUI 工作流作为可调用工具运行'
+  },
+
+  // MCP – HowItWorksSection
+  'mcp.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '工作原理'
+  },
+  'mcp.howItWorks.step1.number': { en: '01', 'zh-CN': '01' },
+  'mcp.howItWorks.step1.title': {
+    en: 'CONNECT',
+    'zh-CN': '连接'
+  },
+  'mcp.howItWorks.step1.description': {
+    en: 'Add the Comfy Cloud MCP server to Claude Code or Claude Desktop and sign in once with OAuth. No API keys to manage.',
+    'zh-CN':
+      '将 Comfy Cloud MCP 服务器添加到 Claude Code 或 Claude Desktop，通过 OAuth 一次性登录。无需管理 API 密钥。'
+  },
+  'mcp.howItWorks.step2.number': { en: '02', 'zh-CN': '02' },
+  'mcp.howItWorks.step2.title': {
+    en: 'DISCOVER',
+    'zh-CN': '发现'
+  },
+  'mcp.howItWorks.step2.description': {
+    en: "Your agent gets Comfy's tools: search, generate, submit, and retrieve — everything it needs to create.",
+    'zh-CN':
+      '你的智能体获得 Comfy 的工具：搜索、生成、提交和获取——一切所需，应有尽有。'
+  },
+  'mcp.howItWorks.step3.number': { en: '03', 'zh-CN': '03' },
+  'mcp.howItWorks.step3.title': {
+    en: 'CREATE',
+    'zh-CN': '创作'
+  },
+  'mcp.howItWorks.step3.description': {
+    en: 'Request what you want, the agent queues and runs the workflow, and returns the finished result.',
+    'zh-CN': '描述你的需求，智能体排队执行工作流，并返回最终结果。'
+  },
+
+  // MCP – FAQSection
+  'mcp.faq.heading': {
+    en: 'Q&As',
+    'zh-CN': '常见问答'
+  },
+  'mcp.faq.1.q': {
+    en: 'Which clients are supported?',
+    'zh-CN': '支持哪些客户端？'
+  },
+  'mcp.faq.1.a': {
+    en: 'Claude Code and Claude Desktop today, both signing in with OAuth. Support for more clients is coming.',
+    'zh-CN':
+      '目前支持 Claude Code 和 Claude Desktop，均通过 OAuth 登录。更多客户端的支持即将推出。'
+  },
+  'mcp.faq.2.q': {
+    en: 'Do I need an API key?',
+    'zh-CN': '我需要 API 密钥吗？'
+  },
+  'mcp.faq.2.a': {
+    en: 'Not for Claude Code or Claude Desktop. They use OAuth. An API key is only needed for headless or CI setups with no browser.',
+    'zh-CN':
+      'Claude Code 和 Claude Desktop 不需要，它们使用 OAuth。仅在没有浏览器的无头或 CI 环境中才需要 API 密钥。'
+  },
+  'mcp.faq.3.q': {
+    en: 'Do the slash commands work in Claude Desktop?',
+    'zh-CN': '斜杠命令在 Claude Desktop 中可以使用吗？'
+  },
+  'mcp.faq.3.a': {
+    en: 'No. They ship in the Claude Code plugin. Desktop connects to the same MCP server, so the tools work; just ask in plain language.',
+    'zh-CN':
+      '不可以。斜杠命令包含在 Claude Code 插件中。Claude Desktop 连接的是同一个 MCP 服务器，因此工具可以正常使用；直接用自然语言提问即可。'
+  },
+  'mcp.faq.4.q': {
+    en: "The sign-in didn't open a browser.",
+    'zh-CN': '登录时没有打开浏览器。'
+  },
+  'mcp.faq.4.a': {
+    en: 'In Claude Code, run /mcp, select comfy-cloud, and choose Authenticate. In Claude Desktop, reopen the connector from Customize → Connectors.',
+    'zh-CN':
+      '在 Claude Code 中，运行 /mcp，选择 comfy-cloud，然后选择 Authenticate（授权）。在 Claude Desktop 中，从“自定义 → 连接器”重新打开该连接器。'
+  },
+  'mcp.faq.5.q': {
+    en: 'How do I connect in Claude Code?',
+    'zh-CN': '如何在 Claude Code 中连接？'
+  },
+  'mcp.faq.5.a': {
+    en: 'Add the marketplace and install the comfy-cloud plugin, then run /mcp → comfy-cloud → Authenticate. It adds the connection and slash commands in one step.',
+    'zh-CN':
+      '添加插件市场并安装 comfy-cloud 插件，然后运行 /mcp → comfy-cloud → Authenticate（授权）。一步即可添加连接和斜杠命令。'
+  },
+  'mcp.faq.6.q': {
+    en: "What's the server URL for Claude Desktop?",
+    'zh-CN': 'Claude Desktop 的服务器 URL 是什么？'
+  },
+  'mcp.faq.6.a': {
+    en: 'Add a custom connector in Customize → Connectors pointing to https://cloud.comfy.org/mcp, then sign in when prompted.',
+    'zh-CN':
+      '在“自定义 → 连接器”中添加一个指向 https://cloud.comfy.org/mcp 的自定义连接器，然后在提示时登录。'
+  },
+  'mcp.faq.7.q': {
+    en: 'What can my agent do once connected?',
+    'zh-CN': '连接后我的智能体能做什么？'
+  },
+  'mcp.faq.7.a': {
+    en: 'Generate images, video, audio, and 3D; search models, nodes, and templates; and run ComfyUI workflows, all from a chat.',
+    'zh-CN':
+      '生成图像、视频、音频和 3D；搜索模型、节点和模板；并运行 ComfyUI 工作流——全部在对话中完成。'
+  },
+  'mcp.faq.8.q': {
+    en: 'Is it generally available?',
+    'zh-CN': '现已正式发布了吗？'
+  },
+  'mcp.faq.8.a': {
+    en: 'Comfy Cloud MCP is in open beta and available to everyone.',
+    'zh-CN': 'Comfy Cloud MCP 目前处于公开测试阶段，所有人均可使用。'
+  },
+
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
   'nav.pricing': { en: 'Pricing', 'zh-CN': '价格' },
@@ -1867,6 +2182,7 @@ const translations = {
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
   // Column headers used in HeaderMainDesktop dropdowns
+  'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
@@ -2597,18 +2913,18 @@ const translations = {
     'zh-CN': 'Plans; Fees; Free Tier.'
   },
   'tos.payment.block.1': {
-    en: 'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.',
+    en: 'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. If a Free Tier user provides a valid payment method in connection with their account (including for identity verification, future upgrade purposes, or any other reason), such user expressly authorizes Comfy to charge that payment method for any usage that exceeds the applicable Free Tier limits, including overages resulting from intentional use, usage by authorized users or third parties under the account, or technical factors. Comfy will use reasonable efforts to notify users when they approach or exceed Free Tier limits, but such notice is not a condition of Comfy’s right to charge for overages. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.',
     'zh-CN':
-      'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.'
+      'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. If a Free Tier user provides a valid payment method in connection with their account (including for identity verification, future upgrade purposes, or any other reason), such user expressly authorizes Comfy to charge that payment method for any usage that exceeds the applicable Free Tier limits, including overages resulting from intentional use, usage by authorized users or third parties under the account, or technical factors. Comfy will use reasonable efforts to notify users when they approach or exceed Free Tier limits, but such notice is not a condition of Comfy’s right to charge for overages. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.'
   },
   'tos.payment.block.2.heading': {
     en: 'Self-Serve Credit Card Billing.',
     'zh-CN': 'Self-Serve Credit Card Billing.'
   },
   'tos.payment.block.3': {
-    en: 'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method.',
+    en: 'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). This billing authorization applies regardless of whether the Customer is on a paid Plan or a Free Tier at the time the overage is incurred. Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method. The same retry rights apply to any failed overage charges incurred by Free Tier users.',
     'zh-CN':
-      'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method.'
+      'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). This billing authorization applies regardless of whether the Customer is on a paid Plan or a Free Tier at the time the overage is incurred. Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method. The same retry rights apply to any failed overage charges incurred by Free Tier users.'
   },
   'tos.payment.block.4.heading': {
     en: 'Invoiced Billing.',

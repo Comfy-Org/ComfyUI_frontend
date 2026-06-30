@@ -12,7 +12,7 @@ import type {
   InputSpec
 } from '@/schemas/nodeDefSchema'
 
-export type ObjectInfoResponse = Record<string, ComfyNodeDef>
+type ObjectInfoResponse = Record<string, ComfyNodeDef>
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 

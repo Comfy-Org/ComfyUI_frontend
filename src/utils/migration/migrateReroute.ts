@@ -3,10 +3,10 @@ import _ from 'es-toolkit/compat'
 import type {
   ComfyLinkObject,
   ComfyNode,
-  NodeId,
   Reroute,
   WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 type RerouteNode = ComfyNode & {
   type: 'Reroute'
@@ -45,10 +45,10 @@ function getNodeCenter(node: ComfyNode): [number, number] {
 }
 
 class ConversionContext {
-  nodeById: Record<NodeId, ComfyNode>
+  nodeById: Record<SerializedNodeId, ComfyNode>
   linkById: Record<number, ComfyLinkObject>
   rerouteById: Record<number, Reroute>
-  rerouteByNodeId: Record<NodeId, Reroute>
+  rerouteByNodeId: Record<SerializedNodeId, Reroute>
   linkExtensions: LinkExtension[]
 
   /** Reroutes that has at least a valid link pass through it */
