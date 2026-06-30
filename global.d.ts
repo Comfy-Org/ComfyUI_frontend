@@ -41,6 +41,26 @@ interface GtagFunction {
   (...args: unknown[]): void
 }
 
+type SyftDataAuthMethod = 'email' | 'google' | 'github'
+type SyftDataSource = 'signup' | 'login' | 'form_submit'
+type SyftDataTraits = Record<string, string | number | null | undefined>
+
+interface SyftDataPendingFetch {
+  args: unknown[]
+  resolve: (value: unknown) => void
+  reject: (reason?: unknown) => void
+}
+
+interface SyftDataClient {
+  identify(email: string, traits?: SyftDataTraits): void
+  signup(email: string, traits?: SyftDataTraits): void
+  track(event: string, traits?: SyftDataTraits): void
+  page(...args: unknown[]): void
+  q?: unknown[][]
+  fi?: SyftDataPendingFetch[]
+  fetchID?: (...args: unknown[]) => Promise<unknown>
+}
+
 interface Window {
   __CONFIG__: {
     gtm_container_id?: string
@@ -49,6 +69,7 @@ interface Window {
     posthog_project_token?: string
     posthog_api_host?: string
     posthog_config?: Record<string, unknown>
+    syftdata_source_id?: string
     customer_io?: {
       write_key?: string
       site_id?: string
@@ -78,6 +99,8 @@ interface Window {
   }
   dataLayer?: Array<Record<string, unknown>>
   gtag?: GtagFunction
+  syft?: SyftDataClient
+  syftc?: { sourceId: string }
   ire_o?: string
   ire?: ImpactQueueFunction
   rewardful?: RewardfulQueueFunction
