@@ -106,6 +106,7 @@ describe('nodeBookmarkStore', () => {
 
     await store.toggleBookmark(leafNode('KSampler', 'sampling/KSampler'))
 
+    expect(setSpy).toHaveBeenCalledWith(BOOKMARK_ID, ['KSampler'])
     expect(setSpy).toHaveBeenLastCalledWith(BOOKMARK_ID, [])
     expect(store.bookmarks).toEqual([])
   })
@@ -123,13 +124,33 @@ describe('nodeBookmarkStore', () => {
     expect(childPath).toBe('Favorites/Nested/')
   })
 
-  it('builds the bookmark tree, dropping unknown node defs', () => {
+  it('parses each bookmark into its parent category, dropping unknown node defs', () => {
+    nodeDefs['LoadImage'] = leafNode('LoadImage')
     nodeDefs['KSampler'] = leafNode('KSampler')
-    settings[BOOKMARK_ID] = ['sampling/KSampler', 'sampling/Unknown', 'Folder/']
+    nodeDefs['Canny'] = leafNode('Canny')
+    settings[BOOKMARK_ID] = [
+      'LoadImage',
+      'sampling/KSampler',
+      'image/preprocessors/Canny',
+      'sampling/Unknown',
+      'Folder/'
+    ]
     const store = useNodeBookmarkStore()
 
-    const children = (store.bookmarkedRoot as { children: unknown[] }).children
-    expect(children).toHaveLength(2)
+    const children = (
+      store.bookmarkedRoot as unknown as { children: BookmarkNodeFixture[] }
+    ).children
+
+    expect(
+      children.map((node) =>
+        node.isDummyFolder ? node.nodePath : [node.name, node.category]
+      )
+    ).toEqual([
+      ['LoadImage', ''],
+      ['KSampler', 'sampling'],
+      ['Canny', 'image/preprocessors'],
+      'Folder/'
+    ])
   })
 
   describe('renameBookmarkFolder', () => {
@@ -188,6 +209,7 @@ describe('nodeBookmarkStore', () => {
 
     await store.deleteBookmarkFolder(folderNode('Old/'))
 
+    expect(setSpy).toHaveBeenCalledWith(BOOKMARK_ID, ['Keep/Node'])
     expect(settings[BOOKMARK_ID]).toEqual(['Keep/Node'])
     expect(
       (settings[CUSTOMIZATION_ID] as Record<string, unknown>)['Old/']
