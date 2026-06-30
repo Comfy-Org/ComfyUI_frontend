@@ -176,6 +176,19 @@ describe('useAssetGridSelection', () => {
       expect(callbacks.setSelectedIds).toHaveBeenCalled()
     })
 
+    it('does not block native drag when no marquee is tracking', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+
+      const dragEvent = new DragEvent('dragstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      card('a').dispatchEvent(dragEvent)
+
+      expect(dragEvent.defaultPrevented).toBe(false)
+    })
+
     it('shows a marquee overlay while dragging and removes it on release', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
@@ -369,6 +382,30 @@ describe('useAssetGridSelection', () => {
       })
       screen.getByTestId('search').dispatchEvent(outsideGrid)
       expect(outsideGrid.defaultPrevented).toBe(false)
+    })
+
+    it('stops blocking text selection after a normal marquee release', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+
+      grid().dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }))
+      window.dispatchEvent(pointer('pointermove', { clientX: 30, clientY: 40 }))
+
+      const duringDrag = new Event('selectstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      card('a').dispatchEvent(duringDrag)
+      expect(duringDrag.defaultPrevented).toBe(true)
+
+      window.dispatchEvent(pointer('pointerup', { clientX: 30, clientY: 40 }))
+
+      const afterRelease = new Event('selectstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      card('a').dispatchEvent(afterRelease)
+      expect(afterRelease.defaultPrevented).toBe(false)
     })
 
     it('does not suppress the click after a sub-threshold press', async () => {

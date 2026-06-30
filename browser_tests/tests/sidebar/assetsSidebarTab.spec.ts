@@ -408,4 +408,114 @@ test.describe('FE-910 marquee selection and select all', () => {
 
     await expect(tab.selectedCards).toHaveCount(2)
   })
+
+  test('Ctrl/Cmd-dragging from an asset card starts a marquee selection', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+    await expect(tab.selectedCards).toHaveCount(0)
+
+    const alpha = await tab.getAssetCardByName('alpha').boundingBox()
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!alpha || !beta) throw new Error('asset cards have no layout box')
+
+    // Ctrl bypasses card drag, so a press that begins on a card rubber-bands.
+    await page.keyboard.down('Control')
+    await page.mouse.move(alpha.x + alpha.width / 2, alpha.y + alpha.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width - 6, beta.y + beta.height - 6, {
+      steps: 12
+    })
+    await page.mouse.up()
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(2)
+    await expect(tab.selectionFooter).toBeVisible()
+  })
+
+  test('Ctrl/Cmd-dragging within a single card selects only that card', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+
+    const alpha = tab.getAssetCardByName('alpha')
+    const box = await alpha.boundingBox()
+    if (!box) throw new Error('alpha card has no layout box')
+
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    await page.keyboard.down('Control')
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 12, start.y + 12, { steps: 4 })
+    await page.mouse.up()
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(1)
+    await expect(alpha).toHaveAttribute('data-selected', 'true')
+  })
+
+  test('Ctrl/Cmd+A in the focused search input does not select assets', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const query = 'alpha'
+
+    await comfyPage.setup()
+    await tab.open()
+    await tab.searchInput.fill(query)
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await tab.searchInput.focus()
+    await comfyPage.page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(0)
+    await expect
+      .poll(() =>
+        tab.searchInput.evaluate((el) => {
+          if (!(el instanceof HTMLInputElement)) {
+            throw new Error('expected the asset search input')
+          }
+          return { start: el.selectionStart, end: el.selectionEnd }
+        })
+      )
+      .toEqual({ start: 0, end: query.length })
+  })
+
+  test('a drag starting in the search input does not marquee-select assets', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await comfyPage.setup()
+    await tab.open()
+    await expect(tab.assetCards).toHaveCount(2)
+
+    const search = await tab.searchInput.boundingBox()
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!search || !beta)
+      throw new Error('search box or card has no layout box')
+
+    await page.mouse.move(
+      search.x + search.width / 2,
+      search.y + search.height / 2
+    )
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width / 2, beta.y + beta.height / 2, {
+      steps: 12
+    })
+    await page.mouse.up()
+
+    await expect(tab.selectedCards).toHaveCount(0)
+  })
 })
