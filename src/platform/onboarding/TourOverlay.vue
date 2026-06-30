@@ -37,9 +37,9 @@
         fill="none"
         stroke="white"
         stroke-width="2"
-        stroke-dasharray="8 8"
         :class="
-          marching && 'motion-safe:animate-[coach-march_0.7s_linear_infinite]'
+          outlinePulsing &&
+          'motion-safe:animate-[coach-pulse_1.2s_ease-in-out_infinite]'
         "
       />
     </svg>
@@ -100,7 +100,7 @@ import CoachmarkLanding from './CoachmarkLanding.vue'
 import { SPOTLIGHT_PAD } from './onboardingTours'
 import { useCoachmarkTour } from './useCoachmarkTour'
 
-// Keeps the spotlight's 2px dashed outline clear of the viewport edge.
+// Keeps the spotlight's 2px outline clear of the viewport edge.
 const SPOTLIGHT_EDGE_INSET = 2
 const CARD_WIDTH = 300
 // Standard gap between the card and its target / the viewport edge.
@@ -127,7 +127,7 @@ const {
   primaryLabel,
   skipLabel,
   expectsTargetInteraction,
-  marching,
+  outlinePulsing,
   showSkip,
   onPrimary,
   end
@@ -143,7 +143,7 @@ const landingOpen = computed({
   }
 })
 
-// Keep the padded spotlight box — and its dashed outline — inside the viewport
+// Keep the padded spotlight box — and its outline — inside the viewport
 // when the target hugs an edge.
 function clampToViewport(r: DOMRect, pad: number) {
   const left = Math.max(SPOTLIGHT_EDGE_INSET, r.left - pad)
@@ -272,10 +272,9 @@ const cardStyle = computed(() => {
 </script>
 
 <style>
-/* dash + gap = 8 + 8 = 16; offset by two periods so the loop is seamless. */
-@keyframes coach-march {
-  to {
-    stroke-dashoffset: -32;
+@keyframes coach-pulse {
+  50% {
+    opacity: 0.4;
   }
 }
 </style>

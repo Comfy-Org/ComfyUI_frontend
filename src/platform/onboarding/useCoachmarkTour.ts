@@ -21,8 +21,8 @@ import { useFocusTrap } from './useFocusTrap'
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 const START_DELAY_MS = 800
 const DEFER_TIMEOUT_MS = 8000
-// On steps the user must interact with the target, march a dashed outline
-// around the spotlight once they have stalled this long.
+// On steps the user must interact with the target, pulse the spotlight
+// outline once they have stalled this long.
 const PULSE_IDLE_MS = 4000
 
 type TourStage = 'started' | 'step_shown' | 'completed' | 'skipped'
@@ -126,15 +126,15 @@ export function useCoachmarkTour(refs: {
   )
 
   // Steps the user advances by interacting with the target (clicking or closing
-  // it) march the spotlight outline once they stall, and have no primary button.
+  // it) pulse the spotlight outline once they stall, and have no primary button.
   const expectsTargetInteraction = computed(
     () =>
       !!step.value?.advanceOnTargetClick || !!step.value?.advanceOnTargetClose
   )
 
-  // The spotlight's dashed outline marches once the user stalls on a step they
+  // The spotlight's outline pulses once the user stalls on a step they
   // must interact with.
-  const marching = computed(
+  const outlinePulsing = computed(
     () => pulsing.value && expectsTargetInteraction.value
   )
 
@@ -370,7 +370,7 @@ export function useCoachmarkTour(refs: {
     primaryLabel,
     skipLabel,
     expectsTargetInteraction,
-    marching,
+    outlinePulsing,
     showSkip,
     onPrimary,
     end
