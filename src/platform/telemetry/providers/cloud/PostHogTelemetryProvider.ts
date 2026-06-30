@@ -11,6 +11,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AuthMetadata,
+  CancellationFlowClosedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -535,5 +536,25 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       page_name: pageName,
       ...properties
     })
+  }
+
+  trackCancellationFlowOpened(): void {
+    this.trackEvent(TelemetryEvents.CANCELLATION_FLOW_OPENED)
+  }
+
+  trackCancellationFlowClosed(metadata: CancellationFlowClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.CANCELLATION_FLOW_CLOSED, metadata)
+
+    if (metadata.outcome !== 'reconsidered') return
+    if (!this.posthog || !this.isEnabled) return
+    if (this.disabledEvents.has(TelemetryEvents.CANCELLATION_FLOW_CLOSED))
+      return
+    try {
+      this.posthog.people.set({
+        cancellation_reconsidered_at: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Failed to set PostHog user property:', error)
+    }
   }
 }

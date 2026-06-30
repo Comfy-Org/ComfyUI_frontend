@@ -452,6 +452,18 @@ interface EcommerceMetadata {
   items: EcommerceItemMetadata[]
 }
 
+export interface CancellationFlowClosedMetadata {
+  outcome: 'canceled' | 'reconsidered' | 'discounted' | 'paused' | 'unknown'
+  survey_response?: string
+  /**
+   * Categorized reason when `outcome === 'unknown'` so PostHog dashboards
+   * can separate a failed cancel API call from an embed failure. Fallbacks
+   * to the legacy dialog (auth endpoint missing, embed script blocked)
+   * happen before the flow opens and emit no events at all.
+   */
+  failure_reason?: 'cancel_api_failed' | 'unexpected'
+}
+
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   user_id?: string
   checkout_attempt_id: string
@@ -564,6 +576,10 @@ export interface TelemetryProvider {
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Cancellation flow events
+  trackCancellationFlowOpened?(): void
+  trackCancellationFlowClosed?(metadata: CancellationFlowClosedMetadata): void
 }
 
 /**
@@ -660,7 +676,11 @@ export const TelemetryEvents = {
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
   // Page View
-  PAGE_VIEW: 'app:page_view'
+  PAGE_VIEW: 'app:page_view',
+
+  // Cancellation Flow
+  CANCELLATION_FLOW_OPENED: 'app:cancellation_flow_opened',
+  CANCELLATION_FLOW_CLOSED: 'app:cancellation_flow_closed'
 } as const
 
 export type TelemetryEventName =
@@ -709,3 +729,4 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | CancellationFlowClosedMetadata

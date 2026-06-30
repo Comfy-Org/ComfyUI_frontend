@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
+import type { ChurnkeyMode } from '@/platform/cloud/churnkey/types'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -212,6 +213,13 @@ interface PaymentPortalRequest {
 
 interface PaymentPortalResponse {
   url: string
+}
+
+export interface ChurnkeyAuthResponse {
+  customer_id: string
+  subscription_id?: string
+  auth_hash: string
+  mode: ChurnkeyMode
 }
 
 interface PreviewPlanInfo {
@@ -771,6 +779,37 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get Churnkey auth credentials (customer ID + HMAC) for the active workspace.
+   * GET /api/billing/churnkey/auth
+   * Used by the cancellation flow to launch the Churnkey embedded modal.
+   *
+   * Returns `null` on any 404 — callers fall back to the legacy cancel
+   * dialog. Verified against production (2026-06-12): an undeployed route
+   * hits the router's catch-all, which returns a JSON 404 body of
+   * `{"error":{"message":"Not Found","type":"not_found"}}` (application
+   * errors use a `{"code": ...}` shape instead, e.g. UNAUTHORIZED). A
+   * future application-level 404 such as "no Churnkey customer" also
+   * correctly falls back to the legacy dialog.
+   *
+   * The HMAC must be signed server-side; never derive it on the client.
+   */
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse | null> {
+    const headers = await getAuthHeaderOrThrow()
+    const url = api.apiURL('/billing/churnkey/auth')
+    try {
+      const response = await workspaceApiClient.get<ChurnkeyAuthResponse>(url, {
+        headers
+      })
+      return response.data
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        return null
+      }
       handleAxiosError(err)
     }
   },

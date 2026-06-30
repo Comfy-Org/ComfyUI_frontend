@@ -2543,7 +2543,7 @@
       "title": "Your subscription has been canceled",
       "description": "You won't be charged again. Your features remain active until {date}."
     },
-    "cancelSuccess": "Subscription cancelled successfully",
+    "cancelSuccess": "Subscription canceled successfully",
     "cancelDialog": {
       "title": "Cancel subscription",
       "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
@@ -2575,6 +2575,7 @@
     "monthlyBonusDescription": "Monthly credit bonus",
     "prepaidDescription": "Pre-paid credits",
     "prepaidCreditsInfo": "Pre-paid credits expire after 1 year from purchase date.",
+    "creditsIncluded": "Included",
     "creditsRemainingThisMonth": "Included (Refills {date})",
     "creditsRemainingThisYear": "Included (Refills {date})",
     "creditsYouveAdded": "Additional",

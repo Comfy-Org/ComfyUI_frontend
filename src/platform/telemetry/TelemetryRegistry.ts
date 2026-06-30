@@ -3,6 +3,7 @@ import type { AuditLog } from '@/services/customerEventsService'
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
+  CancellationFlowClosedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -267,5 +268,15 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
     this.dispatch((provider) => provider.trackPageView?.(pageName, properties))
+  }
+
+  trackCancellationFlowOpened(): void {
+    this.dispatch((provider) => provider.trackCancellationFlowOpened?.())
+  }
+
+  trackCancellationFlowClosed(metadata: CancellationFlowClosedMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackCancellationFlowClosed?.(metadata)
+    )
   }
 }

@@ -1,0 +1,199 @@
+#ck-app .ck-modal-container {
+  z-index: 10000 !important;
+}
+
+.ck-style,
+.ck-style * {
+  font-family: inherit !important;
+}
+
+.ck-background-overlay,
+#ck-cf-modal-overlay {
+  background: rgb(0 0 0 / 0.7) !important;
+}
+
+/* Churnkey uses var(--color-brand-black) for primary text (titles, etc.).
+   Remap it to our light foreground so that text is readable on the dark
+   modal. Background utilities that also use it (bg-brand-black) are guarded
+   below so they don't turn light. */
+#ck-app,
+.ck-style {
+  --color-brand-black: var(--base-foreground) !important;
+}
+
+.ck-modal,
+#ck-cf-modal {
+  background: var(--base-background) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5) !important;
+  border-radius: 16px !important;
+}
+
+.ck-step,
+.ck-survey-step,
+.ck-confirm-step,
+.ck-freeform-step,
+.ck-pause-step,
+.ck-discount-step,
+.ck-contact-step,
+.ck-redirect-step,
+.ck-complete-step,
+.ck-progress-step,
+.ck-error-step {
+  background: var(--base-background) !important;
+}
+
+.ck-step-header {
+  background: var(--base-background) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+.ck-step-header-text {
+  color: var(--base-foreground) !important;
+}
+.ck-step-description-text,
+.ck-description,
+.ck-style .subtitle {
+  color: var(--muted-foreground) !important;
+}
+.ck-step-body {
+  background: var(--base-background) !important;
+  color: var(--muted-foreground) !important;
+}
+.ck-step-footer {
+  background: var(--base-background) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+}
+
+.ck-style select,
+.ck-style input,
+.ck-style textarea {
+  background-color: var(--secondary-background) !important;
+  color: var(--base-foreground) !important;
+  border-color: var(--border-default) !important;
+}
+.ck-style select:focus-visible,
+.ck-style input:focus-visible,
+.ck-style textarea:focus-visible {
+  border-color: var(--primary-background) !important;
+  box-shadow: 0 0 0 2px var(--primary-background) !important;
+  outline: 2px solid transparent !important;
+  outline-offset: 2px !important;
+}
+.ck-style ::placeholder {
+  color: var(--muted-foreground) !important;
+  opacity: 0.6 !important;
+}
+.ck-style option {
+  background-color: var(--secondary-background) !important;
+  color: var(--base-foreground) !important;
+}
+
+/* Churnkey injects its compiled utility CSS at runtime, AFTER this bundled
+   sheet, so `.ck-style`-scoped overrides tie on specificity and lose on
+   source order — leaving dark brand/gray text on the dark modal. The
+   `#ck-app` id prefix raises specificity above Churnkey's `.ck-style`
+   utilities so these win regardless of injection order. */
+#ck-app .text-gray-900,
+#ck-app .text-gray-800,
+#ck-app .text-brand-black {
+  color: var(--base-foreground) !important;
+}
+#ck-app .text-gray-700,
+#ck-app .text-gray-600,
+#ck-app .text-gray-500,
+#ck-app .text-gray-400 {
+  color: var(--muted-foreground) !important;
+}
+#ck-app .border-gray-100,
+#ck-app .border-gray-200,
+#ck-app .border-gray-300 {
+  border-color: var(--border-default) !important;
+}
+#ck-app .bg-gray-100,
+#ck-app .bg-gray-200,
+#ck-app .bg-gray-300 {
+  background-color: var(--secondary-background) !important;
+}
+/* Guard: brand-black is remapped to a light foreground for text, so force
+   its background usage to a dark surface. Primary buttons override this to
+   the accent via their own rule below. */
+#ck-app .bg-brand-black {
+  background-color: var(--secondary-background) !important;
+}
+#ck-app .text-opacity-60,
+#ck-app .text-opacity-80,
+#ck-app .text-opacity-90 {
+  --tw-text-opacity: 1 !important;
+}
+
+#ck-app [class*='bg-client-primary-light'] {
+  background-color: var(--secondary-background) !important;
+}
+#ck-app .bg-opacity-5 {
+  --tw-bg-opacity: 1 !important;
+}
+.ck-pause-subscription-details {
+  border-color: var(--border-default) !important;
+  color: var(--muted-foreground) !important;
+}
+.ck-pause-subscription-details b {
+  color: var(--base-foreground) !important;
+}
+#ck-app .active-discount-disclaimer {
+  color: var(--muted-foreground) !important;
+  background-color: var(--secondary-background) !important;
+}
+.ck-step-body li,
+.ck-step-body label {
+  color: var(--muted-foreground) !important;
+}
+
+#ck-app .h-14.rounded-t-lg {
+  background-color: var(--secondary-background) !important;
+}
+#ck-app .bg-client-primary {
+  background-color: var(--primary-background) !important;
+}
+#ck-app .text-client-primary,
+#ck-app .text-client-primary-light {
+  color: var(--muted-foreground) !important;
+}
+#ck-app .text-client-primary-middle {
+  color: var(--muted-foreground) !important;
+  opacity: 0.4 !important;
+}
+#ck-app .border-client-primary {
+  border-color: var(--primary-background) !important;
+}
+#ck-app .border-client-primary-light,
+#ck-app .border-text-client-primary {
+  border-color: var(--border-default) !important;
+}
+
+/* Buttons carry both Churnkey component classes (.ck-*-button) and raw
+   utilities (bg-brand-black, bg-gray-200, text-white, text-brand-black).
+   Scope under the #ck-app id so these win over Churnkey's runtime-injected
+   `.ck-style` utilities — otherwise the utility bg/text colors leak through
+   and produce light-on-light / dark-on-dark buttons. */
+#ck-app .ck-primary-button,
+#ck-app .ck-black-primary-button {
+  background: var(--primary-background) !important;
+  color: var(--base-foreground) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+#ck-app .ck-primary-button:hover,
+#ck-app .ck-black-primary-button:hover {
+  background: var(--primary-background-hover) !important;
+}
+#ck-app .ck-gray-primary-button {
+  background: var(--secondary-background) !important;
+  color: var(--base-foreground) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 8px !important;
+}
+#ck-app .ck-text-button,
+#ck-app .ck-black-text-button {
+  color: var(--muted-foreground) !important;
+}

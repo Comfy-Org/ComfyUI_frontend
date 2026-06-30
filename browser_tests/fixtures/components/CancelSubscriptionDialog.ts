@@ -21,12 +21,18 @@ export class CancelSubscriptionDialog extends BaseDialog {
     })
   }
 
-  async open(cancelAt?: string) {
+  /** Launches the cancellation flow without waiting for the legacy dialog
+   * (e.g. when the Churnkey embed is expected to handle it instead). */
+  async launch(cancelAt?: string) {
     await this.page.evaluate((date) => {
       void (
         window.app!.extensionManager as WorkspaceStore
-      ).dialog.showCancelSubscriptionDialog(date)
+      ).dialog.launchCancellationFlow(date)
     }, cancelAt)
+  }
+
+  async open(cancelAt?: string) {
+    await this.launch(cancelAt)
     await this.waitForVisible()
   }
 }

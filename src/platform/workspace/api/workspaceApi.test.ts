@@ -335,6 +335,46 @@ describe('workspaceApi', () => {
       })
       expect(result).toEqual(data)
     })
+
+    it('getChurnkeyAuth() returns the credentials on success', async () => {
+      const data = {
+        customer_id: 'cus_123',
+        auth_hash: 'hash_abc',
+        mode: 'live'
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getChurnkeyAuth()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/churnkey/auth',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getChurnkeyAuth() returns null on 404 so callers fall back', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        isAxiosError: true,
+        response: { status: 404, data: { error: { message: 'Not Found' } } },
+        message: 'Request failed'
+      })
+
+      await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
+    })
+
+    it('getChurnkeyAuth() rethrows non-404 errors', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        isAxiosError: true,
+        response: { status: 500, data: { message: 'Server Error' } },
+        message: 'Request failed'
+      })
+
+      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 500
+      })
+    })
   })
 
   describe('subscription', () => {

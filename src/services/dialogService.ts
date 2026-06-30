@@ -6,6 +6,7 @@ import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.v
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import { workspaceDialogProps } from '@/platform/workspace/components/dialogs/workspaceDialogProps'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -456,12 +457,6 @@ export const useDialogService = () => {
   }
 
   // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
-  const workspaceDialogProps = {
-    renderer: 'reka',
-    headless: true,
-    contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
-  } as const
-
   async function showDeleteWorkspaceDialog(options?: {
     workspaceId?: string
     workspaceName?: string
@@ -612,16 +607,15 @@ export const useDialogService = () => {
   }
 
   async function showCancelSubscriptionDialog(cancelAt?: string) {
-    const { default: component } =
-      await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'cancel-subscription',
-      component,
-      props: { cancelAt },
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
+    const { showCancelSubscriptionDialog: show } =
+      await import('@/platform/cloud/subscription/showCancelSubscriptionDialog')
+    return show(cancelAt)
+  }
+
+  async function launchCancellationFlow(cancelAt?: string): Promise<void> {
+    const { launchCancellationFlow: launch } =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return launch(cancelAt)
   }
 
   /**
@@ -734,6 +728,7 @@ export const useDialogService = () => {
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
+    launchCancellationFlow,
     showDowngradeToPersonalDialog
   }
 }

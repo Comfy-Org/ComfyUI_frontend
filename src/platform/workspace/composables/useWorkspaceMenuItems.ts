@@ -26,7 +26,7 @@ export function useWorkspaceMenuItems() {
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
   const {
-    showCancelSubscriptionDialog,
+    launchCancellationFlow,
     showEditWorkspaceDialog,
     showDeleteWorkspaceDialog,
     showLeaveWorkspaceDialog
@@ -37,7 +37,7 @@ export function useWorkspaceMenuItems() {
   }
 
   function cancelSubscription() {
-    void showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+    void launchCancellationFlow(subscription.value?.endDate ?? undefined)
   }
 
   function deleteWorkspace() {
