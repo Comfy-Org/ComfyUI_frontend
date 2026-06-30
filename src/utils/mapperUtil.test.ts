@@ -50,7 +50,10 @@ describe('registryToFrontendV2NodeDef', () => {
       pack()
     )
 
-    expect(Object.keys(def.inputs)).toEqual(['seed', 'label'])
+    expect(def.inputs).toEqual({
+      seed: { type: 'INT', name: 'seed', isOptional: false, default: 0 },
+      label: { type: 'STRING', name: 'label', isOptional: true }
+    })
   })
 
   it('returns no inputs when input_types is empty or absent', () => {

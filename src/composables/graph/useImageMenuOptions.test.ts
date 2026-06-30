@@ -239,8 +239,14 @@ describe('useImageMenuOptions', () => {
 
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)
-      options.find((o) => o.label === 'Open Image')?.action?.()
-      options.find((o) => o.label === 'Save Image')?.action?.()
+      const openOption = options.find((o) => o.label === 'Open Image')
+      const saveOption = options.find((o) => o.label === 'Save Image')
+
+      expect(openOption?.action).toEqual(expect.any(Function))
+      expect(saveOption?.action).toEqual(expect.any(Function))
+
+      openOption?.action?.()
+      saveOption?.action?.()
 
       expect(openFileInNewTab).not.toHaveBeenCalled()
       expect(downloadFile).not.toHaveBeenCalled()
