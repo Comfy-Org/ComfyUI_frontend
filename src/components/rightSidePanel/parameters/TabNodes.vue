@@ -4,7 +4,6 @@ import { computed, reactive, ref, shallowRef } from 'vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import type { NodeId } from '@/types/nodeId'
@@ -14,13 +13,10 @@ import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
 const canvasStore = useCanvasStore()
-const workflowStore = useWorkflowStore()
 
-const nodes = computed((): LGraphNode[] => {
-  // Depend on activeWorkflow to trigger recomputation when workflow changes
-  void workflowStore.activeWorkflow?.path
-  return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
-})
+const nodes = computed(
+  (): LGraphNode[] => (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
+)
 
 const searchQuery = ref('')
 
