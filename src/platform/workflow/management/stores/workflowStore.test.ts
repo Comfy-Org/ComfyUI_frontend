@@ -249,10 +249,10 @@ describe('useWorkflowStore', () => {
     })
 
     it('should replace a non-UUID workflow id with a fresh UUID', () => {
-      const workflowDataWithSlugId = {
+      const workflowDataWithSlugId = fromPartial<ComfyWorkflowJSON>({
         ...defaultGraph,
         id: 'video-point-prompt-example'
-      } as unknown as ComfyWorkflowJSON
+      })
 
       const workflow = store.createTemporary(
         'slug-id.json',
@@ -268,10 +268,10 @@ describe('useWorkflowStore', () => {
     })
 
     it('should replace an empty-string id with a fresh UUID', () => {
-      const workflowDataWithEmptyId = {
+      const workflowDataWithEmptyId = fromPartial<ComfyWorkflowJSON>({
         ...defaultGraph,
         id: ''
-      } as unknown as ComfyWorkflowJSON
+      })
 
       const workflow = store.createTemporary(
         'empty-id.json',
@@ -286,10 +286,10 @@ describe('useWorkflowStore', () => {
 
     it('should preserve a valid existing UUID', () => {
       const existingUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
-      const workflowDataWithValidId = {
+      const workflowDataWithValidId = fromPartial<ComfyWorkflowJSON>({
         ...defaultGraph,
         id: existingUuid
-      } as unknown as ComfyWorkflowJSON
+      })
 
       const workflow = store.createTemporary(
         'valid-uuid.json',
@@ -302,10 +302,10 @@ describe('useWorkflowStore', () => {
 
     it('should preserve a valid uppercase UUID', () => {
       const existingUuid = '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F'
-      const workflowDataWithUpperId = {
+      const workflowDataWithUpperId = fromPartial<ComfyWorkflowJSON>({
         ...defaultGraph,
         id: existingUuid
-      } as unknown as ComfyWorkflowJSON
+      })
 
       const workflow = store.createTemporary(
         'upper-uuid.json',
