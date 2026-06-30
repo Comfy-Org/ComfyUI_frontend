@@ -231,6 +231,7 @@ export class ChangeTracker {
   }
 
   squashState() {
+    if (ChangeTracker.isLoadingGraph) return
     this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
   }
 

@@ -35,7 +35,8 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     ),
     getNodeLayoutRef: vi.fn((nodeId: string) => ({
       value: testState.layoutByNodeId.get(nodeId) ?? null
-    }))
+    })),
+    getCurrentSource: vi.fn()
   }
 }))
 
