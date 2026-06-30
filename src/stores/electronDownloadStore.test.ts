@@ -24,6 +24,9 @@ vi.mock('@/utils/envUtil', () => ({
   })
 }))
 
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 describe('electronDownloadStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -46,7 +49,7 @@ describe('electronDownloadStore', () => {
     })
     const store = useElectronDownloadStore()
 
-    await store.initialize()
+    await flushPromises()
     progressCallback?.({
       filename: 'model.bin',
       progress: 25,
