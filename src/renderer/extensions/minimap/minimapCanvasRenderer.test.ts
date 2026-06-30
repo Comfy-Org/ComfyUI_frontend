@@ -12,6 +12,7 @@ import {
   createMockLLink,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
+import { toNodeId } from '@/types/nodeId'
 
 const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
@@ -267,7 +268,12 @@ describe('minimapCanvasRenderer', () => {
     ]
 
     mockGraph.links = createMockLinks([
-      createMockLLink({ id: 1, target_id: 2, origin_slot: 0, target_slot: 0 })
+      createMockLLink({
+        id: 1,
+        target_id: toNodeId(2),
+        origin_slot: 0,
+        target_slot: 0
+      })
     ])
 
     mockGraph.getNodeById = vi.fn().mockReturnValue(targetNode)

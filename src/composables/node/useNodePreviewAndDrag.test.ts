@@ -37,17 +37,16 @@ describe('useNodePreviewAndDrag', () => {
   describe('initial state', () => {
     it('should initialize with correct default values', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       expect(result.isHovered.value).toBe(false)
       expect(result.isDragging.value).toBe(false)
       expect(result.showPreview.value).toBe(false)
-      expect(result.previewRef.value).toBeNull()
     })
 
     it('should compute showPreview based on hover and drag state', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isHovered.value = true
       expect(result.showPreview.value).toBe(true)
@@ -58,7 +57,7 @@ describe('useNodePreviewAndDrag', () => {
 
     it('should hide preview while a node is being placed elsewhere', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isHovered.value = true
       expect(result.showPreview.value).toBe(true)
@@ -71,7 +70,7 @@ describe('useNodePreviewAndDrag', () => {
   describe('handleMouseEnter', () => {
     it('should set isHovered to true when nodeDef exists', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockElement = document.createElement('div')
       vi.spyOn(mockElement, 'getBoundingClientRect').mockReturnValue({
@@ -96,7 +95,7 @@ describe('useNodePreviewAndDrag', () => {
 
     it('should not set isHovered when nodeDef is undefined', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(undefined)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockElement = document.createElement('div')
       const mockEvent = fromPartial<MouseEvent>({
@@ -111,7 +110,7 @@ describe('useNodePreviewAndDrag', () => {
   describe('handleMouseLeave', () => {
     it('should set isHovered to false', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isHovered.value = true
       result.handleMouseLeave()
@@ -123,7 +122,7 @@ describe('useNodePreviewAndDrag', () => {
   describe('handleDragStart', () => {
     it('should call startDrag with native mode when nodeDef exists', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockDataTransfer = {
         effectAllowed: '',
@@ -150,7 +149,7 @@ describe('useNodePreviewAndDrag', () => {
 
     it('should not start drag when nodeDef is undefined', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(undefined)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockEvent = { dataTransfer: null } as DragEvent
       result.handleDragStart(mockEvent)
@@ -163,7 +162,7 @@ describe('useNodePreviewAndDrag', () => {
   describe('handleDragEnd', () => {
     it('should call handleNativeDrop with drop coordinates', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isDragging.value = true
 
@@ -180,7 +179,7 @@ describe('useNodePreviewAndDrag', () => {
 
     it('should always call handleNativeDrop regardless of dropEffect', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isDragging.value = true
 

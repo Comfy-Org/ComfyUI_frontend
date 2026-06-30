@@ -43,9 +43,11 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   })
 }))
 
+const mockCloseDialog = vi.fn()
+
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
-    closeDialog: vi.fn()
+    closeDialog: mockCloseDialog
   })
 }))
 
@@ -196,6 +198,41 @@ describe('billingOperationStore', () => {
         summary: 'billingOperation.subscriptionSuccess',
         life: 5000
       })
+    })
+
+    it('leaves the checkout dialog open on subscription success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockCloseDialog).not.toHaveBeenCalledWith({
+        key: 'subscription-required'
+      })
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+    })
+
+    it('closes the top-up dialog and opens settings on topup success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
+      expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
     })
 
     it('fires purchase telemetry on subscription success', async () => {

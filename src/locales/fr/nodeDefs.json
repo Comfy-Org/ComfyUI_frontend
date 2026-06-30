@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "Génère une invite JSON pour le modèle Ideogram 4.",
+    "display_name": "Générer une invite JSON (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "esthétique",
+        "tooltip": "Mots-clés esthétiques obligatoires (ex : sombre, cinématographique, désaturé)."
+      },
+      "background": {
+        "name": "arrière-plan",
+        "tooltip": "Description obligatoire de l’arrière-plan ou de l’environnement de l’image."
+      },
+      "color_palette": {
+        "name": "palette_de_couleurs",
+        "tooltip": "Codes couleur hexadécimaux pour orienter les couleurs dominantes de l’image. Jusqu’à 16 entrées."
+      },
+      "element": {
+        "name": "élément",
+        "tooltip": "Éléments d'invite provenant du nœud Créer des boîtes englobantes."
+      },
+      "high_level_description": {
+        "name": "description_de_haut_niveau",
+        "tooltip": "Description optionnelle de l’image en une ou deux phrases. Fortement recommandé."
+      },
+      "lighting": {
+        "name": "éclairage",
+        "tooltip": "Description obligatoire de l’éclairage (ex : heure dorée, contre-jour, ombres dramatiques)."
+      },
+      "medium": {
+        "name": "support",
+        "tooltip": "Type de support obligatoire (ex : photographie, illustration, rendu_3d, peinture, conception_graphique). Lorsque style = photo, choisir photographie."
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "invite",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Générez une vidéo avec Seedance 2.0 à partir d'une image de première image et, optionnellement, d'une image de dernière image.",
     "display_name": "ByteDance Seedance 2.0 Première-Dernière-Image vers Vidéo",
@@ -2633,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Convertir un tableau en chaîne",
+    "inputs": {
+      "array": {
+        "name": "tableau"
+      },
+      "indent": {
+        "name": "indentation",
+        "tooltip": "Espaces par niveau d’indentation. 0 produit une chaîne compacte sur une seule ligne."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Convertir un dictionnaire en chaîne",
+    "inputs": {
+      "dictionary": {
+        "name": "dictionnaire"
+      },
+      "indent": {
+        "name": "indentation",
+        "tooltip": "Espaces par niveau d’indentation. 0 produit une chaîne compacte sur une seule ligne."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageVersVidéoLatent",
     "inputs": {
@@ -2691,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "Dessinez des boîtes englobantes sur une toile. Génère des éléments d’invite Ideogram, des boîtes englobantes en espace pixel et une image d’aperçu.",
+    "display_name": "Créer des boîtes englobantes",
+    "inputs": {
+      "background": {
+        "name": "arrière-plan",
+        "tooltip": "Image optionnelle utilisée comme arrière-plan sur la toile et dans l’aperçu."
+      },
+      "editor_state": {
+        "name": "état_éditeur",
+        "tooltip": "Dessinez des boîtes englobantes et définissez pour chaque boîte le type, le texte, la description, la palette de couleurs. Commencez par l’élément d’arrière-plan et terminez par le premier plan."
+      },
+      "height": {
+        "name": "hauteur",
+        "tooltip": "Hauteur de la toile et de la grille de pixels pour les boîtes englobantes."
+      },
+      "width": {
+        "name": "largeur",
+        "tooltip": "Largeur de la toile et de la grille de pixels pour les boîtes englobantes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "aperçu",
+        "tooltip": null
+      },
+      "1": {
+        "name": "boîtes_englobantes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "éléments",
         "tooltip": null
       }
     }
@@ -12025,6 +12138,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocs.0."
+      },
+      "blocks_10_": {
+        "name": "blocs.10."
+      },
+      "blocks_11_": {
+        "name": "blocs.11."
+      },
+      "blocks_12_": {
+        "name": "blocs.12."
+      },
+      "blocks_13_": {
+        "name": "blocs.13."
+      },
+      "blocks_14_": {
+        "name": "blocs.14."
+      },
+      "blocks_15_": {
+        "name": "blocs.15."
+      },
+      "blocks_16_": {
+        "name": "blocs.16."
+      },
+      "blocks_17_": {
+        "name": "blocs.17."
+      },
+      "blocks_18_": {
+        "name": "blocs.18."
+      },
+      "blocks_19_": {
+        "name": "blocs.19."
+      },
+      "blocks_1_": {
+        "name": "blocs.1."
+      },
+      "blocks_20_": {
+        "name": "blocs.20."
+      },
+      "blocks_21_": {
+        "name": "blocs.21."
+      },
+      "blocks_22_": {
+        "name": "blocs.22."
+      },
+      "blocks_23_": {
+        "name": "blocs.23."
+      },
+      "blocks_24_": {
+        "name": "blocs.24."
+      },
+      "blocks_25_": {
+        "name": "blocs.25."
+      },
+      "blocks_26_": {
+        "name": "blocs.26."
+      },
+      "blocks_27_": {
+        "name": "blocs.27."
+      },
+      "blocks_2_": {
+        "name": "blocs.2."
+      },
+      "blocks_3_": {
+        "name": "blocs.3."
+      },
+      "blocks_4_": {
+        "name": "blocs.4."
+      },
+      "blocks_5_": {
+        "name": "blocs.5."
+      },
+      "blocks_6_": {
+        "name": "blocs.6."
+      },
+      "blocks_7_": {
+        "name": "blocs.7."
+      },
+      "blocks_8_": {
+        "name": "blocs.8."
+      },
+      "blocks_9_": {
+        "name": "blocs.9."
+      },
+      "first_": {
+        "name": "premier."
+      },
+      "last_": {
+        "name": "dernier."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "ModelMergeLTXV",
     "inputs": {
@@ -17694,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Graine",
+    "inputs": {
+      "fixed": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "graine",
         "tooltip": null
       }
     }

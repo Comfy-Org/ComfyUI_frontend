@@ -235,8 +235,9 @@
                    cycle halves the yearly discount when monthly. -->
               <CreditSlider
                 v-model="teamUsd"
+                :stops="teamStops"
+                :default-stop-index="teamDefaultStopIndex"
                 :cycle="currentBillingCycle"
-                @change="onTeamChange"
               />
 
               <!-- Selected credit grant + template-based video estimate -->
@@ -425,10 +426,12 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  getDiscountedMonthlyUsd,
-  TEAM_PLAN_CREDIT_STOPS
+  TEAM_PLAN_CREDIT_STOPS,
+  getStopDiscountedMonthlyUsd,
+  mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -453,14 +456,14 @@ const {
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
   resubscribe: []
-  // Team-plan checkout. NOTE: the slider stop -> plan-slug mapping is blocked on
-  // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host shows
-  // the confirm step but stubs the final subscribe until the contract lands.
-  // TODO(FE-934): once the contract lands, also carry `currentBillingCycle`
-  // (yearly | monthly) so checkout subscribes to the selected cycle, not just
-  // the stop. The pricing-table view already toggles cycle; the confirm/checkout
-  // chain still assumes yearly.
-  subscribeTeam: [payload: TeamPlanSelection]
+  subscribeTeam: [
+    payload: {
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+      /** See `isTeamPlanChange`. */
+      isChange: boolean
+    }
+  ]
 }>()
 
 const { t, n } = useI18n()
@@ -612,17 +615,40 @@ const {
   currentTeamCreditStop
 } = useBillingContext()
 
+const { teamCreditStops } = useBillingPlans()
+
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
-// Team plan selection (slider). Stop -> slug mapping is BE-blocked (see emit).
-const teamUsd = ref<number>(
-  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].usd
+// Team credit stops: backend-sourced when the API supplies them, otherwise the
+// hardcoded DES-197 fallback so OSS / pre-deploy still renders. Always non-empty
+// so the default/selected stops below are guaranteed defined.
+const teamStops = computed(() => {
+  const apiStops = teamCreditStops.value?.stops
+  return apiStops?.length
+    ? mapApiTeamCreditStops(apiStops)
+    : TEAM_PLAN_CREDIT_STOPS
+})
+const teamDefaultStopIndex = computed(
+  () =>
+    teamCreditStops.value?.default_stop_index ?? DEFAULT_TEAM_PLAN_STOP_INDEX
 )
-const teamCredits = ref<number>(
-  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].credits
+const defaultTeamStop = computed(
+  () => teamStops.value[teamDefaultStopIndex.value] ?? teamStops.value[0]
 )
+
+const teamUsd = ref<number>(defaultTeamStop.value.usd)
+
+// The selected stop follows the slider's USD value; when it matches none (e.g.
+// the API stops loaded after mount with different breakpoints) it falls back to
+// the default stop so the id/credits stay consistent with what's displayed.
+const selectedTeamStop = computed(
+  () =>
+    teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
+    defaultTeamStop.value
+)
+const teamCredits = computed(() => selectedTeamStop.value.credits)
 const teamVideoEstimate = computed(() =>
   Math.round(teamCredits.value * VIDEO_PER_CREDIT)
 )
@@ -630,11 +656,16 @@ const teamVideoEstimate = computed(() =>
 // The team's currently-subscribed stop (null when on no team plan). Matched to
 // the slider stops by list price so the current stop can be disabled.
 const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
-const currentTeamStopIndex = computed(() => {
-  const usd = currentTeamCreditStop.value?.stop_usd
-  if (usd == null) return null
-  const i = TEAM_PLAN_CREDIT_STOPS.findIndex((stop) => stop.usd === usd)
-  return i === -1 ? null : i
+
+// `teamUsd` is seeded at mount from the fallback default; when the API stops
+// resolve afterwards with different breakpoints that seed can match no stop,
+// leaving the slider position and the subscribe payload out of sync. Snap to the
+// resolved default — but only while no real stop is pinned (a subscriber's stop
+// is set below; a user's own selection already matches a stop).
+watch(defaultTeamStop, (stop) => {
+  if (currentTeamCreditStop.value) return
+  if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
+  teamUsd.value = stop.usd
 })
 
 // Start the slider on the current stop so an active subscriber sees their plan
@@ -644,19 +675,23 @@ watch(
   (stop) => {
     if (!stop) return
     teamUsd.value = stop.stop_usd
-    teamCredits.value = stop.credits_monthly
   },
   { immediate: true }
 )
 
 // The CTA — not the slider stop — reflects the current plan: on the active stop
 // it reads "Current plan" (disabled); a cancelled plan re-subscribes on its
-// stop. Any other stop is locked because the credit stop can't be changed.
-const isTeamCurrentStopSelected = computed(
-  () =>
-    currentTeamStopIndex.value !== null &&
-    TEAM_PLAN_CREDIT_STOPS[currentTeamStopIndex.value]?.usd === teamUsd.value
-)
+// stop. Any other stop is locked because the credit stop can't be changed. The
+// subscribed stop must be one of the available stops for the slider to land on
+// it, so match against `teamStops` rather than the hardcoded fallback.
+const isTeamCurrentStopSelected = computed(() => {
+  const usd = currentTeamCreditStop.value?.stop_usd
+  return (
+    usd != null &&
+    usd === teamUsd.value &&
+    teamStops.value.some((stop) => stop.usd === usd)
+  )
+})
 
 // Yearly and monthly at the same credit stop are distinct plans, so toggling
 // the cycle is a change, not the current plan.
@@ -691,6 +726,13 @@ const isTeamButtonDisabled = computed(
     (isTeamSubscribed.value &&
       isTeamCurrentPlanSelected.value &&
       !isCancelled.value)
+)
+
+// A subscriber moving off their current plan is a prorated change rather than a
+// fresh subscribe; re-subscribe and the locked current plan exit before the
+// change emit, so this drives the prorated transition preview.
+const isTeamPlanChange = computed(
+  () => isTeamSubscribed.value && !isTeamCurrentPlanSelected.value
 )
 
 onMounted(() => {
@@ -804,11 +846,6 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
   emit('subscribe', { tierKey, billingCycle: currentBillingCycle.value })
 }
 
-function onTeamChange(stop: { index: number; usd: number; credits: number }) {
-  teamUsd.value = stop.usd
-  teamCredits.value = stop.credits
-}
-
 function handleSubscribeTeam() {
   if (isTeamButtonDisabled.value) return
   // Re-subscribe only when keeping the exact current plan; any other stop or
@@ -817,13 +854,19 @@ function handleSubscribeTeam() {
     emit('resubscribe')
     return
   }
+  const stop = selectedTeamStop.value
   emit('subscribeTeam', {
-    usd: teamUsd.value,
-    credits: teamCredits.value,
-    discountedUsd: getDiscountedMonthlyUsd(
-      teamUsd.value,
-      currentBillingCycle.value
-    )
+    stop: {
+      id: stop.id,
+      usd: stop.usd,
+      credits: stop.credits,
+      discountedUsd: getStopDiscountedMonthlyUsd(
+        stop,
+        currentBillingCycle.value
+      )
+    },
+    billingCycle: currentBillingCycle.value,
+    isChange: isTeamPlanChange.value
   })
 }
 

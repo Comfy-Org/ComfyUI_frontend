@@ -8,6 +8,7 @@ import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -53,6 +54,44 @@ interface MintedToken {
   token: string
   expiresAt: number
   workspace: WorkspaceWithRole
+}
+
+const PERMANENT_AUTH_ERROR_CODES = new Set([
+  'ACCESS_DENIED',
+  'WORKSPACE_NOT_FOUND',
+  'INVALID_FIREBASE_TOKEN',
+  'NOT_AUTHENTICATED'
+])
+
+function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
+  return (
+    err instanceof WorkspaceAuthError &&
+    PERMANENT_AUTH_ERROR_CODES.has(err.code ?? '')
+  )
+}
+
+function permanentAuthErrorMessageKey(code: string | undefined): string {
+  switch (code) {
+    case 'ACCESS_DENIED':
+      return 'workspaceAuth.errors.accessDenied'
+    case 'WORKSPACE_NOT_FOUND':
+      return 'workspaceAuth.errors.workspaceNotFound'
+    case 'INVALID_FIREBASE_TOKEN':
+      return 'workspaceAuth.errors.invalidFirebaseToken'
+    default:
+      return 'workspaceAuth.errors.notAuthenticated'
+  }
+}
+
+// Flag-ON has no Firebase fallback, so surface permanent failures instead of
+// stranding every cloud request on a silently cleared token.
+function surfacePermanentAuthError(err: WorkspaceAuthError): void {
+  console.error('Unified workspace auth revoked or invalid:', err)
+  useToastStore().add({
+    severity: 'error',
+    summary: t('g.error'),
+    detail: t(permanentAuthErrorMessageKey(err.code))
+  })
 }
 
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
@@ -462,10 +501,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // A parallel mint/refresh lifecycle that writes to the dormant `unifiedToken`
   // slot. The legacy switchWorkspace/refreshToken machinery above is untouched.
 
-  // The mint body the unified session re-mints against. `{}` is the personal
-  // default (the backend resolves the personal workspace from the Firebase
-  // identity); `{ workspace_id }` targets a concrete workspace. `null` means no
-  // active unified session.
+  // Mint body the unified session re-mints against: `{}` = personal (resolved
+  // server-side from the Firebase identity), `{ workspace_id }` = explicit.
   type UnifiedMintBody = Record<string, never> | { workspace_id: string }
   let unifiedTarget: UnifiedMintBody | null = null
 
@@ -540,15 +577,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         useAuthStore().notifyTokenRefreshed()
       }
     } catch (err) {
-      const isPermanentError =
-        err instanceof WorkspaceAuthError &&
-        (err.code === 'ACCESS_DENIED' ||
-          err.code === 'WORKSPACE_NOT_FOUND' ||
-          err.code === 'INVALID_FIREBASE_TOKEN' ||
-          err.code === 'NOT_AUTHENTICATED')
-
-      if (isPermanentError) {
-        console.error('Unified workspace auth revoked or invalid:', err)
+      // Guard the toast on a live token so concurrent permanent failures across
+      // the proactive + reactive paths alarm the user once, not once per caller.
+      if (isPermanentAuthError(err)) {
+        if (unifiedToken.value) surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified token refresh failed:', err)
@@ -563,7 +595,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (unifiedToken.value) {
       return true
     }
-    return mintUnified(personalWorkspaceTarget())
+    try {
+      return await mintUnified(personalWorkspaceTarget())
+    } catch (err) {
+      if (isPermanentAuthError(err)) {
+        surfacePermanentAuthError(err)
+      } else {
+        console.warn('Unified login mint failed:', err)
+      }
+      return false
+    }
   }
 
   const remintUnifiedOnce = async (): Promise<string | null> => {
@@ -574,8 +615,24 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (!target) {
       return null
     }
-    await mintUnified(target)
-    return unifiedToken.value
+    try {
+      // On a concurrent burst the stale-guard discards all but the winning
+      // mint. Return the slot's current token (the winner's, once it lands)
+      // rather than this call's own success, so a discarded caller can still
+      // retry with it instead of burning its one-shot retry on a fresh 401.
+      await mintUnified(target)
+      return unifiedToken.value ?? null
+    } catch (err) {
+      // Mirror refreshUnified: a permanent failure tears down the session;
+      // guard the toast on a live token so a concurrent burst surfaces it once.
+      if (isPermanentAuthError(err)) {
+        if (unifiedToken.value) surfacePermanentAuthError(err)
+        clearUnifiedContext()
+      } else {
+        console.warn('Unified reactive re-mint failed:', err)
+      }
+      return null
+    }
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {

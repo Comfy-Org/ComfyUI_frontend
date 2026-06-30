@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "Ideogram 4 modeli için bir JSON istemi oluştur.",
+    "display_name": "JSON İstem Oluştur (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "estetik",
+        "tooltip": "Zorunlu estetik anahtar kelimeler (örn. kasvetli, sinematik, doygunluğu azaltılmış)."
+      },
+      "background": {
+        "name": "arka plan",
+        "tooltip": "Görüntü arka planı veya ortamının zorunlu açıklaması."
+      },
+      "color_palette": {
+        "name": "renk paleti",
+        "tooltip": "Görüntünün baskın renklerini yönlendiren Hex renk kodları. En fazla 16 giriş."
+      },
+      "element": {
+        "name": "öğe",
+        "tooltip": "Create Bounding Boxes düğümünden gelen istem öğeleri."
+      },
+      "high_level_description": {
+        "name": "üst düzey açıklama",
+        "tooltip": "Görüntünün bir veya iki cümleyle isteğe bağlı açıklaması. Şiddetle önerilir."
+      },
+      "lighting": {
+        "name": "aydınlatma",
+        "tooltip": "Zorunlu aydınlatma açıklaması (örn. altın saat, kenar ışığı, dramatik gölgeler)."
+      },
+      "medium": {
+        "name": "ortam",
+        "tooltip": "Zorunlu ortam türü (örn. fotoğraf, illüstrasyon, 3d_render, tablo, grafik_tasarım). Stil = fotoğraf ise, fotoğraf olarak ayarlayın."
+      },
+      "style": {
+        "name": "stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "istem",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 kullanarak bir ilk kare görseli ve isteğe bağlı son kare görseli ile video oluşturun.",
     "display_name": "ByteDance Seedance 2.0 İlk-Son-Kareden Videoya",
@@ -2633,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Diziyi Metne Dönüştür",
+    "inputs": {
+      "array": {
+        "name": "dizi"
+      },
+      "indent": {
+        "name": "girinti",
+        "tooltip": "Girinti seviyesi başına boşluk sayısı. 0, tek satırlık kompakt metin üretir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Sözlüğü Metne Dönüştür",
+    "inputs": {
+      "dictionary": {
+        "name": "sözlük"
+      },
+      "indent": {
+        "name": "girinti",
+        "tooltip": "Girinti seviyesi başına boşluk sayısı. 0, tek satırlık kompakt metin üretir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosGörüntüdenVideoyaGizli",
     "inputs": {
@@ -2691,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "Bir tuvalde sınır kutuları çiz. Ideogram istem öğeleri, piksel alanında sınır kutuları ve bir önizleme görüntüsü çıktısı verir.",
+    "display_name": "Sınır Kutuları Oluştur",
+    "inputs": {
+      "background": {
+        "name": "arka plan",
+        "tooltip": "Tuvalde ve önizlemede arka plan olarak kullanılan isteğe bağlı görüntü."
+      },
+      "editor_state": {
+        "name": "düzenleyici durumu",
+        "tooltip": "Sınır kutuları çizin ve her kutunun türünü, metnini, açıklamasını, renk paletini ayarlayın. Önce arka plan öğesiyle başlayın, en son ön planı ekleyin."
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "Tuvalin ve sınır kutuları için piksel ızgarasının yüksekliği."
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "Tuvalin ve sınır kutuları için piksel ızgarasının genişliği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "önizleme",
+        "tooltip": null
+      },
+      "1": {
+        "name": "sınır kutuları",
+        "tooltip": null
+      },
+      "2": {
+        "name": "öğeler",
         "tooltip": null
       }
     }
@@ -12025,6 +12138,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "bloklar.0."
+      },
+      "blocks_10_": {
+        "name": "bloklar.10."
+      },
+      "blocks_11_": {
+        "name": "bloklar.11."
+      },
+      "blocks_12_": {
+        "name": "bloklar.12."
+      },
+      "blocks_13_": {
+        "name": "bloklar.13."
+      },
+      "blocks_14_": {
+        "name": "bloklar.14."
+      },
+      "blocks_15_": {
+        "name": "bloklar.15."
+      },
+      "blocks_16_": {
+        "name": "bloklar.16."
+      },
+      "blocks_17_": {
+        "name": "bloklar.17."
+      },
+      "blocks_18_": {
+        "name": "bloklar.18."
+      },
+      "blocks_19_": {
+        "name": "bloklar.19."
+      },
+      "blocks_1_": {
+        "name": "bloklar.1."
+      },
+      "blocks_20_": {
+        "name": "bloklar.20."
+      },
+      "blocks_21_": {
+        "name": "bloklar.21."
+      },
+      "blocks_22_": {
+        "name": "bloklar.22."
+      },
+      "blocks_23_": {
+        "name": "bloklar.23."
+      },
+      "blocks_24_": {
+        "name": "bloklar.24."
+      },
+      "blocks_25_": {
+        "name": "bloklar.25."
+      },
+      "blocks_26_": {
+        "name": "bloklar.26."
+      },
+      "blocks_27_": {
+        "name": "bloklar.27."
+      },
+      "blocks_2_": {
+        "name": "bloklar.2."
+      },
+      "blocks_3_": {
+        "name": "bloklar.3."
+      },
+      "blocks_4_": {
+        "name": "bloklar.4."
+      },
+      "blocks_5_": {
+        "name": "bloklar.5."
+      },
+      "blocks_6_": {
+        "name": "bloklar.6."
+      },
+      "blocks_7_": {
+        "name": "bloklar.7."
+      },
+      "blocks_8_": {
+        "name": "bloklar.8."
+      },
+      "blocks_9_": {
+        "name": "bloklar.9."
+      },
+      "first_": {
+        "name": "ilk."
+      },
+      "last_": {
+        "name": "son."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "ModelBirleştirmeLTXV",
     "inputs": {
@@ -17694,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Tohum",
+    "inputs": {
+      "fixed": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "tohum",
         "tooltip": null
       }
     }

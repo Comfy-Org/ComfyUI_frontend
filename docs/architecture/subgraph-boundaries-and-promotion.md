@@ -74,7 +74,7 @@ graph TD
 
     subgraph Unified["Unified: Composition"]
         direction TB
-        W["World (flat)"]
+        W["Dedicated stores (flat)"]
         N1["Node A
         graphScope: root"]
         N2["Node B (subgraph carrier)
@@ -95,30 +95,29 @@ graph TD
     style Unified fill:#1a2a1a,stroke:#2a4a2a,color:#e0e0e0
 ```
 
-In the ECS World:
+Across the dedicated stores:
 
 - **Every graph is a graph.** The "root" graph is simply the one whose
   `graphScope` has no parent.
-- **Nesting is a component, not a type.** A node can carry a
-  `SubgraphStructure` component, which references another graph scope. That
-  scope contains its own entities — nodes, links, widgets, reroutes, groups —
-  all living in the same flat World.
-- **One World per workflow.** All entities across all nesting levels coexist in
-  a single World, each tagged with a `graphScope` identifier. There are no
-  sub-worlds, no recursive containers. The fractal structure is encoded in the
-  data, not in the container hierarchy.
-- **Entity taxonomy: six kinds, not seven.** ADR 0008 defines seven entity kinds
-  including `SubgraphEntityId`. Under unification, "subgraph" is not an entity
-  kind — it is a node with a component. The taxonomy becomes: Node, Link,
-  Widget, Slot, Reroute, Group.
-- **ID counters remain global.** All entity IDs are allocated from a single
-  counter space, shared across all nesting levels. This preserves the current
-  `rootGraph.state` behavior and guarantees ID uniqueness across the entire
-  World.
-- **Graph scope parentage is tracked.** The World maintains a scope registry:
-  each `graphId` maps to its parent `graphId` (or null for the root). This
-  enables the ancestor walk required by the acyclicity invariant and supports
-  queries like "all entities transitively contained by this graph."
+- **Nesting is a component.** A node can carry a `SubgraphStructure` component,
+  which references another graph scope. That scope contains its own entities —
+  nodes, links, widgets, reroutes, groups — and each store entry tags the scope
+  it belongs to.
+- **Scope tagging over container nesting.** Entries across all nesting levels
+  live in the same stores, each tagged with a `graphScope` identifier. The
+  stores stay flat; the fractal structure is encoded in the keys and scope tags,
+  with no recursive containers.
+- **Entity taxonomy: six kinds.** A subgraph is a node carrying a
+  `SubgraphStructure` component. The taxonomy is: Node, Link, Widget, Slot,
+  Reroute, Group. `SubgraphEntityId` is replaced by a `GraphId` scope identifier.
+- **Numeric ID counters stay shared.** Node/link/reroute IDs are allocated from
+  a single counter space across nesting levels, preserving the current
+  `rootGraph.state` behavior and guaranteeing uniqueness. Widget keys embed
+  their scope directly (`WidgetId = graphId:nodeId:name`).
+- **Graph scope parentage is tracked.** A scope registry maps each `graphId` to
+  its parent `graphId` (or null for the root). This enables the ancestor walk
+  required by the acyclicity invariant and supports queries like "all entities
+  transitively contained by this graph."
 
 ### The acyclicity invariant
 
@@ -367,15 +366,17 @@ sequenceDiagram
     Exec->>IW: reads input value (42)
 ```
 
-### Candidate B: Simplified component promotion
+### Candidate B: Simplified component promotion (rejected)
+
+ADR 0009 chose Candidate A. Candidate B is retained here as the rejected
+alternative; it relied on a source-widget lookup model that no longer exists.
 
 Promotion remains a first-class concept, simplified from three layers to one:
 
-- A `WidgetPromotion` component on a widget entity:
-  `{ promotedTo: NodeEntityId, sourceWidget: WidgetEntityId }`
-- The SubgraphNode's widget list includes promoted widget entity IDs directly
-- Value reads/writes delegate to the source widget's `WidgetValue` component via
-  World lookup
+- A `WidgetPromotion` component on a widget entity referencing the host node and
+  source widget
+- The SubgraphNode's widget list includes promoted widget references directly
+- Value reads/writes delegate to the source widget's value via a store lookup
 - Serialized as `properties.proxyWidgets` (unchanged)
 
 This removes the ViewManager and proxy widget reconciliation but preserves the
@@ -399,8 +400,9 @@ concept of promotion as distinct from connection.
 
 Whichever candidate is chosen:
 
-- **`WidgetEntityId` is internal.** Serialization uses widget name + parent node
-  reference. This is settled (see Section 4).
+- **Internal identity is the `WidgetId` string.** Serialization uses widget name
+  - parent node reference, while runtime state keys on `WidgetId`
+    (`graphId:nodeId:name`). This is settled (see Section 4).
 - **The type → widget mapping is authoritative.** The widget registry
   (`widgetStore.widgets`) is the single source of truth for which types produce
   widgets. No parallel mechanism should duplicate this.
@@ -473,10 +475,10 @@ and produces the recursive `ExportedSubgraph` structure, matching the current
 format exactly. Existing workflows, the ComfyUI backend, and third-party tools
 see no change.
 
-| Direction       | Format                          | Notes                                      |
-| --------------- | ------------------------------- | ------------------------------------------ |
-| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree       |
-| **Load/import** | Nested (current) or future flat | Migration: normalize to flat World on load |
+| Direction       | Format                          | Notes                                              |
+| --------------- | ------------------------------- | -------------------------------------------------- |
+| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree               |
+| **Load/import** | Nested (current) or future flat | Migration: normalize to store-backed state on load |
 
 The migration pattern: load any supported format and normalize to the internal
 model. The system accepts old formats indefinitely but produces the current
@@ -486,7 +488,7 @@ format on save.
 
 | Context              | Identity                                                   | Example                            |
 | -------------------- | ---------------------------------------------------------- | ---------------------------------- |
-| **Internal (World)** | `WidgetEntityId` (opaque branded number)                   | `42 as WidgetEntityId`             |
+| **Internal (store)** | `WidgetId` composite string                                | `'graphId:42:seed' as WidgetId`    |
 | **Serialized**       | Position in `widgets_values[]` + name from node definition | `widgets_values[2]` → third widget |
 
 On save: the `SerializationSystem` queries `WidgetIdentity.name` and
@@ -494,7 +496,7 @@ On save: the `SerializationSystem` queries `WidgetIdentity.name` and
 order.
 
 On load: widget values are matched by name against the node definition's input
-specs, then assigned `WidgetEntityId`s from the global counter.
+specs, then registered in `WidgetValueStore` under their `WidgetId`.
 
 This is the existing contract, preserved exactly.
 
@@ -553,7 +555,7 @@ This document proposes or surfaces the following changes to
 | Entity taxonomy     | 7 kinds including `SubgraphEntityId`                                     | 6 kinds — subgraph is a node with `SubgraphStructure` component                 |
 | `SubgraphEntityId`  | `string & { __brand: 'SubgraphEntityId' }`                               | Eliminated; replaced by `GraphId` scope identifier                              |
 | Subgraph components | `SubgraphStructure`, `SubgraphMeta` listed as separate-entity components | Become node components on SubgraphNode entities                                 |
-| World structure     | Implied per-graph containment                                            | Flat World with `graphScope` tags; one World per workflow                       |
+| Storage structure   | Implied per-graph containment                                            | Dedicated stores with `graphScope`-tagged entries; no single registry           |
 | Acyclicity          | Not addressed                                                            | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation   |
 | Boundary model      | Deferred                                                                 | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs |
 | Widget promotion    | Treated as a given feature to migrate                                    | ADR 0009 chooses Candidate A: promoted value widgets are linked inputs          |
