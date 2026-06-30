@@ -33,13 +33,6 @@ export function formatRefillsDate(date?: string | null): string {
   return `${month}/${day}/${year}`
 }
 
-export function getNextMonthInvoice(
-  memberCount: number,
-  tierPrice: number
-): number {
-  return memberCount * tierPrice
-}
-
 export function getPlanTotalCreditsValue(
   tierKey: TierKey,
   isYearly: boolean

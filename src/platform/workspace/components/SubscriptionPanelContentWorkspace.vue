@@ -384,7 +384,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import {
   formatRefillsDate,
   formatSubscriptionDate,
-  getNextMonthInvoice,
   getPlanTotalCreditsValue,
   getSubscriptionTierKey
 } from './subscriptionPanelWorkspace.logic'
@@ -497,9 +496,7 @@ const planMenuItems = computed(() => [
 
 const memberCount = computed(() => members.value.length)
 
-const nextMonthInvoice = computed(() =>
-  getNextMonthInvoice(memberCount.value, tierPrice.value)
-)
+const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
 
 const refillsDate = computed(() =>
   formatRefillsDate(subscription.value?.renewalDate)

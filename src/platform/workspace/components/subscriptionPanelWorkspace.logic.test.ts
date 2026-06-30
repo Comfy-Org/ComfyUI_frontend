@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   formatRefillsDate,
   formatSubscriptionDate,
-  getNextMonthInvoice,
   getPlanTotalCreditsValue,
   getSubscriptionTierKey
 } from './subscriptionPanelWorkspace.logic'
@@ -56,16 +55,6 @@ describe('formatRefillsDate', () => {
     // reads local date parts, so midday avoids any cross-timezone day rollover.
     const result = formatRefillsDate('2026-06-15T12:00:00')
     expect(result).toBe('06/15/26')
-  })
-})
-
-describe('getNextMonthInvoice', () => {
-  it('multiplies member count by tier price', () => {
-    expect(getNextMonthInvoice(3, 20)).toBe(60)
-  })
-
-  it('returns 0 for zero members', () => {
-    expect(getNextMonthInvoice(0, 20)).toBe(0)
   })
 })
 
