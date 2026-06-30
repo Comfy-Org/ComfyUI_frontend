@@ -64,7 +64,7 @@ function extractChunkName(url: string): string | null {
   return withoutHash || null
 }
 
-const HASHED_ASSET_RE = /\/assets\/.+-[a-f0-9]{6,}\.(js|mjs|css)$/
+const HASHED_ASSET_RE = /\/assets\/.+-[A-Za-z0-9_-]{6,}\.(js|mjs|css)$/
 
 /**
  * Determines if a preload error is a genuine stale chunk error — i.e. a hashed
