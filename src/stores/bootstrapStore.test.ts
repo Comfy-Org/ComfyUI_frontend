@@ -93,6 +93,17 @@ describe('bootstrapStore', () => {
     })
   })
 
+  it('does not reload authenticated stores after bootstrap already ran', async () => {
+    const store = useBootstrapStore()
+
+    await store.startStoreBootstrap()
+    await store.startStoreBootstrap()
+
+    await vi.waitFor(() => {
+      expect(store.isI18nReady).toBe(true)
+    })
+  })
+
   describe('cloud mode', () => {
     beforeEach(() => {
       mockDistributionTypes.isCloud = true

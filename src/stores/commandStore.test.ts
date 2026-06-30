@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/stores/commandStore'
 
+const keybindingMock = vi.hoisted(() => ({
+  value: null as null | { combo: { getKeySequences: () => string[] } }
+}))
+
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
@@ -21,12 +25,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
 
 vi.mock('@/platform/keybindings/keybindingStore', () => ({
   useKeybindingStore: () => ({
-    getKeybindingByCommandId: () => null
+    getKeybindingByCommandId: () => keybindingMock.value
   })
 }))
 
 describe('commandStore', () => {
   beforeEach(() => {
+    keybindingMock.value = null
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
@@ -164,6 +169,16 @@ describe('commandStore', () => {
       expect(store.getCommand('tip.fn')?.tooltip).toBe('Dynamic tip')
     })
 
+    it('resolves icon as function', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'icon.fn',
+        function: vi.fn(),
+        icon: () => 'pi pi-bolt'
+      })
+      expect(store.getCommand('icon.fn')?.icon).toBe('pi pi-bolt')
+    })
+
     it('uses explicit menubarLabel over label', () => {
       const store = useCommandStore()
       store.registerCommand({
@@ -184,6 +199,16 @@ describe('commandStore', () => {
       })
       expect(store.getCommand('mbl.default')?.menubarLabel).toBe('My Label')
     })
+
+    it('resolves menubarLabel as function', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'mbl.fn',
+        function: vi.fn(),
+        menubarLabel: () => 'Dynamic menu'
+      })
+      expect(store.getCommand('mbl.fn')?.menubarLabel).toBe('Dynamic menu')
+    })
   })
 
   describe('formatKeySequence', () => {
@@ -192,6 +217,18 @@ describe('commandStore', () => {
       store.registerCommand({ id: 'no.kb', function: vi.fn() })
       const cmd = store.getCommand('no.kb')!
       expect(store.formatKeySequence(cmd)).toBe('')
+    })
+
+    it('formats keybinding sequences', () => {
+      const store = useCommandStore()
+      keybindingMock.value = {
+        combo: { getKeySequences: () => ['Control+A', 'Shift+B'] }
+      }
+      store.registerCommand({ id: 'with.kb', function: vi.fn() })
+
+      const cmd = store.getCommand('with.kb')!
+
+      expect(store.formatKeySequence(cmd)).toBe('Ctrl+A + Shift+B')
     })
   })
 })
