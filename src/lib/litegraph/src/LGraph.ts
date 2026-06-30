@@ -376,7 +376,8 @@ export class LGraph
       toLinkId(Number(value))
     )
     this.links = new Proxy(links, handler) as Map<LinkId, LLink> &
-      Record<LinkId, LLink>
+      Record<LinkId, LLink> &
+      Record<number, LLink>
 
     this.list_of_graphcanvas = null
     this.clear()
@@ -1521,12 +1522,12 @@ export class LGraph
    * @param pos Position in graph space
    * @param before The existing link segment (reroute, link) that will be after this reroute,
    * going from the node output to input.
-   * @returns The newly created reroute - typically ignored.
+   * @returns The newly created reroute, or undefined when the segment cannot be resolved.
    */
-  createReroute(pos: Point, before: LinkSegment): Reroute {
+  createReroute(pos: Point, before: LinkSegment): Reroute | undefined {
     const layoutMutations = useLayoutMutations()
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
-      throw new TypeError('Cannot create reroute from unknown link segment.')
+      return
     }
     const rerouteId = toRerouteId(Number(this.state.lastRerouteId) + 1)
     this.state.lastRerouteId = rerouteId

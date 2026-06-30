@@ -2591,6 +2591,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             return
           } else if (e.altKey && !e.shiftKey) {
             const newReroute = graph.createReroute([x, y], linkSegment)
+            if (!newReroute) return
+
             pointer.onDragStart = (pointer) =>
               this._startDraggingItems(newReroute, pointer)
             pointer.onDragEnd = (e) => this._processDraggedItems(e)
