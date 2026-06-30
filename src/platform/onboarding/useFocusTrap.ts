@@ -61,9 +61,15 @@ export function useFocusTrap(options: FocusTrapOptions) {
       const items = focusCycle()
       if (!items.length) return
       e.preventDefault()
-      const dir = e.shiftKey ? -1 : 1
       const current = items.indexOf(document.activeElement as HTMLElement)
-      const nextIdx = (current + dir + items.length) % items.length
+      // From outside the trap, Tab enters at the first item and Shift+Tab at
+      // the last; inside, step one in the requested direction with wraparound.
+      const nextIdx =
+        current === -1
+          ? e.shiftKey
+            ? items.length - 1
+            : 0
+          : (current + (e.shiftKey ? -1 : 1) + items.length) % items.length
       items[nextIdx]?.focus()
     },
     { capture: true }

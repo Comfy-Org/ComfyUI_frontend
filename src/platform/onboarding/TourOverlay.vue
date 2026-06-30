@@ -248,7 +248,7 @@ const cardStyle = computed(() => {
     return {
       width,
       maxWidth,
-      left: `${(window.innerWidth - CARD_WIDTH) / 2}px`,
+      left: `${Math.max(VIEWPORT_MARGIN, (window.innerWidth - CARD_WIDTH) / 2)}px`,
       top: '30%'
     }
   }

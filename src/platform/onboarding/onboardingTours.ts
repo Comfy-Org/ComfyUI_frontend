@@ -219,7 +219,7 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       coachId: COACH_IDS.assetsPanel,
       titleKey: 'onboardingCoachmarks.appMode.assets.title',
       bodyKey: 'onboardingCoachmarks.appMode.assets.body',
-      placement: 'right',
+      placement: 'auto',
       deferTarget: true
     }
   ]

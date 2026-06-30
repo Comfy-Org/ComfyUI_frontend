@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import { useAppMode } from '@/composables/useAppMode'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -66,8 +67,19 @@ export function useCoachmarkTour(refs: {
   // While a deferred target mounts, focus legitimately moves into it (dialog
   // autofocus) — suspend the focusin guard so the coach doesn't fight it.
   let awaitingDeferredTarget = false
-  // Whether this instance won the single-instance guard, so only it releases it.
+  // Claim the single-instance guard synchronously, before the listeners and
+  // watches below register, so a duplicate mount stays inert (its startTour
+  // no-ops and every handler falls through on a null step) rather than racing
+  // the owner. TourOverlay must be mounted exactly once.
   let ownsInstance = false
+  if (instanceActive) {
+    console.error(
+      'useCoachmarkTour is already active — TourOverlay must be mounted exactly once.'
+    )
+  } else {
+    instanceActive = true
+    ownsInstance = true
+  }
 
   const step = computed(() => steps.value[stepIdx.value] ?? null)
   const isLast = computed(() => stepIdx.value === steps.value.length - 1)
@@ -227,15 +239,21 @@ export function useCoachmarkTour(refs: {
   }
 
   const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
+  const { toastErrorHandler } = useErrorHandling()
 
   async function onPrimary() {
-    if (step.value?.enablesNodes2) {
-      await settingStore.set('Comfy.VueNodes.Enabled', true)
-    }
-    const templateId = step.value?.loadTemplate
-    if (templateId) {
-      await loadTemplates()
-      await loadWorkflowTemplate(templateId, 'default')
+    try {
+      if (step.value?.enablesNodes2) {
+        await settingStore.set('Comfy.VueNodes.Enabled', true)
+      }
+      const templateId = step.value?.loadTemplate
+      if (templateId) {
+        await loadTemplates()
+        await loadWorkflowTemplate(templateId, 'default')
+      }
+    } catch (e) {
+      toastErrorHandler(e)
+      return
     }
     next()
   }
@@ -308,6 +326,7 @@ export function useCoachmarkTour(refs: {
   let forcedTour: ForcedTour | null = null
 
   async function startTour(entryPath: EntryPath, force = false) {
+    if (!ownsInstance) return
     // A tour is already showing or mid-resolution this session.
     if (steps.value.length || starting) return
     starting = true
@@ -333,14 +352,7 @@ export function useCoachmarkTour(refs: {
   }
 
   onMounted(() => {
-    if (instanceActive) {
-      console.error(
-        'useCoachmarkTour is already active — TourOverlay must be mounted exactly once.'
-      )
-      return
-    }
-    instanceActive = true
-    ownsInstance = true
+    if (!ownsInstance) return
     // URL loaders strip their params after consuming them, so snapshot `?coach=`
     // here at mount (before any stripping) rather than reading the live location.
     const coachParam = new URLSearchParams(window.location.search).get('coach')
