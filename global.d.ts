@@ -42,7 +42,7 @@ interface GtagFunction {
 }
 
 type SyftDataAuthMethod = 'email' | 'google' | 'github'
-type SyftDataSource = 'signup' | 'login' | 'form_submit'
+type SyftDataSource = 'signup' | 'login'
 type SyftDataTraits = Record<string, string | number | null | undefined>
 
 interface SyftDataPendingFetch {
