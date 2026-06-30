@@ -377,7 +377,6 @@ export class LGraph
     )
     this.links = new Proxy(links, handler) as Map<LinkId, LLink> &
       Record<LinkId, LLink> &
-      Record<number, LLink>
 
     this.list_of_graphcanvas = null
     this.clear()
