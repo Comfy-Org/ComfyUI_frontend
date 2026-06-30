@@ -1,4 +1,5 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import type { AuthMetadata, TelemetryProvider } from '../../types'
 
@@ -46,7 +47,7 @@ function createSyftStub(): SyftDataClient {
 }
 
 function ensureSyftClient(): SyftDataClient | null {
-  const sourceId = window.__CONFIG__?.syftdata_source_id
+  const sourceId = remoteConfig.value.syftdata_source_id
   if (!sourceId) return window.syft ?? null
 
   window.syftc = { sourceId }

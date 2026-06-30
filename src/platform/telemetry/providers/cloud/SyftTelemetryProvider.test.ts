@@ -5,8 +5,16 @@ const mockCurrentUser = vi.hoisted(() => ({
   useCurrentUser: vi.fn()
 }))
 
+const mockRemoteConfig = vi.hoisted(() => ({
+  value: {} as { syftdata_source_id?: string }
+}))
+
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: mockCurrentUser.useCurrentUser
+}))
+
+vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+  remoteConfig: mockRemoteConfig
 }))
 
 const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
@@ -41,6 +49,7 @@ describe('SyftTelemetryProvider', () => {
     vi.clearAllMocks()
     document.head.innerHTML = ''
     window.__CONFIG__ = {}
+    mockRemoteConfig.value = {}
     window.syft = undefined
     window.syftc = undefined
     mockCurrentUser.userEmail.value = undefined
@@ -55,7 +64,7 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('loads the Syft SDK once when a source id is configured', async () => {
-    window.__CONFIG__ = { syftdata_source_id: 'src-123' }
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     const appendChild = mockScriptAppend()
     const SyftTelemetryProvider = await importProvider()
 
@@ -72,7 +81,7 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('does not touch the current user store during construction', async () => {
-    window.__CONFIG__ = { syftdata_source_id: 'src-123' }
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     mockScriptAppend()
     const SyftTelemetryProvider = await importProvider()
 
@@ -82,7 +91,7 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('preserves an existing GTM-loaded Syft client and script', async () => {
-    window.__CONFIG__ = { syftdata_source_id: 'src-123' }
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     const syft = installSyftSpy()
     const appendChild = mockScriptAppend()
     const SyftTelemetryProvider = await importProvider()
@@ -94,7 +103,7 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('identifies new auth users with signup source and normalized email', async () => {
-    window.__CONFIG__ = { syftdata_source_id: 'src-123' }
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     mockScriptAppend()
     const SyftTelemetryProvider = await importProvider()
 
@@ -157,7 +166,7 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('identifies restored sessions from the current user store', async () => {
-    window.__CONFIG__ = { syftdata_source_id: 'src-123' }
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     mockScriptAppend()
     mockCurrentUser.userEmail.value = 'Restored@Example.com'
     const SyftTelemetryProvider = await importProvider()
