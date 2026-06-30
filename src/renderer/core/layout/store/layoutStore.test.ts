@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
@@ -853,7 +854,7 @@ describe('layoutStore link layout updates', () => {
 
   const stubPath = () => ({}) as unknown as Path2D
   const baseLink = (path = stubPath()) => ({
-    id: 1 as const,
+    id: toLinkId(1),
     path,
     bounds: { x: 0, y: 0, width: 50, height: 50 },
     centerPos: { x: 25, y: 25 },
@@ -864,42 +865,42 @@ describe('layoutStore link layout updates', () => {
   })
 
   it('updateLinkLayout short-circuits when bounds and centerPos are unchanged', () => {
-    layoutStore.updateLinkLayout(1, baseLink())
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink())
     const newPath = stubPath()
 
-    layoutStore.updateLinkLayout(1, baseLink(newPath))
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink(newPath))
 
-    expect(layoutStore.getLinkLayout(1)?.path).toBe(newPath)
+    expect(layoutStore.getLinkLayout(toLinkId(1))?.path).toBe(newPath)
   })
 
   it('updateLinkLayout replaces stored layout when bounds change', () => {
-    layoutStore.updateLinkLayout(1, baseLink())
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink())
     const moved = {
       ...baseLink(),
       bounds: { x: 10, y: 10, width: 50, height: 50 }
     }
 
-    layoutStore.updateLinkLayout(1, moved)
+    layoutStore.updateLinkLayout(toLinkId(1), moved)
 
-    expect(layoutStore.getLinkLayout(1)?.bounds.x).toBe(10)
+    expect(layoutStore.getLinkLayout(toLinkId(1))?.bounds.x).toBe(10)
   })
 
   it('deleteLinkLayout removes the link and its segment layouts', () => {
-    layoutStore.updateLinkLayout(1, baseLink())
-    layoutStore.updateLinkSegmentLayout(1, null, {
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink())
+    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
       path: stubPath(),
       bounds: { x: 0, y: 0, width: 5, height: 5 },
       centerPos: { x: 1, y: 1 }
     })
 
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toEqual({
-      linkId: 1,
+      linkId: toLinkId(1),
       rerouteId: null
     })
 
-    layoutStore.deleteLinkLayout(1)
+    layoutStore.deleteLinkLayout(toLinkId(1))
 
-    expect(layoutStore.getLinkLayout(1)).toBeNull()
+    expect(layoutStore.getLinkLayout(toLinkId(1))).toBeNull()
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
   })
 })
