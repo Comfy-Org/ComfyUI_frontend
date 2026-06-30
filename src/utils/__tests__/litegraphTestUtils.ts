@@ -16,6 +16,7 @@ import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -353,7 +354,7 @@ export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
 }
 
 export function createMockLinks(links: LLink[]): LGraph['links'] {
-  const map = new Map<ReturnType<typeof toLinkId>, LLink>()
+  const map = new Map<LinkId, LLink>()
   const record: Record<number, LLink> = {}
   for (const link of links) {
     map.set(link.id, link)

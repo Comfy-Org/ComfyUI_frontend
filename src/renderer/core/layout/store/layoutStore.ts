@@ -603,13 +603,13 @@ class LayoutStoreImpl implements LayoutStore {
 
     const fullLayout: LinkSegmentLayout = {
       ...layout,
-      linkId: linkId,
+      linkId,
       rerouteId
     }
 
     if (!existing) {
       logger.debug('Adding link segment:', {
-        linkId: linkId,
+        linkId,
         rerouteId,
         bounds: layout.bounds,
         hasPath: !!layout.path

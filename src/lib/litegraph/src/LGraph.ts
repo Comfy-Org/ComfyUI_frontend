@@ -1745,9 +1745,7 @@ export class LGraph
 
     const internalReroutes = new Map([...reroutes].map((r) => [r.id, r]))
     const externalReroutes = new Map(
-      [...this.reroutes].filter(
-        ([id]) => !internalReroutes.has(toRerouteId(id))
-      )
+      [...this.reroutes].filter(([id]) => !internalReroutes.has(id))
     )
     const inputs = mapSubgraphInputsAndLinks(
       resolvedInputLinks,
