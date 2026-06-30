@@ -5,12 +5,14 @@ import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { SafeControlWidget } from '@/types/simplifiedWidget'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
 export interface WidgetRenderState {
   advanced?: boolean
+  controlWidget?: SafeControlWidget
   hasLayoutSize?: boolean
   isDOMWidget?: boolean
   sourceExecutionId?: NodeExecutionId

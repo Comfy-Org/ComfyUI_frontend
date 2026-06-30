@@ -413,7 +413,7 @@ describe('NodeWidgets', () => {
                 type: 'value_not_in_list',
                 message: 'seed is invalid',
                 details: '',
-                extra_info: { input_name: 'seed' }
+                extra_info: { input_name: 'internal_seed' }
               }
             ],
             class_type: 'InnerNode',
