@@ -50,4 +50,12 @@ describe('CoachmarkLanding', () => {
     )
     expect(emitted()['update:open']).toEqual([[false]])
   })
+
+  it('closes (open model false) when Escape is pressed', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderLanding()
+    await screen.findByText('Welcome to Apps')
+    await user.keyboard('{Escape}')
+    expect(emitted()['update:open']).toContainEqual([false])
+  })
 })

@@ -65,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -87,6 +88,12 @@ const { title, message, image, primaryLabel, skipLabel } = defineProps<{
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
+
+// Close on Escape explicitly: Reka's built-in dismissal has proven unreliable
+// for this dialog in e2e, whereas this is the same path the Skip button uses.
+useEventListener(document, 'keydown', (e) => {
+  if (e.key === 'Escape' && open.value) open.value = false
+})
 
 const emit = defineEmits<{
   start: []
