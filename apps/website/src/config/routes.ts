@@ -14,6 +14,7 @@ const baseRoutes = {
   customers: '/customers',
   demos: '/demos',
   learning: '/learning',
+  education: '/edu',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   affiliates: '/affiliates',
