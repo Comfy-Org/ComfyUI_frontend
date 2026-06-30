@@ -127,7 +127,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: externalLinks.docsMcp, 'zh-CN': externalLinks.docsMcp }
+      href: { en: '/mcp', 'zh-CN': '/zh-CN/mcp' }
     }
   },
   {
