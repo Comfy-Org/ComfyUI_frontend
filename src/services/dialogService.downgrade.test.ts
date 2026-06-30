@@ -1,0 +1,124 @@
+/**
+ * showDowngradeToPersonalDialog must refresh members before the no-members
+ * fast path and stay non-dismissable (ESC derives from `closable` in
+ * dialogStore); fast-path failures must toast.
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const showDialog = vi.hoisted(() => vi.fn())
+const toastAdd = vi.hoisted(() => vi.fn())
+const refreshMembers = vi.hoisted(() => vi.fn())
+const downgradeToPersonal = vi.hoisted(() => vi.fn())
+const hasOtherMembers = vi.hoisted(() => ({ value: false }))
+
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({ showDialog })
+}))
+
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackEvent: vi.fn() })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    isActiveSubscription: { value: true },
+    isFreeTier: { value: false },
+    type: { value: 'legacy' }
+  })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: toastAdd })
+}))
+
+vi.mock('@/platform/workspace/composables/useDowngradeToPersonal', () => ({
+  useDowngradeToPersonal: () => ({
+    hasOtherMembers,
+    refreshMembers,
+    downgradeToPersonal
+  })
+}))
+
+vi.mock(
+  '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue',
+  () => ({ default: { name: 'DowngradeRemoveMembersDialogContent' } })
+)
+
+import { useDialogService } from '@/services/dialogService'
+
+describe('showDowngradeToPersonalDialog', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    hasOtherMembers.value = false
+    refreshMembers.mockResolvedValue(undefined)
+    downgradeToPersonal.mockResolvedValue(undefined)
+  })
+
+  const options = { planName: 'Standard', planSlug: 'standard-monthly' }
+
+  it('refreshes members before deciding the no-members fast path', async () => {
+    const calls: string[] = []
+    refreshMembers.mockImplementation(() => {
+      calls.push('refresh')
+      return Promise.resolve()
+    })
+    downgradeToPersonal.mockImplementation(() => {
+      calls.push('downgrade')
+      return Promise.resolve()
+    })
+
+    await useDialogService().showDowngradeToPersonalDialog(options)
+
+    expect(calls).toEqual(['refresh', 'downgrade'])
+    expect(downgradeToPersonal).toHaveBeenCalledWith('standard-monthly')
+    expect(showDialog).not.toHaveBeenCalled()
+  })
+
+  it('shows a non-dismissable confirm dialog when other members exist', async () => {
+    hasOtherMembers.value = true
+
+    await useDialogService().showDowngradeToPersonalDialog(options)
+
+    expect(downgradeToPersonal).not.toHaveBeenCalled()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.key).toBe('downgrade-remove-members')
+    expect(args.props.onConfirm).toBe(downgradeToPersonal)
+    expect(args.dialogComponentProps.closable).toBe(false)
+    expect(args.dialogComponentProps.dismissableMask).toBe(false)
+  })
+
+  it('toasts and does not rethrow when the fast-path downgrade fails', async () => {
+    downgradeToPersonal.mockRejectedValue(new Error('Outstanding balance'))
+
+    await useDialogService().showDowngradeToPersonalDialog(options)
+
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Outstanding balance'
+      })
+    )
+    expect(showDialog).not.toHaveBeenCalled()
+  })
+
+  it('toasts and aborts when the member refresh fails', async () => {
+    hasOtherMembers.value = true
+    refreshMembers.mockRejectedValue(new Error('network'))
+
+    await useDialogService().showDowngradeToPersonalDialog(options)
+
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error', detail: 'network' })
+    )
+    expect(showDialog).not.toHaveBeenCalled()
+    expect(downgradeToPersonal).not.toHaveBeenCalled()
+  })
+})

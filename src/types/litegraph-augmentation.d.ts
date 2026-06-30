@@ -9,11 +9,11 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 /** ComfyUI extensions of litegraph */
 declare module '@/lib/litegraph/src/types/widgets' {
@@ -112,7 +112,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     /** Flattens a subgraph node into its executable inner nodes. */
     getInnerNodes?(
       nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
-      subgraphNodePath?: readonly NodeId[],
+      subgraphNodePath?: readonly SerializedNodeId[],
       nodes?: ExecutableLGraphNode[],
       subgraphs?: Set<LGraphNode>
     ): ExecutableLGraphNode[]
@@ -143,7 +143,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     onDragDrop?(e: DragEvent): Promise<boolean> | boolean
 
     index?: number
-    runningInternalNodeId?: NodeId
+    runningInternalNodeId?: SerializedNodeId
 
     comfyClass?: string
 
