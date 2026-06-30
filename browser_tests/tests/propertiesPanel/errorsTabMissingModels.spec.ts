@@ -33,19 +33,21 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     await cleanupFakeModel(comfyPage)
   })
 
-  test('Should show missing models group in errors tab', async ({
-    comfyPage
-  }) => {
-    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+  test(
+    'Should show missing models group in errors tab',
+    { tag: '@critical' },
+    async ({ comfyPage }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
-    const missingModelsGroup = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingModelsGroup
-    )
-    await expect(missingModelsGroup).toBeVisible()
-    await expect(
-      missingModelsGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
-    ).toHaveText(/\S/)
-  })
+      const missingModelsGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      await expect(missingModelsGroup).toBeVisible()
+      await expect(
+        missingModelsGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+      ).toHaveText(/\S/)
+    }
+  )
 
   test('Should display model name and metadata', async ({ comfyPage }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')

@@ -8,20 +8,24 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     await comfyPage.searchBoxV2.setup()
   })
 
-  test('Can open search and add node', async ({ comfyPage }) => {
-    const { searchBoxV2 } = comfyPage
-    const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+  test(
+    'Can open search and add node',
+    { tag: '@critical' },
+    async ({ comfyPage }) => {
+      const { searchBoxV2 } = comfyPage
+      const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    await searchBoxV2.open()
-    await searchBoxV2.input.fill('KSampler')
-    await expect(searchBoxV2.results.first()).toBeVisible()
+      await searchBoxV2.open()
+      await searchBoxV2.input.fill('KSampler')
+      await expect(searchBoxV2.results.first()).toBeVisible()
 
-    await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount + 1)
-  })
+      await comfyPage.page.keyboard.press('Enter')
+      await expect(searchBoxV2.input).toBeHidden()
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
+    }
+  )
 
   test('Can add first default result with Enter', async ({ comfyPage }) => {
     const { searchBoxV2 } = comfyPage
