@@ -3,8 +3,10 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { WidgetId } from '@/types/widgetId'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
+import type { SlotIndex } from '@/types/slotId'
 
 import type { ContextMenu } from './ContextMenu'
+import type { LGraphGroup, GroupId } from './LGraphGroup'
 import type { LGraphNode, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
@@ -87,7 +89,7 @@ interface Parent<TChild> {
  * May contain other {@link Positionable} objects.
  */
 export interface Positionable extends Parent<Positionable>, HasBoundingRect {
-  readonly id: NodeId | RerouteId | number
+  readonly id: NodeId | RerouteId | GroupId
   /**
    * Position in graph coordinates. This may be the top-left corner,
    * the centre, or another point depending on concrete type.
@@ -237,8 +239,7 @@ export interface IFoundSlot extends IInputOrOutput {
   link_pos: Point
 }
 
-/** Index of an input or output slot on a node. */
-export type SlotIndex = number
+export type { SlotIndex } from '@/types/slotId'
 
 /** A point represented as `[x, y]` co-ordinates */
 export type Point = [x: number, y: number]
