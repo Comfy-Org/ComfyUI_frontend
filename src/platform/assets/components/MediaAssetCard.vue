@@ -327,10 +327,15 @@ function dragStart(e: DragEvent) {
   const { dataTransfer } = e
   if (!dataTransfer) return
 
-  const { filename, subfolder, type } =
+  const { filename, subfolder, type, display_name } =
     getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
   if (filename) {
-    const outputString = JSON.stringify({ filename, subfolder, type })
+    const outputString = JSON.stringify({
+      filename,
+      subfolder,
+      type,
+      display_name
+    })
     dataTransfer.items.add(outputString, MIME_ASSET_INFO)
   }
 
