@@ -53,7 +53,7 @@
             class="relative flex flex-col gap-2 rounded-md border border-interface-stroke p-4"
           >
             <div class="absolute top-2 right-2">
-              <Popover :show-arrow="false">
+              <Popover :show-arrow="false" :entries="warningMenuItems(warning)">
                 <template #button>
                   <Button
                     variant="muted-textonly"
@@ -62,24 +62,6 @@
                   >
                     <i class="icon-[lucide--more-horizontal] size-4" />
                   </Button>
-                </template>
-                <template #default="{ close }">
-                  <div class="flex min-w-32 flex-col items-stretch">
-                    <Button
-                      variant="textonly"
-                      size="md"
-                      class="w-full justify-start text-sm font-light"
-                      @click="
-                        () => {
-                          store.remove(warning.key)
-                          close()
-                        }
-                      "
-                    >
-                      <i class="icon-[lucide--trash-2] size-4" />
-                      <span>{{ t('deprecationWarnings.clear') }}</span>
-                    </Button>
-                  </div>
                 </template>
               </Popover>
             </div>
@@ -156,6 +138,7 @@
 
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -227,6 +210,16 @@ function metaParts(warning: {
 function clearWarnings() {
   store.clear()
   selectedExtensions.value = []
+}
+
+function warningMenuItems(warning: { key: string }): MenuItem[] {
+  return [
+    {
+      label: t('deprecationWarnings.clear'),
+      icon: 'icon-[lucide--trash-2] size-4',
+      command: () => store.remove(warning.key)
+    }
+  ]
 }
 
 onMounted(() => {

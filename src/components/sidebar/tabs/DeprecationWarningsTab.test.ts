@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -248,6 +248,28 @@ describe('DeprecationWarningsTab', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('removes a single warning via its per-warning clear action', async () => {
+    const store = useDeprecationWarningsStore()
+    store.report({ message: 'keep me' })
+    store.report({ message: 'remove me' })
+
+    renderTab()
+
+    const menus = screen.getAllByRole('button', {
+      name: 'deprecationWarnings.moreOptions'
+    })
+    // reka's Popover trigger doesn't toggle through userEvent's synthesized
+    // events under happy-dom, so drive the menu with native clicks.
+    // Warnings render newest-first, so the first menu targets 'remove me'.
+    menus[0].click()
+    ;(await screen.findByText('deprecationWarnings.clear')).click()
+
+    await waitFor(() => {
+      expect(screen.queryByText('remove me')).toBeNull()
+    })
+    screen.getByText('keep me')
   })
 
   it('clear-all button empties the store and shows the empty state', async () => {
