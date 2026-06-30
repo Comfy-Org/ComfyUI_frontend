@@ -1,8 +1,11 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type * as Pinia from 'pinia'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 
@@ -94,25 +97,16 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isWorkspaceSubscribed() {
-      return isWorkspaceSubscribed
-    },
-    get isInPersonalWorkspace() {
-      return isInPersonalWorkspace
-    },
-    get members() {
-      return members
-    }
-  })
-}))
-
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { defineStore } = await vi.importActual<typeof Pinia>('pinia')
+  // A real setup store (returning refs as state) so the production
+  // storeToRefs() path is exercised instead of mocking pinia itself.
   return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
+    useTeamWorkspaceStore: defineStore('teamWorkspace', () => ({
+      isWorkspaceSubscribed,
+      isInPersonalWorkspace,
+      members
+    }))
   }
 })
 
@@ -144,7 +138,7 @@ const ButtonStub = {
 function renderComponent() {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
-      plugins: [i18n],
+      plugins: [i18n, createTestingPinia({ stubActions: false })],
       stubs: {
         Button: ButtonStub,
         StatusBadge: {
