@@ -71,7 +71,7 @@
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
-        <Select v-if="!isImmutable" v-model="selectedModelType">
+        <Select v-if="isModelTypeEditable" v-model="selectedModelType">
           <SelectTrigger class="w-full">
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
@@ -230,6 +230,7 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import { isCloud } from '@/platform/distribution/types'
 import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 import {
   buildModelTypeTagUpdate,
@@ -275,6 +276,9 @@ const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
 const isImmutable = computed(() => asset.is_immutable ?? true)
+// Retagging a model rewrites its asset tags; core is filesystem-backed and does
+// not yet move the file to match, so the model type is read-only off-cloud.
+const isModelTypeEditable = computed(() => !isImmutable.value && isCloud)
 const displayName = computed(
   () => pendingUpdates.value.name ?? getAssetDisplayName(asset)
 )
@@ -321,7 +325,7 @@ function handleDisplayNameEdit(newName: string) {
 }
 
 const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
-  if (isImmutable.value) return
+  if (!isModelTypeEditable.value) return
   const currentModelType = getEditableModelType(
     asset,
     flags.supportsModelTypeTags
