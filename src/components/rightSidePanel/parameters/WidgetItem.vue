@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -67,23 +68,34 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
+const isLinked = computed(() => {
+  const safeWidget = useVueNodeLifecycle()
+    .nodeManager.value?.vueNodeData.get(node.id)
+    ?.widgets?.find((w) => w.name === widget.name)
+  return safeWidget?.slotMetadata
+    ? !!safeWidget.slotMetadata.linked
+    : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link
+})
+
 const simplifiedWidget = computed((): SimplifiedWidget => {
   const graphId = node.graph?.rootGraph?.id
-  const bareNodeId = stripGraphPrefix(String(node.id))
+  const bareNodeId = stripGraphPrefix(node.id)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
-    : graphId
+    : graphId && bareNodeId
       ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
       : undefined
   const widgetName = widgetState?.name ?? widget.name
   const widgetType = widgetState?.type ?? widget.type
 
+  const baseOptions = widgetState?.options ?? widget.options
+  const disabled = isLinked.value || !!widget.disabled || undefined
   return {
     name: widgetName,
     type: widgetType,
     value: widgetState?.value ?? widget.value,
     label: widgetState?.label ?? widget.label,
-    options: widgetState?.options ?? widget.options,
+    options: { ...baseOptions, disabled },
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
     controlWidget: getControlWidget(widget)
   }
@@ -200,7 +212,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
-      :node-id="String(node.id)"
+      :node-id="node.id"
       :node-type="node.type"
       :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
     />

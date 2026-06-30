@@ -5,6 +5,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { Ref } from 'vue'
 
@@ -132,11 +133,12 @@ function renderWidget(
   initialModel: Bounds = { x: 0, y: 0, width: 512, height: 512 }
 ) {
   const value = ref<Bounds>(initialModel)
+  const nodeId = toNodeId(1)
   const Harness = defineComponent({
     components: { WidgetImageCrop },
-    setup: () => ({ value, widget }),
+    setup: () => ({ value, widget, nodeId }),
     template:
-      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="1" />'
+      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="nodeId" />'
   })
   const utils = render(Harness, {
     global: {
@@ -233,7 +235,7 @@ describe('WidgetImageCrop', () => {
       renderWidget(
         makeWidget({
           options: { disabled: true },
-          linkedUpstream: { nodeId: 'n1' }
+          linkedUpstream: { nodeId: toNodeId('n1') }
         }),
         { x: 0, y: 0, width: 512, height: 512 }
       )

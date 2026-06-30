@@ -266,10 +266,6 @@ export class LiteGraphGlobal {
    */
   ctrl_shift_v_paste_connect_unselected_outputs = true
 
-  // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
-  // use this if you must have node IDs that are unique across all graphs and subgraphs.
-  use_uuids = false
-
   // Whether to highlight the bounding box of selected groups
   highlight_selected_group = true
 

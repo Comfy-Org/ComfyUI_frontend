@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -7,8 +8,9 @@ import type { FormDropdownItem, LayoutMode } from './types'
 const VirtualGridStub = {
   name: 'VirtualGrid',
   props: ['items', 'maxColumns', 'itemHeight', 'scrollerHeight'],
+  emits: ['approach-end'],
   template:
-    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" />'
+    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" @click="$emit(\'approach-end\')" />'
 }
 
 function createItem(id: string, name: string): FormDropdownItem {
@@ -24,6 +26,7 @@ describe('FormDropdownMenu', () => {
   const defaultProps = {
     items: [createItem('1', 'Item 1'), createItem('2', 'Item 2')],
     isSelected: () => false,
+    uploadable: false,
     filterOptions: [],
     sortOptions: []
   }
@@ -93,6 +96,31 @@ describe('FormDropdownMenu', () => {
     expect(virtualGrid.getAttribute('data-max-columns')).toBe('1')
   })
 
+  it('forwards approach-end from the virtual grid', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(FormDropdownMenu, {
+      props: defaultProps,
+      global: globalConfig
+    })
+
+    await user.click(screen.getByTestId('virtual-grid'))
+
+    expect(emitted()['approach-end']).toHaveLength(1)
+  })
+
+  it('shows the loading-more row only while loadingMore is set', async () => {
+    const { rerender } = render(FormDropdownMenu, {
+      props: { ...defaultProps, loadingMore: true },
+      global: globalConfig
+    })
+
+    expect(screen.getByTestId('form-dropdown-loading-more')).toBeTruthy()
+
+    await rerender({ ...defaultProps, loadingMore: false })
+
+    expect(screen.queryByTestId('form-dropdown-loading-more')).toBeNull()
+  })
+
   it('has data-capture-wheel="true" on the root element', () => {
     render(FormDropdownMenu, {
       props: defaultProps,
@@ -129,6 +157,58 @@ describe('FormDropdownMenu', () => {
     root.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
+  })
+
+  /** Stub that surfaces `uploadable` as a data attribute and exposes a button
+   *  that emits `show-picker`, so the parent's prop-forwarding and event
+   *  re-emission can be asserted from the DOM. */
+  const FormDropdownMenuFilterStub = {
+    name: 'FormDropdownMenuFilter',
+    props: ['uploadable', 'filterOptions'],
+    emits: ['show-picker'],
+    template:
+      '<button data-testid="filter-stub" :data-uploadable="String(uploadable)" @click="$emit(\'show-picker\')" />'
+  }
+
+  it('forwards uploadable prop to FormDropdownMenuFilter', () => {
+    render(FormDropdownMenu, {
+      props: {
+        ...defaultProps,
+        uploadable: true,
+        filterOptions: [{ name: 'All', value: 'all' }]
+      },
+      global: {
+        stubs: {
+          FormDropdownMenuFilter: FormDropdownMenuFilterStub,
+          FormDropdownMenuActions: true,
+          VirtualGrid: VirtualGridStub
+        },
+        mocks: { $t: (key: string) => key }
+      }
+    })
+
+    expect(screen.getByTestId('filter-stub').dataset.uploadable).toBe('true')
+  })
+
+  it('re-emits show-picker when FormDropdownMenuFilter emits it', async () => {
+    const { emitted } = render(FormDropdownMenu, {
+      props: {
+        ...defaultProps,
+        uploadable: true,
+        filterOptions: [{ name: 'All', value: 'all' }]
+      },
+      global: {
+        stubs: {
+          FormDropdownMenuFilter: FormDropdownMenuFilterStub,
+          FormDropdownMenuActions: true,
+          VirtualGrid: VirtualGridStub
+        },
+        mocks: { $t: (key: string) => key }
+      }
+    })
+
+    await userEvent.click(screen.getByTestId('filter-stub'))
+    expect(emitted('show-picker')).toHaveLength(1)
   })
 
   /** Vertical scrolling must remain native so the dropdown's own scroll

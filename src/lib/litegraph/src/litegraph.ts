@@ -108,8 +108,6 @@ export type {
 } from './interfaces'
 export {
   LGraph,
-  type GroupNodeConfigEntry,
-  type GroupNodeWorkflowData,
   type LGraphTriggerAction,
   type LGraphTriggerParam,
   type GraphAddOptions,
@@ -119,7 +117,7 @@ export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup, type GroupId } from './LGraphGroup'
-export { LGraphNode, type NodeId } from './LGraphNode'
+export { LGraphNode } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

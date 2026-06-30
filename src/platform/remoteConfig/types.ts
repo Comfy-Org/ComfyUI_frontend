@@ -93,7 +93,9 @@ export type RemoteConfig = {
   comfy_api_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
+  firebase_env?: 'dev'
   telemetry_disabled_events?: TelemetryEventName[]
+  enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
   asset_rename_enabled?: boolean
   private_models_enabled?: boolean
@@ -110,4 +112,17 @@ export type RemoteConfig = {
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
   sentry_dsn?: string
+  turnstile_sitekey?: string
+  // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
+  // Always funnel it through normalizeTurnstileMode before trusting it as a
+  // TurnstileMode — that resolver is the single narrowing boundary.
+  signup_turnstile?: string
 }
+
+/**
+ * Gate mode for the signup Turnstile challenge.
+ * - 'off': do not render the widget
+ * - 'shadow': render the widget but never block submit (observe only)
+ * - 'enforce': block submit until the challenge is solved
+ */
+export type TurnstileMode = 'off' | 'shadow' | 'enforce'

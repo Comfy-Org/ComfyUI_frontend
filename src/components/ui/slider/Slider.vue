@@ -15,7 +15,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<
   // eslint-disable-next-line vue/no-unused-properties
-  SliderRootProps & { class?: HTMLAttributes['class'] }
+  SliderRootProps & {
+    class?: HTMLAttributes['class']
+    rangeClass?: HTMLAttributes['class']
+    thumbClass?: HTMLAttributes['class']
+  }
 >()
 
 const pressed = ref(false)
@@ -25,7 +29,7 @@ const setPressed = (val: boolean) => {
 
 const emits = defineEmits<SliderRootEmits>()
 
-const delegatedProps = reactiveOmit(props, 'class')
+const delegatedProps = reactiveOmit(props, 'class', 'rangeClass', 'thumbClass')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
@@ -60,7 +64,12 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     >
       <SliderRange
         data-slot="slider-range"
-        class="absolute bg-node-component-surface-highlight data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
+        :class="
+          cn(
+            'absolute bg-node-component-surface-highlight data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
+            props.rangeClass
+          )
+        "
       />
     </SliderTrack>
 
@@ -74,7 +83,8 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           'cursor-grab',
           'before:absolute before:-inset-1 before:block before:rounded-full before:bg-transparent',
           'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
-          { 'cursor-grabbing': pressed }
+          { 'cursor-grabbing': pressed },
+          props.thumbClass
         )
       "
     />
