@@ -220,7 +220,7 @@ test.describe('App mode usage', () => {
     await expect(comfyPage.page.getByRole('menu')).toBeHidden()
   })
 
-  test('Mode toggle returns to app mode after exiting the builder', async ({
+  test('Mode toggle re-appears after exiting the builder to graph mode', async ({
     comfyPage
   }) => {
     const toggle = comfyPage.page.getByTestId(
@@ -234,10 +234,11 @@ test.describe('App mode usage', () => {
     await expect(comfyPage.appMode.centerPanel).toBeHidden()
 
     await comfyPage.appMode.footer.exitButton.click()
-    // The center panel only renders in app mode, so its return proves the exit
-    // landed back in app mode rather than graph mode (where the toggle also shows).
-    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    // Exiting the builder lands in graph mode: the app-mode-only center panel
+    // stays hidden while the toggle's teleport host re-mounts and the toggle
+    // re-appears.
     await expect(toggle).toBeVisible()
+    await expect(comfyPage.appMode.centerPanel).toBeHidden()
   })
 
   test('Mode toggle survives a sidebar tab remounting the app panel', async ({
