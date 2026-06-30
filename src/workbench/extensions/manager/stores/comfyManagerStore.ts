@@ -1,4 +1,4 @@
-import { useEventListener, whenever } from '@vueuse/core'
+import { useDebounceFn, useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
@@ -6,6 +6,7 @@ import { ref, watch } from 'vue'
 import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -111,6 +112,49 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     () => {
       partitionTasks()
       partitionTaskLogs()
+    },
+    { deep: true }
+  )
+
+  // Track install failures we've already notified about to prevent replay
+  const notifiedFailedInstallIds = ref<Set<string>>(new Set())
+  const pendingFailureCount = ref(0)
+
+  const flushFailureToast = useDebounceFn(() => {
+    if (pendingFailureCount.value === 0) return
+    const count = pendingFailureCount.value
+    pendingFailureCount.value = 0
+    useToastStore().add({
+      severity: 'error',
+      summary: t('manager.installFailureToast.summary'),
+      detail: t('manager.installFailureToast.detail', { count }, count),
+      life: 8000
+    })
+  }, 300)
+
+  // Watch taskHistory for newly completed install failures.
+  // Only fires toast for tasks where kind === 'install' and status is error/skip.
+  // Tracks notified IDs to prevent replay when server state reintroduces history.
+  watch(
+    taskHistory,
+    (history) => {
+      let newFailures = 0
+      for (const task of Object.values(history)) {
+        // Only notify for install tasks, not update/uninstall/enable/disable/etc.
+        if (task.kind !== 'install') continue
+        // Only notify for failures (error or skip status)
+        if (task.status?.status_str === 'success') continue
+        // Skip if we've already notified about this task
+        if (notifiedFailedInstallIds.value.has(task.ui_id)) continue
+
+        notifiedFailedInstallIds.value.add(task.ui_id)
+        newFailures++
+      }
+
+      if (newFailures > 0) {
+        pendingFailureCount.value += newFailures
+        void flushFailureToast()
+      }
     },
     { deep: true }
   )
@@ -339,7 +383,12 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   }
 
   const resetTaskState = () => {
-    // Clear all task-related reactive state for fresh start after restart
+    // Clear all task-related reactive state for fresh start after restart.
+    // Also clear pendingFailureCount so any in-flight debounced failure
+    // toast (which reads this value before firing) becomes a no-op.
+    // Clear notifiedFailedInstallIds so we start fresh tracking.
+    pendingFailureCount.value = 0
+    notifiedFailedInstallIds.value.clear()
     taskLogs.value = []
     taskHistory.value = {}
     succeededTasksIds.value = []
