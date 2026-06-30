@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
+import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
@@ -125,6 +126,7 @@ app
       }
     }
   })
+  .use(ConfirmationService)
   .use(ToastService)
   .use(pinia)
   .use(i18n)
