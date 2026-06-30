@@ -32,8 +32,6 @@ import {
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
   createNodeLocatorId
