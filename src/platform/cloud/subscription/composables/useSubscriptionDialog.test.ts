@@ -11,6 +11,7 @@ const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
+const mockUseWorkspaceUI = vi.hoisted(() => vi.fn())
 
 vi.mock('vue', async (importOriginal) => {
   const actual = await importOriginal()
@@ -65,13 +66,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return { canManageSubscription: mockCanManageSubscription.value }
-      }
-    }
-  })
+  useWorkspaceUI: mockUseWorkspaceUI
 }))
 
 describe('useSubscriptionDialog', () => {
@@ -83,12 +78,36 @@ describe('useSubscriptionDialog', () => {
     mockTeamWorkspacesEnabled.value = false
     mockIsLegacyTeamPlan.value = false
     mockCanManageSubscription.value = true
+    mockUseWorkspaceUI.mockImplementation(() => ({
+      permissions: {
+        get value() {
+          return { canManageSubscription: mockCanManageSubscription.value }
+        }
+      }
+    }))
 
     try {
       sessionStorage.clear()
     } catch {
       // noop
     }
+  })
+
+  describe('billing context import cycle', () => {
+    it('does not resolve useWorkspaceUI at composable setup', () => {
+      useSubscriptionDialog()
+
+      expect(mockUseWorkspaceUI).not.toHaveBeenCalled()
+    })
+
+    it('resolves useWorkspaceUI lazily when the pricing table is shown', () => {
+      const { showPricingTable } = useSubscriptionDialog()
+      expect(mockUseWorkspaceUI).not.toHaveBeenCalled()
+
+      showPricingTable()
+
+      expect(mockUseWorkspaceUI).toHaveBeenCalled()
+    })
   })
 
   describe('showPricingTable', () => {

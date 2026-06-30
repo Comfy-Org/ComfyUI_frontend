@@ -32,7 +32,6 @@ export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const { permissions } = useWorkspaceUI()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -41,6 +40,8 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
+
+    const { permissions } = useWorkspaceUI()
 
     // Members can't manage the workspace subscription, so a blocked run shows a
     // small read-only "ask your owner to reactivate" modal instead of the
