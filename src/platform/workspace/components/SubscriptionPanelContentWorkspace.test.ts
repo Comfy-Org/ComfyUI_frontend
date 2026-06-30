@@ -126,7 +126,9 @@ const mockError = ref<string | null>(null)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockIsActiveSubscription.value
+    ),
     isFreeTier: computed(() => false),
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
@@ -180,7 +182,9 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     })),
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockIsActiveSubscription.value
+    ),
     isOriginalOwner: mockIsOriginalOwner,
     isTeamPlanCancelled: mockIsTeamPlanCancelled,
     isDeleteDisabled: mockIsDeleteDisabled,

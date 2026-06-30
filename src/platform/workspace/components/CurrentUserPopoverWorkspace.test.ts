@@ -1,161 +1,204 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
-const showCreateWorkspaceDialog = vi.fn()
+// Mock pinia - preserve actual exports to avoid missing defineStore
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as object),
+    storeToRefs: vi.fn((store) => store)
+  }
+})
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    userDisplayName: ref('Liz'),
-    userEmail: ref('liz@example.com'),
-    userPhotoUrl: ref(null),
-    handleSignOut: vi.fn()
-  })
-}))
-
+const mockCanAccessSubscriptionFeatures = ref(true)
+const mockIsFreeTier = ref(false)
+const mockSubscription = ref({ isCancelled: false })
+const mockBalance = ref({ effectiveBalanceMicros: 100000 })
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: ref(true),
-    isFreeTier: ref(false),
-    subscription: ref(null),
-    balance: ref(null),
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+    isFreeTier: mockIsFreeTier,
+    subscription: mockSubscription,
+    balance: mockBalance,
     isLoading: ref(false),
     fetchBalance: vi.fn()
   })
 }))
 
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    initState: ref('ready'),
+    workspaceName: ref('Test Workspace'),
+    isInPersonalWorkspace: ref(false)
+  })
+}))
+
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canTopUp: false,
-      canManageSubscription: false
-    }))
+    permissions: ref({
+      canTopUp: true,
+      canManageSubscription: true
+    })
+  })
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    userDisplayName: 'Test User',
+    userEmail: 'test@example.com',
+    userPhotoUrl: null,
+    handleSignOut: vi.fn()
+  })
+}))
+
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: () => ({
+    show: vi.fn()
+  })
+}))
+
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: () => ({
+    showTopUpCreditsDialog: vi.fn(),
+    showCreateWorkspaceDialog: vi.fn()
   })
 }))
 
 vi.mock(
   '@/platform/cloud/subscription/composables/useSubscriptionDialog',
   () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
+    useSubscriptionDialog: () => ({
+      showPricingTable: vi.fn()
+    })
   })
 )
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: vi.fn() })
-}))
-
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showCreateWorkspaceDialog,
-    showTopUpCreditsDialog: vi.fn()
+vi.mock('@/composables/useExternalLink', () => ({
+  useExternalLink: () => ({
+    buildDocsUrl: vi.fn().mockReturnValue('https://docs.example.com'),
+    docsPaths: { partnerNodesPricing: '/pricing' }
   })
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => undefined
-}))
-
-vi.mock('@/composables/useExternalLink', () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: vi.fn(() => 'https://docs.comfy.org'),
-    docsPaths: { partnerNodesPricing: 'partner-nodes' }
+  useTelemetry: () => ({
+    trackAddApiCreditButtonClicked: vi.fn()
   })
 }))
 
-const WorkspaceSwitcherPopoverStub = defineComponent({
-  emits: ['select', 'create'],
-  template: `
-    <div>
-      <button data-testid="stub-select-workspace" @click="$emit('select')" />
-      <button data-testid="stub-create-workspace" @click="$emit('create')" />
-    </div>
-  `
-})
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: true
+}))
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
+vi.mock('@/base/credits/comfyCredits', () => ({
+  formatCreditsFromCents: vi.fn().mockReturnValue('$10.00')
+}))
 
-function renderComponent() {
-  return render(CurrentUserPopoverWorkspace, {
-    global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn,
-          initialState: {
-            teamWorkspace: {
-              initState: 'ready',
-              activeWorkspaceId: 'ws-personal'
-            }
-          }
-        }),
-        i18n
-      ],
-      directives: {
-        tooltip: {}
-      },
-      stubs: {
-        WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
-        SubscribeButton: true,
-        UserAvatar: true,
-        WorkspaceProfilePic: true,
-        Skeleton: true,
-        Divider: true
-      }
-    }
-  })
-}
+// Mock child components
+vi.mock('@/components/common/UserAvatar.vue', () => ({
+  default: { template: '<div data-testid="user-avatar"></div>' }
+}))
+
+vi.mock('./WorkspaceProfilePic.vue', () => ({
+  default: { template: '<div data-testid="workspace-pic"></div>' }
+}))
+
+vi.mock('./WorkspaceSwitcherPopover.vue', () => ({
+  default: { template: '<div data-testid="workspace-switcher"></div>' }
+}))
+
+vi.mock('@/components/ui/button/Button.vue', () => ({
+  default: {
+    template: '<button :data-testid="$attrs[\'data-testid\']"><slot /></button>'
+  }
+}))
+
+vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
+  default: {
+    template: '<button data-testid="subscribe-button">Subscribe</button>'
+  }
+}))
+
+vi.mock('primevue/divider', () => ({
+  default: { template: '<hr />' }
+}))
+
+vi.mock('primevue/popover', () => ({
+  default: { template: '<div><slot /></div>' }
+}))
+
+vi.mock('primevue/skeleton', () => ({
+  default: { template: '<div data-testid="skeleton"></div>' }
+}))
 
 describe('CurrentUserPopoverWorkspace', () => {
-  it('toggles the workspace switcher panel from the selector row', async () => {
-    const user = userEvent.setup()
-    renderComponent()
-
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
-
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
-
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCanAccessSubscriptionFeatures.value = true
+    mockIsFreeTier.value = false
+    mockSubscription.value = { isCancelled: false }
   })
 
-  it('closes the switcher panel after selecting a workspace', async () => {
-    const user = userEvent.setup()
-    renderComponent()
+  function renderComponent() {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
 
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    await user.click(screen.getByTestId('stub-select-workspace'))
+    return render(CurrentUserPopoverWorkspace, {
+      global: {
+        plugins: [i18n],
+        directives: {
+          tooltip: {}
+        }
+      }
+    })
+  }
 
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
-  })
+  describe('canAccessSubscriptionFeatures', () => {
+    it('shows add credits button when canAccessSubscriptionFeatures is true and not free tier', () => {
+      mockCanAccessSubscriptionFeatures.value = true
+      mockIsFreeTier.value = false
+      renderComponent()
 
-  it('opens the create-workspace dialog and closes the popover on create', async () => {
-    const user = userEvent.setup()
-    const { emitted } = renderComponent()
+      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('upgrade-to-add-credits-button')
+      ).not.toBeInTheDocument()
+    })
 
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    await user.click(screen.getByTestId('stub-create-workspace'))
+    it('shows upgrade button when canAccessSubscriptionFeatures is true and is free tier', () => {
+      mockCanAccessSubscriptionFeatures.value = true
+      mockIsFreeTier.value = true
+      renderComponent()
 
-    expect(showCreateWorkspaceDialog).toHaveBeenCalled()
-    expect(emitted('close')).toHaveLength(1)
-    expect(
-      screen.queryByTestId('workspace-switcher-panel')
-    ).not.toBeInTheDocument()
+      expect(
+        screen.getByTestId('upgrade-to-add-credits-button')
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    })
+
+    it('shows manage plan when canAccessSubscriptionFeatures is true', () => {
+      mockCanAccessSubscriptionFeatures.value = true
+      renderComponent()
+
+      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+    })
+
+    it('hides manage plan when canAccessSubscriptionFeatures is false', () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      renderComponent()
+
+      expect(
+        screen.queryByTestId('manage-plan-menu-item')
+      ).not.toBeInTheDocument()
+    })
   })
 })

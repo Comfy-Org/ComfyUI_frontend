@@ -1,4 +1,3 @@
-import { FirebaseError } from 'firebase/app'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,7 +7,10 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
 const mockAuthStore = vi.hoisted(() => ({
-  logout: vi.fn().mockResolvedValue(undefined)
+  logout: vi.fn().mockResolvedValue(undefined),
+  initiateCreditPurchase: vi
+    .fn()
+    .mockResolvedValue({ checkout_url: 'https://checkout.example.com' })
 }))
 
 const mockToastStore = vi.hoisted(() => ({
@@ -27,28 +29,21 @@ const mockDialogService = vi.hoisted(() => ({
   confirm: vi.fn()
 }))
 
-const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-
-const knownAuthErrorCodes = new Set([
-  'auth/invalid-credential',
-  'auth/email-already-in-use'
-])
-
 vi.mock('@/i18n', () => ({
   t: (key: string, values?: { workflow?: string }) =>
-    values?.workflow ? `${key}:${values.workflow}` : key,
-  st: (key: string, fallback: string) => {
-    const code = key.replace('auth.errors.', '')
-    return knownAuthErrorCodes.has(code) ? key : fallback
-  }
+    values?.workflow ? `${key}:${values.workflow}` : key
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
+const mockStartTopupTracking = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => undefined)
+  useTelemetry: vi.fn(() => ({
+    startTopupTracking: mockStartTopupTracking
+  }))
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -71,9 +66,13 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => mockAuthStore)
 }))
 
+const mockCanAccessSubscriptionFeatures = vi.hoisted(() => ({
+  value: false
+}))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: false },
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     isFreeTier: { value: true },
     type: { value: 'free' }
   }))
@@ -84,7 +83,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
     wrapWithErrorHandlingAsync: <TArgs extends unknown[], TReturn>(
       action: (...args: TArgs) => Promise<TReturn> | TReturn
     ) => action,
-    toastErrorHandler: mockToastErrorHandler
+    toastErrorHandler: vi.fn()
   })
 }))
 
@@ -206,79 +205,39 @@ describe('useAuthActions.logout', () => {
   })
 })
 
-describe('useAuthActions.reportError', () => {
+describe('useAuthActions.purchaseCredits', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockCanAccessSubscriptionFeatures.value = false
   })
 
-  it('shows the friendly message for a known Firebase auth code', () => {
-    const { reportError } = useAuthActions()
+  it('returns early when canAccessSubscriptionFeatures is false', async () => {
+    mockCanAccessSubscriptionFeatures.value = false
 
-    reportError(new FirebaseError('auth/invalid-credential', 'raw firebase'))
+    const { purchaseCredits } = useAuthActions()
+    await purchaseCredits(10)
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.auth/invalid-credential'
+    expect(mockAuthStore.initiateCreditPurchase).not.toHaveBeenCalled()
+  })
+
+  it('initiates credit purchase when canAccessSubscriptionFeatures is true', async () => {
+    mockCanAccessSubscriptionFeatures.value = true
+    const mockOpen = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    const { purchaseCredits } = useAuthActions()
+    await purchaseCredits(10)
+
+    expect(mockAuthStore.initiateCreditPurchase).toHaveBeenCalledWith({
+      amount_micros: 10_000_000,
+      currency: 'usd'
     })
-    expect(mockToastErrorHandler).not.toHaveBeenCalled()
-  })
-
-  it('shows the signupBlocked message when the error carries the signup_blocked token', () => {
-    const { reportError } = useAuthActions()
-
-    // The backend wraps the rejection in a generic code; we match the token in
-    // the message, so it must win over the auth.errors.${code} fallback.
-    reportError(
-      new FirebaseError(
-        'auth/internal-error',
-        'Account creation is temporarily unavailable. (ref: signup_blocked)'
-      )
+    expect(mockStartTopupTracking).toHaveBeenCalled()
+    expect(mockOpen).toHaveBeenCalledWith(
+      'https://checkout.example.com',
+      '_blank'
     )
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.signupBlocked'
-    })
-    expect(mockToastErrorHandler).not.toHaveBeenCalled()
-  })
-
-  it('matches the signup_blocked token case-insensitively', () => {
-    const { reportError } = useAuthActions()
-
-    reportError(
-      new FirebaseError('auth/internal-error', 'rejected: SIGNUP_BLOCKED')
-    )
-
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.signupBlocked'
-    })
-  })
-
-  it('shows the generic fallback for an unknown Firebase auth code', () => {
-    const { reportError } = useAuthActions()
-
-    reportError(new FirebaseError('auth/some-new-code', 'raw firebase'))
-
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.generic'
-    })
-    expect(mockToastErrorHandler).not.toHaveBeenCalled()
-  })
-
-  it('delegates non-Firebase errors to toastErrorHandler', () => {
-    const { reportError } = useAuthActions()
-    const networkError = new TypeError('Failed to fetch')
-
-    reportError(networkError)
-
-    expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
-    expect(mockToastStore.add).not.toHaveBeenCalled()
+    mockOpen.mockRestore()
   })
 })

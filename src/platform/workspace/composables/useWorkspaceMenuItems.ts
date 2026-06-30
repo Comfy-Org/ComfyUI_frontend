@@ -19,7 +19,7 @@ export function useWorkspaceMenuItems() {
   const {
     uiConfig,
     isInPersonalWorkspace,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isOriginalOwner,
     isTeamPlanCancelled,
     isDeleteDisabled,
@@ -51,7 +51,7 @@ export function useWorkspaceMenuItems() {
   const canCancelPlan = computed(
     () =>
       isOriginalOwner.value &&
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       !isTeamPlanCancelled.value &&
       !isFreeTier.value
   )
@@ -59,7 +59,7 @@ export function useWorkspaceMenuItems() {
   const canDeleteWorkspace = computed(
     () =>
       isOriginalOwner.value &&
-      (!isInPersonalWorkspace.value || isActiveSubscription.value)
+      (!isInPersonalWorkspace.value || canAccessSubscriptionFeatures.value)
   )
 
   const canLeaveWorkspace = computed(

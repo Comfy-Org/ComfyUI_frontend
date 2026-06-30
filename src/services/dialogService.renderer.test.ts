@@ -25,7 +25,7 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     isFreeTier: { value: false },
     type: { value: 'legacy' }
   })
