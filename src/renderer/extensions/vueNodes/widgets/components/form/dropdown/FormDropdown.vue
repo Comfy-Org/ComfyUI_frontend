@@ -317,6 +317,11 @@ async function selectTopSearchResult() {
 function handleSearchEnter() {
   void selectTopSearchResult()
 }
+
+function showPicker() {
+  triggerRef.value!.showPicker()
+  closeDropdown()
+}
 </script>
 
 <template>
@@ -360,6 +365,7 @@ function handleSearchEnter() {
         v-model:search-query="searchQuery"
         v-model:ownership-selected="ownershipSelected"
         v-model:base-model-selected="baseModelSelected"
+        :uploadable
         :filter-options
         :sort-options
         :show-ownership-filter
@@ -376,6 +382,7 @@ function handleSearchEnter() {
         @close="closeDropdown"
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"
+        @show-picker="showPicker"
         @approach-end="emit('approach-end')"
       />
     </Popover>
