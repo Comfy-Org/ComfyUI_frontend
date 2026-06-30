@@ -158,7 +158,9 @@ describe('isStaleChunkError', () => {
 
   it('returns false for image files', () => {
     const info = parsePreloadError(
-      new Error('Unable to preload CSS for /assets/logo-abc123.png')
+      new Error(
+        'Failed to fetch dynamically imported module: /assets/logo-abc123.png'
+      )
     )
     expect(isStaleChunkError(info)).toBe(false)
   })
