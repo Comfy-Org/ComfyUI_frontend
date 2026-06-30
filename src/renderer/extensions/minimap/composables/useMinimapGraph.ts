@@ -13,7 +13,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
-import type { UpdateFlags } from '../types'
+import type { IMinimapDataSource, UpdateFlags } from '../types'
 
 interface GraphCallbacks {
   onNodeAdded?: (node: LGraphNode) => void
@@ -27,7 +27,8 @@ export function useMinimapGraph(
   onGraphChanged: () => void
 ) {
   const nodeStatesCache = new Map<NodeId, string>()
-  const linksCache = ref<string>('')
+  let lastLinkCount = 0
+  let lastGraphVersion = -1
   const lastNodeCount = ref(0)
   const updateFlags = ref<UpdateFlags>({
     bounds: false,
@@ -35,6 +36,13 @@ export function useMinimapGraph(
     connections: false,
     viewport: false
   })
+
+  // Reusable Set for node ID cleanup (avoids allocation per frame)
+  const currentNodeIds = new Set<NodeId>()
+
+  // Cached data source instance — invalidated when graph changes
+  let cachedDataSource: IMinimapDataSource | null = null
+  let cachedDataSourceGraph: LGraph | null = null
 
   // Track LayoutStore version for change detection
   const layoutStoreVersion = layoutStore.getVersion()
@@ -115,6 +123,20 @@ export function useMinimapGraph(
     originalCallbacksMap.delete(g.id)
   }
 
+  function getDataSource(g: LGraph): IMinimapDataSource {
+    if (cachedDataSource && cachedDataSourceGraph === g) {
+      return cachedDataSource
+    }
+    nodeStatesCache.clear()
+    currentNodeIds.clear()
+    lastNodeCount.value = 0
+    lastLinkCount = 0
+    lastGraphVersion = -1
+    cachedDataSource = MinimapDataSourceFactory.create(g)
+    cachedDataSourceGraph = g
+    return cachedDataSource
+  }
+
   const checkForChangesInternal = () => {
     const g = graph.value
     if (!g) return false
@@ -123,8 +145,7 @@ export function useMinimapGraph(
     let positionChanged = false
     let connectionChanged = false
 
-    // Use unified data source for change detection
-    const dataSource = MinimapDataSourceFactory.create(g)
+    const dataSource = getDataSource(g)
 
     // Check for node count changes
     const currentNodeCount = dataSource.getNodeCount()
@@ -145,8 +166,11 @@ export function useMinimapGraph(
       }
     }
 
-    // Clean up removed nodes from cache
-    const currentNodeIds = new Set(nodes.map((n) => n.id))
+    // Clean up removed nodes from cache (reuse Set to avoid allocation)
+    currentNodeIds.clear()
+    for (const node of nodes) {
+      currentNodeIds.add(node.id)
+    }
     for (const [nodeId] of nodeStatesCache) {
       if (!currentNodeIds.has(nodeId)) {
         nodeStatesCache.delete(nodeId)
@@ -154,11 +178,17 @@ export function useMinimapGraph(
       }
     }
 
-    // TODO: update when Layoutstore tracks links
-    const currentLinks = JSON.stringify(g.links || {})
-    if (currentLinks !== linksCache.value) {
+    // Detect connection changes via graph version + link count
+    // (avoids JSON.stringify of all links every frame)
+    const currentVersion = g._version
+    const currentLinkCount = g._links?.size ?? 0
+    if (
+      currentVersion !== lastGraphVersion ||
+      currentLinkCount !== lastLinkCount
+    ) {
       connectionChanged = true
-      linksCache.value = currentLinks
+      lastGraphVersion = currentVersion
+      lastLinkCount = currentLinkCount
     }
 
     if (structureChanged || positionChanged) {
@@ -185,13 +215,17 @@ export function useMinimapGraph(
   const destroy = () => {
     cleanupEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
-    nodeStatesCache.clear()
+    clearCache()
   }
 
   const clearCache = () => {
     nodeStatesCache.clear()
-    linksCache.value = ''
+    currentNodeIds.clear()
+    lastLinkCount = 0
+    lastGraphVersion = -1
     lastNodeCount.value = 0
+    cachedDataSource = null
+    cachedDataSourceGraph = null
   }
 
   return {
