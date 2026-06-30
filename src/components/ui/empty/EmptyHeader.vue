@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
@@ -9,11 +10,9 @@ const { class: className } = defineProps<{
 
 <template>
   <div
+    data-slot="empty-header"
     :class="
-      cn(
-        'flex w-full flex-wrap justify-start gap-2 @[460px]:justify-center',
-        className
-      )
+      cn('flex max-w-sm flex-col items-center gap-2 text-center', className)
     "
   >
     <slot />

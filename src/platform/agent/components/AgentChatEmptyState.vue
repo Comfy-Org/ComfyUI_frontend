@@ -1,22 +1,37 @@
 <script setup lang="ts">
+import Empty from '@/components/ui/empty/Empty.vue'
+import EmptyHeader from '@/components/ui/empty/EmptyHeader.vue'
+import EmptyMedia from '@/components/ui/empty/EmptyMedia.vue'
+import EmptyTitle from '@/components/ui/empty/EmptyTitle.vue'
+
 const { name } = defineProps<{
   name?: string
 }>()
 </script>
 
 <template>
-  <div class="flex w-full max-w-96 flex-col items-center gap-4 pt-12">
-    <img
-      src="/assets/images/comfy-logo-single.svg"
-      alt=""
-      class="size-12"
-      aria-hidden="true"
-    />
-    <div class="text-center text-base font-semibold text-base-foreground">
-      <p>
-        {{ name ? $t('agent.greetingNamed', { name }) : $t('agent.greeting') }}
-      </p>
-      <p>{{ $t('agent.greetingQuestion') }}</p>
-    </div>
-  </div>
+  <Empty class="pt-12">
+    <EmptyHeader>
+      <EmptyMedia>
+        <div class="rounded-xl border border-plum-600">
+          <img
+            src="/assets/images/comfy-logo-single.svg"
+            alt=""
+            class="block size-12"
+            aria-hidden="true"
+          />
+        </div>
+      </EmptyMedia>
+      <EmptyTitle
+        class="text-base/snug font-semibold text-base-foreground"
+      >
+        <span class="block">
+          {{
+            name ? $t('agent.greetingNamed', { name }) : $t('agent.greeting')
+          }}
+        </span>
+        <span class="block">{{ $t('agent.greetingQuestion') }}</span>
+      </EmptyTitle>
+    </EmptyHeader>
+  </Empty>
 </template>

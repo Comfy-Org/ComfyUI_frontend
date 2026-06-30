@@ -13,7 +13,7 @@ const {
   class: className,
   status = 'ready',
   variant = 'inverted',
-  size = 'icon-lg',
+  size = 'icon',
   disabled = false
 } = defineProps<{
   class?: HTMLAttributes['class']

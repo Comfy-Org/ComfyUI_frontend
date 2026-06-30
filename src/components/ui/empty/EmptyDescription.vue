@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
@@ -8,14 +9,10 @@ const { class: className } = defineProps<{
 </script>
 
 <template>
-  <div
-    :class="
-      cn(
-        'flex w-full flex-wrap justify-start gap-2 @[460px]:justify-center',
-        className
-      )
-    "
+  <p
+    data-slot="empty-description"
+    :class="cn('text-sm text-muted-foreground', className)"
   >
     <slot />
-  </div>
+  </p>
 </template>

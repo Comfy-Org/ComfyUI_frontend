@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 import AgentChatEmptyState from './AgentChatEmptyState.vue'
 import AgentChatHeader from './AgentChatHeader.vue'
+import AgentChatHistory from './AgentChatHistory.vue'
 import AgentPromptSuggestions from './AgentPromptSuggestions.vue'
 
 const {
@@ -30,6 +31,7 @@ const {
   input,
   status,
   isEmpty,
+  chatHistory,
   send,
   stop,
   applySuggestion,
@@ -40,6 +42,7 @@ const authStore = useAuthStore()
 const agentPanelStore = useAgentPanelStore()
 
 const model = ref('Auto')
+const showHistory = ref(false)
 
 const userName = computed(
   () => authStore.currentUser?.displayName?.split(' ')[0] ?? ''
@@ -70,69 +73,85 @@ function close() {
   <div class="flex h-full flex-col overflow-hidden bg-base-background">
     <AgentChatHeader @new-chat="startNewChat" @close="close" />
 
-    <div class="flex h-10 shrink-0 items-center px-4">
-      <button
-        type="button"
-        class="flex h-6 items-center gap-1 rounded-sm px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
-      >
-        <span class="max-w-56 truncate">
-          {{ conversationTitle ?? $t('agent.newChat') }}
-        </span>
-        <i class="icon-[lucide--chevron-down] size-4" />
-      </button>
-    </div>
+    <template v-if="showHistory">
+      <AgentChatHistory
+        :conversations="chatHistory"
+        :current-title="conversationTitle"
+        @back="showHistory = false"
+        @select="showHistory = false"
+      />
+    </template>
 
-    <ConversationEmptyState v-if="isEmpty">
-      <AgentChatEmptyState :name="userName" />
-    </ConversationEmptyState>
-    <Conversation v-else>
-      <ConversationContent>
-        <Message
-          v-for="message in messages"
-          :key="message.id"
-          :from="message.role"
+    <template v-else>
+      <div class="flex shrink-0 items-center px-2 py-1.5">
+        <button
+          type="button"
+          class="flex h-6 items-center gap-1 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
+          @click="showHistory = true"
         >
-          <MessageContent>
-            <MessageResponse :content="message.text" />
-          </MessageContent>
-        </Message>
-        <Loader v-if="status === 'submitted'" />
-      </ConversationContent>
-      <ConversationScrollButton />
-    </Conversation>
-
-    <div class="flex shrink-0 flex-col gap-4 p-4">
-      <AgentPromptSuggestions v-if="isEmpty" @select="applySuggestion" />
-      <div class="flex flex-col gap-2.5">
-        <PromptInput @submit="onSubmit">
-          <PromptInputBody>
-            <PromptInputTextarea
-              v-model="input"
-              :placeholder="$t('agent.placeholder')"
-            />
-            <PromptInputToolbar>
-              <PromptInputTools>
-                <PromptInputButton :aria-label="$t('agent.attach')">
-                  <i class="icon-[lucide--paperclip] size-4" />
-                </PromptInputButton>
-                <PromptInputButton :aria-label="$t('agent.mention')">
-                  <i class="icon-[lucide--at-sign] size-4" />
-                </PromptInputButton>
-              </PromptInputTools>
-              <PromptInputTools>
-                <PromptInputModelSelect v-model="model" />
-                <PromptInputSubmit
-                  :status="status"
-                  :disabled="submitDisabled"
-                />
-              </PromptInputTools>
-            </PromptInputToolbar>
-          </PromptInputBody>
-        </PromptInput>
-        <p class="text-center text-xs text-muted-foreground">
-          {{ $t('agent.disclaimer') }}
-        </p>
+          <i class="icon-[lucide--align-justify] size-3.5" />
+          <span class="max-w-56 truncate">
+            {{ conversationTitle ?? $t('agent.newChat') }}
+          </span>
+        </button>
       </div>
-    </div>
+
+      <ConversationEmptyState v-if="isEmpty">
+        <AgentChatEmptyState :name="userName" />
+      </ConversationEmptyState>
+      <Conversation v-else>
+        <ConversationContent>
+          <Message
+            v-for="message in messages"
+            :key="message.id"
+            :from="message.role"
+          >
+            <MessageContent>
+              <MessageResponse :content="message.text" />
+            </MessageContent>
+          </Message>
+          <Loader v-if="status === 'submitted'" />
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      <div class="flex shrink-0 flex-col gap-4 p-4">
+        <div
+          class="@container mx-auto flex w-full max-w-[640px] flex-col gap-4"
+        >
+          <AgentPromptSuggestions v-if="isEmpty" @select="applySuggestion" />
+          <div class="flex flex-col gap-2.5">
+            <PromptInput @submit="onSubmit">
+              <PromptInputBody>
+                <PromptInputTextarea
+                  v-model="input"
+                  :placeholder="$t('agent.placeholder')"
+                />
+                <PromptInputToolbar>
+                  <PromptInputTools>
+                    <PromptInputButton :aria-label="$t('agent.attach')">
+                      <i class="icon-[lucide--paperclip] size-4" />
+                    </PromptInputButton>
+                    <PromptInputButton :aria-label="$t('agent.mention')">
+                      <i class="icon-[lucide--at-sign] size-4" />
+                    </PromptInputButton>
+                  </PromptInputTools>
+                  <PromptInputTools>
+                    <PromptInputModelSelect v-model="model" />
+                    <PromptInputSubmit
+                      :status="status"
+                      :disabled="submitDisabled"
+                    />
+                  </PromptInputTools>
+                </PromptInputToolbar>
+              </PromptInputBody>
+            </PromptInput>
+            <p class="my-0 text-center text-xs text-muted-foreground">
+              {{ $t('agent.disclaimer') }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>

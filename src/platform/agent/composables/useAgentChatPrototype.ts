@@ -8,12 +8,62 @@ export interface AgentMessage {
   text: string
 }
 
+export interface AgentConversation {
+  id: string
+  title: string
+  createdAt: Date
+}
+
 const STREAM_INTERVAL_MS = 40
 const THINKING_DELAY_MS = 500
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
 
 const messages = ref<AgentMessage[]>([])
 const input = ref('')
 const status = ref<ChatStatus>('ready')
+const chatHistory = ref<AgentConversation[]>([
+  {
+    id: 'h-1',
+    title: 'Generate a yellow duck with a hockey mask',
+    createdAt: daysAgo(0)
+  },
+  {
+    id: 'h-2',
+    title: 'Build me a workflow for image to video with 3 models',
+    createdAt: daysAgo(0)
+  },
+  {
+    id: 'h-3',
+    title: 'Build me a workflow for image to video with 3 models',
+    createdAt: daysAgo(0)
+  },
+  {
+    id: 'h-4',
+    title: 'Build me a workflow for image to video with 3 models',
+    createdAt: daysAgo(1)
+  },
+  {
+    id: 'h-5',
+    title: 'Build me a workflow for image to video with 3 models',
+    createdAt: daysAgo(1)
+  },
+  {
+    id: 'h-6',
+    title: 'Build me a workflow for image to video with 3 models',
+    createdAt: daysAgo(1)
+  },
+  {
+    id: 'h-7',
+    title: 'Build me a workflow for image to video with 3 models',
+    createdAt: daysAgo(5)
+  },
+  {
+    id: 'h-8',
+    title: 'Build me a workflow for image to video with 3 models',
+    createdAt: daysAgo(15)
+  }
+])
 
 let idCounter = 0
 let streamTimer: ReturnType<typeof setInterval> | null = null
@@ -89,6 +139,14 @@ function applySuggestion(text: string) {
 }
 
 function startNewChat() {
+  const firstUserMessage = messages.value.find((m) => m.role === 'user')
+  if (firstUserMessage) {
+    chatHistory.value.unshift({
+      id: `h-${Date.now()}`,
+      title: firstUserMessage.text,
+      createdAt: new Date()
+    })
+  }
   clearTimers()
   messages.value = []
   input.value = ''
@@ -100,6 +158,7 @@ export function useAgentChatPrototype() {
     messages: readonly(messages),
     input,
     status: readonly(status),
+    chatHistory: readonly(chatHistory),
     isEmpty: computed(() => messages.value.length === 0),
     send,
     stop,
