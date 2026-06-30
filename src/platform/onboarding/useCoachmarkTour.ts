@@ -5,11 +5,8 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
-import { useAppMode } from '@/composables/useAppMode'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 
 import { useCoachmarkController } from './coachmarkController'
 import { TOURS, resolveSteps } from './onboardingTours'
@@ -140,14 +137,14 @@ export function useCoachmarkTour(refs: {
   }
 
   async function showStep(idx: number) {
+    const nextStep = steps.value[idx]
+    if (!nextStep) return
     stepController?.abort()
     const controller = new AbortController()
     stepController = controller
     const { signal } = controller
     // This call now owns the suspend flag; a superseded call must not clear it.
     awaitingDeferredTarget = false
-    const nextStep = steps.value[idx]
-    if (!nextStep) return
     if (
       nextStep.deferTarget &&
       nextStep.coachId &&
@@ -191,23 +188,6 @@ export function useCoachmarkTour(refs: {
     void showStep(stepIdx.value + 1)
   }
 
-  const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
-  const { toastErrorHandler } = useErrorHandling()
-
-  async function onPrimary() {
-    try {
-      const templateId = step.value?.loadTemplate
-      if (templateId) {
-        await loadTemplates()
-        await loadWorkflowTemplate(templateId, 'default')
-      }
-    } catch (e) {
-      toastErrorHandler(e)
-      return
-    }
-    next()
-  }
-
   function end(outcome: 'completed' | 'skipped', markSeen = true) {
     trackTour(outcome)
     clearPulse()
@@ -237,12 +217,6 @@ export function useCoachmarkTour(refs: {
     },
     { capture: true }
   )
-
-  // Entering app mode opens the app-mode tour (startTour guards re-entry).
-  const { isAppMode } = useAppMode()
-  watch(isAppMode, (active) => {
-    if (active) startTour('appMode')
-  })
 
   // Re-resolve the spotlight when the step's target mounts, unmounts or swaps.
   watch(candidateEls, () => {
@@ -292,7 +266,7 @@ export function useCoachmarkTour(refs: {
   }
 
   onMounted(() => {
-    // appMode opens via the isAppMode watcher; `?coach=` forces a tour at load.
+    // Tours open on explicit request (info button); `?coach=` forces one at load.
     // Snapshot it before URL loaders strip their params.
     const coachParam = new URLSearchParams(window.location.search).get('coach')
     if (coachParam === null) return
@@ -315,7 +289,7 @@ export function useCoachmarkTour(refs: {
     expectsTargetInteraction,
     outlinePulsing,
     showSkip,
-    onPrimary,
+    next,
     end
   }
 }

@@ -32,6 +32,8 @@ export interface CoachStep {
   placement: CoachPlacement
   /** The user advances by clicking the spotlighted element, not Next. */
   advanceOnTargetClick?: boolean
+  /** Drop this step at tour start when this target is already mounted (e.g. it opens a panel that's already open). */
+  skipIfMounted?: CoachId | CoachId[]
   /** Target mounts later (e.g. a dialog); wait for it instead of dropping the step. */
   deferTarget?: boolean
   /** Stronger card shadow for when the card sits over another surface. */
@@ -40,8 +42,6 @@ export interface CoachStep {
   primaryLabelKey?: string
   /** Overrides the secondary (Skip) button label. */
   skipLabelKey?: string
-  /** Loads this core workflow template before advancing (e.g. the tutorial's app). */
-  loadTemplate?: string
   /**
    * Renders a full-screen, non-closable landing dialog (image + overview)
    * instead of a spotlight, e.g. the opening step of a section's tour.
@@ -52,8 +52,10 @@ export interface CoachStep {
 }
 
 /**
- * Resolves which of a tour's steps actually run: drops steps whose target isn't
- * mounted, keeping targetless and deferred steps.
+ * Resolves which of a tour's steps actually run, fixing the set (and so the step
+ * count) at tour start: drops steps whose `skipIfMounted` target is already
+ * mounted (their goal is already met) and steps whose own target isn't mounted,
+ * keeping targetless and deferred steps.
  */
 export function resolveSteps(
   steps: CoachStep[],
@@ -61,9 +63,10 @@ export function resolveSteps(
     isMounted: (id: CoachId | CoachId[]) => boolean
   }
 ): CoachStep[] {
-  return steps.filter(
-    (s) => !s.coachId || s.deferTarget || options.isMounted(s.coachId)
-  )
+  return steps.filter((s) => {
+    if (s.skipIfMounted && options.isMounted(s.skipIfMounted)) return false
+    return !s.coachId || s.deferTarget || options.isMounted(s.coachId)
+  })
 }
 
 export const TOURS: Record<EntryPath, CoachStep[]> = {
@@ -74,14 +77,12 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       bodyKey: 'onboardingCoachmarks.appMode.landing.body',
       placement: 'center',
       primaryLabelKey: 'onboardingCoachmarks.appMode.landing.start',
-      skipLabelKey: 'onboardingCoachmarks.appMode.landing.skip',
-      loadTemplate: 'template_contact_sheet-step_1.app'
+      skipLabelKey: 'onboardingCoachmarks.appMode.landing.skip'
     },
     {
       coachId: COACH_IDS.inputsList,
       titleKey: 'onboardingCoachmarks.appMode.inputs.title',
       bodyKey: 'onboardingCoachmarks.appMode.inputs.body',
-      image: '/assets/images/default-template.png',
       placement: 'auto',
       deferTarget: true
     },
@@ -105,7 +106,8 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       bodyKey: 'onboardingCoachmarks.appMode.assetsButton.body',
       placement: 'right',
       deferTarget: true,
-      advanceOnTargetClick: true
+      advanceOnTargetClick: true,
+      skipIfMounted: COACH_IDS.assetsPanel
     },
     {
       // The panel mounts when the button above is clicked.

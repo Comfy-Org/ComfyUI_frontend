@@ -33,19 +33,6 @@ vi.mock('@/composables/useAppMode', async () => {
   const { ref: r } = await import('vue')
   return { useAppMode: () => ({ isAppMode: r(false) }) }
 })
-const templates = vi.hoisted(() => ({
-  loadTemplates: vi.fn().mockResolvedValue(undefined),
-  loadWorkflowTemplate: vi.fn().mockResolvedValue(undefined)
-}))
-vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateWorkflows',
-  () => ({ useTemplateWorkflows: () => templates })
-)
-
-const errorHandling = vi.hoisted(() => ({ toastErrorHandler: vi.fn() }))
-vi.mock('@/composables/useErrorHandling', () => ({
-  useErrorHandling: () => errorHandling
-}))
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
 }))
@@ -90,21 +77,26 @@ describe('useCoachmarkTour', () => {
     clearCoachmarks()
     settings.seen = []
     telemetry.track.mockClear()
-    templates.loadTemplates.mockClear()
-    templates.loadWorkflowTemplate.mockClear()
-    errorHandling.toastErrorHandler.mockClear()
     vi.useRealTimers()
   })
 
-  /** Register every app-mode target laid out, so deferred steps resolve at once. */
-  function registerAppModeTargets(): HTMLElement[] {
-    return APP_MODE_TARGETS.map((id) => {
-      const el = document.createElement('div')
-      el.getBoundingClientRect = () => new DOMRect(0, 0, 100, 100)
-      document.body.appendChild(el)
-      registerCoachmark(id, el)
-      return el
-    })
+  /** Register one laid-out element for a coach id, so its step resolves at once. */
+  function mountTarget(id: CoachId): HTMLElement {
+    const el = document.createElement('div')
+    el.getBoundingClientRect = () => new DOMRect(0, 0, 100, 100)
+    document.body.appendChild(el)
+    registerCoachmark(id, el)
+    return el
+  }
+
+  function registerAppModeTargets(
+    ids: CoachId[] = APP_MODE_TARGETS
+  ): Map<CoachId, HTMLElement> {
+    return new Map(ids.map((id) => [id, mountTarget(id)]))
+  }
+
+  function removeTargets(targets: Map<CoachId, HTMLElement>) {
+    for (const el of targets.values()) el.remove()
   }
 
   it('marks the tour seen when it ends normally', async () => {
@@ -122,26 +114,9 @@ describe('useCoachmarkTour', () => {
     // Flush startTour + the opening landing step.
     await vi.advanceTimersByTimeAsync(0)
     // Advance past the landing into the first deferred-target step.
-    await api.onPrimary()
+    api.next()
     // The deferred target (inputs list) is never registered; exhaust the wait.
     await vi.advanceTimersByTimeAsync(8000)
-    expect(settings.seen).not.toContain('appMode')
-  })
-
-  it('surfaces an error and stays on the step when a primary action fails', async () => {
-    const error = new Error('load failed')
-    templates.loadWorkflowTemplate.mockRejectedValueOnce(error)
-    const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
-    await flush()
-
-    // The landing's primary action loads a template; if that rejects the tour
-    // must report it and not advance off the landing.
-    await api.onPrimary()
-    await flush()
-
-    expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
-    expect(api.step.value?.landing).toBe(true)
     expect(settings.seen).not.toContain('appMode')
   })
 
@@ -158,7 +133,8 @@ describe('useCoachmarkTour', () => {
 
   it('advances through every step to completion and marks the tour seen', async () => {
     // Register every app-mode target so each step resolves immediately as the
-    // user advances (spotlight steps defer their targets).
+    // user advances (spotlight steps defer their targets). The assets panel is
+    // mounted, so the assets-button step is skipped — the tour still completes.
     const targets = registerAppModeTargets()
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
@@ -167,7 +143,7 @@ describe('useCoachmarkTour', () => {
     // Advance until the tour completes (count-agnostic; extra presses after the
     // final step are no-ops), capped so a stuck tour fails instead of hangs.
     for (let i = 0; i < 12 && !settings.seen.includes('appMode'); i++) {
-      await api.onPrimary()
+      api.next()
       await flush()
     }
 
@@ -176,29 +152,56 @@ describe('useCoachmarkTour', () => {
       ([stage]) => stage === 'completed'
     )
     expect(completed).toBe(true)
-    targets.forEach((el) => el.remove())
+    removeTargets(targets)
   })
 
   it('advances a click-to-advance step when its spotlighted target is clicked', async () => {
-    const targets = registerAppModeTargets()
+    // Every target except the assets panel — it's still closed, so the
+    // assets-button click step is shown rather than skipped.
+    const targets = registerAppModeTargets(
+      APP_MODE_TARGETS.filter((id) => id !== 'assets-panel')
+    )
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
     await flush()
 
     // Advance off the landing and through the spotlight steps up to the assets
     // button, which advances only when its target is clicked (Next is hidden).
+    // All five spotlight steps run when the panel starts closed.
+    expect(api.countedSteps.value.length).toBe(5)
     for (let i = 0; i < 4; i++) {
-      await api.onPrimary()
+      api.next()
       await flush()
     }
     expect(api.step.value?.advanceOnTargetClick).toBe(true)
 
-    const assetsButton = targets[APP_MODE_TARGETS.indexOf('assets-button')]
+    // Clicking the button opens the panel and advances to spotlight it.
+    targets.set('assets-panel', mountTarget('assets-panel'))
+    const assetsButton = targets.get('assets-button')!
     assetsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flush()
 
     expect(api.step.value?.coachId).toBe('assets-panel')
-    targets.forEach((el) => el.remove())
+    removeTargets(targets)
+  })
+
+  it('drops the assets-button step (count 4) when the panel is already open', async () => {
+    // The panel is registered up front, so the step that only exists to open it
+    // is dropped at tour start — the indicator counts four steps, not five.
+    const targets = registerAppModeTargets()
+    const { api } = mountTour()
+    void useCoachmarkController().requestTour('appMode')
+    await flush()
+
+    expect(api.countedSteps.value.length).toBe(4)
+
+    // landing → inputs → run → outputs → assets-panel (no assets-button step)
+    for (let i = 0; i < 4; i++) {
+      api.next()
+      await flush()
+    }
+    expect(api.step.value?.coachId).toBe('assets-panel')
+    removeTargets(targets)
   })
 
   it('advancing off the landing does not mark the tour skipped', async () => {
@@ -208,7 +211,7 @@ describe('useCoachmarkTour', () => {
     await flush()
     expect(api.step.value?.landing).toBe(true)
 
-    await api.onPrimary()
+    api.next()
     await flush()
 
     expect(api.step.value?.landing).toBeFalsy()
@@ -216,6 +219,6 @@ describe('useCoachmarkTour', () => {
       ([stage]) => stage === 'skipped'
     )
     expect(skipped).toBe(false)
-    targets.forEach((el) => el.remove())
+    removeTargets(targets)
   })
 })

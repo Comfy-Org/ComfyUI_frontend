@@ -36,7 +36,7 @@ vi.mock('./useCoachmarkTour', async () => {
     expectsTargetInteraction: ref(false),
     outlinePulsing: ref(false),
     showSkip: ref(true),
-    onPrimary: vi.fn(),
+    next: vi.fn(),
     end: vi.fn()
   } satisfies TourState)
   return { useCoachmarkTour: () => mocks.state }
@@ -78,7 +78,7 @@ describe('TourOverlay', () => {
     s.expectsTargetInteraction.value = false
     s.outlinePulsing.value = false
     s.showSkip.value = true
-    s.onPrimary.mockClear()
+    s.next.mockClear()
     s.end.mockClear()
   })
 
@@ -111,7 +111,7 @@ describe('TourOverlay', () => {
     renderOverlay()
 
     await user.click(screen.getByRole('button', { name: 'Next' }))
-    expect(s.onPrimary).toHaveBeenCalledOnce()
+    expect(s.next).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Skip' }))
     expect(s.end).toHaveBeenCalledWith('skipped')
@@ -158,7 +158,7 @@ describe('TourOverlay', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Start tutorial' })
     )
-    expect(s.onPrimary).toHaveBeenCalledOnce()
+    expect(s.next).toHaveBeenCalledOnce()
   })
 
   it('ends the tour when the landing is dismissed', async () => {

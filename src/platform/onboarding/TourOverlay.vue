@@ -7,7 +7,7 @@
     :image="step.image"
     :primary-label="primaryLabel"
     :skip-label="skipLabel"
-    @start="onPrimary"
+    @start="next"
   />
   <div
     v-else-if="step"
@@ -79,7 +79,7 @@
             v-if="!expectsTargetInteraction"
             variant="inverted"
             size="md"
-            @click="onPrimary"
+            @click="next"
           >
             {{ primaryLabel }}
           </Button>
@@ -132,7 +132,7 @@ const {
   expectsTargetInteraction,
   outlinePulsing,
   showSkip,
-  onPrimary,
+  next,
   end
 } = useCoachmarkTour({ cardRef, overlayRef })
 
