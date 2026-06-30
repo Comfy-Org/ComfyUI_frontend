@@ -49,6 +49,7 @@
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue-component-type-helpers": "catalog:"
   }
 }
