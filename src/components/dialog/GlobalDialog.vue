@@ -46,7 +46,9 @@
               <DialogTitle v-else :id="item.key">
                 {{ item.title || ' ' }}
               </DialogTitle>
-              <DialogClose v-if="item.dialogComponentProps.closable !== false" />
+              <DialogClose
+                v-if="item.dialogComponentProps.closable !== false"
+              />
             </DialogHeader>
             <div class="flex-1 overflow-auto px-4 py-2">
               <component
