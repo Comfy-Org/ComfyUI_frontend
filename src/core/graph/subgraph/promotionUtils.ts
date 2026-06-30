@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -63,7 +64,7 @@ export function findHostInputForPromotion(
 
 function resolvePromotionSource(
   subgraphNode: SubgraphNode,
-  subgraphInput: { linkIds: readonly number[] }
+  subgraphInput: { linkIds: readonly LinkId[] }
 ): PromotedWidgetSource | undefined {
   for (const linkId of subgraphInput.linkIds) {
     const link = subgraphNode.subgraph.getLink(linkId)

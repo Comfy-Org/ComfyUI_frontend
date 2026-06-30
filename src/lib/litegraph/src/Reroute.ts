@@ -1,7 +1,5 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
-import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -206,19 +204,19 @@ export class Reroute
    * @param linkIds Link IDs ({@link LLink.id}) of all links that use this reroute
    */
   constructor(
-    id: RerouteId | number,
+    id: RerouteId,
     network: LinkNetwork,
     pos?: Point,
-    parentId?: RerouteId | number,
-    linkIds?: Iterable<LinkId | number>,
-    floatingLinkIds?: Iterable<LinkId | number>
+    parentId?: RerouteId,
+    linkIds?: Iterable<LinkId>,
+    floatingLinkIds?: Iterable<LinkId>
   ) {
-    this.id = toRerouteId(id)
+    this.id = id
     this.network = new WeakRef(network)
-    this.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
+    this.parentId = parentId
     if (pos) this.pos = pos
-    this.linkIds = new Set(Array.from(linkIds ?? [], toLinkId))
-    this.floatingLinkIds = new Set(Array.from(floatingLinkIds ?? [], toLinkId))
+    this.linkIds = new Set(linkIds)
+    this.floatingLinkIds = new Set(floatingLinkIds)
   }
 
   /**
@@ -230,14 +228,14 @@ export class Reroute
    * @param linkIds All link IDs that pass through this reroute
    */
   update(
-    parentId: RerouteId | number | undefined,
+    parentId: RerouteId | undefined,
     pos?: Point,
-    linkIds?: Iterable<LinkId | number>,
+    linkIds?: Iterable<LinkId>,
     floating?: FloatingRerouteSlot
   ): void {
-    this.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
+    this.parentId = parentId
     if (pos) this.pos = pos
-    if (linkIds) this.linkIds = new Set(Array.from(linkIds, toLinkId))
+    if (linkIds) this.linkIds = new Set(linkIds)
     this.floating = floating
   }
 
@@ -247,8 +245,8 @@ export class Reroute
    * @returns true if any links remain after validation
    */
   validateLinks(
-    links: ReadonlyMap<LinkId | number, LLink>,
-    floatingLinks: ReadonlyMap<LinkId | number, LLink>
+    links: ReadonlyMap<LinkId, LLink>,
+    floatingLinks: ReadonlyMap<LinkId, LLink>
   ): boolean {
     const { linkIds, floatingLinkIds } = this
     for (const linkId of linkIds) {
@@ -351,7 +349,7 @@ export class Reroute
     function addAllResults(
       network: ReadonlyLinkNetwork,
       linkIds: Iterable<LinkId>,
-      links: ReadonlyMap<LinkId | number, LLink>
+      links: ReadonlyMap<LinkId, LLink>
     ) {
       for (const linkId of linkIds) {
         const link = links.get(linkId)
@@ -546,7 +544,7 @@ export class Reroute
      */
     function calculateAngles(
       linkIds: Iterable<LinkId>,
-      links: ReadonlyMap<LinkId | number, LLink>
+      links: ReadonlyMap<LinkId, LLink>
     ) {
       for (const linkId of linkIds) {
         const link = links.get(linkId)

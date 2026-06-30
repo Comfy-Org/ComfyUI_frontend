@@ -6,6 +6,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { SlotIndex } from '@/types/slotId'
 
 import type { ContextMenu } from './ContextMenu'
+import type { LGraphGroup, GroupId } from './LGraphGroup'
 import type { LGraphNode, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
@@ -88,7 +89,7 @@ interface Parent<TChild> {
  * May contain other {@link Positionable} objects.
  */
 export interface Positionable extends Parent<Positionable>, HasBoundingRect {
-  readonly id: NodeId | RerouteId | number
+  readonly id: NodeId | RerouteId | GroupId
   /**
    * Position in graph coordinates. This may be the top-left corner,
    * the centre, or another point depending on concrete type.
@@ -161,12 +162,12 @@ export interface IPinnable {
 }
 
 export interface ReadonlyLinkNetwork {
-  readonly links: ReadonlyMap<LinkId | number, LLink>
-  readonly reroutes: ReadonlyMap<RerouteId | number, Reroute>
-  readonly floatingLinks: ReadonlyMap<LinkId | number, LLink>
+  readonly links: ReadonlyMap<LinkId, LLink>
+  readonly reroutes: ReadonlyMap<RerouteId, Reroute>
+  readonly floatingLinks: ReadonlyMap<LinkId, LLink>
   getNodeById(id: NodeId | null | undefined): LGraphNode | null
   getLink(id: null | undefined): undefined
-  getLink(id: LinkId | number | null | undefined): LLink | undefined
+  getLink(id: LinkId | null | undefined): LLink | undefined
   getReroute(parentId: null | undefined): undefined
   getReroute(parentId: RerouteId | null | undefined): Reroute | undefined
 
@@ -178,8 +179,8 @@ export interface ReadonlyLinkNetwork {
  * Contains a list of links, reroutes, and nodes.
  */
 export interface LinkNetwork extends ReadonlyLinkNetwork {
-  readonly links: Map<LinkId | number, LLink>
-  readonly reroutes: Map<RerouteId | number, Reroute>
+  readonly links: Map<LinkId, LLink>
+  readonly reroutes: Map<RerouteId, Reroute>
   addFloatingLink(link: LLink): LLink
   removeReroute(id: RerouteId): unknown
   removeFloatingLink(link: LLink): void
@@ -362,7 +363,7 @@ export interface IWidgetLocator {
 }
 
 export interface INodeInputSlot extends INodeSlot {
-  link: LinkId | number | null
+  link: LinkId | null
   widget?: IWidgetLocator
   widgetId?: WidgetId
   alwaysVisible?: boolean
@@ -378,7 +379,7 @@ export interface IWidgetInputSlot extends INodeInputSlot {
 }
 
 export interface INodeOutputSlot extends INodeSlot {
-  links: Array<LinkId | number> | null
+  links: LinkId[] | null
   _data?: unknown
   slot_index?: SlotIndex
 }

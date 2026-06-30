@@ -415,8 +415,8 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Update link layout data (for geometry/debug, no separate spatial index)
    */
-  updateLinkLayout(linkId: LinkId | number, layout: LinkLayout): void {
-    const id = toLinkId(linkId)
+  updateLinkLayout(linkId: LinkId, layout: LinkLayout): void {
+    const id = linkId
     const existing = this.linkLayouts.get(id)
 
     if (
@@ -436,8 +436,8 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Delete link layout data
    */
-  deleteLinkLayout(linkId: LinkId | number): void {
-    const id = toLinkId(linkId)
+  deleteLinkLayout(linkId: LinkId): void {
+    const id = linkId
     const deleted = this.linkLayouts.delete(id)
     if (deleted) {
       this.cleanupLinkSegments(id)
@@ -556,8 +556,8 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get link layout data
    */
-  getLinkLayout(linkId: LinkId | number): LinkLayout | null {
-    return this.linkLayouts.get(toLinkId(linkId)) || null
+  getLinkLayout(linkId: LinkId): LinkLayout | null {
+    return this.linkLayouts.get(linkId) || null
   }
   /**
    * Get slot layout data
@@ -585,11 +585,11 @@ class LayoutStoreImpl implements LayoutStore {
    * Update link segment layout data
    */
   updateLinkSegmentLayout(
-    linkId: LinkId | number,
+    linkId: LinkId,
     rerouteId: RerouteId | null,
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void {
-    const id = toLinkId(linkId)
+    const id = linkId
     const key = makeLinkSegmentKey(id, rerouteId)
     const existing = this.linkSegmentLayouts.get(key)
 
@@ -631,11 +631,8 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Delete link segment layout data
    */
-  deleteLinkSegmentLayout(
-    linkId: LinkId | number,
-    rerouteId: RerouteId | null
-  ): void {
-    const id = toLinkId(linkId)
+  deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void {
+    const id = linkId
     const key = makeLinkSegmentKey(id, rerouteId)
     const deleted = this.linkSegmentLayouts.delete(key)
     if (deleted) {

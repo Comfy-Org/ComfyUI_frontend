@@ -263,7 +263,7 @@ describe('minimapCanvasRenderer', () => {
       createMockNodeOutputSlot({
         name: 'output',
         type: 'number',
-        links: [1],
+        links: [toLinkId(1)],
         boundingRect: new Float64Array([0, 0, 10, 10])
       })
     ]

@@ -4294,9 +4294,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Remap linkIds
     for (const reroute of reroutes.values()) {
-      const ids = [...reroute.linkIds].map(
-        (x) => links.get(x)?.id ?? toLinkId(x)
-      )
+      const ids = [...reroute.linkIds].map((x) => links.get(x)?.id ?? x)
       reroute.update(reroute.parentId, undefined, ids, reroute.floating)
 
       // Remove any invalid items
@@ -4667,20 +4665,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const input of item.inputs) {
         if (input.link == null) continue
 
-        const node = LLink.getOriginNode(graph, toLinkId(input.link))
+        const node = LLink.getOriginNode(graph, input.link)
         if (node && this.selectedItems.has(node)) continue
 
-        delete this.highlighted_links[toLinkId(input.link)]
+        delete this.highlighted_links[input.link]
       }
     }
     if (item.outputs) {
       for (const id of item.outputs.flatMap((x) => x.links)) {
         if (id == null) continue
 
-        const node = LLink.getTargetNode(graph, toLinkId(id))
+        const node = LLink.getTargetNode(graph, id)
         if (node && this.selectedItems.has(node)) continue
 
-        delete this.highlighted_links[toLinkId(id)]
+        delete this.highlighted_links[id]
       }
     }
   }

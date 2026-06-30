@@ -295,9 +295,9 @@ export interface LayoutStore {
   }
 
   // Update methods for link, slot, and reroute layouts
-  updateLinkLayout(linkId: LinkId | number, layout: LinkLayout): void
+  updateLinkLayout(linkId: LinkId, layout: LinkLayout): void
   updateLinkSegmentLayout(
-    linkId: LinkId | number,
+    linkId: LinkId,
     rerouteId: RerouteId | null,
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void
@@ -305,17 +305,14 @@ export interface LayoutStore {
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
 
   // Delete methods for cleanup
-  deleteLinkLayout(linkId: LinkId | number): void
-  deleteLinkSegmentLayout(
-    linkId: LinkId | number,
-    rerouteId: RerouteId | null
-  ): void
+  deleteLinkLayout(linkId: LinkId): void
+  deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
   deleteSlotLayout(key: SlotId): void
   deleteRerouteLayout(rerouteId: RerouteId): void
   clearAllSlotLayouts(): void
 
   // Get layout data
-  getLinkLayout(linkId: LinkId | number): LinkLayout | null
+  getLinkLayout(linkId: LinkId): LinkLayout | null
   getSlotLayout(key: SlotId): SlotLayout | null
   getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
 

@@ -157,21 +157,21 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   constructor(
-    id: LinkId | number,
+    id: LinkId,
     type: ISlotType,
     origin_id: SerializedNodeId,
     origin_slot: number,
     target_id: SerializedNodeId,
     target_slot: number,
-    parentId?: RerouteId | number
+    parentId?: RerouteId
   ) {
-    this.id = toLinkId(id)
+    this.id = id
     this.type = type
     this.origin_id = toNodeId(origin_id)
     this.origin_slot = origin_slot
     this.target_id = toNodeId(target_id)
     this.target_slot = target_slot
-    this.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
+    this.parentId = parentId
 
     this._data = null
     // center
@@ -180,7 +180,14 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   /** @deprecated Use {@link LLink.create} */
   static createFromArray(data: SerialisedLLinkArray): LLink {
-    return new LLink(data[0], data[5], data[1], data[2], data[3], data[4])
+    return new LLink(
+      toLinkId(data[0]),
+      data[5],
+      data[1],
+      data[2],
+      data[3],
+      data[4]
+    )
   }
 
   /**
@@ -190,13 +197,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   static create(data: SerialisableLLink): LLink {
     return new LLink(
-      data.id,
+      toLinkId(data.id),
       data.type,
       data.origin_id,
       data.origin_slot,
       data.target_id,
       data.target_slot,
-      data.parentId
+      data.parentId === undefined ? undefined : toRerouteId(data.parentId)
     )
   }
 
@@ -277,7 +284,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * it is recommended to use simpler methods where appropriate.
    */
   static resolve(
-    linkId: LinkId | number | null | undefined,
+    linkId: LinkId | null | undefined,
     network: BasicReadonlyNetwork
   ): ResolvedConnection | undefined {
     return network.getLink(linkId)?.resolve(network)
@@ -292,12 +299,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @see {@link LLink.resolve}
    */
   static resolveMany(
-    linkIds: Iterable<LinkId | number>,
+    linkIds: Iterable<LinkId>,
     network: BasicReadonlyNetwork
   ): ResolvedConnection[] {
     const resolved: ResolvedConnection[] = []
     for (const id of linkIds) {
-      const r = network.getLink(toLinkId(id))?.resolve(network)
+      const r = network.getLink(id)?.resolve(network)
       if (r) resolved.push(r)
     }
     return resolved
@@ -362,14 +369,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.target_slot = o[4]
       this.type = o[5]
     } else {
-      this.id = toLinkId(o.id)
+      this.id = o.id
       this.type = o.type
       this.origin_id = o.origin_id
       this.origin_slot = o.origin_slot
       this.target_id = o.target_id
       this.target_slot = o.target_slot
-      this.parentId =
-        o.parentId === undefined ? undefined : toRerouteId(o.parentId)
+      this.parentId = o.parentId
     }
   }
 

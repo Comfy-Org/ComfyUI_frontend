@@ -1,4 +1,3 @@
-import { toLinkId } from '@/types/linkId'
 import type { LGraphNode } from './LGraphNode'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { LLink, LinkId } from './LLink'
@@ -10,13 +9,13 @@ function linkTupleKey(link: LLink): string {
 
 /** Groups all link IDs by their connection tuple key. */
 export function groupLinksByTuple(
-  links: Map<LinkId | number, LLink>
+  links: Map<LinkId, LLink>
 ): Map<string, LinkId[]> {
   const groups = new Map<string, LinkId[]>()
   for (const [id, link] of links) {
     const key = linkTupleKey(link)
     if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(toLinkId(id))
+    groups.get(key)!.push(id)
   }
   return groups
 }
@@ -44,7 +43,7 @@ export function selectSurvivorLink(
 export function purgeOrphanedLinks(
   ids: LinkId[],
   keepId: LinkId,
-  links: Map<LinkId | number, LLink>,
+  links: Map<LinkId, LLink>,
   getNodeById: (id: SerializedNodeId) => LGraphNode | null
 ): void {
   for (const id of ids) {
@@ -77,7 +76,7 @@ export function repairInputLinks(
 
   for (const input of node.inputs ?? []) {
     if (input?.link == null || input.link === keepId) continue
-    if (duplicateIds.has(toLinkId(input.link))) {
+    if (duplicateIds.has(input.link)) {
       input.link = keepId
     }
   }
