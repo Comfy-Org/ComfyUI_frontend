@@ -50,6 +50,14 @@ describe('customerStorySchema', () => {
     })
     expect(result.success).toBe(false)
   })
+
+  it('rejects unknown frontmatter keys so typos fail the build', () => {
+    const result = customerStorySchema.safeParse({
+      ...validFrontmatter,
+      readMoreHref: 'https://blog.comfy.org/p/example'
+    })
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('storySlug', () => {
@@ -109,17 +117,12 @@ describe('nextStory', () => {
 
 describe('toCardProps', () => {
   it('maps a story entry to listing-card props', () => {
-    const entry = {
-      id: 'en/series-entertainment',
-      data: { ...validFrontmatter, coverAlt: 'Series cover' }
-    }
+    const entry = { id: 'en/series-entertainment', data: validFrontmatter }
     expect(toCardProps(entry)).toEqual({
       slug: 'series-entertainment',
       title: validFrontmatter.title,
       category: validFrontmatter.category,
-      description: validFrontmatter.description,
-      cover: validFrontmatter.cover,
-      coverAlt: 'Series cover'
+      cover: validFrontmatter.cover
     })
   })
 })

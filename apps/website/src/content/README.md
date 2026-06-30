@@ -57,3 +57,8 @@ the pattern to follow for the rest of the marketing content.
   logical block per line when editing.
 - `components/common/ContentSection.vue` and `config/contentSections.ts` still power
   the legal and privacy pages. Do not delete them.
+- The MDX `components` map styles the block elements (paragraphs, `###`, lists) and the
+  named block components (`Figure`, `Quote`, etc.). Inline `a`/`strong`/`em` typed
+  directly in prose render with browser defaults, so route prose through the block
+  components; if styled inline links are ever needed, add them to the map with design
+  sign-off.

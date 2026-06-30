@@ -3626,10 +3626,6 @@ const translations = {
     en: "What's next?",
     'zh-CN': '接下来看什么？'
   },
-  'customers.story.backToStories': {
-    en: '← BACK TO CUSTOMER STORIES',
-    'zh-CN': '← 返回客户故事'
-  },
   'customers.story.viewArticle': {
     en: 'VIEW ARTICLE',
     'zh-CN': '查看文章'

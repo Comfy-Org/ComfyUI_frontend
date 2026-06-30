@@ -14,7 +14,7 @@ const { href, locale = 'en' } = defineProps<{
     <Button as="a" :href variant="default" size="lg">
       {{ t('customers.story.readMore', locale) }}
       <template #append>
-        <span class="text-base">↗</span>
+        <span class="text-base" aria-hidden="true">↗</span>
       </template>
     </Button>
   </div>

@@ -2,8 +2,6 @@ import type { CollectionEntry } from 'astro:content'
 
 import type { CustomerStoryFrontmatter } from '../content/customers.schema'
 
-export type Locale = 'en' | 'zh-CN'
-
 export type CustomerStoryEntry = CollectionEntry<'customers'>
 
 export function storySlug(id: string): string {
@@ -34,9 +32,7 @@ export interface StoryCard {
   slug: string
   title: string
   category: string
-  description: string
   cover: string
-  coverAlt?: string
 }
 
 export function toCardProps(entry: {
@@ -47,8 +43,6 @@ export function toCardProps(entry: {
     slug: storySlug(entry.id),
     title: entry.data.title,
     category: entry.data.category,
-    description: entry.data.description,
-    cover: entry.data.cover,
-    coverAlt: entry.data.coverAlt
+    cover: entry.data.cover
   }
 }

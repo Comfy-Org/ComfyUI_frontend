@@ -1,16 +1,13 @@
 ---
-import { getCollection } from 'astro:content'
-
 import CustomerArticle from '../../components/customers/CustomerArticle.astro'
 import DetailHeroSection from '../../components/customers/DetailHeroSection.vue'
 import WhatsNextSection from '../../components/customers/WhatsNextSection.vue'
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { nextStory, sortStories, storySlug } from '../../utils/customers'
+import { nextStory, storySlug } from '../../utils/customers'
+import { loadStories } from '../../utils/loadStories'
 
 export async function getStaticPaths() {
-  const stories = sortStories(
-    await getCollection('customers', ({ id }) => id.startsWith('en/'))
-  )
+  const stories = await loadStories('en')
   return stories.map((entry) => ({
     params: { slug: storySlug(entry.id) },
     props: { entry, next: nextStory(stories, storySlug(entry.id)) }
