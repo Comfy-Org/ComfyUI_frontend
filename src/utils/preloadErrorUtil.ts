@@ -74,7 +74,6 @@ const HASHED_ASSET_RE = /\/assets\/.+-[A-Za-z0-9_-]{6,}\.(js|mjs|css)$/
  */
 export function isStaleChunkError(info: PreloadErrorInfo): boolean {
   if (!info.url) return false
-  if (info.fileType !== 'js' && info.fileType !== 'css') return false
 
   const pathname = new URL(info.url, 'https://cloud.comfy.org').pathname
   return HASHED_ASSET_RE.test(pathname)
