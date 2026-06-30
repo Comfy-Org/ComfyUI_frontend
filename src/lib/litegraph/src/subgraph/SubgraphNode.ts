@@ -33,6 +33,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
@@ -52,6 +53,16 @@ workflowSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
 
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
+
+function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
+  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
+    return widget.isDOMWidget
+  }
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
 
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
@@ -643,23 +654,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
+    const store = useWidgetValueStore()
     input.widgetId = id
-    useWidgetValueStore().registerWidget(id, {
+    store.registerWidget(id, {
       type: interiorWidget.type,
       value: interiorWidget.value,
       options: cloneDeep(interiorWidget.options ?? {}),
       label: input.label ?? subgraphInput.name,
       serialize: interiorWidget.serialize,
-      disabled: interiorWidget.disabled,
-      isDOMWidget:
-        'isDOMWidget' in interiorWidget &&
-        typeof interiorWidget.isDOMWidget === 'boolean'
-          ? interiorWidget.isDOMWidget
-          : undefined
+      disabled: interiorWidget.disabled
     })
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
+    const source = input._widget
+      ? resolvePromotedWidgetSource(this.rootGraph, this, input._widget)
+      : undefined
+    store.registerWidgetRenderState(id, {
+      advanced: interiorWidget.options?.advanced ?? interiorWidget.advanced,
+      hasLayoutSize: typeof interiorWidget.computeLayoutSize === 'function',
+      isDOMWidget: isDOMBackedWidget(interiorWidget),
+      sourceExecutionId: source?.sourceExecutionId,
+      sourceWidgetName: source?.sourceWidgetName ?? interiorWidget.name,
+      tooltip: interiorWidget.tooltip
+    })
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {

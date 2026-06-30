@@ -46,6 +46,13 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
+function isDOMBackedWidget(widget: IBaseWidget): boolean {
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
+
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget, NodeBindable
 {
@@ -147,13 +154,18 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
 
-    this._state = useWidgetValueStore().registerWidget(
-      widgetId(graphId, nodeId, this.name),
-      {
-        ...this._state,
-        value: this.value
-      }
-    )
+    const store = useWidgetValueStore()
+    const id = widgetId(graphId, nodeId, this.name)
+    this._state = store.registerWidget(id, {
+      ...this._state,
+      value: this.value
+    })
+    store.registerWidgetRenderState(id, {
+      advanced: this.options?.advanced ?? this.advanced,
+      hasLayoutSize: typeof this.computeLayoutSize === 'function',
+      isDOMWidget: isDOMBackedWidget(this),
+      tooltip: this.tooltip
+    })
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

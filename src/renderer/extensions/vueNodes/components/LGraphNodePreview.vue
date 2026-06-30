@@ -20,8 +20,9 @@
       <NodeSlots :node-data="nodeData" />
 
       <NodeWidgets
-        v-if="nodeData.widgets?.length"
+        v-if="previewNode.widgets?.length"
         :node-data="nodeData"
+        :node="previewNode"
         class="pointer-events-none"
       />
     </div>
@@ -36,8 +37,11 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-import { RenderShape } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, RenderShape } from '@/lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -58,20 +62,16 @@ const {
 
 const widgetStore = useWidgetStore()
 
-// Convert nodeDef into VueNodeData
-const nodeData = computed<VueNodeData>(() => {
-  const widgets = Object.entries(nodeDef.inputs || {})
+const previewWidgets = computed<IBaseWidget[]>(() =>
+  Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
     .map(([name, input]) => {
       const comboValues =
         input.type === 'COMBO' && Array.isArray(input.options)
           ? input.options
           : undefined
-      // Preview nodes have no widget-value store entry, so combo widgets
-      // render their first option; lead with the requested value to show it.
       const leadValue = widgetValues?.[name]
       return {
-        nodeId: toNodeId('-1'),
         name,
         type: input.widgetType || input.type,
         value:
@@ -85,10 +85,21 @@ const nodeData = computed<VueNodeData>(() => {
             leadValue && comboValues
               ? [leadValue, ...comboValues.filter((o) => o !== leadValue)]
               : comboValues
-        } satisfies IWidgetOptions
+        } satisfies IWidgetOptions,
+        y: 0
       }
     })
+)
 
+const previewNode = computed(() => {
+  const node = new LGraphNode(nodeDef.name)
+  node.id = nodeData.value.id
+  node.type = nodeDef.name
+  node.widgets = previewWidgets.value
+  return node
+})
+
+const nodeData = computed<VueNodeData>(() => {
   const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => !widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
@@ -119,13 +130,11 @@ const nodeData = computed<VueNodeData>(() => {
     id: toNodeId(`preview-${nodeDef.name}`),
     title: nodeDef.display_name || nodeDef.name,
     type: nodeDef.name,
-    mode: 0, // Normal mode
+    mode: 0,
     selected: false,
     executing: false,
-    widgets,
     inputs,
     outputs,
-
     flags: {
       collapsed: false
     }

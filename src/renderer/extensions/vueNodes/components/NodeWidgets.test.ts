@@ -6,17 +6,17 @@ import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-
-import type {
-  SafeWidgetData,
-  VueNodeData
-} from '@/composables/graph/useGraphNodeManager'
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
@@ -50,63 +50,92 @@ vi.mock(
   }
 )
 
-describe('NodeWidgets', () => {
-  const createMockWidget = (
-    overrides: Partial<SafeWidgetData> = {}
-  ): SafeWidgetData => ({
-    nodeId: toNodeId('test_node'),
+function createMockWidget(
+  overrides: Partial<IBaseWidget> & { widgetId?: WidgetId } = {}
+): IBaseWidget {
+  const { widgetId: id, ...rest } = overrides
+  const widget: IBaseWidget = {
     name: 'test_widget',
     type: 'combo',
-    options: undefined,
-    callback: undefined,
-    spec: undefined,
-    isDOMWidget: false,
-    slotMetadata: undefined,
-    ...overrides
-  })
+    options: {},
+    value: 'value',
+    y: 0,
+    ...rest
+  }
+  if (id) {
+    Object.defineProperty(widget, 'widgetId', {
+      value: id,
+      configurable: true
+    })
+  }
+  return widget
+}
 
-  const createMockNodeData = (
-    nodeType: string = 'TestNode',
-    widgets: SafeWidgetData[] = [],
-    id: NodeId = toNodeId(1)
-  ): VueNodeData => ({
+function createMockNode(
+  widgets: IBaseWidget[],
+  id: NodeId = toNodeId(1),
+  type = 'TestNode'
+): LGraphNode {
+  const node = new LGraphNode(type)
+  node.id = id
+  node.type = type
+  node.widgets = widgets
+  return node
+}
+
+function createMockNodeData(
+  nodeType = 'TestNode',
+  id: NodeId = toNodeId(1)
+): VueNodeData {
+  return {
     id,
     type: nodeType,
-    widgets,
     title: 'Test Node',
     mode: 0,
     selected: false,
     executing: false,
     inputs: [],
     outputs: []
-  })
-
-  function renderComponent(nodeData?: VueNodeData, setupStores?: () => void) {
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
-    setupStores?.()
-
-    return render(NodeWidgets, {
-      props: {
-        nodeData
-      },
-      global: {
-        plugins: [pinia],
-        stubs: {
-          InputSlot: true
-        },
-        mocks: {
-          $t: (key: string) => key
-        }
-      }
-    })
   }
+}
 
+function renderComponent({
+  nodeData,
+  node,
+  setupStores
+}: {
+  nodeData?: VueNodeData
+  node?: LGraphNode | null
+  setupStores?: () => void
+}) {
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
+  setupStores?.()
+
+  return render(NodeWidgets, {
+    props: {
+      nodeData,
+      node
+    },
+    global: {
+      plugins: [pinia],
+      stubs: {
+        InputSlot: true
+      },
+      mocks: {
+        $t: (key: string) => key
+      }
+    }
+  })
+}
+
+describe('NodeWidgets', () => {
   describe('node-type prop passing', () => {
     it('passes node type to widget components', () => {
       const widget = createMockWidget()
-      const nodeData = createMockNodeData('CheckpointLoaderSimple', [widget])
-      const { container } = renderComponent(nodeData)
+      const nodeData = createMockNodeData('CheckpointLoaderSimple')
+      const node = createMockNode([widget], nodeData.id, nodeData.type)
+      const { container } = renderComponent({ nodeData, node })
 
       const stub = container.querySelector('.widget-stub')
       expect(stub).not.toBeNull()
@@ -116,15 +145,26 @@ describe('NodeWidgets', () => {
     })
 
     it('renders no widgets when nodeData is undefined', () => {
-      const { container } = renderComponent(undefined)
+      const { container } = renderComponent({
+        node: createMockNode([createMockWidget()])
+      })
+
+      expect(container.querySelectorAll('.widget-stub')).toHaveLength(0)
+    })
+
+    it('renders no widgets when node is undefined', () => {
+      const { container } = renderComponent({
+        nodeData: createMockNodeData('CheckpointLoaderSimple')
+      })
 
       expect(container.querySelectorAll('.widget-stub')).toHaveLength(0)
     })
 
     it('passes empty string when nodeData.type is empty', () => {
       const widget = createMockWidget()
-      const nodeData = createMockNodeData('', [widget])
-      const { container } = renderComponent(nodeData)
+      const nodeData = createMockNodeData('')
+      const node = createMockNode([widget], nodeData.id, nodeData.type)
+      const { container } = renderComponent({ nodeData, node })
 
       const stub = container.querySelector('.widget-stub')
       expect(stub).not.toBeNull()
@@ -132,7 +172,7 @@ describe('NodeWidgets', () => {
     })
   })
 
-  it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
+  it('deduplicates widgets with identical render identity while keeping distinct widget ids', () => {
     const duplicateEntityId = widgetId(
       GRAPH_ID,
       toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
@@ -143,31 +183,30 @@ describe('NodeWidgets', () => {
       toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20'),
       'string_a'
     )
-    const duplicateA = createMockWidget({
-      name: 'string_a',
-      type: 'text',
-      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      widgetId: duplicateEntityId
-    })
-    const duplicateB = createMockWidget({
-      name: 'string_a',
-      type: 'text',
-      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      widgetId: duplicateEntityId
-    })
-    const distinct = createMockWidget({
-      name: 'string_a',
-      type: 'text',
-      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20'),
-      widgetId: distinctEntityId
-    })
-    const nodeData = createMockNodeData('SubgraphNode', [
-      duplicateA,
-      duplicateB,
-      distinct
-    ])
+    const nodeData = createMockNodeData('SubgraphNode')
+    const node = createMockNode(
+      [
+        createMockWidget({
+          name: 'string_a',
+          type: 'text',
+          widgetId: duplicateEntityId
+        }),
+        createMockWidget({
+          name: 'string_a',
+          type: 'text',
+          widgetId: duplicateEntityId
+        }),
+        createMockWidget({
+          name: 'string_a',
+          type: 'text',
+          widgetId: distinctEntityId
+        })
+      ],
+      nodeData.id,
+      nodeData.type
+    )
 
-    const { container } = renderComponent(nodeData)
+    const { container } = renderComponent({ nodeData, node })
 
     expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
@@ -178,26 +217,27 @@ describe('NodeWidgets', () => {
       toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       'string_a'
     )
-    const hiddenDuplicate = createMockWidget({
-      name: 'string_a',
-      type: 'text',
-      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      widgetId: sharedEntityId,
-      options: { hidden: true }
-    })
-    const visibleDuplicate = createMockWidget({
-      name: 'string_a',
-      type: 'text',
-      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      widgetId: sharedEntityId,
-      options: { hidden: false }
-    })
-    const nodeData = createMockNodeData('SubgraphNode', [
-      hiddenDuplicate,
-      visibleDuplicate
-    ])
+    const nodeData = createMockNodeData('SubgraphNode')
+    const node = createMockNode(
+      [
+        createMockWidget({
+          name: 'string_a',
+          type: 'text',
+          widgetId: sharedEntityId,
+          options: { hidden: true }
+        }),
+        createMockWidget({
+          name: 'string_a',
+          type: 'text',
+          widgetId: sharedEntityId,
+          options: { hidden: false }
+        })
+      ],
+      nodeData.id,
+      nodeData.type
+    )
 
-    const { container } = renderComponent(nodeData)
+    const { container } = renderComponent({ nodeData, node })
 
     expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(1)
   })
@@ -208,87 +248,80 @@ describe('NodeWidgets', () => {
       toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       'string_a'
     )
-    const textWidget = createMockWidget({
-      name: 'string_a',
-      type: 'text',
-      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      widgetId: sharedEntityId
-    })
-    const comboWidget = createMockWidget({
-      name: 'string_a',
-      type: 'combo',
-      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      widgetId: sharedEntityId
-    })
-    const nodeData = createMockNodeData('SubgraphNode', [
-      textWidget,
-      comboWidget
-    ])
+    const nodeData = createMockNodeData('SubgraphNode')
+    const node = createMockNode(
+      [
+        createMockWidget({
+          name: 'string_a',
+          type: 'text',
+          widgetId: sharedEntityId
+        }),
+        createMockWidget({
+          name: 'string_a',
+          type: 'combo',
+          widgetId: sharedEntityId
+        })
+      ],
+      nodeData.id,
+      nodeData.type
+    )
 
-    const { container } = renderComponent(nodeData)
-
-    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
-  })
-
-  it('keeps unresolved same-name promoted entries distinct by source execution identity', () => {
-    const firstTransientEntry = createMockWidget({
-      nodeId: undefined,
-      name: 'string_a',
-      type: 'text',
-      sourceExecutionId: createNodeExecutionId([toNodeId(65), toNodeId(18)])
-    })
-    const secondTransientEntry = createMockWidget({
-      nodeId: undefined,
-      name: 'string_a',
-      type: 'text',
-      sourceExecutionId: createNodeExecutionId([toNodeId(65), toNodeId(19)])
-    })
-    const nodeData = createMockNodeData('SubgraphNode', [
-      firstTransientEntry,
-      secondTransientEntry
-    ])
-
-    const { container } = renderComponent(nodeData)
+    const { container } = renderComponent({ nodeData, node })
 
     expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
-  it('does not deduplicate promoted duplicates that differ only by disambiguating source identity', () => {
-    const firstPromoted = createMockWidget({
-      name: 'text',
-      type: 'text',
-      nodeId: toNodeId('outer-subgraph:1'),
-      widgetId: widgetId(GRAPH_ID, toNodeId('outer-subgraph:1'), 'text')
-    })
-    const secondPromoted = createMockWidget({
-      name: 'text',
-      type: 'text',
-      nodeId: toNodeId('outer-subgraph:2'),
-      widgetId: widgetId(GRAPH_ID, toNodeId('outer-subgraph:2'), 'text')
-    })
+  it('keeps same-name promoted entries distinct by canonical widget identity', () => {
+    const firstPromoted = widgetId(
+      GRAPH_ID,
+      toNodeId('outer-subgraph:1'),
+      'text'
+    )
+    const secondPromoted = widgetId(
+      GRAPH_ID,
+      toNodeId('outer-subgraph:2'),
+      'text'
+    )
+    const nodeData = createMockNodeData('SubgraphNode')
+    const node = createMockNode(
+      [
+        createMockWidget({
+          name: 'text',
+          type: 'text',
+          widgetId: firstPromoted
+        }),
+        createMockWidget({
+          name: 'text',
+          type: 'text',
+          widgetId: secondPromoted
+        })
+      ],
+      nodeData.id,
+      nodeData.type
+    )
 
-    const nodeData = createMockNodeData('SubgraphNode', [
-      firstPromoted,
-      secondPromoted
-    ])
-    const { container } = renderComponent(nodeData)
+    const { container } = renderComponent({ nodeData, node })
 
     expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('hides widgets when merged store options mark them hidden', async () => {
-    const nodeData = createMockNodeData('TestNode', [
-      createMockWidget({
-        nodeId: toNodeId('test_node'),
-        name: 'test_widget',
-        options: { hidden: false }
-      })
-    ])
+    const nodeData = createMockNodeData('TestNode', toNodeId('test_node'))
+    const node = createMockNode(
+      [
+        createMockWidget({
+          name: 'test_widget',
+          options: { hidden: false }
+        })
+      ],
+      nodeData.id,
+      nodeData.type
+    )
 
-    const { container } = renderComponent(nodeData)
+    const { container } = renderComponent({ nodeData, node })
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(
-      widgetId('graph-test', toNodeId('test_node'), 'test_widget'),
+      widgetId(GRAPH_ID, toNodeId('test_node'), 'test_widget'),
       {
         type: 'combo',
         value: 'value',
@@ -307,23 +340,26 @@ describe('NodeWidgets', () => {
   it('forwards canonical widgetId to AppInput for selection', () => {
     const seedAEntityId = widgetId(GRAPH_ID, toNodeId('test_node'), 'seed_a')
     const seedBEntityId = widgetId(GRAPH_ID, toNodeId('test_node'), 'seed_b')
-    const nodeData = createMockNodeData('TestNode', [
-      createMockWidget({
-        nodeId: toNodeId('test_node'),
-        name: 'seed_a',
-        type: 'text',
-        widgetId: seedAEntityId
-      }),
-      createMockWidget({
-        nodeId: toNodeId('test_node'),
-        name: 'seed_b',
-        type: 'text',
-        widgetId: seedBEntityId
-      })
-    ])
+    const nodeData = createMockNodeData('TestNode', toNodeId('test_node'))
+    const node = createMockNode(
+      [
+        createMockWidget({
+          name: 'seed_a',
+          type: 'text',
+          widgetId: seedAEntityId
+        }),
+        createMockWidget({
+          name: 'seed_b',
+          type: 'text',
+          widgetId: seedBEntityId
+        })
+      ],
+      nodeData.id,
+      nodeData.type
+    )
 
     const { container } = render(NodeWidgets, {
-      props: { nodeData },
+      props: { nodeData, node },
       global: {
         plugins: [
           (() => {
@@ -351,5 +387,53 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
+  })
+
+  it('uses render-state source execution metadata for widget errors', () => {
+    const id = widgetId(GRAPH_ID, toNodeId('test_node'), 'seed')
+    const sourceExecutionId = createNodeExecutionId([
+      toNodeId(65),
+      toNodeId(18)
+    ])
+    const nodeData = createMockNodeData('SubgraphNode', toNodeId('test_node'))
+    const node = createMockNode(
+      [createMockWidget({ name: 'seed', type: 'text', widgetId: id })],
+      nodeData.id,
+      nodeData.type
+    )
+
+    const { container } = renderComponent({
+      nodeData,
+      node,
+      setupStores: () => {
+        useExecutionErrorStore().lastNodeErrors = {
+          [sourceExecutionId]: {
+            errors: [
+              {
+                type: 'value_not_in_list',
+                message: 'seed is invalid',
+                details: '',
+                extra_info: { input_name: 'seed' }
+              }
+            ],
+            class_type: 'InnerNode',
+            dependent_outputs: []
+          }
+        }
+        useWidgetValueStore().registerWidget(id, {
+          type: 'text',
+          value: 'value',
+          options: {}
+        })
+        useWidgetValueStore().registerWidgetRenderState(id, {
+          sourceExecutionId,
+          sourceWidgetName: 'internal_seed'
+        })
+      }
+    })
+
+    expect(container.querySelector('.widget-stub')?.className).toContain(
+      'text-node-stroke-error'
+    )
   })
 })

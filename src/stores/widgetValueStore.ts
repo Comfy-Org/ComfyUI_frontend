@@ -4,9 +4,19 @@ import { reactive, ref } from 'vue'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+
+export interface WidgetRenderState {
+  advanced?: boolean
+  hasLayoutSize?: boolean
+  isDOMWidget?: boolean
+  sourceExecutionId?: NodeExecutionId
+  sourceWidgetName?: string
+  tooltip?: string
+}
 
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
@@ -14,6 +24,9 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
+  const graphWidgetRenderStates = ref(
+    new Map<UUID, Map<WidgetId, WidgetRenderState>>()
+  )
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
@@ -22,6 +35,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const nextWidgetStates = reactive(new Map<WidgetId, WidgetState>())
     graphWidgetStates.value.set(graphId, nextWidgetStates)
     return nextWidgetStates
+  }
+
+  function getGraphWidgetRenderStates(
+    graphId: UUID
+  ): Map<WidgetId, WidgetRenderState> {
+    const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
+    if (widgetRenderStates) return widgetRenderStates
+
+    const nextWidgetRenderStates = reactive(
+      new Map<WidgetId, WidgetRenderState>()
+    )
+    graphWidgetRenderStates.value.set(graphId, nextWidgetRenderStates)
+    return nextWidgetRenderStates
   }
 
   function registerWidget<TValue = unknown>(
@@ -43,9 +69,33 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return widgetStates.get(widgetId) as WidgetState<TValue>
   }
 
+  function registerWidgetRenderState(
+    widgetId: WidgetId,
+    init: WidgetRenderState
+  ): WidgetRenderState {
+    const { graphId } = parseWidgetId(widgetId)
+    const widgetRenderStates = getGraphWidgetRenderStates(graphId)
+    const existing = widgetRenderStates.get(widgetId)
+    if (existing) {
+      Object.assign(existing, init)
+      return existing
+    }
+
+    const state: WidgetRenderState = { ...init }
+    widgetRenderStates.set(widgetId, state)
+    return widgetRenderStates.get(widgetId) as WidgetRenderState
+  }
+
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetStates(graphId).get(widgetId)
+  }
+
+  function getWidgetRenderState(
+    widgetId: WidgetId
+  ): WidgetRenderState | undefined {
+    const { graphId } = parseWidgetId(widgetId)
+    return getGraphWidgetRenderStates(graphId).get(widgetId)
   }
 
   function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
@@ -57,6 +107,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function deleteWidget(widgetId: WidgetId): boolean {
     const { graphId } = parseWidgetId(widgetId)
+    getGraphWidgetRenderStates(graphId).delete(widgetId)
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
@@ -68,11 +119,14 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
+    graphWidgetRenderStates.value.delete(graphId)
   }
 
   return {
     registerWidget,
+    registerWidgetRenderState,
     getWidget,
+    getWidgetRenderState,
     setValue,
     deleteWidget,
     getNodeWidgets,

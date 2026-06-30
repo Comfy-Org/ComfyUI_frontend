@@ -19,7 +19,6 @@ export interface WidgetState<
   | 'disabled'
   | 'y'
 > {
-  isDOMWidget?: boolean
   nodeId: NodeId
 }
 

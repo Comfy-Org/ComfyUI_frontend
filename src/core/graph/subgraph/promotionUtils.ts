@@ -281,22 +281,24 @@ function seedNestedPromotedInputState(
   )
   if (!hostInput || hostInput.widgetId) return
 
-  const sourceState = useWidgetValueStore().getWidget(sourceSlot.widgetId)
+  const store = useWidgetValueStore()
+  const sourceState = store.getWidget(sourceSlot.widgetId)
   if (!sourceState) return
+  const sourceRenderState = store.getWidgetRenderState(sourceSlot.widgetId)
 
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
   hostInput.widget.name = inputName
   hostInput.widgetId = id
-  useWidgetValueStore().registerWidget(id, {
+  store.registerWidget(id, {
     type: sourceState.type,
     value: sourceState.value,
     options: cloneDeep(sourceState.options ?? {}),
     label: hostInput.label ?? sourceSlot.label ?? inputName,
     serialize: sourceState.serialize,
-    disabled: sourceState.disabled,
-    isDOMWidget: sourceState.isDOMWidget
+    disabled: sourceState.disabled
   })
+  if (sourceRenderState) store.registerWidgetRenderState(id, sourceRenderState)
 }
 
 function promotePreviewViaExposure(

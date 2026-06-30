@@ -9,12 +9,10 @@ vi.mock('@/stores/widgetStore', () => ({
   useWidgetStore: () => ({ inputIsWidget: () => true })
 }))
 
-// Serializes the nodeData prop so tests can assert on the data contract
-// LGraphNodePreview hands to NodeWidgets. How that data renders is covered
-// by NodeWidgets.test.ts and browser_tests/tests/sidebar/modelLibrary.spec.ts.
 const NodeWidgetsProbe = {
-  props: ['nodeData'],
-  template: '<div data-testid="node-data">{{ JSON.stringify(nodeData) }}</div>'
+  props: ['nodeData', 'node'],
+  template:
+    '<div data-testid="node-data">{{ JSON.stringify({ widgets: node.widgets }) }}</div>'
 }
 
 interface ProbedWidget {

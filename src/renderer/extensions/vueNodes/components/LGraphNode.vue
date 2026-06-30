@@ -153,7 +153,11 @@
         >
           <NodeSlots :node-data="nodeData" />
 
-          <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+          <NodeWidgets
+            v-if="hasRenderableWidgets"
+            :node-data="nodeData"
+            :node="lgraphNode"
+          />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
@@ -281,6 +285,7 @@ import type { LayoutChange } from '@/renderer/core/layout/types'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { getNodeRenderableWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
@@ -297,6 +302,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
@@ -719,18 +725,25 @@ const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
 useGLSLPreview(lgraphNode)
 
+const hasRenderableWidgets = computed(
+  () => getNodeRenderableWidgets(lgraphNode.value).length > 0
+)
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
   if (isCollapsed.value) return false
-
-  // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
     return hasUnpromotedWidgets(node)
   }
 
-  // For regular nodes: show button if there are advanced widgets and they're currently hidden
-  const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
+  const widgetValueStore = useWidgetValueStore()
+  const hasAdvancedWidgets = getNodeRenderableWidgets(node).some((widget) => {
+    const renderState = widget.widgetId
+      ? widgetValueStore.getWidgetRenderState(widget.widgetId)
+      : undefined
+    return renderState?.advanced ?? widget.options?.advanced ?? widget.advanced
+  })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )
