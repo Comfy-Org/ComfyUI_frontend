@@ -112,7 +112,9 @@ test.describe(
       await expect(panel.searchBox).toHaveValue('')
     })
 
-    test('search resets when switching tabs', async ({ comfyPage }) => {
+    test('search resets after switching away and back to a tab', async ({
+      comfyPage
+    }) => {
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
       await selectNodeById(comfyPage, '3')
@@ -121,6 +123,9 @@ test.describe(
       await expect(panel.searchBox).toHaveValue('seed')
 
       await panel.switchToTab('Settings')
+      await expect(panel.searchBox).toBeHidden()
+
+      await panel.switchToTab('Parameters')
       await expect(panel.searchBox).toHaveValue('')
     })
 
