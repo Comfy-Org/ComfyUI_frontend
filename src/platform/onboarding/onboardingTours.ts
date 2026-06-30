@@ -36,8 +36,6 @@ export interface CoachStep {
   skipIfMounted?: CoachId | CoachId[]
   /** Target mounts later (e.g. a dialog); wait for it instead of dropping the step. */
   deferTarget?: boolean
-  /** Stronger card shadow for when the card sits over another surface. */
-  elevated?: boolean
   /** Overrides the primary button label (defaults to Next / Done). */
   primaryLabelKey?: string
   /** Overrides the secondary (Skip) button label. */

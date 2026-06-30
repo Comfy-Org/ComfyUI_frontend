@@ -1,11 +1,6 @@
 <template>
   <div
-    :class="
-      cn(
-        'flex w-full flex-col items-start justify-center gap-3 rounded-2xl bg-secondary-background p-4 drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]',
-        elevated && 'ring-1 ring-border-default'
-      )
-    "
+    class="flex w-full flex-col items-start justify-center gap-3 rounded-2xl bg-secondary-background p-4 drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]"
   >
     <div
       v-if="image || $slots.image"
@@ -39,16 +34,12 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
-const { title, message, subtitle, subtitleId, image, messageId, elevated } =
-  defineProps<{
-    title: string
-    message: string
-    subtitle?: string
-    subtitleId?: string
-    image?: string
-    messageId?: string
-    elevated?: boolean
-  }>()
+const { title, message, subtitle, subtitleId, image, messageId } = defineProps<{
+  title: string
+  message: string
+  subtitle?: string
+  subtitleId?: string
+  image?: string
+  messageId?: string
+}>()
 </script>

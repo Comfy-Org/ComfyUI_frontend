@@ -1,5 +1,5 @@
-import { useEventListener } from '@vueuse/core'
-import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
+import { useElementBounding, useEventListener } from '@vueuse/core'
+import { computed, onScopeDispose, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { coachmarkElements } from './coachmarkRegistry'
@@ -28,68 +28,41 @@ function elementsFor(id: CoachId | CoachId[]): readonly HTMLElement[] {
  * Tracks the on-screen rect of a coach step's target. The element itself comes
  * from the reactive registry (the `v-coachmark` directive registers it), so
  * mounts, unmounts and swaps arrive as reactivity rather than DOM observation.
- * Geometry — which the registry can't provide — is still measured here, kept
- * glued through resizes, scrolls and the target's own size changes, with a
- * frame-settle for transform-driven open animations a ResizeObserver can't see.
+ * Geometry — which the registry can't provide — is tracked by `useElementBounding`
+ * (resize, window scroll and element swaps), extended to scrollable ancestors by
+ * the capture-phase scroll listener, with a frame-settle for transform-driven
+ * open animations a ResizeObserver can't see.
  */
 export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
-  const targetRect = ref<DOMRect | null>(null)
-  // Cached so per-event consumers (focus trap, click guard) don't re-resolve.
-  const targetEl = shallowRef<HTMLElement | null>(null)
-
   // Elements registered for the step's id(s); reactive, drives re-measure and close detection.
   const candidateEls = computed<readonly HTMLElement[]>(() => {
     const id = step.value?.coachId
     return id ? elementsFor(id) : []
   })
 
-  function firstVisible(els: readonly HTMLElement[]): HTMLElement | null {
-    return els.find(isLaidOut) ?? null
-  }
+  // The first laid-out candidate; skips a registered-but-hidden target (e.g. v-show).
+  const targetEl = computed<HTMLElement | null>(
+    () => candidateEls.value.find(isLaidOut) ?? null
+  )
 
-  function measure() {
-    const id = step.value?.coachId
-    if (!id) {
-      targetEl.value = null
-      targetRect.value = null
-      return
-    }
-    const el = firstVisible(elementsFor(id))
-    targetEl.value = el
-    targetRect.value = el?.getBoundingClientRect() ?? null
-  }
+  // `windowScroll` off: the capture-phase listener already catches window and
+  // scrollable-ancestor scrolls, so VueUse needn't double-bind window scroll.
+  const { x, y, width, height, update } = useElementBounding(targetEl, {
+    windowScroll: false
+  })
+  const targetRect = computed<DOMRect | null>(() =>
+    targetEl.value && width.value > 0
+      ? new DOMRect(x.value, y.value, width.value, height.value)
+      : null
+  )
+  useEventListener(window, 'scroll', update, { capture: true, passive: true })
 
-  // Coalesce resize/scroll/observer triggers into one measure per frame (each forces layout).
-  let measureFrame: number | null = null
+  // A target swap can call settle() while a prior loop runs; cancel so one re-measure per frame.
   let settleFrame: number | null = null
-  function scheduleMeasure() {
-    if (measureFrame !== null || !step.value) return
-    measureFrame = requestAnimationFrame(() => {
-      measureFrame = null
-      measure()
-    })
-  }
-
-  useEventListener(window, 'resize', scheduleMeasure)
-  useEventListener(window, 'scroll', scheduleMeasure, {
-    capture: true,
-    passive: true
-  })
-  let resizeObserver: ResizeObserver | null = null
-  watch(targetEl, (el) => {
-    resizeObserver?.disconnect()
-    resizeObserver = null
-    if (!el) return
-    resizeObserver = new ResizeObserver(scheduleMeasure)
-    resizeObserver.observe(el)
-  })
   onScopeDispose(() => {
-    resizeObserver?.disconnect()
-    if (measureFrame !== null) cancelAnimationFrame(measureFrame)
     if (settleFrame !== null) cancelAnimationFrame(settleFrame)
   })
 
-  // A target swap can call settle() while a prior loop runs; cancel so one re-measure per frame.
   function settle(signal: AbortSignal) {
     if (settleFrame !== null) cancelAnimationFrame(settleFrame)
     let last = ''
@@ -98,7 +71,7 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
     function tick() {
       settleFrame = null
       if (signal.aborted) return
-      measure()
+      update()
       const key = rectKey(targetRect.value)
       if (key === last) {
         stable++
@@ -153,7 +126,7 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
     targetRect,
     targetEl,
     candidateEls,
-    measure,
+    update,
     settle,
     targetMounted,
     waitForTarget

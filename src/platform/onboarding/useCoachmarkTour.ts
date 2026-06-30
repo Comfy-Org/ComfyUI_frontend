@@ -69,7 +69,7 @@ export function useCoachmarkTour(refs: {
     targetRect,
     targetEl,
     candidateEls,
-    measure,
+    update,
     settle,
     targetMounted,
     waitForTarget
@@ -166,7 +166,7 @@ export function useCoachmarkTour(refs: {
       }
     }
     stepIdx.value = idx
-    measure()
+    update()
     schedulePulse()
     trackTour('step_shown')
     if (nextStep.deferTarget) settle(signal)
@@ -225,7 +225,7 @@ export function useCoachmarkTour(refs: {
     const { signal } = stepController
     void nextTick(() => {
       if (signal.aborted) return
-      measure()
+      update()
       if (step.value?.deferTarget) settle(signal)
     })
   })

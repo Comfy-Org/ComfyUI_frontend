@@ -18,31 +18,15 @@
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-[10px] motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
-      :style="[spotlightStyle, dimShadow]"
-    />
-    <svg
-      v-if="targetRect"
-      aria-hidden="true"
-      class="pointer-events-none absolute overflow-visible motion-safe:transition-[left,top,width,height] motion-safe:duration-300"
-      :style="spotlightStyle"
-    >
-      <rect
-        data-testid="coach-spotlight-ring"
-        x="0"
-        y="0"
-        width="100%"
-        height="100%"
-        rx="10"
-        fill="none"
-        stroke="white"
-        stroke-width="2"
-        :class="
+      :class="
+        cn(
+          'pointer-events-none absolute rounded-[10px] motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
           outlinePulsing &&
-          'motion-safe:animate-[coach-pulse_1.2s_ease-in-out_infinite]'
-        "
-      />
-    </svg>
+            'motion-safe:animate-[coach-pulse_1.2s_ease-in-out_infinite]'
+        )
+      "
+      :style="[spotlightStyle, spotlightChrome]"
+    />
     <div
       ref="cardRef"
       role="dialog"
@@ -64,7 +48,6 @@
         :message="t(step.bodyKey)"
         :message-id="bodyId"
         :image="step.image"
-        :elevated="step.elevated"
       >
         <template #actions>
           <Button
@@ -90,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -151,8 +135,12 @@ const viewport = () => ({
   height: windowHeight.value
 })
 
-// A giant spread shadow in the scrim colour dims everything outside the spotlight.
-const dimShadow = { boxShadow: `0 0 0 9999px ${SCRIM_COLOR}` }
+// The white ring (outline) plus the giant spread shadow that dims everything
+// outside the spotlight. The outline pulses via the coach-pulse keyframe.
+const spotlightChrome = {
+  outline: '2px solid #fff',
+  boxShadow: `0 0 0 9999px ${SCRIM_COLOR}`
+}
 
 const spotlightStyle = computed(() => {
   const r = targetRect.value
@@ -200,7 +188,7 @@ const cardStyle = computed(() => {
 <style>
 @keyframes coach-pulse {
   50% {
-    opacity: 0.4;
+    outline-color: rgb(255 255 255 / 0.4);
   }
 }
 </style>

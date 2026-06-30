@@ -85,14 +85,13 @@ describe('TourOverlay', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('renders the spotlight, ring and card for a targeted step', () => {
+  it('renders the spotlight and card for a targeted step', () => {
     s.step.value = spotlightStep
     s.targetRect.value = new DOMRect(100, 100, 50, 40)
     s.countedSteps.value = [spotlightStep]
     renderOverlay()
 
     expect(screen.getByTestId('coach-spotlight')).toBeTruthy()
-    expect(screen.getByTestId('coach-spotlight-ring')).toBeTruthy()
     const card = screen.getByRole('dialog')
     expect(card).toHaveAttribute('aria-label', 'Canvas title')
     expect(screen.getByText('Canvas body')).toBeTruthy()
@@ -120,22 +119,21 @@ describe('TourOverlay', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
   })
 
-  it('animates the ring only while the outline is pulsing', () => {
+  it('pulses the spotlight outline only while the outline is pulsing', () => {
     s.step.value = spotlightStep
     s.targetRect.value = new DOMRect(100, 100, 50, 40)
     s.outlinePulsing.value = true
     renderOverlay()
-    expect(
-      screen.getByTestId('coach-spotlight-ring').getAttribute('class')
-    ).toMatch(/coach-pulse/)
+    expect(screen.getByTestId('coach-spotlight').getAttribute('class')).toMatch(
+      /coach-pulse/
+    )
   })
 
-  it('dims via the blocker and hides the ring for a step with no target', () => {
+  it('hides the spotlight and dims via the blocker for a step with no target', () => {
     s.step.value = { titleKey: 'tt', bodyKey: 'bb', placement: 'center' }
     s.targetRect.value = null
     renderOverlay()
-    expect(screen.getByTestId('coach-spotlight')).toBeTruthy()
-    expect(screen.queryByTestId('coach-spotlight-ring')).toBeNull()
+    expect(screen.getByTestId('coach-spotlight').style.opacity).toBe('0')
   })
 
   it('renders the landing step and starts the tour on its primary action', async () => {
