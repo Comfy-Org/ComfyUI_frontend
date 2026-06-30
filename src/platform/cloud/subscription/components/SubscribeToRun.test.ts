@@ -82,24 +82,24 @@ describe('SubscribeToRun', () => {
   it('shows the subscribe label for owners who can manage the subscription', () => {
     renderButton()
 
-    expect(screen.getByTestId('subscribe-to-run-button')).toHaveTextContent(
-      'Subscribe to Run'
-    )
+    expect(
+      screen.getByRole('button', { name: /subscribe to run/i })
+    ).toBeInTheDocument()
   })
 
   it('shows a neutral run label for members who cannot subscribe', () => {
     mockCanManageSubscription.value = false
     renderButton()
 
-    const button = screen.getByTestId('subscribe-to-run-button')
-    expect(button).toHaveTextContent('Run')
+    const button = screen.getByRole('button', { name: 'Run' })
+    expect(button).toBeInTheDocument()
     expect(button).not.toHaveTextContent('Subscribe')
   })
 
   it('opens the subscription dialog for owners on click', async () => {
     const { user } = renderButton()
 
-    await user.click(screen.getByTestId('subscribe-to-run-button'))
+    await user.click(screen.getByRole('button', { name: /subscribe to run/i }))
 
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
   })
@@ -108,7 +108,7 @@ describe('SubscribeToRun', () => {
     mockCanManageSubscription.value = false
     const { user } = renderButton()
 
-    await user.click(screen.getByTestId('subscribe-to-run-button'))
+    await user.click(screen.getByRole('button', { name: 'Run' }))
 
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
   })
@@ -123,9 +123,23 @@ describe('SubscribeToRun', () => {
       const { user } = renderButton()
       expect(mockUseBillingContext).not.toHaveBeenCalled()
 
-      await user.click(screen.getByTestId('subscribe-to-run-button'))
+      await user.click(
+        screen.getByRole('button', { name: /subscribe to run/i })
+      )
 
       expect(mockUseBillingContext).toHaveBeenCalled()
+    })
+
+    it('reuses the billing context across repeated clicks', async () => {
+      const { user } = renderButton()
+      const button = screen.getByRole('button', { name: /subscribe to run/i })
+
+      await user.click(button)
+      await user.click(button)
+      await user.click(button)
+
+      expect(mockUseBillingContext).toHaveBeenCalledOnce()
+      expect(mockShowSubscriptionDialog).toHaveBeenCalledTimes(3)
     })
   })
 })

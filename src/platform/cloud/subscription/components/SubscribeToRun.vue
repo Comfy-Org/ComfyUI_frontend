@@ -33,6 +33,13 @@ const isMdOrLarger = breakpoints.greaterOrEqual('md')
 const { permissions } = useWorkspacePermissions()
 const { trackRunButton } = useRunButtonTelemetry()
 
+let billingContext: ReturnType<typeof useBillingContext> | undefined
+
+function getBillingContext() {
+  billingContext ??= useBillingContext()
+  return billingContext
+}
+
 const canResubscribe = computed(() => permissions.value.canManageSubscription)
 
 const buttonLabel = computed(() => {
@@ -53,6 +60,6 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  useBillingContext().showSubscriptionDialog()
+  getBillingContext().showSubscriptionDialog()
 }
 </script>
