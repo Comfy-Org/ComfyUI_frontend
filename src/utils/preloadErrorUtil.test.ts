@@ -149,7 +149,9 @@ describe('isStaleChunkError', () => {
 
   it('returns false for font files', () => {
     const info = parsePreloadError(
-      new Error('Unable to preload CSS for /assets/inter-abc123.woff2')
+      new Error(
+        'Failed to fetch dynamically imported module: /assets/inter-abc123.woff2'
+      )
     )
     expect(isStaleChunkError(info)).toBe(false)
   })
