@@ -33,15 +33,19 @@ vi.mock('@/composables/useAppMode', async () => {
   const { ref: r } = await import('vue')
   return { useAppMode: () => ({ isAppMode: r(false) }) }
 })
+const templates = vi.hoisted(() => ({
+  loadTemplates: vi.fn().mockResolvedValue(undefined),
+  loadWorkflowTemplate: vi.fn().mockResolvedValue(undefined)
+}))
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateWorkflows',
-  () => ({
-    useTemplateWorkflows: () => ({
-      loadTemplates: vi.fn().mockResolvedValue(undefined),
-      loadWorkflowTemplate: vi.fn().mockResolvedValue(undefined)
-    })
-  })
+  () => ({ useTemplateWorkflows: () => templates })
 )
+
+const errorHandling = vi.hoisted(() => ({ toastErrorHandler: vi.fn() }))
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => errorHandling
+}))
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
 }))
@@ -85,6 +89,9 @@ describe('useCoachmarkTour', () => {
     cleanup()
     settings.seen = []
     telemetry.track.mockClear()
+    templates.loadTemplates.mockClear()
+    templates.loadWorkflowTemplate.mockClear()
+    errorHandling.toastErrorHandler.mockClear()
     vi.useRealTimers()
   })
 
@@ -106,6 +113,23 @@ describe('useCoachmarkTour', () => {
     await api.onPrimary()
     // The deferred target (inputs list) is never registered; exhaust the wait.
     await vi.advanceTimersByTimeAsync(8000)
+    expect(settings.seen).not.toContain('appMode')
+  })
+
+  it('surfaces an error and stays on the step when a primary action fails', async () => {
+    const error = new Error('load failed')
+    templates.loadWorkflowTemplate.mockRejectedValueOnce(error)
+    const { api } = mountTour()
+    void useCoachmarkController().requestTour('appMode')
+    await flush()
+
+    // The landing's primary action loads a template; if that rejects the tour
+    // must report it and not advance off the landing.
+    await api.onPrimary()
+    await flush()
+
+    expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
+    expect(api.step.value?.landing).toBe(true)
     expect(settings.seen).not.toContain('appMode')
   })
 

@@ -97,18 +97,18 @@ import Button from '@/components/ui/button/Button.vue'
 
 import CoachmarkCard from './CoachmarkCard.vue'
 import CoachmarkLanding from './CoachmarkLanding.vue'
-import { SPOTLIGHT_PAD } from './onboardingTours'
+import {
+  CARD_WIDTH,
+  SPOTLIGHT_PAD,
+  VIEWPORT_MARGIN,
+  blockerClipPath,
+  cardCorner,
+  clampCardPosition,
+  clampSpotlight,
+  noTargetCardLeft,
+  resolvePlacement
+} from './coachmarkLayout'
 import { useCoachmarkTour } from './useCoachmarkTour'
-
-// Keeps the spotlight's 2px outline clear of the viewport edge.
-const SPOTLIGHT_EDGE_INSET = 2
-const CARD_WIDTH = 300
-// Standard gap between the card and its target / the viewport edge.
-const CARD_GAP = 16
-const VIEWPORT_MARGIN = 12
-// Keeps the card clear of the top bar.
-const TOP_SAFE_INSET = 56
-const CARD_TOP_NUDGE = 8
 
 const { t } = useI18n()
 const bodyId = useId()
@@ -142,91 +142,26 @@ const landingOpen = computed({
   }
 })
 
-// Keep the padded spotlight box inside the viewport when the target hugs an edge.
-function clampToViewport(r: DOMRect, pad: number) {
-  const left = Math.max(SPOTLIGHT_EDGE_INSET, r.left - pad)
-  const top = Math.max(SPOTLIGHT_EDGE_INSET, r.top - pad)
-  const right = Math.min(
-    window.innerWidth - SPOTLIGHT_EDGE_INSET,
-    r.right + pad
-  )
-  const bottom = Math.min(
-    window.innerHeight - SPOTLIGHT_EDGE_INSET,
-    r.bottom + pad
-  )
-  return {
-    left: `${left}px`,
-    top: `${top}px`,
-    width: `${Math.max(0, right - left)}px`,
-    height: `${Math.max(0, bottom - top)}px`
-  }
-}
+const viewport = () => ({
+  width: window.innerWidth,
+  height: window.innerHeight
+})
 
 const spotlightStyle = computed(() => {
   const r = targetRect.value
   if (!r) return { opacity: '0' }
-  return { ...clampToViewport(r, SPOTLIGHT_PAD), opacity: '1' }
+  return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
 })
 
-/**
- * Eats pointer events everywhere (the spotlight's shadow does the dimming).
- * Interaction steps get a hole at the target's exact bounds so only it stays
- * clickable: a polygon tracing the viewport then the target rect, with the
- * `evenodd` fill-rule subtracting the inner loop.
- */
+// Eats pointer events everywhere (the spotlight's shadow does the dimming);
+// interaction steps punch a hole at the target's bounds so only it stays clickable.
 const blockerStyle = computed(() => {
   const r = targetRect.value
   // No target (Nodes 2.0 gate): no spotlight shadow, so dim here.
   if (!r) return { background: 'rgba(0,0,0,0.62)' }
   if (!expectsTargetInteraction.value) return {}
-  const x1 = `${r.left}px`
-  const y1 = `${r.top}px`
-  const x2 = `${r.right}px`
-  const y2 = `${r.bottom}px`
-  return {
-    clipPath: `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1} ${y1}, ${x1} ${y2}, ${x2} ${y2}, ${x2} ${y1}, ${x1} ${y1})`
-  }
+  return { clipPath: blockerClipPath(r) }
 })
-
-type ResolvedPlacement =
-  | 'left'
-  | 'right'
-  | 'center'
-  | 'bottom'
-  | 'topRight'
-  | 'leftCenter'
-
-function cardCorner(placement: ResolvedPlacement, r: DOMRect) {
-  switch (placement) {
-    case 'left':
-      return {
-        x: r.left - CARD_WIDTH - CARD_GAP,
-        y: Math.max(TOP_SAFE_INSET, r.top + CARD_TOP_NUDGE)
-      }
-    case 'leftCenter':
-      return {
-        x: r.left - CARD_WIDTH - CARD_GAP,
-        y: r.top + r.height / 2 - cardHeight.value / 2
-      }
-    case 'right':
-      return { x: r.right + CARD_GAP, y: r.top + CARD_TOP_NUDGE }
-    case 'bottom':
-      return {
-        x: r.left + r.width / 2 - CARD_WIDTH / 2,
-        y: r.bottom + CARD_GAP
-      }
-    case 'center':
-      return {
-        x: r.left + r.width / 2 - CARD_WIDTH / 2,
-        y: r.top + r.height / 2 - cardHeight.value / 2
-      }
-    // Tuck into the target's top-right (over the close button) so only its contents advance.
-    case 'topRight':
-      return { x: r.right - CARD_WIDTH - CARD_GAP, y: r.top + CARD_GAP }
-  }
-  // A new placement without a case above fails to compile here.
-  return placement satisfies never
-}
 
 const cardStyle = computed(() => {
   const r = targetRect.value
@@ -239,22 +174,16 @@ const cardStyle = computed(() => {
     return {
       width,
       maxWidth,
-      left: `${Math.max(VIEWPORT_MARGIN, (window.innerWidth - CARD_WIDTH) / 2)}px`,
+      left: `${noTargetCardLeft(window.innerWidth)}px`,
       top: '30%'
     }
   }
-  const placement: ResolvedPlacement =
-    s.placement === 'auto'
-      ? window.innerWidth - r.right >= r.left
-        ? 'right'
-        : 'left'
-      : s.placement
-  const { x, y } = cardCorner(placement, r)
+  const placement = resolvePlacement(s.placement, r, window.innerWidth)
+  const corner = cardCorner(placement, r, cardHeight.value)
   return {
     width,
     maxWidth,
-    left: `${Math.max(VIEWPORT_MARGIN, Math.min(x, window.innerWidth - CARD_WIDTH - CARD_GAP))}px`,
-    top: `${Math.max(TOP_SAFE_INSET, Math.min(y, window.innerHeight - cardHeight.value - CARD_GAP))}px`,
+    ...clampCardPosition(corner, cardHeight.value, viewport()),
     // Centred placements need the measured height; hide frame 0 (height still 0) to avoid a jump.
     opacity: cardHeight.value > 0 ? '1' : '0'
   }

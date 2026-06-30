@@ -2,7 +2,7 @@ import type { CoachGate } from './coachmarkGates'
 
 export type EntryPath = 'appMode'
 
-type CoachPlacement =
+export type CoachPlacement =
   | 'left'
   | 'right'
   | 'center'
@@ -69,9 +69,6 @@ export interface CoachStep {
   /** Image shown on the landing dialog's left panel. */
   image?: string
 }
-
-/** Breathing room the spotlight glow adds around its rect. */
-export const SPOTLIGHT_PAD = 8
 
 /** A step is relevant unless its gate fails; a throwing gate is treated as a fail. */
 export async function passesGate(step: CoachStep): Promise<boolean> {

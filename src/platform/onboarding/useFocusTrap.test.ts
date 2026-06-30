@@ -84,6 +84,18 @@ describe('useFocusTrap', () => {
     expect(document.activeElement).toBe(primary)
   })
 
+  it('enters at the first item on Tab when focus starts outside the trap', () => {
+    outside.focus()
+    press('Tab')
+    expect(document.activeElement).toBe(t1)
+  })
+
+  it('enters at the last item on Shift+Tab when focus starts outside the trap', () => {
+    outside.focus()
+    press('Tab', true)
+    expect(document.activeElement).toBe(primary)
+  })
+
   it('invokes onEscape when Escape is pressed', () => {
     press('Escape')
     expect(onEscape).toHaveBeenCalledOnce()
