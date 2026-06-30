@@ -1,14 +1,17 @@
 <template>
   <div class="pointer-events-none absolute inset-0 flex flex-col">
-    <!-- Top bar: category selector + active category's controls -->
     <div
       ref="topBarRef"
-      class="pointer-events-auto flex h-10 items-center gap-1 bg-black px-2"
+      class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
       @wheel.stop
     >
       <Popover v-model:open="catMenuOpen">
         <PopoverTrigger as-child>
-          <button :class="chipClass" type="button">
+          <button
+            :class="chipClass"
+            type="button"
+            data-testid="load3d-category-menu"
+          >
             {{ activeLabel }}
             <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
           </button>
@@ -36,284 +39,82 @@
         </PopoverContent>
       </Popover>
 
-      <div class="mx-1 h-5 w-px bg-white/10" />
+      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
 
-      <!-- Scene -->
-      <template v-if="activeCategory === 'scene' && !!sceneConfig">
-        <button
-          v-tooltip.bottom="tip(t('load3d.menuBar.showGrid'))"
-          :class="actionClass(sceneConfig!.showGrid)"
-          type="button"
-          @click="sceneConfig!.showGrid = !sceneConfig!.showGrid"
-        >
-          <i class="icon-[lucide--grid-3x3] size-4" />
-          <span v-if="!compact">{{ t('load3d.menuBar.showGrid') }}</span>
-        </button>
-        <template v-if="!sceneHasImage">
-          <button
-            v-tooltip.bottom="tip(t('load3d.menuBar.bgColor'))"
-            :class="actionClass(false)"
-            type="button"
-            @click="colorRef?.click()"
-          >
-            <i class="icon-[lucide--palette] size-4" />
-            <span v-if="!compact">{{ t('load3d.menuBar.bgColor') }}</span>
-            <input
-              ref="colorRef"
-              type="color"
-              class="pointer-events-none absolute size-0 opacity-0"
-              :value="sceneConfig!.backgroundColor"
-              @input="
-                sceneConfig!.backgroundColor = (
-                  $event.target as HTMLInputElement
-                ).value
-              "
-            />
-          </button>
-          <button
-            v-if="canUseBackgroundImage"
-            v-tooltip.bottom="tip(t('load3d.menuBar.bgImage'))"
-            :class="actionClass(false)"
-            type="button"
-            @click="bgImageRef?.click()"
-          >
-            <i class="icon-[lucide--image] size-4" />
-            <span v-if="!compact">{{ t('load3d.menuBar.bgImage') }}</span>
-            <input
-              ref="bgImageRef"
-              type="file"
-              accept="image/*"
-              class="pointer-events-none absolute size-0 opacity-0"
-              @change="onBackgroundImagePicked"
-            />
-          </button>
-        </template>
-        <template v-else>
-          <button
-            v-tooltip.bottom="tip(t('load3d.menuBar.panorama'))"
-            :class="
-              actionClass(sceneConfig!.backgroundRenderMode === 'panorama')
-            "
-            type="button"
-            @click="togglePanorama"
-          >
-            <i class="icon-[lucide--globe] size-4" />
-            <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
-          </button>
-          <button
-            v-tooltip.bottom="tip(t('load3d.menuBar.removeBackground'))"
-            :class="actionClass(false)"
-            type="button"
-            @click="emit('updateBackgroundImage', null)"
-          >
-            <i class="icon-[lucide--x] size-4" />
-            <span v-if="!compact">{{
-              t('load3d.menuBar.removeBackground')
-            }}</span>
-          </button>
-        </template>
-      </template>
-
-      <!-- 3D Model -->
-      <template v-else-if="activeCategory === 'model' && !!modelConfig">
-        <Popover>
-          <PopoverTrigger as-child>
-            <button
-              v-tooltip.bottom="tip(t('load3d.menuBar.upDirection'))"
-              :class="actionClass(false)"
-              type="button"
-            >
-              <i class="icon-[lucide--move-3d] size-4" />
-              <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            side="bottom"
-            align="start"
-            :side-offset="8"
-            :class="panelClass"
-          >
-            <button
-              v-for="d in upDirections"
-              :key="d"
-              type="button"
-              :class="
-                cn(
-                  rowClass,
-                  modelConfig!.upDirection === d && 'bg-button-active-surface'
-                )
-              "
-              @click="modelConfig!.upDirection = d"
-            >
-              {{ d.toUpperCase() }}
-            </button>
-          </PopoverContent>
-        </Popover>
-        <Popover v-if="materialModes.length">
-          <PopoverTrigger as-child>
-            <button
-              v-tooltip.bottom="tip(t('load3d.menuBar.material'))"
-              :class="actionClass(false)"
-              type="button"
-            >
-              <i class="icon-[lucide--box] size-4" />
-              <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            side="bottom"
-            align="start"
-            :side-offset="8"
-            :class="panelClass"
-          >
-            <button
-              v-for="m in materialModes"
-              :key="m"
-              type="button"
-              :class="
-                cn(
-                  rowClass,
-                  modelConfig!.materialMode === m && 'bg-button-active-surface'
-                )
-              "
-              @click="modelConfig!.materialMode = m"
-            >
-              {{ t(`load3d.materialModes.${m}`) }}
-            </button>
-          </PopoverContent>
-        </Popover>
-        <button
-          v-if="hasSkeleton"
-          v-tooltip.bottom="tip(t('load3d.menuBar.skeleton'))"
-          :class="actionClass(modelConfig!.showSkeleton)"
-          type="button"
-          @click="modelConfig!.showSkeleton = !modelConfig!.showSkeleton"
-        >
-          <i class="icon-[lucide--bone] size-4" />
-          <span v-if="!compact">{{ t('load3d.menuBar.skeleton') }}</span>
-        </button>
-      </template>
-
-      <!-- Camera -->
-      <template v-else-if="activeCategory === 'camera' && !!cameraConfig">
-        <button
-          v-tooltip.bottom="tip(t('load3d.menuBar.switchProjection'))"
-          :class="actionClass(false)"
-          type="button"
-          @click="switchCamera"
-        >
-          <i class="icon-[lucide--camera] size-4" />
-          <span v-if="!compact">{{ cap(cameraConfig!.cameraType) }}</span>
-        </button>
-        <Popover v-if="cameraConfig!.cameraType === 'perspective'">
-          <PopoverTrigger as-child>
-            <button
-              v-tooltip.bottom="tip(t('load3d.menuBar.fov'))"
-              :class="actionClass(false)"
-              type="button"
-            >
-              <i class="icon-[lucide--focus] size-4" />
-              <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            side="bottom"
-            align="start"
-            :side-offset="8"
-            :class="cn(panelClass, 'w-56')"
-          >
-            <div class="flex flex-col gap-2 p-1">
-              <span class="text-sm text-base-foreground">{{
-                t('load3d.fov')
-              }}</span>
-              <Slider
-                :model-value="[cameraConfig!.fov]"
-                :min="1"
-                :max="150"
-                :step="1"
-                class="w-full"
-                @update:model-value="
-                  (v) => v?.length && (cameraConfig!.fov = v[0])
-                "
-              />
-            </div>
-          </PopoverContent>
-        </Popover>
-      </template>
-
-      <!-- Lighting -->
-      <template
-        v-else-if="activeCategory === 'light' && !!lightConfig && !!modelConfig"
-      >
-        <Popover v-if="modelConfig!.materialMode === 'original'">
-          <PopoverTrigger as-child>
-            <button
-              v-tooltip.bottom="tip(t('load3d.menuBar.intensity'))"
-              :class="actionClass(false)"
-              type="button"
-            >
-              <i class="icon-[lucide--sun] size-4" />
-              <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            side="bottom"
-            align="start"
-            :side-offset="8"
-            :class="cn(panelClass, 'w-56')"
-          >
-            <div class="flex flex-col gap-2 p-1">
-              <span class="text-sm text-base-foreground">{{
-                t('load3d.lightIntensity')
-              }}</span>
-              <Slider
-                :model-value="[lightConfig!.intensity]"
-                :min="0"
-                :max="10"
-                :step="0.1"
-                class="w-full"
-                @update:model-value="
-                  (v) => v?.length && (lightConfig!.intensity = v[0])
-                "
-              />
-            </div>
-          </PopoverContent>
-        </Popover>
-        <span v-else class="px-2 text-sm text-muted">{{
-          t('load3d.menuBar.originalMaterialOnly')
-        }}</span>
-      </template>
+      <SceneMenuGroup
+        v-if="activeCategory === 'scene' && sceneConfig"
+        v-model:config="sceneConfig"
+        v-model:fov="cameraFov"
+        :compact
+        :can-use-background-image="canUseBackgroundImage"
+        :hdri-active="hdriActive"
+        @update-background-image="emit('updateBackgroundImage', $event)"
+      />
+      <ModelMenuGroup
+        v-else-if="activeCategory === 'model' && modelConfig"
+        v-model:config="modelConfig"
+        :compact
+        :material-modes="materialModes"
+        :has-skeleton="hasSkeleton"
+      />
+      <CameraMenuGroup
+        v-else-if="activeCategory === 'camera' && cameraConfig"
+        v-model:config="cameraConfig"
+        :compact
+      />
+      <LightMenuGroup
+        v-else-if="activeCategory === 'light' && lightConfig && modelConfig"
+        v-model:config="lightConfig"
+        :compact
+        :is-original-material="isOriginalMaterial"
+      />
+      <HdriMenuGroup
+        v-else-if="activeCategory === 'hdri' && lightConfig"
+        v-model:config="lightConfig"
+        :compact
+        :scene-has-image="sceneHasImage"
+        @update-hdri-file="emit('updateHdriFile', $event)"
+      />
+      <GizmoMenuGroup
+        v-else-if="activeCategory === 'gizmo' && modelConfig"
+        v-model:config="modelConfig"
+        :compact
+        @toggle-gizmo="emit('toggleGizmo', $event)"
+        @set-gizmo-mode="emit('setGizmoMode', $event)"
+        @reset-gizmo-transform="emit('resetGizmoTransform')"
+      />
     </div>
 
-    <!-- Viewport shows through here (pointer events pass to the 3D canvas) -->
-    <div class="flex-1" />
-
-    <!-- Bottom bar: Record (left) · fit + export (right) -->
     <div
-      class="pointer-events-auto flex h-10 items-center justify-between bg-black px-2"
+      :class="
+        cn('flex-1', isRecording && 'border-2 border-node-component-executing')
+      "
+    />
+
+    <div
+      class="pointer-events-auto flex h-10 items-center justify-between gap-1 bg-interface-menu-surface px-2"
       @wheel.stop
     >
-      <button
-        v-tooltip.top="
-          tip(
-            recording
-              ? t('load3d.menuBar.stopRecording')
-              : t('load3d.menuBar.record')
-          )
-        "
-        :class="chipClass"
-        type="button"
-        @click="recording = !recording"
-      >
-        <span
-          v-if="recording"
-          class="size-2 animate-pulse rounded-full bg-red-500"
-        />
-        {{ t('load3d.menuBar.record') }}
-      </button>
-
       <div class="flex items-center gap-1">
+        <RecordMenuControl
+          v-if="canUseRecording"
+          v-model:is-recording="isRecording"
+          v-model:has-recording="hasRecording"
+          v-model:recording-duration="recordingDuration"
+          :compact
+          @start-recording="emit('startRecording')"
+          @stop-recording="emit('stopRecording')"
+          @export-recording="emit('exportRecording')"
+          @clear-recording="emit('clearRecording')"
+        />
+      </div>
+      <div class="flex items-center gap-1">
+        <ViewerControls
+          v-if="enableViewer && node"
+          :node="node as LGraphNode"
+        />
         <button
+          v-if="canFitToViewer"
           v-tooltip.top="tip(t('load3d.fitToViewer'))"
           :class="iconBtnClass"
           type="button"
@@ -321,6 +122,16 @@
           @click="emit('fitToViewer')"
         >
           <i class="icon-[lucide--scan] size-4" />
+        </button>
+        <button
+          v-if="canCenterCameraOnModel"
+          v-tooltip.top="tip(t('load3d.centerCameraOnModel'))"
+          :class="iconBtnClass"
+          type="button"
+          :aria-label="t('load3d.centerCameraOnModel')"
+          @click="emit('centerCamera')"
+        >
+          <i class="icon-[lucide--crosshair] size-4" />
         </button>
         <Popover v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
@@ -361,31 +172,60 @@ import { PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CameraMenuGroup from '@/components/load3d/menubar/CameraMenuGroup.vue'
+import GizmoMenuGroup from '@/components/load3d/menubar/GizmoMenuGroup.vue'
+import HdriMenuGroup from '@/components/load3d/menubar/HdriMenuGroup.vue'
+import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
+import {
+  chipClass,
+  iconBtnClass,
+  panelClass,
+  rowClass,
+  tip
+} from '@/components/load3d/menubar/menuBarStyles'
+import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
+import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue'
+import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
+import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   CameraConfig,
+  GizmoMode,
   LightConfig,
   MaterialMode,
   ModelConfig,
-  SceneConfig,
-  UpDirection
+  SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   canUseLighting = true,
+  canUseHdri = true,
+  canUseGizmo = true,
   canExport = true,
   canUseBackgroundImage = true,
+  canFitToViewer = true,
+  canCenterCameraOnModel = true,
+  canUseRecording = true,
+  enableViewer = false,
+  node = null,
   materialModes = ['original', 'clay', 'normal', 'wireframe'],
   hasSkeleton = false,
   sourceFormat = null
 } = defineProps<{
   canUseLighting?: boolean
+  canUseHdri?: boolean
+  canUseGizmo?: boolean
   canExport?: boolean
   canUseBackgroundImage?: boolean
+  canFitToViewer?: boolean
+  canCenterCameraOnModel?: boolean
+  canUseRecording?: boolean
+  enableViewer?: boolean
+  node?: LGraphNode | null
   materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
   sourceFormat?: string | null
@@ -395,11 +235,23 @@ const sceneConfig = defineModel<SceneConfig>('sceneConfig')
 const modelConfig = defineModel<ModelConfig>('modelConfig')
 const cameraConfig = defineModel<CameraConfig>('cameraConfig')
 const lightConfig = defineModel<LightConfig>('lightConfig')
+const isRecording = defineModel<boolean>('isRecording')
+const hasRecording = defineModel<boolean>('hasRecording')
+const recordingDuration = defineModel<number>('recordingDuration')
 
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
+  (e: 'updateHdriFile', file: File | null): void
   (e: 'exportModel', format: string): void
   (e: 'fitToViewer'): void
+  (e: 'centerCamera'): void
+  (e: 'toggleGizmo', enabled: boolean): void
+  (e: 'setGizmoMode', mode: GizmoMode): void
+  (e: 'resetGizmoTransform'): void
+  (e: 'startRecording'): void
+  (e: 'stopRecording'): void
+  (e: 'exportRecording'): void
+  (e: 'clearRecording'): void
 }>()
 
 const { t } = useI18n()
@@ -409,7 +261,7 @@ const categoryDefs = computed(() =>
     { key: 'scene', label: t('load3d.scene'), show: !!sceneConfig.value },
     {
       key: 'model',
-      label: `3D ${t('load3d.model')}`,
+      label: t('load3d.model3d'),
       show: !!modelConfig.value
     },
     { key: 'camera', label: t('load3d.camera'), show: !!cameraConfig.value },
@@ -417,6 +269,16 @@ const categoryDefs = computed(() =>
       key: 'light',
       label: t('load3d.light'),
       show: canUseLighting && !!lightConfig.value && !!modelConfig.value
+    },
+    {
+      key: 'hdri',
+      label: t('load3d.hdri.label'),
+      show: canUseHdri && !!lightConfig.value
+    },
+    {
+      key: 'gizmo',
+      label: t('load3d.gizmo.label'),
+      show: canUseGizmo && !!modelConfig.value
     }
   ].filter((c) => c.show)
 )
@@ -434,70 +296,42 @@ watch(categoryDefs, (defs) => {
 
 const catMenuOpen = ref(false)
 const exportOpen = ref(false)
-const recording = ref(false)
-
-const selectCategory = (key: string) => {
-  activeCategory.value = key
-  catMenuOpen.value = false
-}
 
 const sceneHasImage = computed(
   () =>
     !!sceneConfig.value?.backgroundImage &&
     sceneConfig.value.backgroundImage !== ''
 )
-const exportFormats = computed(() => getExportFormatOptions(sourceFormat))
-const upDirections: UpDirection[] = [
-  'original',
-  '-x',
-  '+x',
-  '-y',
-  '+y',
-  '-z',
-  '+z'
-]
+const hdriActive = computed(
+  () =>
+    !!lightConfig.value?.hdri?.hdriPath && !!lightConfig.value?.hdri?.enabled
+)
+const isOriginalMaterial = computed(
+  () => modelConfig.value?.materialMode === 'original'
+)
+const cameraFov = computed({
+  get: () => cameraConfig.value?.fov ?? 0,
+  set: (value) => {
+    if (cameraConfig.value) cameraConfig.value.fov = value
+  }
+})
 
-const colorRef = ref<HTMLInputElement | null>(null)
-const bgImageRef = ref<HTMLInputElement | null>(null)
+const exportFormats = computed(() => getExportFormatOptions(sourceFormat))
+
 const topBarRef = ref<HTMLElement | null>(null)
 const { width: topW } = useElementSize(topBarRef)
-const compact = computed(() => topW.value > 0 && topW.value < 380)
+const compactWidthThreshold = 480
+const compact = computed(
+  () => topW.value > 0 && topW.value < compactWidthThreshold
+)
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
-const tip = (label: string) => ({ value: label, showDelay: 300 })
+function selectCategory(key: string) {
+  activeCategory.value = key
+  catMenuOpen.value = false
+}
 
-const onBackgroundImagePicked = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  if (input.files?.[0]) emit('updateBackgroundImage', input.files[0])
-}
-const togglePanorama = () => {
-  if (!sceneConfig.value) return
-  sceneConfig.value.backgroundRenderMode =
-    sceneConfig.value.backgroundRenderMode === 'panorama' ? 'tiled' : 'panorama'
-}
-const switchCamera = () => {
-  if (!cameraConfig.value) return
-  cameraConfig.value.cameraType =
-    cameraConfig.value.cameraType === 'perspective'
-      ? 'orthographic'
-      : 'perspective'
-}
-const onExport = (format: string) => {
+function onExport(format: string) {
   emit('exportModel', format)
   exportOpen.value = false
 }
-
-const chipClass =
-  'flex items-center gap-1.5 rounded-lg border-0 bg-interface-menu-surface px-2.5 py-1 text-sm text-base-foreground outline-none transition-colors hover:bg-button-active-surface'
-const iconBtnClass =
-  'flex size-8 items-center justify-center rounded-md border-0 bg-transparent text-base-foreground outline-none transition-colors hover:bg-white/10'
-const panelClass =
-  'w-48 max-h-80 overflow-y-auto flex flex-col gap-0.5 p-1.5 rounded-lg border-border-default bg-base-background shadow-[0_2px_12px_0_rgba(0,0,0,0.10)]'
-const rowClass =
-  'flex w-full cursor-pointer items-center rounded-md border-0 bg-transparent px-2 py-1.5 text-left text-sm text-base-foreground outline-none hover:bg-white/10'
-const actionClass = (active: boolean) =>
-  cn(
-    'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-base-foreground transition-colors outline-none hover:bg-white/10',
-    active && 'bg-white/10'
-  )
 </script>
