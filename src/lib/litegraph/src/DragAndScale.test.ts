@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { DragAndScale } from './DragAndScale'
 
@@ -25,32 +25,48 @@ describe('DragAndScale.fitToBounds', () => {
     expect(ds.offset[1]).toBeCloseTo(-bounds[3] * 0.5 + scaledH * 0.5)
   })
 
-  it('shifts center rightward when left inset is applied', () => {
+  it('centers bounds within the unobscured region for a left inset', () => {
     const ds = createDragAndScale(1920, 1080)
     const bounds: [number, number, number, number] = [0, 0, 400, 300]
+    const left = 300
 
-    const dsNoInset = createDragAndScale(1920, 1080)
-    dsNoInset.fitToBounds(bounds)
+    ds.fitToBounds(bounds, { insets: { left } })
 
-    ds.fitToBounds(bounds, { insets: { left: 300 } })
-
-    // With a left inset, the offset should be shifted left (more negative)
-    // to push content away from the left panel
-    expect(ds.offset[0]).toBeLessThan(dsNoInset.offset[0])
+    // The bounds center should map to the center of the visible region,
+    // i.e. left + (fullCw - left) / 2 in canvas pixels.
+    const boundsCenterX = bounds[0] + bounds[2] * 0.5
+    const visibleCenterX = left + (1920 - left) / 2
+    expect((boundsCenterX + ds.offset[0]) * ds.scale).toBeCloseTo(
+      visibleCenterX
+    )
   })
 
-  it('shifts center leftward when right inset is applied', () => {
+  it('centers bounds within the unobscured region for a right inset', () => {
     const ds = createDragAndScale(1920, 1080)
     const bounds: [number, number, number, number] = [0, 0, 400, 300]
+    const right = 300
 
-    const dsNoInset = createDragAndScale(1920, 1080)
-    dsNoInset.fitToBounds(bounds)
+    ds.fitToBounds(bounds, { insets: { right } })
 
-    ds.fitToBounds(bounds, { insets: { right: 300 } })
+    const boundsCenterX = bounds[0] + bounds[2] * 0.5
+    const visibleCenterX = (1920 - right) / 2
+    expect((boundsCenterX + ds.offset[0]) * ds.scale).toBeCloseTo(
+      visibleCenterX
+    )
+  })
 
-    // With right inset, the available width shrinks and the content is
-    // centered in the remaining left portion — offset decreases
-    expect(ds.offset[0]).toBeLessThan(dsNoInset.offset[0])
+  it('centers bounds within the unobscured region for a top inset', () => {
+    const ds = createDragAndScale(1920, 1080)
+    const bounds: [number, number, number, number] = [0, 0, 400, 300]
+    const top = 200
+
+    ds.fitToBounds(bounds, { insets: { top } })
+
+    const boundsCenterY = bounds[1] + bounds[3] * 0.5
+    const visibleCenterY = top + (1080 - top) / 2
+    expect((boundsCenterY + ds.offset[1]) * ds.scale).toBeCloseTo(
+      visibleCenterY
+    )
   })
 
   it('uses reduced viewport for scale calculation with insets', () => {
@@ -93,5 +109,26 @@ describe('DragAndScale.animateToBounds', () => {
         insets: { left: 300, right: 200 }
       })
     ).not.toThrow()
+  })
+
+  it('ends at the same state as fitToBounds with the same insets', () => {
+    vi.useFakeTimers()
+    try {
+      const bounds: [number, number, number, number] = [50, 50, 500, 400]
+      const insets = { left: 150, right: 250, top: 100 }
+
+      const dsFit = createDragAndScale(1200, 900)
+      dsFit.fitToBounds(bounds, { insets })
+
+      const dsAnimate = createDragAndScale(1200, 900)
+      dsAnimate.animateToBounds(bounds, () => {}, { duration: 350, insets })
+      vi.advanceTimersByTime(400)
+
+      expect(dsAnimate.scale).toBeCloseTo(dsFit.scale, 4)
+      expect(dsAnimate.offset[0]).toBeCloseTo(dsFit.offset[0], 4)
+      expect(dsAnimate.offset[1]).toBeCloseTo(dsFit.offset[1], 4)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
