@@ -2061,6 +2061,7 @@
     "centerCameraOnModel": "Center Camera on Model",
     "scene": "Scene",
     "model": "Model",
+    "model3d": "3D Model",
     "camera": "Camera",
     "light": "Light",
     "switchingMaterialMode": "Switching Material Mode...",
@@ -2074,7 +2075,7 @@
     "menuBar": {
       "showGrid": "Show grid",
       "bgColor": "BG Color",
-      "bgImage": "BG image",
+      "bgImage": "BG Image",
       "panorama": "Panorama",
       "removeBackground": "Remove BG",
       "upDirection": "Up Direction",
@@ -2126,10 +2127,10 @@
     "uploadingModel": "Uploading 3D model...",
     "loadingHDRI": "Loading HDRI...",
     "hdri": {
-      "label": "HDRI Environment",
-      "uploadFile": "Upload HDRI (.hdr, .exr)",
-      "changeFile": "Change HDRI",
-      "removeFile": "Remove HDRI",
+      "label": "HDRI",
+      "uploadFile": "Upload",
+      "changeFile": "Change",
+      "removeFile": "Remove",
       "showAsBackground": "Show as Background",
       "intensity": "Intensity"
     },
@@ -2139,7 +2140,7 @@
       "translate": "Translate",
       "rotate": "Rotate",
       "scale": "Scale",
-      "reset": "Reset Transform"
+      "reset": "Reset"
     }
   },
   "imageCrop": {
