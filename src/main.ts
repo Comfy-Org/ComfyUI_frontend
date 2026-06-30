@@ -139,3 +139,5 @@ const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')
+
+// e2e baseline probe — no-op (do not merge)
