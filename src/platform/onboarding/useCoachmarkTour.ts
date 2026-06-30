@@ -5,8 +5,10 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
+import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 import { useCoachmarkController } from './coachmarkController'
 import { TOURS, resolveSteps } from './onboardingTours'
@@ -51,6 +53,8 @@ export function useCoachmarkTour(refs: {
   let stepController: AbortController | null = null
   // Suspends the focusin guard while a deferred target autofocuses, so we don't fight it.
   let awaitingDeferredTarget = false
+  // `?coach=` override; declared here so the immediate auto-open watcher can read it.
+  let forcedTour: ForcedTour | null = null
 
   const step = computed<CoachStep | null>(
     () => steps.value[stepIdx.value] ?? null
@@ -229,6 +233,20 @@ export function useCoachmarkTour(refs: {
     })
   })
 
+  // Auto-open the app-mode tour when entering a populated app
+  const { mode } = useAppMode()
+  const appModeStore = useAppModeStore()
+  const appControlsVisible = computed(
+    () => mode.value === 'app' && appModeStore.hasOutputs
+  )
+  watch(
+    appControlsVisible,
+    (visible) => {
+      if (visible) startTour('appMode')
+    },
+    { immediate: true }
+  )
+
   function isEntryPath(value: string): value is EntryPath {
     return value in TOURS
   }
@@ -242,8 +260,6 @@ export function useCoachmarkTour(refs: {
     if (seen.includes(entryPath)) return
     void settingStore.set(SEEN_SETTING, [...seen, entryPath])
   }
-
-  let forcedTour: ForcedTour | null = null
 
   function startTour(entryPath: EntryPath, force = false) {
     // A tour is already showing or mid-resolution this session.

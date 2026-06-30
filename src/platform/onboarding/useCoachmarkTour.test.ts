@@ -2,7 +2,10 @@ import { createTestingPinia } from '@pinia/testing'
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type { AppMode } from '@/utils/appMode'
 
 import { useCoachmarkController } from './coachmarkController'
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
@@ -29,9 +32,31 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
 }))
 
+// `mode` + `hasOutputs` drive the auto-open watcher; hoisted so tests can flip
+// them to simulate entering a populated vs empty app.
+const appModeMock = vi.hoisted(
+  () =>
+    ({ mode: null, hasOutputs: null }) as {
+      mode: Ref<AppMode> | null
+      hasOutputs: Ref<boolean> | null
+    }
+)
 vi.mock('@/composables/useAppMode', async () => {
   const { ref: r } = await import('vue')
-  return { useAppMode: () => ({ isAppMode: r(false) }) }
+  appModeMock.mode = r<AppMode>('graph')
+  return { useAppMode: () => ({ mode: appModeMock.mode }) }
+})
+vi.mock('@/stores/appModeStore', async () => {
+  const { ref: r } = await import('vue')
+  appModeMock.hasOutputs = r(false)
+  const hasOutputs = appModeMock.hasOutputs
+  return {
+    useAppModeStore: () => ({
+      get hasOutputs() {
+        return hasOutputs.value
+      }
+    })
+  }
 })
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
@@ -72,10 +97,18 @@ function startedCount() {
 }
 
 describe('useCoachmarkTour', () => {
+  // Tracks every element mountTarget appends, so teardown removes them even when
+  // a test throws before its own cleanup would run.
+  const appendedTargets: HTMLElement[] = []
+
   afterEach(() => {
     cleanup()
     clearCoachmarks()
+    appendedTargets.forEach((el) => el.remove())
+    appendedTargets.length = 0
     settings.seen = []
+    if (appModeMock.mode) appModeMock.mode.value = 'graph'
+    if (appModeMock.hasOutputs) appModeMock.hasOutputs.value = false
     telemetry.track.mockClear()
     vi.useRealTimers()
   })
@@ -85,6 +118,7 @@ describe('useCoachmarkTour', () => {
     const el = document.createElement('div')
     el.getBoundingClientRect = () => new DOMRect(0, 0, 100, 100)
     document.body.appendChild(el)
+    appendedTargets.push(el)
     registerCoachmark(id, el)
     return el
   }
@@ -95,9 +129,50 @@ describe('useCoachmarkTour', () => {
     return new Map(ids.map((id) => [id, mountTarget(id)]))
   }
 
-  function removeTargets(targets: Map<CoachId, HTMLElement>) {
-    for (const el of targets.values()) el.remove()
+  function enterApp(mode: AppMode, hasOutputs: boolean) {
+    const modeRef = appModeMock.mode
+    const outputsRef = appModeMock.hasOutputs
+    if (!modeRef || !outputsRef)
+      throw new Error('app mode mock not initialised')
+    modeRef.value = mode
+    outputsRef.value = hasOutputs
   }
+
+  it('auto-opens when entering a populated app it has not seen', async () => {
+    mountTour()
+    enterApp('app', true)
+    await flush()
+    expect(startedCount()).toBe(1)
+  })
+
+  it('auto-opens when mounted into an already-populated app', async () => {
+    enterApp('app', true)
+    mountTour()
+    await flush()
+    expect(startedCount()).toBe(1)
+  })
+
+  it('does not auto-open in an empty app with no linear controls', async () => {
+    mountTour()
+    enterApp('app', false)
+    await flush()
+    expect(startedCount()).toBe(0)
+  })
+
+  it('does not auto-open in arrange (builder) mode', async () => {
+    mountTour()
+    enterApp('builder:arrange', true)
+    await flush()
+    expect(startedCount()).toBe(0)
+  })
+
+  it('does not auto-open a populated app once the tour has been dismissed', async () => {
+    settings.seen = ['appMode']
+    mountTour()
+    enterApp('app', true)
+    await flush()
+    expect(startedCount()).toBe(0)
+  })
 
   it('marks the tour seen when it ends normally', async () => {
     const { api } = mountTour()
@@ -135,7 +210,7 @@ describe('useCoachmarkTour', () => {
     // Register every app-mode target so each step resolves immediately as the
     // user advances (spotlight steps defer their targets). The assets panel is
     // mounted, so the assets-button step is skipped — the tour still completes.
-    const targets = registerAppModeTargets()
+    registerAppModeTargets()
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
     await flush()
@@ -152,7 +227,6 @@ describe('useCoachmarkTour', () => {
       ([stage]) => stage === 'completed'
     )
     expect(completed).toBe(true)
-    removeTargets(targets)
   })
 
   it('advances a click-to-advance step when its spotlighted target is clicked', async () => {
@@ -176,19 +250,18 @@ describe('useCoachmarkTour', () => {
     expect(api.step.value?.advanceOnTargetClick).toBe(true)
 
     // Clicking the button opens the panel and advances to spotlight it.
-    targets.set('assets-panel', mountTarget('assets-panel'))
+    mountTarget('assets-panel')
     const assetsButton = targets.get('assets-button')!
     assetsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flush()
 
     expect(api.step.value?.coachId).toBe('assets-panel')
-    removeTargets(targets)
   })
 
   it('drops the assets-button step (count 4) when the panel is already open', async () => {
     // The panel is registered up front, so the step that only exists to open it
     // is dropped at tour start — the indicator counts four steps, not five.
-    const targets = registerAppModeTargets()
+    registerAppModeTargets()
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
     await flush()
@@ -201,11 +274,10 @@ describe('useCoachmarkTour', () => {
       await flush()
     }
     expect(api.step.value?.coachId).toBe('assets-panel')
-    removeTargets(targets)
   })
 
   it('advancing off the landing does not mark the tour skipped', async () => {
-    const targets = registerAppModeTargets()
+    registerAppModeTargets()
     const { api } = mountTour()
     void useCoachmarkController().requestTour('appMode')
     await flush()
@@ -219,6 +291,5 @@ describe('useCoachmarkTour', () => {
       ([stage]) => stage === 'skipped'
     )
     expect(skipped).toBe(false)
-    removeTargets(targets)
   })
 })
