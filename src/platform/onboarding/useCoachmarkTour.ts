@@ -22,20 +22,15 @@ import { useFocusTrap } from './useFocusTrap'
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 const START_DELAY_MS = 800
 const DEFER_TIMEOUT_MS = 8000
-// On steps the user must interact with the target, pulse the spotlight
-// outline once they have stalled this long.
+// How long a user can stall on an interaction step before the outline pulses.
 const PULSE_IDLE_MS = 4000
 
 type TourStage = 'started' | 'step_shown' | 'completed' | 'skipped'
 
-// `?coach=<path>` forces that tour; `?coach=1` (any non-path value) forces
-// whichever tour the entry detection picks.
+// `?coach=<path>` forces that tour; any non-path value forces the auto-detected one.
 type ForcedTour = EntryPath | 'any'
 
-// TourOverlay mounts exactly once (GraphView), so this composable is a de-facto
-// singleton: a single state machine owning the document listeners and the
-// app-mode watcher. A second concurrent mount would double-fire all of them, so
-// guard against it rather than corrupt shared state silently.
+// TourOverlay mounts once; this guards a duplicate mount from double-firing its listeners.
 let instanceActive = false
 
 /**
@@ -55,22 +50,15 @@ export function useCoachmarkTour(refs: {
   const stepIdx = ref(0)
   const pulsing = ref(false)
   let activeTour: EntryPath | null = null
-  // Set synchronously before the gate resolution awaits, so a second trigger
-  // (e.g. the app-mode watcher firing alongside an explicit request) can't slip
-  // past the `steps.value.length` guard while the first tour is still resolving.
+  // Set synchronously so a second trigger can't slip past the steps guard mid-resolution.
   let starting = false
   let startTimer: ReturnType<typeof setTimeout> | undefined
   let pulseTimer: ReturnType<typeof setTimeout> | undefined
-  // Cancels the in-flight step's async work (deferred-target wait, frame settle,
-  // close watcher) when the step advances, the tour ends, or the view unmounts.
+  // Cancels the step's in-flight async work when it advances, the tour ends, or unmounts.
   let stepController: AbortController | null = null
-  // While a deferred target mounts, focus legitimately moves into it (dialog
-  // autofocus) — suspend the focusin guard so the coach doesn't fight it.
+  // Suspends the focusin guard while a deferred target autofocuses, so we don't fight it.
   let awaitingDeferredTarget = false
-  // Claim the single-instance guard synchronously, before the listeners and
-  // watches below register, so a duplicate mount stays inert (its startTour
-  // no-ops and every handler falls through on a null step) rather than racing
-  // the owner. TourOverlay must be mounted exactly once.
+  // Claim the guard synchronously (before the listeners below) so a duplicate stays inert.
   let ownsInstance = false
   if (instanceActive) {
     console.error(
@@ -84,8 +72,7 @@ export function useCoachmarkTour(refs: {
   const step = computed(() => steps.value[stepIdx.value] ?? null)
   const isLast = computed(() => stepIdx.value === steps.value.length - 1)
 
-  // Landing steps are full-screen chrome, not part of the numbered progression,
-  // so the step indicator counts only the spotlight steps.
+  // Landing steps aren't numbered, so the indicator counts only spotlight steps.
   const countedSteps = computed(() => steps.value.filter((s) => !s.landing))
   const countedStepIdx = computed(() => {
     const s = step.value
@@ -102,8 +89,7 @@ export function useCoachmarkTour(refs: {
     waitForTarget
   } = useCoachmarkTarget(step)
 
-  // The landing renders as a real Dialog that owns its own focus trap and escape
-  // handling, so the cross-subtree trap only runs for spotlight steps.
+  // The landing Dialog owns its own focus trap, so ours runs only for spotlight steps.
   const focusTrap = useFocusTrap({
     cardRef,
     getTarget: () => targetEl.value,
@@ -137,21 +123,17 @@ export function useCoachmarkTour(refs: {
     t(step.value?.skipLabelKey ?? 'onboardingCoachmarks.skip')
   )
 
-  // Steps the user advances by interacting with the target (clicking or closing
-  // it) pulse the spotlight outline once they stall, and have no primary button.
+  // Steps the user advances by interacting with the target (click/close), not Next.
   const expectsTargetInteraction = computed(
     () =>
       !!step.value?.advanceOnTargetClick || !!step.value?.advanceOnTargetClose
   )
 
-  // The spotlight's outline pulses once the user stalls on a step they
-  // must interact with.
   const outlinePulsing = computed(
     () => pulsing.value && expectsTargetInteraction.value
   )
 
-  // On the last step the primary button reads "Done", which already dismisses
-  // the tour — so Skip is redundant there (unless the step has no primary button).
+  // Last step's "Done" already dismisses, so hide Skip unless the step has no primary button.
   const showSkip = computed(
     () => !isLast.value || expectsTargetInteraction.value
   )
@@ -161,7 +143,7 @@ export function useCoachmarkTour(refs: {
     pulsing.value = false
   }
 
-  /** March the outline if the user stalls on a step they must interact with. */
+  /** Pulse the outline if the user stalls on a step they must interact with. */
   function schedulePulse() {
     clearPulse()
     if (!expectsTargetInteraction.value) return
@@ -204,8 +186,7 @@ export function useCoachmarkTour(refs: {
       )
       awaitingDeferredTarget = false
       if (signal.aborted) return
-      // The target never appeared — abandon without burning the seen-flag so a
-      // transient failure doesn't cost the user their onboarding.
+      // Target never appeared — abandon without setting the seen-flag, so the miss isn't permanent.
       if (!found) {
         end('skipped', false)
         return
@@ -218,8 +199,7 @@ export function useCoachmarkTour(refs: {
     if (nextStep.deferTarget) settle(signal)
     if (nextStep.advanceOnTargetClose && nextStep.coachId)
       watchForTargetClose(nextStep.coachId, signal)
-    // Reclaim the top of the shared modal sequence — a deferred dialog may have
-    // registered above us since the last step.
+    // Reclaim the top of the modal stack — a deferred dialog may have registered above us.
     void raiseOverlay()
     void focusTrap.focusCard()
   }
@@ -288,16 +268,13 @@ export function useCoachmarkTour(refs: {
     { capture: true }
   )
 
-  // Entering app mode opens the app-mode tour (guarded against re-entry and an
-  // already-running tour inside startTour).
+  // Entering app mode opens the app-mode tour (startTour guards re-entry).
   const { isAppMode } = useAppMode()
   watch(isAppMode, (active) => {
     if (active) void startTour('appMode')
   })
 
-  // The registry tells us when the current step's target mounts, unmounts or
-  // swaps (e.g. loading an app template hides the graph run button and mounts the
-  // app run button). Re-resolve the spotlight to whichever element is now live.
+  // Re-resolve the spotlight when the step's target mounts, unmounts or swaps.
   watch(candidateEls, () => {
     if (!stepController) return
     const { signal } = stepController
@@ -353,24 +330,20 @@ export function useCoachmarkTour(refs: {
 
   onMounted(() => {
     if (!ownsInstance) return
-    // URL loaders strip their params after consuming them, so snapshot `?coach=`
-    // here at mount (before any stripping) rather than reading the live location.
+    // Snapshot `?coach=` at mount, before URL loaders strip their params.
     const coachParam = new URLSearchParams(window.location.search).get('coach')
     if (coachParam !== null) {
       forcedTour = isEntryPath(coachParam) ? coachParam : 'any'
     }
     const forcedPath = coachParam && isEntryPath(coachParam) ? coachParam : null
-    // Only blankCanvas is detected at load; appMode opens via the isAppMode
-    // watcher. A forced `?coach=` path starts at load so it's testable without
-    // driving the live trigger.
+    // blankCanvas auto-detects at load; appMode opens via the watcher; `?coach=` forces at load.
     const hasNodes = !!app.rootGraph?.nodes?.length
     const mountPath = forcedPath ?? (hasNodes ? null : 'blankCanvas')
     if (!mountPath) return
     startTimer = setTimeout(() => void startTour(mountPath), START_DELAY_MS)
   })
 
-  // An explicit request (e.g. the app-mode info button) replays the tour past
-  // its seen-flag and gates.
+  // An explicit request (e.g. info button) replays the tour past its seen-flag and gates.
   const { onTourRequested } = useCoachmarkController()
   onTourRequested((tour) => void startTour(tour, true))
 

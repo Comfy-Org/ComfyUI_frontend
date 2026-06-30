@@ -5,11 +5,7 @@ import type { Ref } from 'vue'
 import { coachmarkElements } from './coachmarkRegistry'
 import type { CoachId, CoachStep } from './onboardingTours'
 
-// The deferred target scales in over several frames; only trust the rect once
-// it has held steady this long, and keep re-measuring up to the cap so a slow
-// open animation still resolves to the final size, tracking it live as it does
-// (which a one-shot transitionend listener couldn't). The cap is a backstop for
-// an animation that never settles, not a duration the open is expected to use.
+// A deferred target animates in; trust the rect only after STABLE steady frames, capped at MAX.
 const SETTLE_STABLE_FRAMES = 10
 const SETTLE_MAX_FRAMES = 30
 
@@ -41,8 +37,7 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
   // Cached so per-event consumers (focus trap, click guard) don't re-resolve.
   const targetEl = shallowRef<HTMLElement | null>(null)
 
-  // Elements registered for the current step's id(s). Reactive: drives the
-  // overlay's re-measure on mount/unmount/swap and its close detection.
+  // Elements registered for the step's id(s); reactive, drives re-measure and close detection.
   const candidateEls = computed<readonly HTMLElement[]>(() => {
     const id = step.value?.coachId
     return id ? elementsFor(id) : []
@@ -70,9 +65,7 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
     targetRect.value = el?.getBoundingClientRect() ?? null
   }
 
-  // Coalesce the high-frequency resize/scroll/observer triggers into a single
-  // measure per frame — each measure forces a layout, so one per paint is plenty.
-  // Idle (no active step) the listeners stay attached but do no layout work.
+  // Coalesce resize/scroll/observer triggers into one measure per frame (each forces layout).
   let measureFrame: number | null = null
   let settleFrame: number | null = null
   function scheduleMeasure() {
@@ -102,8 +95,7 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
     if (settleFrame !== null) cancelAnimationFrame(settleFrame)
   })
 
-  // A target swap (e.g. dialog open) can call settle() again while a prior loop
-  // is still running; cancel it so only one re-measure runs per frame.
+  // A target swap can call settle() while a prior loop runs; cancel so one re-measure per frame.
   function settle(signal: AbortSignal) {
     if (settleFrame !== null) cancelAnimationFrame(settleFrame)
     let last = ''

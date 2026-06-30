@@ -133,9 +133,8 @@ const {
   end
 } = useCoachmarkTour({ cardRef, overlayRef })
 
-// The landing renders as a real modal Dialog; dismissing it (escape, close
-// button, Skip) ends the tour. Advancing to a spotlight step flips `step.landing`
-// to false, closing the Dialog without re-triggering this skip.
+// Dismissing the landing Dialog (escape/close/Skip) ends the tour; advancing flips
+// `step.landing` false to close it without skipping.
 const landingOpen = computed({
   get: () => !!step.value?.landing,
   set: (value) => {
@@ -143,8 +142,7 @@ const landingOpen = computed({
   }
 })
 
-// Keep the padded spotlight box — and its outline — inside the viewport
-// when the target hugs an edge.
+// Keep the padded spotlight box inside the viewport when the target hugs an edge.
 function clampToViewport(r: DOMRect, pad: number) {
   const left = Math.max(SPOTLIGHT_EDGE_INSET, r.left - pad)
   const top = Math.max(SPOTLIGHT_EDGE_INSET, r.top - pad)
@@ -172,15 +170,9 @@ const spotlightStyle = computed(() => {
 
 /**
  * Eats pointer events everywhere (the spotlight's shadow does the dimming).
- * Steps the user advances by interacting with the target (clicking it, or
- * closing it) get a hole at the target's exact bounds — not the padded
- * spotlight — so neighbouring elements can't be clicked by accident.
- *
- * The hole is a single polygon tracing the viewport then the target rect; the
- * `evenodd` fill-rule subtracts the inner loop. fill-rule is a valid argument
- * to the CSS `polygon()` basic shape (Baseline since 2020), not SVG-only — the
- * click-through is covered by tour.spec.ts ("a click just outside must not
- * advance" plus the target click that opens the dialog).
+ * Interaction steps get a hole at the target's exact bounds so only it stays
+ * clickable: a polygon tracing the viewport then the target rect, with the
+ * `evenodd` fill-rule subtracting the inner loop.
  */
 const blockerStyle = computed(() => {
   const r = targetRect.value
@@ -228,8 +220,7 @@ function cardCorner(placement: ResolvedPlacement, r: DOMRect) {
         x: r.left + r.width / 2 - CARD_WIDTH / 2,
         y: r.top + r.height / 2 - cardHeight.value / 2
       }
-    // Tucks into the target's top-right corner, over the close button so the
-    // user can only advance by interacting with the target's contents.
+    // Tuck into the target's top-right (over the close button) so only its contents advance.
     case 'topRight':
       return { x: r.right - CARD_WIDTH - CARD_GAP, y: r.top + CARD_GAP }
   }
@@ -264,8 +255,7 @@ const cardStyle = computed(() => {
     maxWidth,
     left: `${Math.max(VIEWPORT_MARGIN, Math.min(x, window.innerWidth - CARD_WIDTH - CARD_GAP))}px`,
     top: `${Math.max(TOP_SAFE_INSET, Math.min(y, window.innerHeight - cardHeight.value - CARD_GAP))}px`,
-    // Vertically-centred placements need the measured height; hide the first
-    // frame (height still 0) so the card appears already in its final spot.
+    // Centred placements need the measured height; hide frame 0 (height still 0) to avoid a jump.
     opacity: cardHeight.value > 0 ? '1' : '0'
   }
 })

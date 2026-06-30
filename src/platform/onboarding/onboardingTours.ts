@@ -164,8 +164,7 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       advanceOnTargetClose: true
     },
     {
-      // A workflow template stays in the graph (run-button); an app template
-      // switches to app mode (app-run-button). Spotlight whichever is visible.
+      // Workflow templates stay in the graph, app templates switch to app mode; spotlight whichever shows.
       coachId: [COACH_IDS.runButton, COACH_IDS.appRunButton],
       titleKey: 'onboardingCoachmarks.blankCanvas.run.title',
       bodyKey: 'onboardingCoachmarks.blankCanvas.run.body',
