@@ -51,6 +51,7 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       await onboarding.startTour('appMode')
       const coach = onboarding
       await expect(coach.landing).toBeVisible()
+      await expect(coach.landingStartButton).toBeFocused()
 
       await comfyPage.page.keyboard.press('Escape')
       await expect(coach.landing).toBeHidden()
