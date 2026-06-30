@@ -1,11 +1,12 @@
 import * as Y from 'yjs'
 
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 
 export type NodeLayoutMap = Y.Map<NodeLayout[keyof NodeLayout]>
 
 export const NODE_LAYOUT_DEFAULTS: NodeLayout = {
-  id: 'unknown-node',
+  id: toNodeId('unknown-node'),
   position: { x: 0, y: 0 },
   size: { width: 100, height: 50 },
   zIndex: 0,

@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -8,6 +8,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -66,7 +67,7 @@ function slotLocator(
   slotIndex: number,
   isInput: boolean
 ) {
-  const key = getSlotKey(String(nodeId), slotIndex, isInput)
+  const key = getSlotKey(nodeId, slotIndex, isInput)
   return page.locator(`[data-slot-key="${key}"]`)
 }
 
@@ -1082,17 +1083,10 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeSearchBoxImpl',
-        'v1 (legacy)'
-      )
-
       // Setup workflow with a KSampler node
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.nodeOps.waitForGraphNodes(0)
-      await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
-      await comfyPage.nextFrame()
-      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+      await comfyPage.searchBoxV2.addNode('KSampler')
       await comfyPage.nodeOps.waitForGraphNodes(1)
 
       // Convert the KSampler node to a subgraph
@@ -1238,3 +1232,41 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
     }).toPass({ timeout: 5000 })
   })
 })
+
+test(
+  'Fast disconnection support',
+  { tag: '@vue-nodes' },
+  async ({ comfyMouse, comfyPage }) => {
+    async function performDisconnect(slot: Locator, isFast: boolean) {
+      await comfyMouse.dragElementBy(slot, { x: isFast ? -25 : -80 })
+
+      if (!isFast) {
+        await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
+        await comfyMouse.click(100, 100)
+      }
+      const isConnected = () => comfyPage.vueNodes.isSlotConnected(slot)
+      await expect.poll(isConnected).toBe(false)
+      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+    }
+
+    const ksamplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const ksampler = new VueNodeFixture(ksamplerLocator)
+    await comfyMouse.dragElementBy(ksamplerLocator, { x: 100 })
+
+    await test.step('Disconnection with normal links', async () => {
+      await performDisconnect(ksampler.getSlot('model'), true)
+      await performDisconnect(ksampler.getSlot('positive'), false)
+    })
+
+    await test.step('Create subgraph', async () => {
+      await ksampler.title.click()
+      await comfyPage.page.keyboard.press('Control+Shift+e')
+      await comfyPage.vueNodes.enterSubgraph()
+    })
+
+    await test.step('Disconnection with subgraph IO', async () => {
+      await performDisconnect(ksampler.getSlot('negative'), true)
+      await performDisconnect(ksampler.getSlot('latent_image'), false)
+    })
+  }
+)

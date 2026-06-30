@@ -71,12 +71,11 @@ vi.mock('./MissingPackGroupRow.vue', () => ({
     name: 'MissingPackGroupRow',
     template: `<div class="pack-row" data-testid="pack-row"
       :data-show-info-button="String(showInfoButton)"
-      :data-show-node-id-badge="String(showNodeIdBadge)"
     >
       <button data-testid="locate-node" @click="$emit('locate-node', group.nodeTypes[0]?.nodeId)" />
       <button data-testid="open-manager-info" @click="$emit('open-manager-info', group.packId)" />
     </div>`,
-    props: ['group', 'showInfoButton', 'showNodeIdBadge'],
+    props: ['group', 'showInfoButton'],
     emits: ['locate-node', 'open-manager-info']
   }
 }))
@@ -90,8 +89,6 @@ const i18n = createI18n({
     en: {
       rightSidePanel: {
         missingNodePacks: {
-          ossMessage: 'Missing node packs detected. Install them.',
-          cloudMessage: 'Unsupported node packs detected.',
           ossManagerDisabledHint:
             'To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.',
           applyChanges: 'Apply Changes'
@@ -124,7 +121,6 @@ function makePackGroups(count = 2): MissingPackGroup[] {
 function renderCard(
   props: Partial<{
     showInfoButton: boolean
-    showNodeIdBadge: boolean
     missingPackGroups: MissingPackGroup[]
   }> = {}
 ) {
@@ -132,7 +128,6 @@ function renderCard(
   const result = render(MissingNodeCard, {
     props: {
       showInfoButton: false,
-      showNodeIdBadge: false,
       missingPackGroups: makePackGroups(),
       ...props
     },
@@ -159,21 +154,6 @@ describe('MissingNodeCard', () => {
   })
 
   describe('Rendering & Props', () => {
-    it('renders cloud message when isCloud is true', () => {
-      mockIsCloud.value = true
-      renderCard()
-      expect(
-        screen.getByText('Unsupported node packs detected.')
-      ).toBeInTheDocument()
-    })
-
-    it('renders OSS message when isCloud is false', () => {
-      renderCard()
-      expect(
-        screen.getByText('Missing node packs detected. Install them.')
-      ).toBeInTheDocument()
-    })
-
     it('renders correct number of MissingPackGroupRow components', () => {
       renderCard({ missingPackGroups: makePackGroups(3) })
       expect(screen.getAllByTestId('pack-row')).toHaveLength(3)
@@ -186,12 +166,10 @@ describe('MissingNodeCard', () => {
 
     it('passes props correctly to MissingPackGroupRow children', () => {
       renderCard({
-        showInfoButton: true,
-        showNodeIdBadge: true
+        showInfoButton: true
       })
       const row = screen.getAllByTestId('pack-row')[0]
       expect(row.getAttribute('data-show-info-button')).toBe('true')
-      expect(row.getAttribute('data-show-node-id-badge')).toBe('true')
     })
   })
 
@@ -273,7 +251,6 @@ describe('MissingNodeCard', () => {
       render(MissingNodeCard, {
         props: {
           showInfoButton: false,
-          showNodeIdBadge: false,
           missingPackGroups: makePackGroups(),
           onLocateNode
         },
@@ -296,7 +273,6 @@ describe('MissingNodeCard', () => {
       render(MissingNodeCard, {
         props: {
           showInfoButton: false,
-          showNodeIdBadge: false,
           missingPackGroups: makePackGroups(),
           onOpenManagerInfo
         },

@@ -1,20 +1,18 @@
 import { toString } from 'es-toolkit/compat'
 
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import {
-  makePromotionEntryKey,
-  usePromotionStore
-} from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import {
@@ -29,9 +27,8 @@ import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkId, SerialisedLLinkArray } from './LLink'
+import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -42,7 +39,6 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   HasBoundingRect,
-  IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
@@ -60,6 +56,7 @@ import {
   createBounds,
   snapPoint
 } from './measure'
+import { warnDeprecated } from './utils/feedback'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -80,6 +77,7 @@ import type {
   LGraphTriggerHandler,
   LGraphTriggerParam
 } from './types/graphTriggers'
+import { LGraphTriggerActions } from './types/graphTriggers'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -99,6 +97,28 @@ export type {
   LGraphTriggerAction,
   LGraphTriggerParam
 } from './types/graphTriggers'
+
+const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
+
+function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
+  return validTriggerActions.has(action as LGraphTriggerAction)
+}
+
+function nextNodeId(state: LGraphState): NodeId {
+  return toNodeId(++state.lastNodeId)
+}
+
+function numericNodeId(id: NodeId): number | null {
+  const numericId = Number(id)
+  return Number.isInteger(numericId) ? numericId : null
+}
+
+function syncLastNodeId(state: LGraphState, id: NodeId): void {
+  const numericId = numericNodeId(id)
+  if (numericId !== null && state.lastNodeId < numericId) {
+    state.lastNodeId = numericId
+  }
+}
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
@@ -140,36 +160,23 @@ export interface GraphAddOptions {
   dragEvent?: MouseEvent
 }
 
-export interface GroupNodeConfigEntry {
-  input?: Record<string, { name?: string; visible?: boolean }>
-  output?: Record<number, { name?: string; visible?: boolean }>
-}
-
-export interface GroupNodeWorkflowData {
-  external: (number | string)[][]
-  links: SerialisedLLinkArray[]
-  nodes: {
-    index?: number
-    type?: string
-    title?: string
-    inputs?: unknown[]
-    outputs?: unknown[]
-    widgets_values?: unknown[]
-  }[]
-  config?: Record<number, GroupNodeConfigEntry>
-}
-
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
-  groupNodes?: Record<string, GroupNodeWorkflowData>
 }
 
 export interface BaseLGraph {
   /** The root graph. */
   readonly rootGraph: LGraph
+}
+
+function fireNodeRemovalLifecycle(node: LGraphNode): void {
+  const graph: LGraph | null = node.graph
+  graph?.events.dispatch('node:before-removed', { node })
+  node.onRemoved?.()
+  graph?.onNodeRemoved?.(node)
 }
 
 /**
@@ -185,6 +192,15 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
+
+  /** @internal */
+  static proxyWidgetMigrationFlush?: (
+    hostNode: SubgraphNode,
+    nodeData: ISerialisedNode | undefined
+  ) => void
+
+  /** @internal */
+  static autoExposePreviewNodes?: (hostNode: SubgraphNode) => void
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -332,16 +348,16 @@ export class LGraph
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
   onTrigger?: LGraphTriggerHandler
+  /**
+   * @deprecated Assign a listener to {@link LGraphCanvas.onBeforeChange} instead.
+   * This graph-level hook will be removed in a future version.
+   */
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
-  onGetNodeMenuOptions?(
-    options: (IContextMenuValue<unknown> | null)[],
-    node: LGraphNode
-  ): void
 
   // @ts-expect-error - Private property type needs fixing
   private _input_nodes?: LGraphNode[]
@@ -373,7 +389,7 @@ export class LGraph
 
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
-      usePromotionStore().clearGraph(graphId)
+      usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
     }
 
@@ -394,8 +410,7 @@ export class LGraph
     // safe clear
     if (this._nodes) {
       for (const _node of this._nodes) {
-        _node.onRemoved?.()
-        this.onNodeRemoved?.(_node)
+        fireNodeRemovalLifecycle(_node)
       }
     }
 
@@ -640,8 +655,8 @@ export class LGraph
     const S: LGraphNode[] = []
     const M: Dictionary<LGraphNode> = {}
     // to avoid repeating links
-    const visited_links: Record<NodeId, boolean> = {}
-    const remaining_links: Record<NodeId, number> = {}
+    const visited_links: Record<SerializedNodeId, boolean> = {}
+    const remaining_links: Record<SerializedNodeId, number> = {}
 
     // search for the nodes without inputs (starting nodes)
     for (const node of this._nodes) {
@@ -956,12 +971,13 @@ export class LGraph
       return
     }
 
-    // nodes
-    if (node.id != -1 && this._nodes_by_id[node.id] != null) {
+    node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
+
+    if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
-      node.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++state.lastNodeId
+      node.id = nextNodeId(state)
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
@@ -969,14 +985,10 @@ export class LGraph
     }
 
     // give him an id
-    if (LiteGraph.use_uuids) {
-      if (node.id == null || node.id == -1) node.id = LiteGraph.uuidv4()
+    if (node.id == null || node.id === UNASSIGNED_NODE_ID) {
+      node.id = nextNodeId(state)
     } else {
-      if (node.id == null || node.id == -1) {
-        node.id = ++state.lastNodeId
-      } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
-        state.lastNodeId = node.id
-      }
+      syncLastNodeId(state, node.id)
     }
 
     // Set ghost flag before registration so VueNodeData picks it up
@@ -1058,6 +1070,8 @@ export class LGraph
     // sure? - almost sure is wrong
     this.beforeChange()
 
+    this.events.dispatch('node:before-removed', { node })
+
     const { inputs, outputs } = node
 
     // disconnect inputs
@@ -1093,10 +1107,7 @@ export class LGraph
       )
 
       if (!hasRemainingReferences) {
-        forEachNode(node.subgraph, (innerNode) => {
-          innerNode.onRemoved?.()
-          innerNode.graph?.onNodeRemoved?.(innerNode)
-        })
+        forEachNode(node.subgraph, fireNodeRemovalLifecycle)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1141,7 +1152,9 @@ export class LGraph
    * Returns a node by its id.
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
-    return id != null ? this._nodes_by_id[id] : null
+    return id != null && id !== UNASSIGNED_NODE_ID
+      ? this._nodes_by_id[id]
+      : null
   }
 
   /**
@@ -1337,18 +1350,11 @@ export class LGraph
   ): void
   trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
-    // Convert to discriminated union format for typed handlers
-    const validEventTypes = new Set([
-      'node:slot-links:changed',
-      'node:slot-errors:changed',
-      'node:property:changed',
-      'node:slot-label:changed'
-    ])
+    if (!isLGraphTriggerAction(action)) return
+    if (!param || typeof param !== 'object') return
 
-    if (validEventTypes.has(action) && param && typeof param === 'object') {
-      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
-    }
-    // Don't handle unknown events - just ignore them
+    this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+    this.events.dispatch(action, param as never)
   }
 
   /** @todo Clean up - never implemented. */
@@ -1371,7 +1377,12 @@ export class LGraph
 
   // used for undo, called before any change is made to the graph
   beforeChange(info?: LGraphNode): void {
-    this.onBeforeChange?.(this, info)
+    if (this.onBeforeChange) {
+      warnDeprecated(
+        'LGraph.onBeforeChange is deprecated and will be removed in a future version. Assign a listener to LGraphCanvas.onBeforeChange instead.'
+      )
+      this.onBeforeChange(this, info)
+    }
     this.canvasAction((c) => c.onBeforeChange?.(this))
   }
 
@@ -1409,7 +1420,7 @@ export class LGraph
     this.floatingLinksInternal.set(link.id, link)
 
     const slot =
-      link.target_id !== -1
+      link.target_id !== UNASSIGNED_NODE_ID
         ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
         : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
@@ -1432,7 +1443,7 @@ export class LGraph
     this.floatingLinksInternal.delete(link.id)
 
     const slot =
-      link.target_id !== -1
+      link.target_id !== UNASSIGNED_NODE_ID
         ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
         : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
@@ -1640,7 +1651,9 @@ export class LGraph
       const node = this.getNodeById(sampleLink.target_id)
       const keepId = selectSurvivorLink(ids, node)
 
-      purgeOrphanedLinks(ids, keepId, this._links, (id) => this.getNodeById(id))
+      purgeOrphanedLinks(ids, keepId, this._links, (id) =>
+        this.getNodeById(toNodeId(id))
+      )
       repairInputLinks(ids, keepId, node)
     }
   }
@@ -1670,20 +1683,14 @@ export class LGraph
 
     // Record state before conversion for proper undo support
     this.beforeChange()
+    this.canvasAction((c) => c.emitBeforeChange())
 
     try {
-      function extractNodes(item: Positionable): Positionable[] {
-        if (!(item instanceof LGraphNode) || !item.convertToNodes) return [item]
-
-        const innerNodes = item.convertToNodes()
-        for (const innerNode of innerNodes) innerNode.updateArea()
-        return innerNodes
-      }
-      const processedItems = new Set([...items].flatMap(extractNodes))
-      return this._convertToSubgraphImpl(processedItems)
+      return this._convertToSubgraphImpl(items)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
+      this.canvasAction((c) => c.emitAfterChange())
     }
   }
 
@@ -1914,13 +1921,6 @@ export class LGraph
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
 
-    // Repair ancestor promotions: when nodes are packed into a nested
-    // subgraph, any host SubgraphNode whose proxyWidgets referenced the
-    // moved nodes must be repointed to chain through the new nested node.
-    if (!this.isRootGraph) {
-      this._repointAncestorPromotions(nodes, subgraphNode as SubgraphNode)
-    }
-
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
         new CustomEvent('subgraph-converted', {
@@ -1931,75 +1931,6 @@ export class LGraph
     )
 
     return { subgraph, node: subgraphNode as SubgraphNode }
-  }
-
-  /**
-   * After packing nodes into a nested subgraph, repoint any ancestor
-   * SubgraphNode promotions that referenced the moved nodes so they
-   * chain through the newly created nested SubgraphNode.
-   */
-  private _repointAncestorPromotions(
-    movedNodes: Set<LGraphNode>,
-    nestedSubgraphNode: SubgraphNode
-  ): void {
-    const movedNodeIds = new Set([...movedNodes].map((n) => String(n.id)))
-    const store = usePromotionStore()
-    const nestedNodeId = String(nestedSubgraphNode.id)
-    const graphId = this.rootGraph.id
-    const nestedEntries = store.getPromotions(graphId, nestedSubgraphNode.id)
-    const nextNestedEntries = [...nestedEntries]
-    const nestedEntryKeys = new Set(
-      nestedEntries.map((entry) => makePromotionEntryKey(entry))
-    )
-    const hostUpdates: Array<{
-      node: SubgraphNode
-      entries: PromotedWidgetSource[]
-    }> = []
-
-    // Find all SubgraphNode instances that host `this` subgraph.
-    // They live in any graph and have `type === this.id`.
-    const allGraphs: LGraph[] = [
-      this.rootGraph,
-      ...this.rootGraph._subgraphs.values()
-    ]
-    for (const graph of allGraphs) {
-      for (const node of graph._nodes) {
-        if (!node.isSubgraphNode() || node.type !== this.id) continue
-
-        const entries = store.getPromotions(graphId, node.id)
-        const movedEntries = entries.filter((entry) =>
-          movedNodeIds.has(entry.sourceNodeId)
-        )
-        if (movedEntries.length === 0) continue
-
-        for (const entry of movedEntries) {
-          const key = makePromotionEntryKey(entry)
-          if (nestedEntryKeys.has(key)) continue
-          nestedEntryKeys.add(key)
-          nextNestedEntries.push(entry)
-        }
-
-        const nextEntries = entries.map((entry) => {
-          if (!movedNodeIds.has(entry.sourceNodeId)) return entry
-          return {
-            sourceNodeId: nestedNodeId,
-            sourceWidgetName: entry.sourceWidgetName,
-            disambiguatingSourceNodeId:
-              entry.disambiguatingSourceNodeId ?? entry.sourceNodeId
-          }
-        })
-
-        hostUpdates.push({ node, entries: nextEntries })
-      }
-    }
-
-    if (nextNestedEntries.length !== nestedEntries.length)
-      store.setPromotions(graphId, nestedSubgraphNode.id, nextNestedEntries)
-
-    for (const { node, entries } of hostUpdates) {
-      store.setPromotions(graphId, node.id, entries)
-      node.rebuildInputWidgetBindings()
-    }
   }
 
   unpackSubgraph(
@@ -2063,9 +1994,10 @@ export class LGraph
         }
       }
 
-      nodeIdMap.set(n_info.id, ++this.last_node_id)
-      node.id = this.last_node_id
-      n_info.id = this.last_node_id
+      const newNodeId = nextNodeId(this.state)
+      nodeIdMap.set(toNodeId(n_info.id), newNodeId)
+      node.id = newNodeId
+      n_info.id = newNodeId
 
       // Strip links from serialized data before configure to prevent
       // onConnectionsChange from resolving subgraph-internal link IDs
@@ -2141,7 +2073,10 @@ export class LGraph
         link.origin_slot = outerLink.origin_slot
         externalParentId = outerLink.parentId
       } else {
-        const origin_id = nodeIdMap.get(link.origin_id)
+        const origin_id =
+          link.origin_id === UNASSIGNED_NODE_ID
+            ? undefined
+            : nodeIdMap.get(link.origin_id)
         if (!origin_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2166,7 +2101,10 @@ export class LGraph
         }
         continue
       } else {
-        const target_id = nodeIdMap.get(link.target_id)
+        const target_id =
+          link.target_id === UNASSIGNED_NODE_ID
+            ? undefined
+            : nodeIdMap.get(link.target_id)
         if (!target_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2204,7 +2142,9 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink.tid]
+        if (newLink.tid === UNASSIGNED_NODE_ID) continue
+        const tnode = this.getNodeById(newLink.tid)
+        if (!tnode) continue
         created = this.inputNode.slots[newLink.oslot].connect(
           tnode.inputs[newLink.tslot],
           tnode
@@ -2214,17 +2154,23 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink.oid]
+        if (newLink.oid === UNASSIGNED_NODE_ID) continue
+        const tnode = this.getNodeById(newLink.oid)
+        if (!tnode) continue
         created = this.outputNode.slots[newLink.tslot].connect(
           tnode.outputs[newLink.oslot],
           tnode
         )
       } else {
-        created = this._nodes_by_id[newLink.oid].connect(
-          newLink.oslot,
-          this._nodes_by_id[newLink.tid],
-          newLink.tslot
+        if (
+          newLink.oid === UNASSIGNED_NODE_ID ||
+          newLink.tid === UNASSIGNED_NODE_ID
         )
+          continue
+        const originNode = this.getNodeById(newLink.oid)
+        const targetNode = this.getNodeById(newLink.tid)
+        if (!originNode || !targetNode) continue
+        created = originNode.connect(newLink.oslot, targetNode, newLink.tslot)
       }
       if (!created) {
         console.error('Failed to create link')
@@ -2261,7 +2207,7 @@ export class LGraph
         continue
       }
       let instance: Reroute | LLink | undefined = linkInstance
-      let parentId: RerouteId | undefined = undefined
+      let parentId: RerouteId | undefined
       if (newLink.externalFirst) {
         parentId = newLink.eparent
         //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
@@ -2428,11 +2374,9 @@ export class LGraph
     Required<Pick<SerialisableGraph, 'nodes' | 'groups' | 'extra'>> {
     const { id, revision, config, state } = this
 
-    const nodeList =
-      !LiteGraph.use_uuids && options?.sortNodes
-        ? // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
-          [...this._nodes].sort((a, b) => a.id - b.id)
-        : this._nodes
+    const nodeList = options?.sortNodes
+      ? [...this._nodes].sort((a, b) => Number(a.id) - Number(b.id))
+      : this._nodes
 
     const nodes = nodeList.map((node) => node.serialize())
     const groups = this._groups.map((x) => x.serialize())
@@ -2602,11 +2546,13 @@ export class LGraph
       if (subgraphs) {
         const reservedNodeIds = new Set<number>()
         for (const node of this._nodes) {
-          if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+          const id = numericNodeId(node.id)
+          if (id !== null) reservedNodeIds.add(id)
         }
         for (const sg of this.subgraphs.values()) {
           for (const node of sg.nodes) {
-            if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+            const id = numericNodeId(node.id)
+            if (id !== null) reservedNodeIds.add(id)
           }
         }
         for (const n of nodesData ?? []) {
@@ -2636,7 +2582,7 @@ export class LGraph
       }
 
       let error = false
-      const nodeDataMap = new Map<NodeId, ISerialisedNode>()
+      const nodeDataMap = new Map<SerializedNodeId, ISerialisedNode>()
 
       // create nodes
       this._nodes = []
@@ -2657,7 +2603,7 @@ export class LGraph
           }
 
           // id it or it will create a new id
-          node.id = n_info.id
+          node.id = toNodeId(n_info.id)
           // add before configure, otherwise configure cannot create links
           this.add(node, true)
           nodeDataMap.set(node.id, n_info)
@@ -2665,7 +2611,7 @@ export class LGraph
 
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          const node = this.getNodeById(id)
+          const node = this.getNodeById(toNodeId(id))
           node?.configure(nodeData)
 
           if (LiteGraph.alwaysSnapToGrid && node) {
@@ -2722,6 +2668,25 @@ export class LGraph
 
       this.updateExecutionOrder()
 
+      for (const node of this._nodes) {
+        if (!(node instanceof SubgraphNode)) continue
+        if (node.properties?.proxyWidgets !== undefined) {
+          const nodeData = nodeDataMap.get(node.id)
+          if (LGraph.proxyWidgetMigrationFlush) {
+            LGraph.proxyWidgetMigrationFlush(node, nodeData)
+          } else if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+            console.warn(
+              '[SubgraphNode] Legacy proxyWidgets were not migrated because no migration flush hook is wired',
+              {
+                hostNodeId: node.id,
+                proxyWidgets: node.properties.proxyWidgets
+              }
+            )
+          }
+        }
+        LGraph.autoExposePreviewNodes?.(node)
+      }
+
       this.onConfigure?.(data)
       this.incrementVersion()
 
@@ -2760,24 +2725,24 @@ export class LGraph
       const remappedIds = new Map<NodeId, NodeId>()
 
       for (const node of graph._nodes) {
-        if (typeof node.id !== 'number') continue
+        const currentId = numericNodeId(node.id)
+        if (currentId === null) continue
 
-        if (usedNodeIds.has(node.id)) {
+        if (usedNodeIds.has(currentId)) {
           const oldId = node.id
           while (usedNodeIds.has(++state.lastNodeId));
-          const newId = state.lastNodeId
+          const newId = toNodeId(state.lastNodeId)
           delete graph._nodes_by_id[oldId]
           node.id = newId
           graph._nodes_by_id[newId] = node
-          usedNodeIds.add(newId)
+          usedNodeIds.add(state.lastNodeId)
           remappedIds.set(oldId, newId)
           console.warn(
             `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
           )
         } else {
-          usedNodeIds.add(node.id as number)
-          if ((node.id as number) > state.lastNodeId)
-            state.lastNodeId = node.id as number
+          usedNodeIds.add(currentId)
+          if (currentId > state.lastNodeId) state.lastNodeId = currentId
         }
       }
 
@@ -2970,7 +2935,7 @@ export class Subgraph
 
   private _repairSlotLinkIds(
     linkIds: LinkId[],
-    ioNodeId: number,
+    ioNodeId: NodeId,
     slotIndex: number
   ): void {
     const repaired = linkIds.map((id) =>
@@ -2984,7 +2949,7 @@ export class Subgraph
   }
 
   private _findLinkBySlot(
-    nodeId: number,
+    nodeId: NodeId,
     slotIndex: number
   ): LLink | undefined {
     for (const link of this._links.values()) {
@@ -3188,10 +3153,16 @@ function patchLinkNodeIds(
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const link of links.values()) {
-    const newOrigin = remappedIds.get(link.origin_id)
+    const newOrigin =
+      link.origin_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.origin_id)
     if (newOrigin !== undefined) link.origin_id = newOrigin
 
-    const newTarget = remappedIds.get(link.target_id)
+    const newTarget =
+      link.target_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.target_id)
     if (newTarget !== undefined) link.target_id = newTarget
   }
 }

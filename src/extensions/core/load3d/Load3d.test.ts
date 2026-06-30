@@ -2,20 +2,27 @@ import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
-import type { GizmoMode } from '@/extensions/core/load3d/interfaces'
+import type {
+  CameraState,
+  GizmoMode
+} from '@/extensions/core/load3d/interfaces'
 
 const {
   cloneSkinnedMock,
   exportGLBMock,
   exportOBJMock,
   exportSTLMock,
-  exportFBXMock
+  exportFBXMock,
+  exportDirectMock,
+  detectFormatFromURLMock
 } = vi.hoisted(() => ({
   cloneSkinnedMock: vi.fn(),
   exportGLBMock: vi.fn(),
   exportOBJMock: vi.fn(),
   exportSTLMock: vi.fn(),
-  exportFBXMock: vi.fn()
+  exportFBXMock: vi.fn(),
+  exportDirectMock: vi.fn(),
+  detectFormatFromURLMock: vi.fn()
 }))
 
 vi.mock('three/examples/jsm/utils/SkeletonUtils.js', () => ({
@@ -27,7 +34,9 @@ vi.mock('@/extensions/core/load3d/ModelExporter', () => ({
     exportGLB: exportGLBMock,
     exportOBJ: exportOBJMock,
     exportSTL: exportSTLMock,
-    exportFBX: exportFBXMock
+    exportFBX: exportFBXMock,
+    exportDirect: exportDirectMock,
+    detectFormatFromURL: detectFormatFromURLMock
   }
 }))
 
@@ -36,6 +45,7 @@ type GizmoStub = {
   setMode: ReturnType<typeof vi.fn>
   reset: ReturnType<typeof vi.fn>
   applyTransform: ReturnType<typeof vi.fn>
+  applyModelTransform: ReturnType<typeof vi.fn>
   getTransform: ReturnType<typeof vi.fn>
   setupForModel: ReturnType<typeof vi.fn>
   updateCamera: ReturnType<typeof vi.fn>
@@ -70,6 +80,7 @@ function makeGizmoStub(): GizmoStub {
     setMode: vi.fn(),
     reset: vi.fn(),
     applyTransform: vi.fn(),
+    applyModelTransform: vi.fn(),
     getTransform: vi.fn(() => ({
       position: { x: 0, y: 0, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
@@ -198,6 +209,19 @@ describe('Load3d', () => {
       ctx.load3d.applyGizmoTransform(pos, rot)
 
       expect(ctx.gizmo.applyTransform).toHaveBeenCalledWith(pos, rot, undefined)
+    })
+
+    it('applyModelTransform forwards the full position/quaternion/scale payload', () => {
+      const transform = {
+        position: { x: 1, y: 2, z: 3 },
+        quaternion: { x: 0.1, y: 0.2, z: 0.3, w: 0.4 },
+        scale: { x: 2, y: 2, z: 2 }
+      }
+
+      ctx.load3d.applyModelTransform(transform)
+
+      expect(ctx.gizmo.applyModelTransform).toHaveBeenCalledWith(transform)
+      expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
 
     it('getGizmoTransform returns the gizmoManager transform', () => {
@@ -769,6 +793,100 @@ describe('Load3d', () => {
     })
   })
 
+  describe('camera framing across reloads', () => {
+    function setupLoadInternal() {
+      const getCameraState = vi.fn<() => CameraState>(() => ({
+        position: new THREE.Vector3(1, 2, 3),
+        target: new THREE.Vector3(),
+        zoom: 1,
+        cameraType: 'perspective'
+      }))
+      const setCameraState = vi.fn()
+      const getCurrentCameraType = vi.fn(() => 'perspective' as const)
+      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      Object.assign(ctx.load3d, {
+        cameraManager: {
+          ...ctx.cameraManager,
+          getCameraState,
+          setCameraState,
+          getCurrentCameraType
+        },
+        controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
+        loaderManager: { loadModel: loaderLoadModel },
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: new THREE.Group(),
+          originalModel: null
+        },
+        animationManager: {
+          ...ctx.animationManager,
+          setupModelAnimations: vi.fn()
+        },
+        handleResize: vi.fn(),
+        hasLoadedModel: false
+      })
+      return { getCameraState, setCameraState, getCurrentCameraType }
+    }
+
+    it('first load uses default framing', async () => {
+      const mocks = setupLoadInternal()
+
+      await ctx.load3d.loadModel('a.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+      expect(mocks.setCameraState).not.toHaveBeenCalled()
+    })
+
+    it('subsequent load preserves the user-adjusted camera framing', async () => {
+      const mocks = setupLoadInternal()
+
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).not.toHaveBeenCalled()
+      expect(mocks.getCameraState).toHaveBeenCalledOnce()
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
+    })
+
+    it('toggles to the saved camera type before restoring state when types differ', async () => {
+      const mocks = setupLoadInternal()
+      mocks.getCameraState.mockImplementation(() => ({
+        position: new THREE.Vector3(0, 0, 5),
+        target: new THREE.Vector3(),
+        zoom: 1,
+        cameraType: 'orthographic'
+      }))
+      // First load (active type stays perspective per the default mock).
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.toggleCamera as ReturnType<typeof vi.fn>).mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.toggleCamera).toHaveBeenCalledWith(
+        'orthographic'
+      )
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
+    })
+
+    it('resets hasLoadedModel on clearModel so the next load uses default framing', async () => {
+      const mocks = setupLoadInternal()
+      await ctx.load3d.loadModel('a.glb')
+      ctx.load3d.clearModel()
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }
@@ -1058,6 +1176,57 @@ describe('Load3d', () => {
 
       await expect(ctx.load3d.exportModel('xyz')).rejects.toThrow(
         'Unsupported export format: xyz'
+      )
+    })
+
+    it('downloads the source file directly for direct-export formats', async () => {
+      exportDirectMock.mockReset()
+      detectFormatFromURLMock.mockReturnValue('ply')
+      const model = new THREE.Object3D()
+      setupForExport({
+        currentModel: model,
+        originalFileName: 'cloud',
+        originalURL: 'http://example.com/api/view?filename=cloud.ply'
+      })
+
+      await ctx.load3d.exportModel('ply')
+
+      expect(exportDirectMock).toHaveBeenCalledWith(
+        'http://example.com/api/view?filename=cloud.ply',
+        'cloud.ply',
+        'ply'
+      )
+      expect(exportGLBMock).not.toHaveBeenCalled()
+      expect(exportOBJMock).not.toHaveBeenCalled()
+      expect(cloneSkinnedMock).not.toHaveBeenCalled()
+    })
+
+    it('refuses a direct export when the requested format differs from the source', async () => {
+      exportDirectMock.mockReset()
+      detectFormatFromURLMock.mockReturnValue('spz')
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      setupForExport({
+        currentModel: new THREE.Object3D(),
+        originalFileName: 'scene',
+        originalURL: 'http://example.com/api/view?filename=scene.spz'
+      })
+
+      await expect(ctx.load3d.exportModel('ply')).rejects.toThrow(
+        'Cannot export ply without converting from the loaded spz source'
+      )
+      expect(exportDirectMock).not.toHaveBeenCalled()
+    })
+
+    it('getSourceFormat derives the extension from the original URL', () => {
+      detectFormatFromURLMock.mockReturnValue('spz')
+      setupForExport({
+        currentModel: new THREE.Object3D(),
+        originalURL: 'http://example.com/api/view?filename=scene.spz'
+      })
+
+      expect(ctx.load3d.getSourceFormat()).toBe('spz')
+      expect(detectFormatFromURLMock).toHaveBeenCalledWith(
+        'http://example.com/api/view?filename=scene.spz'
       )
     })
   })

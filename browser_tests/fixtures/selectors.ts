@@ -10,6 +10,7 @@ export const TestIds = {
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
+    workflowsRefreshButton: 'workflows-refresh-button',
     modeToggle: 'mode-toggle'
   },
   tree: {
@@ -37,13 +38,14 @@ export const TestIds = {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
-    confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
+    missingNodePackExpand: 'missing-node-pack-expand',
+    missingNodePackCount: 'missing-node-pack-count',
     errorCardFindOnGithub: 'error-card-find-on-github',
     errorCardCopy: 'error-card-copy',
     errorDialog: 'error-dialog',
@@ -53,25 +55,24 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    errorGroupDisplayMessage: 'error-group-display-message',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
+    missingModelImport: 'missing-model-import',
+    missingModelImportableRows: 'missing-model-importable-rows',
     missingModelLocate: 'missing-model-locate',
-    missingModelCopyName: 'missing-model-copy-name',
-    missingModelCopyUrl: 'missing-model-copy-url',
+    missingModelReferenceCount: 'missing-model-reference-count',
+    missingModelUnsupportedSection:
+      'missing-model-import-not-supported-section',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',
-    missingModelRefresh: 'missing-model-refresh',
-    missingModelImportUnsupported: 'missing-model-import-unsupported',
+    missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
-    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
-    missingMediaLibrarySelect: 'missing-media-library-select',
-    missingMediaStatusCard: 'missing-media-status-card',
-    missingMediaConfirmButton: 'missing-media-confirm-button',
-    missingMediaCancelButton: 'missing-media-cancel-button',
     missingMediaLocateButton: 'missing-media-locate-button',
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
@@ -111,6 +112,10 @@ export const TestIds = {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors'
   },
+  assets: {
+    browserModal: 'asset-browser-modal',
+    card: 'asset-card'
+  },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
     iconEye: 'icon-eye',
@@ -128,14 +133,17 @@ export const TestIds = {
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
-    slotConnectionDot: 'slot-connection-dot'
+    slotConnectionDot: 'slot-connection-dot',
+    imageGrid: 'image-grid'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red'
+    colorRed: 'red',
+    convertSubgraph: 'convert-to-subgraph-button',
+    bypass: 'bypass-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'
@@ -152,6 +160,7 @@ export const TestIds = {
     widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
+    valueControl: 'value-control',
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',
@@ -300,12 +309,3 @@ export const TestIds = {
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-export type TestId<K extends keyof typeof TestIds> = Exclude<
-  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
-  (...args: never[]) => string
->
-
-export type TestIdValue = {
-  [K in keyof typeof TestIds]: TestId<K>
-}[keyof typeof TestIds]

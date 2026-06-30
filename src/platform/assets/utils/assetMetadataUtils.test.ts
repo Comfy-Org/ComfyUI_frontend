@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -10,18 +10,32 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
+  getAssetMetadataDimensions,
   getAssetModelType,
   getAssetSourceUrl,
+  getAssetStoredFilename,
   getAssetTriggerPhrases,
   getAssetUserDescription,
-  getSourceName
+  getSourceName,
+  resolveDisplayImageDimensions
 } from '@/platform/assets/utils/assetMetadataUtils'
+
+const { isCloudRef } = vi.hoisted(() => ({
+  isCloudRef: { value: true }
+}))
+
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  get isCloud() {
+    return isCloudRef.value
+  }
+}))
 
 describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {
     id: 'test-id',
     name: 'test-model',
-    asset_hash: 'hash123',
+    hash: 'hash123',
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
@@ -295,6 +309,28 @@ describe('assetMetadataUtils', () => {
     })
   })
 
+  describe('getAssetStoredFilename', () => {
+    afterEach(() => {
+      isCloudRef.value = true
+    })
+
+    it('returns the content hash on cloud when present', () => {
+      isCloudRef.value = true
+      expect(getAssetStoredFilename(mockAsset)).toBe('hash123')
+    })
+
+    it('falls back to name on cloud when no hash is present', () => {
+      isCloudRef.value = true
+      const asset = { ...mockAsset, hash: undefined }
+      expect(getAssetStoredFilename(asset)).toBe('test-model')
+    })
+
+    it('returns name on OSS regardless of hash', () => {
+      isCloudRef.value = false
+      expect(getAssetStoredFilename(mockAsset)).toBe('test-model')
+    })
+  })
+
   describe('getAssetFilename', () => {
     it('returns user_metadata.filename when present', () => {
       const asset = {
@@ -381,6 +417,126 @@ describe('assetMetadataUtils', () => {
         display_name: 'pretty.png'
       }
       expect(getAssetCardTitle(asset)).toBe('pretty.png')
+    })
+  })
+
+  describe('getAssetMetadataDimensions', () => {
+    it('returns dimensions when width/height are positive integers', () => {
+      const asset = { ...mockAsset, metadata: { width: 1024, height: 768 } }
+      expect(getAssetMetadataDimensions(asset)).toEqual({
+        width: 1024,
+        height: 768
+      })
+    })
+
+    it.for([
+      { name: 'NaN width', width: Number.NaN, height: 768 },
+      {
+        name: 'Infinity height',
+        width: 1024,
+        height: Number.POSITIVE_INFINITY
+      },
+      { name: 'zero width', width: 0, height: 768 },
+      { name: 'negative height', width: 1024, height: -1 },
+      { name: 'fractional width', width: 1024.5, height: 768 },
+      { name: 'string width', width: '1024', height: 768 },
+      { name: 'missing width', width: undefined, height: 768 }
+    ])('returns undefined for invalid shape: $name', ({ width, height }) => {
+      const asset = { ...mockAsset, metadata: { width, height } }
+      expect(getAssetMetadataDimensions(asset)).toBeUndefined()
+    })
+
+    it('returns undefined when metadata is absent', () => {
+      expect(getAssetMetadataDimensions(mockAsset)).toBeUndefined()
+    })
+
+    it('returns undefined when asset itself is undefined', () => {
+      expect(getAssetMetadataDimensions(undefined)).toBeUndefined()
+    })
+  })
+
+  describe('resolveDisplayImageDimensions', () => {
+    const rendered = { width: 512, height: 288 }
+
+    it('prefers server metadata dimensions over the rendered natural size', () => {
+      const asset = { ...mockAsset, metadata: { width: 1920, height: 1080 } }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual({
+        width: 1920,
+        height: 1080
+      })
+    })
+
+    it('prefers metadata even when a downscaled thumbnail was rendered', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp?res=512',
+        preview_url: 'https://cdn.example/original.webp',
+        metadata: { width: 1920, height: 1080 }
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual({
+        width: 1920,
+        height: 1080
+      })
+    })
+
+    it('falls back to the rendered natural size when no thumbnail was shown (original served)', () => {
+      const asset = { ...mockAsset }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual(rendered)
+    })
+
+    it('falls back to the rendered natural size on OSS where thumbnail_url equals preview_url (full-res)', () => {
+      const fullResUrl =
+        'http://localhost:8188/view?filename=output.png&type=output'
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: fullResUrl,
+        preview_url: fullResUrl
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual(rendered)
+    })
+
+    it('returns undefined (no label) when metadata is absent and a distinct downscaled thumbnail was rendered', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp?res=512',
+        preview_url: 'https://cdn.example/original.webp'
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
+    })
+
+    it('suppresses the fallback for an invalid metadata shape when a distinct thumbnail was rendered', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp?res=512',
+        preview_url: 'https://cdn.example/original.webp',
+        metadata: { width: 0, height: 1080 }
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
+    })
+
+    it('suppresses the fallback when thumbnail_url is present but preview_url is absent', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp'
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
+    })
+
+    it('falls back to the rendered natural size when metadata is invalid and no thumbnail guard applies', () => {
+      const asset = { ...mockAsset, metadata: { width: 0, height: 1080 } }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual(rendered)
+    })
+
+    it('returns undefined when neither metadata nor a rendered size is available', () => {
+      expect(
+        resolveDisplayImageDimensions(mockAsset, undefined)
+      ).toBeUndefined()
+    })
+
+    it('returns the rendered size when asset is undefined (no thumbnail to guard against)', () => {
+      expect(resolveDisplayImageDimensions(undefined, rendered)).toEqual(
+        rendered
+      )
     })
   })
 })

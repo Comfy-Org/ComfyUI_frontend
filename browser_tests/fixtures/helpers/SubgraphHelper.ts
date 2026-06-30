@@ -7,12 +7,16 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position, Size } from '@e2e/fixtures/types'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
+import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
@@ -241,6 +245,17 @@ export class SubgraphHelper {
     return new SubgraphSlotReference('output', slotName || '', this.comfyPage)
   }
 
+  async getInputBounds(): Promise<Position & Size> {
+    return await this.comfyPage.page.evaluate(() => {
+      const graph = app!.canvas.graph as Subgraph
+      const inputNode = graph.inputNode
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
+      const width = inputNode.size[0] * app!.canvas.ds.scale
+      const height = inputNode.size[1] * app!.canvas.ds.scale
+      return { x, y, width, height }
+    })
+  }
+
   /**
    * Connect a regular node output to a subgraph input.
    * This creates a new input slot on the subgraph if targetInputName is not provided.
@@ -411,39 +426,9 @@ export class SubgraphHelper {
   }
 
   async getHostPromotedTupleSnapshot(): Promise<
-    { hostNodeId: string; promotedWidgets: [string, string][] }[]
+    { hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]
   > {
-    return this.page.evaluate(() => {
-      const graph = window.app!.canvas.graph!
-      return graph._nodes
-        .filter(
-          (node) =>
-            typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
-        )
-        .map((node) => {
-          const proxyWidgets = Array.isArray(node.properties?.proxyWidgets)
-            ? node.properties.proxyWidgets
-            : []
-          const promotedWidgets = proxyWidgets
-            .filter(
-              (entry): entry is [string, string] =>
-                Array.isArray(entry) &&
-                entry.length >= 2 &&
-                typeof entry[0] === 'string' &&
-                typeof entry[1] === 'string'
-            )
-            .map(
-              ([interiorNodeId, widgetName]) =>
-                [interiorNodeId, widgetName] as [string, string]
-            )
-
-          return {
-            hostNodeId: String(node.id),
-            promotedWidgets
-          }
-        })
-        .sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
-    })
+    return getAllHostPromotedWidgets(this.comfyPage)
   }
 
   /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */
@@ -565,6 +550,7 @@ export class SubgraphHelper {
   }
 
   static getTextSlotPosition(page: Page, nodeId: string) {
+    const localNodeId = toNodeId(nodeId)
     return page.evaluate((id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)
       if (!node) return null
@@ -581,7 +567,7 @@ export class SubgraphHelper {
         }
       }
       return null
-    }, nodeId)
+    }, localNodeId)
   }
 
   static async expectWidgetBelowHeader(
