@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { computedAsync, refDebounced } from '@vueuse/core'
+import {
+  computedAsync,
+  refDebounced,
+  unrefElement,
+  useEventListener
+} from '@vueuse/core'
 import Popover from 'primevue/popover'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
 import type {
   FilterOption,
@@ -14,7 +21,11 @@ import type {
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import { defaultSearcher, getDefaultSortOptions } from './shared'
+import {
+  DROPDOWN_PANEL_CLASS,
+  defaultSearcher,
+  getDefaultSortOptions
+} from './shared'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
@@ -102,6 +113,7 @@ const isOpen = defineModel<boolean>('isOpen', { default: false })
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
+const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
 const displayedSearchQuery = ref('')
@@ -204,6 +216,43 @@ const closeDropdown = ({ restoreFocus = false } = {}) => {
   if (restoreFocus) focusTrigger()
 }
 
+/**
+ * Dismiss on `pointerdown` rather than PrimeVue's default `click` (mouseup) so
+ * the dropdown closes the instant an outside press lands, and a focused inner
+ * scrollbar cannot swallow the first outside click. Presses on the trigger and
+ * on the menu's body-teleported sub-popovers (Sort / Ownership / Base-model)
+ * are excluded so they keep working instead of closing the parent.
+ */
+useEventListener(
+  window,
+  'pointerdown',
+  (event) => {
+    if (!isOpen.value) return
+    const menuEl = unrefElement(menuRef)
+    const triggerEl = triggerAnchorRef.value
+    const path = event.composedPath()
+    if (menuEl && path.includes(menuEl)) return
+    if (triggerEl && path.includes(triggerEl)) return
+    if (path.some(isInsideDropdownPanel)) return
+    closeDropdown()
+  },
+  { capture: true }
+)
+
+function isInsideDropdownPanel(target: EventTarget): boolean {
+  return (
+    target instanceof HTMLElement &&
+    target.classList.contains(DROPDOWN_PANEL_CLASS)
+  )
+}
+
+/**
+ * The popover is teleported to `document.body`, so canvas gestures (pan, zoom,
+ * box select — any input device) move the node while the popover stays put.
+ * Dismiss as soon as such a gesture begins.
+ */
+useDismissOnCanvasGesture(isOpen, () => closeDropdown())
+
 function handleFileChange(event: Event) {
   if (disabled) return
   const target = event.target
@@ -268,6 +317,11 @@ async function selectTopSearchResult() {
 function handleSearchEnter() {
   void selectTopSearchResult()
 }
+
+function showPicker() {
+  triggerRef.value!.showPicker()
+  closeDropdown()
+}
 </script>
 
 <template>
@@ -290,7 +344,7 @@ function handleSearchEnter() {
     />
     <Popover
       ref="popoverRef"
-      :dismissable="true"
+      :dismissable="false"
       :close-on-escape="true"
       unstyled
       :pt="{
@@ -304,12 +358,14 @@ function handleSearchEnter() {
       @hide="isOpen = false"
     >
       <FormDropdownMenu
+        ref="menuRef"
         v-model:filter-selected="filterSelected"
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
         v-model:ownership-selected="ownershipSelected"
         v-model:base-model-selected="baseModelSelected"
+        :uploadable
         :filter-options
         :sort-options
         :show-ownership-filter
@@ -326,6 +382,7 @@ function handleSearchEnter() {
         @close="closeDropdown"
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"
+        @show-picker="showPicker"
         @approach-end="emit('approach-end')"
       />
     </Popover>
