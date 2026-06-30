@@ -35,18 +35,24 @@ interface BadgeHitArea {
  */
 const hitAreas: BadgeHitArea[] = []
 
-interface PendingBadge {
-  link: LLink
-  startPos: Point
-  endPos: Point
+interface BadgeLayout {
+  badge: LGraphBadge
   color: string
+  width: number
+  outputSocket: Point
+  outputBadgeX: number
+  outputBadgeY: number
+  inputSocket: Point
+  inputBadgeX: number
+  inputBadgeY: number
 }
 
 /**
- * Badges queued during the link pass and drawn afterwards, so every badge sits
- * above the noodles (e.g. a hovered link's revealed curve). Reset each frame.
+ * Laid-out badges from the current link pass, painted after the noodles so the
+ * labels sit on top. Layout (positions + hit areas) happens at enqueue so a
+ * revealed link's noodle can attach to the badge tip; only painting is deferred.
  */
-const pendingBadges: PendingBadge[] = []
+const pendingBadges: BadgeLayout[] = []
 
 /** Links whose noodle is currently revealed (badge or socket hover). */
 const revealedLinkIds = new Set<LinkId>()
@@ -209,12 +215,90 @@ function freeBadgeCentreY(
   return centreY
 }
 
+function recordHitArea(
+  linkId: LinkId,
+  left: number,
+  centreY: number,
+  width: number
+): void {
+  hitAreas.push({
+    linkId,
+    x: left,
+    y: centreY - BADGE_HEIGHT / 2,
+    width,
+    height: BADGE_HEIGHT
+  })
+}
+
 /**
- * Draws a hidden link's two end badges — one just past the output socket, one
- * just before the input socket — both filled with the link/socket `color` and
- * joined to their socket by a short connector stub, and records their hit areas
- * for {@link queryLinkBadgeAtPoint}.
+ * Lays out a hidden link's two end badges — one just past the output socket, one
+ * just before the input socket — recording their hit areas. Returns the geometry
+ * to paint later, or `undefined` if the link has no badge text.
  */
+function layoutHiddenLinkBadges(
+  ctx: CanvasRenderingContext2D,
+  link: LLink,
+  startPos: Point,
+  endPos: Point,
+  color: string
+): BadgeLayout | undefined {
+  const text = linkBadgeText(link)
+  if (!text) return undefined
+
+  const badge = makeBadge(text, color)
+  const width = badge.getWidth(ctx)
+
+  const [outputSocketX, outputSocketY] = startPos
+  const outputBadgeX = outputSocketX + BADGE_GAP
+  const outputBadgeY = freeBadgeCentreY(outputBadgeX, outputSocketY, width)
+  recordHitArea(link.id, outputBadgeX, outputBadgeY, width)
+
+  const [inputSocketX, inputSocketY] = endPos
+  const inputBadgeX = inputSocketX - BADGE_GAP - width
+  const inputBadgeY = freeBadgeCentreY(inputBadgeX, inputSocketY, width)
+  recordHitArea(link.id, inputBadgeX, inputBadgeY, width)
+
+  return {
+    badge,
+    color,
+    width,
+    outputSocket: startPos,
+    outputBadgeX,
+    outputBadgeY,
+    inputSocket: endPos,
+    inputBadgeX,
+    inputBadgeY
+  }
+}
+
+/** Paints a laid-out badge pair: each socket's connector stub and its badge. */
+function drawBadgeLayout(ctx: CanvasRenderingContext2D, l: BadgeLayout): void {
+  drawConnectorStub(
+    ctx,
+    l.outputSocket,
+    [l.outputBadgeX + BADGE_CONNECT_INSET, l.outputBadgeY],
+    l.color
+  )
+  l.badge.draw(ctx, l.outputBadgeX, l.outputBadgeY - BADGE_HEIGHT / 2)
+
+  drawConnectorStub(
+    ctx,
+    l.inputSocket,
+    [l.inputBadgeX + l.width - BADGE_CONNECT_INSET, l.inputBadgeY],
+    l.color
+  )
+  l.badge.draw(ctx, l.inputBadgeX, l.inputBadgeY - BADGE_HEIGHT / 2)
+}
+
+/** The far edge of each badge, where a revealed link's noodle attaches. */
+function badgeTips(l: BadgeLayout): { outputTip: Point; inputTip: Point } {
+  return {
+    outputTip: [l.outputBadgeX + l.width, l.outputBadgeY],
+    inputTip: [l.inputBadgeX, l.inputBadgeY]
+  }
+}
+
+/** Lays out and immediately paints a hidden link's end badges. */
 export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
   link: LLink,
@@ -222,64 +306,30 @@ export function drawHiddenLinkBadges(
   endPos: Point,
   color: string
 ): void {
-  const text = linkBadgeText(link)
-  if (!text) return
-
-  const badge = makeBadge(text, color)
-  const width = badge.getWidth(ctx)
-
-  function placeBadge(left: number, centreY: number): void {
-    const top = centreY - BADGE_HEIGHT / 2
-    badge.draw(ctx, left, top)
-    hitAreas.push({
-      linkId: link.id,
-      x: left,
-      y: top,
-      width,
-      height: BADGE_HEIGHT
-    })
-  }
-
-  const [outputSocketX, outputSocketY] = startPos
-  const outputBadgeX = outputSocketX + BADGE_GAP
-  const outputBadgeY = freeBadgeCentreY(outputBadgeX, outputSocketY, width)
-  drawConnectorStub(
-    ctx,
-    [outputSocketX, outputSocketY],
-    [outputBadgeX + BADGE_CONNECT_INSET, outputBadgeY],
-    color
-  )
-  placeBadge(outputBadgeX, outputBadgeY)
-
-  const [inputSocketX, inputSocketY] = endPos
-  const inputBadgeX = inputSocketX - BADGE_GAP - width
-  const inputBadgeY = freeBadgeCentreY(inputBadgeX, inputSocketY, width)
-  drawConnectorStub(
-    ctx,
-    [inputSocketX, inputSocketY],
-    [inputBadgeX + width - BADGE_CONNECT_INSET, inputBadgeY],
-    color
-  )
-  placeBadge(inputBadgeX, inputBadgeY)
+  const layout = layoutHiddenLinkBadges(ctx, link, startPos, endPos, color)
+  if (layout) drawBadgeLayout(ctx, layout)
 }
 
 /**
- * Queues a hidden link's badges to be drawn once all noodles are rendered, so
- * the labels stay on top. Drawn by {@link drawPendingLinkBadges}.
+ * Lays out a hidden link's badges now — so its hit areas and tip positions are
+ * known — but defers painting to {@link drawPendingLinkBadges}, keeping labels
+ * above the noodles. Returns the badge tips a revealed link's noodle attaches to.
  */
 export function enqueueHiddenLinkBadges(
+  ctx: CanvasRenderingContext2D,
   link: LLink,
   startPos: Point,
   endPos: Point,
   color: string
-): void {
-  pendingBadges.push({ link, startPos, endPos, color })
+): { outputTip: Point; inputTip: Point } | undefined {
+  const layout = layoutHiddenLinkBadges(ctx, link, startPos, endPos, color)
+  if (!layout) return undefined
+  pendingBadges.push(layout)
+  return badgeTips(layout)
 }
 
-/** Draws every queued badge on top of the rendered links, then clears the queue. */
+/** Paints every queued badge on top of the rendered links, then clears the queue. */
 export function drawPendingLinkBadges(ctx: CanvasRenderingContext2D): void {
-  for (const { link, startPos, endPos, color } of pendingBadges) {
-    drawHiddenLinkBadges(ctx, link, startPos, endPos, color)
-  }
+  for (const layout of pendingBadges) drawBadgeLayout(ctx, layout)
   pendingBadges.length = 0
 }

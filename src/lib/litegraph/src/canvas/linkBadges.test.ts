@@ -144,20 +144,39 @@ describe('drawHiddenLinkBadges + queryLinkBadgeAtPoint', () => {
     expect(disjoint(a, b) && disjoint(b, c) && disjoint(a, c)).toBe(true)
   })
 
-  it('defers enqueued badges until the pending pass is flushed', () => {
+  it('lays badges out at enqueue but defers painting until the flush', () => {
     const ctx = mockCtx()
     enqueueHiddenLinkBadges(
+      ctx,
       new LLink(9, 'MODEL', 4, 0, 5, 0),
       [100, 100],
       [400, 200],
       '#cab8ff'
     )
 
-    // Enqueuing alone draws nothing — badges paint above the noodles later.
-    expect(queryLinkBadgeAtPoint(120, 100)).toBeUndefined()
+    // Hit-testable immediately, but the badge is not painted until the flush.
+    expect(queryLinkBadgeAtPoint(120, 100)).toBe(9)
+    expect(ctx.fillText).not.toHaveBeenCalled()
 
     drawPendingLinkBadges(ctx)
-    expect(queryLinkBadgeAtPoint(120, 100)).toBe(9)
+    expect(ctx.fillText).toHaveBeenCalled()
+  })
+
+  it('returns the badge tips a revealed noodle attaches to', () => {
+    const ctx = mockCtx()
+    const tips = enqueueHiddenLinkBadges(
+      ctx,
+      new LLink(9, 'MODEL', 4, 0, 5, 0),
+      [100, 100],
+      [400, 200],
+      '#cab8ff'
+    )
+
+    // Output tip is the right edge of the output badge; input tip its left edge.
+    expect(tips?.outputTip[0]).toBeGreaterThan(100)
+    expect(tips?.outputTip[1]).toBe(100)
+    expect(tips?.inputTip[0]).toBeLessThan(400)
+    expect(tips?.inputTip[1]).toBe(200)
   })
 })
 

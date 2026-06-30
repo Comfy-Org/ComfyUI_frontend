@@ -6341,14 +6341,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Hidden links: badges replace the curve and are painted on top of the
     // noodles afterwards (see drawPendingLinkBadges). Hovering a badge or a
-    // connected socket reveals the noodle, so fall through to draw the curve.
+    // connected socket reveals the noodle, so fall through to draw the curve —
+    // attached to the badge tips rather than the sockets.
     if (link.hidden) {
       const badgeColor =
         (typeof link.color === 'string' && link.color) ||
         LGraphCanvas.link_type_colors[link.type] ||
         this.default_link_color
-      enqueueHiddenLinkBadges(link, startPos, endPos, badgeColor)
+      const tips = enqueueHiddenLinkBadges(
+        ctx,
+        link,
+        startPos,
+        endPos,
+        badgeColor
+      )
       if (!isLinkRevealed(link.id)) return
+      if (tips) {
+        startPos = tips.outputTip
+        endPos = tips.inputTip
+      }
     }
 
     const start_dir = startDirection || LinkDirection.RIGHT
