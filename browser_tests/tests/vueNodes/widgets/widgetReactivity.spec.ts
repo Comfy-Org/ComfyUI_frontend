@@ -41,7 +41,7 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
     }, nodeId)
     await expect(widgets).toHaveCount(4)
   })
-  
+
   test('Should hide removed widgets', async ({ comfyPage }) => {
     const loadCheckpointNode = comfyPage.page.locator(
       'css=[data-testid="node-body-3"] > .lg-node-widgets > div'

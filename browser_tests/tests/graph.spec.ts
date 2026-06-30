@@ -14,11 +14,12 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
   // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3348
   test('Fix link input slots', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/input_order_swap')
+    const linkId = toLinkId(1)
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => {
-          return window.app!.graph!.links.get(toLinkId(1))?.target_slot
-        })
+        comfyPage.page.evaluate((linkId) => {
+          return window.app!.graph!.links.get(linkId)?.target_slot
+        }, linkId)
       )
       .toBe(1)
   })
