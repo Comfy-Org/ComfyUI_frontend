@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -177,9 +178,10 @@ describe('useComfyRegistryStore', () => {
 
   it('should return null when fetching a pack with null ID', async () => {
     const store = useComfyRegistryStore()
-    vi.spyOn(store.getPackById, 'call').mockResolvedValueOnce(null)
 
-    const result = await store.getPackById.call(null!)
+    const result = await store.getPackById.call(
+      fromAny<Parameters<typeof store.getPackById.call>[0], unknown>(null)
+    )
 
     expect(result).toBeNull()
     expect(mockRegistryService.getPackById).not.toHaveBeenCalled()
@@ -203,6 +205,56 @@ describe('useComfyRegistryStore', () => {
     expect(mockRegistryService.listAllPacks).toHaveBeenCalledWith(
       { node_id: packIds },
       expect.any(Object) // abort signal
+    )
+  })
+
+  it('should reuse cached packs by ID', async () => {
+    const store = useComfyRegistryStore()
+
+    await store.getPacksByIds.call(['test-pack-id'])
+    const result = await store.getPacksByIds.call(['test-pack-id'])
+
+    expect(result).toEqual([mockNodePack])
+    expect(mockRegistryService.listAllPacks).toHaveBeenCalledTimes(1)
+  })
+
+  it('should ignore missing packs by ID', async () => {
+    mockRegistryService.listAllPacks.mockResolvedValueOnce({
+      nodes: [fromAny<components['schemas']['Node'], unknown>({ name: 'bad' })],
+      total: 1,
+      page: 1,
+      limit: 10
+    })
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(['unknown-pack-id'])
+
+    expect(result).toEqual([])
+  })
+
+  it('should handle empty pack lookup responses', async () => {
+    mockRegistryService.listAllPacks.mockResolvedValueOnce(null)
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(['unknown-pack-id'])
+
+    expect(result).toEqual([])
+  })
+
+  it('should filter undefined pack IDs before lookup', async () => {
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(
+      fromAny<components['schemas']['Node']['id'][], unknown>([
+        'test-pack-id',
+        undefined
+      ])
+    )
+
+    expect(result).toEqual([mockNodePack])
+    expect(mockRegistryService.listAllPacks).toHaveBeenCalledWith(
+      { node_id: ['test-pack-id'] },
+      expect.any(Object)
     )
   })
 

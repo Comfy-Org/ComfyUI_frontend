@@ -138,6 +138,22 @@ describe('useModelToNodeStore', () => {
       expect(provider?.key).toBe('ckpt_name')
     })
 
+    it('omits providers whose node definition is unavailable from reverse lookup', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.modelToNodeMap = {
+        missing: [
+          new ModelNodeProvider(
+            undefined as unknown as ComfyNodeDefImpl,
+            'model'
+          )
+        ]
+      }
+
+      expect(modelToNodeStore.getRegisteredNodeTypes()).not.toHaveProperty(
+        'undefined'
+      )
+    })
+
     it('should return undefined for unregistered model type', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
@@ -575,6 +591,22 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.getCategoryForNodeType('NonExistentNode')
       ).toBeUndefined()
       expect(modelToNodeStore.getCategoryForNodeType('')).toBeUndefined()
+    })
+
+    it('skips providers without node definitions during category lookup', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.modelToNodeMap = {
+        missing: [
+          new ModelNodeProvider(
+            undefined as unknown as ComfyNodeDefImpl,
+            'model'
+          )
+        ]
+      }
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('MissingNode')
+      ).toBeUndefined()
     })
 
     it('maps the IC-LoRA Loader Model Only node to loras so its lora_name dropdown uses the cloud asset browser (FE-838)', () => {
