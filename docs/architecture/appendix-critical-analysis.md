@@ -2,6 +2,13 @@
 
 _In which we examine the shadow material of a codebase in individuation, verify its self-reported symptoms, and note where the ego's aspirations outpace the psyche's readiness for transformation._
 
+> **Post-pivot status (PR 12617).** This analysis was written against the
+> single-World ECS target. The project has since chosen dedicated Pinia stores
+> over one unified World, which acts on several of the concerns raised below.
+> Resolution notes are inlined where the pivot answers a critique; the still-open
+> gaps (extension-callback continuity, atomicity/undo, Y.js ↔ ECS coexistence)
+> remain live. Verification snapshots predate PR 12617.
+
 ---
 
 ## I. On the Accuracy of Self-Diagnosis
@@ -15,7 +22,7 @@ The god-objects are as large as claimed. `LGraphCanvas` contains 9,094 lines —
 
 Some thirty specific line references were verified against the living code. The `renderingColor` getter sits precisely at line 328. The `drawNode()` method begins exactly at line 5554, and within it, at lines 5562 and 5564, the render pass mutates state — `_setConcreteSlots()` and `arrange()` — just as the documents confess. The scattered `_version++` increments appear at every claimed location across all three files. The module-scope store invocations in `LLink.ts:24` and `Reroute.ts:23` are exactly where indicated.
 
-The stores — all six of them — exist at their stated paths with their described APIs. The `WidgetValueStore` does indeed hold plain `WidgetState` objects. The `PromotionStore` does maintain its ref-counted maps. The `LayoutStore` does wrap Y.js CRDTs.
+The stores — six of them — exist at their stated paths with their described APIs. The `WidgetValueStore` does indeed hold plain `WidgetState` objects, keyed by `WidgetId`. The `LayoutStore` does wrap Y.js CRDTs. (The `PromotionStore` named in the original snapshot was removed by PR 12617; promoted value state now lives in `WidgetValueStore`, and `PreviewExposureStore` holds host-scoped preview exposures.)
 
 This level of factual accuracy — 28 out of 30 sampled citation checks
 (93.3%) — is, one might say, the work of a consciousness that has genuinely
@@ -46,6 +53,12 @@ The target architecture documents read as a vision of wholeness. Where the curre
 This is the individuation dream: the fragmented psyche imagines itself unified, each complex (component) named and contained, each archetypal function (system) operating in its proper domain, the Self (World) holding all of it in coherent relation.
 
 It is a beautiful vision. It is also, in several respects, a fantasy that has not yet been tested against reality.
+
+> **Resolved (PR 12617).** The single World was set aside. The project keeps the
+> fragments deliberately apart — dedicated stores, each holding one concern and
+> keyed by its own string identity. The integration the dream sought lives in the
+> shared discipline (plain-data components, command-driven mutation), with the
+> stores standing on their own.
 
 ### The Line-Count Comparisons
 
@@ -93,6 +106,12 @@ But one must be careful not to mistake diversity for disorder. Some of these com
 
 The documents present branded IDs as an unqualified improvement. They are an improvement in _type safety_. Whether they are an improvement in _comprehensibility_ depends on whether the system provides good lookup APIs. The analysis would benefit from acknowledging this tradeoff rather than presenting it as a pure gain.
 
+> **Resolved (PR 12617).** The pivot honored this concern. `WidgetValueStore`
+> keeps the self-documenting composite as its key, branded as a string
+> (`WidgetId = graphId:nodeId:name`, `src/types/widgetId.ts`), gaining cross-kind
+> safety while preserving the structural meaning the synthetic integer would have
+> shed.
+
 ## V. On the Subgraph: The Child Who Contains the Parent
 
 The documents describe the `Subgraph extends LGraph` relationship as a circular dependency. This is technically accurate and architecturally concerning. But it is also, symbolically, the most interesting structure in the entire system.
@@ -115,13 +134,13 @@ This is sound. The documents would benefit from being equally realistic about th
 
 ### Factual Corrections Required
 
-| Document              | Error                              | Correction                         |
-| --------------------- | ---------------------------------- | ---------------------------------- |
-| `entity-problems.md`  | `toJSON() (line 1033)`             | `toString() (line 1033)`           |
-| `entity-problems.md`  | `execute() (line 1418)`            | `doExecute() (line 1411)`          |
-| `entity-problems.md`  | `~539 method/property definitions` | ~848; methodology should be stated |
-| `entity-problems.md`  | `configure()` ~180 lines           | ~247 lines                         |
-| `proto-ecs-stores.md` | `resolveDeepest()` in diagram      | `reconcile()` / `getOrCreate()`    |
+| Document              | Error                              | Correction                                            |
+| --------------------- | ---------------------------------- | ----------------------------------------------------- |
+| `entity-problems.md`  | `toJSON() (line 1033)`             | `toString() (line 1033)`                              |
+| `entity-problems.md`  | `execute() (line 1418)`            | `doExecute() (line 1411)`                             |
+| `entity-problems.md`  | `~539 method/property definitions` | ~848; methodology should be stated                    |
+| `entity-problems.md`  | `configure()` ~180 lines           | ~247 lines                                            |
+| `proto-ecs-stores.md` | `resolveDeepest()` in diagram      | moot — `PromotedWidgetViewManager` removed (PR 12617) |
 
 ### Analytical Gaps
 
@@ -129,7 +148,7 @@ This is sound. The documents would benefit from being equally realistic about th
 2. **Atomicity guarantees** are claimed but not mechanically specified.
 3. **Y.js / ECS coexistence** is an open architectural question the documents do not engage.
 4. **ECS line-count projections** are aspirational and should be marked as estimates.
-5. **Composite key tradeoffs** deserve more nuance than "branded IDs fix everything."
+5. **Composite key tradeoffs** deserve more nuance than "branded IDs fix everything." _(Resolved by PR 12617: `WidgetId` keeps the composite as a branded string.)_
 
 ### What the Documents Do Well
 

@@ -7,11 +7,9 @@ import {
   jobsRouteFixture,
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
-import type { JobsRouteMocker } from '@e2e/fixtures/jobsRouteFixture'
+import type { JobsScenario } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-
-const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 
 const historyJobs: RawJobListItem[] = [
   createRouteMockJob({
@@ -75,21 +73,24 @@ const activeJobs: RawJobListItem[] = [
 ]
 const runningOnlyJobs = activeJobs.filter((job) => job.status !== 'pending')
 
-async function setupJobHistorySidebar(
-  comfyPage: ComfyPage,
-  jobsRoutes: JobsRouteMocker,
-  {
-    history = historyJobs,
-    queue = activeJobs
-  }: {
-    history?: readonly RawJobListItem[]
-    queue?: readonly RawJobListItem[]
-  } = {}
-) {
-  await jobsRoutes.mockJobsScenario({ history, queue })
-  await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', true)
-  await comfyPage.setup()
+const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
+  initialJobsScenario: JobsScenario
+  mockInitialJobsScenario: void
+}>({
+  initialJobsScenario: [
+    { history: historyJobs, queue: activeJobs },
+    { option: true }
+  ],
+  mockInitialJobsScenario: [
+    async ({ jobsRoutes, initialJobsScenario }, use) => {
+      await jobsRoutes.mockJobsScenario(initialJobsScenario)
+      await use()
+    },
+    { auto: true }
+  ]
+})
 
+async function openJobHistorySidebar(comfyPage: ComfyPage) {
   await comfyPage.page
     .getByTestId(TestIds.sidebar.toolbar)
     .getByRole('button', { name: 'Job History', exact: true })
@@ -122,159 +123,152 @@ async function openSidebarClearHistoryDialog(comfyPage: ComfyPage) {
 }
 
 test.describe('Job history sidebar', { tag: '@ui' }, () => {
-  test('opens from the queue overlay docked history action', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    await jobsRoutes.mockJobsScenario({
-      history: historyJobs,
-      queue: activeJobs
+  test.describe('docked overlay action', () => {
+    test.use({ initialSettings: { 'Comfy.Queue.QPOV2': false } })
+
+    test('opens from the queue overlay docked history action', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
+      await comfyPage.queuePanel.moreOptionsButton.click()
+      await comfyPage.page
+        .getByTestId(TestIds.queue.dockedJobHistoryAction)
+        .click()
+
+      await expect(jobHistorySidebar(comfyPage)).toBeVisible()
+      await expect(jobRow(comfyPage)('history-completed')).toBeVisible()
+      await expect(jobRow(comfyPage)('queue-pending')).toBeVisible()
     })
-    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
-    await comfyPage.setup()
-
-    await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
-    await comfyPage.queuePanel.moreOptionsButton.click()
-    await comfyPage.page
-      .getByTestId(TestIds.queue.dockedJobHistoryAction)
-      .click()
-
-    await expect(jobHistorySidebar(comfyPage)).toBeVisible()
-    await expect(jobRow(comfyPage)('history-completed')).toBeVisible()
-    await expect(jobRow(comfyPage)('queue-pending')).toBeVisible()
   })
 
-  test('shows terminal and active job states', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    await setupJobHistorySidebar(comfyPage, jobsRoutes)
+  test.describe('expanded history tab', () => {
+    test.use({ initialSettings: { 'Comfy.Queue.QPOV2': true } })
 
-    const row = jobRow(comfyPage)
-    await expect(row('queue-pending')).toBeVisible()
-    await expect(row('queue-running')).toBeVisible()
-    await expect(row('history-completed')).toBeVisible()
-    await expect(row('history-failed')).toBeVisible()
-    await expect(row('history-cancelled')).toBeVisible()
+    test('shows terminal and active job states', async ({ comfyPage }) => {
+      await openJobHistorySidebar(comfyPage)
 
-    await expect(clearQueueButton(comfyPage)).toBeEnabled()
-  })
+      const row = jobRow(comfyPage)
+      await expect(row('queue-pending')).toBeVisible()
+      await expect(row('queue-running')).toBeVisible()
+      await expect(row('history-completed')).toBeVisible()
+      await expect(row('history-failed')).toBeVisible()
+      await expect(row('history-cancelled')).toBeVisible()
 
-  test('filters completed and failed history jobs', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    await setupJobHistorySidebar(comfyPage, jobsRoutes)
-
-    await comfyPage.page
-      .getByRole('button', { name: 'Completed', exact: true })
-      .click()
-
-    const row = jobRow(comfyPage)
-    await expect(row('history-completed')).toBeVisible()
-    await expect(row('history-failed')).toBeHidden()
-    await expect(row('queue-running')).toBeHidden()
-
-    await comfyPage.page
-      .getByRole('button', { name: 'Failed', exact: true })
-      .click()
-
-    await expect(row('history-failed')).toBeVisible()
-    await expect(row('history-cancelled')).toBeVisible()
-    await expect(row('history-completed')).toBeHidden()
-  })
-
-  test('searches by job id and output filename', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    await setupJobHistorySidebar(comfyPage, jobsRoutes)
-
-    const row = jobRow(comfyPage)
-    const searchInput = comfyPage.page.getByPlaceholder('Search...')
-
-    await searchInput.fill('history-failed')
-    await expect(row('history-failed')).toBeVisible()
-    await expect(row('history-completed')).toBeHidden()
-    await expect(row('queue-running')).toBeHidden()
-
-    await searchInput.fill('completed-output')
-    await expect(row('history-completed')).toBeVisible()
-    await expect(row('history-failed')).toBeHidden()
-
-    await searchInput.clear()
-    await expect(row('history-completed')).toBeVisible()
-    await expect(row('queue-running')).toBeVisible()
-  })
-
-  test('disables clear queue when there are no pending jobs', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    await setupJobHistorySidebar(comfyPage, jobsRoutes, {
-      queue: runningOnlyJobs
+      await expect(clearQueueButton(comfyPage)).toBeEnabled()
     })
 
-    await expect(clearQueueButton(comfyPage)).toBeDisabled()
-  })
+    test('filters completed and failed history jobs', async ({ comfyPage }) => {
+      await openJobHistorySidebar(comfyPage)
 
-  test('clears pending queue jobs and leaves running/history jobs', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    await setupJobHistorySidebar(comfyPage, jobsRoutes)
+      await comfyPage.page
+        .getByRole('button', { name: 'Completed', exact: true })
+        .click()
 
-    const row = jobRow(comfyPage)
-    await expect(row('queue-pending')).toBeVisible()
+      const row = jobRow(comfyPage)
+      await expect(row('history-completed')).toBeVisible()
+      await expect(row('history-failed')).toBeHidden()
+      await expect(row('queue-running')).toBeHidden()
 
-    const clearQueueRequests = await jobsRoutes.mockClearQueue()
-    const clearHistoryRequests = await jobsRoutes.mockClearHistory()
-    await jobsRoutes.mockJobsScenario({
-      history: historyJobs,
-      queue: runningOnlyJobs
+      await comfyPage.page
+        .getByRole('button', { name: 'Failed', exact: true })
+        .click()
+
+      await expect(row('history-failed')).toBeVisible()
+      await expect(row('history-cancelled')).toBeVisible()
+      await expect(row('history-completed')).toBeHidden()
     })
 
-    await clearQueueButton(comfyPage).click()
+    test('searches by job id and output filename', async ({ comfyPage }) => {
+      await openJobHistorySidebar(comfyPage)
 
-    await expect.poll(() => clearQueueRequests.length).toBe(1)
-    expect(clearQueueRequests).toContainEqual({ clear: true })
-    await expect(row('queue-pending')).toBeHidden()
-    await expect(row('queue-running')).toBeVisible()
-    await expect(row('history-completed')).toBeVisible()
-    await expect(clearQueueButton(comfyPage)).toBeDisabled()
-    expect(clearHistoryRequests).toHaveLength(0)
-  })
+      const row = jobRow(comfyPage)
+      const searchInput = comfyPage.page.getByPlaceholder('Search...')
 
-  test('clears history from the sidebar menu and keeps active jobs', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    await setupJobHistorySidebar(comfyPage, jobsRoutes)
+      await searchInput.fill('history-failed')
+      await expect(row('history-failed')).toBeVisible()
+      await expect(row('history-completed')).toBeHidden()
+      await expect(row('queue-running')).toBeHidden()
 
-    const row = jobRow(comfyPage)
-    await expect(row('history-completed')).toBeVisible()
+      await searchInput.fill('completed-output')
+      await expect(row('history-completed')).toBeVisible()
+      await expect(row('history-failed')).toBeHidden()
 
-    const clearHistoryRequests = await jobsRoutes.mockClearHistory()
-    const clearQueueRequests = await jobsRoutes.mockClearQueue()
-    await jobsRoutes.mockJobsScenario({
-      history: [],
-      queue: activeJobs
+      await searchInput.clear()
+      await expect(row('history-completed')).toBeVisible()
+      await expect(row('queue-running')).toBeVisible()
     })
 
-    await openSidebarClearHistoryDialog(comfyPage)
-    await expect(
-      comfyPage.page.getByText('Clear your job queue history?')
-    ).toBeVisible()
-    await comfyPage.page
-      .getByRole('button', { name: 'Clear', exact: true })
-      .click()
+    test('clears pending queue jobs and leaves running/history jobs', async ({
+      comfyPage,
+      jobsRoutes
+    }) => {
+      await openJobHistorySidebar(comfyPage)
 
-    await expect.poll(() => clearHistoryRequests.length).toBe(1)
-    expect(clearHistoryRequests).toContainEqual({ clear: true })
-    await expect(row('history-completed')).toBeHidden()
-    await expect(row('history-failed')).toBeHidden()
-    await expect(row('queue-running')).toBeVisible()
-    await expect(row('queue-pending')).toBeVisible()
-    expect(clearQueueRequests).toHaveLength(0)
+      const row = jobRow(comfyPage)
+      await expect(row('queue-pending')).toBeVisible()
+
+      const clearQueueRequests = await jobsRoutes.mockClearQueue()
+      const clearHistoryRequests = await jobsRoutes.mockClearHistory()
+      await jobsRoutes.mockJobsScenario({
+        history: historyJobs,
+        queue: runningOnlyJobs
+      })
+
+      await clearQueueButton(comfyPage).click()
+
+      await expect.poll(() => clearQueueRequests.length).toBe(1)
+      expect(clearQueueRequests).toContainEqual({ clear: true })
+      await expect(row('queue-pending')).toBeHidden()
+      await expect(row('queue-running')).toBeVisible()
+      await expect(row('history-completed')).toBeVisible()
+      await expect(clearQueueButton(comfyPage)).toBeDisabled()
+      expect(clearHistoryRequests).toHaveLength(0)
+    })
+
+    test('clears history from the sidebar menu and keeps active jobs', async ({
+      comfyPage,
+      jobsRoutes
+    }) => {
+      await openJobHistorySidebar(comfyPage)
+
+      const row = jobRow(comfyPage)
+      await expect(row('history-completed')).toBeVisible()
+
+      const clearHistoryRequests = await jobsRoutes.mockClearHistory()
+      const clearQueueRequests = await jobsRoutes.mockClearQueue()
+      await jobsRoutes.mockJobsScenario({
+        history: [],
+        queue: activeJobs
+      })
+
+      await openSidebarClearHistoryDialog(comfyPage)
+      await expect(
+        comfyPage.page.getByText('Clear your job queue history?')
+      ).toBeVisible()
+      await comfyPage.page
+        .getByRole('button', { name: 'Clear', exact: true })
+        .click()
+
+      await expect.poll(() => clearHistoryRequests.length).toBe(1)
+      expect(clearHistoryRequests).toContainEqual({ clear: true })
+      await expect(row('history-completed')).toBeHidden()
+      await expect(row('history-failed')).toBeHidden()
+      await expect(row('queue-running')).toBeVisible()
+      await expect(row('queue-pending')).toBeVisible()
+      expect(clearQueueRequests).toHaveLength(0)
+    })
+  })
+
+  test.describe('without pending queue jobs', () => {
+    test.use({
+      initialJobsScenario: { history: historyJobs, queue: runningOnlyJobs },
+      initialSettings: { 'Comfy.Queue.QPOV2': true }
+    })
+
+    test('disables clear queue', async ({ comfyPage }) => {
+      await openJobHistorySidebar(comfyPage)
+
+      await expect(clearQueueButton(comfyPage)).toBeDisabled()
+    })
   })
 })

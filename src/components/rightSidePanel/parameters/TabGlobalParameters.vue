@@ -1,17 +1,8 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  shallowRef
-} from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
-import { DraggableList } from '@/scripts/ui/draggableList'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
 
@@ -22,8 +13,6 @@ const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const searchQuery = ref('')
 const { t } = useI18n()
 
-const draggableList = ref<DraggableList | undefined>(undefined)
-const sectionWidgetsRef = ref<{ widgetsContainer: HTMLElement }>()
 const isSearching = ref(false)
 
 const favoritedWidgets = computed(
@@ -45,70 +34,20 @@ async function searcher(query: string) {
   searchedFavoritedWidgets.value = searchWidgets(favoritedWidgets.value, query)
 }
 
-const isMounted = useMounted()
+function handleReorder({
+  fromIndex,
+  toIndex
+}: {
+  fromIndex: number
+  toIndex: number
+}) {
+  const widgets = [...searchedFavoritedWidgets.value]
+  const [moved] = widgets.splice(fromIndex, 1)
+  if (!moved) return
+  widgets.splice(toIndex, 0, moved)
 
-function setDraggableState() {
-  if (!isMounted.value) return
-  draggableList.value?.dispose()
-  const container = sectionWidgetsRef.value?.widgetsContainer
-  if (isSearching.value || !container?.children?.length) return
-
-  draggableList.value = new DraggableList(container, '.draggable-item')
-
-  draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems: HTMLElement[] = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem as HTMLElement
-      }
-    }
-
-    const newPosition = reorderedItems.indexOf(
-      this.draggableItem as HTMLElement
-    )
-    const widgets = [...searchedFavoritedWidgets.value]
-    const [widget] = widgets.splice(oldPosition, 1)
-    widgets.splice(newPosition, 0, widget)
-    searchedFavoritedWidgets.value = widgets
-    favoritedWidgetsStore.reorderFavorites(widgets)
-  }
-}
-
-watchDebounced(
-  searchedFavoritedWidgets,
-  () => {
-    setDraggableState()
-  },
-  { debounce: 100 }
-)
-
-onMounted(() => {
-  setDraggableState()
-})
-
-onBeforeUnmount(() => {
-  draggableList.value?.dispose()
-})
-
-function onCollapseUpdate() {
-  // Rebuild draggable list after the section header is toggled
-  nextTick(setDraggableState)
+  searchedFavoritedWidgets.value = widgets
+  favoritedWidgetsStore.reorderFavorites(widgets)
 }
 </script>
 
@@ -124,7 +63,6 @@ function onCollapseUpdate() {
     />
   </div>
   <SectionWidgets
-    ref="sectionWidgetsRef"
     :label
     :widgets="searchedFavoritedWidgets"
     :is-draggable="!isSearching"
@@ -132,7 +70,7 @@ function onCollapseUpdate() {
     show-node-name
     enable-empty-state
     class="border-b border-interface-stroke"
-    @update:collapse="onCollapseUpdate"
+    @reorder="handleReorder"
   >
     <template #empty>
       <div class="px-4 py-10 text-center text-sm text-muted-foreground">

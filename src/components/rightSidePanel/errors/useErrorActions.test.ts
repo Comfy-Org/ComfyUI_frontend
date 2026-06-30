@@ -58,7 +58,8 @@ describe('useErrorActions', () => {
       openGitHubIssues()
 
       expect(mocks.trackUiButtonClicked).toHaveBeenCalledWith({
-        button_id: 'error_tab_github_issues_clicked'
+        button_id: 'error_tab_github_issues_clicked',
+        element_group: 'errors_panel'
       })
       expect(windowOpenSpy).toHaveBeenCalledWith(
         mocks.staticUrls.githubIssues,
@@ -123,7 +124,8 @@ describe('useErrorActions', () => {
       findOnGitHub('CUDA out of memory')
 
       expect(mocks.trackUiButtonClicked).toHaveBeenCalledWith({
-        button_id: 'error_tab_find_existing_issues_clicked'
+        button_id: 'error_tab_find_existing_issues_clicked',
+        element_group: 'errors_panel'
       })
       const expectedQuery = encodeURIComponent('CUDA out of memory is:issue')
       expect(windowOpenSpy).toHaveBeenCalledWith(

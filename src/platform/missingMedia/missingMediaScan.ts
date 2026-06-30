@@ -1,5 +1,4 @@
 import { groupBy } from 'es-toolkit'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   MissingMediaCandidate,
   MissingMediaViewModel,
@@ -118,7 +117,7 @@ export function scanNodeMediaCandidates(
     }
 
     candidates.push({
-      nodeId: executionId as NodeId,
+      nodeId: executionId,
       nodeType: node.type,
       widgetName: widget.name,
       mediaType: mediaInfo.mediaType,
@@ -140,8 +139,8 @@ interface MediaVerificationOptions {
  * Verify media candidates against assets available to the current runtime.
  *
  * A candidate's `name` may be either a filename or an opaque asset hash.
- * Cloud-side `asset_hash` is not guaranteed to follow a single shape, so we
- * match against the union of `asset.name` and `asset.asset_hash`. Output
+ * Cloud-side `hash` is not guaranteed to follow a single shape, so we
+ * match against the union of `asset.name` and `asset.hash`. Output
  * candidates are matched against Cloud output assets or Core generated-history
  * assets because Core resolves those annotations against output folders, not
  * input files.
@@ -256,13 +255,17 @@ export function groupCandidatesByName(
     if (existing) {
       existing.referencingNodes.push({
         nodeId: c.nodeId,
+        nodeType: c.nodeType,
         widgetName: c.widgetName
       })
     } else {
       map.set(c.name, {
         name: c.name,
         mediaType: c.mediaType,
-        referencingNodes: [{ nodeId: c.nodeId, widgetName: c.widgetName }]
+        representative: c,
+        referencingNodes: [
+          { nodeId: c.nodeId, nodeType: c.nodeType, widgetName: c.widgetName }
+        ]
       })
     }
   }

@@ -87,6 +87,14 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackUiButtonClicked: mockTrackUiButtonClicked
+  })
+}))
+
 type WrapperOptions = {
   pinia?: ReturnType<typeof createTestingPinia>
   stubs?: Record<string, boolean | Component>
@@ -110,6 +118,9 @@ function createWrapper({
             activeJobsShort: '{count} active | {count} active',
             clearQueueTooltip: 'Clear queue'
           }
+        },
+        rightSidePanel: {
+          togglePanel: 'Toggle properties panel'
         }
       }
     }
@@ -264,6 +275,19 @@ describe('TopMenuSection', () => {
     createWrapper()
 
     expect(screen.queryByTestId('active-jobs-indicator')).toBeNull()
+  })
+
+  it('tracks right side panel opens', async () => {
+    const { user } = createWrapper()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Toggle properties panel' })
+    )
+
+    expect(mockTrackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'right_side_panel_opened',
+      element_group: 'top_menu'
+    })
   })
 
   it('hides queue progress overlay when QPO V2 is enabled', async () => {

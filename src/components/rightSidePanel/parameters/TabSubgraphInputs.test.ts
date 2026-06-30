@@ -1,204 +1,127 @@
+import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
+
 import TabSubgraphInputs from './TabSubgraphInputs.vue'
 
-vi.mock('@/core/graph/subgraph/promotedWidgetTypes', () => ({
-  isPromotedWidgetView: vi.fn(() => false)
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ updatePreviews: vi.fn() })
 }))
-
-vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  getWidgetName: vi.fn((widget) => widget.name)
-}))
-
-vi.mock('@/stores/promotionStore', () => ({
-  usePromotionStore: () => ({
-    getPromotions: vi.fn(() => [
-      {
-        sourceNodeId: '11',
-        sourceWidgetName: 'alpha-widget',
-        disambiguatingSourceNodeId: undefined
-      },
-      {
-        sourceNodeId: '22',
-        sourceWidgetName: 'beta-widget',
-        disambiguatingSourceNodeId: undefined
-      }
-    ]),
-    isPromoted: vi.fn(() => false),
-    movePromotion: vi.fn()
-  })
-}))
-
-vi.mock('@/scripts/ui/draggableList', () => ({
-  DraggableList: vi.fn().mockImplementation(() => ({ dispose: vi.fn() }))
-}))
-
-const AsyncSearchInputStub = defineComponent({
-  props: {
-    modelValue: { type: String, default: '' },
-    searcher: { type: Function, default: undefined }
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    function onInput(event: Event) {
-      const value = (event.target as HTMLInputElement).value
-      emit('update:modelValue', value)
-      props.searcher?.(value)
-    }
-
-    return { onInput }
-  },
-  template:
-    '<input data-testid="search-input" :value="modelValue" @input="onInput" />'
-})
-
-const SectionWidgetsStub = defineComponent({
-  props: {
-    widgets: { type: Array, default: () => [] }
-  },
-  template: `
-    <div>
-      <span
-        v-for="item in widgets"
-        :key="item.widget.name"
-        data-testid="widget-name"
-      >
-        {{ item.widget.name }}
-      </span>
-      <slot v-if="widgets.length === 0" name="empty" />
-    </div>
-  `
-})
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      rightSidePanel: {
-        inputs: 'Inputs',
-        inputsNone: 'No inputs',
-        advancedInputs: 'Advanced Inputs',
-        noneSearchDesc: 'No results found',
-        inputsNoneTooltip: 'No inputs available'
-      }
-    }
-  }
+  messages: { en: { rightSidePanel: { inputs: 'Inputs', inputsNone: 'None' } } }
 })
 
-const subgraphNode = fromAny<SubgraphNode, unknown>({
-  id: 100,
-  rootGraph: { id: 'root-1' },
-  widgets: [
-    {
-      name: 'alpha-widget',
-      type: 'text',
-      value: 'alpha',
-      options: {}
-    },
-    {
-      name: 'beta-widget',
-      type: 'text',
-      value: 'beta',
-      options: {}
-    }
-  ],
-  subgraph: {
-    nodes: [
-      {
-        id: 11,
-        title: 'Interior 1',
-        widgets: [
-          {
-            name: 'interior-widget',
-            type: 'text',
-            value: 'interior',
-            computedDisabled: false,
-            options: {}
-          }
-        ]
-      }
-    ]
+const captured: { rows: { node: LGraphNode; widget: IBaseWidget }[] } = {
+  rows: []
+}
+
+const SectionWidgetsStub = {
+  props: ['widgets', 'node', 'parents'],
+  setup(props: Record<string, unknown>) {
+    captured.rows = props.widgets as {
+      node: LGraphNode
+      widget: IBaseWidget
+    }[]
+    return () => null
   }
-})
+}
+
+function buildHostWithPromotedSeed(): {
+  host: SubgraphNode
+  sourceNode: LGraphNode
+} {
+  const subgraph = createTestSubgraph()
+  const host = createTestSubgraphNode(subgraph)
+  const graph = host.graph as LGraph
+  graph.add(host)
+
+  const sourceNode = new LGraphNode('Sampler')
+  const input = sourceNode.addInput('seed', 'INT')
+  const seedWidget = sourceNode.addWidget('number', 'seed', 42, () => {})
+  input.widget = { name: seedWidget.name }
+  subgraph.add(sourceNode)
+
+  promoteValueWidgetViaSubgraphInput(host, sourceNode, seedWidget)
+  return { host, sourceNode }
+}
+
+function renderPanel(node: SubgraphNode) {
+  return render(TabSubgraphInputs, {
+    props: { node },
+    global: {
+      plugins: [i18n],
+      stubs: {
+        SectionWidgets: SectionWidgetsStub,
+        AsyncSearchInput: true,
+        CollapseToggleButton: true
+      }
+    }
+  })
+}
 
 describe('TabSubgraphInputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    captured.rows = []
     vi.clearAllMocks()
   })
 
-  it('starts with an empty search and filters promoted widgets', async () => {
-    const user = userEvent.setup()
+  it('lists a subgraph node promoted widget as a store-backed parameter row', () => {
+    const { host } = buildHostWithPromotedSeed()
 
-    render(TabSubgraphInputs, {
-      props: {
-        node: subgraphNode
-      },
-      global: {
-        plugins: [i18n],
-        stubs: {
-          AsyncSearchInput: AsyncSearchInputStub,
-          SectionWidgets: SectionWidgetsStub,
-          CollapseToggleButton: { template: '<div />' }
-        }
-      }
-    })
+    renderPanel(host)
 
-    expect(screen.getByTestId('search-input')).toHaveValue('')
-    expect(screen.getByText('alpha-widget')).toBeInTheDocument()
-    expect(screen.getByText('beta-widget')).toBeInTheDocument()
-
-    await user.type(screen.getByTestId('search-input'), 'alpha-widget')
-
-    expect(screen.getByTestId('search-input')).toHaveValue('alpha-widget')
-    expect(screen.getByText('alpha-widget')).toBeInTheDocument()
-    expect(screen.queryByText('beta-widget')).not.toBeInTheDocument()
+    const seedRow = captured.rows.find((row) => row.widget.name === 'seed')
+    expect(seedRow).toBeDefined()
+    expect(seedRow?.node.id).toBe(host.id)
+    expect(seedRow?.widget.type).toBe('number')
+    expect(seedRow?.widget.widgetId).toBe(
+      widgetId(host.rootGraph.id, host.id, 'seed')
+    )
+    expect(seedRow?.widget.value).toBe(42)
   })
 
-  it('resets local search query after key-based remount', async () => {
-    const user = userEvent.setup()
+  it('reflects the current host widget value from the store', () => {
+    const { host } = buildHostWithPromotedSeed()
+    const id = widgetId(host.rootGraph.id, host.id, 'seed')
+    useWidgetValueStore().setValue(id, 7)
 
-    const Wrapper = defineComponent({
-      components: { TabSubgraphInputs },
-      props: {
-        k: { type: String, required: true }
-      },
-      setup() {
-        return {
-          node: subgraphNode
-        }
-      },
-      template: '<TabSubgraphInputs :key="k" :node="node" />'
-    })
+    renderPanel(host)
 
-    const { rerender } = render(Wrapper, {
-      props: { k: 'ctx-1' },
-      global: {
-        plugins: [i18n],
-        stubs: {
-          AsyncSearchInput: AsyncSearchInputStub,
-          SectionWidgets: SectionWidgetsStub,
-          CollapseToggleButton: { template: '<div />' }
-        }
-      }
-    })
+    const seedRow = captured.rows.find((row) => row.widget.name === 'seed')
+    expect(seedRow?.widget.value).toBe(7)
+  })
 
-    await user.type(screen.getByTestId('search-input'), 'beta-widget')
-    expect(screen.getByTestId('search-input')).toHaveValue('beta-widget')
+  it('reflects value changes through the same descriptor without rebuilding it', () => {
+    const { host } = buildHostWithPromotedSeed()
+    renderPanel(host)
 
-    await rerender({ k: 'ctx-2' })
+    const seedRow = captured.rows.find((row) => row.widget.name === 'seed')!
+    expect(seedRow.widget.value).toBe(42)
 
-    expect(screen.getByTestId('search-input')).toHaveValue('')
-    expect(screen.getByText('alpha-widget')).toBeInTheDocument()
-    expect(screen.getByText('beta-widget')).toBeInTheDocument()
+    // A value edit must not require a new descriptor object: the same row
+    // reflects the store change via its live getter, keeping render keys stable.
+    useWidgetValueStore().setValue(
+      widgetId(host.rootGraph.id, host.id, 'seed'),
+      100
+    )
+    expect(seedRow.widget.value).toBe(100)
   })
 })

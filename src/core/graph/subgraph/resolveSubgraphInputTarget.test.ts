@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { toNodeId } from '@/types/nodeId'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -85,7 +86,7 @@ describe('resolveSubgraphInputTarget', () => {
     })
   })
 
-  test('returns undefined for non-widget input on nested SubgraphNode', () => {
+  test('resolves non-widget input on nested SubgraphNode to immediate child target', () => {
     const { outerSubgraph, outerSubgraphNode } = createOuterSubgraphSetup([
       'audio'
     ])
@@ -93,28 +94,41 @@ describe('resolveSubgraphInputTarget', () => {
 
     const result = resolveSubgraphInputTarget(outerSubgraphNode, 'audio')
 
-    expect(result).toBeUndefined()
+    expect(result).toMatchObject({
+      nodeId: '819',
+      widgetName: 'audio'
+    })
   })
 
-  test('resolves widget inputs but not non-widget inputs on the same nested SubgraphNode', () => {
+  test('resolves both widget and non-widget inputs on nested SubgraphNodes', () => {
     const { outerSubgraph, outerSubgraphNode } = createOuterSubgraphSetup([
       'width',
       'audio'
     ])
-    addLinkedNestedSubgraphNode(outerSubgraph, 'width', 'width', {
-      widget: 'width'
-    })
-    addLinkedNestedSubgraphNode(outerSubgraph, 'audio', 'audio')
+    const { innerSubgraphNode: widthChild } = addLinkedNestedSubgraphNode(
+      outerSubgraph,
+      'width',
+      'width',
+      { widget: 'width' }
+    )
+    const { innerSubgraphNode: audioChild } = addLinkedNestedSubgraphNode(
+      outerSubgraph,
+      'audio',
+      'audio'
+    )
 
     expect(
       resolveSubgraphInputTarget(outerSubgraphNode, 'width')
     ).toMatchObject({
-      nodeId: '819',
+      nodeId: String(widthChild.id),
       widgetName: 'width'
     })
     expect(
       resolveSubgraphInputTarget(outerSubgraphNode, 'audio')
-    ).toBeUndefined()
+    ).toMatchObject({
+      nodeId: String(audioChild.id),
+      widgetName: 'audio'
+    })
   })
 
   test('returns target for widget-backed input on plain interior node', () => {
@@ -126,7 +140,7 @@ describe('resolveSubgraphInputTarget', () => {
       (slot) => slot.name === 'seed'
     )!
     const node = new LGraphNode('Interior-seed')
-    node.id = 42
+    node.id = toNodeId(42)
     const input = node.addInput('seed_input', '*')
     node.addWidget('number', 'seed', 0, () => undefined)
     input.widget = { name: 'seed' }
@@ -199,7 +213,10 @@ describe('resolveSubgraphInputTarget', () => {
     })
     expect(
       resolveSubgraphInputTarget(outerSubgraphNode, 'audio')
-    ).toBeUndefined()
+    ).toMatchObject({
+      nodeId: '820',
+      widgetName: 'audio'
+    })
   })
 
   test('three-level nesting returns immediate child target, not deepest', () => {
@@ -208,7 +225,7 @@ describe('resolveSubgraphInputTarget', () => {
       inputs: [{ name: 'seed', type: '*' }]
     })
     const concreteNode = new LGraphNode('ConcreteNode')
-    concreteNode.id = 900
+    concreteNode.id = toNodeId(900)
     const concreteInput = concreteNode.addInput('seed_input', '*')
     concreteNode.addWidget('number', 'seed', 0, () => undefined)
     concreteInput.widget = { name: 'seed' }

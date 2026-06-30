@@ -95,10 +95,15 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
         'Content-Type': 'application/json'
       }
     })
+    // 404 = the survey key was never stored = genuinely not completed. Only
+    // reachable after a successful authenticated read (a stale token returns
+    // 401, never 404), so it can't be a transient-auth false signal.
+    if (response.status === 404) {
+      return false
+    }
     if (!response.ok) {
-      // Ambiguous response (404/5xx/etc). Treat as completed to avoid
-      // bouncing working customers to /cloud/survey on transient hiccups.
-      // Real "not completed" only comes from a 200 with empty value.
+      // Other non-ok (401/403/5xx): treat as completed so a transient failure
+      // never bounces a working user to /cloud/survey.
       Sentry.addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
@@ -113,7 +118,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
     const data = await response.json()
     return !isEmpty(data.value)
   } catch (error) {
-    // Network/parse failure — same policy as ambiguous HTTP responses.
+    // Network/parse failure: same fail-safe policy as a non-ok response.
     Sentry.captureException(error, {
       tags: {
         api_endpoint: '/settings/{key}',

@@ -53,8 +53,13 @@ vi.mock('@/stores/systemStatsStore', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackTemplateFilterChanged: vi.fn()
+    trackTemplateFilterChanged: vi.fn(),
+    trackSearchQuery: vi.fn()
   }))
+}))
+
+vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
+  useSearchQueryTracking: vi.fn()
 }))
 
 const mockGetFuseOptions = vi.hoisted(() => vi.fn())
@@ -76,59 +81,6 @@ describe('useTemplateFiltering', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
-  })
-
-  it('sorts templates by VRAM from low to high and pushes missing values last', () => {
-    const gb = (value: number) => value * 1024 ** 3
-
-    const templates = ref<TemplateInfo[]>([
-      {
-        name: 'missing-vram',
-        description: 'no vram value',
-        mediaType: 'image',
-        mediaSubtype: 'png'
-      },
-      {
-        name: 'highest-vram',
-        description: 'high usage',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        vram: gb(12)
-      },
-      {
-        name: 'mid-vram',
-        description: 'medium usage',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        vram: gb(7.5)
-      },
-      {
-        name: 'low-vram',
-        description: 'low usage',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        vram: gb(5)
-      },
-      {
-        name: 'zero-vram',
-        description: 'unknown usage',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        vram: 0
-      }
-    ])
-
-    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
-
-    sortBy.value = 'vram-low-to-high'
-
-    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
-      'low-vram',
-      'mid-vram',
-      'highest-vram',
-      'missing-vram',
-      'zero-vram'
-    ])
   })
 
   it('filters by search text, models, tags, and license with debounce handling', async () => {

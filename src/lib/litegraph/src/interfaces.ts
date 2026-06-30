@@ -1,9 +1,11 @@
 import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { WidgetId } from '@/types/widgetId'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
 
 import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode, NodeId, NodeProperty } from './LGraphNode'
+import type { LGraphNode, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
@@ -362,6 +364,7 @@ export interface IWidgetLocator {
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   widget?: IWidgetLocator
+  widgetId?: WidgetId
   alwaysVisible?: boolean
 
   /**

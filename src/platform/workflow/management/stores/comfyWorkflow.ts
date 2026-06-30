@@ -2,23 +2,27 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
-import type { AppMode } from '@/composables/useAppMode'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type { AppMode } from '@/utils/appMode'
+import type { WidgetId } from '@/types/widgetId'
 
 export interface InputWidgetConfig {
   height?: number
 }
 
-export type LinearInput = [NodeId, string, InputWidgetConfig?]
+type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
+type LinearOutputNodeId = SerializedNodeId
+export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
 export interface LinearData {
   inputs: LinearInput[]
-  outputs: NodeId[]
+  outputs: LinearOutputNodeId[]
 }
 
 export interface PendingWarnings {
@@ -55,6 +59,7 @@ export class ComfyWorkflow extends UserFile {
    * Takes precedence over initialMode when present.
    */
   activeMode: AppMode | null = null
+  shareId?: string
   /**
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.
@@ -97,10 +102,14 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
-    const { useWorkflowDraftStore } =
-      await import('@/platform/workflow/persistence/stores/workflowDraftStore')
+    if (!force && this.isLoaded && this.changeTracker) {
+      return this as this & LoadedComfyWorkflow
+    }
+
+    const { useWorkflowDraftStoreV2 } =
+      await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const { useSettingStore } = await import('@/platform/settings/settingStore')
-    const draftStore = useWorkflowDraftStore()
+    const draftStore = useWorkflowDraftStoreV2()
     const persistEnabled = useSettingStore().get('Comfy.Workflow.Persist')
     let draft =
       !force && persistEnabled ? draftStore.getDraft(this.path) : undefined
@@ -125,7 +134,6 @@ export class ComfyWorkflow extends UserFile {
     }
 
     await super.load({ force })
-    if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
 
     if (this.originalContent == null) {
       throw new Error(
@@ -143,6 +151,8 @@ export class ComfyWorkflow extends UserFile {
       this.changeTracker.activeState = draftState
       this.content = draftContent
       this._isModified = true
+      // Saved-workflow draft overlay path; direct persisted-draft restores
+      // are touched in workflowDraftStoreV2.loadDraft().
       draftStore.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow
@@ -155,9 +165,9 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
-    const { useWorkflowDraftStore } =
-      await import('@/platform/workflow/persistence/stores/workflowDraftStore')
-    const draftStore = useWorkflowDraftStore()
+    const { useWorkflowDraftStoreV2 } =
+      await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
+    const draftStore = useWorkflowDraftStoreV2()
     this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
@@ -174,9 +184,9 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override async saveAs(path: string) {
-    const { useWorkflowDraftStore } =
-      await import('@/platform/workflow/persistence/stores/workflowDraftStore')
-    const draftStore = useWorkflowDraftStore()
+    const { useWorkflowDraftStoreV2 } =
+      await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
+    const draftStore = useWorkflowDraftStoreV2()
     this.content = JSON.stringify(this.activeState)
     const result = await super.saveAs(path)
     draftStore.removeDraft(path)

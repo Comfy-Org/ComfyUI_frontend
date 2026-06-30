@@ -144,7 +144,6 @@ import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -158,7 +157,10 @@ import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  resolveDisplayImageDimensions
+} from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
@@ -279,12 +281,15 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
+const displayImageDimensions = computed(() =>
+  resolveDisplayImageDimensions(asset, imageDimensions.value)
+)
+
 // Get metadata info based on file kind
 const metaInfo = computed(() => {
   if (!asset) return ''
-  // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
-  if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
-    return `${imageDimensions.value.width}x${imageDimensions.value.height}`
+  if (fileKind.value === 'image' && displayImageDimensions.value) {
+    return `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
   }
   if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
     return formatSize(asset.size)
@@ -316,10 +321,15 @@ function dragStart(e: DragEvent) {
   const { dataTransfer } = e
   if (!dataTransfer) return
 
-  const { filename, subfolder, type } =
+  const { filename, subfolder, type, display_name } =
     getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
   if (filename) {
-    const outputString = JSON.stringify({ filename, subfolder, type })
+    const outputString = JSON.stringify({
+      filename,
+      subfolder,
+      type,
+      display_name
+    })
     dataTransfer.items.add(outputString, MIME_ASSET_INFO)
   }
 

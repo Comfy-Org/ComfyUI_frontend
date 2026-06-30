@@ -25,7 +25,8 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -46,9 +47,10 @@ enum IoDirection {
   OUTPUT
 }
 
-function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
+function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
   if ((graph as LGraph).getNodeById) {
-    return (graph as LGraph).getNodeById(id)
+    const parsedNodeId = parseNodeId(id)
+    return parsedNodeId ? (graph as LGraph).getNodeById(parsedNodeId) : null
   }
   graph = graph as ISerialisedGraph
   return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
@@ -209,7 +211,7 @@ export function fixBadLinks(
     linkId: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let has = false
+    let has: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasIt = node.inputs?.[slot]?.link === linkId
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -249,7 +251,7 @@ export function fixBadLinks(
     slot: number
   ) {
     // Patched data should be canonical. We can double check if fixing too.
-    let hasAny = false
+    let hasAny: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasAny = node.inputs?.[slot]?.link != null
       if (patchedNodeSlots[node.id]?.['inputs']) {
@@ -368,12 +370,12 @@ export function fixBadLinks(
           logger.log(
             ` > [PATCH] ${targetLog} is not defined, will set to ${link.id}.`
           )
-          let patched = patchTarget('ADD')
+          const patched = patchTarget('ADD')
           if (!patched) {
             logger.log(
               ` > [PATCH] Nvm, ${targetLog} already patched. Removing ${link.id} from ${originLog}.`
             )
-            patched = patchOrigin('REMOVE')
+            patchOrigin('REMOVE')
           }
         } else {
           logger.log(

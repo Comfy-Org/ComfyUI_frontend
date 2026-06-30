@@ -33,7 +33,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
 
   drawWidget(
     ctx: CanvasRenderingContext2D,
-    { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
+    { width, showText = true }: DrawWidgetOptions
   ): void {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
@@ -145,10 +145,10 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
 
     // Draw outline if not disabled
     if (showText && !this.computedDisabled) {
-      ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+      ctx.strokeStyle = this.getOutlineColor()
       // Draw value
       ctx.beginPath()
-      ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+      ctx.strokeStyle = this.getOutlineColor()
       ctx.arc(
         arc_center.x,
         arc_center.y,

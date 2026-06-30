@@ -2,9 +2,10 @@
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -32,7 +33,11 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
       const advancedWidgets = widgets
         .filter(
           (w) =>
-            !(w.options?.canvasOnly || w.options?.hidden) && w.options?.advanced
+            !(
+              w.options?.canvasOnly ||
+              w.options?.hidden ||
+              w.options?.hideInPanel
+            ) && w.options?.advanced
         )
         .map((widget) => ({ node, widget }))
       return { widgets: advancedWidgets, node }
