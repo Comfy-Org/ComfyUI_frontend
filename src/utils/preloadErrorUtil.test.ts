@@ -142,6 +142,15 @@ describe('isStaleChunkError', () => {
     expect(isStaleChunkError(info)).toBe(false)
   })
 
+  it('returns false for hashed assets outside /assets/', () => {
+    const info = parsePreloadError(
+      new Error(
+        'Failed to fetch dynamically imported module: /static/style-abc123.css'
+      )
+    )
+    expect(isStaleChunkError(info)).toBe(false)
+  })
+
   it('returns false when no URL can be extracted', () => {
     const info = parsePreloadError(new Error('Something failed'))
     expect(isStaleChunkError(info)).toBe(false)
