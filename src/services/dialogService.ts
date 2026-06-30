@@ -293,6 +293,7 @@ export const useDialogService = () => {
           renderer: 'reka',
           size: 'md',
           headless: true,
+          describedBy: true,
           contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS,
           onClose: () => {
             resolve(null)
@@ -333,6 +334,7 @@ export const useDialogService = () => {
           renderer: 'reka',
           size: 'md',
           headless: true,
+          describedBy: true,
           contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS,
           onClose: () => resolve(null)
         }
@@ -624,6 +626,7 @@ export const useDialogService = () => {
         renderer: 'reka',
         size: 'sm',
         headless: true,
+        describedBy: true,
         contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS
       }
     })

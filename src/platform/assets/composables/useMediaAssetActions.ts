@@ -848,6 +848,7 @@ export function useMediaAssetActions() {
           renderer: 'reka',
           size: 'md',
           headless: true,
+          describedBy: true,
           contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS,
           onClose: () => {
             if (!confirmed) resolve(false)

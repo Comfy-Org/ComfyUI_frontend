@@ -1,7 +1,7 @@
 <template>
-  <SmallModalShell :title class="prompt-dialog-content">
+  <SmallModalShell :title :title-id="titleId" class="prompt-dialog-content">
     <label class="flex flex-col gap-2 text-sm text-muted-foreground">
-      {{ message }}
+      <span :id="descriptionId">{{ message }}</span>
       <Input
         ref="inputRef"
         v-model="inputValue"
@@ -32,12 +32,21 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { message, defaultValue, onConfirm, placeholder } = defineProps<{
+const {
+  message,
+  defaultValue,
+  onConfirm,
+  placeholder,
+  titleId,
+  descriptionId
+} = defineProps<{
   title: string
   message: string
   defaultValue: string
   onConfirm: (value: string) => void
   placeholder?: string
+  titleId?: string
+  descriptionId?: string
 }>()
 
 const inputValue = ref<string>(defaultValue)

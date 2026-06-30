@@ -1,7 +1,9 @@
 <template>
-  <SmallModalShell :title>
+  <SmallModalShell :title :title-id="titleId">
     <div class="flex flex-col gap-4 wrap-break-word whitespace-pre-wrap">
-      <span class="text-sm text-muted-foreground">{{ message }}</span>
+      <span :id="descriptionId" class="text-sm text-muted-foreground">{{
+        message
+      }}</span>
       <ul
         v-if="itemList?.length"
         class="m-0 flex flex-col gap-2 pl-4 text-sm text-muted-foreground"
@@ -134,6 +136,8 @@ const props = defineProps<{
   itemList?: string[]
   hint?: string
   denyLabel?: string
+  titleId?: string
+  descriptionId?: string
 }>()
 
 const { t } = useI18n()

@@ -45,6 +45,18 @@ describe('PromptDialogContent', () => {
     ).toBeInTheDocument()
   })
 
+  it('puts the description-id on the message so the dialog can describe itself', () => {
+    renderComponent({
+      message: 'Enter a new file name',
+      descriptionId: 'global-prompt-description'
+    })
+
+    expect(screen.getByText('Enter a new file name')).toHaveAttribute(
+      'id',
+      'global-prompt-description'
+    )
+  })
+
   it('closes the dialog without confirming when Cancel is clicked', async () => {
     const onConfirm = vi.fn()
     const { user } = renderComponent({ onConfirm })

@@ -78,6 +78,18 @@ describe('ConfirmationDialogContent', () => {
     ).toHaveAttribute('id', 'global-prompt')
   })
 
+  it('puts the description-id on the message so the dialog can describe itself', () => {
+    renderComponent({
+      message: 'This action cannot be undone.',
+      descriptionId: 'global-prompt-description'
+    })
+
+    expect(screen.getByText('This action cannot be undone.')).toHaveAttribute(
+      'id',
+      'global-prompt-description'
+    )
+  })
+
   it('closes the dialog when the header close button is clicked', async () => {
     const { user, container } = renderComponent()
     const closeSpy = vi.spyOn(useDialogStore(), 'closeDialog')
