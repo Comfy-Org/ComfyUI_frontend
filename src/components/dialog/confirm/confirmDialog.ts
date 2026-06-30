@@ -22,12 +22,13 @@ export function showConfirmDialog(options: ConfirmDialogOptions = {}) {
     headerProps,
     props,
     footerProps,
+    // Render confirm dialogs via Reka. The legacy PrimeVue confirm dialog has a
+    // latent-flaky enter-transition that becomes deterministic under the heavier
+    // cloud init (FE-978), hanging the e2e confirm interactions. The Reka
+    // Confirm{Header,Body,Footer} components own their padding, so the PrimeVue
+    // `pt` zeroing is no longer needed.
     dialogComponentProps: {
-      pt: {
-        header: 'py-0! px-0!',
-        content: 'p-0!',
-        footer: 'p-0!'
-      }
+      renderer: 'reka'
     }
   })
 }
