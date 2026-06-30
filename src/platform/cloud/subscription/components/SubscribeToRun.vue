@@ -24,14 +24,13 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useWorkspacePermissions } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const { t } = useI18n()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
-const { permissions } = useWorkspaceUI()
-const { showSubscriptionDialog } = useBillingContext()
+const { permissions } = useWorkspacePermissions()
 const { trackRunButton } = useRunButtonTelemetry()
 
 const canResubscribe = computed(() => permissions.value.canManageSubscription)
@@ -54,6 +53,6 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog()
+  useBillingContext().showSubscriptionDialog()
 }
 </script>

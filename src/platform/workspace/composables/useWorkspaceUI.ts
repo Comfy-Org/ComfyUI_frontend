@@ -156,17 +156,13 @@ function isOriginalOwnerByEmail(
   return original.email.toLowerCase() === email
 }
 
-/**
- * Internal implementation of UI configuration composable.
- */
-function useWorkspaceUIInternal() {
+// Billing-free permissions: must not read useBillingContext, directly or
+// indirectly. useWorkspaceUI sits inside the
+// useBillingContext -> useWorkspaceBilling -> useWorkspaceUI cycle, so any
+// component whose render path needs only permissions must use this composable
+// to avoid re-entering a half-built billing context at setup time.
+function useWorkspacePermissionsInternal() {
   const store = useTeamWorkspaceStore()
-  const { userEmail } = useCurrentUser()
-  const { isActiveSubscription, subscription } = useBillingContext()
-
-  const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
-  const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
-  const members = computed(() => store.members)
 
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
@@ -201,6 +197,32 @@ function useWorkspaceUIInternal() {
   const uiConfig = computed<WorkspaceUIConfig>(() =>
     getUIConfig(workspaceType.value, workspaceRole.value)
   )
+
+  return {
+    permissions,
+    uiConfig,
+    workspaceType,
+    workspaceRole
+  }
+}
+
+export const useWorkspacePermissions = createSharedComposable(
+  useWorkspacePermissionsInternal
+)
+
+/**
+ * Internal implementation of UI configuration composable.
+ */
+function useWorkspaceUIInternal() {
+  const store = useTeamWorkspaceStore()
+  const { userEmail } = useCurrentUser()
+  const { isActiveSubscription, subscription } = useBillingContext()
+  const { permissions, uiConfig, workspaceType, workspaceRole } =
+    useWorkspacePermissions()
+
+  const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
+  const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
+  const members = computed(() => store.members)
 
   // Cancel / reactivate / delete are original-owner-only; personal workspaces
   // are single-member, so the user is always their own original owner.

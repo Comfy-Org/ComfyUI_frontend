@@ -8,17 +8,18 @@ import { createI18n } from 'vue-i18n'
 import SubscribeToRun from './SubscribeToRun.vue'
 
 const mockShowSubscriptionDialog = vi.fn()
+const mockUseBillingContext = vi.fn(() => ({
+  showSubscriptionDialog: mockShowSubscriptionDialog
+}))
 const mockCanManageSubscription = ref(true)
 const mockIsMdOrLarger = ref(true)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    showSubscriptionDialog: mockShowSubscriptionDialog
-  })
+  useBillingContext: () => mockUseBillingContext()
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
+  useWorkspacePermissions: () => ({
     permissions: computed(() => ({
       canManageSubscription: mockCanManageSubscription.value
     }))
@@ -110,5 +111,21 @@ describe('SubscribeToRun', () => {
     await user.click(screen.getByTestId('subscribe-to-run-button'))
 
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+  })
+
+  describe('billing context import cycle', () => {
+    it('does not resolve useBillingContext at component setup', () => {
+      renderButton()
+      expect(mockUseBillingContext).not.toHaveBeenCalled()
+    })
+
+    it('resolves useBillingContext lazily when the button is clicked', async () => {
+      const { user } = renderButton()
+      expect(mockUseBillingContext).not.toHaveBeenCalled()
+
+      await user.click(screen.getByTestId('subscribe-to-run-button'))
+
+      expect(mockUseBillingContext).toHaveBeenCalled()
+    })
   })
 })
