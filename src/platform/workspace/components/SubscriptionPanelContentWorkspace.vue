@@ -187,6 +187,7 @@
                   variant="muted-textonly"
                   size="icon-sm"
                   class="absolute top-4 right-4"
+                  :aria-label="$t('subscription.refreshCredits')"
                   :loading="isLoadingBalance"
                   @click="handleRefresh"
                 >

@@ -207,12 +207,10 @@ describe('SubscriptionPanelContentWorkspace (component smoke tests)', () => {
   it('calls handleRefresh on refresh button click', async () => {
     setSubscribedState()
     renderComponent()
-    const allButtons = screen.getAllByRole('button')
-    const refreshButton = allButtons.find(
-      (b) => b.textContent === '' && !b.getAttribute('aria-label')
-    )
-    expect(refreshButton).toBeTruthy()
-    await userEvent.click(refreshButton!)
+    const refreshButton = screen.getByRole('button', {
+      name: /subscription.refreshCredits/
+    })
+    await userEvent.click(refreshButton)
     expect(fns.handleRefresh).toHaveBeenCalled()
   })
 
