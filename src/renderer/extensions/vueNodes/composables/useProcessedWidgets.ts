@@ -5,7 +5,6 @@ import type { Component } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -232,7 +231,11 @@ function createWidgetUpdateHandler(
 }
 
 export function hasWidgetError(
-  widget: { name: string; sourceExecutionId?: NodeExecutionId },
+  widget: {
+    name: string
+    sourceExecutionId?: NodeExecutionId
+    sourceWidgetName?: string
+  },
   nodeExecId: NodeExecutionId,
   nodeErrors:
     | { errors: { extra_info?: { input_name?: string } }[] }
@@ -243,8 +246,11 @@ export function hasWidgetError(
   const errors = widget.sourceExecutionId
     ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
     : nodeErrors?.errors
+  const errorInputName = widget.sourceExecutionId
+    ? (widget.sourceWidgetName ?? widget.name)
+    : widget.name
   return (
-    !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
+    !!errors?.some((e) => e.extra_info?.input_name === errorInputName) ||
     missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
   )
 }
@@ -349,7 +355,6 @@ function toRenderWidgetSource({
   graphId,
   index,
   node,
-  rootGraph,
   slotMetadata,
   widget,
   widgetValueStore
@@ -357,7 +362,6 @@ function toRenderWidgetSource({
   graphId: string | undefined
   index: number
   node: LGraphNode
-  rootGraph: LGraph | null
   slotMetadata: Map<string, WidgetSlotMetadata>
   widget: IBaseWidget
   widgetValueStore: ReturnType<typeof useWidgetValueStore>
@@ -371,30 +375,24 @@ function toRenderWidgetSource({
   const renderState = widgetId
     ? widgetValueStore.getWidgetRenderState(widgetId)
     : undefined
-  const promoted = node.isSubgraphNode()
-    ? resolvePromotedWidgetSource(rootGraph, node, widget)
-    : undefined
-  const sourceWidget = promoted?.sourceWidget ?? widget
   const options = getMergedOptions(widget, widgetState, renderState)
 
   if (!shouldRenderAsVue({ type: widget.type, options })) return undefined
 
   return {
     callback: createWidgetCallback(node, widget),
-    controlWidget: getControlWidget(sourceWidget),
+    controlWidget: renderState?.controlWidget ?? getControlWidget(widget),
     hasLayoutSize:
       renderState?.hasLayoutSize ??
-      typeof sourceWidget.computeLayoutSize === 'function',
-    isDOMWidget: renderState?.isDOMWidget ?? isDOMBackedWidget(sourceWidget),
+      typeof widget.computeLayoutSize === 'function',
+    isDOMWidget: renderState?.isDOMWidget ?? isDOMBackedWidget(widget),
     name: widgetState?.name ?? widget.name,
     options,
     renderState,
     slotMetadata: slotMetadata.get(widget.name),
-    sourceExecutionId:
-      renderState?.sourceExecutionId ?? promoted?.sourceExecutionId,
-    sourceWidgetName:
-      renderState?.sourceWidgetName ?? promoted?.sourceWidgetName,
-    tooltip: renderState?.tooltip ?? sourceWidget.tooltip,
+    sourceExecutionId: renderState?.sourceExecutionId,
+    sourceWidgetName: renderState?.sourceWidgetName,
+    tooltip: renderState?.tooltip ?? widget.tooltip,
     type: widgetState?.type ?? widget.type,
     widget,
     widgetId
@@ -446,7 +444,6 @@ export function computeProcessedWidgets({
       graphId,
       index: duplicateIndex,
       node,
-      rootGraph,
       slotMetadata,
       widget,
       widgetValueStore
