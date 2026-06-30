@@ -6,6 +6,7 @@
  */
 import { onUnmounted, ref } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -61,6 +62,9 @@ export function useLayoutSync() {
     }
 
     pendingNodeIds.clear()
+
+    if (layoutStore.getCurrentSource() === LayoutSource.DOM)
+      useWorkflowStore().activeWorkflow?.changeTracker?.squashState()
     canvas.setDirty(true, true)
   }
 
