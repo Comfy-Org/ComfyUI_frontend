@@ -52,7 +52,7 @@ const inner = 'relative top-[0.06em] inline-block'
         </span>
         <span
           v-if="!compact"
-          class="hero-liquid-link bg-primary-comfy-yellow pointer-events-none absolute top-1/2 left-1/2 h-9 w-24 rounded-full"
+          class="hero-liquid-link bg-primary-comfy-yellow pointer-events-none absolute top-1/2 left-1/2 h-9 w-5 rounded-full"
         />
       </div>
 
@@ -71,7 +71,7 @@ const inner = 'relative top-[0.06em] inline-block'
       :class="
         cn(
           'max-w-md text-primary-comfy-canvas',
-          compact ? 'mt-5 text-sm/relaxed' : 'mt-8 text-base'
+          compact ? 'mt-5 hidden text-sm/relaxed sm:block' : 'mt-8 text-base'
         )
       "
     >
