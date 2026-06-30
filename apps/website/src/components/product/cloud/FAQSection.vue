@@ -12,5 +12,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     heading-key="cloud.faq.heading"
     faq-prefix="cloud.faq"
     :faq-count="12"
+    footer-key="cloud.faq.footer"
   />
 </template>

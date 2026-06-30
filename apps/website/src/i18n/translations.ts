@@ -1061,6 +1061,11 @@ const translations = {
     en: 'FAQs',
     'zh-CN': '常见问题'
   },
+  'cloud.faq.footer': {
+    en: 'For pricing, plans, credits, and billing details, see the <a href="/cloud/pricing#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    'zh-CN':
+      '有关定价、计划、积分和账单的详细信息，请查看<a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
+  },
   'cloud.faq.1.q': {
     en: 'What is Comfy Cloud / ComfyUI Cloud?',
     'zh-CN': '什么是 Comfy Cloud / ComfyUI Cloud？'
@@ -1462,8 +1467,8 @@ const translations = {
   },
 
   'pricing.faq.heading': {
-    en: 'Q&A',
-    'zh-CN': '问答'
+    en: 'FAQs',
+    'zh-CN': '常见问题'
   },
 
   // VideoPlayer

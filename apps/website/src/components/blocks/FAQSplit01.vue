@@ -7,13 +7,14 @@ import AccordionTrigger from '../ui/accordion/AccordionTrigger.vue'
 type Faq = { id: string; question: string; answer: string }
 
 defineProps<{
+  id?: string
   heading: string
   faqs: readonly Faq[]
 }>()
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section :id="id" class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <!-- Left heading -->
       <div

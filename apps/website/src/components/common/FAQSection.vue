@@ -10,12 +10,14 @@ const {
   locale = 'en',
   headingKey,
   faqPrefix,
-  faqCount
+  faqCount,
+  footerKey
 } = defineProps<{
   locale?: Locale
   headingKey: TranslationKey
   faqPrefix: string
   faqCount: number
+  footerKey?: TranslationKey
 }>()
 
 const faqKeys: Array<{ q: TranslationKey; a: TranslationKey }> = Array.from(
@@ -104,6 +106,12 @@ function toggle(index: number) {
             />
           </section>
         </div>
+
+        <p
+          v-if="footerKey"
+          class="[&_a]:text-primary-comfy-yellow mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:underline"
+          v-html="t(footerKey, locale)"
+        />
       </div>
     </div>
   </section>
