@@ -107,13 +107,19 @@ const isSingleSubgraphNode = computed(() => {
   return selectedSingleNode.value instanceof SubgraphNode
 })
 
+const workflowKey = computed(() => workflowStore.activeWorkflow?.path ?? '')
+
 const selectedNodesKey = computed(() => {
   const nodeIds = selectedNodes.value.map((n) => n.id).join(',')
   const groupIds = selectedGroups.value.map((g) => g.id).join(',')
   return `${workflowKey.value}|${nodeIds}|${groupIds}`
 })
 
-const workflowKey = computed(() => workflowStore.activeWorkflow?.path ?? '')
+const singleSubgraphKey = computed(() =>
+  selectedSingleNode.value
+    ? `${workflowKey.value}:${selectedSingleNode.value.id}`
+    : ''
+)
 
 function closePanel() {
   useTelemetry()?.trackUiButtonClicked({
@@ -393,13 +399,13 @@ function handleTitleCancel() {
       </template>
       <SubgraphEditor
         v-else-if="isSingleSubgraphNode && isEditingSubgraph"
-        :key="`${workflowKey}:${selectedSingleNode!.id}`"
+        :key="singleSubgraphKey"
         :node="selectedSingleNode"
       />
       <template v-else>
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
-          :key="`${workflowKey}:${selectedSingleNode!.id}`"
+          :key="singleSubgraphKey"
           :node="selectedSingleNode as SubgraphNode"
         />
         <TabNormalInputs
