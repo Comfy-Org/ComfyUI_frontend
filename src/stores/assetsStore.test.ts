@@ -50,6 +50,11 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+// Node types whose category lookup should throw, simulating a refresh failure
+const mockCategoryLookupFailures = vi.hoisted(() => ({
+  nodeTypes: new Set<string>()
+}))
+
 // Mock modelToNodeStore with proper node providers and category lookups
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({
@@ -71,6 +76,9 @@ vi.mock('@/stores/modelToNodeStore', () => ({
       return providers[category] ?? []
     }),
     getCategoryForNodeType: vi.fn((nodeType: string) => {
+      if (mockCategoryLookupFailures.nodeTypes.has(nodeType)) {
+        throw new Error(`No category registered for node type: ${nodeType}`)
+      }
       const nodeToCategory: Record<string, string> = {
         CheckpointLoaderSimple: 'checkpoints',
         ImageOnlyCheckpointLoader: 'checkpoints',
@@ -862,6 +870,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = true
+    mockCategoryLookupFailures.nodeTypes.clear()
     vi.clearAllMocks()
   })
 
@@ -1343,6 +1352,43 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         expect.objectContaining({ limit: 500, offset: 0 })
       )
       expect(store.hasCategory('tag:models')).toBe(true)
+    })
+
+    it('settles the batch when one provider refresh rejects', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      mockCategoryLookupFailures.nodeTypes.add('ImageOnlyCheckpointLoader')
+
+      useAssetsStore()
+      const downloadStore = useAssetDownloadStore()
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([])
+
+      downloadStore.lastCompletedDownload = {
+        taskId: 'task-2',
+        modelType: 'checkpoints',
+        timestamp: 2
+      }
+
+      await vi.waitFor(() =>
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('ImageOnlyCheckpointLoader'),
+          expect.any(Error)
+        )
+      )
+
+      expect(assetService.getAssetsForNodeType).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple',
+        expect.objectContaining({ limit: 500, offset: 0 })
+      )
+      expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+        'models',
+        true,
+        expect.objectContaining({ limit: 500, offset: 0 })
+      )
+
+      consoleErrorSpy.mockRestore()
     })
   })
 
