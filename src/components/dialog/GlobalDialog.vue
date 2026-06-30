@@ -25,28 +25,40 @@
           "
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
-          <DialogHeader v-if="!item.dialogComponentProps.headless">
-            <component
-              :is="item.headerComponent"
-              v-if="item.headerComponent"
-              v-bind="item.headerProps"
-              :id="item.key"
-            />
-            <DialogTitle v-else :id="item.key">
-              {{ item.title || ' ' }}
-            </DialogTitle>
-            <DialogClose v-if="item.dialogComponentProps.closable !== false" />
-          </DialogHeader>
-          <div class="flex-1 overflow-auto px-4 py-2">
+          <!-- Headless dialogs (e.g. the pricing table) draw their own chrome;
+               render them directly to avoid the px-4/py-2 + overflow-auto wrapper
+               that otherwise forces a horizontal scrollbar on full-width content. -->
+          <template v-if="item.dialogComponentProps.headless">
             <component
               :is="item.component"
               v-bind="item.contentProps"
               :maximized="item.dialogComponentProps.maximized"
             />
-          </div>
-          <DialogFooter v-if="item.footerComponent">
-            <component :is="item.footerComponent" v-bind="item.footerProps" />
-          </DialogFooter>
+          </template>
+          <template v-else>
+            <DialogHeader>
+              <component
+                :is="item.headerComponent"
+                v-if="item.headerComponent"
+                v-bind="item.headerProps"
+                :id="item.key"
+              />
+              <DialogTitle v-else :id="item.key">
+                {{ item.title || ' ' }}
+              </DialogTitle>
+              <DialogClose v-if="item.dialogComponentProps.closable !== false" />
+            </DialogHeader>
+            <div class="flex-1 overflow-auto px-4 py-2">
+              <component
+                :is="item.component"
+                v-bind="item.contentProps"
+                :maximized="item.dialogComponentProps.maximized"
+              />
+            </div>
+            <DialogFooter v-if="item.footerComponent">
+              <component :is="item.footerComponent" v-bind="item.footerProps" />
+            </DialogFooter>
+          </template>
         </DialogContent>
       </DialogPortal>
     </Dialog>

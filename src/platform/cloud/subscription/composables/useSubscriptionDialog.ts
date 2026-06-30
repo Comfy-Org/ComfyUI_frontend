@@ -41,6 +41,13 @@ export const useSubscriptionDialog = () => {
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
 
+    // Opening pricing from inside Settings (the "Subscribe" / "Upgrade to Team"
+    // CTA) would stack the Reka pricing dialog behind the PrimeVue Settings
+    // dialog (Reka z-1700 < PrimeVue modal z-1800) — and pricing is intentionally
+    // non-modal so its hosted PrimeVue popover stays clickable, so it can't just
+    // be raised above. Close Settings first so pricing opens cleanly on top.
+    dialogStore.closeDialog({ key: 'global-settings' })
+
     const { permissions } = useWorkspaceUI()
 
     // Members can't manage the workspace subscription, so a blocked run shows a
