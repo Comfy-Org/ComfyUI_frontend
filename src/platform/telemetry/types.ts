@@ -162,9 +162,12 @@ export interface MissingNodePack {
 
 /**
  * How a template open was triggered:
- * - `StarterTemplate` — desktop install/onboarding deeplink (`?template=` on first launch)
+ * - `StarterTemplate` — desktop onboarding deeplink (`?template=` on first launch)
  * - `LibraryTemplate` — in-app template picker
  * - `SharedUrl` — a `?template=` link opened in the browser
+ *
+ * Values are the on-the-wire `open_trigger` param and are mirrored in the desktop
+ * deeplink builder — don't rename them lightly.
  */
 export const TemplateOpenTrigger = {
   StarterTemplate: 'starter_template',

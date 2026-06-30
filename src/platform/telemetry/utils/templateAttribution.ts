@@ -3,21 +3,23 @@ import type {
   WorkflowImportMetadata,
   WorkflowOpenSource
 } from '../types'
+import { isTemplateOpenTrigger } from './templateOpenTrigger'
 
 type TemplateAttribution = Partial<
   Pick<WorkflowImportMetadata, 'template_id' | 'open_trigger'>
 >
 
 /**
- * Per-template attribution for a workflow-open event. Empty unless the open
- * actually came from a template and both tags are present, so non-template
- * opens emit an unchanged payload.
+ * Per-template attribution for a workflow-open event; empty for any other open,
+ * so their payload is unchanged. Re-validates the trigger so a shared URL can't
+ * smuggle an unchecked value into telemetry.
  */
 export function templateAttribution(
   openSource: WorkflowOpenSource | undefined,
   templateId: string | undefined,
   openTrigger: TemplateOpenTrigger | undefined
 ): TemplateAttribution {
-  if (openSource !== 'template' || !templateId || !openTrigger) return {}
+  if (openSource !== 'template' || !templateId) return {}
+  if (!isTemplateOpenTrigger(openTrigger)) return {}
   return { template_id: templateId, open_trigger: openTrigger }
 }

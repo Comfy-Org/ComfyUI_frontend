@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { TemplateOpenTrigger } from '../types'
 import { templateAttribution } from './templateAttribution'
 
 describe('templateAttribution', () => {
@@ -28,5 +29,10 @@ describe('templateAttribution', () => {
     expect(templateAttribution('template', 'flux_simple', undefined)).toEqual(
       {}
     )
+  })
+
+  it('rejects a trigger value outside the known set', () => {
+    const forged = 'malicious_trigger' as unknown as TemplateOpenTrigger
+    expect(templateAttribution('template', 'flux_simple', forged)).toEqual({})
   })
 })
