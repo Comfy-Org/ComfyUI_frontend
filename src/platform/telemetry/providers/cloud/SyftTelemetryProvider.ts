@@ -8,8 +8,7 @@ const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
 let scriptPromise: Promise<void> | null = null
 
 function normalizeEmail(email: string | null | undefined): string | null {
-  const normalized = email?.trim().toLowerCase()
-  return normalized ? normalized : null
+  return email?.trim().toLowerCase() || null
 }
 
 function createTraits(
@@ -95,11 +94,10 @@ export class SyftTelemetryProvider implements TelemetryProvider {
     const normalizedEmail = normalizeEmail(email)
     if (!normalizedEmail) return
 
-    if (is_new_user) {
-      this.identify(normalizedEmail, createTraits('signup', method))
-    } else {
-      this.identify(normalizedEmail, createTraits('login', method))
-    }
+    this.identify(
+      normalizedEmail,
+      createTraits(is_new_user ? 'signup' : 'login', method)
+    )
   }
 
   trackUserLoggedIn(): void {
