@@ -230,6 +230,10 @@ export class ChangeTracker {
     this.captureCanvasState()
   }
 
+  squashState() {
+    this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+  }
+
   private static _checkStateWarned = false
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
