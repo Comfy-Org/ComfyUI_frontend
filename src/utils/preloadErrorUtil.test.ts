@@ -117,6 +117,15 @@ describe('isStaleChunkError', () => {
     expect(isStaleChunkError(info)).toBe(true)
   })
 
+  it('returns true for base64 (mixed-case) hashed chunk under /assets/', () => {
+    const info = parsePreloadError(
+      new Error(
+        'Failed to fetch dynamically imported module: /assets/vendor-Bx7_ab2.js'
+      )
+    )
+    expect(isStaleChunkError(info)).toBe(true)
+  })
+
   it('returns false for non-asset URLs like /api/i18n', () => {
     const info = parsePreloadError(
       new Error(
