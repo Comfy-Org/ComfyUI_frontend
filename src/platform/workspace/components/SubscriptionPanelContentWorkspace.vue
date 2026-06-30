@@ -560,7 +560,7 @@ async function handleResubscribe() {
     await Promise.all([fetchStatus(), fetchBalance()])
   } catch (error) {
     const message =
-      error instanceof Error
+      error instanceof Error && error.message.trim().length > 0
         ? error.message
         : t('subscription.resubscribeFailed')
     toast.add({
