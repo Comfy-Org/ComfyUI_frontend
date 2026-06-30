@@ -611,5 +611,24 @@ describe('useAssetGridSelection', () => {
 
       dialog.remove()
     })
+
+    it('stops the select-all keystroke from reaching other handlers when hovered', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+      const downstream = vi.fn()
+      window.addEventListener('keydown', downstream)
+
+      panel().dispatchEvent(new MouseEvent('mouseenter'))
+      pressSelectAll()
+      expect(callbacks.selectAll).toHaveBeenCalledTimes(1)
+      expect(downstream).not.toHaveBeenCalled()
+
+      panel().dispatchEvent(new MouseEvent('mouseleave'))
+      pressSelectAll()
+      expect(callbacks.selectAll).toHaveBeenCalledTimes(1)
+      expect(downstream).toHaveBeenCalledTimes(1)
+
+      window.removeEventListener('keydown', downstream)
+    })
   })
 })
