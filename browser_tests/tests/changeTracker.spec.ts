@@ -347,14 +347,13 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
           .then((menu) => menu.clickMenuItem('Convert to Subgraph'))
 
       await test.step('setup nested subgraph', async () => {
-        await convertToSubgraph('Empty Latent')
+        await convertToSubgraph('Load Checkpoint')
         await convertToSubgraph('New Subgraph')
         await comfyPage.vueNodes.enterSubgraph()
       })
 
-      //Spurious undo states may exist. Repeat until valid
-
-      expect(true).toBe(false)
+      await comfyPage.keyboard.undo()
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     }
   )
 })
