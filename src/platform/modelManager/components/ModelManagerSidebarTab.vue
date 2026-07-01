@@ -65,7 +65,7 @@
   </SidebarTabTemplate>
 
   <AddModelByUrlDialog v-model:open="addOpen" />
-  <DownloadCredentialsDialog
+  <HostCredentialsDialog
     v-model:open="credentialsOpen"
     :prefill-host="prefillHost"
   />
@@ -79,7 +79,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import Button from '@/components/ui/button/Button.vue'
 
 import AddModelByUrlDialog from './AddModelByUrlDialog.vue'
-import DownloadCredentialsDialog from './DownloadCredentialsDialog.vue'
+import HostCredentialsDialog from './HostCredentialsDialog.vue'
 import ModelDownloadRow from './ModelDownloadRow.vue'
 import { useModelDownloadStore } from '../stores/modelDownloadStore'
 

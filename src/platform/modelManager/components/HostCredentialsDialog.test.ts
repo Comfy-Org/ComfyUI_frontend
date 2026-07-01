@@ -8,7 +8,7 @@ import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import type { HostCredentialView } from '../types'
-import DownloadCredentialsDialog from './DownloadCredentialsDialog.vue'
+import HostCredentialsDialog from './HostCredentialsDialog.vue'
 
 const mockCloseDialog = vi.fn()
 const mockToastAdd = vi.fn()
@@ -21,8 +21,8 @@ const mockCredentialsStore = reactive({
   remove: vi.fn()
 })
 
-vi.mock('../stores/downloadCredentialsStore', () => ({
-  useDownloadCredentialsStore: () => mockCredentialsStore
+vi.mock('../stores/hostCredentialsStore', () => ({
+  useHostCredentialsStore: () => mockCredentialsStore
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -108,13 +108,13 @@ function createCredential(
 }
 
 function mountDialog(props: { open?: boolean; prefillHost?: string } = {}) {
-  return render(DownloadCredentialsDialog, {
+  return render(HostCredentialsDialog, {
     props: { open: true, ...props },
     global: { plugins: [i18n], stubs }
   })
 }
 
-describe('DownloadCredentialsDialog', () => {
+describe('HostCredentialsDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCredentialsStore.credentials = []

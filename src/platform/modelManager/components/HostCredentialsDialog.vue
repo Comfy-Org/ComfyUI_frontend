@@ -180,7 +180,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { storeToRefs } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useDownloadCredentialsStore } from '../stores/downloadCredentialsStore'
+import { useHostCredentialsStore } from '../stores/hostCredentialsStore'
 import { AUTH_SCHEMES } from '../types'
 import type { AuthScheme, HostCredentialView } from '../types'
 
@@ -193,7 +193,7 @@ const { prefillHost = '' } = defineProps<{ prefillHost?: string }>()
 const isOpen = defineModel<boolean>('open', { required: true })
 
 const { t } = useI18n()
-const store = useDownloadCredentialsStore()
+const store = useHostCredentialsStore()
 const { credentials } = storeToRefs(store)
 const dialogStore = useDialogStore()
 

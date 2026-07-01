@@ -43,9 +43,9 @@ vi.mock('./AddModelByUrlDialog.vue', () => ({
   }
 }))
 
-vi.mock('./DownloadCredentialsDialog.vue', () => ({
+vi.mock('./HostCredentialsDialog.vue', () => ({
   default: {
-    name: 'DownloadCredentialsDialog',
+    name: 'HostCredentialsDialog',
     props: ['open', 'prefillHost'],
     template:
       '<div data-testid="credentials-dialog">{{ open }}:{{ prefillHost }}</div>'

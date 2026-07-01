@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as downloadApi from '../api/modelDownloadApi'
 import type { HostCredentialUpsert, HostCredentialView } from '../types'
-import { useDownloadCredentialsStore } from './downloadCredentialsStore'
+import { useHostCredentialsStore } from './hostCredentialsStore'
 
 vi.mock('../api/modelDownloadApi', () => ({
   listCredentials: vi.fn(),
@@ -31,7 +31,7 @@ function createCredential(
   }
 }
 
-describe('useDownloadCredentialsStore', () => {
+describe('useHostCredentialsStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
@@ -41,7 +41,7 @@ describe('useDownloadCredentialsStore', () => {
     it('toggles isLoading and stores the result', async () => {
       const credential = createCredential()
       vi.mocked(downloadApi.listCredentials).mockResolvedValue([credential])
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
 
       const promise = store.fetchCredentials()
       expect(store.isLoading).toBe(true)
@@ -55,7 +55,7 @@ describe('useDownloadCredentialsStore', () => {
       vi.mocked(downloadApi.listCredentials).mockRejectedValue(
         new Error('boom')
       )
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
 
       await expect(store.fetchCredentials()).rejects.toThrow('boom')
       expect(store.isLoading).toBe(false)
@@ -66,7 +66,7 @@ describe('useDownloadCredentialsStore', () => {
     it('normalizes the host and appends a new credential', async () => {
       const created = createCredential({ id: 'new', host: 'huggingface.co' })
       vi.mocked(downloadApi.upsertCredential).mockResolvedValue(created)
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       const body: HostCredentialUpsert = {
         host: '  HuggingFace.co  ',
         secret: 's3cret'
@@ -85,7 +85,7 @@ describe('useDownloadCredentialsStore', () => {
       const original = createCredential({ id: 'c1', label: 'Old' })
       const updated = createCredential({ id: 'c1', label: 'New' })
       vi.mocked(downloadApi.upsertCredential).mockResolvedValue(updated)
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       store.credentials.push(original)
 
       await store.upsert({ host: 'huggingface.co', secret: 's' })
@@ -97,7 +97,7 @@ describe('useDownloadCredentialsStore', () => {
   describe('remove', () => {
     it('deletes and filters out the credential by id', async () => {
       vi.mocked(downloadApi.deleteCredential).mockResolvedValue(undefined)
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       store.credentials.push(
         createCredential({ id: 'c1' }),
         createCredential({ id: 'c2' })
@@ -112,7 +112,7 @@ describe('useDownloadCredentialsStore', () => {
 
   describe('enabledCredentialForHost', () => {
     it('matches an exact enabled host case-insensitively', () => {
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       store.credentials.push(
         createCredential({ host: 'HuggingFace.co', enabled: true })
       )
@@ -123,7 +123,7 @@ describe('useDownloadCredentialsStore', () => {
     })
 
     it('returns undefined for a disabled exact match', () => {
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       store.credentials.push(
         createCredential({ host: 'huggingface.co', enabled: false })
       )
@@ -132,7 +132,7 @@ describe('useDownloadCredentialsStore', () => {
     })
 
     it('falls back to a subdomain match only when match_subdomains is set', () => {
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       store.credentials.push(
         createCredential({
           host: 'huggingface.co',
@@ -147,7 +147,7 @@ describe('useDownloadCredentialsStore', () => {
     })
 
     it('does not subdomain-match when match_subdomains is false', () => {
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       store.credentials.push(
         createCredential({
           host: 'huggingface.co',
@@ -162,7 +162,7 @@ describe('useDownloadCredentialsStore', () => {
     })
 
     it('returns undefined when no host matches', () => {
-      const store = useDownloadCredentialsStore()
+      const store = useHostCredentialsStore()
       expect(store.enabledCredentialForHost('example.com')).toBeUndefined()
     })
   })
