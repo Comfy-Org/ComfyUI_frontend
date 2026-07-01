@@ -158,6 +158,7 @@ describe('useSubscriptionCheckout', () => {
     vi.clearAllMocks()
     mockPlans.value = allPlans()
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
+    mockUserId.value = 'user-1'
     emit = vi.fn()
   })
 
@@ -472,7 +473,11 @@ describe('useSubscriptionCheckout', () => {
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
-        expect.objectContaining({ tier: 'team', checkout_type: 'new' })
+        expect.objectContaining({
+          tier: 'team',
+          checkout_type: 'new',
+          billing_op_id: 'op-team-1'
+        })
       )
     })
 
@@ -568,6 +573,39 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Team payment failed'
         })
       )
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+    })
+
+    it('keeps team checkout_type as change when the preview request fails', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-change'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tier: 'team',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          billing_op_id: 'op-team-change'
+        })
+      )
     })
   })
 
@@ -654,6 +692,7 @@ describe('useSubscriptionCheckout', () => {
         tier: 'standard',
         cycle: 'yearly',
         checkout_type: 'new',
+        billing_op_id: 'op-1',
         payment_intent_source: 'subscribe_to_run'
       })
     })
@@ -775,6 +814,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Payment failed'
         })
       )
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
     })
   })
 

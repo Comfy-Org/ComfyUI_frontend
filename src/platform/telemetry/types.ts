@@ -439,6 +439,8 @@ export interface BeginCheckoutMetadata
   tier: TierKey | 'team'
   cycle: BillingCycle
   checkout_type: 'new' | 'change'
+  checkout_attempt_id?: string
+  billing_op_id?: string
   previous_tier?: TierKey
   payment_intent_source?: SubscriptionDialogReason
 }

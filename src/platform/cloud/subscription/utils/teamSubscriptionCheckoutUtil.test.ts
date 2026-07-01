@@ -66,6 +66,7 @@ describe('performTeamSubscriptionCheckout', () => {
       tier: 'team',
       cycle: 'yearly',
       checkout_type: 'new',
+      billing_op_id: 'op_1',
       payment_intent_source: 'deep_link'
     })
   })
@@ -97,6 +98,16 @@ describe('performTeamSubscriptionCheckout', () => {
     ).rejects.toThrow(/payment URL/)
 
     expect(assignedHref).toBeUndefined()
+  })
+
+  it('does not track begin_checkout when subscribe fails', async () => {
+    mockSubscribe.mockRejectedValueOnce(new Error('subscribe failed'))
+
+    await expect(
+      performTeamSubscriptionCheckout('team_700', 'yearly')
+    ).rejects.toThrow('subscribe failed')
+
+    expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
   })
 
   it('does nothing off cloud', async () => {

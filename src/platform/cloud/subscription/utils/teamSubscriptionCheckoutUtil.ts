@@ -31,22 +31,23 @@ export async function performTeamSubscriptionCheckout(
   if (!isCloud) return
 
   const { userId } = storeToRefs(useAuthStore())
-  if (userId.value) {
-    useTelemetry()?.trackBeginCheckout({
-      user_id: userId.value,
-      tier: 'team',
-      cycle: billingCycle,
-      checkout_type: 'new',
-      payment_intent_source: 'deep_link'
-    })
-  }
-
   const planSlug = getTeamPlanSlug(billingCycle)
   const response = await workspaceApi.subscribe(planSlug, {
     returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
     cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
     teamCreditStopId
   })
+
+  if (userId.value) {
+    useTelemetry()?.trackBeginCheckout({
+      user_id: userId.value,
+      tier: 'team',
+      cycle: billingCycle,
+      checkout_type: 'new',
+      billing_op_id: response.billing_op_id,
+      payment_intent_source: 'deep_link'
+    })
+  }
 
   if (response.status === 'needs_payment_method') {
     // A needs_payment_method response without a URL is unusable: surface it to

@@ -231,6 +231,18 @@ describe('useSubscriptionDialog', () => {
       )
     })
 
+    it('does not track modal_opened for the inactive member dialog', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockCanManageSubscription.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      expect(mockTrackSubscription).not.toHaveBeenCalled()
+    })
+
     it('does not track on non-cloud', () => {
       mockIsCloud.value = false
       const { showPricingTable } = useSubscriptionDialog()

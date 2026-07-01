@@ -67,8 +67,6 @@ export const useSubscriptionDialog = () => {
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
 
-    trackModalOpened(options?.reason)
-
     // Resolved lazily (not at setup): useWorkspaceUI reads useBillingContext, so
     // a setup-time read re-enters the half-built context during the
     // useBillingContext -> useWorkspaceBilling -> useSubscriptionDialog cycle.
@@ -98,6 +96,8 @@ export const useSubscriptionDialog = () => {
       })
       return
     }
+
+    trackModalOpened(options?.reason)
 
     // Shared dialog shell styling for both variants.
     const dialogComponentProps = {

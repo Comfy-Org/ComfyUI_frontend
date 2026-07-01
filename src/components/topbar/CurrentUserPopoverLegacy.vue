@@ -224,7 +224,7 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   emit('close')
 }
 
@@ -253,7 +253,7 @@ const handleOpenPartnerNodesInfo = () => {
 }
 
 const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
   emit('close')
 }
 

@@ -21,6 +21,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+type CheckoutType = 'new' | 'change'
 
 /**
  * Which screen the `preview` step shows. Only a change prorates: a team change
@@ -75,6 +76,7 @@ export function useSubscriptionCheckout(
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamStop = ref<TeamPlanSelection | null>(null)
+  const selectedTeamCheckoutType = ref<CheckoutType>('new')
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
   const isTeamCheckout = computed(() => selectedTeamStop.value !== null)
@@ -100,15 +102,18 @@ export function useSubscriptionCheckout(
 
   function trackCheckoutStarted(
     tier: TierKey | 'team',
-    checkoutType: 'new' | 'change'
+    cycle: BillingCycle,
+    checkoutType: CheckoutType,
+    billingOpId: string
   ) {
     const { userId } = storeToRefs(useAuthStore())
     if (!userId.value) return
     telemetry?.trackBeginCheckout({
       user_id: userId.value,
       tier,
-      cycle: selectedBillingCycle.value,
+      cycle,
       checkout_type: checkoutType,
+      billing_op_id: billingOpId,
       ...(paymentIntentSource
         ? { payment_intent_source: paymentIntentSource }
         : {})
@@ -178,6 +183,7 @@ export function useSubscriptionCheckout(
     isChange?: boolean
   }) {
     selectedTeamStop.value = payload.stop
+    selectedTeamCheckoutType.value = payload.isChange ? 'change' : 'new'
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
     previewData.value = null
@@ -206,6 +212,7 @@ export function useSubscriptionCheckout(
     checkoutStep.value = 'pricing'
     previewData.value = null
     selectedTeamStop.value = null
+    selectedTeamCheckoutType.value = 'new'
   }
 
   function handleSuccessClose() {
@@ -213,28 +220,33 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscription() {
-    if (!selectedTierKey.value) return
+    const tierKey = selectedTierKey.value
+    if (!tierKey) return
 
-    trackCheckoutStarted(
-      selectedTierKey.value,
+    const billingCycle = selectedBillingCycle.value
+    const checkoutType =
       previewData.value &&
-        previewData.value.transition_type !== 'new_subscription'
+      previewData.value.transition_type !== 'new_subscription'
         ? 'change'
         : 'new'
-    )
 
     isSubscribing.value = true
     try {
-      const planSlug = getApiPlanSlug(
-        selectedTierKey.value,
-        selectedBillingCycle.value
-      )
+      const planSlug = getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) return
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
 
+      if (response) {
+        trackCheckoutStarted(
+          tierKey,
+          billingCycle,
+          checkoutType,
+          response.billing_op_id
+        )
+      }
       await handleSubscribeResponse(response)
     } catch (error) {
       showSubscribeError(error)
@@ -310,18 +322,27 @@ export function useSubscriptionCheckout(
       return
     }
 
-    trackCheckoutStarted('team', previewData.value ? 'change' : 'new')
+    const billingCycle = selectedBillingCycle.value
+    const checkoutType = selectedTeamCheckoutType.value
 
     isSubscribing.value = true
     try {
-      const planSlug = getTeamPlanSlug(selectedBillingCycle.value)
+      const planSlug = getTeamPlanSlug(billingCycle)
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
-        billingCycle: selectedBillingCycle.value,
+        billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
 
+      if (response) {
+        trackCheckoutStarted(
+          'team',
+          billingCycle,
+          checkoutType,
+          response.billing_op_id
+        )
+      }
       await handleSubscribeResponse(response)
     } catch (error) {
       showSubscribeError(error)

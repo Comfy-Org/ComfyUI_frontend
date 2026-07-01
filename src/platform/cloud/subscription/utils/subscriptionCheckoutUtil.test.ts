@@ -139,6 +139,7 @@ describe('performSubscriptionCheckout', () => {
       tier: 'pro',
       cycle: 'yearly',
       checkout_type: 'new',
+      checkout_attempt_id: expect.any(String),
       ga_client_id: 'ga-client-id',
       ga_session_id: 'ga-session-id',
       ga_session_number: 'ga-session-number',
@@ -150,6 +151,12 @@ describe('performSubscriptionCheckout', () => {
       gbraid: 'gbraid-456',
       wbraid: 'wbraid-789'
     })
+    const beginCheckoutMetadata =
+      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
+    const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
+      JSON.parse(storedAttempt).attempt_id
+    )
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining(
         '/customers/cloud-subscription-checkout/pro-yearly'
@@ -203,7 +210,8 @@ describe('performSubscriptionCheckout', () => {
       user_id: 'user-123',
       tier: 'pro',
       cycle: 'monthly',
-      checkout_type: 'new'
+      checkout_type: 'new',
+      checkout_attempt_id: expect.any(String)
     })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
@@ -224,10 +232,16 @@ describe('performSubscriptionCheckout', () => {
     expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({ payment_intent_source: 'out_of_credits' })
     )
+    const beginCheckoutMetadata =
+      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
     const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
-    expect(JSON.parse(storedAttempt)).toMatchObject({
+    const pendingAttempt = JSON.parse(storedAttempt)
+    expect(pendingAttempt).toMatchObject({
       payment_intent_source: 'out_of_credits'
     })
+    expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
+      pendingAttempt.attempt_id
+    )
     openSpy.mockRestore()
   })
 
@@ -258,13 +272,14 @@ describe('performSubscriptionCheckout', () => {
         user_id: 'user-late',
         tier: 'pro',
         cycle: 'yearly',
-        checkout_type: 'new'
+        checkout_type: 'new',
+        checkout_attempt_id: expect.any(String)
       })
     )
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 
-  it('does not persist a pending attempt when the checkout popup is blocked', async () => {
+  it('persists the pending attempt when the checkout popup is blocked', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
@@ -276,8 +291,14 @@ describe('performSubscriptionCheckout', () => {
     await performSubscriptionCheckout('pro', 'monthly', true)
 
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
-    expect(
-      window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    ).toBeNull()
+    const storedAttempt = window.localStorage.getItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+    )
+    expect(storedAttempt).not.toBeNull()
+    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        checkout_attempt_id: JSON.parse(storedAttempt ?? '{}').attempt_id
+      })
+    )
   })
 })

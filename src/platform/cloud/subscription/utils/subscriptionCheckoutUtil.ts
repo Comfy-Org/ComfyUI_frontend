@@ -110,12 +110,20 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
+    const pendingAttempt = recordPendingSubscriptionCheckoutAttempt({
+      tier: tierKey,
+      cycle: currentBillingCycle,
+      checkout_type: 'new',
+      payment_intent_source: paymentIntentSource
+    })
+
     if (userId.value) {
       telemetry?.trackBeginCheckout({
         user_id: userId.value,
         tier: tierKey,
         cycle: currentBillingCycle,
         checkout_type: 'new',
+        checkout_attempt_id: pendingAttempt.attempt_id,
         ...(paymentIntentSource
           ? { payment_intent_source: paymentIntentSource }
           : {}),
@@ -128,20 +136,7 @@ export async function performSubscriptionCheckout(
       if (!checkoutWindow) {
         return
       }
-
-      recordPendingSubscriptionCheckoutAttempt({
-        tier: tierKey,
-        cycle: currentBillingCycle,
-        checkout_type: 'new',
-        payment_intent_source: paymentIntentSource
-      })
     } else {
-      recordPendingSubscriptionCheckoutAttempt({
-        tier: tierKey,
-        cycle: currentBillingCycle,
-        checkout_type: 'new',
-        payment_intent_source: paymentIntentSource
-      })
       globalThis.location.href = data.checkout_url
     }
   }
