@@ -84,6 +84,14 @@ describe('TourSpotlight', () => {
     expect(emitted().skip).toHaveLength(1)
   })
 
+  it('emits skip when Escape is pressed', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderSpotlight()
+
+    await user.keyboard('{Escape}')
+    expect(emitted().skip).toHaveLength(1)
+  })
+
   it('hides the primary button on a click-to-advance step', () => {
     renderSpotlight({
       step: spotlightStep({

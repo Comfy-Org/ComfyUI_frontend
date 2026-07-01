@@ -279,6 +279,59 @@ describe('useCoachmarkTour', () => {
     expect(api.step.value?.coachId).toBe('assets-panel')
   })
 
+  it('force-starts a named tour after the delay, replaying it even when seen', async () => {
+    vi.useFakeTimers()
+    // A known `?coach=<path>` force-starts that specific tour on mount, past the
+    // seen-flag and without waiting for its auto-open trigger.
+    settings.seen = ['appMode']
+    window.history.replaceState(null, '', '/?coach=appMode')
+    mountTour()
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(startedCount()).toBe(0)
+
+    await vi.advanceTimersByTimeAsync(800)
+    expect(startedCount()).toBe(1)
+  })
+
+  it('reports step index 0 while no tour is active', () => {
+    const { api } = mountTour()
+    expect(api.countedStepIdx.value).toBe(0)
+  })
+
+  it('labels the buttons from the step, falling back to Next then Done', async () => {
+    registerAppModeTargets()
+    const { api } = mountTour()
+    void useCoachmarkController().requestTour('appMode')
+    await flush()
+
+    // The landing step overrides both labels.
+    expect(api.step.value?.landing).toBe(true)
+    expect(api.primaryLabel.value).toBe(
+      'onboardingCoachmarks.appMode.landing.start'
+    )
+    expect(api.skipLabel.value).toBe(
+      'onboardingCoachmarks.appMode.landing.skip'
+    )
+
+    // Every target is mounted, so the tour is a landing plus four spotlight steps.
+    expect(api.countedSteps.value.length).toBe(4)
+
+    // Landing → first spotlight: labels fall back to the generic Next/Skip.
+    api.next()
+    await flush()
+    expect(api.primaryLabel.value).toBe('onboardingCoachmarks.next')
+    expect(api.skipLabel.value).toBe('onboardingCoachmarks.skip')
+
+    // Three more advances reach the final step, whose primary action reads Done.
+    for (let i = 0; i < 3; i++) {
+      api.next()
+      await flush()
+    }
+    expect(api.isLast.value).toBe(true)
+    expect(api.primaryLabel.value).toBe('onboardingCoachmarks.done')
+  })
+
   it('advancing off the landing does not mark the tour skipped', async () => {
     registerAppModeTargets()
     const { api } = mountTour()
