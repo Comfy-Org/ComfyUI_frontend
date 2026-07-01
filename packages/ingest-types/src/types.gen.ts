@@ -877,6 +877,10 @@ export type CreateTopupRequest = {
    *
    */
   idempotency_key?: string
+  /**
+   * Transaction platform/source classification for analytics attribution
+   */
+  platform_source?: PlatformSource
 }
 
 /**
@@ -1007,7 +1011,16 @@ export type SubscribeRequest = {
    *
    */
   cancel_url?: string
+  /**
+   * Transaction platform/source classification for analytics attribution
+   */
+  platform_source?: PlatformSource
 }
+
+/**
+ * Transaction platform/source classification for analytics attribution
+ */
+export type PlatformSource = 'cloud' | 'desktop_cloud' | 'desktop_local'
 
 /**
  * Plan information for preview display

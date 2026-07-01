@@ -522,7 +522,10 @@ export const zCreateTopupRequest = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
-  idempotency_key: z.string().optional()
+  idempotency_key: z.string().optional(),
+  platform_source: z
+    .enum(['cloud', 'desktop_cloud', 'desktop_local'])
+    .optional()
 })
 
 /**
@@ -587,7 +590,10 @@ export const zSubscribeRequest = z.object({
   plan_slug: z.string(),
   idempotency_key: z.string().optional(),
   return_url: z.string().optional(),
-  cancel_url: z.string().optional()
+  cancel_url: z.string().optional(),
+  platform_source: z
+    .enum(['cloud', 'desktop_cloud', 'desktop_local'])
+    .optional()
 })
 
 /**

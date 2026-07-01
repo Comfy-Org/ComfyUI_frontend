@@ -711,6 +711,7 @@ export type {
   PlanAvailability,
   PlanAvailabilityReason,
   PlanSeatSummary,
+  PlatformSource,
   PostAssetsFromWorkflowData,
   PostAssetsFromWorkflowError,
   PostAssetsFromWorkflowErrors,

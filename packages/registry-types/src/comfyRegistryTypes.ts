@@ -21180,6 +21180,8 @@ export interface operations {
                     amount_micros: number;
                     /** @description the currency used in the checkout transaction */
                     currency: string;
+                    /** @description Transaction platform/source classification for analytics attribution */
+                    platform_source?: "cloud" | "desktop_cloud" | "desktop_local";
                 };
             };
         };
@@ -21319,6 +21321,8 @@ export interface operations {
                     im_ref?: string;
                     /** @description Rewardful referral UUID (window.Rewardful.referral), passed to Stripe as client_reference_id for affiliate conversion tracking */
                     rewardful_referral?: string;
+                    /** @description Transaction platform/source classification for analytics attribution */
+                    platform_source?: "cloud" | "desktop_cloud" | "desktop_local";
                 };
             };
         };
@@ -21401,6 +21405,8 @@ export interface operations {
                     im_ref?: string;
                     /** @description Rewardful referral UUID (window.Rewardful.referral), passed to Stripe as client_reference_id for affiliate conversion tracking */
                     rewardful_referral?: string;
+                    /** @description Transaction platform/source classification for analytics attribution */
+                    platform_source?: "cloud" | "desktop_cloud" | "desktop_local";
                 };
             };
         };
