@@ -11,7 +11,10 @@ export type RightSidePanelTab =
   | 'subgraph'
   | 'errors'
 
-type RightSidePanelSection = 'advanced-inputs' | string
+type RightSidePanelSection =
+  | 'advanced-inputs'
+  | 'show-advanced-setting'
+  | string
 
 /**
  * Store for managing the right side panel state.
@@ -75,6 +78,16 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   }
 
   /**
+   * Focus a section inside the global settings tab. Opens the panel,
+   * switches to the settings tab, and signals the consumer to scroll
+   * to and highlight the matching field.
+   */
+  function focusGlobalSetting(section: RightSidePanelSection) {
+    openPanel('settings')
+    focusedSection.value = section
+  }
+
+  /**
    * Clear the focused section after it has been handled.
    */
   function clearFocusedSection() {
@@ -92,6 +105,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     closePanel,
     togglePanel,
     focusSection,
+    focusGlobalSetting,
     clearFocusedSection
   }
 })

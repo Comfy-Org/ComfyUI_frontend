@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -12,6 +20,7 @@ import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -21,6 +30,40 @@ import LayoutField from './LayoutField.vue'
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const settingsDialog = useSettingsDialog()
+const rightSidePanelStore = useRightSidePanelStore()
+const { focusedSection } = storeToRefs(rightSidePanelStore)
+
+const showAdvancedRowRef = useTemplateRef('showAdvancedRowRef')
+const showAdvancedHighlighted = ref(false)
+let clearHighlightTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  focusedSection,
+  async (section) => {
+    if (section !== 'show-advanced-setting') return
+    rightSidePanelStore.clearFocusedSection()
+    await nextTick()
+    const row = showAdvancedRowRef.value
+    if (!row) return
+
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+    if (clearHighlightTimer) clearTimeout(clearHighlightTimer)
+    showAdvancedHighlighted.value = false
+    await nextTick()
+    void row.offsetWidth
+    showAdvancedHighlighted.value = true
+    clearHighlightTimer = setTimeout(() => {
+      showAdvancedHighlighted.value = false
+      clearHighlightTimer = null
+    }, 1100)
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  if (clearHighlightTimer) clearTimeout(clearHighlightTimer)
+})
 
 // NODES settings
 const showAdvancedParameters = computed({
@@ -104,11 +147,23 @@ function openFullSettings() {
         {{ t('rightSidePanel.globalSettings.nodes') }}
       </template>
       <div class="space-y-4 px-4 py-3">
-        <FieldSwitch
-          v-model="showAdvancedParameters"
-          :label="t('rightSidePanel.globalSettings.showAdvanced')"
-          :tooltip="t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')"
-        />
+        <div
+          ref="showAdvancedRowRef"
+          :class="
+            cn(
+              '-mx-2 rounded-md px-2 py-1',
+              showAdvancedHighlighted && 'show-advanced-highlight'
+            )
+          "
+        >
+          <FieldSwitch
+            v-model="showAdvancedParameters"
+            :label="t('rightSidePanel.globalSettings.showAdvanced')"
+            :tooltip="
+              t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')
+            "
+          />
+        </div>
         <FieldSwitch
           v-model="showToolbox"
           :label="t('rightSidePanel.globalSettings.showToolbox')"
@@ -211,3 +266,69 @@ function openFullSettings() {
     </div>
   </div>
 </template>
+
+<style>
+@media (prefers-reduced-motion: no-preference) {
+  .show-advanced-highlight {
+    --highlight-bg: var(--color-secondary-background-selected);
+    animation: show-advanced-row-highlight 1s linear;
+  }
+
+  .dark-theme .show-advanced-highlight {
+    --highlight-bg: var(--color-charcoal-200);
+  }
+
+  .show-advanced-highlight span:first-of-type {
+    animation: show-advanced-label-color 1s linear;
+    /* Word-wrap (commented out — keep for revert):
+    border-radius: 0.25rem;
+    padding: 0 0.25rem;
+    margin: -0.125rem -0.25rem;
+    flex: none;
+    */
+  }
+
+  .dark-theme .show-advanced-highlight span:first-of-type {
+    animation-name: show-advanced-label-color-dark;
+  }
+}
+
+@keyframes show-advanced-row-highlight {
+  0% {
+    background-color: transparent;
+  }
+  10%,
+  80% {
+    background-color: var(--highlight-bg);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes show-advanced-label-color {
+  0% {
+    color: var(--color-muted-foreground);
+  }
+  10%,
+  80% {
+    color: black;
+  }
+  100% {
+    color: var(--color-muted-foreground);
+  }
+}
+
+@keyframes show-advanced-label-color-dark {
+  0% {
+    color: var(--color-muted-foreground);
+  }
+  10%,
+  80% {
+    color: white;
+  }
+  100% {
+    color: var(--color-muted-foreground);
+  }
+}
+</style>

@@ -334,7 +334,7 @@ describe('computeProcessedWidgets borderStyle', () => {
     ).toBe(false)
   })
 
-  it('applies advanced border styling to advanced widgets', () => {
+  it('does not apply border styling to advanced widgets (advanced hint is applied at row level via opacity)', () => {
     const advancedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
@@ -360,9 +360,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       ui: noopUi
     })
 
-    expect(result[0].simplified.borderStyle).toBe(
-      'ring ring-component-node-widget-advanced'
-    )
+    expect(result[0].simplified.borderStyle).toBeUndefined()
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
