@@ -16,8 +16,7 @@ export function useMissingModelDownload() {
       const metadata = await fetchModelMetadata(url)
       if (metadata.fileSize !== null) {
         store.setFileSize(url, metadata.fileSize)
-      }
-      if (metadata.gatedRepoUrl) {
+      } else if (metadata.gatedRepoUrl) {
         store.setGatedRepoUrl(url, metadata.gatedRepoUrl)
       }
     } catch (error: unknown) {
@@ -28,10 +27,29 @@ export function useMissingModelDownload() {
     }
   }
 
-  function downloadMissingModel(model: ModelWithUrl): void {
+  async function downloadMissingModel(model: ModelWithUrl): Promise<void> {
     const gatedRepoUrl = store.gatedRepoUrls[model.url]
     if (gatedRepoUrl) {
-      openGatedRepoPage(gatedRepoUrl)
+      let repoUrl = gatedRepoUrl
+      try {
+        const metadata = await fetchModelMetadata(model.url)
+        if (metadata.fileSize !== null) {
+          store.setFileSize(model.url, metadata.fileSize)
+          downloadModel(model, store.folderPaths)
+          return
+        }
+        if (metadata.gatedRepoUrl) {
+          store.setGatedRepoUrl(model.url, metadata.gatedRepoUrl)
+          repoUrl = metadata.gatedRepoUrl
+        }
+      } catch (error: unknown) {
+        console.warn(
+          `[MissingModelDownload] Failed to revalidate gated metadata for ${model.url}:`,
+          error
+        )
+      }
+
+      openGatedRepoPage(repoUrl)
       return
     }
 

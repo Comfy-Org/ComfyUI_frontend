@@ -136,7 +136,7 @@ const downloadAllLabel = computed(() => {
 
 function downloadAllModels() {
   for (const model of downloadableModels.value) {
-    downloadMissingModel(model)
+    void downloadMissingModel(model)
   }
 }
 

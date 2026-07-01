@@ -244,6 +244,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   function setFileSize(url: string, size: number) {
     fileSizes.value[url] = size
+    // A resolved file size means a previously gated URL is no longer blocked.
+    delete gatedRepoUrls.value[url]
   }
 
   function setGatedRepoUrl(url: string, repoUrl: string) {

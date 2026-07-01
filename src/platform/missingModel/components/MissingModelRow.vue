@@ -358,7 +358,7 @@ onMounted(() => {
 function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadMissingModel({
+    void downloadMissingModel({
       name: rep.name,
       url: rep.url,
       directory: rep.directory

@@ -500,9 +500,11 @@ describe('MissingModelRow', () => {
 
     await user.click(screen.getByTestId('missing-model-download'))
 
-    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
-      'https://huggingface.co/bfl/FLUX.1'
-    )
+    await waitFor(() => {
+      expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+        'https://huggingface.co/bfl/FLUX.1'
+      )
+    })
     expect(mockDownloadModel).not.toHaveBeenCalled()
   })
 })

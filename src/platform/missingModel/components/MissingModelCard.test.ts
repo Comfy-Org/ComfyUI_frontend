@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,6 +40,7 @@ vi.mock('./MissingModelRow.vue', () => ({
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockDownloadModel = vi.hoisted(() => vi.fn())
+const mockFetchModelMetadata = vi.hoisted(() => vi.fn())
 const mockOpenGatedRepoPage = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -54,6 +55,7 @@ vi.mock('@/platform/missingModel/missingModelDownload', async () => {
   return {
     ...actual,
     downloadModel: mockDownloadModel,
+    fetchModelMetadata: mockFetchModelMetadata,
     openGatedRepoPage: mockOpenGatedRepoPage
   }
 })
@@ -273,6 +275,10 @@ describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
     mockIsCloud.value = false
     vi.clearAllMocks()
+    mockFetchModelMetadata.mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    })
   })
 
   afterEach(() => {
@@ -332,9 +338,11 @@ describe('MissingModelCard (OSS)', () => {
 
     await userEvent.click(screen.getByTestId('missing-model-download-all'))
 
-    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
-      'https://huggingface.co/comfy/test'
-    )
+    await waitFor(() => {
+      expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+        'https://huggingface.co/comfy/test'
+      )
+    })
     expect(mockDownloadModel).not.toHaveBeenCalled()
   })
 })

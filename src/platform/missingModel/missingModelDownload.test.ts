@@ -100,6 +100,24 @@ describe('fetchModelMetadata', () => {
     expect(metadata.fileSize).toBeNull()
   })
 
+  it('does not cache gated HuggingFace metadata so access can be retried', async () => {
+    const url = `https://huggingface.co/bfl/FLUX.1/resolve/main/retry-gated-${testId}.safetensors`
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-length': '4096' })
+    })
+
+    const first = await fetchModelMetadata(url)
+    const second = await fetchModelMetadata(url)
+
+    expect(first.gatedRepoUrl).toBe('https://huggingface.co/bfl/FLUX.1')
+    expect(first.fileSize).toBeNull()
+    expect(second.gatedRepoUrl).toBeNull()
+    expect(second.fileSize).toBe(4096)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('does not treat thrown HuggingFace HEAD requests as gated or cache them', async () => {
     const url = `https://huggingface.co/bfl/FLUX.1/resolve/main/thrown-${testId}.safetensors`
     fetchMock

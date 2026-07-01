@@ -212,8 +212,7 @@ export async function runMissingModelPipeline({
           const metadata = await fetchModelMetadata(c.url)
           if (!controller.signal.aborted && metadata.fileSize !== null) {
             missingModelStore.setFileSize(c.url, metadata.fileSize)
-          }
-          if (!controller.signal.aborted && metadata.gatedRepoUrl) {
+          } else if (!controller.signal.aborted && metadata.gatedRepoUrl) {
             missingModelStore.setGatedRepoUrl(c.url, metadata.gatedRepoUrl)
           }
         })

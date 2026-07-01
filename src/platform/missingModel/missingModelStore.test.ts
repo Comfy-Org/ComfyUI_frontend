@@ -281,6 +281,20 @@ describe('missingModelStore', () => {
     })
   })
 
+  describe('setFileSize', () => {
+    it('clears stale gated repo metadata for the same URL', () => {
+      const store = useMissingModelStore()
+      const url =
+        'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+      store.setGatedRepoUrl(url, 'https://huggingface.co/bfl/FLUX.1')
+
+      store.setFileSize(url, 2048)
+
+      expect(store.fileSizes[url]).toBe(2048)
+      expect(store.gatedRepoUrls[url]).toBeUndefined()
+    })
+  })
+
   describe('isWidgetMissingModel', () => {
     it('returns true when specific widget has missing model', () => {
       const store = useMissingModelStore()

@@ -191,8 +191,8 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
   }
 }
 
-function isComplete(metadata: ModelMetadata): boolean {
-  return metadata.fileSize !== null || metadata.gatedRepoUrl !== null
+function isCacheable(metadata: ModelMetadata): boolean {
+  return metadata.fileSize !== null
 }
 
 export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
@@ -207,7 +207,7 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
       ? await fetchCivitaiMetadata(url)
       : await fetchHeadMetadata(url)
 
-    if (isComplete(metadata)) {
+    if (isCacheable(metadata)) {
       metadataCache.set(url, metadata)
     }
     return metadata
