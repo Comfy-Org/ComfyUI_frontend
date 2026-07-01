@@ -147,9 +147,9 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '团队计划的并发是如何运作的？多名成员可以同时运行工作流吗？'
     },
     answer: {
-      en: 'Yes. <strong>The workspace has 50 concurrent slots (matches the number of members), shared across the team</strong>. A ten-person team and a 50-person team both get the same 50 slots. If a few teammates saturate the pool, the rest queue up until slots free.',
+      en: 'Yes. On a Team plan, the workspace has a greater concurrency limit per member than the Pro plan. If you run into issues you can request additional support for your team plan limits <a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">here</a>.',
       'zh-CN':
-        '可以。<strong>工作区拥有 50 个并发槽位（与成员上限一致），由整个团队共享</strong>。无论是 10 人团队还是 50 人团队，都享有相同的 50 个槽位。如果少数成员占满了槽位，其他人会排队等待，直到有槽位空出。'
+        '可以。在团队计划中，工作区的每位成员并发上限高于 Pro 计划。如果您遇到问题，可以<a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">在此处</a>为您的团队计划上限申请额外支持。'
     }
   },
   {
@@ -159,9 +159,21 @@ export const pricingFaqs: readonly PricingFaq[] = [
       'zh-CN': '运行时长和并发的限制是什么？'
     },
     answer: {
-      en: 'Each workflow has a max runtime of <strong>30 minutes</strong> on Standard and Creator, raised to <strong>1 hour</strong> on Pro. Jobs over the limit are cancelled automatically to keep the system fair and stable. You can queue up to <strong>100 workflows</strong> at once, and run <strong>1 / 3 / 5</strong> concurrently via API on Standard / Creator / Pro. On Team plan, the limit is raised to 50, matching the number of members on the team. Need higher API rate limits? Contact <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
+      en: 'Each workflow has a max runtime of <strong>30 minutes</strong> on Standard and Creator, raised to <strong>1 hour</strong> on Pro. Jobs over the limit are cancelled automatically to keep the system fair and stable. You can queue up to <strong>100 workflows</strong> at once, and run <strong>1 / 3 / 5</strong> concurrently via API on Standard / Creator / Pro. If you need to increase your Team plan concurrency limit, contact us <a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">here</a>. Need higher API rate limits? Contact us <a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">here</a>.',
       'zh-CN':
-        'Standard 和 Creator 上，单个工作流的最长运行时长为 <strong>30 分钟</strong>；Pro 上提升至 <strong>1 小时</strong>。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 <strong>100 个工作流</strong>，并在 Standard / Creator / Pro 上通过 API 分别并发运行 <strong>1 / 3 / 5</strong> 个工作流。在团队计划中，此上限提升至 50，与团队成员上限一致。需要更高的 API 速率限制？请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
+        'Standard 和 Creator 上，单个工作流的最长运行时长为 <strong>30 分钟</strong>；Pro 上提升至 <strong>1 小时</strong>。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 <strong>100 个工作流</strong>，并在 Standard / Creator / Pro 上通过 API 分别并发运行 <strong>1 / 3 / 5</strong> 个工作流。如果您需要提高团队计划的并发上限，请<a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">点击此处</a>联系我们。需要更高的 API 速率限制？请<a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">点击此处</a>联系我们。'
+    }
+  },
+  {
+    id: 'run-workflows-via-api',
+    question: {
+      en: 'Can I run workflows via API?',
+      'zh-CN': '我可以通过 API 运行工作流吗？'
+    },
+    answer: {
+      en: 'Yes. Run Comfy workflows programmatically via API. Concurrency limits scale with your plan: 1 / 3 / 5 on Standard / Creator / Pro. It\'s built for integrating ComfyUI into your apps, automating batch jobs, or running production pipelines. If you need to request increasing limits you can do so <a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">here</a>.',
+      'zh-CN':
+        '可以。通过 API 以编程方式运行 Comfy 工作流。并发上限随您的计划扩展：Standard / Creator / Pro 分别为 1 / 3 / 5。它专为将 ComfyUI 集成到您的应用、自动化批处理任务或运行生产管线而打造。如果您需要申请提高上限，可以<a href="https://comfy-org.portal.usepylon.com/forms/team-plan-requests" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">在此处</a>提交。'
     }
   },
   {
@@ -174,18 +186,6 @@ export const pricingFaqs: readonly PricingFaq[] = [
       en: 'Partner Nodes let you run proprietary models (like Nano Banana Pro) directly inside your workflow. They draw from the same credit pool as your subscription (no separate bill); how much each call costs depends on the model and parameters you set. These credits work across both Comfy Cloud and Comfy Desktop. <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Read more about Partner Nodes</a>.',
       'zh-CN':
         '合作伙伴节点让您直接在工作流中运行专有模型（如 Nano Banana Pro）。它们从与您订阅相同的积分池中扣费（不会单独出账单）；每次调用的费用取决于模型以及您设置的参数。这些积分在 Comfy Cloud 和 Comfy 桌面版上均可使用。<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">了解更多关于合作伙伴节点的信息</a>。'
-    }
-  },
-  {
-    id: 'run-workflows-via-api',
-    question: {
-      en: 'Can I run workflows via API?',
-      'zh-CN': '我可以通过 API 运行工作流吗？'
-    },
-    answer: {
-      en: 'Yes. Run Comfy workflows programmatically via API. Concurrency limits scale with your plan: 1 / 3 / 5 on Standard / Creator / Pro, or one per member on Team. It\'s built for integrating ComfyUI into your apps, automating batch jobs, or running production pipelines. For higher rate limits, contact <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
-      'zh-CN':
-        '可以。通过 API 以编程方式运行 Comfy 工作流。并发上限随您的计划扩展：Standard / Creator / Pro 分别为 1 / 3 / 5，团队计划则为每位成员一个。它专为将 ComfyUI 集成到您的应用、自动化批处理任务或运行生产管线而打造。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
     }
   },
   {
