@@ -5,18 +5,25 @@ import { createI18n } from 'vue-i18n'
 
 import LinearWelcome from './LinearWelcome.vue'
 
-const { hasNodes, hasOutputs, enterBuilder } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ref } = require('vue')
-  return {
-    hasNodes: ref(false),
-    hasOutputs: ref(false),
-    enterBuilder: vi.fn()
-  }
-})
+const { hasNodes, hasOutputs, enterBuilder, isBuilderMode, canvasState } =
+  vi.hoisted(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ref } = require('vue')
+    return {
+      hasNodes: ref(false),
+      hasOutputs: ref(false),
+      enterBuilder: vi.fn(),
+      isBuilderMode: ref(false),
+      canvasState: { apiMode: false, builderEnteredFromApi: false }
+    }
+  })
 
 vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({ setMode: vi.fn() })
+  useAppMode: () => ({ setMode: vi.fn(), isBuilderMode })
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => canvasState
 }))
 
 vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
@@ -53,6 +60,9 @@ describe('LinearWelcome', () => {
   beforeEach(() => {
     hasNodes.value = false
     hasOutputs.value = false
+    isBuilderMode.value = false
+    canvasState.apiMode = false
+    canvasState.builderEnteredFromApi = false
     vi.clearAllMocks()
   })
 
@@ -79,5 +89,37 @@ describe('LinearWelcome', () => {
     renderComponent({ hasNodes: true, hasOutputs: false })
     await user.click(screen.getByTestId('linear-welcome-build-app'))
     expect(enterBuilder).toHaveBeenCalled()
+  })
+
+  // The test i18n has no messages loaded, so t() returns the key path.
+  it('shows the app welcome text by default', () => {
+    renderComponent()
+    expect(screen.getByText('linearMode.welcome.message')).toBeInTheDocument()
+    expect(
+      screen.queryByText('linearMode.welcome.apiMessage')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the API welcome text in API mode', () => {
+    canvasState.apiMode = true
+    renderComponent()
+    expect(
+      screen.getByText('linearMode.welcome.apiMessage')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('linearMode.welcome.apiSharing')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('linearMode.welcome.message')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the API welcome text in an API builder session', () => {
+    isBuilderMode.value = true
+    canvasState.builderEnteredFromApi = true
+    renderComponent()
+    expect(
+      screen.getByText('linearMode.welcome.apiMessage')
+    ).toBeInTheDocument()
   })
 })

@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -25,9 +26,21 @@ export function useBuilderSave() {
   const dialogService = useDialogService()
   const appModeStore = useAppModeStore()
   const dialogStore = useDialogStore()
+  const canvasStore = useCanvasStore()
 
   function closeDialog(key: string) {
     dialogStore.closeDialog({ key })
+  }
+
+  // "View App" / "View API": API builder sessions open the generated Swagger
+  // (API mode) instead of the App-mode preview.
+  function viewAppOrApi() {
+    if (canvasStore.builderEnteredFromApi) {
+      canvasStore.apiShowSwagger = true
+      setMode('api')
+    } else {
+      setMode('app')
+    }
   }
 
   async function save() {
@@ -110,7 +123,7 @@ export function useBuilderSave() {
               onCancel: () => {
                 closeDialog(SUCCESS_DIALOG_KEY)
                 useTelemetry()?.trackEnterLinear({ source: 'app_builder' })
-                setMode('app')
+                viewAppOrApi()
               },
               onConfirm: () => {
                 closeDialog(SUCCESS_DIALOG_KEY)
@@ -125,7 +138,7 @@ export function useBuilderSave() {
               onConfirm: () => {
                 closeDialog(SUCCESS_DIALOG_KEY)
                 useTelemetry()?.trackEnterLinear({ source: 'app_builder' })
-                setMode('app')
+                viewAppOrApi()
               }
             }
     })

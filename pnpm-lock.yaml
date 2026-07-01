@@ -327,6 +327,9 @@ catalogs:
     stylelint:
       specifier: ^16.26.1
       version: 16.26.1
+    swagger-ui-dist:
+      specifier: ^5.32.8
+      version: 5.32.8
     tailwindcss:
       specifier: ^4.3.0
       version: 4.3.0
@@ -606,6 +609,9 @@ importers:
       semver:
         specifier: ^7.7.2
         version: 7.7.4
+      swagger-ui-dist:
+        specifier: 'catalog:'
+        version: 5.32.8
       three:
         specifier: 'catalog:'
         version: 0.184.0
@@ -3325,6 +3331,9 @@ packages:
 
   '@rushstack/ts-command-line@5.3.1':
     resolution: {integrity: sha512-mid/JIZSJafwy3x9e4v0wVLuAqSSYYErEHV0HXPALYLSBN13YNkR5caOk0hf97lSRKrxhtvQjGaDKSEelR3sMg==}
+
+  '@scarf/scarf@1.4.0':
+    resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
 
   '@segment/analytics.js-video-plugins@0.2.1':
     resolution: {integrity: sha512-lZwCyEXT4aaHBLNK433okEKdxGAuyrVmop4BpQqQSJuRz0DglPZgd9B/XjiiWs1UyOankg2aNYMN3VcS8t4eSQ==}
@@ -8007,6 +8016,9 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
+  swagger-ui-dist@5.32.8:
+    resolution: {integrity: sha512-dgMdWXIgnI4zX4OPhKEdWnlDODbgm8W3AX0Ivn/BBqcUh6xZsBxhZMnvk6DJyRz1BTrj8dPxtarmEGgkz30oyA==}
+
   swr@2.4.0:
     resolution: {integrity: sha512-sUlC20T8EOt1pHmDiqueUWMmRRX03W7w5YxovWX7VR2KHEPCTMly85x05vpkP5i6Bu4h44ePSMD9Tc+G2MItFw==}
     peerDependencies:
@@ -11204,6 +11216,8 @@ snapshots:
       string-argv: 0.3.2
     transitivePeerDependencies:
       - '@types/node'
+
+  '@scarf/scarf@1.4.0': {}
 
   '@segment/analytics.js-video-plugins@0.2.1':
     dependencies:
@@ -16801,6 +16815,10 @@ snapshots:
       csso: 5.0.5
       picocolors: 1.1.1
       sax: 1.6.0
+
+  swagger-ui-dist@5.32.8:
+    dependencies:
+      '@scarf/scarf': 1.4.0
 
   swr@2.4.0(react@19.2.4):
     dependencies:

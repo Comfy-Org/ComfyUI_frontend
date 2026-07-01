@@ -63,6 +63,15 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ closeDialog: mockCloseDialog })
 }))
 
+const mockCanvasState = vi.hoisted(() => ({
+  builderEnteredFromApi: false,
+  apiShowSwagger: false
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => mockCanvasState
+}))
+
 vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
   showConfirmDialog: mockShowConfirmDialog
 }))
@@ -85,6 +94,8 @@ describe('useBuilderSave', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockActiveWorkflow.value = null
+    mockCanvasState.builderEnteredFromApi = false
+    mockCanvasState.apiShowSwagger = false
   })
 
   describe('save()', () => {
@@ -336,6 +347,16 @@ describe('useBuilderSave', () => {
         source: 'app_builder'
       })
       expect(mockSetMode).toHaveBeenCalledWith('app')
+    })
+
+    it('opens the Swagger (API mode) for an API builder session', async () => {
+      mockCanvasState.builderEnteredFromApi = true
+      const { onCancel } = await getGraphSuccessDialogProps()
+
+      onCancel()
+
+      expect(mockSetMode).toHaveBeenCalledWith('api')
+      expect(mockCanvasState.apiShowSwagger).toBe(true)
     })
   })
 })

@@ -97,17 +97,11 @@ export function useWorkflowActionsMenu(
 
     const workflowMode =
       workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
-    const isLinearMode = workflowMode === 'app'
+    const isGraphMode = workflowMode === 'graph'
     const showAppModeItems =
       isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
-    const toggleLinear = async () => {
-      await ensureWorkflowActive(targetWorkflow.value)
-      await commandStore.execute('Comfy.ToggleLinear', {
-        metadata: { source: 'breadcrumb_menu' }
-      })
-    }
     addItem({
       id: 'rename',
       label: t('g.rename'),
@@ -201,25 +195,6 @@ export function useWorkflowActionsMenu(
       visible: isCloud && flags.workflowSharingEnabled
     })
 
-    addItem({
-      id: 'enter-app-mode',
-      label: t('breadcrumbsMenu.enterAppMode'),
-      icon: 'icon-[lucide--panels-top-left]',
-      command: toggleLinear,
-      visible: showAppModeItems && !isLinearMode,
-      prependSeparator: true,
-      isNew: true
-    })
-
-    addItem({
-      id: 'exit-app-mode',
-      label: t('breadcrumbsMenu.exitAppMode'),
-      icon: 'icon-[comfy--workflow]',
-      command: toggleLinear,
-      visible: isLinearMode,
-      prependSeparator: true
-    })
-
     const isActive = workflow === workflowStore.activeWorkflow
     const rawLd = isActive
       ? {
@@ -245,7 +220,8 @@ export function useWorkflowActionsMenu(
         await ensureWorkflowActive(targetWorkflow.value)
         enterBuilder()
       },
-      visible: showAppModeItems,
+      visible: showAppModeItems && !isGraphMode,
+      prependSeparator: true,
       isNew: true
     })
 

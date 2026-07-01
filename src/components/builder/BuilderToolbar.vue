@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -45,7 +46,7 @@ import type { BuilderStepId } from './useBuilderSteps'
 import { useBuilderSteps } from './useBuilderSteps'
 
 const { t } = useI18n()
-const { activeStep, navigateToStep } = useBuilderSteps()
+const { steps: activeStepIds, activeStep, navigateToStep } = useBuilderSteps()
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
@@ -71,5 +72,11 @@ const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
   icon: 'icon-[lucide--layout-panel-left]'
 }
 
-const steps = [selectInputsStep, selectOutputsStep, arrangeStep]
+const stepsById: Record<BuilderStepId, BuilderToolbarStep<BuilderStepId>> = {
+  'builder:inputs': selectInputsStep,
+  'builder:outputs': selectOutputsStep,
+  'builder:arrange': arrangeStep
+}
+
+const steps = computed(() => activeStepIds.value.map((id) => stepsById[id]))
 </script>

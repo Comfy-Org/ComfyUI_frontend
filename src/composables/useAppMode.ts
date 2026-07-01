@@ -1,7 +1,11 @@
 import { computed, ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
+import {
+  getWorkflowMode,
+  isApiModeValue,
+  isAppModeValue
+} from '@/utils/appMode'
 import type { AppMode } from '@/utils/appMode'
 
 const enableAppBuilder = ref(true)
@@ -20,6 +24,7 @@ export function useAppMode() {
   )
   const isArrangeMode = computed(() => mode.value === 'builder:arrange')
   const isAppMode = computed(() => isAppModeValue(mode.value))
+  const isApiMode = computed(() => isApiModeValue(mode.value))
   const isGraphMode = computed(
     () => mode.value === 'graph' || isSelectMode.value
   )
@@ -38,6 +43,7 @@ export function useAppMode() {
     isSelectOutputsMode,
     isArrangeMode,
     isAppMode,
+    isApiMode,
     isGraphMode,
     setMode
   }

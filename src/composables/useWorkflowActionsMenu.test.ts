@@ -161,44 +161,7 @@ describe('useWorkflowActionsMenu', () => {
     expect(labels).not.toContain('breadcrumbsMenu.deleteWorkflow')
   })
 
-  it('shows app mode items when linearToggleEnabled flag is set', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
-
-    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
-    const labels = menuLabels(menuItems.value)
-
-    expect(labels).toContain('breadcrumbsMenu.enterAppMode')
-  })
-
-  it('shows app mode items when user has seen linear mode', () => {
-    mockMenuItemStore.hasSeenLinear = true
-
-    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
-    const labels = menuLabels(menuItems.value)
-
-    expect(labels).toContain('breadcrumbsMenu.enterAppMode')
-  })
-
-  it('hides app mode items when conditions not met', () => {
-    mockMenuItemStore.hasSeenLinear = false
-    mockFeatureFlags.flags.linearToggleEnabled = false
-
-    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
-    const labels = menuLabels(menuItems.value)
-
-    expect(labels).not.toContain('breadcrumbsMenu.enterAppMode')
-  })
-
-  it('hides app mode items when not root', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
-
-    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
-    const labels = menuLabels(menuItems.value)
-
-    expect(labels).not.toContain('breadcrumbsMenu.enterAppMode')
-  })
-
-  it('shows "go to workflow mode" when in linear mode', () => {
+  it('shows builder app mode items when linearToggleEnabled flag is set', () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
@@ -209,7 +172,59 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
 
-    expect(labels).toContain('breadcrumbsMenu.exitAppMode')
+    expect(labels).toContain('breadcrumbsMenu.enterBuilderMode')
+  })
+
+  it('hides the build app item when in graph mode', () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).not.toContain('breadcrumbsMenu.enterBuilderMode')
+  })
+
+  it('does not show the enter app mode item in the actions menu', () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+    mockMenuItemStore.hasSeenLinear = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).not.toContain('breadcrumbsMenu.enterAppMode')
+  })
+
+  it('hides builder app mode items when conditions not met', () => {
+    mockMenuItemStore.hasSeenLinear = false
+    mockFeatureFlags.flags.linearToggleEnabled = false
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).not.toContain('breadcrumbsMenu.enterBuilderMode')
+  })
+
+  it('hides builder app mode items when not root', () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).not.toContain('breadcrumbsMenu.enterBuilderMode')
+  })
+
+  it('does not show the exit app mode item when in app mode', () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: true,
+      activeMode: 'app'
+    } as ComfyWorkflow
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).not.toContain('breadcrumbsMenu.exitAppMode')
     expect(labels).not.toContain('breadcrumbsMenu.enterAppMode')
   })
 
@@ -225,11 +240,16 @@ describe('useWorkflowActionsMenu', () => {
 
   it('adds badge to app mode items', () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: true,
+      activeMode: 'app'
+    } as ComfyWorkflow
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const appModeItem = findItem(
       menuItems.value,
-      'breadcrumbsMenu.enterAppMode'
+      'breadcrumbsMenu.enterBuilderMode'
     )
 
     expect(appModeItem.badge).toBeDefined()
@@ -312,6 +332,11 @@ describe('useWorkflowActionsMenu', () => {
 
   it('enter builder mode calls enterBuilder', async () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: true,
+      activeMode: 'app'
+    } as ComfyWorkflow
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(
@@ -326,7 +351,8 @@ describe('useWorkflowActionsMenu', () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
-      isPersisted: true
+      isPersisted: true,
+      activeMode: 'app'
     } as ComfyWorkflow
     mockAppModeStore.selectedInputs.push([1, 'widget'])
     mockAppModeStore.selectedOutputs.push(2)
@@ -336,18 +362,6 @@ describe('useWorkflowActionsMenu', () => {
 
     expect(item).toBeDefined()
     expect(item.isNew).toBeTruthy()
-  })
-
-  it('app mode toggle executes Comfy.ToggleLinear', async () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
-
-    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
-    await findItem(menuItems.value, 'breadcrumbsMenu.enterAppMode').command?.()
-
-    expect(mockCommandStore.execute).toHaveBeenCalledWith(
-      'Comfy.ToggleLinear',
-      { metadata: { source: 'breadcrumb_menu' } }
-    )
   })
 
   it('rename is disabled for unpersisted root workflows', () => {

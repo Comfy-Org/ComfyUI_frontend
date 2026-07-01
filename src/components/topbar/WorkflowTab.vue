@@ -10,11 +10,7 @@
         @mouseup="handleMouseUp"
         @click="handleClick"
       >
-        <i v-if="isBuilderState" class="bg-text-subtle icon-[lucide--hammer]" />
-        <i
-          v-else-if="workflowOption.workflow.initialMode === 'app'"
-          class="icon-[lucide--panels-top-left] bg-primary-background"
-        />
+        <i :class="tabModeIcon" />
         <span
           class="workflow-label inline-block max-w-[150px] truncate text-sm"
         >
@@ -104,6 +100,7 @@ import {
 } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
+import { getWorkflowMode } from '@/utils/appMode'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
@@ -173,6 +170,19 @@ const shouldShowUnsavedIndicator = computed(() => {
 const isBuilderState = computed(() => {
   const currentMode = props.workflowOption.workflow.activeMode
   return typeof currentMode === 'string' && currentMode.startsWith('builder:')
+})
+
+// Icon reflects the workflow's current mode so the tab matches the active view.
+const tabModeIcon = computed(() => {
+  if (isBuilderState.value) return 'bg-text-subtle icon-[lucide--hammer]'
+  switch (getWorkflowMode(props.workflowOption.workflow)) {
+    case 'api':
+      return 'icon-[lucide--cloud] bg-primary-background'
+    case 'app':
+      return 'icon-[lucide--panels-top-left] bg-primary-background'
+    default:
+      return 'bg-text-subtle icon-[comfy--workflow]'
+  }
 })
 
 const isActiveTab = computed(() => {

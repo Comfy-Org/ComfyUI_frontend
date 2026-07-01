@@ -140,7 +140,44 @@ const messages: Partial<Record<SupportedLocale, LocaleMessages>> = {
   en: enMessages
 }
 
+/**
+ * When API mode is active, user-facing "App" wording is rewritten to "API".
+ * The check is injected at runtime (see `setApiModeChecker`) to avoid importing
+ * the Pinia canvas store into this early-loaded module.
+ */
+let isApiModeActive: () => boolean = () => false
+
+export function setApiModeChecker(checker: () => boolean): void {
+  isApiModeActive = checker
+}
+
+// Mode-switch affordances (the toolbar buttons) must keep their literal "App"
+// wording so users can still tell the modes apart while inside API mode.
+const API_MODE_LABEL_EXCLUDED_KEYS = new Set<string>([
+  'breadcrumbsMenu.enterAppMode',
+  'breadcrumbsMenu.exitAppMode',
+  'breadcrumbsMenu.enterApiMode',
+  'breadcrumbsMenu.exitApiMode',
+  'breadcrumbsMenu.enterGraphMode',
+  'breadcrumbsMenu.actions',
+  'builderMenu.enterAppMode'
+])
+
+function apifyAppLabel(text: string): string {
+  return text
+    .replace(/\bApps\b/g, 'APIs')
+    .replace(/\bapps\b/g, 'APIs')
+    .replace(/\bApp\b/g, 'API')
+    .replace(/\bapp\b/g, 'API')
+}
+
 export const i18n = createI18n({
+  postTranslation: (translated, key) => {
+    if (typeof translated !== 'string') return translated
+    if (!isApiModeActive()) return translated
+    if (API_MODE_LABEL_EXCLUDED_KEYS.has(key)) return translated
+    return apifyAppLabel(translated)
+  },
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
   locale: getDefaultLocale(),

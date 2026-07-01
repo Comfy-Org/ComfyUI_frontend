@@ -5,7 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -46,21 +46,37 @@ function handleOpen(open: boolean) {
   }
 }
 
-function toggleModeTooltip() {
-  const label = canvasStore.linearMode
-    ? t('breadcrumbsMenu.enterNodeGraph')
-    : t('breadcrumbsMenu.enterAppMode')
+const isGraphMode = computed(
+  () => !canvasStore.linearMode && !canvasStore.apiMode
+)
+
+function appModeTooltip() {
   const shortcut = keybindingStore
     .getKeybindingByCommandId('Comfy.ToggleLinear')
     ?.combo.toString()
-  return label + (shortcut ? t('g.shortcutSuffix', { shortcut }) : '')
+  return (
+    t('breadcrumbsMenu.enterAppMode') +
+    (shortcut ? t('g.shortcutSuffix', { shortcut }) : '')
+  )
 }
 
-function toggleLinearMode() {
+function enterGraphMode() {
   dropdownOpen.value = false
-  void useCommandStore().execute('Comfy.ToggleLinear', {
-    metadata: { source }
-  })
+  canvasStore.linearMode = false
+  canvasStore.apiMode = false
+}
+
+function enterAppMode() {
+  dropdownOpen.value = false
+  if (!canvasStore.linearMode) {
+    useTelemetry()?.trackEnterLinear({ source })
+  }
+  canvasStore.linearMode = true
+}
+
+function enterApiMode() {
+  dropdownOpen.value = false
+  canvasStore.apiMode = true
 }
 
 const tooltipPt = {
@@ -92,29 +108,51 @@ const tooltipPt = {
       >
         <Button
           v-tooltip.bottom="{
-            value: toggleModeTooltip(),
+            value: appModeTooltip(),
             showDelay: 300,
             hideDelay: 300,
             pt: tooltipPt
           }"
-          :aria-label="
-            canvasStore.linearMode
-              ? t('breadcrumbsMenu.enterNodeGraph')
-              : t('breadcrumbsMenu.enterAppMode')
-          "
+          :aria-label="t('breadcrumbsMenu.enterAppMode')"
           variant="base"
           class="m-1"
+          :class="{ 'bg-secondary-background-hover': !canvasStore.linearMode }"
           @pointerdown.stop
-          @click="toggleLinearMode"
+          @click="enterAppMode"
         >
-          <i
-            class="size-4"
-            :class="
-              canvasStore.linearMode
-                ? 'icon-[lucide--panels-top-left]'
-                : 'icon-[comfy--workflow]'
-            "
-          />
+          <i class="icon-[lucide--panels-top-left] size-4" />
+        </Button>
+        <Button
+          v-tooltip.bottom="{
+            value: t('breadcrumbsMenu.enterApiMode'),
+            showDelay: 300,
+            hideDelay: 300,
+            pt: tooltipPt
+          }"
+          :aria-label="t('breadcrumbsMenu.enterApiMode')"
+          variant="base"
+          class="m-1"
+          :class="{ 'bg-secondary-background-hover': !canvasStore.apiMode }"
+          @pointerdown.stop
+          @click="enterApiMode"
+        >
+          <i class="icon-[lucide--cloud] size-4" />
+        </Button>
+        <Button
+          v-tooltip.bottom="{
+            value: t('breadcrumbsMenu.enterGraphMode'),
+            showDelay: 300,
+            hideDelay: 300,
+            pt: tooltipPt
+          }"
+          :aria-label="t('breadcrumbsMenu.enterGraphMode')"
+          variant="base"
+          class="m-1"
+          :class="{ 'bg-secondary-background-hover': !isGraphMode }"
+          @pointerdown.stop
+          @click="enterGraphMode"
+        >
+          <i class="icon-[comfy--workflow] size-4" />
         </Button>
         <DropdownMenuTrigger as-child>
           <Button
@@ -128,11 +166,7 @@ const tooltipPt = {
             :aria-label="t('breadcrumbsMenu.workflowActions')"
             class="relative h-10 gap-1 rounded-lg pr-2 pl-2.5 text-center data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
           >
-            <span>{{
-              canvasStore.linearMode
-                ? t('breadcrumbsMenu.app')
-                : t('breadcrumbsMenu.graph')
-            }}</span>
+            <span>{{ t('breadcrumbsMenu.actions') }}</span>
             <i
               class="icon-[lucide--chevron-down] size-4 text-muted-foreground"
             />

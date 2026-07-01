@@ -1,6 +1,7 @@
 export type AppMode =
   | 'graph'
   | 'app'
+  | 'api'
   | 'builder:inputs'
   | 'builder:outputs'
   | 'builder:arrange'
@@ -18,4 +19,8 @@ export function getWorkflowMode(
 
 export function isAppModeValue(mode: AppMode): boolean {
   return mode === 'app' || mode === 'builder:arrange'
+}
+
+export function isApiModeValue(mode: AppMode): boolean {
+  return mode === 'api'
 }

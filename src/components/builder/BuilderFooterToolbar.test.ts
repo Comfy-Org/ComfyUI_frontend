@@ -10,6 +10,10 @@ import type { AppMode } from '@/utils/appMode'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 
 const mockSetMode = vi.hoisted(() => vi.fn())
+const mockCanvasState = vi.hoisted(() => ({
+  builderEnteredFromApi: false,
+  apiShowSwagger: false
+}))
 const mockExitBuilder = vi.hoisted(() => vi.fn())
 const mockSave = vi.hoisted(() => vi.fn())
 const mockSaveAs = vi.hoisted(() => vi.fn())
@@ -24,6 +28,10 @@ vi.mock('@/composables/useAppMode', () => ({
     isBuilderMode: ref(true),
     setMode: mockSetMode
   })
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => mockCanvasState
 }))
 
 const mockHasOutputs = ref(true)
@@ -104,6 +112,8 @@ describe('BuilderFooterToolbar', () => {
     mockState.mode = 'builder:inputs'
     mockHasOutputs.value = true
     mockActiveWorkflow.value = { isTemporary: true, initialMode: 'app' }
+    mockCanvasState.builderEnteredFromApi = false
+    mockCanvasState.apiShowSwagger = false
   })
 
   function renderComponent() {
@@ -172,6 +182,14 @@ describe('BuilderFooterToolbar', () => {
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /view app/i }))
     expect(mockSetMode).toHaveBeenCalledWith('app')
+  })
+
+  it('calls setMode api on view click for an API builder session', async () => {
+    mockCanvasState.builderEnteredFromApi = true
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: /view app/i }))
+    expect(mockSetMode).toHaveBeenCalledWith('api')
+    expect(mockCanvasState.apiShowSwagger).toBe(true)
   })
 
   it('shows "Save as" when workflow is temporary', () => {

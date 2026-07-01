@@ -118,6 +118,7 @@ catalog:
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.2.10
   stylelint: ^16.26.1
+  swagger-ui-dist: ^5.32.8
   tailwindcss: ^4.3.0
   tailwindcss-primeui: ^0.6.1
   three: ^0.184.0
@@ -153,6 +154,7 @@ cleanupUnusedCatalogs: true
 
 allowBuilds:
   '@firebase/util': false
+  '@scarf/scarf': false
   '@sentry/cli': true
   '@tailwindcss/oxide': true
   core-js: false

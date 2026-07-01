@@ -5,16 +5,25 @@ import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemp
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 const { t } = useI18n()
-const { setMode } = useAppMode()
+const { setMode, isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
 const workflowStore = useWorkflowStore()
+const canvasStore = useCanvasStore()
 const isAppDefault = computed(
   () => workflowStore.activeWorkflow?.initialMode === 'app'
+)
+// True in API mode or an API builder session, so the welcome text describes the
+// generated API/Swagger instead of the app preview.
+const isApiContext = computed(
+  () =>
+    canvasStore.apiMode ||
+    (isBuilderMode.value && canvasStore.builderEnteredFromApi)
 )
 const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
 </script>
@@ -32,9 +41,15 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
     </div>
 
     <div class="flex max-w-md flex-col gap-3 text-[14px] text-muted-foreground">
-      <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
-      <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
-      <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
+      <template v-if="isApiContext">
+        <p class="mt-0">{{ t('linearMode.welcome.apiMessage') }}</p>
+        <p class="mt-0">{{ t('linearMode.welcome.apiSharing') }}</p>
+      </template>
+      <template v-else>
+        <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
+        <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
+        <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
+      </template>
     </div>
     <div v-if="hasOutputs" class="flex flex-row gap-2 text-[14px]">
       <p class="mt-0 text-base-foreground">

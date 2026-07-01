@@ -1,9 +1,11 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef } from 'vue'
+import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { setApiModeChecker } from '@/i18n'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -49,13 +51,57 @@ export const useCanvasStore = defineStore('canvas', () => {
     appScalePercentage.value = Math.round(scale * 100)
   }
 
-  const { isAppMode, setMode } = useAppMode()
+  const { isAppMode, isApiMode, isBuilderMode, setMode } = useAppMode()
+  const workflowStore = useWorkflowStore()
+
+  // Whether the active workflow already has linear data, i.e. the app/API has
+  // already been built. When true, entering app/API mode opens the result
+  // (the app preview / generated Swagger) instead of the builder/preview.
+  function activeWorkflowHasLinearData(): boolean {
+    const linearData =
+      workflowStore.activeWorkflow?.changeTracker?.activeState?.extra
+        ?.linearData
+    return (
+      (linearData?.inputs?.length ?? 0) > 0 ||
+      (linearData?.outputs?.length ?? 0) > 0
+    )
+  }
+
   const linearMode = computed({
     get: () => isAppMode.value,
     set: (val: boolean) => {
       setMode(val ? 'app' : 'graph')
     }
   })
+  // When true, API mode renders the generated Swagger ("View API" result)
+  // instead of the API builder/preview. Set by the builder's "View API" action,
+  // or when entering API mode for a workflow that's already been built.
+  const apiShowSwagger = ref(false)
+  const apiMode = computed({
+    get: () => isApiMode.value,
+    set: (val: boolean) => {
+      apiShowSwagger.value = val && activeWorkflowHasLinearData()
+      setMode(val ? 'api' : 'graph')
+    }
+  })
+  watch(isApiMode, (inApi) => {
+    if (!inApi) apiShowSwagger.value = false
+  })
+
+  // The builder is shared between App mode and API mode. Track whether the
+  // current builder session was entered from API mode so labels can stay "API".
+  // Set by `appModeStore.enterBuilder`; auto-cleared when leaving builder mode.
+  const builderEnteredFromApi = ref(false)
+  watch(isBuilderMode, (inBuilder) => {
+    if (!inBuilder) builderEnteredFromApi.value = false
+  })
+
+  // Let i18n rewrite "App" wording to "API" while API mode (or an API builder
+  // session) is active. Reading the refs inside the checker keeps translations
+  // reactive to mode changes.
+  setApiModeChecker(
+    () => apiMode.value || (isBuilderMode.value && builderEnteredFromApi.value)
+  )
 
   // Set up scale synchronization when canvas is available
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
@@ -188,6 +234,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     rerouteSelected,
     appScalePercentage,
     linearMode,
+    apiMode,
+    apiShowSwagger,
+    builderEnteredFromApi,
     updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,

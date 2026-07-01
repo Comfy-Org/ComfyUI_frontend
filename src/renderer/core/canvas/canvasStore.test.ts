@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,10 +8,28 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
+const mockAppModeState = vi.hoisted(() => ({
+  isApiMode: { value: false },
+  setMode: vi.fn()
+}))
+const mockActiveWorkflow = vi.hoisted(
+  () => ({ value: null }) as { value: unknown }
+)
+
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
     isAppMode: { value: false },
-    setMode: vi.fn()
+    isApiMode: mockAppModeState.isApiMode,
+    isBuilderMode: { value: false },
+    setMode: mockAppModeState.setMode
+  })
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    get activeWorkflow() {
+      return mockActiveWorkflow.value
+    }
   })
 }))
 
@@ -46,6 +64,44 @@ describe('useCanvasStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useCanvasStore()
     vi.clearAllMocks()
+    mockActiveWorkflow.value = null
+  })
+
+  describe('apiMode entry', () => {
+    // Use a real pinia so the writable computed setter runs (createTestingPinia
+    // makes getters overridable, which would bypass the setter under test).
+    let realStore: ReturnType<typeof useCanvasStore>
+
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      realStore = useCanvasStore()
+    })
+
+    it('opens the Swagger when the workflow already has linear data', () => {
+      mockActiveWorkflow.value = {
+        changeTracker: {
+          activeState: { extra: { linearData: { inputs: [['1', 'text']] } } }
+        }
+      }
+
+      realStore.apiMode = true
+
+      expect(realStore.apiShowSwagger).toBe(true)
+      expect(mockAppModeState.setMode).toHaveBeenCalledWith('api')
+    })
+
+    it('opens the builder/preview when the workflow has no linear data', () => {
+      mockActiveWorkflow.value = {
+        changeTracker: {
+          activeState: { extra: { linearData: { inputs: [], outputs: [] } } }
+        }
+      }
+
+      realStore.apiMode = true
+
+      expect(realStore.apiShowSwagger).toBe(false)
+      expect(mockAppModeState.setMode).toHaveBeenCalledWith('api')
+    })
   })
 
   describe('appScalePercentage', () => {

@@ -21,7 +21,7 @@ import { storeToRefs } from 'pinia'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
-const { enableAppBuilder } = useAppMode()
+const { enableAppBuilder, isApiMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { enterBuilder } = appModeStore
 const { toastErrorHandler } = useErrorHandling()
@@ -34,6 +34,10 @@ const isAssetsActive = computed(
 )
 const isAppsActive = computed(
   () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'apps'
+)
+// The Apps/APIs sidebar button reflects the current mode.
+const appsIcon = computed(() =>
+  isApiMode.value ? 'icon-[lucide--cloud]' : 'icon-[lucide--panels-top-left]'
 )
 
 function openAssets() {
@@ -110,7 +114,7 @@ function showApps() {
           "
           @click="showApps"
         >
-          <i class="icon-[lucide--panels-top-left] size-4" />
+          <i :class="cn(appsIcon, 'size-4')" />
         </Button>
       </div>
     </div>

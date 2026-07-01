@@ -83,7 +83,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { defineStore } = await import('pinia')
   return {
     useCanvasStore: defineStore('canvas-test-stub', () => ({
-      linearMode: ref(false)
+      linearMode: ref(false),
+      apiMode: ref(false),
+      apiShowSwagger: ref(false)
     }))
   }
 })
@@ -164,6 +166,8 @@ vi.mock('@/utils/envUtil', () => ({
 const stubModule = { default: { template: '<div />' } }
 vi.mock('@/components/graph/GraphCanvas.vue', () => stubModule)
 vi.mock('@/views/LinearView.vue', () => stubModule)
+vi.mock('@/views/ApiView.vue', () => stubModule)
+vi.mock('@/views/ApiSwaggerView.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderToolbar.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderMenu.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderFooterToolbar.vue', () => stubModule)

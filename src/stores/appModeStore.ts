@@ -46,7 +46,8 @@ export function nodeTypeValidForApp(type: string) {
 }
 
 export const useAppModeStore = defineStore('appMode', () => {
-  const { getCanvas } = useCanvasStore()
+  const canvasStore = useCanvasStore()
+  const { getCanvas } = canvasStore
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
@@ -231,11 +232,16 @@ export const useAppModeStore = defineStore('appMode', () => {
 
     useSidebarTabStore().activeSidebarTabId = null
 
-    setMode(
-      mode.value === 'app' && hasOutputs.value
-        ? 'builder:arrange'
-        : 'builder:inputs'
-    )
+    // Remember whether this builder session originated from API mode so the UI
+    // keeps showing "API" wording while building. Captured before changing mode.
+    const enteredFromApi = mode.value === 'api'
+    canvasStore.builderEnteredFromApi = enteredFromApi
+
+    // App-mode sessions with outputs jump straight to the "arrange" preview
+    // step. API sessions have no arrange step, so they start at "inputs".
+    const skipToArrange =
+      mode.value === 'app' && hasOutputs.value && !enteredFromApi
+    setMode(skipToArrange ? 'builder:arrange' : 'builder:inputs')
   }
 
   function exitBuilder() {

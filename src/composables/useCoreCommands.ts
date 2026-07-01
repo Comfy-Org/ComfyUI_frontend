@@ -1353,6 +1353,14 @@ export function useCoreCommands(): ComfyCommand[] {
         if (newMode) useTelemetry()?.trackEnterLinear({ source })
         canvasStore.linearMode = newMode
       }
+    },
+    {
+      id: 'Comfy.ToggleApiMode',
+      icon: 'pi pi-server',
+      label: 'Toggle API Mode',
+      function: () => {
+        canvasStore.apiMode = !canvasStore.apiMode
+      }
     }
   ]
 

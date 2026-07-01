@@ -139,6 +139,7 @@ import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import BuilderOpensAsPopover from './BuilderOpensAsPopover.vue'
@@ -151,6 +152,7 @@ const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const dialogStore = useDialogStore()
 const workflowStore = useWorkflowStore()
+const canvasStore = useCanvasStore()
 const { isBuilderMode, setMode } = useAppMode()
 const { hasOutputs } = storeToRefs(appModeStore)
 const {
@@ -202,7 +204,14 @@ function onExitBuilder() {
 }
 
 function onViewApp() {
-  setMode('app')
+  // API builder sessions open the generated Swagger (API mode) rather than the
+  // App-mode preview.
+  if (canvasStore.builderEnteredFromApi) {
+    canvasStore.apiShowSwagger = true
+    setMode('api')
+  } else {
+    setMode('app')
+  }
 }
 
 function onSetDefaultView(openAsApp: boolean) {

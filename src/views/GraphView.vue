@@ -5,7 +5,7 @@
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
     <div
-      v-show="!linearMode"
+      v-show="!linearMode && !apiMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
@@ -13,6 +13,8 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
+    <ApiView v-if="apiMode && !apiShowSwagger" />
+    <ApiSwaggerView v-if="apiMode && apiShowSwagger" />
     <template v-if="isBuilderMode">
       <BuilderToolbar />
       <BuilderMenu />
@@ -97,6 +99,8 @@ import { electronAPI } from '@/utils/envUtil'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
+import ApiSwaggerView from '@/views/ApiSwaggerView.vue'
+import ApiView from '@/views/ApiView.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
@@ -112,10 +116,16 @@ const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
-const { linearMode } = storeToRefs(useCanvasStore())
+const { linearMode, apiMode, apiShowSwagger } = storeToRefs(useCanvasStore())
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {
+    useSidebarTabStore().activeSidebarTabId = null
+  }
+})
+
+watch(apiMode, (isApi) => {
+  if (isApi) {
     useSidebarTabStore().activeSidebarTabId = null
   }
 })
