@@ -128,4 +128,10 @@ export type TagsOperationResult = z.infer<typeof tagsOperationResultSchema>
 export interface ModelFolderInfo {
   name: string
   folders: string[]
+  /**
+   * The folder's raw registered extension allowlist from
+   * `/experiment/models`. An empty array means match-all; absent on older
+   * backends.
+   */
+  extensions?: string[]
 }

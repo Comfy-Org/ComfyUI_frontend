@@ -162,6 +162,51 @@ export enum ResourceState {
   Loaded
 }
 
+/**
+ * FE-owned copy of core's default `supported_pt_extensions`, applied to
+ * match-all folders (empty registered allowlist) so they don't surface
+ * README/config noise. Accepted to go stale across core version bumps; the
+ * whole surface is expected to be short-lived.
+ */
+const DEFAULT_MODEL_EXTENSIONS = [
+  '.ckpt',
+  '.pt',
+  '.pt2',
+  '.bin',
+  '.pth',
+  '.safetensors',
+  '.pkl',
+  '.sft'
+]
+
+/**
+ * Resolves a folder's display allowlist from its raw registered `extensions`
+ * (`/experiment/models`): non-empty is used verbatim; an empty array
+ * (match-all) or an absent field (older backends) takes the FE default list,
+ * reproducing the legacy sidebar's global-set behavior so nothing that used
+ * to be hidden starts showing.
+ */
+export function effectiveModelExtensions(
+  extensions: string[] | undefined
+): string[] {
+  return extensions?.length ? extensions : DEFAULT_MODEL_EXTENSIONS
+}
+
+/**
+ * Whether a model file belongs in a folder given its display allowlist. An
+ * empty list, or a list with no real (`.`-prefixed) extensions (the
+ * `'folder'`/`''` sentinels), leaves the folder unfiltered.
+ */
+export function matchesModelExtension(
+  fileName: string,
+  extensions: string[]
+): boolean {
+  const realExtensions = extensions.filter((ext) => ext.startsWith('.'))
+  if (realExtensions.length === 0) return true
+  const lower = fileName.toLowerCase()
+  return realExtensions.some((ext) => lower.endsWith(ext.toLowerCase()))
+}
+
 export class ModelFolder {
   /** Models in this folder */
   models: Record<string, ComfyModelDef> = {}
@@ -169,7 +214,8 @@ export class ModelFolder {
 
   constructor(
     public directory: string,
-    private getModelsFunc: (folder: string) => Promise<ModelFile[]>
+    private getModelsFunc: (folder: string) => Promise<ModelFile[]>,
+    public readonly extensions: string[] = []
   ) {}
 
   get key(): string {
@@ -186,6 +232,7 @@ export class ModelFolder {
     this.state = ResourceState.Loading
     const models = await this.getModelsFunc(this.directory)
     for (const model of models) {
+      if (!matchesModelExtension(model.name, this.extensions)) continue
       this.models[`${model.pathIndex}/${model.name}`] = new ComfyModelDef(
         model.name,
         this.directory,
@@ -229,11 +276,15 @@ export const useModelStore = defineStore('models', () => {
     const resData = await api.getModelFolders()
     modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
+    const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
     const getModelsFunc = createGetModelsFunc()
-    for (const folderName of modelFolderNames.value) {
-      modelFolderByName.value[folderName] = new ModelFolder(
-        folderName,
-        getModelsFunc
+    for (const folder of resData) {
+      modelFolderByName.value[folder.name] = new ModelFolder(
+        folder.name,
+        getModelsFunc,
+        // Display filtering applies to the asset walk only; the legacy
+        // listing keeps its historical server-side (global-set) filtering.
+        useAssetAPI ? effectiveModelExtensions(folder.extensions) : []
       )
     }
   }
@@ -265,7 +316,11 @@ export const useModelStore = defineStore('models', () => {
       await refresh()
       return
     }
-    const folder = new ModelFolder(folderName, createGetModelsFunc())
+    const folder = new ModelFolder(
+      folderName,
+      createGetModelsFunc(),
+      modelFolderByName.value[folderName].extensions
+    )
     await folder.load()
     modelFolderByName.value[folderName] = folder
   }

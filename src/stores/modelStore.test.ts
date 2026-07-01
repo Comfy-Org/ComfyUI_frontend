@@ -5,7 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { useModelStore } from '@/stores/modelStore'
+import {
+  effectiveModelExtensions,
+  matchesModelExtension,
+  useModelStore
+} from '@/stores/modelStore'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({
@@ -303,5 +307,96 @@ describe('useModelStore', () => {
       expect(folderStore).toBeDefined()
       expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })
+
+    it('filters asset-path folder contents by the folder extensions', async () => {
+      enableMocks(true)
+      vi.mocked(api.getModelFolders).mockResolvedValue([
+        { name: 'checkpoints', folders: ['/p'], extensions: ['.safetensors'] }
+      ])
+      vi.mocked(assetService.getAssetModels).mockResolvedValue([
+        { name: 'keep.safetensors', pathIndex: 0 },
+        { name: 'notes.txt', pathIndex: 0 }
+      ])
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('checkpoints')
+
+      const names = Object.values(folder!.models).map((m) => m.file_name)
+      expect(names).toEqual(['keep.safetensors'])
+    })
+
+    it('hides non-model noise in match-all folders on the asset path', async () => {
+      enableMocks(true)
+      vi.mocked(api.getModelFolders).mockResolvedValue([
+        { name: 'LLM', folders: ['/p'], extensions: [] }
+      ])
+      vi.mocked(assetService.getAssetModels).mockResolvedValue([
+        { name: 'model.safetensors', pathIndex: 0 },
+        { name: 'README.md', pathIndex: 0 }
+      ])
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('LLM')
+
+      const names = Object.values(folder!.models).map((m) => m.file_name)
+      expect(names).toEqual(['model.safetensors'])
+    })
+
+    it('leaves the legacy listing unfiltered', async () => {
+      enableMocks(false)
+      vi.mocked(api.getModelFolders).mockResolvedValue([
+        { name: 'checkpoints', folders: ['/p'], extensions: ['.safetensors'] }
+      ])
+      vi.mocked(api.getModels).mockResolvedValue([
+        { name: 'keep.safetensors', pathIndex: 0 },
+        { name: 'legacy-visible.gguf', pathIndex: 0 }
+      ])
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('checkpoints')
+
+      const names = Object.values(folder!.models).map((m) => m.file_name)
+      expect(names).toEqual(['keep.safetensors', 'legacy-visible.gguf'])
+    })
+  })
+})
+
+describe(matchesModelExtension, () => {
+  it('keeps files whose extension is in the folder list', () => {
+    expect(
+      matchesModelExtension('a.safetensors', ['.safetensors', '.ckpt'])
+    ).toBe(true)
+    expect(matchesModelExtension('a.txt', ['.safetensors'])).toBe(false)
+  })
+
+  it('matches case-insensitively and on subpaths', () => {
+    expect(
+      matchesModelExtension('sub/dir/A.SAFETENSORS', ['.safetensors'])
+    ).toBe(true)
+  })
+
+  it('is permissive when there are no real extensions', () => {
+    // Unfiltered folders (empty) and the `folder`/`''` sentinels show everything.
+    expect(matchesModelExtension('readme.md', [])).toBe(true)
+    expect(matchesModelExtension('anything', ['folder'])).toBe(true)
+    expect(matchesModelExtension('anything', [''])).toBe(true)
+  })
+})
+
+describe(effectiveModelExtensions, () => {
+  it('uses a registered allowlist verbatim', () => {
+    expect(effectiveModelExtensions(['.gguf'])).toEqual(['.gguf'])
+  })
+
+  it('substitutes the default list for match-all folders', () => {
+    const effective = effectiveModelExtensions([])
+    expect(effective).toContain('.safetensors')
+    expect(matchesModelExtension('readme.md', effective)).toBe(false)
+  })
+
+  it('treats an absent field (older backends) like match-all', () => {
+    expect(effectiveModelExtensions(undefined)).toEqual(
+      effectiveModelExtensions([])
+    )
   })
 })
