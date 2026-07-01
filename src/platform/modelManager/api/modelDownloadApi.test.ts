@@ -10,6 +10,8 @@ import {
   enqueueDownload,
   listCredentials,
   listDownloads,
+  pauseDownload,
+  resumeDownload,
   setDownloadPriority,
   upsertCredential
 } from './modelDownloadApi'
@@ -28,6 +30,15 @@ function jsonResponse(status: number, body: unknown): Response {
     status,
     statusText: `status ${status}`,
     json: () => Promise.resolve(body)
+  } as unknown as Response
+}
+
+function nonJsonErrorResponse(status: number, statusText: string): Response {
+  return {
+    ok: false,
+    status,
+    statusText,
+    json: () => Promise.reject(new Error('not json'))
   } as unknown as Response
 }
 
@@ -70,6 +81,18 @@ describe('modelDownloadApi', () => {
       })
     })
 
+    it('falls back to statusText and an UNKNOWN code for a non-JSON error body', async () => {
+      fetchApi.mockResolvedValue(nonJsonErrorResponse(502, 'Bad Gateway'))
+
+      await expect(
+        enqueueDownload({ url: 'u', model_id: 'loras/x.safetensors' })
+      ).rejects.toMatchObject({
+        message: 'Bad Gateway',
+        code: 'UNKNOWN',
+        status: 502
+      })
+    })
+
     it('exposes the code through DownloadApiError.is()', async () => {
       fetchApi.mockResolvedValue(
         jsonResponse(400, {
@@ -100,6 +123,28 @@ describe('modelDownloadApi', () => {
   })
 
   describe('actions', () => {
+    it('posts to the pause route', async () => {
+      fetchApi.mockResolvedValue(jsonResponse(200, { ok: true }))
+
+      await pauseDownload('d1')
+
+      expect(fetchApi).toHaveBeenCalledWith(
+        '/download/d1/pause',
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+
+    it('posts to the resume route', async () => {
+      fetchApi.mockResolvedValue(jsonResponse(200, { ok: true }))
+
+      await resumeDownload('d1')
+
+      expect(fetchApi).toHaveBeenCalledWith(
+        '/download/d1/resume',
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+
     it('posts to the cancel route', async () => {
       fetchApi.mockResolvedValue(jsonResponse(200, { ok: true }))
 
