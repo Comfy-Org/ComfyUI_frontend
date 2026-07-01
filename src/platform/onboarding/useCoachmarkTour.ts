@@ -1,25 +1,24 @@
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { OnboardingTourStage } from '@/platform/telemetry/types'
 
-import { useCoachmarkController } from './coachmarkController'
+import { onTourRequested } from './coachmarkController'
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
 import { TOURS, resolveSteps } from './onboardingTours'
 import type { CoachStep, EntryPath } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
 
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
-const START_DELAY_MS = 800
 const DEFER_TIMEOUT_MS = 8000
 
 /**
  * The onboarding tour state machine: decides which tour starts and when (auto-open
- * triggers, `?coach=` forcing, explicit requests), resolves which steps run, and
- * drives the advance/skip/complete lifecycle. TourSpotlight owns the spotlight,
- * focus trap and modal stacking for whichever step is shown.
+ * triggers, explicit requests), resolves which steps run, and drives the
+ * advance/skip/complete lifecycle. TourSpotlight owns the spotlight, focus trap
+ * and modal stacking for whichever step is shown.
  */
 export function useCoachmarkTour() {
   const { t } = useI18n()
@@ -31,17 +30,7 @@ export function useCoachmarkTour() {
   // Lets a deferred target autofocus without the spotlight pulling focus back.
   const suspendFocusGuard = ref(false)
   let activeTour: EntryPath | null = null
-  let startTimer: ReturnType<typeof setTimeout> | undefined
   let stepController: AbortController | null = null
-
-  // Read in setup, before the auto-open triggers fire and before URL loaders
-  // strip the param. A known path force-starts that tour after a delay (see
-  // onMounted); `any` replays whichever tour the auto-open watcher detects.
-  // Either way the override is one-shot; anything else is ignored.
-  const coachParam = new URLSearchParams(window.location.search).get('coach')
-  const forcedEntry =
-    coachParam !== null && isEntryPath(coachParam) ? coachParam : null
-  let replayAnyPending = coachParam === 'any'
 
   const step = computed<CoachStep | null>(
     () => steps.value[stepIdx.value] ?? null
@@ -132,7 +121,6 @@ export function useCoachmarkTour() {
   }
 
   onBeforeUnmount(() => {
-    clearTimeout(startTimer)
     stepController?.abort()
   })
 
@@ -145,10 +133,6 @@ export function useCoachmarkTour() {
       },
       { immediate: true }
     )
-  }
-
-  function isEntryPath(value: string): value is EntryPath {
-    return Object.hasOwn(TOURS, value)
   }
 
   function hasSeenTour(entryPath: EntryPath): boolean {
@@ -164,30 +148,16 @@ export function useCoachmarkTour() {
   function startTour(entryPath: EntryPath, force = false) {
     // startTour is synchronous, so a concurrent trigger sees the first's steps.
     if (steps.value.length) return
-    const replay = force || replayAnyPending
-    if (!replay && hasSeenTour(entryPath)) return
+    if (!force && hasSeenTour(entryPath)) return
     const resolved = resolveSteps(TOURS[entryPath], targetMounted)
     if (!resolved.length) return
-    // Consume the one-shot ?coach= override so re-entry respects the seen-flag.
-    replayAnyPending = false
     steps.value = resolved
     activeTour = entryPath
     trackTour('started')
     void showStep(0)
   }
 
-  onMounted(() => {
-    // A known path force-starts after a delay, past the seen-flag and separate
-    // from the auto-open watcher; any other value waits for its trigger.
-    if (forcedEntry)
-      startTimer = setTimeout(
-        () => startTour(forcedEntry, true),
-        START_DELAY_MS
-      )
-  })
-
   // An explicit request (e.g. info button) replays the tour past its seen-flag.
-  const { onTourRequested } = useCoachmarkController()
   onTourRequested((tour) => startTour(tour, true))
 
   return {

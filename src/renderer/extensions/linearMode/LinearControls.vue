@@ -8,7 +8,7 @@ import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import { useCoachmarkController } from '@/platform/onboarding/coachmarkController'
+import { requestTour } from '@/platform/onboarding/coachmarkController'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -27,7 +27,6 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { t } = useI18n()
-const { requestTour } = useCoachmarkController()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()

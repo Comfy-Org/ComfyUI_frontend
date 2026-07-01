@@ -9,9 +9,5 @@ import type { EntryPath } from './onboardingTours'
  */
 const tourRequested = createEventHook<EntryPath>()
 
-export function useCoachmarkController() {
-  return {
-    requestTour: (entryPath: EntryPath) => tourRequested.trigger(entryPath),
-    onTourRequested: tourRequested.on
-  }
-}
+export const requestTour = tourRequested.trigger
+export const onTourRequested = tourRequested.on

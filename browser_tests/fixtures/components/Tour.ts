@@ -1,7 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { nextFrame } from '@e2e/fixtures/utils/timing'
-
 export type CoachTour = 'appMode'
 
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
@@ -42,19 +40,21 @@ export class OnboardingCoachmarks {
   }
 
   /**
-   * Re-navigate with a forced tour (`?coach=` bypasses detection and the
-   * seen-flag). Clears the pre-seeded seen-flag afterward so completion
-   * assertions observe it being set.
+   * Replay the tour from a running app: clears the pre-seeded seen-flag (so
+   * dismissal assertions observe it being set again) and clicks the in-app help
+   * button, which starts the tour past the seen-flag. The caller must already be
+   * in app mode with a populated graph so the button is mounted.
    */
-  async startTour(tour: CoachTour) {
-    await this.page.goto(new URL(`/?coach=${tour}`, this.page.url()).toString())
-    await this.page.waitForFunction(() => window.app?.extensionManager)
-    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+  async startTour() {
+    await this.clearSeen()
+    await this.startTourButton.click()
+  }
+
+  private async clearSeen() {
     await this.page.evaluate(
       async (key) => window.app!.extensionManager.setting.set(key, []),
       SEEN_SETTING
     )
-    await nextFrame(this.page)
   }
 
   /** An element a tour points at, by its `data-coach-id` anchor. */

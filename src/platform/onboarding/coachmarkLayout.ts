@@ -17,8 +17,6 @@ export const CARD_WIDTH = 300
 export const VIEWPORT_MARGIN = 12
 // Gap between the card and its target / the viewport edge.
 export const CARD_GAP = 16
-// Keeps the card clear of the top bar.
-export const TOP_SAFE_INSET = 56
 // Breathing room the spotlight glow adds around its target rect. Kept tight so
 // the glow doesn't spill onto an adjacent control the user might click.
 export const SPOTLIGHT_PAD = 4
@@ -62,4 +60,19 @@ export function blockerClipPath(r: DOMRect): string {
 /** Horizontal position for a centered card with no target, clamped on narrow viewports. */
 export function noTargetCardLeft(viewportWidth: number): number {
   return Math.max(VIEWPORT_MARGIN, (viewportWidth - CARD_WIDTH) / 2)
+}
+
+const TOP_BAR_HEIGHT_VAR = '--comfy-topbar-height'
+
+/**
+ * Keeps the card clear of the top bar: the bar's height read from the theme
+ * token (so it tracks the design system) plus the standard gap.
+ */
+export function topSafeInset(): number {
+  const root = document.documentElement
+  const raw = getComputedStyle(root).getPropertyValue(TOP_BAR_HEIGHT_VAR).trim()
+  const px = raw.endsWith('rem')
+    ? parseFloat(raw) * parseFloat(getComputedStyle(root).fontSize)
+    : parseFloat(raw)
+  return (Number.isFinite(px) ? px : 0) + CARD_GAP
 }

@@ -10,9 +10,6 @@ import TourOverlay from './TourOverlay.vue'
 import type { CoachStep } from './onboardingTours'
 import type { useCoachmarkTour } from './useCoachmarkTour'
 
-// Derived from the composable's contract so the mock can't drift: each method
-// becomes a Mock and each reactive value a writable Ref (tests drive scenarios
-// by setting `.value`, which the real ComputedRefs wouldn't allow).
 type TourApi = ReturnType<typeof useCoachmarkTour>
 type TourState = {
   [K in keyof TourApi]: TourApi[K] extends (...args: never[]) => unknown
@@ -22,8 +19,6 @@ type TourState = {
       : never
 }
 
-// `state` holds the mocked composable's refs/mocks; `seedState` (re)builds it in
-// one place — the factory seeds it once, and each test resets it via beforeEach.
 const mocks = vi.hoisted(() => ({ state: {} as TourState }))
 const seedState = vi.hoisted(
   () => (makeRef: typeof ref) =>

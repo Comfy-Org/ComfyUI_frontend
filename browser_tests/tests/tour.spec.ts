@@ -1,6 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import {
   createTemplateHelper,
@@ -12,10 +13,17 @@ import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 
 const test = mergeTests(comfyPageFixture, onboardingFixture)
 
-/**
- * Tours are forced via `?coach=<tour>` — it bypasses detection, the seen-flag
- * and the per-step gates, which depend on backend state the fixture can't control.
- */
+// The tour only starts in app mode, so load a workflow and enter it first —
+// an empty graph shows the welcome screen, not the controls the tour points at.
+async function enterPopulatedAppMode(comfyPage: ComfyPage) {
+  await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+  await comfyPage.templates.loadTemplate('default')
+  await expect
+    .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+    .toBeGreaterThan(0)
+  await comfyPage.appMode.enterAppModeWithInputs([])
+}
+
 test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
   // The production templates index ships ~400 entries and lazy-paginates, so pin
   // it to a single known `default` card; the workflow JSON still loads from the server.
@@ -28,10 +36,11 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
 
   test.describe('app-mode tour', () => {
     test('opens on the welcome landing, focuses Start, and Skip dismisses it', async ({
-      comfyPage: _comfyPage,
+      comfyPage,
       onboarding
     }) => {
-      await onboarding.startTour('appMode')
+      await enterPopulatedAppMode(comfyPage)
+      await onboarding.startTour()
       const coach = onboarding
 
       await expect(coach.landing).toBeVisible()
@@ -50,7 +59,8 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       comfyPage,
       onboarding
     }) => {
-      await onboarding.startTour('appMode')
+      await enterPopulatedAppMode(comfyPage)
+      await onboarding.startTour()
       const coach = onboarding
       await expect(coach.landing).toBeVisible()
       await expect(coach.landingStartButton).toBeFocused()
@@ -62,21 +72,12 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
   })
 
   test.describe('coach anchors', () => {
-    // comfyPage is requested (unused) so its fixture performs the app setup.
     test('every registry id resolves to an element (drift guard)', async ({
       comfyPage,
       onboarding
     }) => {
       const coach = onboarding
-      // App-mode anchors only mount once a workflow is running in app mode.
-      // Open the template browser and load one to populate the graph first —
-      // entering app mode with an empty graph shows the welcome screen, not the controls.
-      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
-      await comfyPage.templates.loadTemplate('default')
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeGreaterThan(0)
-      await comfyPage.appMode.enterAppModeWithInputs([])
+      await enterPopulatedAppMode(comfyPage)
       // The assets panel only mounts once its button is clicked; every other
       // anchor should already be present in a running app.
       for (const id of Object.values(COACH_IDS).filter(
@@ -98,17 +99,9 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       // Disable the card's position transition so viewport checks read the
       // settled placement, not a transient mid-animation frame.
       await comfyPage.page.emulateMedia({ reducedMotion: 'reduce' })
-      // Populate the graph and enter app mode so the tour's target anchors mount.
-      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
-      await comfyPage.templates.loadTemplate('default')
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeGreaterThan(0)
-      await comfyPage.appMode.enterAppModeWithInputs([])
+      await enterPopulatedAppMode(comfyPage)
 
-      // Replay the tour in-place so the app-mode targets stay mounted (the
-      // ?coach= reload used elsewhere would land on a blank canvas).
-      await coach.startTourButton.click()
+      await coach.startTour()
       await expect(coach.landing).toBeVisible()
       await coach.landingStartButton.click()
 

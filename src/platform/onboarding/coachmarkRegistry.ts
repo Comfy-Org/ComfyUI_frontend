@@ -10,13 +10,8 @@ export function isLaidOut(el: HTMLElement): boolean {
   return r.width > 0 && r.height > 0
 }
 
-/**
- * Live map of coach ids to the elements currently mounted for them, populated
- * by the `v-coachmark` directive. Reactive, so the tour overlay is *told* when
- * a target mounts, unmounts or swaps — no DOM querying or MutationObservers.
- * An id can resolve to several elements (e.g. responsive variants); the overlay
- * picks the first laid-out one.
- */
+// Populated by the `v-coachmark` directive; an id can map to several elements
+// (e.g. responsive variants) and the overlay picks the first laid-out one.
 const registry = shallowReactive(new Map<CoachId, readonly HTMLElement[]>())
 
 export function registerCoachmark(id: CoachId, el: HTMLElement) {

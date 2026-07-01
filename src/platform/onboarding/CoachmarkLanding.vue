@@ -52,7 +52,6 @@
               ref="startButtonRef"
               variant="inverted"
               size="lg"
-              class="w-[146px]"
               @click="emit('start')"
             >
               {{ primaryLabel }}
@@ -89,9 +88,10 @@ const { title, message, image, primaryLabel, skipLabel } = defineProps<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-// Reka's DismissableLayer doesn't fire update:open on Escape for this dialog, so
-// it stays open without this (verified: 3/3 fail without it, 5/5 pass with it).
-// Close it explicitly — the same path Skip and Reka's own dismissal would take.
+// The global keybinding handler (window keydown) matches Escape and calls
+// preventDefault before Reka's DismissableLayer sees it, so Reka skips its own
+// dismiss (it only dismisses when !event.defaultPrevented). Close explicitly —
+// the same path Skip and Reka's dismissal would take.
 useEventListener(document, 'keydown', (e) => {
   if (e.key === 'Escape' && open.value) open.value = false
 })

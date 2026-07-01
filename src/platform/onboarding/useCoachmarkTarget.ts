@@ -3,7 +3,7 @@ import type { Middleware, Placement, Rect } from '@floating-ui/vue'
 import { computed, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
-import { CARD_GAP, TOP_SAFE_INSET, VIEWPORT_MARGIN } from './coachmarkLayout'
+import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
 import { elementsFor, isLaidOut } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
@@ -24,14 +24,6 @@ const PLACEMENT: Record<
   bottom: 'bottom'
 }
 
-// Keeps the card off the top bar and clear of the viewport edges.
-const SHIFT_PADDING = {
-  top: TOP_SAFE_INSET,
-  left: VIEWPORT_MARGIN,
-  right: VIEWPORT_MARGIN,
-  bottom: CARD_GAP
-}
-
 function floatingPlacement(step: CoachStep | null): Placement {
   const placement = step?.placement
   if (!placement || placement === 'auto' || placement === 'center')
@@ -49,9 +41,18 @@ function middleware(step: CoachStep | null): Middleware[] {
   const list: Middleware[] = [offset(CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // crossAxis keeps vertically-centred placements (leftCenter) on-screen too —
-  // shift only guards the main axis by default.
+  // shift only guards the main axis by default. topSafeInset keeps the card off
+  // the top bar; the other edges use the standard viewport margin.
   list.push(
-    shift({ crossAxis: true, padding: SHIFT_PADDING }),
+    shift({
+      crossAxis: true,
+      padding: {
+        top: topSafeInset(),
+        left: VIEWPORT_MARGIN,
+        right: VIEWPORT_MARGIN,
+        bottom: CARD_GAP
+      }
+    }),
     captureReference
   )
   return list

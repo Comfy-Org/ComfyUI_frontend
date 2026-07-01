@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { AppMode } from '@/utils/appMode'
 
-import { useCoachmarkController } from './coachmarkController'
+import { requestTour } from './coachmarkController'
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
 import type { CoachId } from './onboardingTours'
 import { useCoachmarkTour } from './useCoachmarkTour'
@@ -103,7 +103,6 @@ describe('useCoachmarkTour', () => {
     if (appModeMock.mode) appModeMock.mode.value = 'graph'
     if (appModeMock.hasOutputs) appModeMock.hasOutputs.value = false
     telemetry.track.mockClear()
-    window.history.replaceState(null, '', '/')
     vi.useRealTimers()
   })
 
@@ -168,20 +167,17 @@ describe('useCoachmarkTour', () => {
     expect(startedCount()).toBe(0)
   })
 
-  it('replays a seen tour for an already-populated app when ?coach= forces it', async () => {
-    // The forcing param must be read in setup, before the immediate auto-open
-    // trigger fires; otherwise the replay is dropped against the seen-flag.
+  it('replays a seen tour when explicitly requested', async () => {
     settings.seen = ['appMode']
-    window.history.replaceState(null, '', '/?coach=any')
-    enterApp('app', true)
     mountTour()
+    void requestTour('appMode')
     await flush()
     expect(startedCount()).toBe(1)
   })
 
   it('marks the tour seen when it ends normally', async () => {
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     await flush()
     api.end('skipped')
     expect(settings.seen).toContain('appMode')
@@ -190,7 +186,7 @@ describe('useCoachmarkTour', () => {
   it('does not mark the tour seen when a deferred target never appears', async () => {
     vi.useFakeTimers()
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     // Flush startTour + the opening landing step.
     await vi.advanceTimersByTimeAsync(0)
     // Advance past the landing into the first deferred-target step.
@@ -211,7 +207,6 @@ describe('useCoachmarkTour', () => {
 
   it('ignores a second concurrent request while the first tour is resolving', async () => {
     mountTour()
-    const { requestTour } = useCoachmarkController()
     // Both fire synchronously; the first resolves steps before the second runs,
     // so the steps guard drops the second.
     void requestTour('appMode')
@@ -226,7 +221,7 @@ describe('useCoachmarkTour', () => {
     // mounted, so the assets-button step is skipped — the tour still completes.
     registerAppModeTargets()
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     await flush()
 
     // Advance until the tour completes (count-agnostic; extra presses after the
@@ -250,7 +245,7 @@ describe('useCoachmarkTour', () => {
       APP_MODE_TARGETS.filter((id) => id !== 'assets-panel')
     )
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     await flush()
 
     expect(api.countedSteps.value.length).toBe(5)
@@ -275,7 +270,7 @@ describe('useCoachmarkTour', () => {
     // is dropped at tour start — the indicator counts four steps, not five.
     registerAppModeTargets()
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     await flush()
 
     expect(api.countedSteps.value.length).toBe(4)
@@ -288,21 +283,6 @@ describe('useCoachmarkTour', () => {
     expect(api.step.value?.coachId).toBe('assets-panel')
   })
 
-  it('force-starts a named tour after the delay, replaying it even when seen', async () => {
-    vi.useFakeTimers()
-    // A known `?coach=<path>` force-starts that specific tour on mount, past the
-    // seen-flag and without waiting for its auto-open trigger.
-    settings.seen = ['appMode']
-    window.history.replaceState(null, '', '/?coach=appMode')
-    mountTour()
-
-    await vi.advanceTimersByTimeAsync(0)
-    expect(startedCount()).toBe(0)
-
-    await vi.advanceTimersByTimeAsync(800)
-    expect(startedCount()).toBe(1)
-  })
-
   it('reports step index 0 while no tour is active', () => {
     const { api } = mountTour()
     expect(api.countedStepIdx.value).toBe(0)
@@ -311,7 +291,7 @@ describe('useCoachmarkTour', () => {
   it('labels the buttons from the step, falling back to Next then Done', async () => {
     registerAppModeTargets()
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     await flush()
 
     // The landing step overrides both labels.
@@ -344,7 +324,7 @@ describe('useCoachmarkTour', () => {
   it('omits the step index and coach id from the started event, then reports them per step', async () => {
     registerAppModeTargets()
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     await flush()
 
     const started = telemetry.track.mock.calls.find(
@@ -369,7 +349,7 @@ describe('useCoachmarkTour', () => {
   it('advancing off the landing does not mark the tour skipped', async () => {
     registerAppModeTargets()
     const { api } = mountTour()
-    void useCoachmarkController().requestTour('appMode')
+    void requestTour('appMode')
     await flush()
     expect(api.step.value?.landing).toBe(true)
 
