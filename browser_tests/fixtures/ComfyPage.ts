@@ -268,8 +268,16 @@ export class ComfyPage {
       data: { username }
     })
 
-    if (resp.status() !== 200)
-      throw new Error(`Failed to create user: ${await resp.text()}`)
+    if (resp.status() !== 200) {
+      const body = await resp.text()
+      // Persistent backends (Comfy Desktop server user storage) keep the user
+      // across runs and do not list it via GET /api/users, so a duplicate means
+      // it already exists. Returns the username since the generated id is not
+      // retrievable here; only reached on single-user / default-resolving backends.
+      if (resp.status() === 400 && body.includes('Duplicate username.'))
+        return username
+      throw new Error(`Failed to create user: ${body}`)
+    }
 
     return await resp.json()
   }

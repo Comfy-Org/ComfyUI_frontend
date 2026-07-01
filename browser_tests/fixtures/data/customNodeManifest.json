@@ -1,0 +1,24 @@
+[
+  {
+    "pack": "ComfyUI-Impact-Pack",
+    "repo": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
+    "pin": "",
+    "tiers": ["load"],
+    "workflow": "",
+    "expectedNodes": ["ImpactInt", "ImpactFloat"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
+  },
+  {
+    "pack": "ComfyUI-VideoHelperSuite",
+    "repo": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite",
+    "pin": "",
+    "tiers": ["load"],
+    "workflow": "",
+    "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 60000
+  }
+]
