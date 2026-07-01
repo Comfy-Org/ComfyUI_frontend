@@ -548,14 +548,19 @@ export const useAssetsStore = defineStore('assets', () => {
             }
 
             // Merge new assets into existing map and track seen IDs
+            const uniqueIdsBefore = seenIds.size
             for (const asset of newAssets) {
               seenIds.add(asset.id)
               state.assets.set(asset.id, asset)
             }
             state.assets = new Map(state.assets)
 
+            // A full page that contributes no new IDs means the backend is not
+            // honouring `offset`; stop rather than refetch the same page forever.
+            const madeProgress = seenIds.size > uniqueIdsBefore
             state.offset += newAssets.length
-            state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+            state.hasMore =
+              newAssets.length === MODEL_BATCH_SIZE && madeProgress
 
             if (isFirstBatch) {
               state.isLoading = false

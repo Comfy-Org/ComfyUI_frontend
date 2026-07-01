@@ -875,6 +875,32 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
+  describe('pagination safety', () => {
+    it('stops instead of looping when the backend ignores offset', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      // A backend that ignores offset returns the same full page every time.
+      const fullPage = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`asset-${i}`)
+      )
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(fullPage)
+
+      await store.updateModelsForNodeType(nodeType)
+
+      await vi.waitFor(() => {
+        expect(
+          vi.mocked(assetService.getAssetsForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      })
+
+      expect(
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).toHaveBeenCalledTimes(2)
+      expect(store.getAssets(nodeType)).toHaveLength(500)
+    })
+  })
+
   describe('concurrent request handling', () => {
     it('should short-circuit concurrent calls to prevent duplicate work', async () => {
       const store = useAssetsStore()
