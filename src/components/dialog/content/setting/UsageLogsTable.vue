@@ -96,7 +96,7 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -137,11 +137,12 @@ const tooltipContentMap = computed(() => {
   return map
 })
 
-// Billing routing can flip while a fetch is in flight (flag resolution,
-// workspace switch), so two loads against different backends may overlap. A
-// monotonic token lets only the latest load mutate state; superseded responses
-// are discarded to prevent the wrong audit stream from winning the race.
+// A billing-route flip can overlap two loads against different backends; only
+// the latest may mutate state, so a superseded response is discarded.
 let latestLoadToken = 0
+onScopeDispose(() => {
+  latestLoadToken += 1
+})
 
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken

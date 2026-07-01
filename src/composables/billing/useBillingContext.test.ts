@@ -59,6 +59,15 @@ vi.mock('@/composables/useFeatureFlags', async () => {
       teamWorkspacesEnabledRef.value = value
     }
   })
+  const consolidatedBillingEnabledRef = ref(
+    mockConsolidatedBillingEnabled.value
+  )
+  Object.defineProperty(mockConsolidatedBillingEnabled, 'value', {
+    get: () => consolidatedBillingEnabledRef.value,
+    set: (value: boolean) => {
+      consolidatedBillingEnabledRef.value = value
+    }
+  })
   return {
     useFeatureFlags: () => ({
       flags: {
@@ -291,6 +300,23 @@ describe('useBillingContext', () => {
     // Authenticated remote config resolves the flag on for the same workspace
     mockConsolidatedBillingEnabled.value = true
     mockTeamWorkspacesEnabled.value = true
+
+    await vi.waitFor(() => {
+      expect(type.value).toBe('workspace')
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+    })
+  })
+
+  it('moves a personal workspace to workspace billing when consolidated billing flips on', async () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = false
+    mockIsPersonal.value = true
+
+    const { type } = useBillingContext()
+    await nextTick()
+    expect(type.value).toBe('legacy')
+
+    mockConsolidatedBillingEnabled.value = true
 
     await vi.waitFor(() => {
       expect(type.value).toBe('workspace')

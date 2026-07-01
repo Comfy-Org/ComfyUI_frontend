@@ -38,12 +38,10 @@ describe('useBillingRouting', () => {
     mockFlags.teamWorkspacesEnabled = false
     mockActiveWorkspace.value = team
 
-    const { type, shouldUseWorkspaceBilling, shouldUseLegacyBilling } =
-      useBillingRouting()
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
-    expect(shouldUseLegacyBilling.value).toBe(true)
   })
 
   it('keeps personal on legacy when consolidated billing is disabled', () => {

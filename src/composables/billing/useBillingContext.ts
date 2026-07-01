@@ -176,33 +176,29 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
+  // Bumping the token invalidates any in-flight init and discarding the adapter
+  // instances forces a fresh fetch, so a stale backend response can never
+  // resolve into a ready state for the wrong workspace.
+  let latestInitToken = 0
+
   function resetBillingState() {
+    latestInitToken += 1
+    legacyBillingRef.value = null
+    workspaceBillingRef.value = null
     isInitialized.value = false
+    isLoading.value = false
     error.value = null
   }
 
-  // A reinit (workspace switch or backend flip) can overlap an in-flight one.
-  // The token gates completion so only the latest attempt may mark the context
-  // ready, preventing a stale init from resolving into a false-ready state.
-  let latestInitToken = 0
-
-  // type can flip after setup when the team-workspaces or consolidated-billing
-  // flag resolves from authenticated config, swapping the active backend; a
-  // fresh init is needed. The watch fires only when id or type actually
-  // changes, so any fire with a workspace selected warrants a reinit.
+  // type flips when the team-workspaces or consolidated-billing flag resolves
+  // from authenticated config, swapping the active backend. Reset then reinit
+  // on every workspace-id or type change.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
-      if (!newWorkspaceId) {
-        resetBillingState()
-        return
-      }
+      resetBillingState()
+      if (!newWorkspaceId) return
 
-      isInitialized.value = false
-      // The active adapter is a cached singleton whose initialize() short-
-      // circuits on its own flag; clear it so it refetches for the new
-      // workspace/backend instead of serving the prior context's data.
-      activeContext.value.isInitialized.value = false
       try {
         await initialize()
       } catch (err) {
