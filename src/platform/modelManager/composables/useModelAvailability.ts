@@ -5,7 +5,7 @@ import type { AvailabilityEntry } from '../types'
 
 /**
  * Bulk-checks whether the models declared by a workflow are present,
- * downloading, or missing (§7). Pass a `model_id -> source URL` map and badge
+ * downloading, or missing. Pass a `model_id -> source URL` map and badge
  * each model from the returned entries.
  */
 export function useModelAvailability() {

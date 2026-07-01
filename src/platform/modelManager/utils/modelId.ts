@@ -33,7 +33,7 @@ function isIpLiteral(host: string): boolean {
 }
 
 /**
- * Optimistic client-side allowlist hint (§9.1). The server can extend the
+ * Optimistic client-side allowlist hint. The server can extend the
  * allowlist, so a `false` here is advisory — defer to `URL_NOT_ALLOWED`.
  */
 export function isLikelyAllowedHost(url: string): boolean {

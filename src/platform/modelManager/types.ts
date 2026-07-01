@@ -6,7 +6,7 @@ export type { DownloadState, DownloadStatus }
 
 /**
  * Known model file extensions accepted by the backend without
- * `allow_any_extension`. Mirrors the server's extension allowlist (§9.2) and is
+ * `allow_any_extension`. Mirrors the server's extension allowlist and is
  * used for instant client-side validation only — the server stays the source
  * of truth.
  */
@@ -21,7 +21,7 @@ export const MODEL_EXTENSIONS = [
 ] as const
 
 /**
- * Hosts the backend allows out of the box (§9.1). Admins can extend this
+ * Hosts the backend allows out of the box. Admins can extend this
  * server-side, so this list is only for optimistic client-side hints; rely on
  * the server's `URL_NOT_ALLOWED` / `url_allowed` as the source of truth.
  */
@@ -108,7 +108,7 @@ const DOWNLOAD_ERROR_CODES = [
 export type DownloadErrorCode = (typeof DOWNLOAD_ERROR_CODES)[number]
 
 /**
- * Error envelope returned by every download-manager endpoint on failure (§3).
+ * Error envelope returned by every download-manager endpoint on failure.
  * `code` is the stable machine-readable discriminator; `message` is
  * user-facing; `details` is an open object (do not assume a shape).
  */
