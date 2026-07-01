@@ -11,7 +11,7 @@ import { DownloadApiError } from '../types'
 /**
  * Wraps download store mutations with user feedback: optimistic-friendly error
  * toasts and a confirmation prompt for the destructive cancel action (which
- * deletes the partial file, §6.5).
+ * deletes the partial file).
  */
 export function useModelDownloadActions() {
   const store = useModelDownloadStore()

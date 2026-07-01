@@ -32,7 +32,7 @@ const STALE_THRESHOLD_MS = 8_000
 /**
  * Static completion fraction (0..1) for a download. Live values (`progress`)
  * are only populated while a worker is running; for paused/terminal rows we
- * derive it from `bytes_done / total_bytes` (§4.1).
+ * derive it from `bytes_done / total_bytes`.
  */
 export function downloadProgressFraction(
   download: DownloadStatus
