@@ -129,6 +129,21 @@ describe('ModelDownloadRow', () => {
     expect(screen.getByText('50% · 1 KB / 2 KB · 512 B/s')).toBeInTheDocument()
   })
 
+  describe('progress bar visibility', () => {
+    it('shows a progress bar for an active download with known progress', () => {
+      mountRow(createDownload({ status: 'active', progress: 0.5 }))
+
+      expect(screen.getByTestId('progress-bar')).toBeInTheDocument()
+    })
+
+    it('hides the progress bar for a cancelled download', () => {
+      mountRow(createDownload({ status: 'cancelled', progress: 0.5 }))
+
+      expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument()
+      expect(screen.getByText('Cancelled')).toBeInTheDocument()
+    })
+  })
+
   describe('action buttons by status', () => {
     it('shows pause and cancel for a queued download, plus raise priority', () => {
       mountRow(createDownload({ status: 'queued' }))

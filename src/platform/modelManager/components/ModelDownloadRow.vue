@@ -1,8 +1,17 @@
 <template>
   <div
-    class="relative flex flex-col gap-1 overflow-hidden rounded-lg border border-border-default bg-secondary-background px-3 py-2"
+    :class="
+      cn(
+        'relative flex flex-col gap-1 overflow-hidden rounded-lg border border-border-default bg-secondary-background px-3 py-2',
+        isCancelled && 'opacity-60'
+      )
+    "
   >
-    <div v-if="showProgressBar" :class="progressBarContainerClass">
+    <div
+      v-if="showProgressBar"
+      :class="progressBarContainerClass"
+      data-testid="progress-bar"
+    >
       <div :class="progressBarPrimaryClass" :style="barStyle" />
     </div>
 
@@ -78,7 +87,10 @@
     <div
       class="relative flex items-center justify-between gap-2 text-xs text-muted-foreground"
     >
-      <span>{{ statusLabel }}</span>
+      <span class="flex items-center gap-1">
+        <i v-if="isCancelled" class="icon-[lucide--ban] size-3.5" />
+        {{ statusLabel }}
+      </span>
       <span class="truncate" data-testid="meta-line">{{ metaLine }}</span>
     </div>
 
@@ -102,6 +114,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -156,8 +169,12 @@ const barStyle = computed(() => progressPercentStyle(percent.value))
 const isTerminal = computed(() =>
   ['completed', 'cancelled'].includes(download.status)
 )
+const isCancelled = computed(() => download.status === 'cancelled')
 const showProgressBar = computed(
-  () => download.status !== 'failed' && percent.value !== undefined
+  () =>
+    download.status !== 'failed' &&
+    !isCancelled.value &&
+    percent.value !== undefined
 )
 const canPause = computed(() => ['queued', 'active'].includes(download.status))
 const canResume = computed(() => ['paused', 'failed'].includes(download.status))
