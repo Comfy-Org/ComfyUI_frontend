@@ -73,7 +73,8 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       bodyKey: 'onboardingCoachmarks.appMode.landing.body',
       placement: 'center',
       primaryLabelKey: 'onboardingCoachmarks.appMode.landing.start',
-      skipLabelKey: 'onboardingCoachmarks.appMode.landing.skip'
+      skipLabelKey: 'onboardingCoachmarks.appMode.landing.skip',
+      image: '/assets/images/app-mode-landing.png'
     },
     {
       coachId: COACH_IDS.inputsList,
