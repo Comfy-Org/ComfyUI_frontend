@@ -632,7 +632,7 @@ describe('useAssetGridSelection', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    it('does not select all when hover is off and the pointer left the panel', async () => {
+    it('does not select all when the live pointer is outside the panel rect', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
       vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(
