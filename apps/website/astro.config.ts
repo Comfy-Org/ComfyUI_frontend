@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config'
+import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
@@ -24,6 +25,9 @@ export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
   prefetch: { prefetchAll: true },
+  // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
+  // quotes into curly ones and drift from the rest of the site's copy.
+  markdown: { smartypants: false },
   redirects: {
     '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
       '/customers/moment-factory/',
@@ -37,6 +41,7 @@ export default defineConfig({
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
   integrations: [
     vue(),
+    mdx(),
     sitemap({
       filter: (page) => !isExcludedFromSitemap(page)
     })
