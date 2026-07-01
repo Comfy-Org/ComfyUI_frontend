@@ -90,4 +90,45 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       await expect(coach.coachAnchor('assets-panel')).toBeVisible()
     })
   })
+
+  test.describe('spotlight placement', () => {
+    test('every spotlight card stays fully within the viewport', async ({
+      comfyPage,
+      onboarding
+    }) => {
+      const coach = onboarding
+      // Disable the card's position transition so viewport checks read the
+      // settled placement, not a transient mid-animation frame.
+      await comfyPage.page.emulateMedia({ reducedMotion: 'reduce' })
+      // Populate the graph and enter app mode so the tour's target anchors mount.
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+      await comfyPage.templates.loadTemplate('default')
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBeGreaterThan(0)
+      await comfyPage.appMode.enterAppModeWithInputs([])
+
+      // Replay the tour in-place so the app-mode targets stay mounted (the
+      // ?coach= reload used elsewhere would land on a blank canvas).
+      await coach.startTourButton.click()
+      await expect(coach.landing).toBeVisible()
+      await coach.landingStartButton.click()
+
+      // Next-advanced steps. Step 3 (outputs) is the vertically-centred
+      // `leftCenter` placement that must not slide off the top/bottom edge.
+      for (const step of [1, 2, 3]) {
+        const card = coach.cardForStep(step)
+        await expect(card).toBeVisible()
+        await expect(card).toBeInViewport({ ratio: 1 })
+        await coach.cardNextButton.click()
+      }
+
+      // Step 4 (assets button) advances by clicking its target, not Next.
+      await expect(coach.cardForStep(4)).toBeInViewport({ ratio: 1 })
+      await coach.coachAnchor('assets-button').click()
+
+      // Step 5 (assets panel) opens from that click.
+      await expect(coach.cardForStep(5)).toBeInViewport({ ratio: 1 })
+    })
+  })
 })

@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
 import { TelemetryEvents } from '../../types'
+import type { OnboardingTourStage } from '../../types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
@@ -578,24 +579,37 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('maps an onboarding tour stage to its event name', async () => {
-      const provider = createProvider()
-      await vi.dynamicImportSettled()
+    it.for<
+      [
+        OnboardingTourStage,
+        (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+      ]
+    >([
+      ['started', TelemetryEvents.ONBOARDING_TOUR_STARTED],
+      ['step_shown', TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN],
+      ['completed', TelemetryEvents.ONBOARDING_TOUR_COMPLETED],
+      ['skipped', TelemetryEvents.ONBOARDING_TOUR_SKIPPED]
+    ])(
+      'maps onboarding tour stage %s to %s',
+      async ([stage, expectedEvent]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
 
-      const metadata = {
-        tour: 'appMode',
-        step_count: 6,
-        step_index: 2,
-        coach_id: 'app-run-button'
-      } as const
+        const metadata = {
+          tour: 'appMode',
+          step_count: 6,
+          step_index: 2,
+          coach_id: 'app-run-button'
+        } as const
 
-      provider.trackOnboardingTour('step_shown', metadata)
+        provider.trackOnboardingTour(stage, metadata)
 
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
-        metadata
-      )
-    })
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(
+          expectedEvent,
+          metadata
+        )
+      }
+    )
   })
 
   describe('survey tracking', () => {

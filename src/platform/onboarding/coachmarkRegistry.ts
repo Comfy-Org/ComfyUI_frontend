@@ -1,8 +1,14 @@
-import { shallowReactive, watch } from 'vue'
+import { shallowReactive } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
 const EMPTY: readonly HTMLElement[] = []
+
+/** Laid out — a registered target that is currently visible and has a size. */
+export function isLaidOut(el: HTMLElement): boolean {
+  const r = el.getBoundingClientRect()
+  return r.width > 0 && r.height > 0
+}
 
 /**
  * Live map of coach ids to the elements currently mounted for them, populated
@@ -33,12 +39,16 @@ export function elementsFor(id: CoachId | CoachId[]): readonly HTMLElement[] {
   return id.flatMap((coachId) => [...coachmarkElements(coachId)])
 }
 
-/** Whether an element for the id is mounted (regardless of current size). */
+/** Whether a laid-out (visible, non-zero-size) element for the id is mounted. */
 export function targetMounted(id: CoachId | CoachId[]): boolean {
-  return elementsFor(id).length > 0
+  return elementsFor(id).some(isLaidOut)
 }
 
-/** Resolve once an element for the id mounts; false on timeout or abort. */
+/**
+ * Resolve once a laid-out element for the id exists; false on timeout or abort.
+ * Polls per frame so a target that registers before it lays out (e.g. a panel
+ * that animates open from zero size) still resolves only when it's measurable.
+ */
 export function waitForTarget(
   id: CoachId | CoachId[],
   signal: AbortSignal,
@@ -47,10 +57,11 @@ export function waitForTarget(
   if (targetMounted(id)) return Promise.resolve(true)
   return new Promise((resolve) => {
     let done = false
+    let frame = 0
     function finish(found: boolean) {
       if (done) return
       done = true
-      stop()
+      cancelAnimationFrame(frame)
       clearTimeout(timer)
       signal.removeEventListener('abort', onAbort)
       resolve(found)
@@ -58,14 +69,13 @@ export function waitForTarget(
     function onAbort() {
       finish(false)
     }
-    const stop = watch(
-      () => elementsFor(id).length,
-      (count) => {
-        if (count > 0) finish(true)
-      }
-    )
+    function poll() {
+      if (targetMounted(id)) finish(true)
+      else frame = requestAnimationFrame(poll)
+    }
     const timer = setTimeout(() => finish(false), timeoutMs)
     signal.addEventListener('abort', onAbort)
+    frame = requestAnimationFrame(poll)
   })
 }
 

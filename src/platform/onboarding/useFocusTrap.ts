@@ -9,8 +9,6 @@ interface FocusTrapOptions {
   cardRef: Ref<HTMLElement | null>
   /** The spotlighted element, whose focusables join the cycle. */
   getTarget: () => HTMLElement | null
-  /** Whether a tour step is currently shown. */
-  isActive: () => boolean
   /** Suspend the focusin pull-back (e.g. while a deferred dialog autofocuses). */
   isSuspended: () => boolean
   onEscape: () => void
@@ -23,7 +21,7 @@ interface FocusTrapOptions {
  * focus back into the card.
  */
 export function useFocusTrap(options: FocusTrapOptions) {
-  const { cardRef, getTarget, isActive, isSuspended, onEscape } = options
+  const { cardRef, getTarget, isSuspended, onEscape } = options
 
   /** Focus the primary action (the last button); Skip comes first in the DOM. */
   async function focusCard() {
@@ -50,7 +48,6 @@ export function useFocusTrap(options: FocusTrapOptions) {
     document,
     'keydown',
     (e: KeyboardEvent) => {
-      if (!isActive()) return
       if (e.key === 'Escape') {
         e.preventDefault()
         e.stopPropagation()
@@ -78,7 +75,7 @@ export function useFocusTrap(options: FocusTrapOptions) {
     document,
     'focusin',
     (e: FocusEvent) => {
-      if (!isActive() || isSuspended()) return
+      if (isSuspended()) return
       const node = e.target as Node | null
       if (!node) return
       if (cardRef.value?.contains(node)) return

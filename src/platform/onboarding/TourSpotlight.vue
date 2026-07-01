@@ -17,7 +17,7 @@
       ref="cardRef"
       role="dialog"
       aria-modal="true"
-      :aria-label="t(step.titleKey)"
+      :aria-labelledby="titleId"
       :aria-describedby="`${subtitleId} ${bodyId}`"
       class="pointer-events-auto absolute max-h-[calc(100vh-72px)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
       :style="cardStyle"
@@ -31,6 +31,7 @@
         "
         :subtitle-id="subtitleId"
         :title="t(step.titleKey)"
+        :title-id="titleId"
         :message="t(step.bodyKey)"
         :message-id="bodyId"
         :image="step.image"
@@ -60,7 +61,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useElementSize, useEventListener, useWindowSize } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { ZIndex } from '@primeuix/utils/zindex'
 import {
   computed,
@@ -83,11 +84,8 @@ import {
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
   blockerClipPath,
-  cardCorner,
-  clampCardPosition,
   clampSpotlight,
-  noTargetCardLeft,
-  resolvePlacement
+  noTargetCardLeft
 } from './coachmarkLayout'
 import type { CoachStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
@@ -123,16 +121,15 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const bodyId = useId()
 const subtitleId = useId()
+const titleId = useId()
 
 const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
-const { height: cardHeight } = useElementSize(cardRef, undefined, {
-  box: 'border-box'
-})
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const stepRef = computed<CoachStep | null>(() => step)
-const { targetRect, targetEl } = useCoachmarkTarget(stepRef)
+const { targetRect, targetEl, floatingStyles, isPositioned } =
+  useCoachmarkTarget(stepRef, cardRef)
 
 // Steps the user advances by interacting with the target (click/close), not Next.
 const expectsTargetInteraction = computed(() => !!step.advanceOnTargetClick)
@@ -142,7 +139,6 @@ const showSkip = computed(() => !isLast || expectsTargetInteraction.value)
 const focusTrap = useFocusTrap({
   cardRef,
   getTarget: () => targetEl.value,
-  isActive: () => true,
   isSuspended: () => suspendFocusGuard,
   onEscape: () => emit('skip')
 })
@@ -224,11 +220,12 @@ const blockerStyle = computed(() => {
 })
 
 const cardStyle = computed(() => {
-  const r = targetRect.value
   // Cap the width on viewports narrower than the card so it never overflows.
   const width = `${CARD_WIDTH}px`
   const maxWidth = `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`
-  if (!r) {
+  // No resolved target (a centred intro step, or a deferred target that hasn't
+  // laid out): centre the card in the viewport rather than hide it.
+  if (!targetEl.value) {
     return {
       width,
       maxWidth,
@@ -236,14 +233,13 @@ const cardStyle = computed(() => {
       top: '30%'
     }
   }
-  const placement = resolvePlacement(step.placement, r, windowWidth.value)
-  const corner = cardCorner(placement, r, cardHeight.value)
+  // Floating UI places the card beside the target; stay hidden until it's
+  // positioned to avoid a first-frame jump from the origin.
   return {
+    ...floatingStyles.value,
     width,
     maxWidth,
-    ...clampCardPosition(corner, cardHeight.value, viewport()),
-    // Centred placements need the measured height; hide frame 0 (height still 0) to avoid a jump.
-    opacity: cardHeight.value > 0 ? '1' : '0'
+    opacity: isPositioned.value ? '1' : '0'
   }
 })
 </script>

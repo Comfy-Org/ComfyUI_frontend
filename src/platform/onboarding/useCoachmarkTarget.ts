@@ -1,32 +1,68 @@
-import { useElementBounding, useEventListener } from '@vueuse/core'
-import { computed, nextTick, onScopeDispose, watch } from 'vue'
+import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
+import type { Middleware, Placement, Rect } from '@floating-ui/vue'
+import { computed } from 'vue'
 import type { Ref } from 'vue'
 
-import { elementsFor } from './coachmarkRegistry'
-import type { CoachStep } from './onboardingTours'
+import { CARD_GAP, TOP_SAFE_INSET, VIEWPORT_MARGIN } from './coachmarkLayout'
+import { elementsFor, isLaidOut } from './coachmarkRegistry'
+import type { CoachPlacement, CoachStep } from './onboardingTours'
 
-// A deferred target animates in; trust the rect only after STABLE steady frames, capped at MAX.
-const SETTLE_STABLE_FRAMES = 10
-const SETTLE_MAX_FRAMES = 30
-
-function rectKey(r: DOMRect | null): string {
-  return r ? `${r.x},${r.y},${r.width},${r.height}` : 'null'
+// Maps a step's placement to a Floating UI placement. `auto` starts on the right
+// and flips to fit; `center` has no target, so it never reaches here.
+const PLACEMENT: Record<
+  Exclude<CoachPlacement, 'auto' | 'center'>,
+  Placement
+> = {
+  left: 'left-start',
+  right: 'right-start',
+  leftCenter: 'left',
+  bottom: 'bottom'
 }
 
-/** Laid out — skips a registered target that is hidden (e.g. by v-show). */
-function isLaidOut(el: HTMLElement): boolean {
-  const r = el.getBoundingClientRect()
-  return r.width > 0 && r.height > 0
+// Keeps the card off the top bar and clear of the viewport edges.
+const SHIFT_PADDING = {
+  top: TOP_SAFE_INSET,
+  left: VIEWPORT_MARGIN,
+  right: VIEWPORT_MARGIN,
+  bottom: CARD_GAP
+}
+
+function floatingPlacement(step: CoachStep | null): Placement {
+  const placement = step?.placement
+  if (!placement || placement === 'auto' || placement === 'center')
+    return 'right-start'
+  return PLACEMENT[placement]
+}
+
+// Surfaces the measured target rect on each reposition so the spotlight can trace it.
+const captureReference: Middleware = {
+  name: 'captureReference',
+  fn: (state) => ({ data: { rect: state.rects.reference } })
+}
+
+function middleware(step: CoachStep | null): Middleware[] {
+  const list: Middleware[] = [offset(CARD_GAP)]
+  if (!step?.placement || step.placement === 'auto') list.push(flip())
+  // crossAxis keeps vertically-centred placements (leftCenter) on-screen too —
+  // shift only guards the main axis by default.
+  list.push(
+    shift({ crossAxis: true, padding: SHIFT_PADDING }),
+    captureReference
+  )
+  return list
 }
 
 /**
- * Tracks the on-screen rect of a coach step's target. The element comes from the
- * reactive registry (the `v-coachmark` directive), so mounts/unmounts/swaps arrive
- * as reactivity rather than DOM observation; geometry is measured by
- * `useElementBounding` plus the scroll listener and settle loop below. Re-measures
- * itself on any change, so callers only read `targetRect`/`targetEl`.
+ * Locates a coach step's target in the reactive registry and positions the card
+ * beside it with Floating UI: `offset`/`flip`/`shift` place the card and keep it
+ * on-screen, while `autoUpdate` follows the target through scroll, resize and —
+ * for deferred targets that animate in — every frame. The `captureReference`
+ * middleware surfaces the live target rect for the spotlight to trace.
  */
-export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
+export function useCoachmarkTarget(
+  step: Ref<CoachStep | null>,
+  cardRef: Ref<HTMLElement | null>
+) {
   const candidateEls = computed<readonly HTMLElement[]>(() => {
     const id = step.value?.coachId
     return id ? elementsFor(id) : []
@@ -37,58 +73,29 @@ export function useCoachmarkTarget(step: Ref<CoachStep | null>) {
     () => candidateEls.value.find(isLaidOut) ?? null
   )
 
-  // `windowScroll` off: the capture-phase listener already catches window and
-  // scrollable-ancestor scrolls, so VueUse needn't double-bind window scroll.
-  const { x, y, width, height, update } = useElementBounding(targetEl, {
-    windowScroll: false
-  })
-  const targetRect = computed<DOMRect | null>(() =>
-    targetEl.value && width.value > 0
-      ? new DOMRect(x.value, y.value, width.value, height.value)
-      : null
-  )
-  useEventListener(window, 'scroll', update, { capture: true, passive: true })
-
-  let settleFrame: number | null = null
-  function cancelSettle() {
-    if (settleFrame !== null) cancelAnimationFrame(settleFrame)
-    settleFrame = null
-  }
-  onScopeDispose(cancelSettle)
-
-  // Re-measure each frame until the rect holds steady for the stable window,
-  // capped so a never-settling rect still stops; cancels any prior loop first.
-  function settle() {
-    cancelSettle()
-    let last = ''
-    let stable = 0
-    let frames = 0
-    function tick() {
-      settleFrame = null
-      update()
-      const key = rectKey(targetRect.value)
-      if (key === last) {
-        stable++
-      } else {
-        stable = 0
-        last = key
-      }
-      if (stable >= SETTLE_STABLE_FRAMES || ++frames >= SETTLE_MAX_FRAMES)
-        return
-      settleFrame = requestAnimationFrame(tick)
+  const { floatingStyles, middlewareData, isPositioned } = useFloating(
+    targetEl,
+    cardRef,
+    {
+      strategy: 'fixed',
+      transform: false,
+      placement: () => floatingPlacement(step.value),
+      middleware: () => middleware(step.value),
+      whileElementsMounted: (reference, floating, update) =>
+        autoUpdate(reference, floating, update, {
+          animationFrame: step.value?.deferTarget ?? false
+        })
     }
-    settleFrame = requestAnimationFrame(tick)
-  }
+  )
 
-  // Re-measure when the step changes or its target mounts/swaps; a deferred
-  // target additionally settles through its open animation.
-  watch([step, candidateEls], () => {
-    cancelSettle()
-    void nextTick(() => {
-      update()
-      if (step.value?.deferTarget) settle()
-    })
+  const targetRect = computed<DOMRect | null>(() => {
+    const data = middlewareData.value.captureReference as
+      | { rect: Rect }
+      | undefined
+    const rect = data?.rect
+    if (!rect || rect.width === 0) return null
+    return new DOMRect(rect.x, rect.y, rect.width, rect.height)
   })
 
-  return { targetRect, targetEl }
+  return { targetEl, targetRect, floatingStyles, isPositioned }
 }

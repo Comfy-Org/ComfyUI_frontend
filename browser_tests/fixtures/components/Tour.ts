@@ -15,6 +15,11 @@ export class OnboardingCoachmarks {
   public readonly landing: Locator
   public readonly landingStartButton: Locator
   public readonly landingSkipButton: Locator
+  /** App-mode help button that replays the tour in-place (past the seen-flag). */
+  public readonly startTourButton: Locator
+  /** The current spotlight step card (the dialog carrying a "Step N of M" label). */
+  public readonly card: Locator
+  public readonly cardNextButton: Locator
 
   constructor(public readonly page: Page) {
     this.landing = page.getByTestId('coach-landing')
@@ -24,6 +29,18 @@ export class OnboardingCoachmarks {
     this.landingSkipButton = this.landing.getByRole('button', {
       name: 'Skip for now'
     })
+    this.startTourButton = page.getByRole('button', {
+      name: 'Take a tour of App Mode'
+    })
+    this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
+    this.cardNextButton = this.card.getByRole('button', { name: 'Next' })
+  }
+
+  /** The spotlight card while it is showing the given step number. */
+  cardForStep(step: number): Locator {
+    return this.page
+      .getByRole('dialog')
+      .filter({ hasText: new RegExp(`Step ${step} of `) })
   }
 
   /**

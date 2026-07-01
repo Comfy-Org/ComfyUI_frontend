@@ -2,11 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   blockerClipPath,
-  cardCorner,
-  clampCardPosition,
   clampSpotlight,
-  noTargetCardLeft,
-  resolvePlacement
+  noTargetCardLeft
 } from './coachmarkLayout'
 
 const VIEWPORT = { width: 1000, height: 800 }
@@ -52,70 +49,6 @@ describe('blockerClipPath', () => {
     expect(clip).toContain('10px 60px')
     expect(clip).toContain('40px 60px')
     expect(clip).toContain('40px 20px')
-  })
-})
-
-describe('resolvePlacement', () => {
-  it('passes through an explicit placement', () => {
-    const r = new DOMRect(100, 0, 50, 10)
-    expect(resolvePlacement('bottom', r, 1000)).toBe('bottom')
-    expect(resolvePlacement('leftCenter', r, 1000)).toBe('leftCenter')
-  })
-
-  it('auto picks the side of the target with more room', () => {
-    expect(resolvePlacement('auto', new DOMRect(100, 0, 50, 10), 1000)).toBe(
-      'right'
-    )
-    expect(resolvePlacement('auto', new DOMRect(900, 0, 50, 10), 1000)).toBe(
-      'left'
-    )
-  })
-})
-
-describe('cardCorner', () => {
-  const r = new DOMRect(400, 200, 50, 40)
-
-  it('places left of the target, nudged below the top inset', () => {
-    expect(cardCorner('left', r, 120)).toEqual({ x: 84, y: 208 })
-  })
-
-  it('clamps the left placement to the top-safe inset near the top', () => {
-    expect(cardCorner('left', new DOMRect(400, 10, 50, 40), 120).y).toBe(56)
-  })
-
-  it('vertically centers leftCenter and center on the target', () => {
-    expect(cardCorner('leftCenter', r, 120)).toEqual({ x: 84, y: 160 })
-    expect(cardCorner('center', r, 120)).toEqual({ x: 275, y: 160 })
-  })
-
-  it('places right and bottom relative to the target edges', () => {
-    expect(cardCorner('right', r, 120)).toEqual({ x: 466, y: 208 })
-    expect(cardCorner('bottom', r, 120)).toEqual({ x: 275, y: 256 })
-  })
-})
-
-describe('clampCardPosition', () => {
-  it('keeps an in-bounds corner unchanged', () => {
-    expect(clampCardPosition({ x: 84, y: 208 }, 120, VIEWPORT)).toEqual({
-      left: '84px',
-      top: '208px'
-    })
-  })
-
-  it('clamps left within the viewport margin and the right edge', () => {
-    expect(clampCardPosition({ x: -50, y: 208 }, 120, VIEWPORT).left).toBe(
-      '12px'
-    )
-    expect(clampCardPosition({ x: 900, y: 208 }, 120, VIEWPORT).left).toBe(
-      '684px'
-    )
-  })
-
-  it('clamps top below the top bar and above the bottom edge', () => {
-    expect(clampCardPosition({ x: 84, y: 10 }, 120, VIEWPORT).top).toBe('56px')
-    expect(clampCardPosition({ x: 84, y: 900 }, 120, VIEWPORT).top).toBe(
-      '664px'
-    )
   })
 })
 

@@ -41,7 +41,6 @@ describe('useFocusTrap', () => {
       useFocusTrap({
         cardRef: ref(card),
         getTarget: () => target,
-        isActive: () => true,
         isSuspended: () => suspended,
         onEscape
       })

@@ -19,7 +19,10 @@
         >
           {{ subtitle }}
         </p>
-        <h3 class="m-0 text-base/normal font-semibold text-base-foreground">
+        <h3
+          :id="titleId"
+          class="m-0 text-base/normal font-semibold text-base-foreground"
+        >
           {{ title }}
         </h3>
         <p :id="messageId" class="m-0 text-sm/normal text-muted-foreground">
@@ -34,12 +37,14 @@
 </template>
 
 <script setup lang="ts">
-const { title, message, subtitle, subtitleId, image, messageId } = defineProps<{
-  title: string
-  message: string
-  subtitle?: string
-  subtitleId?: string
-  image?: string
-  messageId?: string
-}>()
+const { title, titleId, message, subtitle, subtitleId, image, messageId } =
+  defineProps<{
+    title: string
+    titleId?: string
+    message: string
+    subtitle?: string
+    subtitleId?: string
+    image?: string
+    messageId?: string
+  }>()
 </script>

@@ -20,6 +20,13 @@ describe('CoachmarkCard', () => {
     expect(screen.getByText('Step 1 of 3')).toBeTruthy()
   })
 
+  it('applies titleId to the heading for aria-labelledby wiring', () => {
+    render(CoachmarkCard, {
+      props: { title: 'Heading', message: 'M', titleId: 'title-1' }
+    })
+    expect(screen.getByRole('heading').id).toBe('title-1')
+  })
+
   it('applies messageId to the message for aria-describedby wiring', () => {
     render(CoachmarkCard, {
       props: { title: 'T', message: 'Body copy', messageId: 'desc-1' }
