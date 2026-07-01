@@ -51,18 +51,16 @@ export function classifyRun(input: {
   if (timedOut) return { outcome: 'TIMEOUT', executedNodes }
 
   const failure = events.find(
-    (event) =>
+    (
+      event
+    ): event is Extract<
+      PromptEvent,
+      { type: 'execution_error' | 'execution_interrupted' }
+    > =>
       event.type === 'execution_error' || event.type === 'execution_interrupted'
   )
-  if (failure) {
-    const error =
-      failure.type === 'execution_error'
-        ? failure.error
-        : failure.type === 'execution_interrupted'
-          ? failure.error
-          : undefined
-    return { outcome: 'EXECUTION_ERROR', executedNodes, error }
-  }
+  if (failure)
+    return { outcome: 'EXECUTION_ERROR', executedNodes, error: failure.error }
 
   if (!events.some((event) => event.type === 'execution_success'))
     return { outcome: 'TIMEOUT', executedNodes }

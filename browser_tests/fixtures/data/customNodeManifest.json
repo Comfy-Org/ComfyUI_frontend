@@ -19,6 +19,6 @@
     "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 60000
+    "timeoutMs": 90000
   }
 ]

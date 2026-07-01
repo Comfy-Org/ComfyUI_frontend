@@ -44,6 +44,17 @@ test.describe('classifyRun', () => {
     expect(result.error?.exceptionType).toBe('ValueError')
   })
 
+  test('EXECUTION_ERROR when the run is interrupted', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'executing', node: '1' },
+        { type: 'execution_interrupted' }
+      ],
+      expectedNodeIds: ['1']
+    })
+    expect(result.outcome).toBe('EXECUTION_ERROR')
+  })
+
   test('TIMEOUT when flagged or when no terminal event arrived', () => {
     const flagged = classifyRun({
       events: [{ type: 'executing', node: '1' }],

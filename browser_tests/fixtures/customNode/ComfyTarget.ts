@@ -76,11 +76,17 @@ export class LocalDesktopTarget {
         for (const type of types)
           (window.app!.api as EventTarget).addEventListener(
             type,
-            (event: Event) =>
-              sink.__cnEvents.push({
-                type,
-                ...(event as CustomEvent).detail
-              })
+            (event: Event) => {
+              const detail: unknown = (event as CustomEvent).detail
+              // `executing` dispatches a bare node-id string (api.ts
+              // dispatchCustomEvent('executing', msg.data.node)); the other
+              // events dispatch object payloads.
+              sink.__cnEvents.push(
+                detail !== null && typeof detail === 'object'
+                  ? { type, ...(detail as Record<string, unknown>) }
+                  : { type, node: (detail as string | undefined) ?? null }
+              )
+            }
           )
       },
       ['execution_start', ...TERMINAL, 'executing']
