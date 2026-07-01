@@ -267,7 +267,7 @@ import {
   RenderShape
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { getNodeWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -735,7 +735,7 @@ const widgetIds = computed(() => {
     widgetValueStore.replaceNodeWidgetOrder(
       graphId,
       bareNodeId,
-      getWidgetIds(node.widgets)
+      getNodeWidgetIds(node)
     )
   }
 

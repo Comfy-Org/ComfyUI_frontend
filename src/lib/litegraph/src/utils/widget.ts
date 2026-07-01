@@ -28,11 +28,21 @@ export function evaluateInput(input: string): number | undefined {
 export function getWidgetIds(
   widgets: readonly { readonly widgetId?: WidgetId }[]
 ): WidgetId[] {
-  const widgetIds: WidgetId[] = []
-  for (const widget of widgets) {
-    if (widget.widgetId) widgetIds.push(widget.widgetId)
-  }
-  return widgetIds
+  return widgets
+    .map((widget) => widget.widgetId)
+    .filter((id): id is WidgetId => id !== undefined)
+}
+
+export function getNodeWidgetIds(node: {
+  readonly widgets?: readonly { readonly widgetId?: WidgetId }[]
+  readonly inputs?: readonly { readonly widgetId?: WidgetId }[]
+}): WidgetId[] {
+  return Array.from(
+    new Set([
+      ...getWidgetIds(node.widgets ?? []),
+      ...getWidgetIds(node.inputs ?? [])
+    ])
+  )
 }
 
 export function resolveNodeRootGraphId(
