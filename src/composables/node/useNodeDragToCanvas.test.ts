@@ -142,6 +142,16 @@ describe('useNodeDragToCanvas', () => {
 
       expect(mockCanvasStore.isGhostPlacing).toBe(true)
     })
+
+    it('should leave node interaction intact during a native drag', () => {
+      const { startDrag, cancelDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, { mode: 'native' })
+      expect(mockCanvasStore.isGhostPlacing).toBe(false)
+
+      cancelDrag()
+      expect(mockCanvasStore.isGhostPlacing).toBe(false)
+    })
   })
 
   describe('drag listener lifecycle', () => {
