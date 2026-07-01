@@ -135,6 +135,33 @@ describe('useAgentDraftSync', () => {
     })
   })
 
+  describe('forgetWorkflow', () => {
+    it('clears a pending conflict targeting the closed workflow', () => {
+      const ports = makePorts()
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 7)
+      sync.setVersion('wf1', 8)
+      sync.handlePatch(patch({ baseVersion: 7, version: 9 }))
+      expect(sync.pendingConflict.value).not.toBeNull()
+
+      sync.forgetWorkflow('wf1')
+
+      expect(sync.pendingConflict.value).toBeNull()
+    })
+
+    it('leaves a pending conflict for a different workflow intact', () => {
+      const ports = makePorts()
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 7)
+      sync.setVersion('wf1', 8)
+      sync.handlePatch(patch({ baseVersion: 7, version: 9 }))
+
+      sync.forgetWorkflow('wf2')
+
+      expect(sync.pendingConflict.value).toMatchObject({ workflowId: 'wf1' })
+    })
+  })
+
   describe('wire envelope -> reconciler', () => {
     function wirePatch(version: number, baseVersion: number) {
       const event = parseAgentEvent({
@@ -240,6 +267,40 @@ describe('useAgentDraftSync', () => {
       expect(a).toBe('restored')
       expect(b).toBe('restored')
       expect(ports.fetchSnapshot).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears an open merge dialog when it restores a newer snapshot', async () => {
+      const ports = makePorts()
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 5)
+      sync.setVersion('wf1', 6)
+      sync.handlePatch(patch({ baseVersion: 4, version: 7 }))
+      expect(sync.pendingConflict.value).not.toBeNull()
+
+      const outcome = await sync.resync('wf1')
+
+      expect(outcome).toBe('restored')
+      expect(sync.pendingConflict.value).toBeNull()
+    })
+
+    it('does not resurrect tracking for a tab closed mid-fetch', async () => {
+      const ports = makePorts()
+      let resolveFetch!: (snapshot: typeof SNAPSHOT) => void
+      vi.mocked(ports.fetchSnapshot).mockReturnValue(
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 5)
+
+      const pending = sync.resync('wf1')
+      sync.forgetWorkflow('wf1')
+      resolveFetch(SNAPSHOT)
+
+      expect(await pending).toBe('up-to-date')
+      expect(ports.applyToTab).not.toHaveBeenCalled()
+      expect(sync.baseVersions.value.has('wf1')).toBe(false)
     })
   })
 

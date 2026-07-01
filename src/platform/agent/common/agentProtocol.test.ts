@@ -80,6 +80,22 @@ describe('parseAgentEvent', () => {
     expect(event).toMatchObject({ durationMs: 1200, errorCode: 'OOM' })
   })
 
+  it('omits a non-finite tool call duration', () => {
+    for (const durationMs of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      const event = parseAgentEvent({
+        type: 'agent_tool_call',
+        data: {
+          ...data,
+          tool_call_id: 'tc1',
+          tool_name: 'run',
+          status: 'success',
+          duration_ms: durationMs
+        }
+      })
+      expect(event).not.toHaveProperty('durationMs')
+    }
+  })
+
   it('maps message done usage to tokenUsage', () => {
     const event = parseAgentEvent({
       type: 'agent_message_done',
@@ -91,6 +107,14 @@ describe('parseAgentEvent', () => {
       messageId: 'm1',
       tokenUsage: { input: 12, output: 34 }
     })
+  })
+
+  it('omits tokenUsage when a usage field is non-finite', () => {
+    const event = parseAgentEvent({
+      type: 'agent_message_done',
+      data: { ...data, usage: { input: 12, output: Number.NaN } }
+    })
+    expect(event).not.toHaveProperty('tokenUsage')
   })
 
   it('omits tokenUsage when usage is absent', () => {

@@ -145,7 +145,7 @@ function parseToolCall(
     toolCallId: data.tool_call_id,
     toolName: data.tool_name,
     status: data.status,
-    ...(typeof data.duration_ms === 'number'
+    ...(isFiniteNumber(data.duration_ms)
       ? { durationMs: data.duration_ms }
       : {}),
     ...(typeof data.error_code === 'string'
@@ -180,8 +180,8 @@ function parseTokenUsage(
   usage: unknown
 ): { input: number; output: number } | undefined {
   return isRecord(usage) &&
-    typeof usage.input === 'number' &&
-    typeof usage.output === 'number'
+    isFiniteNumber(usage.input) &&
+    isFiniteNumber(usage.output)
     ? { input: usage.input, output: usage.output }
     : undefined
 }

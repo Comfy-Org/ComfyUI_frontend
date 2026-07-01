@@ -70,8 +70,15 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
     baseVersions.value.set(workflowId, version)
   }
 
+  function clearConflictFor(workflowId: WorkflowId): void {
+    if (pendingConflict.value?.workflowId === workflowId) {
+      pendingConflict.value = null
+    }
+  }
+
   function forgetWorkflow(workflowId: WorkflowId): void {
     baseVersions.value.delete(workflowId)
+    clearConflictFor(workflowId)
   }
 
   /** Call after a local autosave returns a new server version. */
@@ -113,13 +120,22 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
   }
 
   async function runResync(workflowId: WorkflowId): Promise<ResyncOutcome> {
+    const wasTracked = baseVersions.value.has(workflowId)
     const snapshot = await ports.fetchSnapshot(workflowId)
     const current = baseVersions.value.get(workflowId)
+
+    // The tab was closed mid-fetch (`forgetWorkflow`). Don't resurrect tracking
+    // or apply to a tab that no longer exists.
+    if (wasTracked && current === undefined) return 'up-to-date'
     if (current !== undefined && snapshot.version <= current) {
       return 'up-to-date'
     }
     ports.applyToTab(workflowId, snapshot.content, snapshot.version)
     baseVersions.value.set(workflowId, snapshot.version)
+    // The authoritative snapshot supersedes any open merge dialog for this tab;
+    // resolving it later would re-apply now-stale content and roll the version
+    // back.
+    clearConflictFor(workflowId)
     return 'restored'
   }
 
