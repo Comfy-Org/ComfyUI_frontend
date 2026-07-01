@@ -6,6 +6,7 @@ import type {
   SubscriptionTier,
   TierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { SubscriptionSuccessMetadata } from '@/platform/telemetry/types'
 
@@ -40,6 +41,7 @@ interface PendingSubscriptionCheckoutAttempt {
   checkout_type: CheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  payment_intent_source?: SubscriptionDialogReason
 }
 
 interface RecordPendingSubscriptionCheckoutAttemptInput {
@@ -48,6 +50,7 @@ interface RecordPendingSubscriptionCheckoutAttemptInput {
   checkout_type: CheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  payment_intent_source?: SubscriptionDialogReason
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -168,6 +171,9 @@ const normalizeAttempt = (
     ...(candidate.previous_cycle === 'monthly' ||
     candidate.previous_cycle === 'yearly'
       ? { previous_cycle: candidate.previous_cycle }
+      : {}),
+    ...(typeof candidate.payment_intent_source === 'string'
+      ? { payment_intent_source: candidate.payment_intent_source }
       : {})
   }
 }
@@ -235,7 +241,10 @@ export const recordPendingSubscriptionCheckoutAttempt = (
     cycle: input.cycle,
     checkout_type: input.checkout_type,
     ...(input.previous_tier ? { previous_tier: input.previous_tier } : {}),
-    ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {})
+    ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {}),
+    ...(input.payment_intent_source
+      ? { payment_intent_source: input.payment_intent_source }
+      : {})
   }
 
   if (!storage) {
@@ -287,6 +296,9 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     cycle: attempt.cycle,
     checkout_type: attempt.checkout_type,
     ...(attempt.previous_tier ? { previous_tier: attempt.previous_tier } : {}),
+    ...(attempt.payment_intent_source
+      ? { payment_intent_source: attempt.payment_intent_source }
+      : {}),
     value,
     currency: 'USD',
     ecommerce: {

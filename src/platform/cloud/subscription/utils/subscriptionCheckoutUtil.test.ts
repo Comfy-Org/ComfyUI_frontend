@@ -208,6 +208,29 @@ describe('performSubscriptionCheckout', () => {
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 
+  it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
+    const checkoutUrl = 'https://checkout.stripe.com/test'
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockImplementation(() => window as unknown as Window)
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: checkoutUrl })
+    } as Response)
+
+    await performSubscriptionCheckout('pro', 'monthly', true, 'out_of_credits')
+
+    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_intent_source: 'out_of_credits' })
+    )
+    const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    expect(JSON.parse(storedAttempt)).toMatchObject({
+      payment_intent_source: 'out_of_credits'
+    })
+    openSpy.mockRestore()
+  })
+
   it('uses the latest userId when it changes after checkout starts', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi

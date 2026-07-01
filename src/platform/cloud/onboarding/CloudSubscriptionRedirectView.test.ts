@@ -140,7 +140,8 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      false,
+      'deep_link'
     )
 
     // Shows loading affordances
@@ -169,7 +170,8 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      false,
+      'deep_link'
     )
   })
 

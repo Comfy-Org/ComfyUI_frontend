@@ -1,9 +1,11 @@
+import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -15,6 +17,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -45,9 +48,12 @@ export function findPlanSlug(
   return plan?.slug ?? null
 }
 
-export function useSubscriptionCheckout(emit: {
-  (e: 'close', subscribed: boolean): void
-}) {
+export function useSubscriptionCheckout(
+  emit: {
+    (e: 'close', subscribed: boolean): void
+  },
+  paymentIntentSource?: SubscriptionDialogReason
+) {
   const { t } = useI18n()
   const toast = useToast()
   const {
@@ -90,6 +96,23 @@ export function useSubscriptionCheckout(emit: {
     billingCycle: BillingCycle
   ): string | null {
     return findPlanSlug(plans.value, tierKey, billingCycle)
+  }
+
+  function trackCheckoutStarted(
+    tier: TierKey | 'team',
+    checkoutType: 'new' | 'change'
+  ) {
+    const { userId } = storeToRefs(useAuthStore())
+    if (!userId.value) return
+    telemetry?.trackBeginCheckout({
+      user_id: userId.value,
+      tier,
+      cycle: selectedBillingCycle.value,
+      checkout_type: checkoutType,
+      ...(paymentIntentSource
+        ? { payment_intent_source: paymentIntentSource }
+        : {})
+    })
   }
 
   async function handleSubscribeClick(payload: {
@@ -192,6 +215,14 @@ export function useSubscriptionCheckout(emit: {
   async function handleSubscription() {
     if (!selectedTierKey.value) return
 
+    trackCheckoutStarted(
+      selectedTierKey.value,
+      previewData.value &&
+        previewData.value.transition_type !== 'new_subscription'
+        ? 'change'
+        : 'new'
+    )
+
     isSubscribing.value = true
     try {
       const planSlug = getApiPlanSlug(
@@ -278,6 +309,8 @@ export function useSubscriptionCheckout(emit: {
       })
       return
     }
+
+    trackCheckoutStarted('team', previewData.value ? 'change' : 'new')
 
     isSubscribing.value = true
     try {

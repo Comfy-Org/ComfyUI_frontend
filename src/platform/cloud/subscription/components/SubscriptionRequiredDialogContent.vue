@@ -33,7 +33,11 @@
       </i18n-t>
     </div>
 
-    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
+    <PricingTable
+      :reason
+      class="flex-1"
+      @choose-team-workspace="handleChooseTeam"
+    />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">

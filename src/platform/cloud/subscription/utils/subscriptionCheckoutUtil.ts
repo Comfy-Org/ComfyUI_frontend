@@ -8,6 +8,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingCycle } from './subscriptionTierRank'
@@ -47,7 +48,8 @@ const getCheckoutAttributionForCloud =
 export async function performSubscriptionCheckout(
   tierKey: TierKey,
   currentBillingCycle: BillingCycle,
-  openInNewTab: boolean = true
+  openInNewTab: boolean = true,
+  paymentIntentSource?: SubscriptionDialogReason
 ): Promise<void> {
   if (!isCloud) return
 
@@ -114,6 +116,9 @@ export async function performSubscriptionCheckout(
         tier: tierKey,
         cycle: currentBillingCycle,
         checkout_type: 'new',
+        ...(paymentIntentSource
+          ? { payment_intent_source: paymentIntentSource }
+          : {}),
         ...checkoutAttribution
       })
     }
@@ -127,13 +132,15 @@ export async function performSubscriptionCheckout(
       recordPendingSubscriptionCheckoutAttempt({
         tier: tierKey,
         cycle: currentBillingCycle,
-        checkout_type: 'new'
+        checkout_type: 'new',
+        payment_intent_source: paymentIntentSource
       })
     } else {
       recordPendingSubscriptionCheckoutAttempt({
         tier: tierKey,
         cycle: currentBillingCycle,
-        checkout_type: 'new'
+        checkout_type: 'new',
+        payment_intent_source: paymentIntentSource
       })
       globalThis.location.href = data.checkout_url
     }

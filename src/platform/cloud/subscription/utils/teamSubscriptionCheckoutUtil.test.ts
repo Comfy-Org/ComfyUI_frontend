@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, reactive } from 'vue'
 
-const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
-  mockSubscribe: vi.fn()
-}))
+const { mockIsCloud, mockSubscribe, mockTrackBeginCheckout, mockUserId } =
+  vi.hoisted(() => ({
+    mockIsCloud: { value: true },
+    mockSubscribe: vi.fn(),
+    mockTrackBeginCheckout: vi.fn(),
+    mockUserId: { value: 'user-1' as string | null }
+  }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -15,6 +19,12 @@ vi.mock('@/config/comfyApi', () => ({
 }))
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { subscribe: mockSubscribe }
+}))
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackBeginCheckout: mockTrackBeginCheckout })
+}))
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) })
 }))
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
@@ -51,6 +61,13 @@ describe('performTeamSubscriptionCheckout', () => {
       teamCreditStopId: 'team_700'
     })
     expect(assignedHref).toBe('https://stripe.test/pay')
+    expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+      user_id: 'user-1',
+      tier: 'team',
+      cycle: 'yearly',
+      checkout_type: 'new',
+      payment_intent_source: 'deep_link'
+    })
   })
 
   it('uses the monthly slug and lands in the app when no Stripe step is needed', async () => {

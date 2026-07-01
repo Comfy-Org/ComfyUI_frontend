@@ -239,8 +239,7 @@ const handleOpenPlanAndCreditsSettings = () => {
 }
 
 const handleTopUp = () => {
-  // Track purchase credits entry from avatar popover
-  useTelemetry()?.trackAddApiCreditButtonClicked()
+  useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }

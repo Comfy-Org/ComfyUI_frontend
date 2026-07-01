@@ -152,7 +152,7 @@ const {
   handleConfirmTransition,
   handleTeamSubscribe,
   handleResubscribe
-} = useSubscriptionCheckout(emit)
+} = useSubscriptionCheckout(emit, reason)
 
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).

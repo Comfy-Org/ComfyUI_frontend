@@ -277,6 +277,7 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -320,6 +321,10 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const { reason } = defineProps<{
+  reason?: SubscriptionDialogReason
+}>()
 
 const emit = defineEmits<{
   chooseTeamWorkspace: []
@@ -469,6 +474,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             tier: targetPlan.tierKey,
             cycle: targetPlan.billingCycle,
             checkout_type: 'change',
+            ...(reason ? { payment_intent_source: reason } : {}),
             ...checkoutAttribution,
             ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
           })
@@ -498,6 +504,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             tier: targetPlan.tierKey,
             cycle: targetPlan.billingCycle,
             checkout_type: 'change',
+            payment_intent_source: reason,
             ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
             ...(previousPlan
               ? { previous_cycle: previousPlan.billingCycle }
@@ -508,7 +515,8 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
         await performSubscriptionCheckout(
           tierKey,
           currentBillingCycle.value,
-          true
+          true,
+          reason
         )
       }
     } finally {

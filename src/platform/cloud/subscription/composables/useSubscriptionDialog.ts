@@ -4,6 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -11,13 +12,27 @@ const DIALOG_KEY = 'subscription-required'
 const FREE_TIER_DIALOG_KEY = 'free-tier-info'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
+/**
+ * The product moment that sent the user into the paywall/pricing flow.
+ * Attached to `app:subscription_required_modal_opened` and carried through
+ * `begin_checkout` so payment attempts stay attributable to their trigger.
+ */
 export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
   | 'deep_link'
+  | 'subscribe_to_run'
+  | 'subscribe_now_button'
+  | 'upgrade_to_add_credits'
+  | 'settings_billing_panel'
+  | 'avatar_menu_plans'
+  | 'team_members_panel'
+  | 'invite_member_upsell'
+  | 'upload_model_upgrade'
+  | 'team_upgrade_resume'
 
-interface SubscriptionDialogOptions {
+export interface SubscriptionDialogOptions {
   reason?: SubscriptionDialogReason
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
@@ -38,8 +53,21 @@ export const useSubscriptionDialog = () => {
     dialogStore.closeDialog({ key: FREE_TIER_DIALOG_KEY })
   }
 
+  // Fired here — the choke point every paywall/pricing dialog variant passes
+  // through — so both the legacy and workspace billing paths emit it.
+  function trackModalOpened(reason?: SubscriptionDialogReason) {
+    // Resolved lazily to avoid the useBillingContext import cycle (see below).
+    const { tier } = useBillingContext()
+    useTelemetry()?.trackSubscription('modal_opened', {
+      current_tier: tier.value?.toLowerCase(),
+      reason
+    })
+  }
+
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
+
+    trackModalOpened(options?.reason)
 
     // Resolved lazily (not at setup): useWorkspaceUI reads useBillingContext, so
     // a setup-time read re-enters the half-built context during the
@@ -167,6 +195,8 @@ export const useSubscriptionDialog = () => {
     // (not at composable setup) to avoid the useBillingContext import cycle.
     const { isFreeTier } = useBillingContext()
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
+      trackModalOpened(options?.reason)
+
       const component = defineAsyncComponent(
         () =>
           import('@/platform/cloud/subscription/components/FreeTierDialogContent.vue')
@@ -236,7 +266,7 @@ export const useSubscriptionDialog = () => {
       sessionStorage.removeItem(RESUME_PRICING_KEY)
 
       if (!workspaceStore.isInPersonalWorkspace) {
-        showPricingTable()
+        showPricingTable({ reason: 'team_upgrade_resume' })
       }
     } catch {
       // sessionStorage may be unavailable

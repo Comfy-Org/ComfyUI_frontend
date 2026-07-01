@@ -429,13 +429,18 @@ export interface SubscriptionMetadata {
   reason?: SubscriptionDialogReason
 }
 
+export interface AddCreditsClickMetadata {
+  source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
-  tier: TierKey
+  tier: TierKey | 'team'
   cycle: BillingCycle
   checkout_type: 'new' | 'change'
   previous_tier?: TierKey
+  payment_intent_source?: SubscriptionDialogReason
 }
 
 interface EcommerceItemMetadata {
@@ -459,6 +464,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   cycle: BillingCycle
   checkout_type: 'new' | 'change'
   previous_tier?: TierKey
+  payment_intent_source?: SubscriptionDialogReason
   value: number
   currency: string
   ecommerce: EcommerceMetadata
@@ -489,7 +495,7 @@ export interface TelemetryProvider {
     metadata?: SubscriptionSuccessMetadata
   ): void
   trackMonthlySubscriptionCancelled?(): void
-  trackAddApiCreditButtonClicked?(): void
+  trackAddApiCreditButtonClicked?(metadata?: AddCreditsClickMetadata): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
   trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void

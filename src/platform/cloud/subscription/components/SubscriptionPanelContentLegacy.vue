@@ -48,7 +48,9 @@
             v-if="isActiveSubscription"
             variant="primary"
             class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
-            @click="showSubscriptionDialog"
+            @click="
+              showSubscriptionDialog({ reason: 'settings_billing_panel' })
+            "
           >
             {{ $t('subscription.upgradePlan') }}
           </Button>

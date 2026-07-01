@@ -112,7 +112,12 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (isActiveSubscription.value) {
     await accessBillingPortal(undefined, false)
   } else {
-    await performSubscriptionCheckout(tierKeyParam, billingCycle, false)
+    await performSubscriptionCheckout(
+      tierKeyParam,
+      billingCycle,
+      false,
+      'deep_link'
+    )
   }
 }, reportError)
 

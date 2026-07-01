@@ -1,7 +1,11 @@
+import { storeToRefs } from 'pinia'
+
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
 
@@ -25,6 +29,17 @@ export async function performTeamSubscriptionCheckout(
   billingCycle: BillingCycle
 ): Promise<void> {
   if (!isCloud) return
+
+  const { userId } = storeToRefs(useAuthStore())
+  if (userId.value) {
+    useTelemetry()?.trackBeginCheckout({
+      user_id: userId.value,
+      tier: 'team',
+      cycle: billingCycle,
+      checkout_type: 'new',
+      payment_intent_source: 'deep_link'
+    })
+  }
 
   const planSlug = getTeamPlanSlug(billingCycle)
   const response = await workspaceApi.subscribe(planSlug, {
