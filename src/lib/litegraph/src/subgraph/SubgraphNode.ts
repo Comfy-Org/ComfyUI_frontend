@@ -32,20 +32,15 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import {
-  buildPromotedSourceExecutionId,
-  resolveConcretePromotedWidget
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { getControlWidget } from '@/types/simplifiedWidget'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import type { WidgetId } from '@/types/widgetId'
-import { parseWidgetId, widgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -154,13 +149,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
-            this._setWidget(
-              subgraphInput,
-              existingInput,
-              widget,
-              input.widget,
-              input.widgetId ?? widget.widgetId
-            )
+            this._setWidget(subgraphInput, existingInput, widget, input.widget)
           return
         }
         const input = this.addInput(name, type, {
@@ -351,8 +340,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           subgraphInput,
           input,
           e.detail.widget,
-          e.detail.input.widget,
-          e.detail.input.widgetId ?? e.detail.widget.widgetId
+          e.detail.input.widget
         )
       },
       { signal }
@@ -618,13 +606,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
-        this._setWidget(
-          subgraphInput,
-          input,
-          widget,
-          targetInput.widget,
-          targetInput.widgetId ?? widget.widgetId
-        )
+        this._setWidget(subgraphInput, input, widget, targetInput.widget)
         break
       }
 
@@ -633,13 +615,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // still receives widget state and a widgetId.
       const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
       if (nested) {
-        this._setWidget(
-          subgraphInput,
-          input,
-          nested.widget,
-          targetInput.widget,
-          targetInput.widgetId
-        )
+        this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
         break
       }
     }
@@ -666,8 +642,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
     interiorWidget: Readonly<IBaseWidget>,
-    inputWidget: IWidgetLocator | undefined,
-    sourceWidgetId?: WidgetId
+    inputWidget: IWidgetLocator | undefined
   ) {
     this.invalidatePromotedViews()
 
@@ -691,38 +666,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
-    const source = resolveSubgraphInputTarget(this, subgraphInput.name)
-    const sourceFallback = sourceWidgetId
-      ? parseWidgetId(sourceWidgetId)
-      : undefined
-    const sourceResolution = source
-      ? resolveConcretePromotedWidget(this, source.nodeId, source.widgetName)
-      : sourceFallback
-        ? resolveConcretePromotedWidget(
-            this,
-            sourceFallback.nodeId,
-            sourceFallback.name
-          )
-        : undefined
-    const hostExecutionId = getExecutionIdByNode(this.rootGraph, this)
-    const sourceExecutionId =
-      hostExecutionId && sourceResolution?.status === 'resolved'
-        ? buildPromotedSourceExecutionId(
-            hostExecutionId,
-            sourceResolution.resolved.nodePath
-          )
-        : undefined
-    const sourceWidgetName =
-      sourceResolution?.status === 'resolved'
-        ? sourceResolution.resolved.widget.name
-        : interiorWidget.name
     store.registerWidgetRenderState(id, {
       advanced: interiorWidget.options?.advanced ?? interiorWidget.advanced,
-      controlWidget: getControlWidget(interiorWidget),
       hasLayoutSize: typeof interiorWidget.computeLayoutSize === 'function',
       isDOMWidget: isDOMBackedWidget(interiorWidget),
-      sourceExecutionId,
-      sourceWidgetName,
       tooltip: interiorWidget.tooltip
     })
     this._setConcreteSlots()

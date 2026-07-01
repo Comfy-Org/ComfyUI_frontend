@@ -284,7 +284,6 @@ function seedNestedPromotedInputState(
   const store = useWidgetValueStore()
   const sourceState = store.getWidget(sourceSlot.widgetId)
   if (!sourceState) return
-  const sourceRenderState = store.getWidgetRenderState(sourceSlot.widgetId)
 
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
@@ -298,7 +297,6 @@ function seedNestedPromotedInputState(
     serialize: sourceState.serialize,
     disabled: sourceState.disabled
   })
-  if (sourceRenderState) store.registerWidgetRenderState(id, sourceRenderState)
 }
 
 function promotePreviewViaExposure(

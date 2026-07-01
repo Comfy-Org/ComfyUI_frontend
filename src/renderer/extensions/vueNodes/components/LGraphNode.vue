@@ -162,7 +162,7 @@
           <NodeWidgets
             v-if="hasRenderableWidgets"
             :node-data
-            :node="lgraphNode"
+            :widget-ids="widgetIds"
           />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
@@ -287,7 +287,6 @@ import type { LayoutChange } from '@/renderer/core/layout/types'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { getNodeRenderableWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
@@ -303,7 +302,10 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  stripGraphPrefix,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
@@ -738,9 +740,16 @@ const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
 useGLSLPreview(lgraphNode)
 
-const hasRenderableWidgets = computed(
-  () => getNodeRenderableWidgets(lgraphNode.value).length > 0
-)
+const widgetValueStore = useWidgetValueStore()
+const widgetIds = computed(() => {
+  const graphId = app.rootGraph?.id
+  const bareNodeId = stripGraphPrefix(nodeData.id)
+  return graphId && bareNodeId
+    ? widgetValueStore.getNodeWidgetIds(graphId, bareNodeId)
+    : []
+})
+
+const hasRenderableWidgets = computed(() => widgetIds.value.length > 0)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
@@ -750,12 +759,10 @@ const showAdvancedInputsButton = computed(() => {
     return hasUnpromotedWidgets(node)
   }
 
-  const widgetValueStore = useWidgetValueStore()
-  const hasAdvancedWidgets = getNodeRenderableWidgets(node).some((widget) => {
-    const renderState = widget.widgetId
-      ? widgetValueStore.getWidgetRenderState(widget.widgetId)
-      : undefined
-    return renderState?.advanced ?? widget.options?.advanced ?? widget.advanced
+  const hasAdvancedWidgets = widgetIds.value.some((id) => {
+    const renderState = widgetValueStore.getWidgetRenderState(id)
+    const widgetState = widgetValueStore.getWidget(id)
+    return renderState?.advanced ?? widgetState?.options?.advanced
   })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
