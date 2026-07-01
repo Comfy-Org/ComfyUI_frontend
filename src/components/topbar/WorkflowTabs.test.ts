@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -36,7 +36,15 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ isLoggedIn: { value: false } })
+  useCurrentUser: () => ({
+    isLoggedIn: { value: false },
+    userEmail: { value: undefined }
+  })
+}))
+
+const openFeedbackDialog = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/support/feedbackDialog', () => ({
+  openFeedbackDialog
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -132,44 +140,28 @@ function renderComponent() {
 }
 
 describe('WorkflowTabs feedback button', () => {
-  let openSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
     distribution.isCloud = false
     distribution.isDesktop = false
     distribution.isNightly = false
     tabBarLayout.value = 'Default'
-    openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    openFeedbackDialog.mockReset()
   })
 
-  afterEach(() => {
-    openSpy.mockRestore()
-  })
-
-  it('opens the Typeform survey tagged with topbar source on Cloud', async () => {
+  it('opens the feedback dialog tagged with topbar source when clicked', async () => {
     distribution.isCloud = true
     const { user } = renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Feedback' }))
 
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=topbar',
-      '_blank',
-      'noopener,noreferrer'
-    )
+    expect(openFeedbackDialog).toHaveBeenCalledWith('topbar')
   })
 
-  it('opens the Typeform survey tagged with topbar source on Nightly', async () => {
+  it('renders the feedback button on Nightly', () => {
     distribution.isNightly = true
-    const { user } = renderComponent()
+    renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Feedback' }))
-
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://form.typeform.com/to/q7azbWPi#distribution=oss-nightly&source=topbar',
-      '_blank',
-      'noopener,noreferrer'
-    )
+    expect(screen.getByRole('button', { name: 'Feedback' })).toBeInTheDocument()
   })
 
   it('does not render the feedback button on non-Cloud/non-Nightly builds', () => {

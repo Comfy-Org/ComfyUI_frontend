@@ -1,23 +1,16 @@
 <script setup lang="ts">
-import { breakpointsTailwind, useBreakpoints, whenever } from '@vueuse/core'
-import { useTemplateRef } from 'vue'
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import TypeformEmbed from '@/platform/surveys/TypeformEmbed.vue'
 
 const { active = true } = defineProps<{
   dataTfWidget: string
   active?: boolean
 }>()
 
-const feedbackRef = useTemplateRef('feedbackRef')
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
-
-whenever(feedbackRef, () => {
-  const scriptEl = document.createElement('script')
-  scriptEl.src = '//embed.typeform.com/next/embed.js'
-  feedbackRef.value?.appendChild(scriptEl)
-})
 </script>
 <template>
   <Button
@@ -41,6 +34,6 @@ whenever(feedbackRef, () => {
         <i class="icon-[lucide--circle-help] size-4" />
       </Button>
     </template>
-    <div v-if="active" ref="feedbackRef" data-tf-auto-resize :data-tf-widget />
+    <TypeformEmbed v-if="active" :typeform-id="dataTfWidget" auto-resize />
   </Popover>
 </template>
