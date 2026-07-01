@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBillingRouting } from './useBillingRouting'
 
 const { mockFlags, mockActiveWorkspace } = vi.hoisted(() => ({
-  mockFlags: { teamWorkspacesEnabled: false, consolidatedBillingEnabled: false },
+  mockFlags: {
+    teamWorkspacesEnabled: false,
+    consolidatedBillingEnabled: false
+  },
   mockActiveWorkspace: {
     value: null as { id: string; type: 'personal' | 'team' } | null
   }

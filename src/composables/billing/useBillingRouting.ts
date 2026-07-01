@@ -40,7 +40,9 @@ export function useBillingRouting() {
     return workspace.type !== 'personal' || flags.consolidatedBillingEnabled
   })
 
-  const shouldUseLegacyBilling = computed(() => !shouldUseWorkspaceBilling.value)
+  const shouldUseLegacyBilling = computed(
+    () => !shouldUseWorkspaceBilling.value
+  )
 
   const type = computed<BillingType>(() =>
     shouldUseWorkspaceBilling.value ? 'workspace' : 'legacy'
