@@ -71,6 +71,7 @@ const isLoading = ref(false)
 function cancellationMetadata(): SubscriptionCancellationMetadata {
   const endDate = props.cancelAt ?? subscription.value?.endDate
   return {
+    source: 'cancel_plan_menu' as const,
     current_tier: tier.value?.toLowerCase(),
     ...(subscription.value?.duration
       ? {

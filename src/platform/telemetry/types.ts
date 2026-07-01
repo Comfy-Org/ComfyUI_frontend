@@ -432,6 +432,12 @@ export interface SubscriptionMetadata {
 export interface SubscriptionCancellationMetadata {
   current_tier?: string
   cycle?: BillingCycle
+  /**
+   * `manage_subscription_button` opens the external billing portal, where
+   * cancellation is one of the few possible actions but not the only one —
+   * treat it as probable, not certain, cancel intent.
+   */
+  source?: 'cancel_plan_menu' | 'manage_subscription_button'
   /** ISO date the subscription runs until if the cancel goes through. */
   end_date?: string
   /** Present only on the `failed` stage. */

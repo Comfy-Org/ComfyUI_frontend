@@ -113,6 +113,7 @@ describe('CancelSubscriptionDialogContent', () => {
       renderComponent()
 
       expect(mockTrackCancellation).toHaveBeenCalledWith('flow_opened', {
+        source: 'cancel_plan_menu',
         current_tier: 'standard',
         end_date: '2026-08-01T00:00:00.000Z'
       })
