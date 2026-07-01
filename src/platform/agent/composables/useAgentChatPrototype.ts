@@ -8,7 +8,7 @@ export interface ToolCall {
   durationMs: number
 }
 
-export interface AgentMessage {
+interface AgentMessage {
   id: string
   role: 'user' | 'assistant'
   text: string
