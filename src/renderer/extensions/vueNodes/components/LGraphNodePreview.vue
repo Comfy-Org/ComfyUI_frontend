@@ -123,7 +123,8 @@ const previewWidgetIds = computed<WidgetId[]>(() =>
       const leadValue = widgetValues?.[name]
       const id = widgetId(previewGraphId, nodeData.value.id, name)
       const value =
-        input.default !== undefined ? input.default : (comboValues?.[0] ?? '')
+        leadValue ??
+        (input.default !== undefined ? input.default : (comboValues?.[0] ?? ''))
       const options = {
         hidden: input.hidden,
         advanced: input.advanced,

@@ -55,12 +55,45 @@ provide(HideLayoutFieldKey, true)
 
 const resolvedInputs = useResolvedSelectedInputs()
 
+function isDOMBackedWidget(widget: IBaseWidget): boolean {
+  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
+    return widget.isDOMWidget
+  }
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
+
+function ensureSelectedWidgetState(
+  widgetId: WidgetId,
+  widget: IBaseWidget
+): void {
+  if (widgetValueStore.getWidget(widgetId)) return
+
+  widgetValueStore.registerWidget(widgetId, {
+    type: widget.type,
+    value: widget.value,
+    options: widget.options,
+    label: widget.label,
+    serialize: widget.serialize,
+    disabled: widget.disabled
+  })
+  widgetValueStore.registerWidgetRenderState(widgetId, {
+    advanced: widget.options?.advanced ?? widget.advanced,
+    hasLayoutSize: typeof widget.computeLayoutSize === 'function',
+    isDOMWidget: isDOMBackedWidget(widget),
+    tooltip: widget.tooltip
+  })
+}
+
 const mappedSelections = computed((): WidgetEntry[] => {
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
     const { widgetId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
+    ensureSelectedWidgetState(widgetId, widget)
     const fullNodeData = nodeToNodeData(node, widgetId)
     if (
       node.inputs?.some(

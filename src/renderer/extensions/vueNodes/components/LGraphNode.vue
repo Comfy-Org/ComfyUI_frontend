@@ -307,7 +307,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { isVideoOutput } from '@/utils/litegraphUtil'
+import { getWidgetIdForNode, isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -746,7 +746,22 @@ const widgetIds = computed(() => {
   const bareNodeId = stripGraphPrefix(nodeData.id)
   if (!graphId || !bareNodeId) return []
 
-  return widgetValueStore.getNodeWidgetIds(graphId, bareNodeId) ?? []
+  const storedIds = widgetValueStore.getNodeWidgetIds(graphId, bareNodeId) ?? []
+  const node = lgraphNode.value
+  if (!node) return storedIds
+  if (!node.widgets?.length) return []
+
+  const duplicateIndexByKey = new Map<string, number>()
+  const liveIdSet = new Set(
+    node.widgets.flatMap((widget) => {
+      const duplicateKey = `${widget.name}:${widget.type}`
+      const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
+      duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
+      const id = getWidgetIdForNode(node, widget, duplicateIndex)
+      return id ? [id] : []
+    })
+  )
+  return storedIds.filter((id) => liveIdSet.has(id))
 })
 
 const hasRenderableWidgets = computed(() => widgetIds.value.length > 0)

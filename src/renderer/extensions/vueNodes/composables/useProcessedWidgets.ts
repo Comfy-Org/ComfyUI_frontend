@@ -150,8 +150,10 @@ function buildSlotMetadata(
     let originNodeId: NodeId | undefined
     let originOutputName: string | undefined
 
+    let linked = input.link != null
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
+      linked = Boolean(link)
       const originNode = link ? graphRef.getNodeById(link.origin_id) : null
       if (link && originNode) {
         originNodeId = link.origin_id
@@ -161,7 +163,7 @@ function buildSlotMetadata(
 
     const slotInfo: WidgetSlotMetadata = {
       index,
-      linked: input.link != null,
+      linked,
       originNodeId,
       originOutputName,
       type: String(input.type)
@@ -378,7 +380,7 @@ export function computeProcessedWidgets({
   const ids = getWidgetIds(graphId, nodeData.id, widgetIds, widgetValueStore)
   const hostNode = getHostNode(rootGraph, nodeData)
   const slotMetadata = buildSlotMetadata(
-    hostNode?.inputs ?? nodeData.inputs,
+    nodeData.inputs ?? hostNode?.inputs,
     hostNode?.graph ?? rootGraph
   )
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
@@ -392,6 +394,11 @@ export function computeProcessedWidgets({
     const renderState = widgetValueStore.getWidgetRenderState(id)
     const live = getLiveWidget(rootGraph, nodeData, id)
     const liveWidget = live?.widget
+    const sourceWidget =
+      hostNode && liveWidget
+        ? resolvePromotedWidgetSource(rootGraph, hostNode, liveWidget)
+            ?.sourceWidget
+        : undefined
     const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
     if (options.advanced === undefined) {
       options.advanced = renderState?.advanced
@@ -417,7 +424,9 @@ export function computeProcessedWidgets({
             outputName: slotInfo.originOutputName
           }
         : undefined
-    const controlWidget = liveWidget ? getControlWidget(liveWidget) : undefined
+    const controlWidget =
+      (liveWidget ? getControlWidget(liveWidget) : undefined) ??
+      (sourceWidget ? getControlWidget(sourceWidget) : undefined)
     const updateHandler = createWidgetUpdateHandler({
       id,
       live,
