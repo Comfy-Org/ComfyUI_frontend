@@ -117,8 +117,24 @@ export const useModelDownloadStore = defineStore('modelDownload', () => {
   }
 
   async function hydrate() {
+    const previous = downloads.value
     const list = await listDownloads()
     downloads.value = new Map(list.map((d) => [d.download_id, d]))
+    for (const download of list) {
+      const prior = previous.get(download.download_id)
+      if (
+        download.status === 'completed' &&
+        prior &&
+        prior.status !== 'completed'
+      ) {
+        lastCompletedDownload.value = {
+          downloadId: download.download_id,
+          modelId: download.model_id,
+          directory: directoryOf(download.model_id),
+          timestamp: Date.now()
+        }
+      }
+    }
   }
 
   async function enqueue(request: EnqueueRequest): Promise<EnqueueResponse> {
@@ -145,8 +161,8 @@ export const useModelDownloadStore = defineStore('modelDownload', () => {
   }
 
   async function cancel(id: string) {
-    patchStatus(id, 'cancelled')
     await cancelDownload(id)
+    patchStatus(id, 'cancelled')
   }
 
   async function setPriority(id: string, priority: number) {
