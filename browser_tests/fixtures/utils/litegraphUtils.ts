@@ -513,16 +513,22 @@ export class NodeReference {
     await this.comfyPage.contextMenu.clickMenuItem(optionText)
   }
   async convertToSubgraph() {
+    const existingIds = new Set(
+      (await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')).map(
+        (node) => String(node.id)
+      )
+    )
     await this.clickContextMenuOption('Convert to Subgraph')
     await this.comfyPage.nextFrame()
-    const nodes =
-      await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
-    if (nodes.length !== 1) {
-      throw new Error(
-        `Did not find single subgraph node (found=${nodes.length})`
+
+    const findNewNodes = async () =>
+      (await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')).filter(
+        (node) => !existingIds.has(String(node.id))
       )
-    }
-    return nodes[0]
+
+    await expect.poll(async () => (await findNewNodes()).length).toBe(1)
+    const created = await findNewNodes()
+    return created[0]
   }
   async navigateIntoSubgraph() {
     const titleHeight = await this.comfyPage.page.evaluate(() => {
