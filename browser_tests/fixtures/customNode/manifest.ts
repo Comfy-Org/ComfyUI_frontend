@@ -10,8 +10,9 @@ export interface CustomNodeManifestEntry {
   repo: string
   pin: string
   tiers: CustomNodeTier[]
-  // API-prompt workflow used by the run/io tiers; authored + validated against an
-  // installed pack (Phase 3). The run tier skips when the file is absent.
+  // Frontend-format workflow (path relative to browser_tests/) loaded and queued
+  // by the run/io tiers; empty or absent file = tier skips. Run the backend with
+  // --cache-none, or repeat runs classify PARTIAL when cached nodes skip executing.
   workflow: string
   // Runtime class_type / object_info keys, NOT Python class names (e.g. rgthree
   // registers "Power Primitive (rgthree)", not RgthreePowerPrimitive).
