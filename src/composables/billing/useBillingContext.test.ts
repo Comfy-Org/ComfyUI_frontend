@@ -339,6 +339,18 @@ describe('useBillingContext', () => {
         subscriptionPlan: null
       })
     })
+
+    it('clears the mirror while a fresh context has no subscription yet', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+
+      useBillingContext()
+
+      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
+        isSubscribed: false,
+        subscriptionPlan: null
+      })
+    })
   })
 
   describe('getMaxSeats', () => {

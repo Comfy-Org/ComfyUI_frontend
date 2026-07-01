@@ -34,8 +34,11 @@ vi.mock('@/services/customerEventsService', () => ({
   }
 }))
 
+const mockTelemetry = vi.hoisted(() => ({
+  checkForCompletedTopup: vi.fn()
+}))
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => null
+  useTelemetry: () => mockTelemetry
 }))
 
 const mockBillingRouting = vi.hoisted(() => ({
@@ -399,6 +402,48 @@ describe('UsageLogsTable', () => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
       expect(screen.queryByText('LegacyAPI')).not.toBeInTheDocument()
+    })
+
+    it('runs top-up completion telemetry for a superseded response', async () => {
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderWithAutoRefresh()
+
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      const legacyResponse = makeEventsResponse([
+        {
+          event_id: 'legacy-1',
+          event_type: EventType.CREDIT_ADDED,
+          params: { amount: 1000 },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+      ])
+      resolveLegacy(legacyResponse)
+
+      await waitFor(() => {
+        expect(mockTelemetry.checkForCompletedTopup).toHaveBeenCalledWith(
+          legacyResponse.events
+        )
+      })
     })
   })
 

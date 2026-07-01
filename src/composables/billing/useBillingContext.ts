@@ -166,11 +166,9 @@ function useBillingContextInternal(): BillingContext {
   watch(
     subscription,
     (sub) => {
-      if (!sub) return
-
       store.updateActiveWorkspace({
-        isSubscribed: sub.isActive && !sub.isCancelled,
-        subscriptionPlan: sub.planSlug
+        isSubscribed: sub ? sub.isActive && !sub.isCancelled : false,
+        subscriptionPlan: sub?.planSlug ?? null
       })
     },
     { immediate: true }

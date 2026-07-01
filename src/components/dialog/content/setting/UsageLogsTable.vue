@@ -158,6 +158,11 @@ const loadEvents = async () => {
       ? await workspaceApi.getBillingEvents(params)
       : await customerEventService.getMyEvents(params)
 
+    // Completion telemetry must run even when a mid-checkout route flip
+    // supersedes this load, since legacy and workspace backends emit different
+    // top-up events and the winning fetch may not carry the completion yet.
+    useTelemetry()?.checkForCompletedTopup(response?.events)
+
     if (loadToken !== latestLoadToken) return
 
     if (response) {
@@ -173,16 +178,13 @@ const loadEvents = async () => {
         pagination.value.limit = response.limit
       }
 
-      if (response.total) {
+      if (response.total != null) {
         pagination.value.total = response.total
       }
 
-      if (response.totalPages) {
+      if (response.totalPages != null) {
         pagination.value.totalPages = response.totalPages
       }
-
-      // Check if a pending top-up has completed
-      useTelemetry()?.checkForCompletedTopup(response.events)
     } else {
       error.value = customerEventService.error.value || 'Failed to load events'
     }
