@@ -70,4 +70,39 @@ test.describe('Customer story detail @smoke', () => {
       '/customers/series-entertainment'
     )
   })
+
+  test('renders a Creative Campus story with its education blocks', async ({
+    page
+  }) => {
+    await page.goto('/customers/xindi-zhang')
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: /The tool that expands my art/i
+      })
+    ).toBeVisible()
+
+    const nav = page.getByRole('navigation', { name: 'Category filter' })
+    await expect(nav.getByRole('button', { name: 'INTRO' })).toBeVisible()
+    await expect(nav.getByRole('button', { name: 'AT A GLANCE' })).toBeVisible()
+
+    // At a glance block (AtAGlance component) with its spec rows.
+    await expect(
+      page.getByRole('heading', { name: 'At a glance' })
+    ).toBeVisible()
+    await expect(page.getByText('Program', { exact: true })).toBeVisible()
+
+    // Workflow download button (Download component).
+    await expect(
+      page.getByRole('link', {
+        name: /Download Xindi's style transfer workflow/i
+      })
+    ).toBeVisible()
+
+    // Shared education call to action (EducationCta component).
+    await expect(
+      page.getByRole('link', { name: /Explore the Education Program/i })
+    ).toBeVisible()
+  })
 })
