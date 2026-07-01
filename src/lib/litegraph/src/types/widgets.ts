@@ -143,6 +143,7 @@ export type IWidget =
   | IAssetWidget
   | IImageCropWidget
   | IBoundingBoxWidget
+  | ISetRandomIntWidget
   | ICurveWidget
   | IPainterWidget
   | IRangeWidget
@@ -338,6 +339,15 @@ export interface IImageCropWidget extends IBaseWidget<Bounds, 'imagecrop'> {
 export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   type: 'boundingbox'
   value: Bounds
+}
+
+/** Integer widget with a button to set a random value */
+export interface ISetRandomIntWidget extends IBaseWidget<
+  number,
+  'setrandomint'
+> {
+  type: 'setrandomint'
+  value: number
 }
 
 export interface ICurveWidget extends IBaseWidget<CurveData, 'curve'> {

@@ -9,6 +9,9 @@ import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
 )
+const WidgetSetRandomInt = defineAsyncComponent(
+  () => import('../components/WidgetSetRandomInt.vue')
+)
 const WidgetInputText = defineAsyncComponent(
   () => import('../components/WidgetInputText.vue')
 )
@@ -97,6 +100,10 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'button',
     { component: WidgetButton, aliases: ['BUTTON'], essential: false }
+  ],
+  [
+    'setrandomint',
+    { component: WidgetSetRandomInt, aliases: [], essential: false }
   ],
   [
     'string',

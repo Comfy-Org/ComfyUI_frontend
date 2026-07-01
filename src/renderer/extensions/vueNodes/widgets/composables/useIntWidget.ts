@@ -5,6 +5,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { addValueControlWidget } from '@/scripts/widgets'
+import { SAFE_INTEGER_MAX } from '@/scripts/valueControl'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onValueChange(this: INumericWidget, v: number) {
@@ -43,13 +44,19 @@ export const useIntWidget = () => {
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
     const display_type = inputSpec.display
     const widgetType =
-      sliderEnabled && display_type == 'slider'
-        ? 'slider'
-        : display_type == 'knob'
-          ? 'knob'
-          : 'number'
+      inputSpec.component === 'SetRandomInt'
+        ? 'setrandomint'
+        : sliderEnabled && display_type == 'slider'
+          ? 'slider'
+          : display_type == 'knob'
+            ? 'knob'
+            : 'number'
 
     const step = inputSpec.step ?? 1
+    const max =
+      inputSpec.component === 'SetRandomInt'
+        ? Math.min(inputSpec.max ?? SAFE_INTEGER_MAX, SAFE_INTEGER_MAX)
+        : (inputSpec.max ?? 2048)
     /** Assertion {@link inputSpec.default} */
     const defaultValue = (inputSpec.default as number | undefined) ?? 0
     const widget = node.addWidget(
@@ -59,7 +66,7 @@ export const useIntWidget = () => {
       onValueChange,
       {
         min: inputSpec.min ?? 0,
-        max: inputSpec.max ?? 2048,
+        max,
         /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
         step: step * 10,
         step2: step,
