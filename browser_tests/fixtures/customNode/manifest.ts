@@ -22,9 +22,10 @@ export interface CustomNodeManifestEntry {
 }
 
 function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
-  const missing = (
-    ['pack', 'workflow', 'expectedNodes', 'tiers'] as const
+  const missing: string[] = (
+    ['pack', 'workflow', 'expectedNodes', 'tiers', 'requiresModels'] as const
   ).filter((key) => entry[key] == null)
+  if (typeof entry.timeoutMs !== 'number') missing.push('timeoutMs')
   if (missing.length > 0)
     throw new Error(
       `custom-node manifest entry ${index} (${entry.pack ?? '?'}) missing: ${missing.join(', ')}`
