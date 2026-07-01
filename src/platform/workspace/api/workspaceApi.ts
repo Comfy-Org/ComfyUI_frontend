@@ -258,6 +258,8 @@ export interface CurrentTeamCreditStop {
   stop_usd: number
 }
 
+export type PaymentMethodCapability = 'none' | 'one_time_only' | 'reusable'
+
 export interface BillingStatusResponse {
   is_active: boolean
   subscription_status?: BillingSubscriptionStatus
@@ -269,6 +271,8 @@ export interface BillingStatusResponse {
   cancel_at?: string
   renewal_date?: string
   team_credit_stop?: CurrentTeamCreditStop
+  payment_method_capability?: PaymentMethodCapability
+  default_payment_method_type?: string
 }
 
 export interface BillingBalanceResponse {
@@ -285,13 +289,14 @@ interface CreateTopupRequest {
   idempotency_key?: string
 }
 
-type TopupStatus = 'pending' | 'completed' | 'failed'
+type TopupStatus = 'pending' | 'completed' | 'failed' | 'needs_payment_method'
 
 export interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus
   amount_cents: number
+  payment_method_url?: string
 }
 
 type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
@@ -322,6 +327,15 @@ interface BillingEventsResponse {
 interface GetBillingEventsParams {
   page?: number
   limit?: number
+}
+
+export interface AddPaymentMethodResponse {
+  payment_method_url: string
+  billing_op_id: string
+}
+
+export interface SettleOwedBalanceResponse {
+  billing_op_id: string
 }
 
 class WorkspaceApiError extends Error {
@@ -784,6 +798,44 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         api.apiURL(`/billing/ops/${opId}`),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Initiate a Stripe SetupIntent to collect a payment method without charging.
+   * POST /api/billing/add-payment-method
+   */
+  async initiateAddPaymentMethod(): Promise<AddPaymentMethodResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<AddPaymentMethodResponse>(
+        api.apiURL('/billing/add-payment-method'),
+        null,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Settle the outstanding owed balance immediately.
+   * POST /api/billing/settle-owed
+   */
+  async settleOwedBalance(
+    idempotencyKey?: string
+  ): Promise<SettleOwedBalanceResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<SettleOwedBalanceResponse>(
+        api.apiURL('/billing/settle-owed'),
+        idempotencyKey ? { idempotency_key: idempotencyKey } : null,
         { headers }
       )
       return response.data

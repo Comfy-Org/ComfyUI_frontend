@@ -143,6 +143,74 @@
       </div>
     </template>
 
+    <!-- Owed balance notice: shown only when there is a positive pending charge -->
+    <div
+      v-if="owedBalanceAmount !== null"
+      role="alert"
+      class="flex items-start gap-2 rounded-lg bg-base-background p-3 text-sm"
+    >
+      <i
+        class="mt-0.5 icon-[lucide--alert-triangle] size-4 shrink-0 text-base-foreground"
+      />
+      <div class="flex flex-col gap-2">
+        <span class="text-base-foreground">{{
+          $t('billing.owedBalance.title', { amount: owedBalanceAmount })
+        }}</span>
+
+        <!-- one_time_only hint -->
+        <span
+          v-if="paymentMethodCapability === 'one_time_only'"
+          class="text-muted"
+          >{{ $t('billing.owedBalance.oneTimeOnlyHint') }}</span
+        >
+
+        <!-- reusable + flag off: read-only message -->
+        <span
+          v-if="
+            paymentMethodCapability === 'reusable' && !settleEndpointEnabled
+          "
+          class="text-muted"
+          >{{ $t('billing.owedBalance.chargeAutomatic') }}</span
+        >
+
+        <!-- CTA: none / one_time_only → add payment method -->
+        <Button
+          v-if="
+            paymentMethodCapability === 'none' ||
+            paymentMethodCapability === 'one_time_only'
+          "
+          variant="primary"
+          size="sm"
+          class="w-fit"
+          @click="handleOwedAddPaymentMethod"
+        >
+          {{
+            paymentMethodCapability === 'none'
+              ? $t('billing.owedBalance.addPaymentMethod')
+              : $t('billing.owedBalance.addCardOrBank')
+          }}
+        </Button>
+
+        <!-- CTA: reusable + flag on → Pay now -->
+        <Button
+          v-else-if="
+            paymentMethodCapability === 'reusable' && settleEndpointEnabled
+          "
+          ref="payNowButtonRef"
+          variant="primary"
+          size="sm"
+          class="w-fit"
+          :disabled="isPayingOwed"
+          @click="handlePayNow"
+        >
+          <span v-if="isPayingOwed" role="status">{{
+            $t('billing.owedBalance.processing')
+          }}</span>
+          <template v-else>{{ $t('billing.owedBalance.payNow') }}</template>
+        </Button>
+      </div>
+    </div>
+
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
         v-if="isFreeTier"
@@ -176,13 +244,14 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
@@ -193,7 +262,10 @@ import {
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogService } from '@/services/dialogService'
 
 const { zeroState = false } = defineProps<{
@@ -209,6 +281,7 @@ const {
   isActiveSubscription,
   isFreeTier,
   currentTeamCreditStop,
+  paymentMethodCapability,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
@@ -225,6 +298,82 @@ const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
+const { flags } = useFeatureFlags()
+const billingOperationStore = useBillingOperationStore()
+const toastStore = useToastStore()
+
+const settleEndpointEnabled = computed(() => flags.settleEndpointEnabled)
+
+/** Non-null when there is a positive pending balance owed by the workspace. */
+const owedBalanceAmount = computed(() => {
+  const pendingMicros = balance.value?.pendingChargesMicros
+  if (pendingMicros == null || pendingMicros <= 0) return null
+  const currency = balance.value?.currency ?? 'USD'
+  return pendingMicros / 1_000_000
+    ? (pendingMicros / 1_000_000).toLocaleString(locale.value, {
+        style: 'currency',
+        currency: currency.toUpperCase()
+      })
+    : null
+})
+
+const isPayingOwed = computed(() => billingOperationStore.isPayingOwed)
+
+const payNowButtonRef = ref<InstanceType<typeof Button> | null>(null)
+
+let payNowOpId: string | null = null
+
+async function handleOwedAddPaymentMethod() {
+  try {
+    const response = await workspaceApi.initiateAddPaymentMethod()
+    window.open(response.payment_method_url, '_blank')
+  } catch (err) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: err instanceof Error ? err.message : t('g.unknownError')
+    })
+  }
+}
+
+async function handlePayNow() {
+  if (isPayingOwed.value) return
+
+  // Clear any previous operation before starting a new one
+  if (payNowOpId) {
+    billingOperationStore.clearOperation(payNowOpId)
+    payNowOpId = null
+  }
+
+  try {
+    const response = await workspaceApi.settleOwedBalance()
+    payNowOpId = response.billing_op_id
+    const operation = await billingOperationStore.startOperation(
+      payNowOpId,
+      'pay_owed'
+    )
+
+    if (operation.status === 'succeeded') {
+      await nextTick()
+      // Focus refresh button when notice disappears
+      const refreshBtn = document.querySelector<HTMLElement>(
+        '[aria-label="' + t('subscription.refreshCredits') + '"]'
+      )
+      refreshBtn?.focus()
+    } else {
+      // Focus pay now button on failure
+      await nextTick()
+      const el = payNowButtonRef.value?.$el as HTMLElement | undefined
+      el?.focus()
+    }
+  } catch (err) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: err instanceof Error ? err.message : t('g.unknownError')
+    })
+  }
+}
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier

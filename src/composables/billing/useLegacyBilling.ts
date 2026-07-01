@@ -91,6 +91,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const renewalDate = computed(
     () => legacySubscriptionStatus.value?.renewal_date ?? null
   )
+  // Payment method capability is workspace-only; legacy always reports null.
+  const paymentMethodCapability = computed(() => null)
+  const defaultPaymentMethodType = computed(() => null)
 
   // Legacy billing doesn't have workspace-style plans
   const plans = computed(() => [])
@@ -214,6 +217,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
+    paymentMethodCapability,
+    defaultPaymentMethodType,
 
     // Actions
     initialize,

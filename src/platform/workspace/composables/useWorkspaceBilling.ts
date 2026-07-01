@@ -70,7 +70,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       effectiveBalanceMicros:
         data.effective_balance_micros ?? data.amount_micros,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
-      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
+      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
+      pendingChargesMicros: data.pending_charges_micros
     }
   })
 
@@ -80,6 +81,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   )
   const tier = computed(() => statusData.value?.subscription_tier ?? null)
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
+  const paymentMethodCapability = computed(
+    () => statusData.value?.payment_method_capability ?? null
+  )
+  const defaultPaymentMethodType = computed(
+    () => statusData.value?.default_payment_method_type ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
@@ -300,6 +307,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
+    paymentMethodCapability,
+    defaultPaymentMethodType,
 
     // Actions
     initialize,

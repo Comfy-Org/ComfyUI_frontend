@@ -504,6 +504,161 @@ describe('billingOperationStore', () => {
     })
   })
 
+  describe('pay_owed operations', () => {
+    it('shows immediate processing toast for pay_owed operations', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'pay_owed')
+
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'info',
+        summary: 'billingOperation.payOwedProcessing',
+        group: 'billing-operation'
+      })
+    })
+
+    it('does not close any dialog or open settings on pay_owed success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'pay_owed')
+
+      await vi.advanceTimersByTimeAsync(0)
+      await terminal
+
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+    })
+
+    it('shows pay_owed success toast on success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'pay_owed')
+
+      await vi.advanceTimersByTimeAsync(0)
+      await terminal
+
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'success',
+        summary: 'billingOperation.payOwedSuccess',
+        life: 5000
+      })
+    })
+
+    it('uses pay_owed failure message on failure', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'pay_owed')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'billingOperation.payOwedFailed',
+        detail: undefined
+      })
+    })
+
+    it('uses pay_owed timeout message on timeout', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'pay_owed')
+
+      await vi.advanceTimersByTimeAsync(121_000)
+      await vi.runAllTimersAsync()
+
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'billingOperation.payOwedTimeout'
+      })
+    })
+
+    it('isPayingOwed is true while pay_owed operation is pending', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'pay_owed')
+
+      expect(store.isPayingOwed).toBe(true)
+    })
+
+    it('isPayingOwed is false after pay_owed operation succeeds', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'pay_owed')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.isPayingOwed).toBe(false)
+    })
+
+    it('does not update workspace isSubscribed on pay_owed success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'pay_owed')
+
+      await vi.advanceTimersByTimeAsync(0)
+      await terminal
+
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('refreshes billing status and balance on pay_owed success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'pay_owed')
+
+      await vi.advanceTimersByTimeAsync(0)
+      await terminal
+
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(mockFetchBalance).toHaveBeenCalled()
+    })
+  })
+
   describe('exponential backoff', () => {
     it('uses exponential backoff for polling intervals', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({

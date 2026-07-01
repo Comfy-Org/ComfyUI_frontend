@@ -2506,7 +2506,11 @@
     "topupFailed": "Top-up failed",
     "topupTimeout": "Top-up verification timed out",
     "cancelFailed": "Failed to cancel subscription",
-    "cancelTimeout": "Subscription cancellation timed out"
+    "cancelTimeout": "Subscription cancellation timed out",
+    "payOwedProcessing": "Processing payment…",
+    "payOwedSuccess": "Payment processed successfully",
+    "payOwedFailed": "Payment failed",
+    "payOwedTimeout": "Payment verification timed out"
   },
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
@@ -4489,5 +4493,29 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "billing": {
+    "spendLimit": {
+      "addPaymentMethodTitle": "Add a payment method",
+      "paymentFailedTitle": "Your automatic payment failed",
+      "oneTimeOnlyInfo": "{method} can't be used for automatic top-ups — add a card, bank account, or Link",
+      "addPaymentMethodCta": "Add a payment method",
+      "updatePaymentMethodCta": "Update payment method",
+      "orBuyManually": "Or buy credits manually",
+      "capabilityError": "Unable to load payment method status. You can add a payment method below."
+    },
+    "owedBalance": {
+      "title": "Outstanding balance: {amount}",
+      "addPaymentMethod": "Add a payment method",
+      "addCardOrBank": "Add a card or bank account",
+      "oneTimeOnlyHint": "Your current method can't be used to settle a balance — add a card, bank account, or Link",
+      "payNow": "Pay now",
+      "processing": "Processing payment…",
+      "chargeAutomatic": "A charge will process automatically."
+    },
+    "consent": {
+      "paymentMethodBody": "By adding a payment method, you authorize Comfy Org to automatically charge it — without further action from you at the time — for unpaid balances and usage overages, in the amount you owe at billing time. You can remove it at any time in {settingsLink} (an active subscription or unpaid balance may need to be resolved first).",
+      "settingsLink": "Account Settings → Credits"
+    }
   }
 }

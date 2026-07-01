@@ -6,6 +6,7 @@ import type {
   BillingSubscriptionStatus,
   CreateTopupResponse,
   CurrentTeamCreditStop,
+  PaymentMethodCapability,
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
@@ -37,6 +38,7 @@ export interface BalanceInfo {
   effectiveBalanceMicros?: number
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  pendingChargesMicros?: number
 }
 
 export interface BillingActions {
@@ -101,6 +103,10 @@ export interface BillingState {
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
+  /** Workspace-only: what payment methods can be used for recurring charges. */
+  paymentMethodCapability: ComputedRef<PaymentMethodCapability | null>
+  /** Workspace-only: type slug of the default payment method on file. */
+  defaultPaymentMethodType: ComputedRef<string | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {

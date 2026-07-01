@@ -16,7 +16,7 @@ const MAX_INTERVAL_MS = 8000
 const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000 // 2 minutes
 
-type OperationType = 'subscription' | 'topup' | 'cancel'
+type OperationType = 'subscription' | 'topup' | 'cancel' | 'pay_owed'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
 
 interface BillingOperation {
@@ -53,6 +53,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     )
   )
 
+  const isPayingOwed = computed(() =>
+    [...operations.value.values()].some(
+      (op) => op.status === 'pending' && op.type === 'pay_owed'
+    )
+  )
+
   function getOperation(opId: string) {
     return operations.value.get(opId)
   }
@@ -78,10 +84,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (type !== 'cancel') {
-      const messageKey =
-        type === 'subscription'
-          ? 'billingOperation.subscriptionProcessing'
-          : 'billingOperation.topupProcessing'
+      let messageKey: string
+      if (type === 'subscription') {
+        messageKey = 'billingOperation.subscriptionProcessing'
+      } else if (type === 'topup') {
+        messageKey = 'billingOperation.topupProcessing'
+      } else {
+        messageKey = 'billingOperation.payOwedProcessing'
+      }
 
       const toastMessage: ToastMessageOptions = {
         severity: 'info',
@@ -169,6 +179,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       return
     }
 
+    // pay_owed: only refresh balance; do not close any dialog or open settings.
+    if (operation.type === 'pay_owed') {
+      useToastStore().add({
+        severity: 'success',
+        summary: t('billingOperation.payOwedSuccess'),
+        life: 5000
+      })
+      resolveTerminal(opId)
+      return
+    }
+
     // A subscription checkout shows its own success step in the pricing dialog,
     // so leave it open. Top-ups have no such step: close and surface settings.
     if (operation.type === 'topup') {
@@ -233,6 +254,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function failureMessage(type: OperationType) {
     if (type === 'subscription') return t('billingOperation.subscriptionFailed')
     if (type === 'topup') return t('billingOperation.topupFailed')
+    if (type === 'pay_owed') return t('billingOperation.payOwedFailed')
     return t('billingOperation.cancelFailed')
   }
 
@@ -240,6 +262,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (type === 'subscription')
       return t('billingOperation.subscriptionTimeout')
     if (type === 'topup') return t('billingOperation.topupTimeout')
+    if (type === 'pay_owed') return t('billingOperation.payOwedTimeout')
     return t('billingOperation.cancelTimeout')
   }
 
@@ -295,6 +318,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     hasPendingOperations,
     isSettingUp,
     isAddingCredits,
+    isPayingOwed,
     getOperation,
     startOperation,
     clearOperation

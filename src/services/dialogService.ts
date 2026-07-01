@@ -629,6 +629,24 @@ export const useDialogService = () => {
    * understand" confirm dialog when the workspace has no other members;
    * failures on that path surface as an error toast.
    */
+  async function showSpendLimitDialog(options: {
+    scenario: 'limit_reached' | 'payment_failed'
+    capability: 'none' | 'one_time_only' | 'reusable'
+    methodType?: string
+  }) {
+    const { type } = useBillingContext()
+    if (type.value !== 'workspace') return
+
+    const { default: component } =
+      await import('@/platform/workspace/components/SpendLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'spend-limit',
+      component,
+      props: options,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
@@ -734,6 +752,7 @@ export const useDialogService = () => {
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
-    showDowngradeToPersonalDialog
+    showDowngradeToPersonalDialog,
+    showSpendLimitDialog
   }
 }
