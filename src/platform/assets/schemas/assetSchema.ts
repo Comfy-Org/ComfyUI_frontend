@@ -11,6 +11,8 @@ const zAsset = z.object({
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
   display_name: z.string().optional(),
+  /** Path within the model's category folder, i.e. the value a loader widget expects. */
+  loader_path: z.string().nullish(),
   preview_url: z.string().optional(),
   thumbnail_url: z.string().optional(),
   created_at: z.string().optional(),
@@ -26,11 +28,6 @@ const zAssetResponse = zListAssetsResponse
   .extend({
     assets: z.array(zAsset)
   })
-
-const zModelFolder = z.object({
-  name: z.string(),
-  folders: z.array(z.string())
-})
 
 // Zod schema for ModelFile to align with interface
 const zModelFile = z.object({
@@ -100,7 +97,6 @@ export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
 export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
-export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
 
 /** Payload for updating an asset via PUT /assets/:id */

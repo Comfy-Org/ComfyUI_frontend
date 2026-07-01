@@ -12,11 +12,22 @@ import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
+const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get supportsModelTypeTags() {
+        return mockSupportsModelTypeTags.value
+      }
+    }
+  })
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -93,6 +104,7 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',
     name: 'model.safetensors',
+    loader_path: overrides.name ?? 'model.safetensors',
     tags: ['models'],
     ...overrides
   }
@@ -422,32 +434,226 @@ describe(assetService.deleteAsset, () => {
   })
 })
 
-describe(assetService.getAssetModelFolders, () => {
+describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    assetService.invalidateModelBuckets()
+    mockSupportsModelTypeTags.value = true
   })
 
-  it('requests missing-tag exclusion and returns alphabetical unique folders without include_public', async () => {
+  it('walks the models tag once, excluding missing assets', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
-        validAsset({ id: 'a', tags: ['models', 'loras'] }),
-        validAsset({ id: 'b', tags: ['models', 'checkpoints'] }),
-        validAsset({ id: 'c', tags: ['models', 'configs'] }),
-        validAsset({ id: 'e', tags: ['models', 'loras'] })
+        validAsset({ id: 'a', tags: ['models', 'model_type:checkpoints'] })
       ])
     )
 
-    const folders = await assetService.getAssetModelFolders()
+    await assetService.getAssetModels('checkpoints')
 
-    expect(folders).toEqual([
-      { name: 'checkpoints', folders: [] },
-      { name: 'loras', folders: [] }
-    ])
-
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
-    expect(params.has('include_public')).toBe(false)
+    expect(params.get('include_tags')).toBe('models')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+  })
+
+  it('buckets by bare tags when model_type tags are unsupported', async () => {
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'a',
+          name: 'a.safetensors',
+          tags: ['models', 'checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([{ name: 'a.safetensors', pathIndex: 0 }])
+  })
+
+  it('drops uncategorized model assets with a warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'ok',
+          name: 'ok.safetensors',
+          tags: ['models', 'model_type:loras']
+        }),
+        validAsset({
+          id: 'uncat',
+          name: 'orphan.safetensors',
+          tags: ['models']
+        })
+      ])
+    )
+
+    const loras = await assetService.getAssetModels('loras')
+
+    expect(loras).toEqual([{ name: 'ok.safetensors', pathIndex: 0 }])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('orphan.safetensors')
+    )
+    warn.mockRestore()
+  })
+
+  it('maps loader_path and drops unloadable assets without one', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'nested',
+          name: 'model.safetensors',
+          loader_path: 'sdxl/model.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'orphan',
+          name: 'orphan.safetensors',
+          loader_path: null,
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'other-folder',
+          name: 'lora.safetensors',
+          tags: ['models', 'model_type:loras']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([{ name: 'sdxl/model.safetensors', pathIndex: 0 }])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('orphan.safetensors')
+    )
+    warn.mockRestore()
+  })
+
+  it('falls back to filename metadata then name on bare-tag backends', async () => {
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'cloud-hash',
+          name: 'blake3-content-hash',
+          loader_path: null,
+          user_metadata: { filename: 'sdxl/cloud-model.safetensors' },
+          tags: ['models', 'checkpoints']
+        }),
+        validAsset({
+          id: 'bare',
+          name: 'plain.safetensors',
+          loader_path: null,
+          tags: ['models', 'checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([
+      { name: 'sdxl/cloud-model.safetensors', pathIndex: 0 },
+      { name: 'plain.safetensors', pathIndex: 0 }
+    ])
+  })
+
+  it('orders each folder subdirectories-first then files, alphabetically', async () => {
+    const checkpointAsset = (id: string, loaderPath: string) =>
+      validAsset({
+        id,
+        name: loaderPath.split('/').pop()!,
+        loader_path: loaderPath,
+        tags: ['models', 'model_type:checkpoints']
+      })
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        checkpointAsset('1', 'sdxl/base.safetensors'),
+        checkpointAsset('2', 'v1-5.safetensors'),
+        checkpointAsset('3', 'sdxl/refiner.safetensors'),
+        checkpointAsset('4', 'anything.safetensors'),
+        checkpointAsset('5', 'dynamicrafter/model.safetensors')
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models.map((m) => m.name)).toEqual([
+      'dynamicrafter/model.safetensors',
+      'sdxl/base.safetensors',
+      'sdxl/refiner.safetensors',
+      'anything.safetensors',
+      'v1-5.safetensors'
+    ])
+  })
+
+  it('does not let a stale in-flight walk overwrite an invalidated cache', async () => {
+    let resolveStaleWalk!: (response: Response) => void
+    fetchApiMock.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveStaleWalk = resolve
+      })
+    )
+    const staleRead = assetService.getAssetModels('checkpoints')
+
+    assetService.invalidateModelBuckets()
+
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'fresh',
+          name: 'fresh.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    const freshModels = await assetService.getAssetModels('checkpoints')
+    expect(freshModels.map((m) => m.name)).toEqual(['fresh.safetensors'])
+
+    resolveStaleWalk(
+      buildAssetListResponse([
+        validAsset({
+          id: 'stale',
+          name: 'stale.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    await staleRead
+
+    const cachedModels = await assetService.getAssetModels('checkpoints')
+    expect(cachedModels.map((m) => m.name)).toEqual(['fresh.safetensors'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('places multi-category assets in every folder from a single walk', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'shared',
+          name: 'dual_use.safetensors',
+          loader_path: 'dual_use.safetensors',
+          tags: [
+            'models',
+            'model_type:checkpoints',
+            'model_type:diffusion_models'
+          ]
+        })
+      ])
+    )
+
+    const checkpoints = await assetService.getAssetModels('checkpoints')
+    const diffusion = await assetService.getAssetModels('diffusion_models')
+
+    expect(checkpoints).toEqual([
+      { name: 'dual_use.safetensors', pathIndex: 0 }
+    ])
+    expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
+    // Both folder reads resolve from a single memoized models walk.
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
   })
 })
 

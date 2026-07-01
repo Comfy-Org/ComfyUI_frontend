@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
@@ -98,6 +99,11 @@ export class ComfyModelDef {
   /** Loads the model metadata from the server, filling in this object if data is available */
   async load(): Promise<void> {
     if (this.has_loaded_metadata || this.is_load_requested) {
+      return
+    }
+    // viewMetadata reads the safetensors header off local disk; on Cloud the
+    // model bytes live in object storage so there is nothing to read.
+    if (isCloud) {
       return
     }
     this.is_load_requested = true
@@ -213,14 +219,14 @@ export const useModelStore = defineStore('models', () => {
   }
 
   /**
-   * Loads the model folders from the server
+   * Loads the model folders from the server.
+   *
+   * The folder list (and its registration order) always comes from
+   * `/experiment/models`, the source of truth for which model folders exist;
+   * only the per-folder contents differ between the asset API and legacy paths.
    */
   async function loadModelFolders() {
-    const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
-
-    const resData = useAssetAPI
-      ? await assetService.getAssetModelFolders()
-      : await api.getModelFolders()
+    const resData = await api.getModelFolders()
     modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
     const getModelsFunc = createGetModelsFunc()
@@ -254,6 +260,7 @@ export const useModelStore = defineStore('models', () => {
    * folders' loaded contents.
    */
   async function refreshModelFolder(folderName: string) {
+    assetService.invalidateModelBuckets()
     if (!(folderName in modelFolderByName.value)) {
       await refresh()
       return
@@ -270,6 +277,7 @@ export const useModelStore = defineStore('models', () => {
    * currently-visible contents.
    */
   async function refresh() {
+    assetService.invalidateModelBuckets()
     const previouslyLoaded = modelFolders.value
       .filter((folder) => folder.state === ResourceState.Loaded)
       .map((folder) => folder.directory)

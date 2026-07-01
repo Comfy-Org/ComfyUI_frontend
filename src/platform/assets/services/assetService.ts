@@ -1,6 +1,7 @@
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 
 import {
@@ -17,9 +18,9 @@ import type {
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
-  ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -187,6 +188,8 @@ const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
 export const MODELS_TAG = 'models'
+/** Prefix for the namespaced tag that carries a model's folder category, e.g. `model_type:checkpoints`. */
+const MODEL_TYPE_TAG_PREFIX = 'model_type:'
 export const INPUT_TAG = 'input'
 export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
@@ -208,6 +211,45 @@ function throwIfAborted(signal?: AbortSignal): void {
 
 function normalizeAssetTags(tags: string[]): string[] {
   return tags.map((tag) => tag.trim()).filter(Boolean)
+}
+
+/**
+ * Resolves the model folder a tag represents, or undefined when the tag is not
+ * a folder category. `supports_model_type_tags` backends carry the category as
+ * a namespaced `model_type:<folder>` tag; older backends mint the bare folder.
+ */
+function modelFolderFromTag(
+  tag: string,
+  modelTypeMode: boolean
+): string | undefined {
+  if (modelTypeMode) {
+    return tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+      ? tag.slice(MODEL_TYPE_TAG_PREFIX.length)
+      : undefined
+  }
+  return tag === MODELS_TAG ? undefined : tag
+}
+
+/**
+ * Orders loader paths as subdirectories before files at every level,
+ * alphabetical within each group. The asset API returns models in storage
+ * order, which would otherwise interleave root-level files with folder
+ * contents in the sidebar tree.
+ */
+function compareLoaderPaths(a: string, b: string): number {
+  const aSegments = a.split('/')
+  const bSegments = b.split('/')
+  const sharedDepth = Math.min(aSegments.length, bSegments.length)
+  for (let i = 0; i < sharedDepth; i++) {
+    const aIsFile = i === aSegments.length - 1
+    const bIsFile = i === bSegments.length - 1
+    if (aIsFile !== bIsFile) return aIsFile ? 1 : -1
+    const order = aSegments[i].localeCompare(bSegments[i], undefined, {
+      numeric: true
+    })
+    if (order !== 0) return order
+  }
+  return 0
 }
 
 async function withCallerAbort<T>(
@@ -270,6 +312,26 @@ function createAssetService() {
   let inputAssetsIncludingPublicRequestId = 0
   let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
 
+  /**
+   * Model assets bucketed by folder category, built from a single walk of the
+   * `models` tag rather than a fetch per category. Shared by the folder list
+   * and per-folder listings so the sidebar loads every model in one pass.
+   */
+  let modelBuckets: Map<string, AssetItem[]> | null = null
+  let modelBucketsRequestId = 0
+  let pendingModelBuckets: Promise<Map<string, AssetItem[]>> | null = null
+
+  /**
+   * Discards the cached model buckets so the next read re-walks the models
+   * tag. Bumping the request id keeps a walk that was already in flight from
+   * repopulating the cache with pre-invalidation data.
+   */
+  function invalidateModelBuckets(): void {
+    modelBucketsRequestId++
+    modelBuckets = null
+    pendingModelBuckets = null
+  }
+
   /** Invalidates the cached public-inclusive input assets without aborting in-flight readers. */
   function invalidateInputAssetsIncludingPublic(): void {
     inputAssetsIncludingPublicRequestId++
@@ -331,47 +393,95 @@ function createAssetService() {
     return validateAssetResponse(data)
   }
   /**
-   * Gets a list of model folder keys from the asset API
-   *
-   * Logic:
-   * 1. Extract directory names directly from asset tags
-   * 2. Filter out blacklisted directories
-   * 3. Return alphabetically sorted directories with assets
-   *
-   * @returns The list of model folder keys
+   * Walks every `models`-tagged asset once and buckets each into the folder
+   * categories carried by its `model_type:` tags. A single asset lands in every
+   * category it is tagged with (e.g. a shared-root model in both `checkpoints`
+   * and `diffusion_models`). Which folders are actually shown is decided by
+   * `/experiment/models`; models with no category tag are dropped with a warning
+   * rather than hidden silently.
    */
-  async function getAssetModelFolders(): Promise<ModelFolder[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG] },
-      'model folders'
-    )
+  async function buildModelBuckets(): Promise<Map<string, AssetItem[]>> {
+    const assets = await getAllAssetsByTag(MODELS_TAG, true)
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
+    const buckets = new Map<string, AssetItem[]>()
 
-    // Blacklist directories we don't want to show
-    const blacklistedDirectories = new Set(['configs'])
+    for (const asset of assets) {
+      const folders = asset.tags
+        .map((tag) => modelFolderFromTag(tag, modelTypeMode))
+        .filter((folder): folder is string => folder !== undefined)
 
-    const folderTags = data.assets
-      .flatMap((asset) => asset.tags)
-      .filter((tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag))
-    const discoveredFolders = new Set<string>(folderTags)
+      if (folders.length === 0) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) is tagged '${MODELS_TAG}' but has no model category; skipping.`
+        )
+        continue
+      }
 
-    // Return only discovered folders in alphabetical order
-    const sortedFolders = Array.from(discoveredFolders).toSorted()
-    return sortedFolders.map((name) => ({ name, folders: [] }))
+      // On loader_path-contract backends a null loader_path marks an
+      // unloadable asset (e.g. an orphan): it must not mint a widget value,
+      // and `name` is deprecated for path semantics.
+      if (modelTypeMode && !asset.loader_path) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) has no loader_path; skipping.`
+        )
+        continue
+      }
+
+      for (const folder of folders) {
+        const bucket = buckets.get(folder)
+        if (bucket) bucket.push(asset)
+        else buckets.set(folder, [asset])
+      }
+    }
+
+    for (const bucket of buckets.values()) {
+      bucket.sort((a, b) =>
+        compareLoaderPaths(
+          a.loader_path ?? getAssetFilename(a),
+          b.loader_path ?? getAssetFilename(b)
+        )
+      )
+    }
+
+    return buckets
+  }
+
+  /** Returns the memoized model buckets, walking the models tag on first read. */
+  async function loadModelBuckets(): Promise<Map<string, AssetItem[]>> {
+    if (modelBuckets) return modelBuckets
+    if (pendingModelBuckets) return pendingModelBuckets
+
+    const requestId = ++modelBucketsRequestId
+    pendingModelBuckets = buildModelBuckets()
+      .then((buckets) => {
+        if (requestId === modelBucketsRequestId) {
+          modelBuckets = buckets
+        }
+        return buckets
+      })
+      .finally(() => {
+        if (requestId === modelBucketsRequestId) {
+          pendingModelBuckets = null
+        }
+      })
+
+    return pendingModelBuckets
   }
 
   /**
-   * Gets a list of models in the specified folder from the asset API
+   * Gets the models in the specified folder from the single models walk.
    * @param folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG, folder] },
-      `models for ${folder}`
-    )
-
-    return data.assets.map((asset) => ({
-      name: asset.name,
+    const buckets = await loadModelBuckets()
+    return (buckets.get(folder) ?? []).map((asset) => ({
+      // `loader_path` is the category-relative path the loader widget expects
+      // and the source for the sidebar tree. Backends that predate it (bare-tag
+      // mode; today's cloud) fall back to the filename metadata — the same
+      // value the asset browser serializes — rather than `name`, which is a
+      // content hash on cloud.
+      name: asset.loader_path ?? getAssetFilename(asset),
       pathIndex: 0
     }))
   }
@@ -1000,8 +1110,8 @@ function createAssetService() {
   }
 
   return {
-    getAssetModelFolders,
     getAssetModels,
+    invalidateModelBuckets,
     isAssetAPIEnabled,
     isAssetBrowserEligible,
     shouldUseAssetBrowser,

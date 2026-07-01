@@ -24,6 +24,7 @@ import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -40,6 +41,11 @@ const modelDef = computed<ComfyModelDef>(() => props.node.data!)
 const modelPreviewUrl = computed(() => {
   if (modelDef.value.image) {
     return modelDef.value.image
+  }
+  // The preview endpoint reads a rendered thumbnail off local disk, which is
+  // unavailable on Cloud (model bytes live in object storage).
+  if (isCloud) {
+    return ''
   }
   const folder = modelDef.value.directory
   const path_index = modelDef.value.path_index

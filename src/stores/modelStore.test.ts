@@ -22,8 +22,8 @@ vi.mock('@/scripts/api', () => ({
 // Mock the assetService
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    getAssetModelFolders: vi.fn(),
-    getAssetModels: vi.fn()
+    getAssetModels: vi.fn(),
+    invalidateModelBuckets: vi.fn()
   }
 }))
 
@@ -57,11 +57,8 @@ function enableMocks(useAssetAPI = false) {
     { name: 'vae', folders: ['/path/to/vae'] }
   ])
 
-  // Mock asset API - also returns objects with name and folders properties
-  vi.mocked(assetService.getAssetModelFolders).mockResolvedValue([
-    { name: 'checkpoints', folders: ['/path/to/checkpoints'] },
-    { name: 'vae', folders: ['/path/to/vae'] }
-  ])
+  // Asset API supplies only the per-folder model contents; folders come from
+  // api.getModelFolders in both paths.
   vi.mocked(assetService.getAssetModels).mockResolvedValue([
     { name: 'sdxl.safetensors', pathIndex: 0 },
     { name: 'sdv15.safetensors', pathIndex: 0 },
@@ -218,25 +215,23 @@ describe('useModelStore', () => {
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
 
-      // Both APIs return objects with .name property, modelStore extracts folder.name in both cases
+      // Folders come from /experiment/models; legacy path also serves models.
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(api.getModels).toHaveBeenCalledWith('checkpoints')
-      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(0)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(0)
       expect(folderStore).toBeDefined()
       expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })
 
-    it('should use asset API for complete workflow when UseAssetAPI setting is true', async () => {
+    it('should use asset API for model contents but /experiment/models for folders when UseAssetAPI is true', async () => {
       enableMocks(true) // useAssetAPI = true
       store = useModelStore()
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
 
-      // Both APIs return objects with .name property, modelStore extracts folder.name in both cases
-      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(1)
+      // Folders always come from /experiment/models; only contents use the asset API.
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
-      expect(api.getModelFolders).toHaveBeenCalledTimes(0)
       expect(api.getModels).toHaveBeenCalledTimes(0)
       expect(folderStore).toBeDefined()
       expect(Object.keys(folderStore!.models)).toHaveLength(3)
