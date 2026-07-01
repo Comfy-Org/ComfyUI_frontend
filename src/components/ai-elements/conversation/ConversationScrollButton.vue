@@ -14,19 +14,18 @@ const { isAtBottom, scrollToBottom } = useConversation()
 </script>
 
 <template>
-  <Button
+  <div
     v-if="!isAtBottom"
-    variant="secondary"
-    size="icon"
-    :class="
-      cn(
-        'absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md',
-        className
-      )
-    "
-    :aria-label="$t('agent.scrollToBottom')"
-    @click="scrollToBottom"
+    class="pointer-events-none sticky bottom-2 z-10 flex justify-center"
   >
-    <i class="icon-[lucide--chevron-down] size-4" />
-  </Button>
+    <Button
+      variant="secondary"
+      size="icon"
+      :class="cn('pointer-events-auto rounded-full shadow-md', className)"
+      :aria-label="$t('agent.scrollToBottom')"
+      @click="scrollToBottom"
+    >
+      <i class="icon-[lucide--chevron-down] size-4" />
+    </Button>
+  </div>
 </template>

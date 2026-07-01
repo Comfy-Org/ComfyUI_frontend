@@ -9,12 +9,7 @@ const { class: className } = defineProps<{
 
 <template>
   <div
-    :class="
-      cn(
-        'flex items-center justify-between gap-1 border-t border-border-default px-3 py-2',
-        className
-      )
-    "
+    :class="cn('flex items-center justify-between gap-1 px-3 py-2', className)"
   >
     <slot />
   </div>

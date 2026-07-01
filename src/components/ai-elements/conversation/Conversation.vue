@@ -41,7 +41,7 @@ provide(conversationKey, { isAtBottom, scrollToBottom })
 <template>
   <div
     ref="scrollEl"
-    :class="cn('relative flex-1 overflow-y-auto', className)"
+    :class="cn('relative scrollbar-custom flex-1', className)"
     @scroll="updateAtBottom"
   >
     <slot />

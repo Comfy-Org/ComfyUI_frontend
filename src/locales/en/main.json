@@ -26,6 +26,11 @@
     "toolCalls": {
       "summary": "Ran {count} tool calls for {duration}"
     },
+    "message": {
+      "thumbsUp": "Good response",
+      "thumbsDown": "Bad response",
+      "copy": "Copy"
+    },
     "history": {
       "title": "Chat History",
       "current": "Current",

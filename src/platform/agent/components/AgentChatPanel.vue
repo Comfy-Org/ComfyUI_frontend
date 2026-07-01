@@ -6,6 +6,8 @@ import ConversationContent from '@/components/ai-elements/conversation/Conversat
 import ConversationEmptyState from '@/components/ai-elements/conversation/ConversationEmptyState.vue'
 import ConversationScrollButton from '@/components/ai-elements/conversation/ConversationScrollButton.vue'
 import Message from '@/components/ai-elements/message/Message.vue'
+import MessageAction from '@/components/ai-elements/message/MessageAction.vue'
+import MessageActions from '@/components/ai-elements/message/MessageActions.vue'
 import MessageContent from '@/components/ai-elements/message/MessageContent.vue'
 import MessageResponse from '@/components/ai-elements/message/MessageResponse.vue'
 import MessageThinking from '@/components/ai-elements/message/MessageThinking.vue'
@@ -48,6 +50,7 @@ const agentPanelStore = useAgentPanelStore()
 const model = ref('Auto')
 const showHistory = ref(false)
 const promptTextarea = ref<{ focus: () => void } | null>(null)
+const reactions = ref<Record<string, 'liked' | 'disliked' | null>>({})
 
 const userName = computed(
   () => authStore.currentUser?.displayName?.split(' ')[0] ?? ''
@@ -72,6 +75,20 @@ function onSubmit() {
 function close() {
   agentPanelStore.close()
 }
+
+function toggleReaction(id: string, reaction: 'liked' | 'disliked') {
+  reactions.value[id] = reactions.value[id] === reaction ? null : reaction
+}
+
+function copyMessage(text: string) {
+  navigator.clipboard.writeText(text)
+}
+
+function onNewChatFromHistory() {
+  startNewChat()
+  showHistory.value = false
+  nextTick(() => promptTextarea.value?.focus())
+}
 </script>
 
 <template>
@@ -86,11 +103,7 @@ function close() {
         @select="showHistory = false"
         @delete="deleteConversation"
         @copy="copyConversation"
-        @new-chat="
-          startNewChat()
-          showHistory = false
-          nextTick(() => promptTextarea?.focus())
-        "
+        @new-chat="onNewChatFromHistory"
       />
     </template>
 
@@ -112,7 +125,7 @@ function close() {
         <AgentChatEmptyState :name="userName" />
       </ConversationEmptyState>
       <Conversation v-else>
-        <ConversationContent>
+        <ConversationContent class="mx-auto w-full max-w-[640px]">
           <Message
             v-for="message in messages"
             :key="message.id"
@@ -129,6 +142,35 @@ function close() {
                 "
               />
               <MessageResponse v-if="message.text" :content="message.text" />
+              <MessageActions
+                v-if="
+                  message.role === 'assistant' &&
+                  message.text &&
+                  (status === 'ready' ||
+                    message !== messages[messages.length - 1])
+                "
+              >
+                <MessageAction
+                  :tooltip="$t('agent.message.thumbsUp')"
+                  :pressed="reactions[message.id] === 'liked'"
+                  @click="toggleReaction(message.id, 'liked')"
+                >
+                  <i class="icon-[lucide--thumbs-up] size-3.5" />
+                </MessageAction>
+                <MessageAction
+                  :tooltip="$t('agent.message.thumbsDown')"
+                  :pressed="reactions[message.id] === 'disliked'"
+                  @click="toggleReaction(message.id, 'disliked')"
+                >
+                  <i class="icon-[lucide--thumbs-down] size-3.5" />
+                </MessageAction>
+                <MessageAction
+                  :tooltip="$t('agent.message.copy')"
+                  @click="copyMessage(message.text)"
+                >
+                  <i class="icon-[lucide--copy] size-3.5" />
+                </MessageAction>
+              </MessageActions>
             </MessageContent>
           </Message>
         </ConversationContent>
