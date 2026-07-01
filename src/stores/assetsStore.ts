@@ -193,6 +193,12 @@ export const useAssetsStore = defineStore('assets', () => {
   // a stale continuation can't merge into (or move the cursor of) the new walk.
   let historyFetchEpoch = 0
 
+  // Tracks whether the walk is keyset-paginated, independent of the current
+  // cursor value: once a cursor has been minted the walk stays in cursor mode
+  // even after it exhausts (`historyNextCursor` back to null), so head-refresh
+  // merges keep preserving scroll-loaded items instead of replacing them.
+  let historyCursorMode = false
+
   const isRejectedCursorError = (err: unknown): boolean =>
     err instanceof JobsApiError && err.status === 400
 
@@ -211,6 +217,7 @@ export const useAssetsStore = defineStore('assets', () => {
       if (!isRejectedCursorError(err) || epoch !== historyFetchEpoch) throw err
       console.warn('Stale history cursor rejected, resuming via offset:', err)
       historyNextCursor.value = null
+      historyCursorMode = false
       historyOffset.value = 0
       allHistoryItems.value = []
       loadedIds.clear()
@@ -241,6 +248,7 @@ export const useAssetsStore = defineStore('assets', () => {
       historyFetchEpoch += 1
       historyOffset.value = 0
       historyNextCursor.value = null
+      historyCursorMode = false
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
@@ -262,6 +270,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
     const cursorStuck =
       page.nextCursor != null && page.nextCursor === requestedAfter
+    if (page.nextCursor != null) historyCursorMode = true
     historyOffset.value += page.jobs.length
     historyNextCursor.value = cursorStuck ? null : (page.nextCursor ?? null)
     hasMoreHistory.value =
@@ -338,6 +347,7 @@ export const useAssetsStore = defineStore('assets', () => {
     newAssets.forEach((asset) => loadedIds.add(asset.id))
     historyOffset.value = page.jobs.length
     historyNextCursor.value = page.nextCursor ?? null
+    historyCursorMode = page.nextCursor != null
     hasMoreHistory.value = page.hasMore
   }
 
@@ -386,12 +396,14 @@ export const useAssetsStore = defineStore('assets', () => {
         return
       }
 
-      // Merging only preserves scroll-loaded items safely in cursor mode.
-      // In offset fallback mode, prepending new head rows without advancing
-      // historyOffset would drift the next offset request (the server timeline
-      // shifted down by the new completions), so rebuild from the head page —
-      // which resets historyOffset to a position consistent with that page.
-      if (page.hasMore && historyNextCursor.value != null) {
+      // Merging only preserves scroll-loaded items safely in cursor mode,
+      // including once the cursor has exhausted (historyNextCursor is null but
+      // the loaded terminal pages must survive). In offset fallback mode,
+      // prepending new head rows without advancing historyOffset would drift
+      // the next offset request (the server timeline shifted down by the new
+      // completions), so rebuild from the head page — which resets
+      // historyOffset to a position consistent with that page.
+      if (page.hasMore && historyCursorMode) {
         mergeHistoryAssets(mapHistoryToAssets(page.jobs))
         trimHistoryToLimit()
       } else {

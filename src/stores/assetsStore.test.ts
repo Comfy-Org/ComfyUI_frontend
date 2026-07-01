@@ -1094,6 +1094,45 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
     })
 
+    it('preserves the loaded terminal pages when a completion arrives after the cursor is exhausted', async () => {
+      vi.mocked(fetchHistoryPage)
+        // Initial page mints a cursor (keyset mode) and reports more rows.
+        .mockResolvedValueOnce(
+          mockHistoryPage([createMockJobItem(2), createMockJobItem(3)], {
+            hasMore: true,
+            nextCursor: 'cursor-1'
+          })
+        )
+        // Load-more walks to the terminal page: no cursor, no more rows.
+        .mockResolvedValueOnce(
+          mockHistoryPage([createMockJobItem(0), createMockJobItem(1)], {
+            hasMore: false
+          })
+        )
+        // A new completion refreshes the head; hasMore is true again and the
+        // page overlaps the loaded items, but the stored cursor is now null.
+        .mockResolvedValueOnce(
+          mockHistoryPage(
+            [createMockJobItem(4), createMockJobItem(2), createMockJobItem(3)],
+            { hasMore: true }
+          )
+        )
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+      expect(store.hasMoreHistory).toBe(false)
+
+      await store.refreshHistoryHead()
+
+      // The exhausted cursor must not be mistaken for offset-fallback mode: the
+      // already-loaded terminal pages survive and the new completion is added.
+      const ids = store.historyAssets.map((a) => a.id)
+      expect(ids).toContain('prompt_0')
+      expect(ids).toContain('prompt_1')
+      expect(ids).toContain('prompt_4')
+      expect(new Set(ids).size).toBe(5)
+    })
+
     it('coalesces a burst into a leading fetch plus one trailing refresh', async () => {
       vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
         mockHistoryPage([createMockJobItem(0)], {
