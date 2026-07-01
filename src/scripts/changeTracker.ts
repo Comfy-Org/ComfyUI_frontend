@@ -216,6 +216,12 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified()
+      requestAnimationFrame(
+        () =>
+          (this.activeState = clone(
+            app.rootGraph.serialize()
+          ) as ComfyWorkflowJSON)
+      )
     }
   }
 
@@ -228,11 +234,6 @@ export class ChangeTracker {
       )
     }
     this.captureCanvasState()
-  }
-
-  squashState() {
-    if (ChangeTracker.isLoadingGraph) return
-    this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
   }
 
   private static _checkStateWarned = false
