@@ -2,6 +2,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 
@@ -120,12 +121,10 @@ export function useImageMenuOptions() {
     const url = getNodeImageUrl(node)
     if (!url) return
 
-    if (!navigator.clipboard?.write) {
-      console.warn('Clipboard API not available')
-      return
-    }
-
     try {
+      if (!navigator.clipboard?.write) {
+        throw new Error('Clipboard API not available')
+      }
       // Pass a Promise to ClipboardItem so the write is registered
       // synchronously within the click's user-gesture, keeping activation
       // alive across the fetch (required by Safari, tolerated by Chrome).
@@ -134,6 +133,11 @@ export function useImageMenuOptions() {
       ])
     } catch (error) {
       console.error('Failed to copy image to clipboard:', error)
+      useToastStore().addAlert(
+        t('toastMessages.errorCopyImage', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      )
     }
   }
 
@@ -145,6 +149,11 @@ export function useImageMenuOptions() {
       downloadFile(url)
     } catch (error) {
       console.error('Failed to save image:', error)
+      useToastStore().addAlert(
+        t('toastMessages.errorSaveImage', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      )
     }
   }
 
