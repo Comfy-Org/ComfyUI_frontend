@@ -9,7 +9,7 @@ import * as vuefire from 'vuefire'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
@@ -27,8 +27,9 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
   }
 }))
 
-type MockUser = Omit<User, 'getIdToken'> & {
+type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
+  delete: Mock
 }
 
 type MockAuth = Record<string, unknown>
@@ -148,7 +149,8 @@ describe('useAuthStore', () => {
   const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
-    getIdToken: vi.fn().mockResolvedValue('mock-id-token')
+    getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
+    delete: vi.fn().mockResolvedValue(undefined)
   } as Partial<User> as MockUser
 
   beforeEach(() => {
@@ -397,6 +399,90 @@ describe('useAuthStore', () => {
       )
       expect(store.loading).toBe(false)
     })
+
+    it('forwards the turnstile token to createCustomer as turnstile_token', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password', 'turnstile-abc')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ turnstile_token: 'turnstile-abc' })
+        })
+      )
+    })
+
+    it('omits the request body when no turnstile token is provided', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      const customerCall = mockFetch.mock.calls.find(([url]) =>
+        String(url).endsWith('/customers')
+      )
+      expect(customerCall?.[1]).not.toHaveProperty('body')
+    })
+
+    it('rolls back the orphaned Firebase user when customer creation fails', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      // The server-side customer creation (where Turnstile is validated) fails.
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.register('new@example.com', 'password', 'turnstile-bad')
+      ).rejects.toThrow()
+
+      // The just-created user is deleted so the email is freed for retry.
+      expect(mockUser.delete).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not delete the user on a successful registration', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      expect(mockUser.delete).not.toHaveBeenCalled()
+    })
+
+    it('does not delete an existing user when customer creation fails during login', async () => {
+      // Regression guard: the rollback must be scoped to register only — login
+      // signs in an EXISTING user, so a customer hiccup must never delete it.
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.login('test@example.com', 'password')
+      ).rejects.toThrow()
+      expect(mockUser.delete).not.toHaveBeenCalled()
+    })
   })
 
   describe('logout', () => {
@@ -550,6 +636,20 @@ describe('useAuthStore', () => {
         expect(store.loading).toBe(false)
       })
 
+      it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+
+        await store.loginWithGoogle()
+
+        const customerCall = mockFetch.mock.calls.find(([url]) =>
+          String(url).endsWith('/customers')
+        )
+        expect(customerCall).toBeDefined()
+        expect(customerCall?.[1]).not.toHaveProperty('body')
+      })
+
       it('should handle Google sign in errors', async () => {
         const mockError = new Error('Google authentication failed')
         vi.mocked(firebaseAuth.signInWithPopup).mockRejectedValue(mockError)
@@ -581,6 +681,20 @@ describe('useAuthStore', () => {
         )
         expect(result).toEqual(mockUserCredential)
         expect(store.loading).toBe(false)
+      })
+
+      it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+
+        await store.loginWithGithub()
+
+        const customerCall = mockFetch.mock.calls.find(([url]) =>
+          String(url).endsWith('/customers')
+        )
+        expect(customerCall).toBeDefined()
+        expect(customerCall?.[1]).not.toHaveProperty('body')
       })
 
       it('should handle Github sign in errors', async () => {
@@ -857,6 +971,18 @@ describe('useAuthStore', () => {
       mockApiKeyGetAuthHeader.mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
+    })
+
+    it('carries the HTTP status on a non-ok response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity'
+      })
+
+      const error = await store.createCustomer().catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(AuthStoreError)
+      expect((error as AuthStoreError).status).toBe(422)
     })
   })
 })

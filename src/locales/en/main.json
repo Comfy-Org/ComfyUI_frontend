@@ -2253,6 +2253,11 @@
       "personalDataConsentLabel": "I agree to the processing of my personal data.",
       "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."
     },
+    "turnstile": {
+      "failed": "Verification failed. Please try again.",
+      "expired": "Verification expired. Please complete the challenge again.",
+      "submitBlockedHint": "Complete the verification challenge above to enable sign up."
+    },
     "signOut": {
       "signOut": "Log Out",
       "success": "Signed out successfully",
