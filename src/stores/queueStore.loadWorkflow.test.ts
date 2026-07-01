@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -10,7 +10,11 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import * as jobOutputCache from '@/services/jobOutputCache'
+import type { TaskOutput } from '@/schemas/apiSchema'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { TaskItemImpl } from '@/stores/queueStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: vi.fn(() => ({
@@ -44,7 +48,9 @@ const mockJobDetail = {
     }
   },
   outputs: {
-    '1': { images: [{ filename: 'test.png', subfolder: '', type: 'output' }] }
+    '1': {
+      images: [{ filename: 'test.png', subfolder: '', type: 'output' as const }]
+    }
   }
 }
 
@@ -136,5 +142,111 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
 
     expect(jobOutputCache.getJobDetail).toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('should load full outputs for history tasks', async () => {
+    const job = createHistoryJob('test-job-id')
+    const task = new TaskItemImpl(job)
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
+      mockJobDetail as JobDetail
+    )
+
+    const loaded = await task.loadFullOutputs()
+
+    expect(loaded).not.toBe(task)
+    expect(loaded.flatOutputs[0].filename).toBe('test.png')
+  })
+
+  it('should not load full outputs for running tasks', async () => {
+    const job = createRunningJob('test-job-id')
+    const task = new TaskItemImpl(job)
+    const detailSpy = vi.spyOn(jobOutputCache, 'getJobDetail')
+
+    const loaded = await task.loadFullOutputs()
+
+    expect(loaded).toBe(task)
+    expect(detailSpy).not.toHaveBeenCalled()
+  })
+
+  it('should keep history tasks when full outputs are unavailable', async () => {
+    const job = createHistoryJob('test-job-id')
+    const task = new TaskItemImpl(job)
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
+      fromPartial<JobDetail>({ id: 'test-job-id', status: 'completed' })
+    )
+
+    const loaded = await task.loadFullOutputs()
+
+    expect(loaded).toBe(task)
+  })
+
+  it('should load workflow outputs from the task when job detail has none', async () => {
+    const job = createHistoryJob('test-job-id')
+    const task = new TaskItemImpl(job, mockJobDetail.outputs)
+    const nodeOutputStore = useNodeOutputStore()
+    const setOutputsSpy = vi.spyOn(
+      nodeOutputStore,
+      'setNodeOutputsByExecutionId'
+    )
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
+      fromPartial<JobDetail>({ ...mockJobDetail, outputs: undefined })
+    )
+
+    await task.loadWorkflow(mockApp)
+
+    expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
+    expect(setOutputsSpy).toHaveBeenCalledOnce()
+    expect(
+      nodeOutputStore.getNodeOutputByExecutionId(
+        createNodeExecutionId([toNodeId(1)])
+      )
+    ).toEqual(mockJobDetail.outputs['1'])
+  })
+
+  it('should skip workflow output loading when no outputs exist', async () => {
+    const job = createHistoryJob('test-job-id')
+    const task = new TaskItemImpl(job, fromAny<TaskOutput, unknown>(null))
+    const nodeOutputStore = useNodeOutputStore()
+    const setOutputsSpy = vi.spyOn(
+      nodeOutputStore,
+      'setNodeOutputsByExecutionId'
+    )
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
+      fromPartial<JobDetail>({ ...mockJobDetail, outputs: undefined })
+    )
+
+    await task.loadWorkflow(mockApp)
+
+    expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
+    expect(setOutputsSpy).not.toHaveBeenCalled()
+    expect(nodeOutputStore.nodeOutputs).toEqual({})
+  })
+
+  it('should skip invalid node execution ids while loading outputs', async () => {
+    const job = createHistoryJob('test-job-id')
+    const outputs = fromAny<TaskOutput, unknown>({
+      '': { images: [{ filename: 'skip.png', subfolder: '', type: 'output' }] },
+      '1': { images: [{ filename: 'keep.png', subfolder: '', type: 'output' }] }
+    })
+    const task = new TaskItemImpl(job, outputs)
+    const nodeOutputStore = useNodeOutputStore()
+    const setOutputsSpy = vi.spyOn(
+      nodeOutputStore,
+      'setNodeOutputsByExecutionId'
+    )
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
+      fromPartial<JobDetail>({ ...mockJobDetail, outputs: undefined })
+    )
+
+    await task.loadWorkflow(mockApp)
+
+    expect(setOutputsSpy).toHaveBeenCalledOnce()
+    expect(setOutputsSpy).toHaveBeenCalledWith('1', outputs['1'])
+    expect(
+      nodeOutputStore.getNodeOutputByExecutionId(
+        createNodeExecutionId([toNodeId(1)])
+      )
+    ).toEqual(outputs['1'])
+    expect(Object.keys(nodeOutputStore.nodeOutputs)).toEqual(['1'])
   })
 })
