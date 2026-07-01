@@ -429,6 +429,7 @@ const zSettings = z.object({
   'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
+  'Comfy.Assets.ModelLibraryAssetView': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy.Queue.ShowRunProgressBar': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
