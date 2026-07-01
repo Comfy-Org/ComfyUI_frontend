@@ -7,7 +7,6 @@ import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import type * as DistributionTypes from '@/platform/distribution/types'
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
@@ -39,15 +38,22 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => null
 }))
 
-const mockFlags = vi.hoisted(() => ({ teamWorkspacesEnabled: false }))
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
+const mockBillingRouting = vi.hoisted(() => ({
+  shouldUseWorkspaceBilling: false
 }))
-
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionTypes>()),
-  isCloud: true
-}))
+vi.mock('@/composables/billing/useBillingRouting', async () => {
+  const { ref } = await import('vue')
+  const shouldUseWorkspaceBilling = ref(false)
+  Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
+    get: () => shouldUseWorkspaceBilling.value,
+    set: (value: boolean) => {
+      shouldUseWorkspaceBilling.value = value
+    }
+  })
+  return {
+    useBillingRouting: () => ({ shouldUseWorkspaceBilling })
+  }
+})
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingEvents: vi.fn()
@@ -137,7 +143,7 @@ describe('UsageLogsTable', () => {
 
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
-    mockFlags.teamWorkspacesEnabled = false
+    mockBillingRouting.shouldUseWorkspaceBilling = false
     mockCustomerEventsService.formatEventType.mockImplementation(
       (type: string) => {
         switch (type) {
@@ -341,8 +347,8 @@ describe('UsageLogsTable', () => {
   })
 
   describe('billing events source', () => {
-    it('uses workspaceApi.getBillingEvents when teamWorkspacesEnabled is on', async () => {
-      mockFlags.teamWorkspacesEnabled = true
+    it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
+      mockBillingRouting.shouldUseWorkspaceBilling = true
 
       await renderLoaded()
 

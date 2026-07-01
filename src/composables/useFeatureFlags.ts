@@ -30,6 +30,7 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile'
 }
 
@@ -172,6 +173,18 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
+        false
+      )
+    },
+    /**
+     * Whether personal workspaces use the new consolidated (workspace-scoped)
+     * billing flow. While false (default), personal workspaces stay on the
+     * legacy per-user billing flow. Team workspaces are unaffected.
+     */
+    get consolidatedBillingEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
+        remoteConfig.value.consolidated_billing_enabled,
         false
       )
     },

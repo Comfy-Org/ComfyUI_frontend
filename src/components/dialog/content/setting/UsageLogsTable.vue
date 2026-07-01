@@ -96,11 +96,10 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -115,8 +114,7 @@ const error = ref<string | null>(null)
 
 const customerEventService = useCustomerEventsService()
 
-const { flags } = useFeatureFlags()
-const useBillingApi = computed(() => isCloud && flags.teamWorkspacesEnabled)
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 
 const pagination = ref({
   page: 1,
@@ -148,7 +146,7 @@ const loadEvents = async () => {
       page: pagination.value.page,
       limit: pagination.value.limit
     }
-    const response = useBillingApi.value
+    const response = shouldUseWorkspaceBilling.value
       ? await workspaceApi.getBillingEvents(params)
       : await customerEventService.getMyEvents(params)
 
@@ -197,6 +195,12 @@ const refresh = async () => {
   pagination.value.page = 1
   await loadEvents()
 }
+
+watch(shouldUseWorkspaceBilling, () => {
+  refresh().catch((error) => {
+    console.error('Error loading events:', error)
+  })
+})
 
 defineExpose({
   refresh

@@ -1,7 +1,6 @@
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   KEY_TO_TIER,
   getTierFeatures
@@ -18,10 +17,10 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
-  BillingType,
   BillingState,
   SubscriptionInfo
 } from './types'
+import { useBillingRouting } from './useBillingRouting'
 import { useLegacyBilling } from './useLegacyBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
@@ -35,8 +34,9 @@ const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
  * Unified billing context that selects the billing implementation by build/flag.
  *
  * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
- * - Team workspaces enabled: workspace billing via /api/billing/* for both
- *   personal (single-seat workspace) and team workspaces
+ * - Team workspaces enabled: workspace billing via /api/billing/* for team
+ *   workspaces, and for personal workspaces once consolidated billing is
+ *   enabled; personal workspaces otherwise stay on legacy billing
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -69,7 +69,7 @@ const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
  */
 function useBillingContextInternal(): BillingContext {
   const store = useTeamWorkspaceStore()
-  const { flags } = useFeatureFlags()
+  const { type } = useBillingRouting()
 
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
     null
@@ -95,16 +95,6 @@ function useBillingContextInternal(): BillingContext {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-
-  /**
-   * Determines which billing type to use, keyed only on the build/flag:
-   * - Team workspaces feature disabled (OSS/Desktop): legacy (/customers)
-   * - Team workspaces feature enabled: workspace (/api/billing), for both
-   *   personal (single-seat workspace) and team workspaces
-   */
-  const type = computed<BillingType>(() =>
-    flags.teamWorkspacesEnabled ? 'workspace' : 'legacy'
-  )
 
   const activeContext = computed(() =>
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
