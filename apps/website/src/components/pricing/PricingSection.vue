@@ -121,7 +121,6 @@ function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
         <div class="mt-8 flex self-end">
           <Button
             :href="plan.ctaHref(billingPeriod)"
-            as="a"
             variant="outline"
             class="w-full text-center"
           >
