@@ -1070,7 +1070,7 @@
     "description": "Check out the latest improvements and features in this update."
   },
   "modelManager": {
-    "title": "Model Downloader",
+    "title": "Downloads",
     "active": "Active",
     "history": "History",
     "empty": "No downloads yet",
