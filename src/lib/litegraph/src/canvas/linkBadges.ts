@@ -31,7 +31,8 @@ interface BadgeHitArea {
 /**
  * Hit areas for the badges drawn this frame, in graph coordinates. Rebuilt every
  * render pass (cleared at the start of `drawConnections`) and queried by pointer
- * handlers. Module-level so the canvas god-object gains no new render state.
+ * handlers. Module-level so the canvas god-object gains no new render state; safe
+ * because only the app canvas draws badges (offscreen/minimap canvases don't).
  */
 const hitAreas: BadgeHitArea[] = []
 
@@ -161,7 +162,7 @@ function drawConnectorStub(
   to: Point,
   color: string
 ): void {
-  const { strokeStyle, lineWidth, lineCap } = ctx
+  ctx.save()
   ctx.strokeStyle = color
   ctx.lineWidth = CONNECTOR_WIDTH
   ctx.lineCap = 'round'
@@ -169,9 +170,7 @@ function drawConnectorStub(
   ctx.moveTo(from[0], from[1])
   ctx.lineTo(to[0], to[1])
   ctx.stroke()
-  ctx.strokeStyle = strokeStyle
-  ctx.lineWidth = lineWidth
-  ctx.lineCap = lineCap
+  ctx.restore()
 }
 
 function overlapsBadge(

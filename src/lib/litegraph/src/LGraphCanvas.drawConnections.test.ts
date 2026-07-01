@@ -13,6 +13,7 @@ import {
   setRevealedLinks
 } from '@/lib/litegraph/src/canvas/linkBadges'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
@@ -236,5 +237,80 @@ describe('drawConnections widget-input slot positioning', () => {
     // ...and registers a badge hit area at the output socket instead.
     const [outputX, outputY] = sourceNode.getOutputPos(0)
     expect(queryLinkBadgeAtPoint(outputX + 20, outputY)).toBe(link.id)
+  })
+})
+
+describe('showLinkMenu link visibility actions', () => {
+  let graph: LGraph
+  let canvas: LGraphCanvas
+  const originalContextMenu = LiteGraph.ContextMenu
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia())
+
+    const canvasElement = document.createElement('canvas')
+    canvasElement.width = 800
+    canvasElement.height = 600
+    canvasElement.getContext = vi.fn().mockReturnValue(createMockCtx())
+    canvasElement.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+
+    graph = new LGraph()
+    canvas = new LGraphCanvas(canvasElement, graph, { skip_render: true })
+    LiteGraph.vueNodesMode = false
+  })
+
+  afterEach(() => {
+    LiteGraph.ContextMenu = originalContextMenu
+    LiteGraph.vueNodesMode = false
+  })
+
+  function linkBetweenNodes(): LLink {
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'STRING')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('in', 'STRING')
+    graph.add(target)
+    return createTestLink(graph, source, 0, target, 0)
+  }
+
+  function clickMenuItem(link: LLink, item: string): void {
+    let callback: ((v: string, o: unknown, e: MouseEvent) => void) | undefined
+    LiteGraph.ContextMenu = vi
+      .fn<typeof LiteGraph.ContextMenu>()
+      .mockImplementation(function (_values, options) {
+        callback = options.callback
+      }) as Partial<
+      typeof LiteGraph.ContextMenu
+    > as typeof LiteGraph.ContextMenu
+
+    canvas.showLinkMenu(link, {} as CanvasPointerEvent)
+    callback?.(item, null, {} as MouseEvent)
+  }
+
+  it('hides a visible link and brackets it with the change lifecycle', () => {
+    const link = linkBetweenNodes()
+    const before = vi.spyOn(canvas, 'emitBeforeChange')
+    const dirty = vi.spyOn(canvas, 'setDirty')
+    const after = vi.spyOn(canvas, 'emitAfterChange')
+
+    clickMenuItem(link, 'Hide Link')
+
+    expect(link.hidden).toBe(true)
+    expect(before).toHaveBeenCalled()
+    expect(dirty).toHaveBeenCalledWith(false, true)
+    expect(after).toHaveBeenCalled()
+  })
+
+  it('shows a hidden link again', () => {
+    const link = linkBetweenNodes()
+    link.hidden = true
+
+    clickMenuItem(link, 'Show Link')
+
+    expect(link.hidden).toBe(false)
   })
 })
