@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 const args: string[] = process.argv.slice(2)
 
@@ -14,17 +15,21 @@ const perfStatus = getArg('perf-status') ?? 'pending'
 const coverageStatus = getArg('coverage-status') ?? 'skip'
 const criticalCoverageStatus = getArg('critical-coverage-status') ?? 'skip'
 
-type CoverageMetricName = 'statements' | 'branches' | 'functions' | 'lines'
-type CoverageMetric = {
+export type CoverageMetricName =
+  | 'statements'
+  | 'branches'
+  | 'functions'
+  | 'lines'
+export type CoverageMetric = {
   total: number
   covered: number
   pct: number
 }
-type CoverageSummary = {
+export type CoverageSummary = {
   total?: Partial<Record<CoverageMetricName, CoverageMetric>>
 }
 
-function formatCoverageMetric(metric: CoverageMetric | undefined): string {
+export function formatCoverageMetric(metric?: CoverageMetric): string {
   if (
     !metric ||
     !Number.isFinite(metric.covered) ||
@@ -37,10 +42,11 @@ function formatCoverageMetric(metric: CoverageMetric | undefined): string {
   return `${metric.covered}/${metric.total} | ${metric.pct.toFixed(2)}%`
 }
 
-function renderCriticalCoverageReport(): string {
-  const summary = JSON.parse(
+export function renderCriticalCoverageReport(
+  summary: CoverageSummary = JSON.parse(
     readFileSync('temp/critical-coverage/coverage-summary.json', 'utf-8')
   ) as CoverageSummary
+): string {
   const rows: Array<[string, CoverageMetricName]> = [
     ['Statements', 'statements'],
     ['Branches', 'branches'],
@@ -145,7 +151,7 @@ if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
 }
 
 if (
-  criticalCoverageStatus === 'ready' &&
+  (criticalCoverageStatus === 'ready' || criticalCoverageStatus === 'failed') &&
   existsSync('temp/critical-coverage/coverage-summary.json')
 ) {
   try {
@@ -176,4 +182,9 @@ if (
   lines.push('> Critical coverage gate is still running.')
 }
 
-process.stdout.write(lines.join('\n') + '\n')
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  process.stdout.write(lines.join('\n') + '\n')
+}

@@ -105,7 +105,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download critical coverage summary
-        if: steps.pr-meta.outputs.skip != 'true' && steps.find-critical-coverage.outputs.status == 'ready'
+        if: steps.pr-meta.outputs.skip != 'true' && (steps.find-critical-coverage.outputs.status == 'ready' || steps.find-critical-coverage.outputs.status == 'failed')
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
           name: critical-coverage-summary
