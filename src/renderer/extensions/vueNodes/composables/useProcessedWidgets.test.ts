@@ -519,4 +519,43 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       )
     ).toBe(false)
   })
+
+  it('clears execution errors from simplified callback without a live widget', () => {
+    const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
+    registerWidgetState(id, { type: 'combo', value: 'bad-value' })
+
+    const executionErrorStore = useExecutionErrorStore()
+    const missingModelStore = useMissingModelStore()
+    executionErrorStore.lastNodeErrors = {
+      [NODE_ID]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'seed is required',
+            details: '',
+            extra_info: { input_name: 'seed' }
+          }
+        ],
+        class_type: 'TestNode',
+        dependent_outputs: []
+      }
+    }
+
+    const [processed] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
+
+    expect(processed.simplified.callback).toBe(processed.updateHandler)
+
+    processed.simplified.callback?.('fixed-value')
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe('fixed-value')
+    expect(
+      hasWidgetError(
+        { name: 'seed' },
+        createNodeExecutionId([NODE_ID]),
+        executionErrorStore.lastNodeErrors?.[NODE_ID],
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(false)
+  })
 })

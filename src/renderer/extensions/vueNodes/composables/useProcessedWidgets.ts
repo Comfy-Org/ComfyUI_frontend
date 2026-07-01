@@ -416,34 +416,6 @@ export function computeProcessedWidgets({
           }
         : undefined
     const controlWidget = liveWidget ? getControlWidget(liveWidget) : undefined
-    const simplified: SimplifiedWidget = {
-      name: widgetState.name,
-      type: widgetState.type,
-      value,
-      borderStyle: widgetOptions.advanced
-        ? 'ring ring-component-node-widget-advanced'
-        : undefined,
-      callback: liveWidget
-        ? (next) =>
-            createWidgetUpdateHandler({
-              id,
-              live,
-              errorTarget,
-              nodeExecId,
-              widgetName: widgetState.name,
-              widgetOptions,
-              executionErrorStore,
-              widgetValueStore
-            })(next)
-        : (next) => widgetValueStore.setValue(id, next),
-      controlWidget,
-      label: widgetState.label,
-      linkedUpstream,
-      nodeLocatorId: getWidgetNodeLocatorId(nodeData, bareWidgetId),
-      options: widgetOptions,
-      spec: undefined
-    }
-
     const updateHandler = createWidgetUpdateHandler({
       id,
       live,
@@ -454,6 +426,21 @@ export function computeProcessedWidgets({
       executionErrorStore,
       widgetValueStore
     })
+    const simplified: SimplifiedWidget = {
+      name: widgetState.name,
+      type: widgetState.type,
+      value,
+      borderStyle: widgetOptions.advanced
+        ? 'ring ring-component-node-widget-advanced'
+        : undefined,
+      callback: updateHandler,
+      controlWidget,
+      label: widgetState.label,
+      linkedUpstream,
+      nodeLocatorId: getWidgetNodeLocatorId(nodeData, bareWidgetId),
+      options: widgetOptions,
+      spec: undefined
+    }
     const valueTooltip =
       isTooltipValueType(widgetState.type) && String(value).length > 10
         ? String(value)
