@@ -19,6 +19,11 @@ vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 
+const { addAlert } = vi.hoisted(() => ({ addAlert: vi.fn() }))
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ addAlert })
+}))
+
 function mockClipboard(clipboard: Partial<Clipboard> | undefined) {
   Object.defineProperty(navigator, 'clipboard', {
     value: clipboard,
@@ -48,6 +53,7 @@ describe('useImageMenuOptions', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+    addAlert.mockClear()
   })
 
   describe('getImageMenuOptions', () => {
@@ -253,7 +259,45 @@ describe('useImageMenuOptions', () => {
       )
     })
 
-    it('handles missing clipboard API gracefully', async () => {
+    it('re-encodes a non-PNG source to PNG before writing', async () => {
+      const node = createImageNode()
+      const jpegBlob = new Blob(['jpeg'], { type: 'image/jpeg' })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          blob: () => Promise.resolve(jpegBlob)
+        })
+      )
+      stubClipboardItem()
+
+      // jsdom implements neither createImageBitmap nor canvas.toBlob, so stub
+      // the decode + re-encode pipeline the non-PNG branch relies on.
+      const bitmap = { width: 2, height: 2, close: vi.fn() }
+      vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(bitmap))
+      const pngBlob = new Blob(['png'], { type: 'image/png' })
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+        fromPartial<CanvasRenderingContext2D>({ drawImage: vi.fn() }) as never
+      )
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((cb) =>
+        cb(pngBlob)
+      )
+
+      const write = vi.fn().mockResolvedValue(undefined)
+      mockClipboard(fromPartial<Clipboard>({ write }))
+
+      await getCopyAction(node)()
+
+      // Await the deferred PNG promise first so the re-encode chain runs.
+      const item = write.mock.calls[0][0][0] as {
+        data: Record<string, unknown>
+      }
+      await expect(item.data['image/png']).resolves.toBe(pngBlob)
+      expect(createImageBitmap).toHaveBeenCalledWith(jpegBlob)
+      expect(bitmap.close).toHaveBeenCalled()
+    })
+
+    it('alerts the user when the clipboard API is unavailable', async () => {
       const node = createImageNode()
       const fetchMock = vi.fn()
       vi.stubGlobal('fetch', fetchMock)
@@ -261,6 +305,7 @@ describe('useImageMenuOptions', () => {
 
       await expect(getCopyAction(node)()).resolves.toBeUndefined()
       expect(fetchMock).not.toHaveBeenCalled()
+      expect(addAlert).toHaveBeenCalledWith('errorCopyImage')
     })
   })
 })
