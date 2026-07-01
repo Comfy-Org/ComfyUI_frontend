@@ -128,7 +128,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
               autocapture: false,
-              capture_pageview: false,
+              capture_pageview: 'history_change',
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',

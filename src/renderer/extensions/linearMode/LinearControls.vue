@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { useCoachmarkController } from '@/platform/onboarding/coachmarkController'
@@ -16,11 +17,15 @@ import SubscribeToRunButton from '@/platform/cloud/subscription/components/Subsc
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
+import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+
 const { t } = useI18n()
 const { requestTour } = useCoachmarkController()
 const commandStore = useCommandStore()
@@ -31,6 +36,8 @@ const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
+const { hasAnyError } = storeToRefs(useExecutionErrorStore())
+const { overlayMessage } = useErrorOverlayState()
 
 const { toastTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
@@ -46,6 +53,13 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   { controls: true, immediate: false }
 )
 const widgetListRef = useTemplateRef('widgetListRef')
+const linearRunButtonTestId = 'linear-run-button'
+const showRunErrorWarning = computed(
+  () =>
+    hasAnyError.value &&
+    toValue(isActiveSubscription) &&
+    toValue(overlayMessage).trim().length > 0
+)
 
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
@@ -146,9 +160,10 @@ function handleDragDrop() {
       <section
         v-if="mobile"
         v-coachmark="'app-run-button'"
-        data-testid="linear-run-button"
+        :data-testid="linearRunButtonTestId"
         class="border-t border-node-component-border p-4 pb-6"
       >
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
           class="mt-4 w-full"
@@ -178,9 +193,14 @@ function handleDragDrop() {
             variant="primary"
             class="grow"
             size="lg"
+            :aria-describedby="
+              showRunErrorWarning
+                ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+                : undefined
+            "
             @click="runButtonClick"
           >
-            <i class="icon-[lucide--play]" />
+            <i aria-hidden="true" class="icon-[lucide--play]" />
             {{ t('menu.run') }}
           </Button>
         </div>
@@ -188,9 +208,10 @@ function handleDragDrop() {
       <section
         v-else
         v-coachmark="'app-run-button'"
-        data-testid="linear-run-button"
+        :data-testid="linearRunButtonTestId"
         class="border-t border-node-component-border p-4 pb-6"
       >
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div
           class="m-1 mb-2 text-node-component-slot-text"
           v-text="t('linearMode.runCount')"
@@ -211,9 +232,14 @@ function handleDragDrop() {
           variant="primary"
           class="mt-4 w-full text-sm"
           size="lg"
+          :aria-describedby="
+            showRunErrorWarning
+              ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+              : undefined
+          "
           @click="runButtonClick"
         >
-          <i class="icon-[lucide--play]" />
+          <i aria-hidden="true" class="icon-[lucide--play]" />
           {{ t('menu.run') }}
         </Button>
       </section>
