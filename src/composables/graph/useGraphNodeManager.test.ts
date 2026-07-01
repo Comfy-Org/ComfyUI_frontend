@@ -214,7 +214,11 @@ describe('Widget input link reactivity', () => {
 
     expect(valueState?.name).toBe('value')
     expect(valueState?.value).toBe('hello')
-    expect(renderState?.sourceWidgetName).toBe('prompt')
+    expect(renderState).toMatchObject({
+      hasLayoutSize: false,
+      isDOMWidget: false
+    })
+    expect(renderState).not.toHaveProperty('sourceWidgetName')
     expect(subgraphNode.inputs[0].widget?.name).toBe('value')
   })
 
@@ -401,12 +405,12 @@ describe('Nested promoted widget mapping', () => {
     expect(ids[0]).not.toBe(ids[1])
   })
 })
-describe('Promoted widget sourceExecutionId', () => {
+describe('Promoted widget render state', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('sets sourceExecutionId to the interior node execution ID for promoted widgets', () => {
+  it('registers plain render metadata for promoted widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'ckpt_input', type: '*' }]
     })
@@ -438,13 +442,15 @@ describe('Promoted widget sourceExecutionId', () => {
       widgetId(graph.id, subgraphNode.id, 'ckpt_input')
     )
 
-    expect(renderState?.sourceWidgetName).toBe('ckpt_name')
-    expect(renderState?.sourceExecutionId).toBe(
-      `${subgraphNode.id}:${interiorNode.id}`
-    )
+    expect(renderState).toMatchObject({
+      hasLayoutSize: false,
+      isDOMWidget: false
+    })
+    expect(renderState).not.toHaveProperty('sourceWidgetName')
+    expect(renderState).not.toHaveProperty('sourceExecutionId')
   })
 
-  it('does not set sourceExecutionId for non-promoted widgets', () => {
+  it('registers plain render metadata for non-promoted widgets', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addWidget('number', 'steps', 20, () => undefined, {})
@@ -459,7 +465,7 @@ describe('Promoted widget sourceExecutionId', () => {
     )
 
     expect(renderState).toBeDefined()
-    expect(renderState?.sourceExecutionId).toBeUndefined()
+    expect(renderState).not.toHaveProperty('sourceExecutionId')
   })
 })
 

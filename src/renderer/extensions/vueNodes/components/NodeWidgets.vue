@@ -84,7 +84,7 @@
 import { onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { WidgetId } from '@/types/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -98,10 +98,10 @@ import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
-  node?: LGraphNode | null
+  widgetIds?: readonly WidgetId[]
 }
 
-const { nodeData, node = null } = defineProps<NodeWidgetsProps>()
+const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -133,7 +133,7 @@ onErrorCaptured((error) => {
 const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
   useProcessedWidgets(
     () => nodeData,
-    () => node
+    () => widgetIds
   )
 
 // Tracks widget-row growth that the node-level RO can't see

@@ -4,19 +4,14 @@ import { reactive, ref } from 'vue'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type { SafeControlWidget } from '@/types/simplifiedWidget'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
 export interface WidgetRenderState {
   advanced?: boolean
-  controlWidget?: SafeControlWidget
   hasLayoutSize?: boolean
   isDOMWidget?: boolean
-  sourceExecutionId?: NodeExecutionId
-  sourceWidgetName?: string
   tooltip?: string
 }
 
@@ -119,6 +114,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     )
   }
 
+  function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
+    return [...getGraphWidgetStates(graphId).entries()]
+      .filter(([, state]) => state.nodeId === localNodeId)
+      .map(([id]) => id)
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
@@ -132,6 +133,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setValue,
     deleteWidget,
     getNodeWidgets,
+    getNodeWidgetIds,
     clearGraph
   }
 })

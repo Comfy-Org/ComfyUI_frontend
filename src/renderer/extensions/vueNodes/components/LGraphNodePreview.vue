@@ -20,9 +20,9 @@
       <NodeSlots :node-data="nodeData" />
 
       <NodeWidgets
-        v-if="previewNode.widgets?.length"
+        v-if="previewWidgetIds.length"
         :node-data="nodeData"
-        :node="previewNode"
+        :widget-ids="previewWidgetIds"
         class="pointer-events-none"
       />
     </div>
@@ -30,26 +30,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUnmounted } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import { LGraphNode, RenderShape } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import { RenderShape } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 
+let previewInstanceCounter = 0
+
+function nextPreviewGraphId() {
+  previewInstanceCounter += 1
+  return `preview-${previewInstanceCounter}`
+}
 const {
   nodeDef,
   position = 'absolute',
@@ -61,43 +67,8 @@ const {
 }>()
 
 const widgetStore = useWidgetStore()
-
-const previewWidgets = computed<IBaseWidget[]>(() =>
-  Object.entries(nodeDef.inputs || {})
-    .filter(([_, input]) => widgetStore.inputIsWidget(input))
-    .map(([name, input]) => {
-      const comboValues =
-        input.type === 'COMBO' && Array.isArray(input.options)
-          ? input.options
-          : undefined
-      const leadValue = widgetValues?.[name]
-      return {
-        name,
-        type: input.widgetType || input.type,
-        value:
-          input.default !== undefined
-            ? input.default
-            : (comboValues?.[0] ?? ''),
-        options: {
-          hidden: input.hidden,
-          advanced: input.advanced,
-          values:
-            leadValue && comboValues
-              ? [leadValue, ...comboValues.filter((o) => o !== leadValue)]
-              : comboValues
-        } satisfies IWidgetOptions,
-        y: 0
-      }
-    })
-)
-
-const previewNode = computed(() => {
-  const node = new LGraphNode(nodeDef.name)
-  node.id = nodeData.value.id
-  node.type = nodeDef.name
-  node.widgets = previewWidgets.value
-  return node
-})
+const widgetValueStore = useWidgetValueStore()
+const previewGraphId = nextPreviewGraphId()
 
 const nodeData = computed<VueNodeData>(() => {
   const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})
@@ -138,6 +109,47 @@ const nodeData = computed<VueNodeData>(() => {
     flags: {
       collapsed: false
     }
+  }
+})
+
+const previewWidgetIds = computed<WidgetId[]>(() =>
+  Object.entries(nodeDef.inputs || {})
+    .filter(([_, input]) => widgetStore.inputIsWidget(input))
+    .map(([name, input]) => {
+      const comboValues =
+        input.type === 'COMBO' && Array.isArray(input.options)
+          ? input.options
+          : undefined
+      const leadValue = widgetValues?.[name]
+      const id = widgetId(previewGraphId, nodeData.value.id, name)
+      const value =
+        input.default !== undefined ? input.default : (comboValues?.[0] ?? '')
+      const options = {
+        hidden: input.hidden,
+        advanced: input.advanced,
+        values:
+          leadValue && comboValues
+            ? [leadValue, ...comboValues.filter((o) => o !== leadValue)]
+            : comboValues
+      } satisfies IWidgetOptions
+      const state = widgetValueStore.registerWidget(id, {
+        type: input.widgetType || input.type,
+        value,
+        options
+      })
+      state.type = input.widgetType || input.type
+      state.value = value
+      state.options = options
+      widgetValueStore.registerWidgetRenderState(id, {
+        advanced: input.advanced
+      })
+      return id
+    })
+)
+
+onUnmounted(() => {
+  for (const id of previewWidgetIds.value) {
+    widgetValueStore.deleteWidget(id)
   }
 })
 </script>

@@ -11,6 +11,7 @@ import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetId } from '@/types/widgetId'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
@@ -19,6 +20,7 @@ import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.v
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -29,8 +31,8 @@ import { promptRenameWidget } from '@/utils/widgetUtil'
 interface WidgetEntry {
   key: string
   persistedHeight: number | undefined
-  node: LGraphNode
   nodeData: ReturnType<typeof nodeToNodeData>
+  widgetIds: readonly WidgetId[]
   action: { widget: IBaseWidget; node: LGraphNode }
 }
 
@@ -42,6 +44,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const widgetValueStore = useWidgetValueStore()
 const maskEditor = useMaskEditor()
 
 const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
@@ -54,22 +57,12 @@ provide(WidgetHeightKey, mobile ? 'h-10' : 'h-7')
 const resolvedInputs = useResolvedSelectedInputs()
 
 const mappedSelections = computed((): WidgetEntry[] => {
-  const nodeDataByNode = new Map<
-    LGraphNode,
-    ReturnType<typeof nodeToNodeData>
-  >()
-
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
     const { widgetId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
-    if (!nodeDataByNode.has(node)) {
-      nodeDataByNode.set(node, nodeToNodeData(node))
-    }
-    const fullNodeData = nodeDataByNode.get(node)!
-
-    if (widget.widgetId !== widgetId) return []
+    const fullNodeData = nodeToNodeData(node, widgetId)
     if (
       node.inputs?.some(
         (input) => input.widget?.name === widget.name && input.link != null
@@ -82,27 +75,20 @@ const mappedSelections = computed((): WidgetEntry[] => {
       {
         key: widgetId,
         persistedHeight: config?.height,
-        node: nodeWithWidget(node, widget),
         nodeData: fullNodeData,
+        widgetIds: [widgetId],
         action: { widget, node }
       }
     ]
   })
 })
 
-function nodeWithWidget(node: LGraphNode, widget: IBaseWidget): LGraphNode {
-  const renderNode = Object.create(node) as LGraphNode
-  Object.defineProperty(renderNode, 'widgets', {
-    get: () => [widget],
-    configurable: true
-  })
-  return renderNode
-}
-
-function getDropIndicator(node: LGraphNode) {
+function getDropIndicator(node: LGraphNode, id: WidgetId) {
   if (node.type !== 'LoadImage') return undefined
 
-  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
+  const stringValue = extractWidgetStringValue(
+    widgetValueStore.getWidget(id)?.value
+  )
 
   const { filename, subfolder, type } = stringValue
     ? parseImageWidgetValue(stringValue)
@@ -126,8 +112,8 @@ function getDropIndicator(node: LGraphNode) {
   }
 }
 
-function nodeToNodeData(node: LGraphNode) {
-  const dropIndicator = getDropIndicator(node)
+function nodeToNodeData(node: LGraphNode, id: WidgetId) {
+  const dropIndicator = getDropIndicator(node, id)
   const nodeData = extractVueNodeData(node)
 
   return {
@@ -154,7 +140,13 @@ defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
-    v-for="{ key, persistedHeight, node, nodeData, action } in mappedSelections"
+    v-for="{
+      key,
+      persistedHeight,
+      nodeData,
+      widgetIds,
+      action
+    } in mappedSelections"
     :key
     :class="
       cn(
@@ -241,7 +233,7 @@ defineExpose({ handleDragDrop })
       >
         <NodeWidgets
           :node-data
-          :node="node"
+          :widget-ids="widgetIds"
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
