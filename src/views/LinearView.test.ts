@@ -90,7 +90,6 @@ const baseStubs = {
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
   ExtensionSlot: leafStub('extension-slot'),
-  ErrorOverlay: leafStub('error-overlay'),
   SideToolbar: leafStub('side-toolbar'),
   TopbarBadges: leafStub('topbar-badges'),
   TopbarSubscribeButton: leafStub('topbar-subscribe-button'),
@@ -144,7 +143,6 @@ describe('LinearView', () => {
     expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('linear-header-progress-bar')).toBeInTheDocument()
     expect(screen.getByTestId('linear-preview')).toBeInTheDocument()
-    expect(screen.getByTestId('error-overlay')).toBeInTheDocument()
   })
 
   it('lays out left-to-right and shows the toolbar in app mode', () => {
