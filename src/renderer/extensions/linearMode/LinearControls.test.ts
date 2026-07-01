@@ -9,6 +9,7 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { toNodeId } from '@/types/nodeId'
 
 const billingMock = vi.hoisted(() => ({
   isActiveSubscription: true
@@ -91,7 +92,7 @@ function renderControls({
   })
   setActivePinia(pinia)
 
-  useAppModeStore().selectedOutputs = [1]
+  useAppModeStore().selectedOutputs = [toNodeId(1)]
   if (hasError) {
     useExecutionErrorStore().lastNodeErrors = nodeErrors
   }
