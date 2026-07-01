@@ -198,7 +198,7 @@ function handleDragDrop() {
               </Button>
             </template>
             <div
-              class="m-1 mb-2 text-node-component-slot-text"
+              class="m-1 mb-2 text-node-component-slot-text uppercase"
               v-text="t('linearMode.runCount')"
             />
             <ScrubableNumberInput
@@ -229,23 +229,21 @@ function handleDragDrop() {
           </Button>
         </div>
       </section>
-      <section
-        v-else
-        :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
-      >
+      <section v-else :data-testid="linearRunButtonTestId" class="p-4 pb-6">
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <div
-          class="m-1 mb-2 text-node-component-slot-text"
-          v-text="t('linearMode.runCount')"
-        />
-        <ScrubableNumberInput
-          v-model="batchCount"
-          :aria-label="t('linearMode.runCount')"
-          :min="1"
-          :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-          class="h-7 min-w-40"
-        />
+        <div class="mx-1 flex flex-wrap items-center justify-between gap-2">
+          <div
+            class="text-xs text-base-foreground uppercase"
+            v-text="t('linearMode.runCount')"
+          />
+          <ScrubableNumberInput
+            v-model="batchCount"
+            :aria-label="t('linearMode.runCount')"
+            :min="1"
+            :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+            class="h-7 min-w-40"
+          />
+        </div>
         <HoverCardRoot
           :open-delay="creditsBadges.length ? 0 : 150"
           :close-delay="100"
