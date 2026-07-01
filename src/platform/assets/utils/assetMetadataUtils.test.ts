@@ -420,6 +420,46 @@ describe('assetMetadataUtils', () => {
     })
   })
 
+  describe('unified asset response shape (BE-808 RFC)', () => {
+    // Cloud asset: `asset.name` is a content hash; `display_name` carries
+    // the user-facing label.
+    const cloudShape: AssetItem = {
+      ...mockAsset,
+      id: 'cloud-asset-id',
+      name: 'blake3:abc1234567890def.png',
+      hash: 'blake3:abc1234567890def.png',
+      display_name: 'sunset.png'
+    }
+
+    // OSS asset: `asset.name` is already the filename; `display_name` is
+    // nullable per BE-1045 spec — clients fall back to `asset.name`.
+    const ossShape: AssetItem = {
+      ...mockAsset,
+      id: 'oss-asset-id',
+      name: 'sunset.png',
+      hash: null,
+      display_name: undefined
+    }
+
+    it('renders the same label for the Cloud and OSS shapes via getAssetDisplayFilename', () => {
+      expect(getAssetDisplayFilename(cloudShape)).toBe('sunset.png')
+      expect(getAssetDisplayFilename(ossShape)).toBe('sunset.png')
+    })
+
+    it('renders the same label via getAssetCardTitle', () => {
+      expect(getAssetCardTitle(cloudShape)).toBe('sunset.png')
+      expect(getAssetCardTitle(ossShape)).toBe('sunset.png')
+    })
+
+    it('honours OSS-emitted display_name when present', () => {
+      const ossWithDisplayName: AssetItem = {
+        ...ossShape,
+        display_name: 'Curated Sunset'
+      }
+      expect(getAssetDisplayFilename(ossWithDisplayName)).toBe('Curated Sunset')
+    })
+  })
+
   describe('getAssetMetadataDimensions', () => {
     it('returns dimensions when width/height are positive integers', () => {
       const asset = { ...mockAsset, metadata: { width: 1024, height: 768 } }
