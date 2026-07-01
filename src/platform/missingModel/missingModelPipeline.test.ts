@@ -31,6 +31,8 @@ const { mockHandles } = vi.hoisted(() => {
       state,
       missingModelStore: {
         missingModelCandidates: null as MissingModelCandidate[] | null,
+        fileSizes: {} as Record<string, number>,
+        gatedRepoUrls: {} as Record<string, string>,
         createVerificationAbortController: vi.fn(() => new AbortController()),
         setFolderPaths: vi.fn(),
         setFileSize: vi.fn(),
@@ -175,6 +177,8 @@ describe('missingModelPipeline', () => {
     vi.clearAllMocks()
     mockHandles.state.enrichedCandidates = []
     mockHandles.missingModelStore.missingModelCandidates = null
+    mockHandles.missingModelStore.fileSizes = {}
+    mockHandles.missingModelStore.gatedRepoUrls = {}
     mockHandles.workspaceWorkflow.activeWorkflow = null
     mockHandles.missingModelStore.createVerificationAbortController.mockImplementation(
       () => new AbortController()
@@ -494,6 +498,56 @@ describe('missingModelPipeline', () => {
       ).toHaveBeenCalledWith(
         'https://huggingface.co/bfl/FLUX.1/resolve/main/downloadable.safetensors',
         'https://huggingface.co/bfl/FLUX.1'
+      )
+    })
+
+    it('skips metadata fetches for candidates with stored download metadata', async () => {
+      const sizedCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'sized.safetensors',
+        url: 'https://example.com/sized.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      const gatedCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'gated.safetensors',
+        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      const uncachedCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'uncached.safetensors',
+        url: 'https://example.com/uncached.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [
+        sizedCandidate,
+        gatedCandidate,
+        uncachedCandidate
+      ]
+      mockHandles.missingModelStore.fileSizes[sizedCandidate.url] = 1024
+      mockHandles.missingModelStore.gatedRepoUrls[gatedCandidate.url] =
+        'https://huggingface.co/bfl/FLUX.1'
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledOnce()
+      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
+        uncachedCandidate.url
       )
     })
 

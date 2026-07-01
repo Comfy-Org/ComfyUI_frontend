@@ -428,6 +428,17 @@ describe('MissingModelRow', () => {
     })
   })
 
+  it('does not prefetch metadata for non-downloadable rows', async () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url = 'https://example.invalid/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    await nextTick()
+
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+  })
+
   it('shows unknown category metadata for models without a directory', () => {
     renderRow(
       makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]),

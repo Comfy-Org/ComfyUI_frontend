@@ -350,7 +350,7 @@ onMounted(() => {
   if (isCloud) return
 
   const url = model.representative.url
-  if (url) {
+  if (url && downloadable.value) {
     void prefetchModelMetadata(url)
   }
 })
