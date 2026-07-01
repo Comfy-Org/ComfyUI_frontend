@@ -16,6 +16,7 @@ const {
   ticks,
   min = 0,
   max = 100,
+  modelValue,
   ...restProps
 } = defineProps<
   SliderRootProps & { class?: HTMLAttributes['class']; ticks?: number }
@@ -23,12 +24,22 @@ const {
 const emits = defineEmits<SliderRootEmits>()
 
 const forwarded = useForwardPropsEmits(
-  computed(() => ({ ...restProps, min, max })),
+  computed(() => ({ ...restProps, modelValue, min, max })),
   emits
 )
 
+// Single source of truth for tick geometry, shared by the on-track dots and the
+// optional #tick label slot so the two can never drift apart.
+function tickLeft(i: number): string {
+  return `calc(8px + ${(i - 1) / (ticks! - 1)} * (100% - 16px))`
+}
+
 function tickValue(i: number): number {
   return min + ((i - 1) / (ticks! - 1)) * (max - min)
+}
+
+function isTickActive(i: number): boolean {
+  return modelValue != null && tickValue(i) === modelValue[0]
 }
 
 function isTickFilled(
@@ -49,7 +60,7 @@ function isTickFilled(
     data-slot="slider"
     :class="
       cn(
-        'relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
+        'relative flex w-full touch-none items-center select-none data-disabled:opacity-50',
         className
       )
     "
@@ -66,19 +77,17 @@ function isTickFilled(
             ? 'bg-primary-warm-white'
             : 'bg-primary-warm-gray'
         "
-        :style="{
-          left: `calc(8px + ${(i - 1) / (ticks - 1)} * (100% - 16px))`
-        }"
+        :style="{ left: tickLeft(i) }"
       />
     </template>
 
     <SliderTrack
       data-slot="slider-track"
-      class="bg-primary-warm-gray relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5"
+      class="bg-primary-warm-gray relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full"
     >
       <SliderRange
         data-slot="slider-range"
-        class="bg-primary-warm-white absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
+        class="bg-primary-warm-white absolute data-[orientation=horizontal]:h-full"
       />
     </SliderTrack>
 
@@ -89,4 +98,15 @@ function isTickFilled(
       class="bg-primary-warm-white border-primary-comfy-yellow ring-primary-comfy-yellow/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
     />
   </SliderRoot>
+
+  <div v-if="$slots.tick && ticks && ticks > 1" class="relative mt-3 h-6">
+    <div
+      v-for="i in ticks"
+      :key="i"
+      class="absolute top-0 inline-flex -translate-x-1/2 items-center gap-1.5"
+      :style="{ left: tickLeft(i) }"
+    >
+      <slot name="tick" :index="i - 1" :active="isTickActive(i)" />
+    </div>
+  </div>
 </template>

@@ -113,23 +113,12 @@ const ctaHref = computed(() =>
             :max="teamCreditTiers.length - 1"
             :step="1"
             :ticks="teamCreditTiers.length"
-          />
-          <div class="relative mt-3 h-6">
-            <div
-              v-for="(tier, i) in teamCreditTiers"
-              :key="tier.credits"
-              :class="[
-                'absolute top-0 inline-flex items-center gap-1.5',
-                'max-lg:-translate-x-[calc(50%-8px)]'
-              ]"
-              :style="{
-                left: `calc(${i / (teamCreditTiers.length - 1)} * (100% - 16px))`
-              }"
-            >
+          >
+            <template #tick="{ index, active }">
               <ComponentIcon
                 class="hidden size-4 shrink-0 lg:block"
                 :class="
-                  i === teamCreditTierIndex[0]
+                  active
                     ? 'text-primary-comfy-orange'
                     : 'text-primary-warm-gray'
                 "
@@ -137,15 +126,13 @@ const ctaHref = computed(() =>
               <span
                 class="text-sm max-sm:text-[10px]"
                 :class="
-                  i === teamCreditTierIndex[0]
-                    ? 'text-primary-warm-white'
-                    : 'text-primary-warm-gray'
+                  active ? 'text-primary-warm-white' : 'text-primary-warm-gray'
                 "
               >
-                {{ formatTeamCreditsShort(tier.credits) }}
+                {{ formatTeamCreditsShort(teamCreditTiers[index].credits) }}
               </span>
-            </div>
-          </div>
+            </template>
+          </Slider>
         </div>
 
         <PricingCredits

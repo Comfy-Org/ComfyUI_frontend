@@ -14,7 +14,7 @@ defineProps<{
 </script>
 
 <template>
-  <section :id="id" class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
+  <section :id class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <!-- Left heading -->
       <div
