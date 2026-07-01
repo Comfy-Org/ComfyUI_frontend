@@ -7,7 +7,7 @@ export type BillingCycle = 'monthly' | 'yearly'
 
 export type PlanFeatureStatus = 'included' | 'excluded' | 'coming'
 
-export interface PlanFeature {
+interface PlanFeature {
   text: TranslationKey
   status?: PlanFeatureStatus
 }
