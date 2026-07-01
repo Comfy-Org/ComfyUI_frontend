@@ -2,6 +2,7 @@ import { computed, reactive, readonly } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
   remoteConfig
@@ -180,12 +181,28 @@ export function useFeatureFlags() {
      * Whether personal workspaces use the new consolidated (workspace-scoped)
      * billing flow. While false (default), personal workspaces stay on the
      * legacy per-user billing flow. Team workspaces are unaffected.
+     *
+     * This is a per-user flag that selects the billing backend, so it mirrors
+     * `teamWorkspacesEnabled`: it waits for authenticated config and falls back
+     * to the cached session value during the auth window to avoid routing to
+     * the wrong backend based on anonymous bootstrap config.
      */
     get consolidatedBillingEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
-        remoteConfig.value.consolidated_billing_enabled,
-        false
+      const override = getDevOverride<boolean>(
+        ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED
+      )
+      if (override !== undefined) return override
+
+      if (!isCloud) return false
+      if (!isAuthenticatedConfigLoaded.value)
+        return cachedConsolidatedBillingEnabled.value ?? false
+
+      return (
+        remoteConfig.value.consolidated_billing_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
+          false
+        )
       )
     },
     get signupTurnstileMode() {

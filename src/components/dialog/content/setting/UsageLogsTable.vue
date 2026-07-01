@@ -137,7 +137,14 @@ const tooltipContentMap = computed(() => {
   return map
 })
 
+// Billing routing can flip while a fetch is in flight (flag resolution,
+// workspace switch), so two loads against different backends may overlap. A
+// monotonic token lets only the latest load mutate state; superseded responses
+// are discarded to prevent the wrong audit stream from winning the race.
+let latestLoadToken = 0
+
 const loadEvents = async () => {
+  const loadToken = ++latestLoadToken
   loading.value = true
   error.value = null
 
@@ -149,6 +156,8 @@ const loadEvents = async () => {
     const response = shouldUseWorkspaceBilling.value
       ? await workspaceApi.getBillingEvents(params)
       : await customerEventService.getMyEvents(params)
+
+    if (loadToken !== latestLoadToken) return
 
     if (response) {
       if (response.events) {
@@ -177,10 +186,11 @@ const loadEvents = async () => {
       error.value = customerEventService.error.value || 'Failed to load events'
     }
   } catch (err) {
+    if (loadToken !== latestLoadToken) return
     error.value = err instanceof Error ? err.message : 'Unknown error'
     console.error('Error loading events:', err)
   } finally {
-    loading.value = false
+    if (loadToken === latestLoadToken) loading.value = false
   }
 }
 

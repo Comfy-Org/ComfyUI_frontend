@@ -181,10 +181,15 @@ function useBillingContextInternal(): BillingContext {
     error.value = null
   }
 
-  // type can flip after setup when the team-workspaces flag resolves from
-  // authenticated config, swapping the active backend; a fresh init is needed.
-  // The watch fires only when id or type actually changes, so any fire with a
-  // workspace selected warrants a reinit.
+  // A reinit (workspace switch or backend flip) can overlap an in-flight one.
+  // The token gates completion so only the latest attempt may mark the context
+  // ready, preventing a stale init from resolving into a false-ready state.
+  let latestInitToken = 0
+
+  // type can flip after setup when the team-workspaces or consolidated-billing
+  // flag resolves from authenticated config, swapping the active backend; a
+  // fresh init is needed. The watch fires only when id or type actually
+  // changes, so any fire with a workspace selected warrants a reinit.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
@@ -194,6 +199,10 @@ function useBillingContextInternal(): BillingContext {
       }
 
       isInitialized.value = false
+      // The active adapter is a cached singleton whose initialize() short-
+      // circuits on its own flag; clear it so it refetches for the new
+      // workspace/backend instead of serving the prior context's data.
+      activeContext.value.isInitialized.value = false
       try {
         await initialize()
       } catch (err) {
@@ -206,17 +215,20 @@ function useBillingContextInternal(): BillingContext {
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
 
+    const initToken = ++latestInitToken
     isLoading.value = true
     error.value = null
     try {
       await activeContext.value.initialize()
+      if (initToken !== latestInitToken) return
       isInitialized.value = true
     } catch (err) {
+      if (initToken !== latestInitToken) return
       error.value =
         err instanceof Error ? err.message : 'Failed to initialize billing'
       throw err
     } finally {
-      isLoading.value = false
+      if (initToken === latestInitToken) isLoading.value = false
     }
   }
 

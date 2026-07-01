@@ -219,6 +219,21 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(true)
     })
+
+    it('consolidatedBillingEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.setItem('ff:consolidated_billing_enabled', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+    })
+
+    it('consolidatedBillingEnabled is false off-cloud even without an override', () => {
+      vi.mocked(distributionTypes).isCloud = false
+
+      const { flags } = useFeatureFlags()
+      expect(flags.consolidatedBillingEnabled).toBe(false)
+    })
   })
 
   describe('signupTurnstileMode', () => {

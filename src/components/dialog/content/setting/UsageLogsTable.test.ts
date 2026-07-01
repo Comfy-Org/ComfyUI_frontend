@@ -358,6 +358,48 @@ describe('UsageLogsTable', () => {
       })
       expect(mockCustomerEventsService.getMyEvents).not.toHaveBeenCalled()
     })
+
+    it('discards a stale legacy response when routing flips mid-fetch', async () => {
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderWithAutoRefresh()
+
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      resolveLegacy(
+        makeEventsResponse([
+          {
+            event_id: 'legacy-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'LegacyAPI', model: 'legacy-model' },
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+      expect(screen.queryByText('LegacyAPI')).not.toBeInTheDocument()
+    })
   })
 
   describe('EventType integration', () => {
