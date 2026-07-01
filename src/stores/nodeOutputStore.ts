@@ -16,6 +16,7 @@ import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeId } from '@/types/nodeId'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
@@ -273,10 +274,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
 
-  function setNodePreviewsByNodeId(
-    nodeId: string | number,
-    previewImages: string[]
-  ) {
+  function setNodePreviewsByNodeId(nodeId: NodeId, previewImages: string[]) {
     setNodePreviewsByLocatorId(nodeIdToNodeLocatorId(nodeId), previewImages)
   }
 
@@ -346,8 +344,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return hadOutputs
   }
 
-  function removeNodeOutputs(nodeId: number | string) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
+  function removeNodeOutputs(nodeId: NodeId) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
     if (!nodeLocatorId) return false
     return removeOutputsByLocatorId(nodeLocatorId)
   }
@@ -408,13 +406,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function syncLegacyNodeImgs(
-    nodeId: string | number,
+    nodeId: NodeId,
     element: HTMLImageElement,
     activeIndex: number = 0
   ) {
     if (!LiteGraph.vueNodesMode) return
 
-    const node = resolveNode(Number(nodeId))
+    const node = resolveNode(nodeId)
     if (!node) return
 
     node.imgs = [element]

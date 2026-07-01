@@ -195,6 +195,19 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isFreeTier.value).toBe(false)
     })
 
+    it("keeps a 'scheduled' subscription on the active treatment", async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        subscription_status: 'scheduled' as const
+      })
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.isCancelled).toBe(false)
+      expect(billing.isActiveSubscription.value).toBe(true)
+    })
+
     it('reports free tier when status tier is FREE', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(freeStatus)
 

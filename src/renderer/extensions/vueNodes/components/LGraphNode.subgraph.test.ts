@@ -4,6 +4,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
 import { nextTick } from 'vue'
 
 import type {
@@ -76,7 +78,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     id: string,
     subgraphId?: string
   ): VueNodeData => ({
-    id,
+    id: toNodeId(id),
     title: 'Test Node',
     type: 'TestNode',
     mode: 0,

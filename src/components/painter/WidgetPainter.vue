@@ -289,11 +289,12 @@ import { computed, useTemplateRef } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { PAINTER_TOOLS, usePainter } from '@/composables/painter/usePainter'
+import type { NodeId } from '@/types/nodeId'
 import { toHexFromFormat } from '@/utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeId } = defineProps<{
-  nodeId: string
+  nodeId: NodeId
 }>()
 
 const modelValue = defineModel<string>({ default: '' })

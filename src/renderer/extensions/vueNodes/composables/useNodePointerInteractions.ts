@@ -10,7 +10,7 @@ import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -27,7 +27,7 @@ export function useNodePointerInteractions(
   const { nodeManager } = useVueNodeLifecycle()
 
   function isPinnedNode(nodeId: NodeId): boolean {
-    return nodeManager.value?.getNode(String(nodeId))?.flags?.pinned ?? false
+    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
   }
 
   const forwardMiddlePointerIfNeeded = (
