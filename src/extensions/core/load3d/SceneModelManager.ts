@@ -29,6 +29,7 @@ export class SceneModelManager implements ModelManagerInterface {
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial
   depthMaterial: THREE.MeshDepthMaterial
+  clayMaterial: THREE.MeshStandardMaterial
   originalFileName: string | null = null
   originalURL: string | null = null
   appliedTexture: THREE.Texture | null = null
@@ -98,8 +99,44 @@ export class SceneModelManager implements ModelManagerInterface {
       depthPacking: THREE.BasicDepthPacking,
       side: THREE.DoubleSide
     })
+    this.depthMaterial.onBeforeCompile = (shader) => {
+      shader.uniforms.cameraType = {
+        value: this.activeCamera instanceof THREE.OrthographicCamera ? 1.0 : 0.0
+      }
+
+      shader.fragmentShader = `
+                uniform float cameraType;
+                ${shader.fragmentShader}
+              `
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        /gl_FragColor\s*=\s*vec4\(\s*vec3\(\s*1.0\s*-\s*fragCoordZ\s*\)\s*,\s*opacity\s*\)\s*;/,
+        `
+                  float depth = 1.0 - fragCoordZ;
+                  if (cameraType > 0.5) {
+                    depth = pow(depth, 400.0);
+                  } else {
+                    depth = pow(depth, 0.6);
+                  }
+                  gl_FragColor = vec4(vec3(depth), opacity);
+                `
+      )
+    }
+    this.depthMaterial.customProgramCacheKey = () => {
+      return this.activeCamera instanceof THREE.OrthographicCamera
+        ? 'ortho'
+        : 'persp'
+    }
 
     this.standardMaterial = this.createSTLMaterial()
+
+    this.clayMaterial = new THREE.MeshStandardMaterial({
+      color: 0x888888,
+      metalness: 0.0,
+      roughness: 0.9,
+      flatShading: false,
+      side: THREE.DoubleSide
+    })
   }
 
   init(): void {}
@@ -110,6 +147,7 @@ export class SceneModelManager implements ModelManagerInterface {
     this.standardMaterial.dispose()
     this.wireframeMaterial.dispose()
     this.depthMaterial.dispose()
+    this.clayMaterial.dispose()
 
     if (this.appliedTexture) {
       this.appliedTexture.dispose()
@@ -212,68 +250,25 @@ export class SceneModelManager implements ModelManagerInterface {
             if (!this.originalMaterials.has(child)) {
               this.originalMaterials.set(child, child.material)
             }
-            const depthMat = new THREE.MeshDepthMaterial({
-              depthPacking: THREE.BasicDepthPacking,
-              side: THREE.DoubleSide
-            })
-
-            depthMat.onBeforeCompile = (shader) => {
-              shader.uniforms.cameraType = {
-                value:
-                  this.activeCamera instanceof THREE.OrthographicCamera
-                    ? 1.0
-                    : 0.0
-              }
-
-              shader.fragmentShader = `
-                uniform float cameraType;
-                ${shader.fragmentShader}
-              `
-
-              shader.fragmentShader = shader.fragmentShader.replace(
-                /gl_FragColor\s*=\s*vec4\(\s*vec3\(\s*1.0\s*-\s*fragCoordZ\s*\)\s*,\s*opacity\s*\)\s*;/,
-                `
-                  float depth = 1.0 - fragCoordZ;
-                  if (cameraType > 0.5) {
-                    depth = pow(depth, 400.0);
-                  } else {
-                    depth = pow(depth, 0.6);
-                  }
-                  gl_FragColor = vec4(vec3(depth), opacity);
-                `
-              )
-            }
-
-            depthMat.customProgramCacheKey = () => {
-              return this.activeCamera instanceof THREE.OrthographicCamera
-                ? 'ortho'
-                : 'persp'
-            }
-
-            child.material = depthMat
+            child.material = this.depthMaterial
             break
           case 'normal':
             if (!this.originalMaterials.has(child)) {
               this.originalMaterials.set(child, child.material)
             }
-            child.material = new THREE.MeshNormalMaterial({
-              flatShading: false,
-              side: THREE.DoubleSide,
-              normalScale: new THREE.Vector2(1, 1),
-              transparent: false,
-              opacity: 1.0
-            })
+            child.material = this.normalMaterial
             break
           case 'wireframe':
             if (!this.originalMaterials.has(child)) {
               this.originalMaterials.set(child, child.material)
             }
-            child.material = new THREE.MeshBasicMaterial({
-              color: 0xffffff,
-              wireframe: true,
-              transparent: false,
-              opacity: 1.0
-            })
+            child.material = this.wireframeMaterial
+            break
+          case 'clay':
+            if (!this.originalMaterials.has(child)) {
+              this.originalMaterials.set(child, child.material)
+            }
+            child.material = this.clayMaterial
             break
           case 'original':
           case 'pointCloud':
