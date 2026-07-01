@@ -176,13 +176,11 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
-  // Bumping the token invalidates any in-flight init and discarding the adapter
-  // instances forces a fresh fetch, so a stale backend response can never
-  // resolve into a ready state for the wrong workspace.
-  let latestInitToken = 0
-
+  // Discarding the adapter instances forces a fresh fetch and lets an in-flight
+  // init detect that it was superseded (its captured adapter is no longer the
+  // active one), so a stale response can't resolve into a ready state for the
+  // wrong workspace.
   function resetBillingState() {
-    latestInitToken += 1
     legacyBillingRef.value = null
     workspaceBillingRef.value = null
     isInitialized.value = false
@@ -211,20 +209,20 @@ function useBillingContextInternal(): BillingContext {
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
 
-    const initToken = ++latestInitToken
+    const adapter = activeContext.value
     isLoading.value = true
     error.value = null
     try {
-      await activeContext.value.initialize()
-      if (initToken !== latestInitToken) return
+      await adapter.initialize()
+      if (activeContext.value !== adapter) return
       isInitialized.value = true
     } catch (err) {
-      if (initToken !== latestInitToken) return
+      if (activeContext.value !== adapter) return
       error.value =
         err instanceof Error ? err.message : 'Failed to initialize billing'
       throw err
     } finally {
-      if (initToken === latestInitToken) isLoading.value = false
+      if (activeContext.value === adapter) isLoading.value = false
     }
   }
 
