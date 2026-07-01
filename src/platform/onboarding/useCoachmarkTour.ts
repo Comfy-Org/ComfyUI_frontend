@@ -15,8 +15,6 @@ const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 const START_DELAY_MS = 800
 const DEFER_TIMEOUT_MS = 8000
 
-type ForcedTour = EntryPath | 'any'
-
 /**
  * The onboarding tour state machine: decides which tour starts and when (auto-open
  * triggers, `?coach=` forcing, explicit requests), resolves which steps run, and
@@ -37,13 +35,13 @@ export function useCoachmarkTour() {
   let stepController: AbortController | null = null
 
   // Read in setup, before the auto-open triggers fire and before URL loaders
-  // strip the param. A known path force-starts that tour; `any` replays whichever
-  // tour auto-detects; any other value is ignored.
+  // strip the param. A known path force-starts that tour after a delay (see
+  // onMounted); `any` replays whichever tour the auto-open watcher detects.
+  // Either way the override is one-shot; anything else is ignored.
   const coachParam = new URLSearchParams(window.location.search).get('coach')
   const forcedEntry =
     coachParam !== null && isEntryPath(coachParam) ? coachParam : null
-  const forcedTour: ForcedTour | null =
-    forcedEntry ?? (coachParam === 'any' ? 'any' : null)
+  let replayAnyPending = coachParam === 'any'
 
   const step = computed<CoachStep | null>(
     () => steps.value[stepIdx.value] ?? null
@@ -104,7 +102,9 @@ export function useCoachmarkTour() {
       if (signal.aborted) return
       suspendFocusGuard.value = false
       // Abandon without the seen-flag, so a missed target isn't permanent.
+      // Point at the timed-out step first so telemetry reports its coachmark.
       if (!found) {
+        stepIdx.value = idx
         end('skipped', false)
         return
       }
@@ -164,10 +164,12 @@ export function useCoachmarkTour() {
   function startTour(entryPath: EntryPath, force = false) {
     // startTour is synchronous, so a concurrent trigger sees the first's steps.
     if (steps.value.length) return
-    const replay = force || forcedTour === 'any' || forcedTour === entryPath
+    const replay = force || replayAnyPending
     if (!replay && hasSeenTour(entryPath)) return
     const resolved = resolveSteps(TOURS[entryPath], targetMounted)
     if (!resolved.length) return
+    // Consume the one-shot ?coach= override so re-entry respects the seen-flag.
+    replayAnyPending = false
     steps.value = resolved
     activeTour = entryPath
     trackTour('started')
@@ -175,9 +177,13 @@ export function useCoachmarkTour() {
   }
 
   onMounted(() => {
-    // A known path force-starts after a delay; any other value waits for its trigger.
+    // A known path force-starts after a delay, past the seen-flag and separate
+    // from the auto-open watcher; any other value waits for its trigger.
     if (forcedEntry)
-      startTimer = setTimeout(() => startTour(forcedEntry), START_DELAY_MS)
+      startTimer = setTimeout(
+        () => startTour(forcedEntry, true),
+        START_DELAY_MS
+      )
   })
 
   // An explicit request (e.g. info button) replays the tour past its seen-flag.

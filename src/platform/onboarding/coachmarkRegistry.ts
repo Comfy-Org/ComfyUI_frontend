@@ -55,6 +55,8 @@ export function waitForTarget(
   timeoutMs: number
 ): Promise<boolean> {
   if (targetMounted(id)) return Promise.resolve(true)
+  // An already-aborted signal never fires 'abort', so resolve up front.
+  if (signal.aborted) return Promise.resolve(false)
   return new Promise((resolve) => {
     let done = false
     let frame = 0

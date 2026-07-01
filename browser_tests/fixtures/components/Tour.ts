@@ -38,9 +38,7 @@ export class OnboardingCoachmarks {
 
   /** The spotlight card while it is showing the given step number. */
   cardForStep(step: number): Locator {
-    return this.page
-      .getByRole('dialog')
-      .filter({ hasText: new RegExp(`Step ${step} of `) })
+    return this.card.filter({ hasText: new RegExp(`Step ${step} of `) })
   }
 
   /**

@@ -198,6 +198,15 @@ describe('useCoachmarkTour', () => {
     // The deferred target (inputs list) is never registered; exhaust the wait.
     await vi.advanceTimersByTimeAsync(8000)
     expect(settings.seen).not.toContain('appMode')
+
+    // The skipped event reports the timed-out step, not the prior landing.
+    const skipped = telemetry.track.mock.calls.find(
+      ([stage]) => stage === 'skipped'
+    )
+    expect(skipped?.[1]).toMatchObject({
+      step_index: 1,
+      coach_id: 'inputs-list'
+    })
   })
 
   it('ignores a second concurrent request while the first tour is resolving', async () => {
