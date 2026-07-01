@@ -29,4 +29,27 @@
     position: absolute;
     width: 100%;
   }
+
+  @keyframes highlight-animation {
+    0% {
+      background-color: transparent;
+      box-shadow: 0 0 0 6px transparent;
+      border-radius: 4px;
+    }
+    6%,
+    63% {
+      background-color: color-mix(in srgb, var(--fg-color) 25%, transparent);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--fg-color) 25%, transparent);
+      border-radius: 4px;
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: 0 0 0 6px transparent;
+      border-radius: 4px;
+    }
+  }
+
+  .animate-highlight {
+    animation: highlight-animation 0.9s ease-out;
+  }
 }

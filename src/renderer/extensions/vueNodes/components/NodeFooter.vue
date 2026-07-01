@@ -28,7 +28,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pr-0 pb-4 pl-5',
           enterRadiusClass
         )
       "
@@ -72,12 +72,17 @@
     </Button>
 
     <Button
+      as="div"
+      role="button"
+      tabindex="0"
       variant="textonly"
       data-testid="advanced-inputs-button"
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          'relative z-0 -ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          showAdvancedState ? 'pr-0' : 'pr-4',
+          'has-[.node-footer-settings-btn:hover]:hover:bg-node-component-header-surface',
           enterRadiusClass
         )
       "
@@ -85,20 +90,31 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{
+      <div
+        :class="
+          cn(
+            'flex size-full min-w-0 items-center justify-center gap-2',
+            showAdvancedState ? 'pr-10' : 'pr-0'
+          )
+        "
+      >
+        <span class="min-w-0 truncate">{{
           showAdvancedState
             ? t('rightSidePanel.hideAdvancedShort')
             : t('rightSidePanel.showAdvancedShort')
         }}</span>
         <i
-          :class="
-            showAdvancedState
-              ? 'icon-[lucide--chevron-up] size-4 shrink-0'
-              : 'icon-[lucide--settings-2] size-4 shrink-0'
-          "
+          v-if="!showAdvancedState"
+          class="icon-[lucide--settings-2] size-4 shrink-0"
         />
       </div>
+
+      <NodeFooterAdvancedSettingsButton
+        v-if="showAdvancedState"
+        class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex h-full w-10 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface pt-9 pb-4"
+        :class="cn(tabStyles, enterRadiusClass)"
+        :style="headerColorStyle"
+      />
     </Button>
   </div>
 
@@ -164,7 +180,8 @@
     :class="
       cn(
         footerWrapperBase,
-        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full',
+        'relative flex items-center'
       )
     "
   >
@@ -174,7 +191,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface',
+          'box-border w-full rounded-none bg-node-component-header-surface px-0',
           hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
           footerRadiusClass
         )
@@ -183,21 +200,40 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
+      <div
+        :class="
+          cn(
+            'flex size-full min-w-0 items-center justify-center gap-2',
+            showAdvancedState ? 'px-10' : 'px-4'
+          )
+        "
+      >
         <template v-if="showAdvancedState">
-          <span class="truncate">{{
+          <span class="min-w-0 truncate">{{
             t('rightSidePanel.hideAdvancedInputsButton')
           }}</span>
-          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
         </template>
         <template v-else>
-          <span class="truncate">{{
+          <span class="min-w-0 truncate">{{
             t('rightSidePanel.showAdvancedInputsButton')
           }}</span>
           <i class="icon-[lucide--settings-2] size-4 shrink-0" />
         </template>
       </div>
     </Button>
+
+    <NodeFooterAdvancedSettingsButton
+      v-if="showAdvancedState"
+      class="border-interface-stroke-muted/20 absolute inset-y-0 right-0 flex h-full w-10 shrink-0 items-center justify-center rounded-none border-l bg-node-component-header-surface"
+      :class="
+        cn(
+          tabStyles,
+          footerRadiusRightClass,
+          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4'
+        )
+      "
+      :style="headerColorStyle"
+    />
   </div>
 </template>
 
@@ -205,6 +241,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
+import NodeFooterAdvancedSettingsButton from './NodeFooterAdvancedSettingsButton.vue'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -258,19 +295,30 @@ const RADIUS_CLASS = {
   'rounded-b-17': 'rounded-b-[17px]',
   'rounded-b-20': 'rounded-b-[20px]',
   'rounded-br-17': 'rounded-br-[17px]',
-  'rounded-br-20': 'rounded-br-[20px]'
+  'rounded-br-20': 'rounded-br-[20px]',
+  'rounded-bl-17': 'rounded-bl-[17px]',
+  'rounded-bl-20': 'rounded-bl-[20px]'
 } as const
+
+const SHAPE_CORNER_PREFIX_MAP: Record<
+  string | number,
+  Record<'both' | 'right' | 'left', string>
+> = {
+  [RenderShape.BOX]: { both: '', right: '', left: '' },
+  [RenderShape.CARD]: { both: 'rounded-br', right: 'rounded-br', left: '' },
+  default: { both: 'rounded-b', right: 'rounded-br', left: 'rounded-bl' }
+}
 
 function getBottomRadius(
   nodeShape: RenderShape | undefined,
   size: '17px' | '20px',
-  corners: 'both' | 'right' = 'both'
+  corners: 'both' | 'right' | 'left' = 'both'
 ): string {
-  if (nodeShape === RenderShape.BOX) return ''
-  const prefix =
-    nodeShape === RenderShape.CARD || corners === 'right'
-      ? 'rounded-br'
-      : 'rounded-b'
+  const map =
+    SHAPE_CORNER_PREFIX_MAP[nodeShape ?? 'default'] ??
+    SHAPE_CORNER_PREFIX_MAP.default
+  const prefix = map[corners]
+  if (!prefix) return ''
   const key =
     `${prefix}-${size === '17px' ? '17' : '20'}` as keyof typeof RADIUS_CLASS
   return RADIUS_CLASS[key]
@@ -278,6 +326,10 @@ function getBottomRadius(
 
 const footerRadiusClass = computed(() =>
   getBottomRadius(shape, hasAnyError ? '20px' : '17px')
+)
+
+const footerRadiusRightClass = computed(() =>
+  getBottomRadius(shape, hasAnyError ? '20px' : '17px', 'right')
 )
 
 const errorRadiusClass = computed(() => getBottomRadius(shape, '20px'))

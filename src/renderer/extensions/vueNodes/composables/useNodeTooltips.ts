@@ -83,20 +83,61 @@ function setupGlobalTooltipHiding() {
 }
 
 /**
+ * Composable for creating the themed tooltip configuration object.
+ */
+export function useTooltipConfig() {
+  const settingStore = useSettingStore()
+
+  const tooltipsEnabled = computed(() =>
+    settingStore.get('Comfy.EnableTooltips')
+  )
+
+  const createTooltipConfig = (text: string): TooltipOptions => {
+    const tooltipDelay = settingStore.get('LiteGraph.Node.TooltipDelay')
+    const tooltipText = text || ''
+
+    return {
+      value: tooltipText,
+      showDelay: tooltipDelay as number,
+      hideDelay: 0, // Immediate hiding
+      disabled:
+        !tooltipsEnabled.value ||
+        !tooltipText ||
+        tooltipsTemporarilyDisabled.value, // this reactive value works but only on next mount,
+      // so if the tooltip is already visible changing this will not hide it
+      pt: {
+        text: {
+          class:
+            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-75 shadow-none'
+        },
+        arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
+          class: cn(
+            context.top && 'border-t-node-component-tooltip-border',
+            context.bottom && 'border-b-node-component-tooltip-border',
+            context.left && 'border-l-node-component-tooltip-border',
+            context.right && 'border-r-node-component-tooltip-border'
+          )
+        })
+      }
+    }
+  }
+
+  return {
+    tooltipsEnabled,
+    createTooltipConfig
+  }
+}
+
+/**
  * Composable for managing Vue node tooltips
  * Provides tooltip text for node headers, slots, and widgets
  */
 export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const nodeDefStore = useNodeDefStore()
-  const settingsStore = useSettingStore()
+  const { tooltipsEnabled, createTooltipConfig } = useTooltipConfig()
 
   // Setup global pointerdown listener once
   setupGlobalTooltipHiding()
-
-  // Check if tooltips are globally enabled
-  const tooltipsEnabled = computed(() =>
-    settingsStore.get('Comfy.EnableTooltips')
-  )
 
   // Get node definition for tooltip data
   const nodeDef = computed(() => nodeDefStore.nodeDefsByName[unref(nodeType)])
@@ -147,40 +188,6 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(widget.name)}.tooltip`
     const inputTooltip = nodeDef.value.inputs?.[widget.name]?.tooltip ?? ''
     return stRaw(key, inputTooltip)
-  }
-
-  /**
-   * Create tooltip configuration object for v-tooltip directive
-   * Components wrap this in computed() for reactivity
-   */
-  const createTooltipConfig = (text: string): TooltipOptions => {
-    const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
-    const tooltipText = text || ''
-
-    return {
-      value: tooltipText,
-      showDelay: tooltipDelay as number,
-      hideDelay: 0, // Immediate hiding
-      disabled:
-        !tooltipsEnabled.value ||
-        !tooltipText ||
-        tooltipsTemporarilyDisabled.value, // this reactive value works but only on next mount,
-      // so if the tooltip is already visible changing this will not hide it
-      pt: {
-        text: {
-          class:
-            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-75 shadow-none'
-        },
-        arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
-          class: cn(
-            context.top && 'border-t-node-component-tooltip-border',
-            context.bottom && 'border-b-node-component-tooltip-border',
-            context.left && 'border-l-node-component-tooltip-border',
-            context.right && 'border-r-node-component-tooltip-border'
-          )
-        })
-      }
-    }
   }
 
   return {

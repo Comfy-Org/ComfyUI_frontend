@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, readonly, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -81,6 +81,20 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     focusedSection.value = null
   }
 
+  const highlightGlobalSetting = ref<string | null>(null)
+
+  function triggerHighlight(settingName: string) {
+    highlightGlobalSetting.value = settingName
+  }
+
+  function consumeHighlight(settingName: string): boolean {
+    if (highlightGlobalSetting.value === settingName) {
+      highlightGlobalSetting.value = null
+      return true
+    }
+    return false
+  }
+
   return {
     isOpen,
     activeTab,
@@ -88,10 +102,13 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     focusedSection,
     focusedErrorNodeId,
     searchQuery,
+    highlightGlobalSetting: readonly(highlightGlobalSetting),
     openPanel,
     closePanel,
     togglePanel,
     focusSection,
-    clearFocusedSection
+    clearFocusedSection,
+    triggerHighlight,
+    consumeHighlight
   }
 })

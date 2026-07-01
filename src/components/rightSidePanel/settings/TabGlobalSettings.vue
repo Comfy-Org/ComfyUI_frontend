@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -18,9 +18,29 @@ import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import FieldSwitch from './FieldSwitch.vue'
 import LayoutField from './LayoutField.vue'
 
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const settingsDialog = useSettingsDialog()
+const rightSidePanelStore = useRightSidePanelStore()
+
+const isHighlightingAdvanced = ref(false)
+
+watch(
+  () => rightSidePanelStore.highlightGlobalSetting,
+  (newVal) => {
+    if (
+      newVal &&
+      rightSidePanelStore.consumeHighlight(
+        'Comfy.Node.AlwaysShowAdvancedWidgets'
+      )
+    ) {
+      isHighlightingAdvanced.value = true
+    }
+  },
+  { immediate: true }
+)
 
 // NODES settings
 const showAdvancedParameters = computed({
@@ -106,8 +126,11 @@ function openFullSettings() {
       <div class="space-y-4 px-4 py-3">
         <FieldSwitch
           v-model="showAdvancedParameters"
+          data-testid="advanced-widgets-switch"
           :label="t('rightSidePanel.globalSettings.showAdvanced')"
           :tooltip="t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')"
+          :highlighted="isHighlightingAdvanced"
+          @animationend="isHighlightingAdvanced = false"
         />
         <FieldSwitch
           v-model="showToolbox"

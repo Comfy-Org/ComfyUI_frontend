@@ -3822,6 +3822,7 @@
     "parameters": "Parameters",
     "nodes": "Nodes",
     "info": "Info",
+    "advancedWidgetSettings": "Advanced widget settings",
     "infoFor": "Info for {item}",
     "color": "Node color",
     "pinned": "Pinned",
