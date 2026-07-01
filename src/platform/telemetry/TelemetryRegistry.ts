@@ -18,10 +18,12 @@ import type {
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  ResubscribeClickMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -97,6 +99,19 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackMonthlySubscriptionCancelled(): void {
     this.dispatch((provider) => provider.trackMonthlySubscriptionCancelled?.())
+  }
+
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackSubscriptionCancellation?.(event, metadata)
+    )
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.dispatch((provider) => provider.trackResubscribeClicked?.(metadata))
   }
 
   trackAddApiCreditButtonClicked(): void {

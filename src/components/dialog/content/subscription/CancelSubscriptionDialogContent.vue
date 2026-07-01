@@ -45,11 +45,13 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
@@ -60,9 +62,34 @@ const props = defineProps<{
 const { t } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
-const { cancelSubscription, fetchStatus, subscription } = useBillingContext()
+const { cancelSubscription, fetchStatus, subscription, tier } =
+  useBillingContext()
+const telemetry = useTelemetry()
 
 const isLoading = ref(false)
+
+function cancellationMetadata(): SubscriptionCancellationMetadata {
+  const endDate = props.cancelAt ?? subscription.value?.endDate
+  return {
+    current_tier: tier.value?.toLowerCase(),
+    ...(subscription.value?.duration
+      ? {
+          cycle:
+            subscription.value.duration === 'ANNUAL'
+              ? ('yearly' as const)
+              : ('monthly' as const)
+        }
+      : {}),
+    ...(endDate ? { end_date: endDate } : {})
+  }
+}
+
+onMounted(() => {
+  telemetry?.trackSubscriptionCancellation(
+    'flow_opened',
+    cancellationMetadata()
+  )
+})
 
 const formattedEndDate = computed(() => {
   const date = parseIsoDateSafe(props.cancelAt ?? subscription.value?.endDate)
@@ -80,10 +107,12 @@ const description = computed(() =>
 
 function onClose() {
   if (isLoading.value) return
+  telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
 async function onConfirmCancel() {
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {
     await cancelSubscription()
@@ -95,6 +124,10 @@ async function onConfirmCancel() {
       life: 5000
     })
   } catch (error) {
+    telemetry?.trackSubscriptionCancellation('failed', {
+      ...cancellationMetadata(),
+      error_message: error instanceof Error ? error.message : String(error)
+    })
     toast.add({
       severity: 'error',
       summary: t('subscription.cancelDialog.failed'),

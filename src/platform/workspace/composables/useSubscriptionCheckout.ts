@@ -298,6 +298,7 @@ export function useSubscriptionCheckout(emit: {
   }
 
   async function handleResubscribe() {
+    telemetry?.trackResubscribeClicked({ source: 'pricing_dialog' })
     isResubscribing.value = true
     try {
       await resubscribe()

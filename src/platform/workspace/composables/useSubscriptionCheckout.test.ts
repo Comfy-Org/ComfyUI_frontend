@@ -118,8 +118,13 @@ vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
+const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackMonthlySubscriptionSucceeded: vi.fn() })
+  useTelemetry: () => ({
+    trackMonthlySubscriptionSucceeded: vi.fn(),
+    trackResubscribeClicked: mockTrackResubscribeClicked
+  })
 }))
 
 vi.mock('vue-i18n', async (importOriginal) => {
@@ -771,6 +776,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockResubscribe).toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', true)
+      expect(mockTrackResubscribeClicked).toHaveBeenCalledWith({
+        source: 'pricing_dialog'
+      })
     })
 
     it('shows error toast on failure', async () => {

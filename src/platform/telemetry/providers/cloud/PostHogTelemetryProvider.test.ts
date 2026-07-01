@@ -313,6 +313,40 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('maps cancellation stages to their events', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSubscriptionCancellation('flow_opened', {
+        current_tier: 'standard'
+      })
+      provider.trackSubscriptionCancellation('failed', {
+        current_tier: 'standard',
+        error_message: 'timed out'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED,
+        { current_tier: 'standard' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED,
+        { current_tier: 'standard', error_message: 'timed out' }
+      )
+    })
+
+    it('captures resubscribe clicks with their source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackResubscribeClicked({ source: 'settings_billing_panel' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED,
+        { source: 'settings_billing_panel' }
+      )
+    })
+
     it('captures share attribution events', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
