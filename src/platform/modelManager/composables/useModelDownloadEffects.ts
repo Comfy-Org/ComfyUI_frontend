@@ -32,7 +32,14 @@ export function useModelDownloadEffects() {
         }
       }
 
-      void useMissingModelStore().refreshMissingModels()
+      try {
+        await useMissingModelStore().refreshMissingModels()
+      } catch (error) {
+        console.warn(
+          '[ModelManager] Failed to re-scan missing models after download',
+          error
+        )
+      }
     }
   )
 }

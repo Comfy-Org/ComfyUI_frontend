@@ -6,7 +6,9 @@ import { DownloadApiError } from '../types'
 import {
   cancelDownload,
   checkAvailability,
+  clearDownloads,
   deleteCredential,
+  deleteDownload,
   enqueueDownload,
   listCredentials,
   listDownloads,
@@ -164,6 +166,29 @@ describe('modelDownloadApi', () => {
       expect(fetchApi).toHaveBeenCalledWith(
         '/download/d1/priority',
         expect.objectContaining({ body: JSON.stringify({ priority: 5 }) })
+      )
+    })
+
+    it('sends a DELETE to the download route', async () => {
+      fetchApi.mockResolvedValue(jsonResponse(200, { deleted: true }))
+
+      await deleteDownload('d1')
+
+      expect(fetchApi).toHaveBeenCalledWith(
+        '/download/d1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('posts to the clear route and returns the deleted count', async () => {
+      fetchApi.mockResolvedValue(jsonResponse(200, { deleted: 3 }))
+
+      const result = await clearDownloads()
+
+      expect(result).toBe(3)
+      expect(fetchApi).toHaveBeenCalledWith(
+        '/download/clear',
+        expect.objectContaining({ method: 'POST' })
       )
     })
   })

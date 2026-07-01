@@ -85,9 +85,7 @@ function modelDownloaderPanel(comfyPage: ComfyPage) {
 async function openModelDownloaderTab(comfyPage: ComfyPage) {
   await modelDownloaderTabButton(comfyPage).click()
   const panel = modelDownloaderPanel(comfyPage)
-  await expect(
-    panel.getByText('Model Downloader', { exact: true })
-  ).toBeVisible()
+  await expect(panel.getByText('Downloads', { exact: true })).toBeVisible()
   // Toolbar buttons are only interactive while the tab panel is hovered
   // (`group-hover/sidebar-tab`), so keep the cursor over it for later clicks.
   await panel.hover()

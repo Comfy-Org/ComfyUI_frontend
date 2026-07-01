@@ -20,6 +20,7 @@ import type {
   EnqueueRequest,
   EnqueueResponse
 } from '../types'
+import { directoryOf } from '../utils/modelId'
 
 const ACTIVE_STATES: ReadonlySet<DownloadState> = new Set([
   'queued',
@@ -69,16 +70,11 @@ function optimisticRow(
   }
 }
 
-interface CompletedDownload {
+export interface CompletedDownload {
   downloadId: string
   modelId: string
   directory: string
   timestamp: number
-}
-
-function directoryOf(modelId: string): string {
-  const slash = modelId.indexOf('/')
-  return slash === -1 ? '' : modelId.slice(0, slash)
 }
 
 export const useModelDownloadStore = defineStore('modelDownload', () => {
@@ -181,8 +177,9 @@ export const useModelDownloadStore = defineStore('modelDownload', () => {
   }
 
   async function clearHistory() {
+    const clearedIds = historyDownloads.value.map((d) => d.download_id)
     await clearDownloads()
-    for (const id of historyDownloads.value.map((d) => d.download_id)) {
+    for (const id of clearedIds) {
       downloads.value.delete(id)
     }
   }

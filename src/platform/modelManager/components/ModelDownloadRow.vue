@@ -125,6 +125,7 @@ import { formatSize } from '@/utils/formatUtil'
 import { useModelDownloadActions } from '../composables/useModelDownloadActions'
 import { downloadProgressFraction } from '../stores/modelDownloadStore'
 import type { DownloadStatus } from '../types'
+import { directoryOf, filenameOf } from '../utils/modelId'
 
 const { download } = defineProps<{ download: DownloadStatus }>()
 
@@ -138,14 +139,8 @@ const {
   progressPercentStyle
 } = useProgressBarBackground()
 
-const directory = computed(() => {
-  const slash = download.model_id.indexOf('/')
-  return slash === -1 ? '' : download.model_id.slice(0, slash)
-})
-const filename = computed(() => {
-  const slash = download.model_id.indexOf('/')
-  return slash === -1 ? download.model_id : download.model_id.slice(slash + 1)
-})
+const directory = computed(() => directoryOf(download.model_id))
+const filename = computed(() => filenameOf(download.model_id))
 
 const host = computed(() => {
   try {
@@ -205,8 +200,13 @@ const metaLine = computed(() => {
 
 function formatEta(seconds: number): string {
   const total = Math.max(0, Math.round(seconds))
-  const minutes = Math.floor(total / 60)
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
   const secs = total % 60
-  return `${minutes}:${secs.toString().padStart(2, '0')}`
+  const paddedSecs = secs.toString().padStart(2, '0')
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${paddedSecs}`
+  }
+  return `${minutes}:${paddedSecs}`
 }
 </script>

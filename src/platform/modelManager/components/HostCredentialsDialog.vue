@@ -237,7 +237,8 @@ const canSubmit = computed(
   () =>
     !!form.host.trim() &&
     !!form.secret &&
-    (form.auth_scheme !== 'query' || !!form.query_param.trim())
+    (form.auth_scheme !== 'query' || !!form.query_param.trim()) &&
+    (form.auth_scheme !== 'header' || !!form.header_name.trim())
 )
 
 async function onOpen() {

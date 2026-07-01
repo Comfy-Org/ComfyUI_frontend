@@ -1,14 +1,8 @@
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CompletedDownload } from '../stores/modelDownloadStore'
 import { useModelDownloadEffects } from './useModelDownloadEffects'
-
-interface CompletedDownload {
-  downloadId: string
-  modelId: string
-  directory: string
-  timestamp: number
-}
 
 const mockLastCompletedDownload = ref<CompletedDownload | null>(null)
 const mockRefreshModelFolder = vi.fn()
