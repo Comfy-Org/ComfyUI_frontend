@@ -62,9 +62,11 @@ export function useModelDownloadActions() {
     const dialog = showConfirmDialog({
       headerProps: { title: t('modelManager.cancelConfirmTitle') },
       props: {
-        promptText: t('modelManager.cancelConfirmMessage', {
-          name: download.model_id
-        })
+        promptText: t(
+          'modelManager.cancelConfirmMessage',
+          { name: download.model_id },
+          { escapeParameter: false }
+        )
       },
       footerProps: {
         confirmText: t('modelManager.cancelConfirm'),
