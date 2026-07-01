@@ -51,7 +51,9 @@
           />
         </div>
 
-        <label class="flex items-center gap-2 text-xs text-muted-foreground">
+        <label
+          class="flex w-fit items-center gap-2 text-xs text-muted-foreground"
+        >
           <input v-model="allowAnyExtension" type="checkbox" class="size-4" />
           {{ $t('modelManager.allowAnyExtension') }}
         </label>
