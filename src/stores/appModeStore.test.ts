@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -56,9 +56,13 @@ vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
   resolveNode: mockResolveNode
 }))
 
+const mockCanvas = vi.hoisted(() => ({
+  state: undefined as { readOnly: boolean } | undefined
+}))
+
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    getCanvas: () => ({ read_only: false })
+    getCanvas: () => ({ state: mockCanvas.state })
   })
 }))
 
@@ -162,6 +166,7 @@ describe('appModeStore', () => {
     ChangeTracker.isLoadingGraph = false
     mockResolveNode.mockReturnValue(undefined)
     mockSettings.reset()
+    mockCanvas.state = undefined
     vi.mocked(app.rootGraph).nodes = [{ id: toNodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
@@ -365,6 +370,83 @@ describe('appModeStore', () => {
       expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
     })
 
+    it('keeps canonical entity ids when the node still exists', () => {
+      const node1 = nodeWithWidgets(1, [])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+
+      store.loadSelections({
+        inputs: [[entityPrompt, 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
+    })
+
+    it('drops canonical entity ids when their node is gone', () => {
+      vi.mocked(app.rootGraph).nodes = []
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+
+      store.loadSelections({
+        inputs: [[entityPrompt, 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([])
+    })
+
+    it('drops locator inputs when the widget does not resolve', () => {
+      const hostLocator = `${rootGraphId}:5`
+      const hostNode = fromAny<LGraphNode, unknown>({
+        id: 5,
+        isSubgraphNode: () => false,
+        widgets: [{ name: 'other' }]
+      })
+      vi.mocked(app.rootGraph).nodes = [hostNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(5) ? hostNode : null
+      )
+
+      store.loadSelections({
+        inputs: [[hostLocator, 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([])
+    })
+
+    it('drops malformed legacy input ids', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).nodes = []
+
+      store.loadSelections({
+        inputs: [[fromAny<SerializedNodeId, unknown>(null), 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('legacy selectedInput tuple'),
+        expect.objectContaining({ storedId: null, widgetName: 'prompt' })
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('drops direct node inputs when the widget is missing', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const node1 = nodeWithWidgets(1, [])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+
+      store.loadSelections({
+        inputs: [[1, 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
     it('drops legacy entries whose widget no longer exists', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
@@ -397,6 +479,32 @@ describe('appModeStore', () => {
       store.loadSelections({ outputs: [toNodeId(1), toNodeId(99)] })
 
       expect(store.selectedOutputs).toEqual([toNodeId(1)])
+    })
+
+    it('drops malformed output ids on load', () => {
+      store.loadSelections({
+        outputs: [fromAny<SerializedNodeId, unknown>('')]
+      })
+
+      expect(store.selectedOutputs).toEqual([])
+    })
+
+    it('drops legacy subgraph input slots without widget ids', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
+        id: 5,
+        inputs: [{ name: 'Prompt' }]
+      })
+      vi.mocked(app.rootGraph).nodes = [hostNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+
+      store.loadSelections({
+        inputs: [[1, 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
     })
 
     it('reloads selections on configured event', async () => {
@@ -481,7 +589,7 @@ describe('appModeStore', () => {
         expect(
           store.pruneLinearData({
             inputs: [[1, 'seed']],
-            outputs: [toNodeId(1)]
+            outputs: [toNodeId(1), fromAny<SerializedNodeId, unknown>('')]
           })
         ).toEqual({
           inputs: [[1, 'seed']],
@@ -641,6 +749,17 @@ describe('appModeStore', () => {
       expect(originalRootGraph.extra.linearData).toEqual(dataBefore)
     })
 
+    it('does not write while graph loading is in progress', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      ChangeTracker.isLoadingGraph = true
+      await nextTick()
+
+      store.selectedOutputs.push(toNodeId(1))
+      await nextTick()
+
+      expect(app.rootGraph.extra.linearData).toBeUndefined()
+    })
+
     it('calls captureCanvasState when input is selected', async () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
@@ -755,6 +874,24 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs).toEqual([[promptEntity, 'prompt']])
     })
+
+    it('ignores widgets without ids', () => {
+      store.selectedInputs.push(['g:1:prompt' as WidgetId, 'prompt'])
+
+      store.removeSelectedInput(fromAny<IBaseWidget, unknown>({}))
+
+      expect(store.selectedInputs).toEqual([['g:1:prompt', 'prompt']])
+    })
+
+    it('ignores missing input ids', () => {
+      store.selectedInputs.push(['g:1:prompt' as WidgetId, 'prompt'])
+
+      store.removeSelectedInput(
+        fromAny<IBaseWidget, unknown>({ widgetId: 'g:2:prompt' })
+      )
+
+      expect(store.selectedInputs).toEqual([['g:1:prompt', 'prompt']])
+    })
   })
 
   describe('autoEnableVueNodes', () => {
@@ -818,6 +955,47 @@ describe('appModeStore', () => {
         'Comfy.VueNodes.Enabled',
         expect.anything()
       )
+    })
+
+    it('does not enable Vue nodes after leaving select mode', async () => {
+      mockSettings.store['Comfy.VueNodes.Enabled'] = false
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+      await nextTick()
+      mockSettings.set.mockClear()
+      store.exitBuilder()
+      await nextTick()
+
+      expect(mockSettings.set).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('read only canvas sync', () => {
+    it('keeps canvas read-only while in select mode', async () => {
+      mockCanvas.state = reactive({ readOnly: false })
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+      await nextTick()
+      mockCanvas.state.readOnly = false
+      await nextTick()
+
+      expect(mockCanvas.state.readOnly).toBe(true)
+    })
+
+    it('stops enforcing read-only after leaving select mode', async () => {
+      mockCanvas.state = reactive({ readOnly: false })
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+      await nextTick()
+      store.exitBuilder()
+      await nextTick()
+      mockCanvas.state.readOnly = false
+      await nextTick()
+
+      expect(mockCanvas.state.readOnly).toBe(false)
     })
   })
 
@@ -905,6 +1083,121 @@ describe('appModeStore', () => {
       expect(result.inputs).toEqual([
         [rootEntityId, sourceWidgetName, { height: 120 }]
       ])
+    })
+
+    it('drops direct root-node widgets that cannot produce an entity id', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const sourceNodeId = 42
+      const sourceWidgetName = 'text'
+      const rootNode = fromAny<LGraphNode, unknown>({
+        id: sourceNodeId,
+        widgets: [{ name: sourceWidgetName }]
+      })
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [rootNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+        (id: SerializedNodeId | null | undefined) =>
+          id == sourceNodeId ? rootNode : null
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('legacy selectedInput tuple'),
+        expect.objectContaining({
+          storedId: sourceNodeId,
+          widgetName: sourceWidgetName
+        })
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('drops promoted inputs whose source target no longer matches', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const subgraphInputName = 'Prompt'
+      const sourceWidgetName = 'text'
+
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
+      })
+      const interior = new LGraphNodeClass('Interior')
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+
+      const host = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = host.graph as LGraph
+      rootGraph.add(host)
+      host._internalConfigureAfterSlots()
+
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        rootGraph.getNodeById(id)
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[interior.id, 'other-widget', { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('drops legacy inputs when multiple promoted inputs match', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const subgraphInputName = 'Prompt'
+      const sourceWidgetName = 'text'
+
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
+      })
+      const interior = new LGraphNodeClass('Interior')
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+
+      const firstHost = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = firstHost.graph as LGraph
+      const secondHost = createTestSubgraphNode(subgraph, {
+        id: 6,
+        parentGraph: rootGraph
+      })
+      rootGraph.add(firstHost)
+      rootGraph.add(secondHost)
+      firstHost._internalConfigureAfterSlots()
+      secondHost._internalConfigureAfterSlots()
+
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        rootGraph.getNodeById(id)
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ambiguous legacy selectedInput tuple'),
+        expect.objectContaining({
+          storedId: interior.id,
+          widgetName: sourceWidgetName
+        })
+      )
+      warnSpy.mockRestore()
     })
 
     it('warns and drops a tuple whose target widget no longer resolves', () => {
