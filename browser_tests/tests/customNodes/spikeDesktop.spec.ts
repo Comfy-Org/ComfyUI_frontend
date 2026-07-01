@@ -7,13 +7,32 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-const defaultWorkflow = JSON.parse(
-  readFileSync(resolve(assetPath('default.json')), 'utf-8')
+// Core-only, model-free workflow: the bundled default template references
+// model files a scoped test backend does not have, which rightly trips the
+// error surfaces this suite asserts are clean.
+const smokeWorkflow = JSON.parse(
+  readFileSync(resolve(assetPath('customNodes/core_smoke.json')), 'utf-8')
 ) as ComfyWorkflowJSON
 
-test.describe('smoke: default workflow', () => {
+test.use({
+  initialSettings: {
+    'Comfy.TutorialCompleted': false,
+    'Comfy.userId': 'default',
+    'Comfy.RightSidePanel.ShowErrorsTab': true
+  }
+})
+
+test.beforeEach(async ({ comfyPage }) => {
+  const templates = comfyPage.page.getByTestId('template-workflows-content')
+  await templates.waitFor({ state: 'visible' })
+  await comfyPage.page.keyboard.press('Escape')
+  await templates.waitFor({ state: 'hidden' })
+})
+
+test.describe('smoke: core workflow', () => {
   test('loads without console errors in both renderers', async ({
     comfyPage
   }) => {
@@ -23,7 +42,7 @@ test.describe('smoke: default workflow', () => {
         'Comfy.VueNodes.Enabled',
         vueNodesEnabled
       )
-      await comfyPage.workflow.loadGraphData(defaultWorkflow)
+      await comfyPage.workflow.loadGraphData(smokeWorkflow)
       await comfyPage.nextFrame()
       consoleErrors.stop()
 
@@ -32,6 +51,13 @@ test.describe('smoke: default workflow', () => {
         consoleErrors.errors,
         `console errors (VueNodes=${vueNodesEnabled})`
       ).toEqual([])
+      for (const [surface, locator] of Object.entries(
+        errorSurfaces(comfyPage.page)
+      ))
+        await expect(
+          locator,
+          `${surface} (VueNodes=${vueNodesEnabled})`
+        ).toHaveCount(0)
     }
   })
 })

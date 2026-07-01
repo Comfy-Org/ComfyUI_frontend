@@ -13,10 +13,46 @@ import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 import { expectedNodesPresent } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const target = new LocalDesktopTarget()
 const OBJECT_INFO_SANITY_FLOOR = 50
+
+// Boot every session with a blank graph (loadBlankWorkflow) instead of the
+// bundled default template, whose model references error on the model-less
+// harness backend and would trip the zero-visible-errors invariant.
+// Comfy.userId must be 'default': this harness backend runs single-user
+// server storage, so the browser session always reads users/default/ - the
+// devtools set_settings endpoint must write there or no pre-boot setting
+// (including this one) ever reaches the session.
+test.use({
+  initialSettings: {
+    'Comfy.TutorialCompleted': false,
+    'Comfy.userId': 'default',
+    // The shared fixture disables the errors tab to hide missing-model
+    // indicators in unrelated suites. This suite exists to SEE errors -
+    // keep every error surface live so the invariant means something.
+    'Comfy.RightSidePanel.ShowErrorsTab': true
+  }
+})
+
+// The tutorial path auto-opens the templates browser over the blank graph.
+// Dismiss it deterministically so no window ever shows unexpected UI.
+test.beforeEach(async ({ comfyPage }) => {
+  const templates = comfyPage.page.getByTestId('template-workflows-content')
+  await templates.waitFor({ state: 'visible' })
+  await comfyPage.page.keyboard.press('Escape')
+  await templates.waitFor({ state: 'hidden' })
+})
+
+async function expectNoVisibleErrors(
+  page: Page,
+  context: string
+): Promise<void> {
+  for (const [surface, locator] of Object.entries(errorSurfaces(page)))
+    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
+}
 
 function readWorkflow(relativePath: string): ComfyWorkflowJSON {
   return JSON.parse(
@@ -57,6 +93,7 @@ for (const entry of loadManifest()) {
         missing.length > 0,
         `${entry.pack} not installed on this backend (missing: ${missing.join(', ')})`
       )
+      await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
       for (const vueNodesEnabled of [false, true]) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
@@ -87,6 +124,10 @@ for (const entry of loadManifest()) {
           consoleErrors.errors,
           `console errors with VueNodes=${vueNodesEnabled}`
         ).toEqual([])
+        await expectNoVisibleErrors(
+          comfyPage.page,
+          `after VueNodes=${vueNodesEnabled} pass`
+        )
       }
     })
 
@@ -103,6 +144,7 @@ for (const entry of loadManifest()) {
           !existsSync(resolve(workflowRelative)),
         `run tier unavailable for ${entry.pack}`
       )
+      await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
       await comfyPage.workflow.loadGraphData(readWorkflow(workflowRelative))
       const result = await target.runWorkflow(comfyPage.page, {
@@ -114,6 +156,7 @@ for (const entry of loadManifest()) {
       })
 
       expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
+      await expectNoVisibleErrors(comfyPage.page, 'after run')
     })
 
     test('T2a io: assertion nodes pass', async ({ comfyPage }) => {
@@ -130,6 +173,7 @@ for (const entry of loadManifest()) {
           !existsSync(resolve(workflowRelative)),
         `io tier needs ${entry.pack} + ComfyUI-test-framework assertion nodes + workflow`
       )
+      await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
       await comfyPage.workflow.loadGraphData(readWorkflow(workflowRelative))
       const result = await target.runWorkflow(comfyPage.page, {
@@ -141,6 +185,7 @@ for (const entry of loadManifest()) {
       })
 
       expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
+      await expectNoVisibleErrors(comfyPage.page, 'after io run')
     })
   })
 }
@@ -172,4 +217,9 @@ test('harness self-check: captures a real execution error', async ({
   // Proves the event tap captures node ids from the live `executing` stream
   // (its detail is a bare string): the failing node starts before it raises.
   expect(result.executedNodes.length).toBeGreaterThan(0)
+  // Positive control for the zero-visible-errors invariant: a real execution
+  // error MUST surface in the app's error overlay. If this fails, the
+  // expectNoVisibleErrors selectors have rotted and every clean assertion in
+  // this suite is meaningless.
+  await expect(errorSurfaces(comfyPage.page).errorOverlay).toBeVisible()
 })
