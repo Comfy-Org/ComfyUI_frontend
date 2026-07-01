@@ -146,6 +146,36 @@ describe('parseAgentEvent', () => {
     expect(event).toBeNull()
   })
 
+  it('rejects a draft_patch with a non-finite version', () => {
+    for (const version of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      const event = parseAgentEvent({
+        type: 'draft_patch',
+        data: {
+          ...data,
+          workflow_id: 'wf1',
+          content: {},
+          version,
+          base_version: 7
+        }
+      })
+      expect(event).toBeNull()
+    }
+  })
+
+  it('rejects a draft_patch whose content is an array', () => {
+    const event = parseAgentEvent({
+      type: 'draft_patch',
+      data: {
+        ...data,
+        workflow_id: 'wf1',
+        content: [],
+        version: 8,
+        base_version: 7
+      }
+    })
+    expect(event).toBeNull()
+  })
+
   it('rejects a tool call with an invalid status', () => {
     const event = parseAgentEvent({
       type: 'agent_tool_call',
@@ -212,6 +242,8 @@ describe('parseDraftSnapshot', () => {
     expect(parseDraftSnapshot({ content: { nodes: [] } })).toBeNull()
     expect(parseDraftSnapshot({ version: 3 })).toBeNull()
     expect(parseDraftSnapshot({ content: 'nope', version: 3 })).toBeNull()
+    expect(parseDraftSnapshot({ content: [], version: 3 })).toBeNull()
     expect(parseDraftSnapshot({ content: {}, version: '3' })).toBeNull()
+    expect(parseDraftSnapshot({ content: {}, version: Number.NaN })).toBeNull()
   })
 })

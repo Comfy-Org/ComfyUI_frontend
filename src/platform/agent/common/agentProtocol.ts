@@ -108,7 +108,12 @@ export type AgentEvent =
   | AgentMessageDoneEvent
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** A finite number — rejects `NaN`/`Infinity`, which would wedge CAS version compares. */
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
 }
 
 /** The base identifiers, read from the snake_case envelope body. */
@@ -156,8 +161,8 @@ function parseDraftPatch(
   if (
     typeof data.workflow_id !== 'string' ||
     !isRecord(data.content) ||
-    typeof data.version !== 'number' ||
-    typeof data.base_version !== 'number'
+    !isFiniteNumber(data.version) ||
+    !isFiniteNumber(data.base_version)
   ) {
     return null
   }
@@ -235,7 +240,7 @@ export function parseDraftSnapshot(raw: unknown): DraftSnapshot | null {
   if (
     !isRecord(raw) ||
     !isRecord(raw.content) ||
-    typeof raw.version !== 'number'
+    !isFiniteNumber(raw.version)
   ) {
     return null
   }
