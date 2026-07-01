@@ -47,6 +47,7 @@
             id="download-filename"
             v-model="filename"
             :placeholder="$t('modelManager.filenamePlaceholder')"
+            @update:model-value="onFilenameEdited"
           />
         </div>
 
@@ -125,6 +126,7 @@ const {
 const url = ref('')
 const directory = ref<string | undefined>(undefined)
 const filename = ref('')
+const isFilenameUserEdited = ref(false)
 const allowAnyExtension = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
@@ -157,15 +159,20 @@ function onOpen() {
 }
 
 function onUrlChanged() {
-  if (!filename.value) {
+  if (!isFilenameUserEdited.value) {
     filename.value = filenameFromUrl(url.value)
   }
+}
+
+function onFilenameEdited() {
+  isFilenameUserEdited.value = true
 }
 
 function reset() {
   url.value = ''
   directory.value = undefined
   filename.value = ''
+  isFilenameUserEdited.value = false
   allowAnyExtension.value = false
   errorMessage.value = ''
 }

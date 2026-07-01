@@ -19,7 +19,7 @@ export const useDownloadCredentialsStore = defineStore(
     const isLoading = ref(false)
 
     const credentialsByHost = computed(
-      () => new Map(credentials.value.map((c) => [c.host, c]))
+      () => new Map(credentials.value.map((c) => [normalizeHost(c.host), c]))
     )
 
     async function fetchCredentials() {
@@ -54,8 +54,15 @@ export const useDownloadCredentialsStore = defineStore(
     function enabledCredentialForHost(
       host: string
     ): HostCredentialView | undefined {
-      const credential = credentialsByHost.value.get(normalizeHost(host))
-      return credential?.enabled ? credential : undefined
+      const normalized = normalizeHost(host)
+      const exact = credentialsByHost.value.get(normalized)
+      if (exact) return exact.enabled ? exact : undefined
+
+      const subdomainMatch = credentials.value.find(
+        (c) =>
+          c.match_subdomains && normalized.endsWith(`.${normalizeHost(c.host)}`)
+      )
+      return subdomainMatch?.enabled ? subdomainMatch : undefined
     }
 
     return {

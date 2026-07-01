@@ -55,7 +55,8 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         'model-library': 'sideToolbar.modelLibrary',
         workflows: 'sideToolbar.workflows',
         assets: 'sideToolbar.assets',
-        'job-history': 'queue.jobHistory'
+        'job-history': 'queue.jobHistory',
+        'model-manager': 'modelManager.title'
       }
 
       const key = menubarLabelKeys[tab.id]
@@ -144,6 +145,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         registerSidebarTab(useModelManagerSidebarTab())
       } else if (!enabled && hasTab) {
         unregisterSidebarTab(modelManagerTabId)
+        useCommandStore().unregisterCommand(
+          `Workspace.ToggleSidebarTab.${modelManagerTabId}`
+        )
       }
     }
     watch(

@@ -12,7 +12,7 @@ export function hasModelExtension(filename: string): boolean {
 }
 
 export function buildModelId(directory: string, filename: string): string {
-  return `${directory}/${filename}`
+  return `${directory.replace(/\/+$/, '')}/${filename.replace(/^\/+/, '')}`
 }
 
 /**
@@ -26,6 +26,12 @@ export function hostFromUrl(url: string): string | null {
   }
 }
 
+const IPV4_PATTERN = /^\d{1,3}(?:\.\d{1,3}){3}$/
+
+function isIpLiteral(host: string): boolean {
+  return IPV4_PATTERN.test(host) || host.includes(':')
+}
+
 /**
  * Optimistic client-side allowlist hint (§9.1). The server can extend the
  * allowlist, so a `false` here is advisory — defer to `URL_NOT_ALLOWED`.
@@ -34,7 +40,9 @@ export function isLikelyAllowedHost(url: string): boolean {
   const host = hostFromUrl(url)
   if (!host) return false
   return DEFAULT_ALLOWED_HOSTS.some(
-    (allowed) => host === allowed || host.endsWith(`.${allowed}`)
+    (allowed) =>
+      host === allowed ||
+      (!isIpLiteral(allowed) && host.endsWith(`.${allowed}`))
   )
 }
 

@@ -36,6 +36,14 @@ export function useModelDownloadActions() {
       await action()
     } catch (error) {
       toastError(error)
+      // The store applies optimistic status/priority patches before the API
+      // call; re-fetch the authoritative state so a failed mutation doesn't
+      // leave the row stuck in the wrong local state.
+      try {
+        await store.hydrate()
+      } catch {
+        // Server unreachable; the next poll will reconcile.
+      }
     }
   }
 

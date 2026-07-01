@@ -240,11 +240,16 @@ const canSubmit = computed(
     (form.auth_scheme !== 'query' || !!form.query_param.trim())
 )
 
-function onOpen() {
-  void store.fetchCredentials()
-  errorMessage.value = ''
-  if (prefillHost && !form.id) {
+async function onOpen() {
+  resetForm()
+  if (prefillHost) {
     form.host = prefillHost
+  }
+  try {
+    await store.fetchCredentials()
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error ? error.message : t('modelManager.actionFailed')
   }
 }
 
@@ -310,7 +315,16 @@ function confirmDelete(credential: HostCredentialView) {
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
         dialogStore.closeDialog(dialog)
-        await store.remove(credential.id)
+        try {
+          await store.remove(credential.id)
+        } catch (error) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('modelManager.actionFailed'),
+            detail: error instanceof Error ? error.message : String(error),
+            life: 5000
+          })
+        }
       }
     }
   })

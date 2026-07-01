@@ -70,7 +70,14 @@ async function refreshAfterModelAvailable(model: ModelWithUrl): Promise<void> {
       import('@/platform/missingModel/missingModelStore')
     ])
     if (model.directory) {
-      await useModelStore().refreshModelFolder(model.directory)
+      try {
+        await useModelStore().refreshModelFolder(model.directory)
+      } catch (error) {
+        console.warn(
+          '[MissingModel] Failed to refresh model folder after model available',
+          error
+        )
+      }
     }
     void useMissingModelStore().refreshMissingModels()
   } catch (error) {
