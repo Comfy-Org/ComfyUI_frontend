@@ -34,17 +34,22 @@ describe('useSelectionToolboxPosition', () => {
     canvasStore = useCanvasStore()
   })
 
-  function renderToolboxForSelection(item: Positionable) {
+  function renderToolboxForSelection(
+    items: Iterable<Positionable>,
+    state: Partial<LGraphCanvas['state']> = {},
+    ds: Partial<LGraphCanvas['ds']> = {}
+  ) {
     canvasStore.canvas = markRaw({
       canvas: document.createElement('canvas'),
       ds: {
-        offset: [0, 0],
-        scale: 1
+        offset: ds.offset ?? [0, 0],
+        scale: ds.scale ?? 1
       },
-      selectedItems: new Set([item]),
+      selectedItems: new Set(items),
       state: {
         draggingItems: false,
-        selectionChanged: true
+        selectionChanged: true,
+        ...state
       }
     } as Partial<LGraphCanvas> as LGraphCanvas)
 
@@ -69,7 +74,7 @@ describe('useSelectionToolboxPosition', () => {
     group.pos = [100, 200]
     group.size = [160, 80]
 
-    const { toolbox, unmount } = renderToolboxForSelection(group)
+    const { toolbox, unmount } = renderToolboxForSelection([group])
 
     expect(toolbox.style.getPropertyValue('--tb-y')).toBe('190px')
     unmount()
@@ -81,11 +86,64 @@ describe('useSelectionToolboxPosition', () => {
     node.pos = [100, 200]
     node.size = [160, 80]
 
-    const { toolbox, unmount } = renderToolboxForSelection(node)
+    const { toolbox, unmount } = renderToolboxForSelection([node])
 
     expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
       `${190 - LiteGraph.NODE_TITLE_HEIGHT}px`
     )
+    unmount()
+  })
+
+  it('does not set coordinates when selection is empty', () => {
+    const { toolbox, unmount } = renderToolboxForSelection([])
+
+    expect(toolbox.style.getPropertyValue('--tb-x')).toBe('')
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe('')
+    unmount()
+  })
+
+  it('does not set coordinates while selected items are being dragged', () => {
+    const group = new LGraphGroup('Group', 1)
+    group.pos = [100, 200]
+    group.size = [160, 80]
+
+    const { toolbox, unmount } = renderToolboxForSelection([group], {
+      draggingItems: true
+    })
+
+    expect(toolbox.style.getPropertyValue('--tb-x')).toBe('')
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe('')
+    unmount()
+  })
+
+  it('positions multiple selected items from their union bounds', () => {
+    const first = new LGraphGroup('First', 1)
+    first.pos = [100, 200]
+    first.size = [100, 40]
+    const second = new LGraphGroup('Second', 2)
+    second.pos = [300, 260]
+    second.size = [50, 40]
+
+    const { toolbox, unmount } = renderToolboxForSelection([first, second])
+
+    expect(toolbox.style.getPropertyValue('--tb-x')).toBe('270px')
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe('190px')
+    unmount()
+  })
+
+  it('applies canvas scale and offset to screen coordinates', () => {
+    const group = new LGraphGroup('Group', 1)
+    group.pos = [100, 200]
+    group.size = [100, 40]
+
+    const { toolbox, unmount } = renderToolboxForSelection(
+      [group],
+      {},
+      { offset: [10, 20], scale: 2 }
+    )
+
+    expect(toolbox.style.getPropertyValue('--tb-x')).toBe('360px')
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe('420px')
     unmount()
   })
 })

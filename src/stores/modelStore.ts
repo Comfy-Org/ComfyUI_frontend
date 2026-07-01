@@ -69,7 +69,9 @@ export class ComfyModelDef {
     this.path_index = pathIndex
     this.file_name = name
     this.normalized_file_name = name.replaceAll('\\', '/')
-    this.simplified_file_name = this.normalized_file_name.split('/').pop() ?? ''
+    this.simplified_file_name = this.normalized_file_name.slice(
+      this.normalized_file_name.lastIndexOf('/') + 1
+    )
     if (this.simplified_file_name.endsWith('.safetensors')) {
       this.simplified_file_name = this.simplified_file_name.slice(
         0,

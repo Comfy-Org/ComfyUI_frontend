@@ -54,13 +54,19 @@ test.describe('Queue overlay', () => {
     await comfyPage.setup()
   })
 
-  test('Toggle button opens expanded queue overlay', async ({ comfyPage }) => {
-    const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
-    await toggle.click()
+  test(
+    'Toggle button opens expanded queue overlay',
+    { tag: '@critical' },
+    async ({ comfyPage }) => {
+      const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
+      await toggle.click()
 
-    // Expanded overlay should show job items
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
-  })
+      // Expanded overlay should show job items
+      await expect(
+        comfyPage.page.locator('[data-job-id]').first()
+      ).toBeVisible()
+    }
+  )
 
   test('Overlay shows filter tabs (All, Completed)', async ({ comfyPage }) => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)

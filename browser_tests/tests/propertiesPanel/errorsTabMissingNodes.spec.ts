@@ -12,23 +12,25 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     )
   })
 
-  test('Should show missing node pack card with guidance', async ({
-    comfyPage
-  }) => {
-    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
+  test(
+    'Should show missing node pack card with guidance',
+    { tag: '@critical' },
+    async ({ comfyPage }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
-    const missingNodeGroup = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingNodePacksGroup
-    )
+      const missingNodeGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingNodePacksGroup
+      )
 
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.missingNodeCard)
-    ).toBeVisible()
-    await expect(missingNodeGroup).toBeVisible()
-    await expect(
-      missingNodeGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
-    ).toHaveText(/\S/)
-  })
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingNodeCard)
+      ).toBeVisible()
+      await expect(missingNodeGroup).toBeVisible()
+      await expect(
+        missingNodeGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+      ).toHaveText(/\S/)
+    }
+  )
 
   test('Should show unknown pack node rows by default', async ({
     comfyPage

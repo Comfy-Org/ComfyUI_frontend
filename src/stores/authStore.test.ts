@@ -90,6 +90,7 @@ vi.mock('firebase/auth', async (importOriginal) => {
     onAuthStateChanged: vi.fn(),
     onIdTokenChanged: vi.fn(),
     signInWithPopup: vi.fn(),
+    sendPasswordResetEmail: vi.fn(),
     GoogleAuthProvider: class {
       addScope = vi.fn()
       setCustomParameters = vi.fn()
@@ -99,7 +100,8 @@ vi.mock('firebase/auth', async (importOriginal) => {
       setCustomParameters = vi.fn()
     },
     getAdditionalUserInfo: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined)
+    setPersistence: vi.fn().mockResolvedValue(undefined),
+    updatePassword: vi.fn()
   }
 })
 
@@ -125,6 +127,18 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: mockFeatureFlags
   })
+}))
+
+const mockWorkspaceAuthStore = vi.hoisted(() => ({
+  unifiedToken: null as string | null,
+  clearWorkspaceContext: vi.fn(),
+  mintAtLogin: vi.fn(),
+  getWorkspaceAuthHeader: vi.fn(),
+  getWorkspaceToken: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
+  useWorkspaceAuthStore: () => mockWorkspaceAuthStore
 }))
 
 // Mock apiKeyAuthStore
@@ -163,6 +177,9 @@ describe('useAuthStore', () => {
 
     mockFeatureFlags.teamWorkspacesEnabled = false
     mockFeatureFlags.unifiedCloudAuthEnabled = false
+    mockWorkspaceAuthStore.unifiedToken = null
+    mockWorkspaceAuthStore.getWorkspaceAuthHeader.mockReturnValue(null)
+    mockWorkspaceAuthStore.getWorkspaceToken.mockReturnValue(undefined)
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -275,6 +292,11 @@ describe('useAuthStore', () => {
       store.notifyTokenRefreshed()
       expect(store.tokenRefreshTrigger).toBe(1)
     })
+
+    it('ignores null ID token events', () => {
+      idTokenCallback?.(null)
+      expect(store.tokenRefreshTrigger).toBe(0)
+    })
   })
 
   it('should initialize with the current user', () => {
@@ -290,6 +312,24 @@ describe('useAuthStore', () => {
       mockAuth,
       firebaseAuth.browserLocalPersistence
     )
+  })
+
+  it('mints workspace auth on cloud login and clears it on logout state', () => {
+    expect(mockWorkspaceAuthStore.mintAtLogin).toHaveBeenCalledOnce()
+
+    authStateCallback(null)
+
+    expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalledOnce()
+  })
+
+  it('does not mint workspace auth outside cloud', () => {
+    mockWorkspaceAuthStore.mintAtLogin.mockClear()
+    mockDistributionTypes.isCloud = false
+
+    authStateCallback(mockUser)
+
+    expect(mockWorkspaceAuthStore.mintAtLogin).not.toHaveBeenCalled()
+    mockDistributionTypes.isCloud = true
   })
 
   it('should properly clean up error state between operations', async () => {
@@ -347,6 +387,30 @@ describe('useAuthStore', () => {
         'wrong-password'
       )
       expect(store.loading).toBe(false)
+    })
+
+    it('tracks login when Firebase returns no email', async () => {
+      const userWithoutEmail = { ...mockUser, email: null }
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: userWithoutEmail
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.login('test@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ email: undefined })
+      )
+    })
+
+    it('fails customer creation when the signed-in user has no token yet', async () => {
+      authStateCallback(null)
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await expect(store.login('test@example.com', 'password')).rejects.toThrow(
+        'Cannot create customer: User not authenticated'
+      )
     })
 
     it('should handle concurrent login attempts correctly', async () => {
@@ -486,6 +550,19 @@ describe('useAuthStore', () => {
       ).rejects.toThrow()
       expect(mockUser.delete).not.toHaveBeenCalled()
     })
+
+    it('tracks registration when Firebase returns no email', async () => {
+      const userWithoutEmail = { ...mockUser, email: null }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: userWithoutEmail
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ email: undefined })
+      )
+    })
   })
 
   describe('logout', () => {
@@ -618,6 +695,54 @@ describe('useAuthStore', () => {
 
       const authHeader = await store.getAuthHeader()
       expect(authHeader).toBeNull() // Should fallback gracefully
+    })
+
+    it('uses the unified cloud token when enabled', async () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      mockWorkspaceAuthStore.unifiedToken = 'unified-token'
+
+      await expect(store.getAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer unified-token'
+      })
+      await expect(store.getAuthToken()).resolves.toBe('unified-token')
+    })
+
+    it('returns no unified auth when the unified token is missing', async () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      mockWorkspaceAuthStore.unifiedToken = null
+
+      await expect(store.getAuthHeader()).resolves.toBeNull()
+      await expect(store.getAuthToken()).resolves.toBeUndefined()
+    })
+
+    it('prefers workspace auth when team workspaces are enabled', async () => {
+      mockFeatureFlags.teamWorkspacesEnabled = true
+      mockWorkspaceAuthStore.getWorkspaceAuthHeader.mockReturnValue({
+        Authorization: 'Bearer workspace-header'
+      })
+      mockWorkspaceAuthStore.getWorkspaceToken.mockReturnValue(
+        'workspace-token'
+      )
+
+      await expect(store.getAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer workspace-header'
+      })
+      await expect(store.getAuthToken()).resolves.toBe('workspace-token')
+    })
+
+    it('falls back to Firebase when workspace auth is unavailable', async () => {
+      mockFeatureFlags.teamWorkspacesEnabled = true
+      mockWorkspaceAuthStore.getWorkspaceAuthHeader.mockReturnValue(null)
+      mockWorkspaceAuthStore.getWorkspaceToken.mockReturnValue(undefined)
+
+      await expect(store.getAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer mock-id-token'
+      })
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+    })
+
+    it('returns the Firebase token by default', async () => {
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
     })
   })
 
@@ -804,6 +929,22 @@ describe('useAuthStore', () => {
           )
         }
       )
+
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s should track undefined email when Firebase returns no email',
+        async (method) => {
+          const userWithoutEmail = { ...mockUser, email: null }
+          vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+            user: userWithoutEmail
+          } as Partial<UserCredential> as UserCredential)
+
+          await store[method]()
+
+          expect(mockTrackAuth).toHaveBeenCalledWith(
+            expect.objectContaining({ email: undefined })
+          )
+        }
+      )
     })
   })
 
@@ -975,6 +1116,61 @@ describe('useAuthStore', () => {
 
       await expect(store.accessBillingPortal()).rejects.toThrow()
     })
+
+    it('throws when no auth method is available', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.accessBillingPortal()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+  })
+
+  describe('fetchBalance', () => {
+    it('stores the balance and update time when fetching succeeds', async () => {
+      await expect(store.fetchBalance()).resolves.toEqual({ balance: 0 })
+
+      expect(store.balance).toEqual({ balance: 0 })
+      expect(store.lastBalanceUpdateTime).toBeInstanceOf(Date)
+      expect(store.isFetchingBalance).toBe(false)
+    })
+
+    it('throws when no auth method is available', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+      expect(store.isFetchingBalance).toBe(false)
+    })
+
+    it('returns null when the customer balance is missing', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404
+      })
+
+      await expect(store.fetchBalance()).resolves.toBeNull()
+      expect(store.balance).toBeNull()
+      expect(store.isFetchingBalance).toBe(false)
+    })
+
+    it('throws API errors when fetching balance fails', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Balance unavailable' })
+      })
+
+      await expect(store.fetchBalance()).rejects.toThrow(
+        'toastMessages.failedToFetchBalance'
+      )
+      expect(store.isFetchingBalance).toBe(false)
+    })
   })
 
   describe('getAuthHeaderOrThrow', () => {
@@ -1061,6 +1257,118 @@ describe('useAuthStore', () => {
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
       expect((error as AuthStoreError).status).toBe(422)
+    })
+
+    it('throws when the response has no customer id', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({})
+      })
+
+      await expect(store.createCustomer()).rejects.toThrow(
+        'toastMessages.failedToCreateCustomer'
+      )
+    })
+  })
+
+  describe('password actions', () => {
+    it('sends password reset emails', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockResolvedValue()
+
+      await store.sendPasswordReset('test@example.com')
+
+      expect(firebaseAuth.sendPasswordResetEmail).toHaveBeenCalledWith(
+        mockAuth,
+        'test@example.com'
+      )
+    })
+
+    it('updates the current user password', async () => {
+      vi.mocked(firebaseAuth.updatePassword).mockResolvedValue()
+
+      await store.updatePassword('new-password')
+
+      expect(firebaseAuth.updatePassword).toHaveBeenCalledWith(
+        mockUser,
+        'new-password'
+      )
+    })
+
+    it('throws when updating password without a user', async () => {
+      authStateCallback(null)
+
+      await expect(store.updatePassword('new-password')).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+  })
+
+  describe('initiateCreditPurchase', () => {
+    it('creates the customer once before adding credits', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ redirect_url: 'https://stripe.test' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      await store.initiateCreditPurchase({
+        amount_micros: 10_000_000,
+        currency: 'usd'
+      })
+      await store.initiateCreditPurchase({
+        amount_micros: 10_000_000,
+        currency: 'usd'
+      })
+
+      const customerCalls = mockFetch.mock.calls.filter(([url]) =>
+        String(url).endsWith('/customers')
+      )
+      expect(customerCalls).toHaveLength(1)
+    })
+
+    it('throws when credit purchase fails', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return Promise.resolve({
+            ok: false,
+            json: () => Promise.resolve({ message: 'Checkout unavailable' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      await expect(
+        store.initiateCreditPurchase({
+          amount_micros: 10_000_000,
+          currency: 'usd'
+        })
+      ).rejects.toThrow('toastMessages.failedToInitiateCreditPurchase')
+    })
+
+    it('throws when no auth method is available', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(
+        store.initiateCreditPurchase({
+          amount_micros: 10_000_000,
+          currency: 'usd'
+        })
+      ).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
     })
   })
 })

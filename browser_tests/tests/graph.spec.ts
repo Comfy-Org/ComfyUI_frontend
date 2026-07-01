@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -13,20 +14,27 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
   // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3348
   test('Fix link input slots', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/input_order_swap')
+    const linkId = toLinkId(1)
+
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => {
-          return window.app!.graph!.links.get(1)?.target_slot
-        })
+        comfyPage.page.evaluate(
+          (linkId) => window.app!.graph!.links.get(linkId)?.target_slot,
+          linkId
+        )
       )
       .toBe(1)
   })
 
-  test('Validate workflow links', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Validation.Workflows', true)
-    await comfyPage.workflow.loadWorkflow('links/bad_link')
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(2)
-  })
+  test(
+    'Validate workflow links',
+    { tag: '@critical' },
+    async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Validation.Workflows', true)
+      await comfyPage.workflow.loadWorkflow('links/bad_link')
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(2)
+    }
+  )
 
   // Regression: duplicate links with shifted target_slot (widget-to-input
   // conversion) caused the wrong link to survive during deduplication.

@@ -129,7 +129,7 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
 test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
   test(
     'Legacy primitive proxy widgets migrate to host inputs without proxyWidgets round-trip',
-    { tag: ['@vue-nodes'] },
+    { tag: ['@vue-nodes', '@critical'] },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-link-and-proxied-primitive'

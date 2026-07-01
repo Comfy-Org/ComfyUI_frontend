@@ -112,6 +112,36 @@ describe('domWidgetStore', () => {
         store.activateWidget('non-existent')
       }).not.toThrow()
     })
+
+    it('should ignore deactivating non-existent widgets', () => {
+      store.deactivateWidget('non-existent')
+
+      expect(store.widgetStates.size).toBe(0)
+    })
+
+    it('should replace registered widgets', () => {
+      const widget = createMockDOMWidget('widget-1')
+      const replacement = {
+        ...createMockDOMWidget('widget-1'),
+        value: 'replacement'
+      }
+      store.registerWidget(widget)
+      store.deactivateWidget('widget-1')
+
+      store.setWidget(replacement)
+
+      const state = store.widgetStates.get('widget-1')
+      expect(state?.widget.value).toBe('replacement')
+      expect(state?.active).toBe(true)
+    })
+
+    it('should ignore missing widgets when replacing', () => {
+      const widget = createMockDOMWidget('widget-1')
+
+      store.setWidget(widget)
+
+      expect(store.widgetStates.size).toBe(0)
+    })
   })
 
   describe('computed states', () => {
