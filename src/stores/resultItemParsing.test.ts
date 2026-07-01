@@ -113,6 +113,38 @@ describe(parseNodeOutput, () => {
     expect(result[0].mediaType).toBe('images')
   })
 
+  it('parses array-shaped text outputs into text result items', () => {
+    const output = makeOutput({
+      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
+      text: ['first', 'second']
+    })
+
+    const result = parseNodeOutput('6', output)
+
+    expect(result).toHaveLength(3)
+
+    const textItems = result.filter((item) => item.isText)
+    expect(textItems).toHaveLength(2)
+    expect(textItems.map((item) => item.content)).toEqual(['first', 'second'])
+    expect(textItems[0].nodeId).toBe('6')
+    expect(textItems[0].filename).toBe('6-text-0.txt')
+  })
+
+  it('parses object-shaped text entries from a synthesized preview_output', () => {
+    const output = makeOutput({
+      text: [
+        { nodeId: '6', mediaType: 'text', content: 'from preview_output' }
+      ] as unknown as NodeExecutionOutput['text']
+    })
+
+    const result = parseNodeOutput('6', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].isText).toBe(true)
+    expect(result[0].content).toBe('from preview_output')
+    expect(result[0].filename).toBe('6-text-0.txt')
+  })
+
   it('excludes non-ResultItem array items', () => {
     const output = fromPartial<NodeExecutionOutput>({
       images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
