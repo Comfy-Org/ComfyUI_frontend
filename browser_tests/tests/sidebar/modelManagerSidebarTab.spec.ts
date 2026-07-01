@@ -20,6 +20,7 @@ const DOWNLOADS_ROUTE = /\/api\/download$/
 const ENQUEUE_ROUTE = /\/api\/download\/enqueue$/
 const CREDENTIALS_ROUTE = /\/api\/download\/credentials$/
 const CREDENTIAL_ROUTE = /\/api\/download\/credentials\/([^/?]+)$/
+const CLEAR_ROUTE = /\/api\/download\/clear$/
 
 const DOWNLOAD_ID = 'e2e-download-1'
 const MODEL_URL =
@@ -176,6 +177,40 @@ test.describe('Model Downloader sidebar', { tag: '@ui' }, () => {
     await expect(panel.getByText('Completed', { exact: true })).toBeVisible()
     await expect(panel.getByText('History', { exact: true })).toBeVisible()
     await expect(modelDownloaderBadge(comfyPage)).toHaveCount(0)
+  })
+
+  test('clears history and the cleared rows stay gone after reopening the tab', async ({
+    comfyPage
+  }) => {
+    let downloads: DownloadStatus[] = [
+      makeDownloadStatus({ status: 'completed', progress: 1, bytes_done: 1000 })
+    ]
+    await mockDownloadsList(comfyPage.page, () => downloads)
+    await comfyPage.page.route(CLEAR_ROUTE, async (route) => {
+      const count = downloads.length
+      downloads = []
+      await route.fulfill(jsonRoute({ deleted: count }))
+    })
+
+    await openModelDownloaderTab(comfyPage)
+    const panel = modelDownloaderPanel(comfyPage)
+    await expect(panel.getByText('History', { exact: true })).toBeVisible()
+    await expect(panel.getByText('e2e-test-model.safetensors')).toBeVisible()
+
+    await panel.getByRole('button', { name: 'Clear history' }).click()
+    await expect(panel.getByText('No downloads yet')).toBeVisible()
+
+    // Reopening the tab re-runs hydrate() -> GET /api/download. The bug was
+    // that the cleared row reappeared here; the persisted delete must prevent
+    // the backend list from returning it again.
+    await modelDownloaderTabButton(comfyPage).click()
+    await openModelDownloaderTab(comfyPage)
+    await expect(
+      modelDownloaderPanel(comfyPage).getByText('No downloads yet')
+    ).toBeVisible()
+    await expect(
+      modelDownloaderPanel(comfyPage).getByText('e2e-test-model.safetensors')
+    ).toBeHidden()
   })
 
   test('manages download credentials: add, edit, and delete', async ({
