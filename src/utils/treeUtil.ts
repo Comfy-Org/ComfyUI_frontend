@@ -148,7 +148,7 @@ function cloneTree<T extends TreeNode>(node: T): T {
   const clone = { ...node }
 
   // Clone children recursively
-  if (node.children && node.children.length > 0) {
+  if (node.children) {
     clone.children = node.children.map((child) => cloneTree(child))
   }
 
