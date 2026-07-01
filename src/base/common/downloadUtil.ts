@@ -117,9 +117,8 @@ export function extractFilenameFromContentDisposition(
 }
 
 /**
- * Fetch a URL and return the raw Response, throwing on non-OK status.
- * Shared by download and open-in-new-tab cloud paths that need response
- * headers (e.g. Content-Disposition).
+ * Fetch a URL and return its body as a Blob.
+ * Shared by download and open-in-new-tab cloud paths.
  */
 async function fetchAsBlob(url: string): Promise<Response> {
   const response = await fetch(url)
@@ -127,20 +126,6 @@ async function fetchAsBlob(url: string): Promise<Response> {
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }
   return response
-}
-
-/**
- * Fetch a URL and return its body as a Blob.
- *
- * Fetching (rather than reading an already-rendered <img> via a canvas) is what
- * keeps this safe for cross-origin cloud assets (e.g. GCS): the returned blob is
- * always readable, whereas a canvas drawn from a non-CORS cross-origin image is
- * tainted and cannot be exported. Reuse this anywhere an image's bytes are
- * needed (download, open-in-tab, copy-to-clipboard).
- */
-export async function fetchUrlAsBlob(url: string): Promise<Blob> {
-  const response = await fetchAsBlob(url)
-  return response.blob()
 }
 
 async function downloadViaBlobFetch(
@@ -177,7 +162,8 @@ export async function openFileInNewTab(url: string): Promise<void> {
   const tab = window.open('', '_blank')
 
   try {
-    const blob = await fetchUrlAsBlob(url)
+    const response = await fetchAsBlob(url)
+    const blob = await response.blob()
     const blobUrl = URL.createObjectURL(blob)
 
     if (tab && !tab.closed) {

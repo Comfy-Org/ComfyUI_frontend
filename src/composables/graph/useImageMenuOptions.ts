@@ -1,10 +1,6 @@
 import { useI18n } from 'vue-i18n'
 
-import {
-  downloadFile,
-  fetchUrlAsBlob,
-  openFileInNewTab
-} from '@/base/common/downloadUtil'
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -33,16 +29,22 @@ function getNodeImageUrl(node: LGraphNode): string | null {
 /**
  * Fetch an image URL and return it as a PNG blob ready for the clipboard.
  *
- * Builds on the shared cloud-aware {@link fetchUrlAsBlob}: re-fetching the URL
- * (instead of exporting the node's rendered <img> through a canvas) is what
- * avoids the tainted-canvas SecurityError for cross-origin cloud assets.
+ * Re-fetching the URL (instead of exporting the node's rendered <img> through a
+ * canvas) is what avoids the tainted-canvas SecurityError for cross-origin cloud
+ * assets: the fetched blob is always readable, whereas a canvas drawn from a
+ * non-CORS cross-origin image cannot be exported.
  *
  * The blob is re-encoded to PNG when the source is not already PNG, because the
  * async clipboard only reliably accepts `image/png`. The bitmap is decoded from
  * a same-origin blob, so this canvas is never tainted.
  */
 async function fetchImageAsPngBlob(url: string): Promise<Blob> {
-  const blob = await fetchUrlAsBlob(url)
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.status}`)
+  }
+
+  const blob = await response.blob()
   if (blob.type === 'image/png') return blob
 
   const bitmap = await createImageBitmap(blob)
