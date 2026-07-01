@@ -24,6 +24,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetRenderStates = ref(
     new Map<UUID, Map<WidgetId, WidgetRenderState>>()
   )
+  const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
@@ -47,12 +48,51 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return nextWidgetRenderStates
   }
 
+  function getGraphNodeWidgetOrders(graphId: UUID): Map<NodeId, WidgetId[]> {
+    const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (widgetOrders) return widgetOrders
+
+    const nextWidgetOrders = reactive(new Map<NodeId, WidgetId[]>())
+    graphNodeWidgetOrders.value.set(graphId, nextWidgetOrders)
+    return nextWidgetOrders
+  }
+
+  function getNodeWidgetOrder(graphId: UUID, nodeId: NodeId): WidgetId[] {
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(nodeId)
+    if (order) return order
+
+    const nextOrder = reactive<WidgetId[]>([])
+    graphOrders.set(nodeId, nextOrder)
+    return nextOrder
+  }
+
+  function appendNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const order = getNodeWidgetOrder(graphId, nodeId)
+    if (!order.includes(widgetId)) order.push(widgetId)
+  }
+
+  function removeNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(nodeId)
+    if (!order) return
+
+    const index = order.indexOf(widgetId)
+    if (index !== -1) order.splice(index, 1)
+    if (order.length === 0) graphOrders.delete(nodeId)
+  }
+
   function registerWidget<TValue = unknown>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>
   ): WidgetState<TValue> {
     const existing = getWidget(widgetId)
-    if (existing) return existing as WidgetState<TValue>
+    if (existing) {
+      appendNodeWidgetOrder(widgetId)
+      return existing as WidgetState<TValue>
+    }
 
     const { graphId, nodeId, name } = parseWidgetId(widgetId)
     const state: WidgetState<TValue> = {
@@ -63,6 +103,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)
+    appendNodeWidgetOrder(widgetId)
     return widgetStates.get(widgetId) as WidgetState<TValue>
   }
 
@@ -105,24 +146,106 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function deleteWidget(widgetId: WidgetId): boolean {
     const { graphId } = parseWidgetId(widgetId)
     getGraphWidgetRenderStates(graphId).delete(widgetId)
+    removeNodeWidgetOrder(widgetId)
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
   function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
-    return [...getGraphWidgetStates(graphId).values()].filter(
-      (state) => state.nodeId === localNodeId
+    return getNodeWidgetIds(graphId, localNodeId).flatMap((id) => {
+      const state = getWidget(id)
+      return state ? [state] : []
+    })
+  }
+
+  function getRegisteredNodeWidgetIds(
+    graphId: UUID,
+    localNodeId: NodeId
+  ): WidgetId[] {
+    const widgetStates = getGraphWidgetStates(graphId)
+    return [...widgetStates.entries()]
+      .filter(([, state]) => state.nodeId === localNodeId)
+      .map(([id]) => id)
+  }
+
+  function getOrderedRegisteredNodeWidgetIds(
+    registeredIds: readonly WidgetId[],
+    orderedWidgetIds: readonly WidgetId[]
+  ): WidgetId[] {
+    const registeredIdSet = new Set(registeredIds)
+    return orderedWidgetIds.filter((id) => registeredIdSet.has(id))
+  }
+
+  function getRegisteredNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): WidgetId[] {
+    const registeredIds = getRegisteredNodeWidgetIds(graphId, localNodeId)
+    const orderedIds = getOrderedRegisteredNodeWidgetIds(
+      registeredIds,
+      orderedWidgetIds
     )
+    const orderedIdSet = new Set(orderedIds)
+    return [
+      ...orderedIds,
+      ...registeredIds.filter((id) => !orderedIdSet.has(id))
+    ]
   }
 
   function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
-    return [...getGraphWidgetStates(graphId).entries()]
-      .filter(([, state]) => state.nodeId === localNodeId)
-      .map(([id]) => id)
+    const order = getNodeWidgetOrder(graphId, localNodeId)
+    const nextOrder = getRegisteredNodeWidgetOrder(graphId, localNodeId, order)
+
+    if (
+      nextOrder.length !== order.length ||
+      nextOrder.some((id, index) => id !== order[index])
+    ) {
+      order.splice(0, order.length, ...nextOrder)
+    }
+
+    return [...order]
+  }
+
+  function setNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const nextOrder = getRegisteredNodeWidgetOrder(
+      graphId,
+      localNodeId,
+      orderedWidgetIds
+    )
+    const order = getNodeWidgetOrder(graphId, localNodeId)
+    order.splice(0, order.length, ...nextOrder)
+  }
+
+  function replaceNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const widgetStates = getGraphWidgetStates(graphId)
+    const registeredIds = getRegisteredNodeWidgetIds(graphId, localNodeId)
+    const nextOrder = getOrderedRegisteredNodeWidgetIds(
+      registeredIds,
+      orderedWidgetIds
+    )
+    const nextOrderSet = new Set(nextOrder)
+    for (const [id, state] of widgetStates.entries()) {
+      if (state.nodeId !== localNodeId || nextOrderSet.has(id)) continue
+      widgetStates.delete(id)
+      getGraphWidgetRenderStates(graphId).delete(id)
+    }
+
+    const order = getNodeWidgetOrder(graphId, localNodeId)
+    order.splice(0, order.length, ...nextOrder)
   }
 
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
+    graphNodeWidgetOrders.value.delete(graphId)
   }
 
   return {
@@ -134,6 +257,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     deleteWidget,
     getNodeWidgets,
     getNodeWidgetIds,
+    setNodeWidgetOrder,
+    replaceNodeWidgetOrder,
     clearGraph
   }
 })

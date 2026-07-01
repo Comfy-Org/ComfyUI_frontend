@@ -145,6 +145,13 @@ function applySubgraphInputOrder(
   })
 
   reorderSubgraphInputs(subgraphNode, orderedIndices)
+  useWidgetValueStore().setNodeWidgetOrder(
+    subgraphNode.rootGraph.id,
+    subgraphNode.id,
+    subgraphNode.inputs.flatMap((input) =>
+      input.widgetId ? [input.widgetId] : []
+    )
+  )
 
   for (const [newIndex, oldIndex] of orderedIndices.entries()) {
     const value = widgetValues[oldIndex]
