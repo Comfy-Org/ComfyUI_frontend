@@ -24,11 +24,6 @@ export interface ApiOutputAsset {
   url: string
 }
 
-export interface ApiRunResult {
-  prompt_id: string
-  outputs: Record<string, ApiOutputAsset[]>
-}
-
 /**
  * Apply request payload values onto the API prompt's node inputs, using the
  * field→graph mapping derived from `linearData`.
