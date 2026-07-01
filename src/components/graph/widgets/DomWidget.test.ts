@@ -54,7 +54,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-function createWidgetState(disabled: boolean): DomWidgetState {
+function createWidgetState(computedDisabled: boolean): DomWidgetState {
   const domWidgetStore = useDomWidgetStore()
   const node = createMockLGraphNode({
     id: 1,
@@ -70,7 +70,7 @@ function createWidgetState(disabled: boolean): DomWidgetState {
     value: '',
     options: {},
     node,
-    computedDisabled: disabled
+    computedDisabled: false
   })
 
   domWidgetStore.registerWidget(widget)
@@ -80,6 +80,7 @@ function createWidgetState(disabled: boolean): DomWidgetState {
 
   state.zIndex = 2
   state.size = [100, 40]
+  state.computedDisabled = computedDisabled
 
   return reactive(state)
 }
@@ -94,7 +95,7 @@ describe('DomWidget disabled style', () => {
     vi.clearAllMocks()
   })
 
-  it('uses disabled style when widget is computedDisabled', async () => {
+  it('uses disabled style when widgetState.computedDisabled is true', async () => {
     const widgetState = createWidgetState(true)
     const { container } = render(DomWidget, {
       props: {
