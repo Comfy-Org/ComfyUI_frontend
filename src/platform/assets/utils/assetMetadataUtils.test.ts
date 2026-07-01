@@ -13,7 +13,7 @@ import {
   getAssetFilename,
   getAssetMetadataDimensions,
   getAssetModelType,
-  getAssetNodeCategory,
+  getAssetNodeCategoryCandidates,
   getAssetSourceUrl,
   getAssetStoredFilename,
   getAssetTriggerPhrases,
@@ -620,56 +620,59 @@ describe('getAssetCategories', () => {
   })
 })
 
-describe('getAssetNodeCategory', () => {
+describe('getAssetNodeCategoryCandidates', () => {
   const asset = (tags: string[]): AssetItem => ({
     id: 'a',
     name: 'model.safetensors',
     tags
   })
 
-  it('prefers the most specific (deepest) tag over a flat model_type value', () => {
+  it('orders the most specific (deepest) tag ahead of a flat model_type value', () => {
     expect(
-      getAssetNodeCategory(
+      getAssetNodeCategoryCandidates(
         asset(['models', 'model_type:LLM', 'LLM/Qwen-VL/Qwen3-0.6B']),
         true
       )
-    ).toBe('LLM/Qwen-VL/Qwen3-0.6B')
+    ).toEqual(['LLM/Qwen-VL/Qwen3-0.6B', 'LLM'])
   })
 
   it('strips the model_type: prefix when it is the only candidate', () => {
     expect(
-      getAssetNodeCategory(asset(['models', 'model_type:vae']), true)
-    ).toBe('vae')
+      getAssetNodeCategoryCandidates(asset(['models', 'model_type:vae']), true)
+    ).toEqual(['vae'])
   })
 
-  it('lets a model_type value win ties against a bare tag', () => {
+  it('keeps a model_type value ahead of an equally-deep bare tag', () => {
     expect(
-      getAssetNodeCategory(
+      getAssetNodeCategoryCandidates(
         asset(['models', 'model_type:checkpoints', 'sdxl']),
         true
       )
-    ).toBe('checkpoints')
+    ).toEqual(['checkpoints', 'sdxl'])
   })
 
   it('keeps a hierarchical tag intact', () => {
     expect(
-      getAssetNodeCategory(asset(['models', 'chatterbox/chatterbox_vc']), true)
-    ).toBe('chatterbox/chatterbox_vc')
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'chatterbox/chatterbox_vc']),
+        true
+      )
+    ).toEqual(['chatterbox/chatterbox_vc'])
   })
 
-  it('returns undefined when only reserved tags are present', () => {
+  it('returns no candidates when only reserved tags are present', () => {
     expect(
-      getAssetNodeCategory(asset(['models', 'missing']), true)
-    ).toBeUndefined()
+      getAssetNodeCategoryCandidates(asset(['models', 'missing']), true)
+    ).toEqual([])
   })
 
   it('uses the first non-reserved tag verbatim when mode is off (default)', () => {
-    expect(getAssetNodeCategory(asset(['models', 'model_type:vae']))).toBe(
-      'model_type:vae'
-    )
-    expect(getAssetNodeCategory(asset(['models', 'checkpoints']))).toBe(
-      'checkpoints'
-    )
+    expect(
+      getAssetNodeCategoryCandidates(asset(['models', 'model_type:vae']))
+    ).toEqual(['model_type:vae'])
+    expect(
+      getAssetNodeCategoryCandidates(asset(['models', 'checkpoints']))
+    ).toEqual(['checkpoints'])
   })
 })
 
