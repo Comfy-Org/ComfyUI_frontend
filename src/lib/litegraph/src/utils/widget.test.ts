@@ -2,11 +2,39 @@ import { describe, expect, test } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidgetOptions } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { getNodeWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import {
   evaluateInput,
   getWidgetStep,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/litegraph'
+
+describe('getNodeWidgetIds', () => {
+  test('includes promoted widget ids stored on input slots', () => {
+    const seedId = widgetId('graph', toNodeId(10), 'seed')
+    const textId = widgetId('graph', toNodeId(10), 'text')
+
+    expect(
+      getNodeWidgetIds({
+        widgets: [{ widgetId: seedId }, {}],
+        inputs: [{}, { widgetId: textId }]
+      })
+    ).toStrictEqual([seedId, textId])
+  })
+
+  test('deduplicates widget ids when the same id is on widget and input', () => {
+    const seedId = widgetId('graph', toNodeId(10), 'seed')
+
+    expect(
+      getNodeWidgetIds({
+        widgets: [{ widgetId: seedId }],
+        inputs: [{ widgetId: seedId }]
+      })
+    ).toStrictEqual([seedId])
+  })
+})
 
 describe('getWidgetStep', () => {
   test('should return step2 when available', () => {
