@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ProductCardsSection from '../components/common/ProductCardsSection.vue'
+import HeroSection from '../templates/mcp/HeroSection.vue'
+import SetupSection from '../templates/mcp/SetupSection.vue'
+import WhySection from '../templates/mcp/WhySection.vue'
+import ToolsSection from '../templates/mcp/ToolsSection.vue'
+import HowItWorksSection from '../templates/mcp/HowItWorksSection.vue'
+import FAQSection from '../templates/mcp/FAQSection.vue'
+import { t } from '../i18n/translations'
+---
+
+<BaseLayout
+  title={t('mcp.meta.title', 'en')}
+  description={t('mcp.meta.description', 'en')}
+>
+  <HeroSection locale="en" client:load />
+  <SetupSection locale="en" client:visible />
+  <WhySection locale="en" />
+  <ToolsSection locale="en" />
+  <HowItWorksSection locale="en" />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+  <FAQSection client:visible locale="en" />
+</BaseLayout>

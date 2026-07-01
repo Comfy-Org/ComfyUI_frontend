@@ -249,7 +249,6 @@
                 :card="card"
                 :compact="isSingleNodeSelected"
                 @locate-node="handleLocateNode"
-                @enter-subgraph="handleEnterSubgraph"
                 @copy-to-clipboard="copyToClipboard"
               />
             </div>
@@ -357,7 +356,7 @@ const ErrorPanelSurveyCta =
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
-const { focusNode, enterSubgraph } = useFocusNode()
+const { focusNode } = useFocusNode()
 const { openGitHubIssues, contactSupport } = useErrorActions()
 const rightSidePanelStore = useRightSidePanelStore()
 const missingModelStore = useMissingModelStore()
@@ -522,9 +521,5 @@ function handleReplaceGroup(group: SwapNodeGroup) {
 
 function handleReplaceAll() {
   replaceAllGroups(swapNodeGroups.value)
-}
-
-function handleEnterSubgraph(nodeId: string) {
-  enterSubgraph(nodeId, errorNodeCache.value)
 }
 </script>

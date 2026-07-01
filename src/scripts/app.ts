@@ -37,9 +37,10 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowSto
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
@@ -303,7 +304,7 @@ export class ComfyApp {
    * The node errors from the previous execution.
    * @deprecated Use app.extensionManager.lastNodeErrors instead
    */
-  get lastNodeErrors(): Record<NodeId, NodeError> | null {
+  get lastNodeErrors(): Record<string, NodeError> | null {
     return useExecutionErrorStore().lastNodeErrors
   }
 
@@ -320,7 +321,7 @@ export class ComfyApp {
    * TODO: Update to support multiple executing nodes. This getter returns only the first executing node.
    * Consider updating consumers to handle multiple nodes or use executingNodeIds array.
    */
-  get runningNodeId(): NodeId | null {
+  get runningNodeId(): SerializedNodeId | null {
     return useExecutionStore().executingNodeId
   }
 
@@ -2061,21 +2062,22 @@ export class ComfyApp {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
       if (!node) continue
-      node.id = isNaN(+id) ? id : +id
+      node.id = toNodeId(isNaN(+id) ? id : +id)
       node.title = data._meta?.title ?? node.title
       app.rootGraph.add(node)
     }
 
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
-      const node = app.rootGraph.getNodeById(id)
+      const currentNodeId = toNodeId(isNaN(+id) ? id : +id)
+      const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
 
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(fromId)
+          const fromNode = app.rootGraph.getNodeById(toNodeId(fromId))
           if (!fromNode) continue
 
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
