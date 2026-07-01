@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "catalog:",
+    "@astrojs/mdx": "catalog:",
     "@astrojs/vue": "catalog:",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
@@ -48,6 +49,7 @@
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue-component-type-helpers": "catalog:"
   }
 }
