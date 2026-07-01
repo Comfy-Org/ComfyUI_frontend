@@ -64,6 +64,21 @@ function extractChunkName(url: string): string | null {
   return withoutHash || null
 }
 
+const HASHED_ASSET_RE = /\/assets\/.+-[A-Za-z0-9_-]{6,}\.(js|mjs|css)$/
+
+/**
+ * Determines if a preload error is a genuine stale chunk error — i.e. a hashed
+ * JS/CSS asset under /assets/ that 404'd, typically after a new deployment
+ * changed chunk hashes. Returns false for non-asset URLs (e.g. /api/i18n),
+ * unknown file types, and errors with no extractable URL.
+ */
+export function isStaleChunkError(info: PreloadErrorInfo): boolean {
+  if (!info.url) return false
+
+  const pathname = new URL(info.url, 'https://cloud.comfy.org').pathname
+  return HASHED_ASSET_RE.test(pathname)
+}
+
 export function parsePreloadError(error: Error): PreloadErrorInfo {
   const message = error.message || String(error)
   const url = extractUrl(message)
