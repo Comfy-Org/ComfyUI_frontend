@@ -47,6 +47,7 @@ function createImageNode(
 describe('useImageMenuOptions', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   describe('getImageMenuOptions', () => {
@@ -180,6 +181,86 @@ describe('useImageMenuOptions', () => {
       await pasteOption!.action!()
 
       expect(node.pasteFiles).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('copyImage action', () => {
+    /**
+     * Capture-only ClipboardItem stub. jsdom has no ClipboardItem, and we want
+     * to resolve the PNG blob promise the composable hands it so assertions can
+     * read what would be placed on the real clipboard.
+     */
+    function stubClipboardItem() {
+      vi.stubGlobal(
+        'ClipboardItem',
+        class {
+          data: Record<string, Blob | Promise<Blob>>
+          constructor(data: Record<string, Blob | Promise<Blob>>) {
+            this.data = data
+          }
+        }
+      )
+    }
+
+    function getCopyAction(node: LGraphNode) {
+      const { getImageMenuOptions } = useImageMenuOptions()
+      return getImageMenuOptions(node).find((o) => o.label === 'Copy Image')!
+        .action!
+    }
+
+    it('fetches the image and writes a PNG blob to the clipboard', async () => {
+      const node = createImageNode()
+      const pngBlob = new Blob(['png'], { type: 'image/png' })
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        blob: () => Promise.resolve(pngBlob)
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      stubClipboardItem()
+
+      const write = vi.fn().mockResolvedValue(undefined)
+      mockClipboard(fromPartial<Clipboard>({ write }))
+
+      await getCopyAction(node)()
+
+      // Fetches the source URL instead of exporting the (cloud-tainted) canvas.
+      expect(fetchMock).toHaveBeenCalledWith('http://localhost/test.png')
+      const item = write.mock.calls[0][0][0] as {
+        data: Record<string, unknown>
+      }
+      await expect(item.data['image/png']).resolves.toBe(pngBlob)
+    })
+
+    it('strips the preview query param before fetching', async () => {
+      const img = new Image()
+      img.src = 'http://localhost/view?filename=a.png&preview=webp'
+      const node = createImageNode({ imgs: [img] })
+
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        blob: () => Promise.resolve(new Blob(['png'], { type: 'image/png' }))
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      stubClipboardItem()
+      mockClipboard(
+        fromPartial<Clipboard>({ write: vi.fn().mockResolvedValue(undefined) })
+      )
+
+      await getCopyAction(node)()
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost/view?filename=a.png'
+      )
+    })
+
+    it('handles missing clipboard API gracefully', async () => {
+      const node = createImageNode()
+      const fetchMock = vi.fn()
+      vi.stubGlobal('fetch', fetchMock)
+      mockClipboard(fromPartial<Clipboard>({ write: undefined }))
+
+      await expect(getCopyAction(node)()).resolves.toBeUndefined()
+      expect(fetchMock).not.toHaveBeenCalled()
     })
   })
 })
