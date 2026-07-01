@@ -143,6 +143,112 @@ describe('useModelDownloadStore', () => {
     expect(downloadApi.pauseDownload).toHaveBeenCalledWith('d1')
   })
 
+  it('optimistically updates status when resuming', async () => {
+    vi.mocked(downloadApi.resumeDownload).mockResolvedValue()
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'paused' }))
+
+    await store.resume('d1')
+
+    expect(store.downloadList.find((d) => d.download_id === 'd1')?.status).toBe(
+      'queued'
+    )
+    expect(downloadApi.resumeDownload).toHaveBeenCalledWith('d1')
+  })
+
+  it('marks a download cancelled after the API call resolves', async () => {
+    vi.mocked(downloadApi.cancelDownload).mockResolvedValue()
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+
+    await store.cancel('d1')
+
+    expect(store.downloadList.find((d) => d.download_id === 'd1')?.status).toBe(
+      'cancelled'
+    )
+    expect(downloadApi.cancelDownload).toHaveBeenCalledWith('d1')
+  })
+
+  it('optimistically updates priority and calls the API', async () => {
+    vi.mocked(downloadApi.setDownloadPriority).mockResolvedValue()
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'queued', priority: 0 }))
+
+    await store.setPriority('d1', 5)
+
+    expect(
+      store.downloadList.find((d) => d.download_id === 'd1')?.priority
+    ).toBe(5)
+    expect(downloadApi.setDownloadPriority).toHaveBeenCalledWith('d1', 5)
+  })
+
+  it('is a no-op when patching priority for an unknown id', async () => {
+    vi.mocked(downloadApi.setDownloadPriority).mockResolvedValue()
+    const store = useModelDownloadStore()
+
+    await store.setPriority('missing', 5)
+
+    expect(store.downloadList).toHaveLength(0)
+    expect(downloadApi.setDownloadPriority).toHaveBeenCalledWith('missing', 5)
+  })
+
+  it('finds a download by model id', () => {
+    const store = useModelDownloadStore()
+    dispatch(
+      createStatus({ download_id: 'd1', model_id: 'loras/x.safetensors' })
+    )
+
+    expect(store.findByModelId('loras/x.safetensors')?.download_id).toBe('d1')
+    expect(store.findByModelId('loras/missing.safetensors')).toBeUndefined()
+  })
+
+  describe('hydrate', () => {
+    it('replaces the download map with the fetched list', async () => {
+      const store = useModelDownloadStore()
+      dispatch(createStatus({ download_id: 'stale', status: 'active' }))
+      vi.mocked(downloadApi.listDownloads).mockResolvedValue([
+        createStatus({ download_id: 'fresh', status: 'active' })
+      ])
+
+      await store.hydrate()
+
+      expect(store.downloadList.map((d) => d.download_id)).toEqual(['fresh'])
+    })
+
+    it('records a completion when a refreshed row transitions to completed', async () => {
+      const store = useModelDownloadStore()
+      dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+      vi.mocked(downloadApi.listDownloads).mockResolvedValue([
+        createStatus({
+          download_id: 'd1',
+          model_id: 'loras/x.safetensors',
+          status: 'completed'
+        })
+      ])
+
+      await store.hydrate()
+
+      expect(store.lastCompletedDownload).toMatchObject({
+        downloadId: 'd1',
+        modelId: 'loras/x.safetensors',
+        directory: 'loras'
+      })
+    })
+
+    it('does not re-record a completion for a row that was already completed', async () => {
+      const store = useModelDownloadStore()
+      dispatch(createStatus({ download_id: 'd1', status: 'completed' }))
+      const firstTimestamp = store.lastCompletedDownload?.timestamp
+      vi.mocked(downloadApi.listDownloads).mockResolvedValue([
+        createStatus({ download_id: 'd1', status: 'completed' })
+      ])
+
+      await store.hydrate()
+
+      expect(store.lastCompletedDownload?.timestamp).toBe(firstTimestamp)
+    })
+  })
+
   it('records the last completed download once on the completing transition', () => {
     const store = useModelDownloadStore()
     dispatch(createStatus({ download_id: 'd1', status: 'active' }))

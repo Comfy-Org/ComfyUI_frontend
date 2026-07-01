@@ -79,7 +79,7 @@
       class="relative flex items-center justify-between gap-2 text-xs text-muted-foreground"
     >
       <span>{{ statusLabel }}</span>
-      <span class="truncate">{{ metaLine }}</span>
+      <span class="truncate" data-testid="meta-line">{{ metaLine }}</span>
     </div>
 
     <p
