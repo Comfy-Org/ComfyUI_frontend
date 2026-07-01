@@ -51,12 +51,12 @@
           />
         </div>
 
-        <label
-          class="flex w-fit items-center gap-2 text-xs text-muted-foreground"
-        >
+        <!-- TODO: re-enable once we think we'd want to allow any extension
+        <label class="flex w-fit items-center gap-2 text-xs text-muted-foreground">
           <input v-model="allowAnyExtension" type="checkbox" class="size-4" />
           {{ $t('modelManager.allowAnyExtension') }}
         </label>
+        -->
 
         <p
           v-if="modelId"
