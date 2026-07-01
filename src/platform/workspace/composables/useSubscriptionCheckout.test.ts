@@ -618,6 +618,24 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('success')
     })
 
+    it('skips begin_checkout when no user id is available', async () => {
+      mockUserId.value = null
+      const checkout = await setup('subscribe_to_run')
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-1'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      mockUserId.value = 'user-1'
+    })
+
     it('fires begin_checkout carrying the payment intent source', async () => {
       const checkout = await setup('subscribe_to_run')
       checkout.selectedTierKey.value = 'standard'
