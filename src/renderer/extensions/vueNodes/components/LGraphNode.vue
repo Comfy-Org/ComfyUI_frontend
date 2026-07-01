@@ -11,7 +11,7 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate text-sm',
+        'group/node lg-node absolute isolate touch-none text-sm',
         'flex flex-col contain-layout contain-style',
         isRerouteNode
           ? 'h-(--node-height)'
