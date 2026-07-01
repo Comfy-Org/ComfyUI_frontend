@@ -63,8 +63,8 @@ const featureGroups: PlanFeatureGroup[] = [
   {
     titleKey: 'pricing.plan.team.comingSoon',
     features: [
-      { text: 'pricing.plan.team.sharedWorkflowsAndAssets', type: 'coming' },
-      { text: 'pricing.plan.team.projects', type: 'coming' }
+      { text: 'pricing.plan.team.sharedWorkflowsAndAssets', status: 'coming' },
+      { text: 'pricing.plan.team.projects', status: 'coming' }
     ]
   }
 ]

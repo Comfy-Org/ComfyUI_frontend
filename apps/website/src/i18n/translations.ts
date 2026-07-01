@@ -1328,7 +1328,7 @@ const translations = {
     en: 'Included',
     'zh-CN': '已包含'
   },
-  'pricing.plan.feature.status.notIncluded': {
+  'pricing.plan.feature.status.excluded': {
     en: 'Not included',
     'zh-CN': '未包含'
   },

@@ -5,9 +5,16 @@ import { externalLinks } from '../config/routes'
 
 export type BillingCycle = 'monthly' | 'yearly'
 
-interface PlanFeature {
+export type PlanFeatureStatus = 'included' | 'excluded' | 'coming'
+
+export interface PlanFeature {
   text: TranslationKey
-  included?: boolean
+  status?: PlanFeatureStatus
+}
+
+export interface PlanFeatureGroup {
+  titleKey?: TranslationKey
+  features: PlanFeature[]
 }
 
 export interface PricingPlan {
@@ -62,8 +69,8 @@ const standardPricingPlans: PricingPlan[] = [
     features: [
       { text: 'pricing.feature.shortRuntime' },
       { text: 'pricing.feature.addCredits' },
-      { text: 'pricing.feature.importModels', included: false },
-      { text: 'pricing.feature.longRuntime', included: false }
+      { text: 'pricing.feature.importModels', status: 'excluded' },
+      { text: 'pricing.feature.longRuntime', status: 'excluded' }
     ]
   },
   {
@@ -80,7 +87,7 @@ const standardPricingPlans: PricingPlan[] = [
       { text: 'pricing.feature.shortRuntime' },
       { text: 'pricing.feature.addCredits' },
       { text: 'pricing.feature.importModels' },
-      { text: 'pricing.feature.longRuntime', included: false }
+      { text: 'pricing.feature.longRuntime', status: 'excluded' }
     ],
     isPopular: true
   },

@@ -1,21 +1,32 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type {
+  PlanFeatureGroup,
+  PlanFeatureStatus
+} from '../../data/pricingPlans'
 
 import { Check, Clock, X } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
 
-type PlanFeatureType = 'checked' | 'coming'
+export type { PlanFeatureGroup }
 
-interface PlanFeature {
-  text: TranslationKey
-  type?: PlanFeatureType
-  included?: boolean
+const statusIcon = {
+  included: Check,
+  excluded: X,
+  coming: Clock
+} as const
+
+const statusIconClass: Record<PlanFeatureStatus, string> = {
+  included: 'text-primary-comfy-yellow',
+  excluded: 'text-primary-comfy-canvas/40',
+  coming: 'text-primary-warm-gray'
 }
 
-export interface PlanFeatureGroup {
-  titleKey?: TranslationKey
-  features: PlanFeature[]
+const statusTextClass: Record<PlanFeatureStatus, string> = {
+  included: 'text-primary-warm-white',
+  excluded: 'text-primary-warm-gray',
+  coming: 'text-primary-warm-gray'
 }
 
 const { locale = 'en' } = defineProps<{
@@ -40,37 +51,23 @@ const { locale = 'en' } = defineProps<{
           :key="feature.text"
           class="flex items-start gap-2"
         >
-          <Clock
-            v-if="feature.type === 'coming'"
-            class="text-primary-warm-gray mt-0.5 size-4 shrink-0"
-            aria-hidden="true"
-          />
-          <Check
-            v-else-if="feature.included !== false"
-            class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
-            aria-hidden="true"
-          />
-          <X
-            v-else
-            class="mt-0.5 size-4 shrink-0 text-primary-comfy-canvas/40"
+          <component
+            :is="statusIcon[feature.status ?? 'included']"
+            class="mt-0.5 size-4 shrink-0"
+            :class="statusIconClass[feature.status ?? 'included']"
             aria-hidden="true"
           />
           <span class="sr-only">
             {{
-              feature.type === 'coming'
-                ? t('pricing.plan.feature.status.coming', locale)
-                : feature.included === false
-                  ? t('pricing.plan.feature.status.notIncluded', locale)
-                  : t('pricing.plan.feature.status.included', locale)
+              t(
+                `pricing.plan.feature.status.${feature.status ?? 'included'}`,
+                locale
+              )
             }}:
           </span>
           <span
             class="ppformula-text-center text-sm"
-            :class="
-              feature.type === 'coming' || feature.included === false
-                ? 'text-primary-warm-gray'
-                : 'text-primary-warm-white'
-            "
+            :class="statusTextClass[feature.status ?? 'included']"
           >
             {{ t(feature.text, locale) }}
           </span>
