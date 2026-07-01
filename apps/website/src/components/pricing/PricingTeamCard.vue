@@ -44,7 +44,9 @@ const teamSaving = computed<string | undefined>(() => {
   const base = selectedTeamTier.value.basePrice
   const discounted = selectedTeamPrice.value
   if (base === discounted) return undefined
-  const pct = ((base - discounted) / base) * 100
+  // Round to 1 decimal so future tiers can't render repeating decimals
+  // (e.g. 8.333333%), while preserving exact values like 2.5% / 7.5%.
+  const pct = Math.round(((base - discounted) / base) * 1000) / 10
   return t('pricing.savePercent', locale)
     .replace('{pct}', String(pct))
     .replace('{amount}', fmtPrice(base - discounted))

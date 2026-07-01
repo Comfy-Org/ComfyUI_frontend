@@ -36,7 +36,7 @@ const estimate = computed(() => {
         {{ label }}
       </span>
     </div>
-    <p v-if="estimate" class="text-primary-warm-gray mt-1.5 px-6 text-xs">
+    <p v-if="estimate" class="text-primary-warm-gray mt-1.5 text-xs">
       {{ estimate }}
     </p>
   </div>
