@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 import FreeTierDialogContent from './FreeTierDialogContent.vue'
 
@@ -17,7 +17,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   }))
 }))
 
-function renderComponent(props?: { reason?: SubscriptionDialogReason }) {
+function renderComponent(props?: { reason?: PaymentIntentSource }) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',

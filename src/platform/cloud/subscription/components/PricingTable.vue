@@ -277,14 +277,19 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import {
+  recordPendingSubscriptionCheckoutAttempt,
+  withPendingCheckoutAttemptId
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type {
+  CheckoutAttributionMetadata,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -323,7 +328,7 @@ interface PricingTierConfig {
 }
 
 const { reason } = defineProps<{
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
 }>()
 
 const emit = defineEmits<{
@@ -514,19 +519,18 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
               : {})
           })
           if (beginCheckoutMetadata) {
-            telemetry?.trackBeginCheckout({
-              ...beginCheckoutMetadata,
-              checkout_attempt_id: pendingAttempt.attempt_id
-            })
+            telemetry?.trackBeginCheckout(
+              withPendingCheckoutAttemptId(
+                beginCheckoutMetadata,
+                pendingAttempt
+              )
+            )
           }
         }
       } else {
-        await performSubscriptionCheckout(
-          tierKey,
-          currentBillingCycle.value,
-          true,
-          reason
-        )
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false

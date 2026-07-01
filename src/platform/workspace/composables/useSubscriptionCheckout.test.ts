@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import { findPlanSlug } from './useSubscriptionCheckout'
@@ -147,7 +147,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
 describe('useSubscriptionCheckout', () => {
   let emit: ReturnType<typeof vi.fn>
 
-  async function setup(paymentIntentSource?: SubscriptionDialogReason) {
+  async function setup(paymentIntentSource?: PaymentIntentSource) {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
     return useSubscriptionCheckout(emit as never, paymentIntentSource)

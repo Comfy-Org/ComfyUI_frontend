@@ -1,27 +1,33 @@
-import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
+  PaymentIntentSource,
+  SubscriptionCheckoutType
+} from '@/platform/telemetry/types'
+import type {
   Plan,
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
+import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
-type CheckoutType = 'new' | 'change'
+
+interface SelectedTeamCheckout {
+  stop: TeamPlanSelection
+  checkoutType: SubscriptionCheckoutType
+}
 
 /**
  * Which screen the `preview` step shows. Only a change prorates: a team change
@@ -53,7 +59,7 @@ export function useSubscriptionCheckout(
   emit: {
     (e: 'close', subscribed: boolean): void
   },
-  paymentIntentSource?: SubscriptionDialogReason
+  paymentIntentSource?: PaymentIntentSource
 ) {
   const { t } = useI18n()
   const toast = useToast()
@@ -75,14 +81,16 @@ export function useSubscriptionCheckout(
   const isResubscribing = ref(false)
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
-  const selectedTeamStop = ref<TeamPlanSelection | null>(null)
-  const selectedTeamCheckoutType = ref<CheckoutType>('new')
+  const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
-  const isTeamCheckout = computed(() => selectedTeamStop.value !== null)
+  const selectedTeamStop = computed(
+    () => selectedTeamCheckout.value?.stop ?? null
+  )
+  const isTeamCheckout = computed(() => selectedTeamCheckout.value !== null)
 
   const previewVariant = computed<PreviewVariant>(() => {
-    if (selectedTeamStop.value) {
+    if (selectedTeamCheckout.value) {
       return previewData.value ? 'team-change' : 'team-new'
     }
     if (previewData.value) {
@@ -98,26 +106,6 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
   ): string | null {
     return findPlanSlug(plans.value, tierKey, billingCycle)
-  }
-
-  function trackCheckoutStarted(
-    tier: TierKey | 'team',
-    cycle: BillingCycle,
-    checkoutType: CheckoutType,
-    billingOpId: string
-  ) {
-    const { userId } = storeToRefs(useAuthStore())
-    if (!userId.value) return
-    telemetry?.trackBeginCheckout({
-      user_id: userId.value,
-      tier,
-      cycle,
-      checkout_type: checkoutType,
-      billing_op_id: billingOpId,
-      ...(paymentIntentSource
-        ? { payment_intent_source: paymentIntentSource }
-        : {})
-    })
   }
 
   async function handleSubscribeClick(payload: {
@@ -182,8 +170,10 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
-    selectedTeamStop.value = payload.stop
-    selectedTeamCheckoutType.value = payload.isChange ? 'change' : 'new'
+    selectedTeamCheckout.value = {
+      stop: payload.stop,
+      checkoutType: payload.isChange ? 'change' : 'new'
+    }
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
     previewData.value = null
@@ -211,8 +201,7 @@ export function useSubscriptionCheckout(
   function handleBackToPricing() {
     checkoutStep.value = 'pricing'
     previewData.value = null
-    selectedTeamStop.value = null
-    selectedTeamCheckoutType.value = 'new'
+    selectedTeamCheckout.value = null
   }
 
   function handleSuccessClose() {
@@ -240,12 +229,13 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
-        trackCheckoutStarted(
-          tierKey,
-          billingCycle,
+        trackWorkspaceCheckoutStarted({
+          tier: tierKey,
+          cycle: billingCycle,
           checkoutType,
-          response.billing_op_id
-        )
+          billingOpId: response.billing_op_id,
+          paymentIntentSource
+        })
       }
       await handleSubscribeResponse(response)
     } catch (error) {
@@ -312,8 +302,8 @@ export function useSubscriptionCheckout(
   }
 
   async function handleTeamSubscription() {
-    const stop = selectedTeamStop.value
-    if (!stop?.id) {
+    const teamCheckout = selectedTeamCheckout.value
+    if (!teamCheckout?.stop.id) {
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -322,8 +312,8 @@ export function useSubscriptionCheckout(
       return
     }
 
+    const { stop, checkoutType } = teamCheckout
     const billingCycle = selectedBillingCycle.value
-    const checkoutType = selectedTeamCheckoutType.value
 
     isSubscribing.value = true
     try {
@@ -336,12 +326,13 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
-        trackCheckoutStarted(
-          'team',
-          billingCycle,
+        trackWorkspaceCheckoutStarted({
+          tier: 'team',
+          cycle: billingCycle,
           checkoutType,
-          response.billing_op_id
-        )
+          billingOpId: response.billing_op_id,
+          paymentIntentSource
+        })
       }
       await handleSubscribeResponse(response)
     } catch (error) {

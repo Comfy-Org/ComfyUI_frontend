@@ -53,7 +53,9 @@ describe('performTeamSubscriptionCheckout', () => {
       billing_op_id: 'op_1'
     })
 
-    await performTeamSubscriptionCheckout('team_700', 'yearly')
+    await performTeamSubscriptionCheckout('team_700', 'yearly', {
+      paymentIntentSource: 'deep_link'
+    })
 
     expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_annual', {
       returnUrl: 'https://app.test/payment/success',

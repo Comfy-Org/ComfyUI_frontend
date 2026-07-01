@@ -100,12 +100,12 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 
 const { reason } = defineProps<{
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
 }>()
 
 defineEmits<{

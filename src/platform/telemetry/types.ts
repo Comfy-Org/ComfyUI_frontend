@@ -12,11 +12,28 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
+
+export type PaymentIntentSource =
+  | 'subscription_required'
+  | 'out_of_credits'
+  | 'top_up_blocked'
+  | 'deep_link'
+  | 'subscribe_to_run'
+  | 'subscribe_now_button'
+  | 'upgrade_to_add_credits'
+  | 'settings_billing_panel'
+  | 'avatar_menu_plans'
+  | 'team_members_panel'
+  | 'invite_member_upsell'
+  | 'upload_model_upgrade'
+  | 'team_upgrade_resume'
+
+export type SubscriptionCheckoutType = 'new' | 'change'
+export type SubscriptionCheckoutTier = TierKey | 'team'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -426,7 +443,7 @@ export interface CheckoutAttributionMetadata {
 
 export interface SubscriptionMetadata {
   current_tier?: string
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
 }
 
 export interface AddCreditsClickMetadata {
@@ -436,13 +453,13 @@ export interface AddCreditsClickMetadata {
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
-  tier: TierKey | 'team'
+  tier: SubscriptionCheckoutTier
   cycle: BillingCycle
-  checkout_type: 'new' | 'change'
+  checkout_type: SubscriptionCheckoutType
   checkout_attempt_id?: string
   billing_op_id?: string
   previous_tier?: TierKey
-  payment_intent_source?: SubscriptionDialogReason
+  payment_intent_source?: PaymentIntentSource
 }
 
 interface EcommerceItemMetadata {
@@ -464,9 +481,9 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   checkout_attempt_id: string
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: 'new' | 'change'
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
-  payment_intent_source?: SubscriptionDialogReason
+  payment_intent_source?: PaymentIntentSource
   value: number
   currency: string
   ecommerce: EcommerceMetadata

@@ -5,6 +5,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -12,28 +13,8 @@ const DIALOG_KEY = 'subscription-required'
 const FREE_TIER_DIALOG_KEY = 'free-tier-info'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
-/**
- * The product moment that sent the user into the paywall/pricing flow.
- * Attached to `app:subscription_required_modal_opened` and carried through
- * `begin_checkout` so payment attempts stay attributable to their trigger.
- */
-export type SubscriptionDialogReason =
-  | 'subscription_required'
-  | 'out_of_credits'
-  | 'top_up_blocked'
-  | 'deep_link'
-  | 'subscribe_to_run'
-  | 'subscribe_now_button'
-  | 'upgrade_to_add_credits'
-  | 'settings_billing_panel'
-  | 'avatar_menu_plans'
-  | 'team_members_panel'
-  | 'invite_member_upsell'
-  | 'upload_model_upgrade'
-  | 'team_upgrade_resume'
-
 export interface SubscriptionDialogOptions {
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
    * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
@@ -55,7 +36,7 @@ export const useSubscriptionDialog = () => {
 
   // Fired here — the choke point every paywall/pricing dialog variant passes
   // through — so both the legacy and workspace billing paths emit it.
-  function trackModalOpened(reason?: SubscriptionDialogReason) {
+  function trackModalOpened(reason?: PaymentIntentSource) {
     // Resolved lazily to avoid the useBillingContext import cycle (see below).
     const { tier } = useBillingContext()
     useTelemetry()?.trackSubscription('modal_opened', {

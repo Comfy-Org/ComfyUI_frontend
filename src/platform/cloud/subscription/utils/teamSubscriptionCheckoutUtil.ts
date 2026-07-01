@@ -1,13 +1,15 @@
-import { storeToRefs } from 'pinia'
-
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useAuthStore } from '@/stores/authStore'
+import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 import type { BillingCycle } from './subscriptionTierRank'
+
+interface PerformTeamSubscriptionCheckoutOptions {
+  paymentIntentSource?: PaymentIntentSource
+}
 
 /**
  * Direct team-plan checkout for the marketing `/cloud/subscribe?tier=team` deep
@@ -26,11 +28,11 @@ import type { BillingCycle } from './subscriptionTierRank'
  */
 export async function performTeamSubscriptionCheckout(
   teamCreditStopId: string,
-  billingCycle: BillingCycle
+  billingCycle: BillingCycle,
+  options: PerformTeamSubscriptionCheckoutOptions = {}
 ): Promise<void> {
   if (!isCloud) return
 
-  const { userId } = storeToRefs(useAuthStore())
   const planSlug = getTeamPlanSlug(billingCycle)
   const response = await workspaceApi.subscribe(planSlug, {
     returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
@@ -38,16 +40,13 @@ export async function performTeamSubscriptionCheckout(
     teamCreditStopId
   })
 
-  if (userId.value) {
-    useTelemetry()?.trackBeginCheckout({
-      user_id: userId.value,
-      tier: 'team',
-      cycle: billingCycle,
-      checkout_type: 'new',
-      billing_op_id: response.billing_op_id,
-      payment_intent_source: 'deep_link'
-    })
-  }
+  trackWorkspaceCheckoutStarted({
+    tier: 'team',
+    cycle: billingCycle,
+    checkoutType: 'new',
+    billingOpId: response.billing_op_id,
+    paymentIntentSource: options.paymentIntentSource
+  })
 
   if (response.status === 'needs_payment_method') {
     // A needs_payment_method response without a URL is unusable: surface it to

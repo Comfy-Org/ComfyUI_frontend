@@ -6,9 +6,13 @@ import type {
   SubscriptionTier,
   TierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { SubscriptionSuccessMetadata } from '@/platform/telemetry/types'
+import type {
+  BeginCheckoutMetadata,
+  PaymentIntentSource,
+  SubscriptionCheckoutType,
+  SubscriptionSuccessMetadata
+} from '@/platform/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
 const VALID_TIER_KEYS = new Set<TierKey>([
@@ -24,7 +28,6 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =
 export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
   'comfy:subscription-checkout-attempt-changed'
 
-type CheckoutType = 'new' | 'change'
 type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 
 interface SubscriptionStatusSnapshot {
@@ -33,24 +36,24 @@ interface SubscriptionStatusSnapshot {
   subscription_duration?: SubscriptionDuration | null
 }
 
-interface PendingSubscriptionCheckoutAttempt {
+export interface PendingSubscriptionCheckoutAttempt {
   attempt_id: string
   started_at_ms: number
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: CheckoutType
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
-  payment_intent_source?: SubscriptionDialogReason
+  payment_intent_source?: PaymentIntentSource
 }
 
-interface RecordPendingSubscriptionCheckoutAttemptInput {
+export interface PendingSubscriptionCheckoutAttemptInput {
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: CheckoutType
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
-  payment_intent_source?: SubscriptionDialogReason
+  payment_intent_source?: PaymentIntentSource
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -230,11 +233,10 @@ const getPendingSubscriptionCheckoutAttempt =
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
   getPendingSubscriptionCheckoutAttempt() !== null
 
-export const recordPendingSubscriptionCheckoutAttempt = (
-  input: RecordPendingSubscriptionCheckoutAttemptInput
+export const createPendingSubscriptionCheckoutAttempt = (
+  input: PendingSubscriptionCheckoutAttemptInput
 ): PendingSubscriptionCheckoutAttempt => {
-  const storage = getStorage()
-  const attempt: PendingSubscriptionCheckoutAttempt = {
+  return {
     attempt_id: createAttemptId(),
     started_at_ms: Date.now(),
     tier: input.tier,
@@ -246,7 +248,12 @@ export const recordPendingSubscriptionCheckoutAttempt = (
       ? { payment_intent_source: input.payment_intent_source }
       : {})
   }
+}
 
+export const persistPendingSubscriptionCheckoutAttempt = (
+  attempt: PendingSubscriptionCheckoutAttempt
+): PendingSubscriptionCheckoutAttempt => {
+  const storage = getStorage()
   if (!storage) {
     return attempt
   }
@@ -263,6 +270,21 @@ export const recordPendingSubscriptionCheckoutAttempt = (
 
   return attempt
 }
+
+export const recordPendingSubscriptionCheckoutAttempt = (
+  input: PendingSubscriptionCheckoutAttemptInput
+): PendingSubscriptionCheckoutAttempt =>
+  persistPendingSubscriptionCheckoutAttempt(
+    createPendingSubscriptionCheckoutAttempt(input)
+  )
+
+export const withPendingCheckoutAttemptId = (
+  metadata: BeginCheckoutMetadata,
+  attempt: PendingSubscriptionCheckoutAttempt
+): BeginCheckoutMetadata => ({
+  ...metadata,
+  checkout_attempt_id: attempt.attempt_id
+})
 
 const didAttemptSucceed = (
   attempt: PendingSubscriptionCheckoutAttempt,
