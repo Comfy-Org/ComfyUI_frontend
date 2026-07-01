@@ -228,37 +228,42 @@ export function getAssetTypeBadge(
 }
 
 /**
- * Resolves the model-type key used to look up a node provider for an asset.
+ * Ordered node-category candidates for an asset, most specific first.
  *
- * Unlike {@link getAssetCategories}, this keeps the full (possibly
- * hierarchical) value so `modelToNodeStore`'s `parent/child` fallback still
- * works.
+ * Callers resolve a node provider by trying each candidate in order and taking
+ * the first that maps to a provider. The full (possibly hierarchical) value is
+ * kept so `modelToNodeStore`'s `parent/child` fallback still works.
  *
- * In `modelTypeMode` (backend declares `supports_model_type_tags`), candidates
- * are the stripped `model_type:*` values plus any other non-reserved tags, and
- * the most specific (deepest `parent/child`) candidate wins so a flat
- * `model_type:LLM` never shadows a resolvable `LLM/Qwen-VL/...` tag. Otherwise
- * we use the legacy first-non-reserved tag verbatim.
+ * In `modelTypeMode` (backend declares `supports_model_type_tags`) candidates
+ * are the stripped `model_type:*` values plus any other non-reserved tags,
+ * ordered by descending `parent/child` depth. Trying deepest-first lets a
+ * resolvable `LLM/Qwen-VL/...` path win over a flat `model_type:LLM`, while an
+ * unresolvable incidental tag (e.g. a user-added `foo/bar`) is skipped in
+ * favour of an authoritative `model_type:vae` that actually resolves. Ties keep
+ * `model_type:*` values ahead of bare tags so they are never shadowed by an
+ * equally-deep tag. Outside `modelTypeMode` the legacy first-non-reserved tag
+ * is used verbatim.
  */
-export function getAssetNodeCategory(
+export function getAssetNodeCategoryCandidates(
   asset: AssetItem,
   modelTypeMode = false
-): string | undefined {
+): string[] {
   if (!modelTypeMode) {
-    return asset.tags.find((tag) => tag !== MODELS_TAG && tag !== MISSING_TAG)
+    const legacy = asset.tags.find(
+      (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
+    )
+    return legacy ? [legacy] : []
   }
 
-  const otherTags = asset.tags.filter(
+  const bareTags = asset.tags.filter(
     (tag) =>
       tag !== MODELS_TAG &&
       tag !== MISSING_TAG &&
       !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
   )
-  const candidates = [...getModelTypeTagValues(asset), ...otherTags]
-  if (candidates.length === 0) return undefined
 
-  return candidates.reduce((best, candidate) =>
-    pathDepth(candidate) > pathDepth(best) ? candidate : best
+  return [...getModelTypeTagValues(asset), ...bareTags].sort(
+    (a, b) => pathDepth(b) - pathDepth(a)
   )
 }
 

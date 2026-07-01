@@ -95,6 +95,37 @@ describe('resolveModelNodeFromAsset', () => {
       expect(mockGetNodeProvider).toHaveBeenCalledWith('vae')
     })
 
+    it('skips an unresolvable incidental tag and resolves via the model_type value', () => {
+      mockSupportsModelTypeTags.value = true
+      mockGetNodeProvider.mockImplementation((category: string) =>
+        category === 'vae' ? createMockNodeProvider() : undefined
+      )
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({ tags: ['models', 'model_type:vae', 'foo/bar'] })
+      )
+
+      expect(result.success).toBe(true)
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('foo/bar')
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('vae')
+    })
+
+    it('prefers the deepest resolvable path over a flat model_type value', () => {
+      mockSupportsModelTypeTags.value = true
+      mockGetNodeProvider.mockImplementation((category: string) =>
+        category === 'LLM/Qwen-VL/Qwen3-0.6B'
+          ? createMockNodeProvider()
+          : undefined
+      )
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({
+          tags: ['models', 'model_type:LLM', 'LLM/Qwen-VL/Qwen3-0.6B']
+        })
+      )
+
+      expect(result.success).toBe(true)
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('LLM/Qwen-VL/Qwen3-0.6B')
+    })
+
     it('falls back to metadata.filename when user_metadata.filename missing', () => {
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(
@@ -228,7 +259,7 @@ describe('resolveModelNodeFromAsset', () => {
       if (!result.success) {
         expect(result.error.code).toBe('NO_PROVIDER')
         expect(result.error.message).toContain('checkpoints')
-        expect(result.error.details?.category).toBe('checkpoints')
+        expect(result.error.details?.candidates).toEqual(['checkpoints'])
       }
     })
   })
