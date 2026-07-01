@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -58,7 +59,7 @@ function makeModelCandidate(
 
 describe('missingModelStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.restoreAllMocks()
     mockNodeLocatorIdToNodeExecutionId.mockImplementation(
       (nodeLocatorId: string) => nodeLocatorId
@@ -262,6 +263,11 @@ describe('missingModelStore', () => {
       ])
       store.modelExpandState['test-key'] = true
       store.selectedLibraryModel['test-key'] = 'some-model'
+      store.setFileSize('https://example.com/model.safetensors', 1024)
+      store.setGatedRepoUrl(
+        'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors',
+        'https://huggingface.co/bfl/FLUX.1'
+      )
       expect(store.missingModelCandidates).not.toBeNull()
 
       store.clearMissingModels()
@@ -270,6 +276,8 @@ describe('missingModelStore', () => {
       expect(store.hasMissingModels).toBe(false)
       expect(store.modelExpandState).toEqual({})
       expect(store.selectedLibraryModel).toEqual({})
+      expect(store.fileSizes).toEqual({})
+      expect(store.gatedRepoUrls).toEqual({})
     })
   })
 

@@ -33,7 +33,8 @@ const { mockHandles } = vi.hoisted(() => {
         missingModelCandidates: null as MissingModelCandidate[] | null,
         createVerificationAbortController: vi.fn(() => new AbortController()),
         setFolderPaths: vi.fn(),
-        setFileSize: vi.fn()
+        setFileSize: vi.fn(),
+        setGatedRepoUrl: vi.fn()
       },
       workspaceWorkflow: {
         activeWorkflow: null as {
@@ -183,7 +184,10 @@ describe('missingModelPipeline', () => {
     )
     mockHandles.scanAllModelCandidates.mockReturnValue([])
     mockHandles.api.getFolderPaths.mockResolvedValue({})
-    mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: null })
+    mockHandles.fetchModelMetadata.mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    })
     mockHandles.isAncestorPathActive.mockReturnValue(true)
     mockHandles.isCandidateScopeActive.mockImplementation(
       (graph: LGraph, candidate: MissingModelCandidate) => {
@@ -440,7 +444,10 @@ describe('missingModelPipeline', () => {
         downloadableCandidate,
         urlOnlyCandidate
       ]
-      mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: 1024 })
+      mockHandles.fetchModelMetadata.mockResolvedValue({
+        fileSize: 1024,
+        gatedRepoUrl: null
+      })
 
       await runMissingModelPipeline({
         graph: createGraph(),
@@ -456,6 +463,37 @@ describe('missingModelPipeline', () => {
       expect(mockHandles.missingModelStore.setFileSize).toHaveBeenCalledWith(
         'https://example.com/downloadable.safetensors',
         1024
+      )
+    })
+
+    it('stores gated repo URLs for downloadable candidates', async () => {
+      const downloadableCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'downloadable.safetensors',
+        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/downloadable.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [downloadableCandidate]
+      mockHandles.fetchModelMetadata.mockResolvedValue({
+        fileSize: null,
+        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      })
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(
+        mockHandles.missingModelStore.setGatedRepoUrl
+      ).toHaveBeenCalledWith(
+        'https://huggingface.co/bfl/FLUX.1/resolve/main/downloadable.safetensors',
+        'https://huggingface.co/bfl/FLUX.1'
       )
     })
 
