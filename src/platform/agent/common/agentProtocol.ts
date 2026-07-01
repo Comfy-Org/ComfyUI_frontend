@@ -108,7 +108,16 @@ export type AgentEvent =
   | AgentMessageDoneEvent
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * A CAS version watermark: a non-negative integer. Rejects `NaN`/`Infinity`
+ * (which would wedge `<=`/`>` compares) plus negatives and non-integers that an
+ * untrusted draft endpoint could otherwise poison the watermark with.
+ */
+function isVersionNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
 }
 
 /** The base identifiers, read from the snake_case envelope body. */
@@ -156,8 +165,8 @@ function parseDraftPatch(
   if (
     typeof data.workflow_id !== 'string' ||
     !isRecord(data.content) ||
-    typeof data.version !== 'number' ||
-    typeof data.base_version !== 'number'
+    !isVersionNumber(data.version) ||
+    !isVersionNumber(data.base_version)
   ) {
     return null
   }
@@ -235,7 +244,7 @@ export function parseDraftSnapshot(raw: unknown): DraftSnapshot | null {
   if (
     !isRecord(raw) ||
     !isRecord(raw.content) ||
-    typeof raw.version !== 'number'
+    !isVersionNumber(raw.version)
   ) {
     return null
   }

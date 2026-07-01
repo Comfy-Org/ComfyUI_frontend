@@ -113,14 +113,35 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
   }
 
   async function runResync(workflowId: WorkflowId): Promise<ResyncOutcome> {
+    const knownAtStart = baseVersions.value.has(workflowId)
     const snapshot = await ports.fetchSnapshot(workflowId)
     const current = baseVersions.value.get(workflowId)
+    // The tab was closed (`forgetWorkflow`) while the snapshot was in flight —
+    // don't resurrect a workflow the user no longer has open. A cold-start seed
+    // (never registered) still applies.
+    if (knownAtStart && current === undefined) return 'up-to-date'
     if (current !== undefined && snapshot.version <= current) {
       return 'up-to-date'
     }
     ports.applyToTab(workflowId, snapshot.content, snapshot.version)
     baseVersions.value.set(workflowId, snapshot.version)
+    clearConflictSupersededBy(workflowId, snapshot.version)
     return 'restored'
+  }
+
+  /**
+   * A queued conflict is obsolete once an authoritative snapshot at or past its
+   * version is restored: resolving it later would replay stale content and
+   * regress the monotonic watermark.
+   */
+  function clearConflictSupersededBy(
+    workflowId: WorkflowId,
+    version: number
+  ): void {
+    const conflict = pendingConflict.value
+    if (conflict?.workflowId === workflowId && conflict.version <= version) {
+      pendingConflict.value = null
+    }
   }
 
   /**

@@ -146,6 +146,52 @@ describe('parseAgentEvent', () => {
     expect(event).toBeNull()
   })
 
+  it('rejects a draft_patch with an out-of-range version', () => {
+    for (const version of [Number.NaN, Number.POSITIVE_INFINITY, -1, 1.5]) {
+      const event = parseAgentEvent({
+        type: 'draft_patch',
+        data: {
+          ...data,
+          workflow_id: 'wf1',
+          content: {},
+          version,
+          base_version: 7
+        }
+      })
+      expect(event).toBeNull()
+    }
+  })
+
+  it('rejects a draft_patch with an out-of-range base_version', () => {
+    for (const base_version of [-1, 2.5, Number.NaN]) {
+      const event = parseAgentEvent({
+        type: 'draft_patch',
+        data: {
+          ...data,
+          workflow_id: 'wf1',
+          content: {},
+          version: 8,
+          base_version
+        }
+      })
+      expect(event).toBeNull()
+    }
+  })
+
+  it('rejects a draft_patch whose content is an array', () => {
+    const event = parseAgentEvent({
+      type: 'draft_patch',
+      data: {
+        ...data,
+        workflow_id: 'wf1',
+        content: [],
+        version: 8,
+        base_version: 7
+      }
+    })
+    expect(event).toBeNull()
+  })
+
   it('rejects a tool call with an invalid status', () => {
     const event = parseAgentEvent({
       type: 'agent_tool_call',
@@ -212,6 +258,13 @@ describe('parseDraftSnapshot', () => {
     expect(parseDraftSnapshot({ content: { nodes: [] } })).toBeNull()
     expect(parseDraftSnapshot({ version: 3 })).toBeNull()
     expect(parseDraftSnapshot({ content: 'nope', version: 3 })).toBeNull()
+    expect(parseDraftSnapshot({ content: [], version: 3 })).toBeNull()
     expect(parseDraftSnapshot({ content: {}, version: '3' })).toBeNull()
+    expect(parseDraftSnapshot({ content: {}, version: Number.NaN })).toBeNull()
+    expect(
+      parseDraftSnapshot({ content: {}, version: Number.POSITIVE_INFINITY })
+    ).toBeNull()
+    expect(parseDraftSnapshot({ content: {}, version: -1 })).toBeNull()
+    expect(parseDraftSnapshot({ content: {}, version: 1.5 })).toBeNull()
   })
 })

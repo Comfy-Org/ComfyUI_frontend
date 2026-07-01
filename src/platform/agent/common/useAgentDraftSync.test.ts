@@ -241,6 +241,39 @@ describe('useAgentDraftSync', () => {
       expect(b).toBe('restored')
       expect(ports.fetchSnapshot).toHaveBeenCalledTimes(1)
     })
+
+    it('does not resurrect a tab closed while the snapshot was in flight', async () => {
+      const ports = makePorts()
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 5)
+
+      const pending = sync.resync('wf1')
+      sync.forgetWorkflow('wf1')
+      const outcome = await pending
+
+      expect(outcome).toBe('up-to-date')
+      expect(ports.applyToTab).not.toHaveBeenCalled()
+      expect(sync.baseVersions.value.has('wf1')).toBe(false)
+    })
+
+    it('drops a queued conflict superseded by the restored snapshot', async () => {
+      const ports = makePorts()
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 7)
+      sync.setVersion('wf1', 8)
+      sync.handlePatch(patch({ baseVersion: 7, version: 9 }))
+      expect(sync.pendingConflict.value).not.toBeNull()
+
+      await sync.resync('wf1')
+
+      expect(sync.baseVersions.value.get('wf1')).toBe(SNAPSHOT.version)
+      expect(sync.pendingConflict.value).toBeNull()
+
+      vi.mocked(ports.applyToTab).mockClear()
+      sync.resolveConflict('accept-agent')
+      expect(ports.applyToTab).not.toHaveBeenCalled()
+      expect(sync.baseVersions.value.get('wf1')).toBe(SNAPSHOT.version)
+    })
   })
 
   describe('gap detection', () => {
