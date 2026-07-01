@@ -3,12 +3,12 @@ import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { Box } from '@/platform/assets/utils/marqueeSelectionUtil'
 import {
   normalizeMarqueeRect,
   selectMarqueeIds
 } from '@/platform/assets/utils/marqueeSelectionUtil'
 import { clampRectToBounds } from '@/utils/mathUtil'
+import type { RectEdges } from '@/utils/mathUtil'
 
 const DRAG_THRESHOLD_PX = 4
 const CARD_SELECTOR = '[data-asset-id]'
@@ -44,7 +44,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     isEnabled = () => true
   } = options
 
-  const marqueeRect = ref<Box | null>(null)
+  const marqueeRect = ref<RectEdges | null>(null)
   const isHoveringPanel = useElementHover(hoverTargetRef)
 
   let startX = 0

@@ -1,16 +1,14 @@
 import type { RectEdges } from '@/utils/mathUtil'
 
-export type Box = RectEdges
-
 export interface MarqueeCard {
   id: string
-  rect: Box
+  rect: RectEdges
 }
 
 export function normalizeMarqueeRect(
   start: { x: number; y: number },
   end: { x: number; y: number }
-): Box {
+): RectEdges {
   return {
     left: Math.min(start.x, end.x),
     top: Math.min(start.y, end.y),
@@ -19,7 +17,7 @@ export function normalizeMarqueeRect(
   }
 }
 
-function rectsIntersect(a: Box, b: Box): boolean {
+function rectsIntersect(a: RectEdges, b: RectEdges): boolean {
   return !(
     a.right < b.left ||
     a.left > b.right ||
@@ -35,7 +33,7 @@ function rectsIntersect(a: Box, b: Box): boolean {
  */
 export function selectMarqueeIds(
   cards: readonly MarqueeCard[],
-  marquee: Box,
+  marquee: RectEdges,
   baseIds: Iterable<string> = []
 ): Set<string> {
   const result = new Set(baseIds)

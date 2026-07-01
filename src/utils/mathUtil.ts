@@ -3,12 +3,8 @@ import { clamp } from 'es-toolkit/math'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
-export interface RectEdges {
-  left: number
-  top: number
-  right: number
-  bottom: number
-}
+/** A rectangle's viewport edges: the DOMRect subset, so a DOMRect is directly assignable. */
+export type RectEdges = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>
 
 /**
  * Clamps a rectangle so every edge stays within `bounds`. Both the rect and the

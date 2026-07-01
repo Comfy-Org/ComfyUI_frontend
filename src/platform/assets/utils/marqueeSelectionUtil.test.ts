@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Box, MarqueeCard } from './marqueeSelectionUtil'
+import type { RectEdges } from '@/utils/mathUtil'
+
+import type { MarqueeCard } from './marqueeSelectionUtil'
 import { normalizeMarqueeRect, selectMarqueeIds } from './marqueeSelectionUtil'
 
 const box = (
@@ -8,7 +10,7 @@ const box = (
   top: number,
   right: number,
   bottom: number
-): Box => ({
+): RectEdges => ({
   left,
   top,
   right,
