@@ -2,6 +2,8 @@ import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { PlatformSource } from '@/platform/telemetry/types'
+import { getCheckoutPlatformSource } from '@/platform/telemetry/utils/platformSource'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -161,6 +163,7 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  platform_source?: PlatformSource
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
@@ -283,6 +286,7 @@ export interface BillingBalanceResponse {
 interface CreateTopupRequest {
   amount_cents: number
   idempotency_key?: string
+  platform_source?: PlatformSource
 }
 
 type TopupStatus = 'pending' | 'completed' | 'failed'
@@ -660,6 +664,7 @@ export const workspaceApi = {
           plan_slug: planSlug,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
+          platform_source: getCheckoutPlatformSource(),
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle
         } satisfies SubscribeRequest,
@@ -746,7 +751,8 @@ export const workspaceApi = {
         api.apiURL('/billing/topup'),
         {
           amount_cents: amountCents,
-          idempotency_key: idempotencyKey
+          idempotency_key: idempotencyKey,
+          platform_source: getCheckoutPlatformSource()
         } satisfies CreateTopupRequest,
         { headers }
       )

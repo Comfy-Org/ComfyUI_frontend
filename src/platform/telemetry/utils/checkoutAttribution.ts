@@ -1,7 +1,15 @@
-import { isPlainObject } from 'es-toolkit'
 import { withTimeout } from 'es-toolkit/promise'
 
 import type { CheckoutAttributionMetadata } from '../types'
+import type { AttributionQueryKey } from './checkoutAttributionStorage'
+import {
+  asNonEmptyString,
+  hasAttributionChanges,
+  persistAttribution,
+  readAttributionFromUrl,
+  readStoredAttribution
+} from './checkoutAttributionStorage'
+import { getCheckoutPlatformSource } from './platformSource'
 
 type GaIdentity = {
   client_id?: string
@@ -16,98 +24,9 @@ const GA_IDENTITY_FIELDS = [
 ] as const satisfies ReadonlyArray<GtagGetFieldName>
 type GaIdentityField = GtagGetFieldName
 
-const ATTRIBUTION_QUERY_KEYS = [
-  'im_ref',
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_term',
-  'utm_content',
-  'gclid',
-  'gbraid',
-  'wbraid'
-] as const
-type AttributionQueryKey = (typeof ATTRIBUTION_QUERY_KEYS)[number]
-const ATTRIBUTION_STORAGE_KEY = 'comfy_checkout_attribution'
 const GENERATE_CLICK_ID_TIMEOUT_MS = 300
 const GET_GA_IDENTITY_TIMEOUT_MS = 300
 const GET_REWARDFUL_REFERRAL_TIMEOUT_MS = 300
-
-function readStoredAttribution(): Partial<Record<AttributionQueryKey, string>> {
-  if (typeof window === 'undefined') return {}
-
-  try {
-    const stored = localStorage.getItem(ATTRIBUTION_STORAGE_KEY)
-    if (!stored) return {}
-
-    const parsed: unknown = JSON.parse(stored)
-    if (!isPlainObject(parsed)) return {}
-
-    const result: Partial<Record<AttributionQueryKey, string>> = {}
-
-    for (const key of ATTRIBUTION_QUERY_KEYS) {
-      const value = asNonEmptyString(parsed[key])
-      if (value) {
-        result[key] = value
-      }
-    }
-
-    return result
-  } catch {
-    return {}
-  }
-}
-
-function persistAttribution(
-  payload: Partial<Record<AttributionQueryKey, string>>
-): void {
-  if (typeof window === 'undefined') return
-
-  try {
-    localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(payload))
-  } catch {
-    return
-  }
-}
-
-function readAttributionFromUrl(
-  search: string
-): Partial<Record<AttributionQueryKey, string>> {
-  const params = new URLSearchParams(search)
-
-  const result: Partial<Record<AttributionQueryKey, string>> = {}
-
-  for (const key of ATTRIBUTION_QUERY_KEYS) {
-    const value = params.get(key)
-    if (value) {
-      result[key] = value
-    }
-  }
-
-  return result
-}
-
-function hasAttributionChanges(
-  existing: Partial<Record<AttributionQueryKey, string>>,
-  incoming: Partial<Record<AttributionQueryKey, string>>
-): boolean {
-  for (const key of ATTRIBUTION_QUERY_KEYS) {
-    const value = incoming[key]
-    if (value !== undefined && existing[key] !== value) {
-      return true
-    }
-  }
-
-  return false
-}
-
-function asNonEmptyString(value: unknown): string | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value)
-  }
-
-  return typeof value === 'string' && value.length > 0 ? value : undefined
-}
 
 async function getGaIdentityField(
   measurementId: string,
@@ -245,6 +164,7 @@ export async function getCheckoutAttribution(): Promise<CheckoutAttributionMetad
 
   return {
     ...attribution,
+    platform_source: getCheckoutPlatformSource(),
     ga_client_id: gaIdentity?.client_id,
     ga_session_id: gaIdentity?.session_id,
     ga_session_number: gaIdentity?.session_number,
