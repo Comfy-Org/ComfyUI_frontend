@@ -99,6 +99,45 @@ describe('fetchModelMetadata', () => {
     expect(metadata.fileSize).toBeNull()
   })
 
+  it('does not treat thrown HuggingFace HEAD requests as gated or cache them', async () => {
+    const url = `https://huggingface.co/bfl/FLUX.1/resolve/main/thrown-${testId}.safetensors`
+    fetchMock
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-length': '2048' })
+      })
+
+    const first = await fetchModelMetadata(url)
+    const second = await fetchModelMetadata(url)
+
+    expect(first.gatedRepoUrl).toBeNull()
+    expect(first.fileSize).toBeNull()
+    expect(second.gatedRepoUrl).toBeNull()
+    expect(second.fileSize).toBe(2048)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not treat non-HuggingFace gated status codes as gated', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })
+
+    const metadata = await fetchModelMetadata(
+      `https://example.com/huggingface.co/not-gated-${testId}.safetensors`
+    )
+    expect(metadata.gatedRepoUrl).toBeNull()
+    expect(metadata.fileSize).toBeNull()
+  })
+
+  it('does not treat thrown non-HuggingFace HEAD requests as gated', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    const metadata = await fetchModelMetadata(
+      `https://example.com/thrown-${testId}.safetensors`
+    )
+    expect(metadata.gatedRepoUrl).toBeNull()
+    expect(metadata.fileSize).toBeNull()
+  })
+
   it('does not treat HuggingFace 404/500 as gated', async () => {
     fetchMock.mockResolvedValueOnce({ ok: false, status: 404 })
 
@@ -185,6 +224,12 @@ describe('toBrowsableUrl', () => {
   it('returns non-HuggingFace URLs unchanged', () => {
     const url =
       'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+    expect(toBrowsableUrl(url)).toBe(url)
+  })
+
+  it('does not treat URLs with HuggingFace in the path as HuggingFace URLs', () => {
+    const url =
+      'https://example.com/huggingface.co/org/model/resolve/main/file.safetensors'
     expect(toBrowsableUrl(url)).toBe(url)
   })
 
