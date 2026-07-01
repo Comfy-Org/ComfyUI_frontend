@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -17,245 +18,87 @@ test.describe('Background Image Upload', () => {
     await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
   })
 
+  async function openBackgroundImageSetting(comfyPage: ComfyPage) {
+    await comfyPage.page.keyboard.press('Control+,')
+    await comfyPage.page.locator('text=Appearance').click()
+    return comfyPage.page.locator('#Comfy\\.Canvas\\.BackgroundImage')
+  }
+
   test('should show background image upload component in settings', async ({
     comfyPage
   }) => {
-    // Open settings dialog
-    await comfyPage.page.keyboard.press('Control+,')
-
-    // Navigate to Appearance category
-    const appearanceOption = comfyPage.page.locator('text=Appearance')
-    await appearanceOption.click()
-
-    // Find the background image setting
-    const backgroundImageSetting = comfyPage.page.locator(
-      '#Comfy\\.Canvas\\.BackgroundImage'
-    )
+    const backgroundImageSetting = await openBackgroundImageSetting(comfyPage)
     await expect(backgroundImageSetting).toBeVisible()
 
-    // Verify the component has the expected elements using semantic selectors
-    const urlInput = backgroundImageSetting.getByRole('textbox')
-    await expect(urlInput).toBeVisible()
-    await expect(urlInput).toHaveAttribute('placeholder')
-
-    const uploadButton = backgroundImageSetting.getByRole('button', {
-      name: /upload/i
-    })
-    await expect(uploadButton).toBeVisible()
-
-    const clearButton = backgroundImageSetting.getByRole('button', {
-      name: /clear/i
-    })
-    await expect(clearButton).toBeVisible()
-    await expect(clearButton).toBeDisabled() // Should be disabled when no image
+    // With no image set: placeholder shown, no remove button
+    await expect(backgroundImageSetting.getByText('Choose image')).toBeVisible()
+    await expect(
+      backgroundImageSetting.getByRole('button', { name: 'Remove image' })
+    ).toBeHidden()
   })
 
   test('should upload image file and set as background', async ({
     comfyPage
   }) => {
-    // Open settings dialog
-    await comfyPage.page.keyboard.press('Control+,')
+    const backgroundImageSetting = await openBackgroundImageSetting(comfyPage)
 
-    // Navigate to Appearance category
-    const appearanceOption = comfyPage.page.locator('text=Appearance')
-    await appearanceOption.click()
-
-    // Find the background image setting
-    const backgroundImageSetting = comfyPage.page.locator(
-      '#Comfy\\.Canvas\\.BackgroundImage'
-    )
-    // Click the upload button to trigger file input
-    const uploadButton = backgroundImageSetting.getByRole('button', {
-      name: /upload/i
-    })
-
-    // Set up file upload handler
+    // Clicking the row opens the system file browser
     const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
-    await uploadButton.click()
+    await backgroundImageSetting
+      .getByRole('button', { name: 'Choose image' })
+      .click()
     const fileChooser = await fileChooserPromise
-
-    // Upload the test image
     await fileChooser.setFiles(comfyPage.assetPath('image32x32.webp'))
 
-    // Verify the URL input now has an API URL
-    const urlInput = backgroundImageSetting.getByRole('textbox')
-    await expect(urlInput).toHaveValue(/^\/api\/view\?.*subfolder=backgrounds/)
+    // The row shows the uploaded file's base name and a remove button
+    await expect(
+      backgroundImageSetting.getByText('image32x32.webp')
+    ).toBeVisible()
+    await expect(
+      backgroundImageSetting.getByRole('button', { name: 'Remove image' })
+    ).toBeVisible()
 
-    // Verify clear button is now enabled
-    const clearButton = backgroundImageSetting.getByRole('button', {
-      name: /clear/i
-    })
-    await expect(clearButton).toBeEnabled()
-
-    // Verify the setting value was actually set
+    // The setting value points at the uploaded file
     const settingValue = await comfyPage.settings.getSetting(
       'Comfy.Canvas.BackgroundImage'
     )
     expect(settingValue).toMatch(/^\/api\/view\?.*subfolder=backgrounds/)
   })
 
-  test('should accept URL input for background image', async ({
+  test('should show the base name of an existing background image', async ({
     comfyPage
   }) => {
-    const testImageUrl = 'https://example.com/test-image.png'
-
-    // Open settings dialog
-    await comfyPage.page.keyboard.press('Control+,')
-
-    // Navigate to Appearance category
-    const appearanceOption = comfyPage.page.locator('text=Appearance')
-    await appearanceOption.click()
-
-    // Find the background image setting
-    const backgroundImageSetting = comfyPage.page.locator(
-      '#Comfy\\.Canvas\\.BackgroundImage'
-    )
-    // Enter URL in the input field
-    const urlInput = backgroundImageSetting.getByRole('textbox')
-    await urlInput.fill(testImageUrl)
-
-    // Trigger blur event to ensure the value is set
-    await urlInput.blur()
-
-    // Verify clear button is now enabled
-    const clearButton = backgroundImageSetting.getByRole('button', {
-      name: /clear/i
-    })
-    await expect(clearButton).toBeEnabled()
-
-    // Verify the setting value was updated
-    const settingValue = await comfyPage.settings.getSetting(
-      'Comfy.Canvas.BackgroundImage'
-    )
-    expect(settingValue).toBe(testImageUrl)
-  })
-
-  test('should clear background image when clear button is clicked', async ({
-    comfyPage
-  }) => {
-    const testImageUrl = 'https://example.com/test-image.png'
-
-    // First set a background image
     await comfyPage.settings.setSetting(
       'Comfy.Canvas.BackgroundImage',
-      testImageUrl
+      '/api/view?filename=backgrounds%2Ftest-image.png&type=input&subfolder=backgrounds'
     )
 
-    // Open settings dialog
-    await comfyPage.page.keyboard.press('Control+,')
-
-    // Navigate to Appearance category
-    const appearanceOption = comfyPage.page.locator('text=Appearance')
-    await appearanceOption.click()
-
-    // Find the background image setting
-    const backgroundImageSetting = comfyPage.page.locator(
-      '#Comfy\\.Canvas\\.BackgroundImage'
-    )
-    // Verify the input has the test URL
-    const urlInput = backgroundImageSetting.getByRole('textbox')
-    await expect(urlInput).toHaveValue(testImageUrl)
-
-    // Verify clear button is enabled
-    const clearButton = backgroundImageSetting.getByRole('button', {
-      name: /clear/i
-    })
-    await expect(clearButton).toBeEnabled()
-
-    // Click the clear button
-    await clearButton.click()
-
-    // Verify the input is now empty
-    await expect(urlInput).toHaveValue('')
-
-    // Verify clear button is now disabled
-    await expect(clearButton).toBeDisabled()
-
-    // Verify the setting value was cleared
-    const settingValue = await comfyPage.settings.getSetting(
-      'Comfy.Canvas.BackgroundImage'
-    )
-    expect(settingValue).toBe('')
+    const backgroundImageSetting = await openBackgroundImageSetting(comfyPage)
+    await expect(
+      backgroundImageSetting.getByText('test-image.png')
+    ).toBeVisible()
   })
 
-  test('should show tooltip on upload and clear buttons', async ({
+  test('should clear background image with the remove button', async ({
     comfyPage
   }) => {
-    // Open settings dialog
-    await comfyPage.page.keyboard.press('Control+,')
-
-    // Navigate to Appearance category
-    const appearanceOption = comfyPage.page.locator('text=Appearance')
-    await appearanceOption.click()
-
-    // Find the background image setting
-    const backgroundImageSetting = comfyPage.page.locator(
-      '#Comfy\\.Canvas\\.BackgroundImage'
+    await comfyPage.settings.setSetting(
+      'Comfy.Canvas.BackgroundImage',
+      '/api/view?filename=test-image.png&type=input'
     )
-    // Hover over upload button and verify tooltip appears
-    const uploadButton = backgroundImageSetting.getByRole('button', {
-      name: /upload/i
-    })
-    await uploadButton.hover()
 
-    const uploadTooltip = comfyPage.page.locator('.p-tooltip:visible')
-    await expect(uploadTooltip).toBeVisible()
+    const backgroundImageSetting = await openBackgroundImageSetting(comfyPage)
+    await backgroundImageSetting
+      .getByRole('button', { name: 'Remove image' })
+      .click()
 
-    // Move away to hide tooltip
-    await comfyPage.page.locator('body').hover()
-
-    // Set a background to enable clear button
-    const urlInput = backgroundImageSetting.getByRole('textbox')
-    await urlInput.fill('https://example.com/test.png')
-    await urlInput.blur()
-
-    // Hover over clear button and verify tooltip appears
-    const clearButton = backgroundImageSetting.getByRole('button', {
-      name: /clear/i
-    })
-    await clearButton.hover()
-
-    const clearTooltip = comfyPage.page.locator('.p-tooltip:visible')
-    await expect(clearTooltip).toBeVisible()
-  })
-
-  test('should maintain reactive updates between URL input and clear button state', async ({
-    comfyPage
-  }) => {
-    // Open settings dialog
-    await comfyPage.page.keyboard.press('Control+,')
-
-    // Navigate to Appearance category
-    const appearanceOption = comfyPage.page.locator('text=Appearance')
-    await appearanceOption.click()
-
-    // Find the background image setting
-    const backgroundImageSetting = comfyPage.page.locator(
-      '#Comfy\\.Canvas\\.BackgroundImage'
-    )
-    const urlInput = backgroundImageSetting.getByRole('textbox')
-    const clearButton = backgroundImageSetting.getByRole('button', {
-      name: /clear/i
-    })
-
-    // Initially clear button should be disabled
-    await expect(clearButton).toBeDisabled()
-
-    // Type some text - clear button should become enabled
-    await urlInput.fill('test')
-    await expect(clearButton).toBeEnabled()
-
-    // Clear the text manually - clear button should become disabled again
-    await urlInput.fill('')
-    await expect(clearButton).toBeDisabled()
-
-    // Add text again - clear button should become enabled
-    await urlInput.fill('https://example.com/image.png')
-    await expect(clearButton).toBeEnabled()
-
-    // Use clear button - should clear input and disable itself
-    await clearButton.click()
-    await expect(urlInput).toHaveValue('')
-    await expect(clearButton).toBeDisabled()
+    // Placeholder returns, remove button disappears, setting cleared
+    await expect(backgroundImageSetting.getByText('Choose image')).toBeVisible()
+    await expect(
+      backgroundImageSetting.getByRole('button', { name: 'Remove image' })
+    ).toBeHidden()
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.Canvas.BackgroundImage'))
+      .toBe('')
   })
 })

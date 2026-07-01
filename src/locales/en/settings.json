@@ -29,9 +29,22 @@
     "name": "Disable animations",
     "tooltip": "Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation."
   },
+  "Comfy_Canvas_BackgroundColor": {
+    "name": "Canvas background color",
+    "tooltip": "Custom canvas background color. Leave empty to follow the active theme."
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Canvas background image",
     "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
+  },
+  "Comfy_Canvas_BackgroundPattern": {
+    "name": "Canvas background pattern",
+    "tooltip": "Pattern drawn on the canvas background. Not shown while a custom background image is set.",
+    "options": {
+      "Dots": "Dots",
+      "Grid": "Grid",
+      "None": "None"
+    }
   },
   "Comfy_Canvas_LeftMouseClickBehavior": {
     "name": "Left Mouse Click Behavior",

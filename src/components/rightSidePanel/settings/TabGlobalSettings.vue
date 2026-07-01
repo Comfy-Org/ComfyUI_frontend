@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
@@ -12,6 +14,9 @@ import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { CanvasBackgroundPattern } from '@/utils/canvasPatternUtil'
+import { getEffectiveCanvasBackgroundColor } from '@/utils/canvasPatternUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -40,6 +45,77 @@ const nodes2Enabled = computed({
 })
 
 // CANVAS settings
+const colorPaletteStore = useColorPaletteStore()
+
+type CanvasBackgroundMode = CanvasBackgroundPattern | 'image'
+
+// Keeps the Image option selected while no image is set, e.g. before the
+// first upload or right after removing the current one.
+const imageModeSelected = ref(false)
+
+const backgroundImage = computed({
+  get: () => settingStore.get('Comfy.Canvas.BackgroundImage') ?? '',
+  set: (value) => {
+    if (!value) imageModeSelected.value = true
+    settingStore.set('Comfy.Canvas.BackgroundImage', value)
+  }
+})
+
+const isBackgroundImageSet = computed(() => !!backgroundImage.value)
+
+const backgroundMode = computed<CanvasBackgroundMode>({
+  get: () =>
+    isBackgroundImageSet.value || imageModeSelected.value
+      ? 'image'
+      : settingStore.get('Comfy.Canvas.BackgroundPattern'),
+  set: (value) => {
+    if (value === 'image') {
+      imageModeSelected.value = true
+      return
+    }
+    imageModeSelected.value = false
+    if (isBackgroundImageSet.value) {
+      settingStore.set('Comfy.Canvas.BackgroundImage', '')
+    }
+    settingStore.set('Comfy.Canvas.BackgroundPattern', value)
+  }
+})
+
+const backgroundOptions = computed(() => [
+  {
+    value: 'dots',
+    label: t('settings.Comfy_Canvas_BackgroundPattern.options.Dots')
+  },
+  {
+    value: 'grid',
+    label: t('settings.Comfy_Canvas_BackgroundPattern.options.Grid')
+  },
+  { value: 'none', label: t('g.none') },
+  { value: 'image', label: t('rightSidePanel.globalSettings.image') }
+])
+
+const hasCustomBackgroundColor = computed(
+  () => settingStore.get('Comfy.Canvas.BackgroundColor') !== ''
+)
+
+const backgroundColor = computed({
+  get: () =>
+    getEffectiveCanvasBackgroundColor(
+      settingStore.get('Comfy.Canvas.BackgroundColor'),
+      colorPaletteStore.completedActivePalette.colors.litegraph_base
+        .CLEAR_BACKGROUND_COLOR
+    ),
+  set: (value) =>
+    settingStore.set(
+      'Comfy.Canvas.BackgroundColor',
+      value.replace(/^#/, '').slice(0, 6)
+    )
+})
+
+async function resetBackgroundColor() {
+  await settingStore.set('Comfy.Canvas.BackgroundColor', '')
+}
+
 const gridSpacing = computed({
   get: () => settingStore.get('Comfy.SnapToGrid.GridSize'),
   set: (value) => settingStore.set('Comfy.SnapToGrid.GridSize', value)
@@ -128,6 +204,55 @@ function openFullSettings() {
         {{ t('rightSidePanel.globalSettings.canvas') }}
       </template>
       <div class="space-y-4 px-4 py-3">
+        <LayoutField
+          :label="t('rightSidePanel.globalSettings.background')"
+          :tooltip="t('settings.Comfy_Canvas_BackgroundPattern.tooltip')"
+        >
+          <Select
+            v-model="backgroundMode"
+            :options="backgroundOptions"
+            :aria-label="t('rightSidePanel.globalSettings.background')"
+            :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+            size="small"
+            :pt="{
+              option: 'text-xs',
+              dropdown: 'w-8',
+              label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
+              overlay: 'w-fit min-w-full'
+            }"
+            data-capture-wheel="true"
+            option-label="label"
+            option-value="value"
+          />
+        </LayoutField>
+        <BackgroundImageUpload
+          v-if="backgroundMode === 'image'"
+          v-model="backgroundImage"
+        />
+        <LayoutField
+          v-else
+          :label="t('rightSidePanel.globalSettings.backgroundColor')"
+          :tooltip="t('settings.Comfy_Canvas_BackgroundColor.tooltip')"
+        >
+          <div class="flex items-center gap-1">
+            <ColorPicker
+              v-model="backgroundColor"
+              class="min-w-0 grow"
+              :aria-label="t('rightSidePanel.globalSettings.backgroundColor')"
+            />
+            <Button
+              v-if="hasCustomBackgroundColor"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="
+                t('rightSidePanel.globalSettings.resetBackgroundColor')
+              "
+              @click="resetBackgroundColor"
+            >
+              <i class="icon-[lucide--rotate-ccw] size-4" />
+            </Button>
+          </div>
+        </LayoutField>
         <LayoutField :label="t('rightSidePanel.globalSettings.gridSpacing')">
           <div
             :class="

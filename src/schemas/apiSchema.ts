@@ -308,6 +308,8 @@ const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
+  'Comfy.Canvas.BackgroundPattern': z.enum(['dots', 'grid', 'none']),
+  'Comfy.Canvas.BackgroundColor': z.string(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
   'Comfy.Appearance.DisableAnimations': z.boolean(),
