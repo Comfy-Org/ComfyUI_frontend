@@ -269,9 +269,17 @@ export const useAssetsStore = defineStore('assets', () => {
   const flatOutputSeenIds = new Set<string>()
   let flatOutputNextCursor: string | undefined
   let flatOutputInFlight: Promise<AssetItem[]> | null = null
+  let flatOutputInFlightIsLoadMore = false
 
   async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
+    // Coalesce matching-intent concurrent calls. A refresh must not be
+    // absorbed into an in-flight loadMore, or its reset would be skipped; wait
+    // for the loadMore to settle first so its late state write can't clobber
+    // the fresh head page.
+    while (flatOutputInFlight) {
+      if (loadMore || !flatOutputInFlightIsLoadMore) return flatOutputInFlight
+      await flatOutputInFlight.catch(() => {})
+    }
 
     if (loadMore) {
       if (!flatOutputHasMore.value) return flatOutputAssets.value
@@ -284,6 +292,7 @@ export const useAssetsStore = defineStore('assets', () => {
       flatOutputSeenIds.clear()
     }
     flatOutputError.value = null
+    flatOutputInFlightIsLoadMore = loadMore
 
     flatOutputInFlight = (async () => {
       const requestedAfter = loadMore ? flatOutputNextCursor : undefined
@@ -312,12 +321,14 @@ export const useAssetsStore = defineStore('assets', () => {
           resolvedNextCursor !== undefined &&
           resolvedNextCursor === requestedAfter
         flatOutputNextCursor = cursorStuck ? undefined : resolvedNextCursor
-        flatOutputHasMore.value = fresh.length > 0 && hasMore && !cursorStuck
+        flatOutputHasMore.value = batch.length > 0 && hasMore && !cursorStuck
         return flatOutputAssets.value
       } catch (err) {
         flatOutputError.value = err
-        console.error('Failed to fetch output assets:', err)
-        if (!loadMore) flatOutputAssets.value = []
+        console.error(
+          `Failed to fetch output assets (loadMore=${loadMore}, after=${requestedAfter ?? 'none'}, offset=${flatOutputOffset.value}):`,
+          err
+        )
         return flatOutputAssets.value
       } finally {
         if (loadMore) flatOutputIsLoadingMore.value = false
