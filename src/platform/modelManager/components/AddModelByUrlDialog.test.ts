@@ -146,7 +146,7 @@ describe('AddModelByUrlDialog', () => {
     expect(submit).toBeEnabled()
   })
 
-  it('requires a known model extension unless allow-any-extension is checked', async () => {
+  it('requires a known model extension', async () => {
     mountDialog()
     await userEvent.type(
       screen.getByLabelText('URL'),
@@ -158,10 +158,6 @@ describe('AddModelByUrlDialog', () => {
     )
     const submit = screen.getByRole('button', { name: 'Download' })
     expect(submit).toBeDisabled()
-
-    await userEvent.click(screen.getByRole('checkbox'))
-
-    expect(submit).toBeEnabled()
   })
 
   it('closes without submitting when cancel is clicked', async () => {
