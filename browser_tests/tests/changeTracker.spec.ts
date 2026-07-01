@@ -340,7 +340,6 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     'Does not restore invalid navigation stack',
     { tag: ['@vue-nodes', '@subgraph'] },
     async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       const convertToSubgraph = (nodeTitle: string) =>
         comfyPage.contextMenu
           .openFor(comfyPage.vueNodes.getNodeByTitle(nodeTitle))
