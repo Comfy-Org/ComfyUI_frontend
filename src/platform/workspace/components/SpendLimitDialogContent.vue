@@ -110,13 +110,10 @@ const ctaLoading = ref(false)
 
 const methodLabel = computed(() => {
   if (!methodType) return t('billing.spendLimit.defaultMethod')
-  const labels: Record<string, string | undefined> = {
-    alipay: t('billing.spendLimit.methodLabels.alipay'),
-    card: t('billing.spendLimit.methodLabels.card'),
-    us_bank_account: t('billing.spendLimit.methodLabels.us_bank_account'),
-    link: t('billing.spendLimit.methodLabels.link')
-  }
-  return labels[methodType] ?? t('billing.spendLimit.defaultMethod')
+  const knownMethods = ['alipay', 'card', 'us_bank_account', 'link']
+  if (!knownMethods.includes(methodType))
+    return t('billing.spendLimit.defaultMethod')
+  return t(`billing.spendLimit.methodLabels.${methodType}`)
 })
 
 const title = computed(() => {

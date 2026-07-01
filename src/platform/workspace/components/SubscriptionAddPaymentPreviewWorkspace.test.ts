@@ -38,17 +38,22 @@ function previewFixture(
   }
 }
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key,
-    n: (value: number) => value.toLocaleString('en-US')
-  })
-}))
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: (key: string) => key,
+      n: (value: number) => value.toLocaleString('en-US')
+    })
+  }
+})
 
 const globalOptions = {
   mocks: { $t: (key: string) => key },
   stubs: {
     'i18n-t': { template: '<span />' },
+    SubscriptionTermsNote: { template: '<div />' },
     Button: {
       template: '<button @click="$emit(\'click\')"><slot /></button>'
     }
