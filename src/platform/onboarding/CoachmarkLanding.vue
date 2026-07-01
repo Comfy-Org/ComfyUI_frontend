@@ -89,8 +89,9 @@ const { title, message, image, primaryLabel, skipLabel } = defineProps<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-// Close on Escape explicitly: Reka's built-in dismissal has proven unreliable
-// for this dialog in e2e, whereas this is the same path the Skip button uses.
+// Reka's DismissableLayer doesn't fire update:open on Escape for this dialog, so
+// it stays open without this (verified: 3/3 fail without it, 5/5 pass with it).
+// Close it explicitly — the same path Skip and Reka's own dismissal would take.
 useEventListener(document, 'keydown', (e) => {
   if (e.key === 'Escape' && open.value) open.value = false
 })

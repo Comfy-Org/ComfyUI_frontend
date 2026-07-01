@@ -14,7 +14,7 @@ export type CoachPlacement =
  * Every element a tour can point at, written as `data-coach-id` literals on
  * the real components. The e2e drift guard asserts each id still resolves.
  */
-const COACH_IDS = {
+export const COACH_IDS = {
   appRunButton: 'app-run-button',
   inputsList: 'inputs-list',
   outputs: 'outputs',

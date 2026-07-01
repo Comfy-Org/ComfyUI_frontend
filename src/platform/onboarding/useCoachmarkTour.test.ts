@@ -332,6 +332,31 @@ describe('useCoachmarkTour', () => {
     expect(api.primaryLabel.value).toBe('onboardingCoachmarks.done')
   })
 
+  it('omits the step index and coach id from the started event, then reports them per step', async () => {
+    registerAppModeTargets()
+    const { api } = mountTour()
+    void useCoachmarkController().requestTour('appMode')
+    await flush()
+
+    const started = telemetry.track.mock.calls.find(
+      ([stage]) => stage === 'started'
+    )
+    expect(started?.[1]).toEqual({ tour: 'appMode', step_count: 5 })
+
+    // Advancing off the landing shows the first spotlight step, which reports its
+    // index and coach id alongside the tour.
+    api.next()
+    await flush()
+    const shown = telemetry.track.mock.calls
+      .filter(([stage]) => stage === 'step_shown')
+      .at(-1)
+    expect(shown?.[1]).toMatchObject({
+      tour: 'appMode',
+      step_index: 1,
+      coach_id: 'inputs-list'
+    })
+  })
+
   it('advancing off the landing does not mark the tour skipped', async () => {
     registerAppModeTargets()
     const { api } = mountTour()

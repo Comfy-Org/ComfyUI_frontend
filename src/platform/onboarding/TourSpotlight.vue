@@ -16,7 +16,7 @@
     <div
       ref="cardRef"
       role="dialog"
-      aria-modal="true"
+      :aria-modal="!expectsTargetInteraction"
       :aria-labelledby="titleId"
       :aria-describedby="`${subtitleId} ${bodyId}`"
       class="pointer-events-auto absolute max-h-[calc(100vh-72px)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"

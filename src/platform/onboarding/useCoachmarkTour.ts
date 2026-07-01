@@ -37,13 +37,13 @@ export function useCoachmarkTour() {
   let stepController: AbortController | null = null
 
   // Read in setup, before the auto-open triggers fire and before URL loaders
-  // strip the param. A known path force-starts that tour; anything else replays
-  // whichever tour auto-detects.
+  // strip the param. A known path force-starts that tour; `any` replays whichever
+  // tour auto-detects; any other value is ignored.
   const coachParam = new URLSearchParams(window.location.search).get('coach')
   const forcedEntry =
     coachParam !== null && isEntryPath(coachParam) ? coachParam : null
   const forcedTour: ForcedTour | null =
-    coachParam === null ? null : (forcedEntry ?? 'any')
+    forcedEntry ?? (coachParam === 'any' ? 'any' : null)
 
   const step = computed<CoachStep | null>(
     () => steps.value[stepIdx.value] ?? null

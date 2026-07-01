@@ -8,6 +8,8 @@ import {
 } from '@e2e/fixtures/helpers/TemplateHelper'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+
 const test = mergeTests(comfyPageFixture, onboardingFixture)
 
 /**
@@ -65,8 +67,6 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       comfyPage,
       onboarding
     }) => {
-      // Keep in sync with COACH_IDS in src/platform/onboarding/onboardingTours.ts
-      // (importing it would execute app modules outside the browser).
       const coach = onboarding
       // App-mode anchors only mount once a workflow is running in app mode.
       // Open the template browser and load one to populate the graph first —
@@ -77,17 +77,15 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
         .poll(() => comfyPage.nodeOps.getGraphNodesCount())
         .toBeGreaterThan(0)
       await comfyPage.appMode.enterAppModeWithInputs([])
-      for (const id of [
-        'app-run-button',
-        'inputs-list',
-        'outputs',
-        'assets-button'
-      ]) {
+      // The assets panel only mounts once its button is clicked; every other
+      // anchor should already be present in a running app.
+      for (const id of Object.values(COACH_IDS).filter(
+        (id) => id !== COACH_IDS.assetsPanel
+      )) {
         await expect(coach.coachAnchor(id)).toBeVisible()
       }
-      // The assets panel mounts when the app-mode assets button is clicked.
-      await coach.coachAnchor('assets-button').click()
-      await expect(coach.coachAnchor('assets-panel')).toBeVisible()
+      await coach.coachAnchor(COACH_IDS.assetsButton).click()
+      await expect(coach.coachAnchor(COACH_IDS.assetsPanel)).toBeVisible()
     })
   })
 

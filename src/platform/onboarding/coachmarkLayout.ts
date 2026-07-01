@@ -23,7 +23,8 @@ export const TOP_SAFE_INSET = 56
 // the glow doesn't spill onto an adjacent control the user might click.
 export const SPOTLIGHT_PAD = 4
 // Page dim: the spotlight's giant box-shadow and the no-target blocker fill.
-export const SCRIM_COLOR = 'rgba(0,0,0,0.62)'
+// Matches the landing dialog's `bg-black/60` so the two overlays don't jump.
+export const SCRIM_COLOR = 'rgba(0,0,0,0.6)'
 
 /** The spotlight box: the target rect grown by `pad`, clamped to the viewport. */
 export function clampSpotlight(
