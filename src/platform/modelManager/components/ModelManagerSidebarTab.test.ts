@@ -16,12 +16,15 @@ const mockStore = reactive({
   downloadList: ref<DownloadStatus[]>([]),
   activeDownloads: ref<DownloadStatus[]>([]),
   historyDownloads: ref<DownloadStatus[]>([]),
-  hydrate: mockHydrate,
-  clearHistory: mockClearHistory
+  hydrate: mockHydrate
 })
 
 vi.mock('../stores/modelDownloadStore', () => ({
   useModelDownloadStore: () => mockStore
+}))
+
+vi.mock('../composables/useModelDownloadActions', () => ({
+  useModelDownloadActions: () => ({ clearHistory: mockClearHistory })
 }))
 
 vi.mock('./ModelDownloadRow.vue', () => ({

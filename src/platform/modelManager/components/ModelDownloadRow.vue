@@ -77,7 +77,7 @@
           variant="textonly"
           size="icon"
           :title="$t('modelManager.removeFromList')"
-          @click="store.removeFromView(download.download_id)"
+          @click="actions.remove(download)"
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
@@ -123,10 +123,7 @@ import { useProgressBarBackground } from '@/composables/useProgressBarBackground
 import { formatSize } from '@/utils/formatUtil'
 
 import { useModelDownloadActions } from '../composables/useModelDownloadActions'
-import {
-  downloadProgressFraction,
-  useModelDownloadStore
-} from '../stores/modelDownloadStore'
+import { downloadProgressFraction } from '../stores/modelDownloadStore'
 import type { DownloadStatus } from '../types'
 
 const { download } = defineProps<{ download: DownloadStatus }>()
@@ -134,7 +131,6 @@ const { download } = defineProps<{ download: DownloadStatus }>()
 const emit = defineEmits<{ openCredentials: [host: string] }>()
 
 const { t } = useI18n()
-const store = useModelDownloadStore()
 const actions = useModelDownloadActions()
 const {
   progressBarContainerClass,

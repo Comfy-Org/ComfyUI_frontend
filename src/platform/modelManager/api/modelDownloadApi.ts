@@ -74,6 +74,17 @@ export const pauseDownload = (id: string) => postAction(id, 'pause')
 export const resumeDownload = (id: string) => postAction(id, 'resume')
 export const cancelDownload = (id: string) => postAction(id, 'cancel')
 
+export async function deleteDownload(id: string): Promise<void> {
+  const response = await api.fetchApi(`${BASE}/${id}`, { method: 'DELETE' })
+  await parseJson<{ deleted: boolean }>(response)
+}
+
+export async function clearDownloads(): Promise<number> {
+  const response = await postJson(`${BASE}/clear`, undefined)
+  const data = await parseJson<{ deleted: number }>(response)
+  return data.deleted
+}
+
 export async function setDownloadPriority(
   id: string,
   priority: number

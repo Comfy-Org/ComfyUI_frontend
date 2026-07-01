@@ -58,6 +58,11 @@ export function useModelDownloadActions() {
       store.setPriority(download.download_id, download.priority + delta)
     )
 
+  const remove = (download: DownloadStatus) =>
+    run(() => store.remove(download.download_id))
+
+  const clearHistory = () => run(() => store.clearHistory())
+
   function cancel(download: DownloadStatus) {
     const dialog = showConfirmDialog({
       headerProps: { title: t('modelManager.cancelConfirmTitle') },
@@ -80,5 +85,13 @@ export function useModelDownloadActions() {
     })
   }
 
-  return { pause, resume, cancel, raisePriority, toastError }
+  return {
+    pause,
+    resume,
+    cancel,
+    raisePriority,
+    remove,
+    clearHistory,
+    toastError
+  }
 }
