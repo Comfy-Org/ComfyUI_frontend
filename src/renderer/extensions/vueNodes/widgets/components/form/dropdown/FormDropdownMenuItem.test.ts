@@ -12,14 +12,12 @@ import { AssetKindKey } from './types'
 import type { FormDropdownMenuItemProps } from './types'
 
 const mockFindServerPreviewUrl = vi.hoisted(() => vi.fn())
-const mockIsAssetPreviewSupported = vi.hoisted(() => vi.fn(() => true))
 const intersectionCallbacks = vi.hoisted(
   () => [] as Array<(entries: Array<{ isIntersecting: boolean }>) => void>
 )
 
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
-  findServerPreviewUrl: (name: string) => mockFindServerPreviewUrl(name),
-  isAssetPreviewSupported: () => mockIsAssetPreviewSupported()
+  findServerPreviewUrl: (name: string) => mockFindServerPreviewUrl(name)
 }))
 
 vi.mock('@vueuse/core', () => ({
@@ -83,7 +81,6 @@ describe('FormDropdownMenuItem', () => {
   beforeEach(() => {
     intersectionCallbacks.length = 0
     mockFindServerPreviewUrl.mockReset()
-    mockIsAssetPreviewSupported.mockReset().mockReturnValue(true)
   })
 
   describe('Label and name', () => {
@@ -165,14 +162,6 @@ describe('FormDropdownMenuItem', () => {
         '3d/model.glb'
       )) as HTMLImageElement
       expect(img.getAttribute('src')).toBe('/api/preview/resolved.png')
-    })
-
-    it('skips lookup when asset preview is unsupported', async () => {
-      mockIsAssetPreviewSupported.mockReturnValue(false)
-      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
-      fireIntersection(true)
-      await flushPromises()
-      expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
     })
 
     it('only looks up once for repeated intersection events', async () => {

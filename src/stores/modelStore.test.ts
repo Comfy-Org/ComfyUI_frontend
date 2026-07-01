@@ -3,15 +3,12 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelStore } from '@/stores/modelStore'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({
   api: {
-    getModels: vi.fn(),
-    getModelFolders: vi.fn(),
     viewMetadata: vi.fn(),
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
@@ -27,37 +24,8 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-// Mock the settingStore
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn()
-}))
-
-function enableMocks(useAssetAPI = false) {
-  // Mock settingStore to return the useAssetAPI setting
-  const mockSettingStore = {
-    get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.Assets.UseAssetAPI') {
-        return useAssetAPI
-      }
-      return false
-    })
-  }
-  vi.mocked(useSettingStore, { partial: true }).mockReturnValue(
-    mockSettingStore
-  )
-
-  // Mock experimental API - returns objects with name and folders properties
-  vi.mocked(api.getModels).mockResolvedValue([
-    { name: 'sdxl.safetensors', pathIndex: 0 },
-    { name: 'sdv15.safetensors', pathIndex: 0 },
-    { name: 'noinfo.safetensors', pathIndex: 0 }
-  ])
-  vi.mocked(api.getModelFolders).mockResolvedValue([
-    { name: 'checkpoints', folders: ['/path/to/checkpoints'] },
-    { name: 'vae', folders: ['/path/to/vae'] }
-  ])
-
-  // Mock asset API - also returns objects with name and folders properties
+function enableMocks() {
+  // Mock asset API - returns objects with name and folders properties
   vi.mocked(assetService.getAssetModelFolders).mockResolvedValue([
     { name: 'checkpoints', folders: ['/path/to/checkpoints'] },
     { name: 'vae', folders: ['/path/to/vae'] }
@@ -141,11 +109,11 @@ describe('useModelStore', () => {
     enableMocks()
     store = useModelStore()
     await store.loadModelFolders()
-    expect(api.getModels).toHaveBeenCalledTimes(0)
+    expect(assetService.getAssetModels).toHaveBeenCalledTimes(0)
     await store.getLoadedModelFolder('checkpoints')
-    expect(api.getModels).toHaveBeenCalledTimes(1)
+    expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
     await store.getLoadedModelFolder('checkpoints')
-    expect(api.getModels).toHaveBeenCalledTimes(1)
+    expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
   })
 
   describe('refreshModelFolder', () => {
@@ -154,9 +122,9 @@ describe('useModelStore', () => {
       store = useModelStore()
       await store.loadModelFolders()
       await store.getLoadedModelFolder('checkpoints')
-      expect(api.getModels).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      vi.mocked(api.getModels).mockResolvedValueOnce([
+      vi.mocked(assetService.getAssetModels).mockResolvedValueOnce([
         { name: 'sdxl.safetensors', pathIndex: 0 },
         { name: 'sdv15.safetensors', pathIndex: 0 },
         { name: 'noinfo.safetensors', pathIndex: 0 },
@@ -165,7 +133,7 @@ describe('useModelStore', () => {
 
       await store.refreshModelFolder('checkpoints')
 
-      expect(api.getModels).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
       const folder = await store.getLoadedModelFolder('checkpoints')
       expect(Object.keys(folder!.models)).toHaveLength(4)
       expect(folder!.models['0/new-upload.safetensors']).toBeDefined()
@@ -175,12 +143,12 @@ describe('useModelStore', () => {
       enableMocks()
       store = useModelStore()
       await store.loadModelFolders()
-      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(1)
 
       await store.refreshModelFolder('loras')
 
-      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
-      expect(api.getModels).not.toHaveBeenCalled()
+      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetModels).not.toHaveBeenCalled()
     })
   })
 
@@ -190,13 +158,15 @@ describe('useModelStore', () => {
       store = useModelStore()
       await store.loadModelFolders()
       await store.getLoadedModelFolder('checkpoints')
-      expect(api.getModels).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
       await store.refresh()
 
-      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
-      expect(api.getModels).toHaveBeenCalledTimes(2)
-      expect(api.getModels).toHaveBeenLastCalledWith('checkpoints')
+      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetModels).toHaveBeenLastCalledWith(
+        'checkpoints'
+      )
     })
 
     it('does not load folders that were never opened', async () => {
@@ -206,38 +176,20 @@ describe('useModelStore', () => {
 
       await store.refresh()
 
-      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
-      expect(api.getModels).not.toHaveBeenCalled()
+      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetModels).not.toHaveBeenCalled()
     })
   })
 
-  describe('API switching functionality', () => {
-    it('should use experimental API for complete workflow when UseAssetAPI setting is false', async () => {
-      enableMocks(false) // useAssetAPI = false
+  describe('asset API usage', () => {
+    it('uses the asset API for model folders and models', async () => {
+      enableMocks()
       store = useModelStore()
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
 
-      // Both APIs return objects with .name property, modelStore extracts folder.name in both cases
-      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
-      expect(api.getModels).toHaveBeenCalledWith('checkpoints')
-      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(0)
-      expect(assetService.getAssetModels).toHaveBeenCalledTimes(0)
-      expect(folderStore).toBeDefined()
-      expect(Object.keys(folderStore!.models)).toHaveLength(3)
-    })
-
-    it('should use asset API for complete workflow when UseAssetAPI setting is true', async () => {
-      enableMocks(true) // useAssetAPI = true
-      store = useModelStore()
-      await store.loadModelFolders()
-      const folderStore = await store.getLoadedModelFolder('checkpoints')
-
-      // Both APIs return objects with .name property, modelStore extracts folder.name in both cases
       expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
-      expect(api.getModelFolders).toHaveBeenCalledTimes(0)
-      expect(api.getModels).toHaveBeenCalledTimes(0)
       expect(folderStore).toBeDefined()
       expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })

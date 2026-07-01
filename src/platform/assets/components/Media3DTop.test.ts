@@ -5,15 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import Media3DTop from './Media3DTop.vue'
 
-const {
-  mockUseIntersectionObserver,
-  mockFindServerPreviewUrl,
-  mockIsAssetPreviewSupported
-} = vi.hoisted(() => ({
-  mockUseIntersectionObserver: vi.fn(),
-  mockFindServerPreviewUrl: vi.fn(),
-  mockIsAssetPreviewSupported: vi.fn(() => true)
-}))
+const { mockUseIntersectionObserver, mockFindServerPreviewUrl } = vi.hoisted(
+  () => ({
+    mockUseIntersectionObserver: vi.fn(),
+    mockFindServerPreviewUrl: vi.fn()
+  })
+)
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal<typeof VueUseCore>()
@@ -24,8 +21,7 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 })
 
 vi.mock('../utils/assetPreviewUtil', () => ({
-  findServerPreviewUrl: mockFindServerPreviewUrl,
-  isAssetPreviewSupported: mockIsAssetPreviewSupported
+  findServerPreviewUrl: mockFindServerPreviewUrl
 }))
 
 function makeAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
@@ -66,7 +62,6 @@ const globalConfig = { mocks: { $t: (key: string) => key } }
 describe('Media3DTop', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockIsAssetPreviewSupported.mockReturnValue(true)
   })
 
   it('renders the placeholder when no thumbnail has loaded', () => {
@@ -115,18 +110,6 @@ describe('Media3DTop', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const img = container.querySelector('img')
     expect(img).toHaveAttribute('src', 'http://server/from-name.png')
-  })
-
-  it('skips the server query when isAssetPreviewSupported is false', async () => {
-    fireObserverIntersecting()
-    mockIsAssetPreviewSupported.mockReturnValue(false)
-    render(Media3DTop, {
-      props: { asset: makeAsset() },
-      global: globalConfig
-    })
-    await flush()
-
-    expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
   })
 
   it('picks up a patched preview_url after the IntersectionObserver gate has closed', async () => {

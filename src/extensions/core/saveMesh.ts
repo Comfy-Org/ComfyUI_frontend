@@ -17,10 +17,7 @@ type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  isAssetPreviewSupported,
-  persistThumbnail
-} from '@/platform/assets/utils/assetPreviewUtil'
+import { persistThumbnail } from '@/platform/assets/utils/assetPreviewUtil'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
@@ -60,15 +57,13 @@ function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
       silentOnNotFound: true
     })
 
-    if (isAssetPreviewSupported()) {
-      const filename = fileInfo.filename ?? ''
-      void load3d
-        .whenLoadIdle()
-        .then(() => load3d.captureThumbnail(256, 256))
-        .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-        .then((blob) => persistThumbnail(filename, blob))
-        .catch(() => {})
-    }
+    const filename = fileInfo.filename ?? ''
+    void load3d
+      .whenLoadIdle()
+      .then(() => load3d.captureThumbnail(256, 256))
+      .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+      .then((blob) => persistThumbnail(filename, blob))
+      .catch(() => {})
   })
 }
 
@@ -194,16 +189,14 @@ useExtensionService().registerExtension({
             silentOnNotFound: true
           })
 
-          if (isAssetPreviewSupported()) {
-            const filename = fileInfo.filename ?? ''
+          const filename = fileInfo.filename ?? ''
 
-            void load3d
-              .whenLoadIdle()
-              .then(() => load3d.captureThumbnail(256, 256))
-              .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-              .then((blob) => persistThumbnail(filename, blob))
-              .catch(() => {})
-          }
+          void load3d
+            .whenLoadIdle()
+            .then(() => load3d.captureThumbnail(256, 256))
+            .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+            .then((blob) => persistThumbnail(filename, blob))
+            .catch(() => {})
         }
       })
     }

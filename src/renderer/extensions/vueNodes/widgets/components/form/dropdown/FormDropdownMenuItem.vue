@@ -5,10 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import {
-  findServerPreviewUrl,
-  isAssetPreviewSupported
-} from '@/platform/assets/utils/assetPreviewUtil'
+import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
 
 import { AssetKindKey } from './types'
 import type { FormDropdownMenuItemProps } from './types'
@@ -40,7 +37,6 @@ function toLookupName(name: string): string {
 }
 
 async function resolveMeshPreview() {
-  if (!isAssetPreviewSupported()) return
   const url = await findServerPreviewUrl(toLookupName(props.name))
   if (url) resolvedMeshPreview.value = url
 }

@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -193,7 +192,6 @@ export class ModelFolder {
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
-  const settingStore = useSettingStore()
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -206,21 +204,14 @@ export const useModelStore = defineStore('models', () => {
   )
 
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
-    const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
-    return useAssetAPI
-      ? (folder) => assetService.getAssetModels(folder)
-      : (folder) => api.getModels(folder)
+    return (folder) => assetService.getAssetModels(folder)
   }
 
   /**
    * Loads the model folders from the server
    */
   async function loadModelFolders() {
-    const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
-
-    const resData = useAssetAPI
-      ? await assetService.getAssetModelFolders()
-      : await api.getModelFolders()
+    const resData = await assetService.getAssetModelFolders()
     modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
     const getModelsFunc = createGetModelsFunc()

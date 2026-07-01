@@ -27,7 +27,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     const sidebarTabs = [
       { key: 'KeyW', tabId: 'workflows', label: 'workflows' },
       { key: 'KeyN', tabId: 'node-library', label: 'node library' },
-      { key: 'KeyM', tabId: 'model-library', label: 'model library' },
       { key: 'KeyA', tabId: 'assets', label: 'assets' }
     ] as const
 

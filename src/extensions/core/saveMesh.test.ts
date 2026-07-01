@@ -50,7 +50,6 @@ vi.mock('@/scripts/domWidget', () => ({
 }))
 
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
-  isAssetPreviewSupported: vi.fn(() => false),
   persistThumbnail: vi.fn()
 }))
 
