@@ -4,6 +4,7 @@ import {
   downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
+  openGatedRepoPage,
   toBrowsableUrl
 } from './missingModelDownload'
 
@@ -262,6 +263,27 @@ describe('toBrowsableUrl', () => {
     expect(toBrowsableUrl('https://civitai.red/api/v1/models/12345')).toBe(
       'https://civitai.red/models/12345'
     )
+  })
+})
+
+describe('openGatedRepoPage', () => {
+  it('opens gated HuggingFace repos without a download attribute', () => {
+    const clickedAnchors: HTMLAnchorElement[] = []
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        clickedAnchors.push(this)
+      })
+
+    openGatedRepoPage('https://huggingface.co/bfl/FLUX.1')
+
+    expect(anchorClick).toHaveBeenCalledTimes(1)
+    expect(clickedAnchors[0]?.getAttribute('href')).toBe(
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    expect(clickedAnchors[0]?.getAttribute('download')).toBeNull()
+    expect(clickedAnchors[0]?.getAttribute('target')).toBe('_blank')
+    expect(clickedAnchors[0]?.getAttribute('rel')).toBe('noopener noreferrer')
   })
 })
 

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +20,8 @@ const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShowUploadDialog = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockDownloadModel = vi.hoisted(() => vi.fn())
+const mockFetchModelMetadata = vi.hoisted(() => vi.fn())
+const mockOpenGatedRepoPage = vi.hoisted(() => vi.fn())
 const mockRootGraph = vi.hoisted<{
   value: Record<string, never> | null
 }>(() => ({ value: null }))
@@ -104,10 +107,8 @@ vi.mock('@/platform/missingModel/missingModelDownload', async () => {
   return {
     ...actual,
     downloadModel: mockDownloadModel,
-    fetchModelMetadata: vi.fn().mockResolvedValue({
-      fileSize: null,
-      gatedRepoUrl: null
-    })
+    fetchModelMetadata: mockFetchModelMetadata,
+    openGatedRepoPage: mockOpenGatedRepoPage
   }
 })
 
@@ -152,7 +153,7 @@ function renderRow(
   directory: string | null = 'checkpoints',
   canCloudImport = true
 ) {
-  const pinia = createPinia()
+  const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
 
   render(MissingModelRow, {
@@ -181,6 +182,10 @@ describe('MissingModelRow', () => {
     mockRootGraph.value = null
     mockApiListeners.clear()
     mockGetNodeByExecutionId.mockReset()
+    mockFetchModelMetadata.mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    })
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
   })
@@ -401,6 +406,28 @@ describe('MissingModelRow', () => {
     )
   })
 
+  it('stores gated HuggingFace metadata for downloadable rows', async () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+    mockFetchModelMetadata.mockResolvedValueOnce({
+      fileSize: null,
+      gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+    })
+
+    renderRow(model, vi.fn(), false)
+    const store = useMissingModelStore()
+
+    await waitFor(() => {
+      expect(
+        store.gatedRepoUrls[
+          'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+        ]
+      ).toBe('https://huggingface.co/bfl/FLUX.1')
+    })
+  })
+
   it('shows unknown category metadata for models without a directory', () => {
     renderRow(
       makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]),
@@ -456,5 +483,26 @@ describe('MissingModelRow', () => {
       },
       {}
     )
+    expect(mockOpenGatedRepoPage).not.toHaveBeenCalled()
+  })
+
+  it('opens gated repo URLs instead of starting the OSS download action', async () => {
+    mockIsCloud.value = false
+    const user = userEvent.setup()
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    const store = useMissingModelStore()
+    store.gatedRepoUrls[model.representative.url] =
+      'https://huggingface.co/bfl/FLUX.1'
+
+    await user.click(screen.getByTestId('missing-model-download'))
+
+    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    expect(mockDownloadModel).not.toHaveBeenCalled()
   })
 })

@@ -66,9 +66,9 @@ import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { downloadModel } from '@/platform/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
 
 interface MissingModelRowEntry {
@@ -96,6 +96,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const missingModelStore = useMissingModelStore()
+const { downloadMissingModel } = useMissingModelDownload()
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -135,7 +136,7 @@ const downloadAllLabel = computed(() => {
 
 function downloadAllModels() {
   for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
+    downloadMissingModel(model)
   }
 }
 

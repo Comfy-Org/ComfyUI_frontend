@@ -202,12 +202,11 @@ import {
   getModelStateKey,
   getNodeDisplayLabel
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
+import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
-  downloadModel,
-  fetchModelMetadata,
   isModelDownloadable,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
@@ -231,6 +230,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
+const { prefetchModelMetadata, downloadMissingModel } =
+  useMissingModelDownload()
 
 const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
@@ -349,29 +350,19 @@ onMounted(() => {
   if (isCloud) return
 
   const url = model.representative.url
-  if (url && !store.fileSizes[url]) {
-    fetchModelMetadata(url)
-      .then((metadata) => {
-        if (metadata.fileSize !== null) {
-          store.setFileSize(url, metadata.fileSize)
-        }
-      })
-      .catch((error: unknown) => {
-        console.warn(
-          `[MissingModelRow] Failed to fetch metadata for ${url}:`,
-          error
-        )
-      })
+  if (url) {
+    void prefetchModelMetadata(url)
   }
 })
 
 function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadModel(
-      { name: rep.name, url: rep.url, directory: rep.directory },
-      store.folderPaths
-    )
+    downloadMissingModel({
+      name: rep.name,
+      url: rep.url,
+      directory: rep.directory
+    })
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }

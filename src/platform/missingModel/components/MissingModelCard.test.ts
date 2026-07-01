@@ -10,6 +10,8 @@ import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
 
 vi.mock('./MissingModelRow.vue', () => ({
   default: {
@@ -37,11 +39,24 @@ vi.mock('./MissingModelRow.vue', () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockDownloadModel = vi.hoisted(() => vi.fn())
+const mockOpenGatedRepoPage = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
+
+vi.mock('@/platform/missingModel/missingModelDownload', async () => {
+  const actual = await vi.importActual<typeof MissingModelDownload>(
+    '@/platform/missingModel/missingModelDownload'
+  )
+  return {
+    ...actual,
+    downloadModel: mockDownloadModel,
+    openGatedRepoPage: mockOpenGatedRepoPage
+  }
+})
 
 import MissingModelCard from './MissingModelCard.vue'
 
@@ -108,7 +123,7 @@ function mountCard(
   }> = {},
   onLocateModel?: (nodeId: string) => void
 ) {
-  const pinia = createTestingPinia({ createSpy: vi.fn })
+  const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
   return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
@@ -257,6 +272,7 @@ describe('MissingModelCard', () => {
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    vi.clearAllMocks()
   })
 
   afterEach(() => {
@@ -302,5 +318,23 @@ describe('MissingModelCard (OSS)', () => {
     expect(
       screen.queryByTestId('missing-model-actions')
     ).not.toBeInTheDocument()
+  })
+
+  it('opens gated repo URLs from Download all actions', async () => {
+    const groups = [makeGroup({ withDownloadUrls: true })]
+    mountCard({
+      missingModelGroups: groups
+    })
+    const store = useMissingModelStore()
+    store.gatedRepoUrls[
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    ] = 'https://huggingface.co/comfy/test'
+
+    await userEvent.click(screen.getByTestId('missing-model-download-all'))
+
+    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+      'https://huggingface.co/comfy/test'
+    )
+    expect(mockDownloadModel).not.toHaveBeenCalled()
   })
 })

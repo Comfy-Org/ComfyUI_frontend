@@ -47,6 +47,14 @@ async function startDesktop2ModelDownload(
   }
 }
 
+export function openGatedRepoPage(url: string): void {
+  const link = document.createElement('a')
+  link.href = url
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.click()
+}
+
 function isHuggingFaceRepoUrl(url: string): boolean {
   try {
     return new URL(url).hostname.toLowerCase() === 'huggingface.co'
