@@ -7,7 +7,6 @@ import { Component as ComponentIcon } from '@lucide/vue'
 
 import { subscribeUrl } from '../../data/pricingPlans'
 import {
-  formatTeamCreditsLong,
   formatTeamCreditsShort,
   teamCreditTiers
 } from '../../data/teamCreditTiers'
@@ -138,7 +137,7 @@ const ctaHref = computed(() =>
         </div>
 
         <PricingCredits
-          :credits="formatTeamCreditsLong(selectedTeamTier.credits)"
+          :credits="selectedTeamTier.credits.toLocaleString('en-US')"
           :label="t('pricing.creditsLabel', locale)"
           estimate-key="pricing.team.videosEstimate"
           :estimate-count="selectedTeamTier.videos.toLocaleString('en-US')"

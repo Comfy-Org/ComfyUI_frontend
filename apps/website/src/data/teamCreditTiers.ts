@@ -42,11 +42,7 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     yearlyPrice: 2000,
     videos: 47830
   }
-] as const
-
-export function formatTeamCreditsLong(n: number): string {
-  return n.toLocaleString('en-US')
-}
+]
 
 export function formatTeamCreditsShort(n: number): string {
   const k = n / 1000
