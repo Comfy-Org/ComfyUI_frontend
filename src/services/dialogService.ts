@@ -19,7 +19,10 @@ import type {
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import type {
+  PaymentMethodCapability,
+  WorkspaceRole
+} from '@/platform/workspace/api/workspaceApi'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -631,7 +634,7 @@ export const useDialogService = () => {
    */
   async function showSpendLimitDialog(options: {
     scenario: 'limit_reached' | 'payment_failed'
-    capability: 'none' | 'one_time_only' | 'reusable'
+    capability: PaymentMethodCapability
     methodType?: string
     capabilityError?: boolean
   }) {

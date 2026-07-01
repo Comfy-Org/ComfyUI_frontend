@@ -53,7 +53,7 @@
         variant="primary"
         size="lg"
         class="h-10 justify-center"
-        :aria-label="ctaAriaLabel"
+        :aria-label="ctaLabel"
         @click="handleMainCta"
       >
         <Skeleton v-if="ctaLoading" class="h-4 w-32" />
@@ -80,13 +80,13 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { PaymentMethodCapability } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import SubscriptionTermsNote from '@/platform/workspace/components/SubscriptionTermsNote.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type Scenario = 'limit_reached' | 'payment_failed'
-type Capability = 'none' | 'one_time_only' | 'reusable'
 
 const {
   scenario,
@@ -95,7 +95,7 @@ const {
   capabilityError = false
 } = defineProps<{
   scenario: Scenario
-  capability: Capability
+  capability: PaymentMethodCapability
   methodType?: string
   capabilityError?: boolean
 }>()
@@ -108,16 +108,15 @@ const { manageSubscription } = useBillingContext()
 
 const ctaLoading = ref(false)
 
-const METHOD_LABELS: Record<string, string> = {
-  alipay: 'Alipay',
-  card: 'Your card',
-  us_bank_account: 'Your bank account',
-  link: 'Link'
-}
-
 const methodLabel = computed(() => {
   if (!methodType) return t('billing.spendLimit.defaultMethod')
-  return METHOD_LABELS[methodType] ?? t('billing.spendLimit.defaultMethod')
+  const labels: Record<string, string | undefined> = {
+    alipay: t('billing.spendLimit.methodLabels.alipay'),
+    card: t('billing.spendLimit.methodLabels.card'),
+    us_bank_account: t('billing.spendLimit.methodLabels.us_bank_account'),
+    link: t('billing.spendLimit.methodLabels.link')
+  }
+  return labels[methodType] ?? t('billing.spendLimit.defaultMethod')
 })
 
 const title = computed(() => {
@@ -128,7 +127,10 @@ const title = computed(() => {
   ) {
     return t('billing.spendLimit.addPaymentMethodTitle')
   }
-  return t('billing.spendLimit.paymentFailedTitle')
+  if (scenario === 'payment_failed') {
+    return t('billing.spendLimit.paymentFailedTitle')
+  }
+  return t('billing.spendLimit.addPaymentMethodTitle')
 })
 
 const ctaLabel = computed(() => {
@@ -139,15 +141,7 @@ const ctaLabel = computed(() => {
   ) {
     return t('billing.spendLimit.addPaymentMethodCta')
   }
-  return t('billing.spendLimit.updatePaymentMethodCta')
-})
-
-const ctaAriaLabel = computed(() => {
-  if (
-    !capabilityError &&
-    capability === 'reusable' &&
-    scenario === 'payment_failed'
-  ) {
+  if (scenario === 'payment_failed') {
     return t('billing.spendLimit.updatePaymentMethodCta')
   }
   return t('billing.spendLimit.addPaymentMethodCta')
@@ -174,7 +168,7 @@ async function handleMainCta() {
         })
         return
       }
-      const paymentWindow = window.open(url, '_blank')
+      const paymentWindow = window.open(url, '_blank', 'noopener,noreferrer')
       if (!paymentWindow) {
         toastStore.add({
           severity: 'warn',

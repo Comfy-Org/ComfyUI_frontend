@@ -84,14 +84,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (type !== 'cancel') {
-      let messageKey: string
-      if (type === 'subscription') {
-        messageKey = 'billingOperation.subscriptionProcessing'
-      } else if (type === 'topup') {
-        messageKey = 'billingOperation.topupProcessing'
-      } else {
-        messageKey = 'billingOperation.payOwedProcessing'
-      }
+      const messageKey =
+        type === 'subscription'
+          ? 'billingOperation.subscriptionProcessing'
+          : type === 'topup'
+            ? 'billingOperation.topupProcessing'
+            : 'billingOperation.payOwedProcessing'
 
       const toastMessage: ToastMessageOptions = {
         severity: 'info',

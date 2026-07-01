@@ -177,8 +177,9 @@
         <!-- consent note before add-payment-method CTA -->
         <SubscriptionTermsNote
           v-if="
-            paymentMethodCapability === 'none' ||
-            paymentMethodCapability === 'one_time_only'
+            permissions.canTopUp &&
+            (paymentMethodCapability === 'none' ||
+              paymentMethodCapability === 'one_time_only')
           "
           context="payment_method"
         />
@@ -186,8 +187,9 @@
         <!-- CTA: none / one_time_only → add payment method -->
         <Button
           v-if="
-            paymentMethodCapability === 'none' ||
-            paymentMethodCapability === 'one_time_only'
+            permissions.canTopUp &&
+            (paymentMethodCapability === 'none' ||
+              paymentMethodCapability === 'one_time_only')
           "
           variant="primary"
           size="sm"
@@ -204,7 +206,9 @@
         <!-- CTA: reusable + flag on → Pay now -->
         <Button
           v-else-if="
-            paymentMethodCapability === 'reusable' && settleEndpointEnabled
+            permissions.canTopUp &&
+            paymentMethodCapability === 'reusable' &&
+            settleEndpointEnabled
           "
           ref="payNowButtonRef"
           variant="primary"
@@ -218,6 +222,13 @@
           }}</span>
           <template v-else>{{ $t('billing.owedBalance.payNow') }}</template>
         </Button>
+
+        <!-- capability loading/unknown: show a neutral message -->
+        <span
+          v-if="permissions.canTopUp && paymentMethodCapability === null"
+          class="text-muted"
+          >{{ $t('billing.owedBalance.unknownCapability') }}</span
+        >
       </div>
     </div>
 
@@ -318,10 +329,11 @@ const settleEndpointEnabled = computed(() => flags.settleEndpointEnabled)
 const owedBalanceAmount = computed(() => {
   const pendingMicros = balance.value?.pendingChargesMicros
   if (pendingMicros == null || pendingMicros <= 0) return null
-  const currency = balance.value?.currency ?? 'USD'
+  const rawCurrency = (balance.value?.currency ?? '').toUpperCase()
+  const currency = /^[A-Z]{3}$/.test(rawCurrency) ? rawCurrency : 'USD'
   return (pendingMicros / 1_000_000).toLocaleString(locale.value, {
     style: 'currency',
-    currency: currency.toUpperCase()
+    currency
   })
 })
 
@@ -345,7 +357,7 @@ async function handleOwedAddPaymentMethod() {
       })
       return
     }
-    const win = window.open(url, '_blank')
+    const win = window.open(url, '_blank', 'noopener,noreferrer')
     if (!win) {
       toastStore.add({
         severity: 'warn',

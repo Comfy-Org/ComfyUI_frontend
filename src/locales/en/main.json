@@ -4503,7 +4503,13 @@
       "updatePaymentMethodCta": "Update payment method",
       "orBuyManually": "Or buy credits manually",
       "capabilityError": "Unable to load payment method status. You can add a payment method below.",
-      "defaultMethod": "Your current payment method"
+      "defaultMethod": "Your current payment method",
+      "methodLabels": {
+        "alipay": "Alipay",
+        "card": "Your card",
+        "us_bank_account": "Your bank account",
+        "link": "Link"
+      }
     },
     "owedBalance": {
       "title": "Outstanding balance: {amount}",
@@ -4512,7 +4518,8 @@
       "oneTimeOnlyHint": "Your current method can't be used to settle a balance — add a card, bank account, or Link",
       "payNow": "Pay now",
       "processing": "Processing payment…",
-      "chargeAutomatic": "A charge will process automatically."
+      "chargeAutomatic": "A charge will process automatically.",
+      "unknownCapability": "Payment method status unavailable. Refresh to try again."
     },
     "consent": {
       "paymentMethodBody": "By adding a payment method, you authorize Comfy Org to automatically charge it — without further action from you at the time — for unpaid balances and usage overages, in the amount you owe at billing time. You can remove it at any time in {settingsLink} (an active subscription or unpaid balance may need to be resolved first).",

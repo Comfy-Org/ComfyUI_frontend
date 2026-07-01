@@ -14,7 +14,7 @@ type Balance = Pick<
   | 'cloudCreditBalanceMicros'
   | 'prepaidBalanceMicros'
   | 'pendingChargesMicros'
->
+> & { currency?: string }
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
@@ -183,7 +183,9 @@ const i18n = createI18n({
             "Your current method can't be used to settle a balance — add a card, bank account, or Link",
           chargeAutomatic: 'A charge will process automatically.',
           payNow: 'Pay now',
-          processing: 'Processing payment…'
+          processing: 'Processing payment…',
+          unknownCapability:
+            'Payment method status unavailable. Refresh to try again.'
         }
       }
     }
@@ -540,6 +542,45 @@ describe('CreditsTile', () => {
       expect(container.textContent).toContain('Processing payment…')
       const btn = screen.getByRole('button', { name: /Processing payment/i })
       expect(btn.getAttribute('disabled')).not.toBeNull()
+    })
+
+    it('falls back to USD when balance.currency is an empty string', () => {
+      activeProSubscription()
+      state.balance = {
+        amountMicros: 500,
+        pendingChargesMicros: 5_000_000,
+        currency: ''
+      }
+      state.paymentMethodCapability = 'reusable'
+      renderTile()
+      const alert = screen.getByRole('alert')
+      expect(alert.textContent).toContain('$5.00')
+    })
+
+    it('hides CTAs when canTopUp is false even when balance is owed', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 3_000_000 }
+      state.paymentMethodCapability = 'none'
+      state.canTopUp = false
+      renderTile()
+      const alert = screen.getByRole('alert')
+      expect(alert.textContent).toContain('Outstanding balance')
+      expect(screen.queryByText('Add a payment method')).toBeNull()
+      expect(screen.queryByTestId('terms-note')).toBeNull()
+    })
+
+    it('shows a neutral message when paymentMethodCapability is null', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 3_000_000 }
+      state.paymentMethodCapability = null
+      state.canTopUp = true
+      renderTile()
+      const alert = screen.getByRole('alert')
+      expect(alert.textContent).toContain(
+        'Payment method status unavailable. Refresh to try again.'
+      )
+      expect(screen.queryByText('Pay now')).toBeNull()
+      expect(screen.queryByText('Add a payment method')).toBeNull()
     })
   })
 })
