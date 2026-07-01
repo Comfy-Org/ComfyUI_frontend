@@ -604,6 +604,59 @@ describe('useAssetGridSelection', () => {
       expect(callbacks.selectAll).not.toHaveBeenCalled()
     })
 
+    it('still selects all when hover desyncs but the pointer stays inside the panel', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+      vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(
+        fromPartial<DOMRect>({
+          left: 0,
+          top: 0,
+          right: 500,
+          bottom: 500,
+          width: 500,
+          height: 500
+        })
+      )
+
+      panel().dispatchEvent(new MouseEvent('mouseenter'))
+      window.dispatchEvent(
+        pointer('pointermove', { clientX: 100, clientY: 100 })
+      )
+      // The selection bar under the cursor unmounts on "deselect all", which
+      // latches useElementHover false while the pointer is still inside.
+      panel().dispatchEvent(new MouseEvent('mouseleave'))
+
+      const event = pressSelectAll()
+
+      expect(callbacks.selectAll).toHaveBeenCalledWith(assets)
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('does not select all when hover is off and the pointer left the panel', async () => {
+      const callbacks = createCallbacks()
+      await renderHarness(callbacks)
+      vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(
+        fromPartial<DOMRect>({
+          left: 0,
+          top: 0,
+          right: 500,
+          bottom: 500,
+          width: 500,
+          height: 500
+        })
+      )
+
+      window.dispatchEvent(
+        pointer('pointermove', { clientX: 900, clientY: 900 })
+      )
+      panel().dispatchEvent(new MouseEvent('mouseleave'))
+
+      const event = pressSelectAll()
+
+      expect(callbacks.selectAll).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
+    })
+
     it('ignores other keys and the unmodified A while hovered', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)

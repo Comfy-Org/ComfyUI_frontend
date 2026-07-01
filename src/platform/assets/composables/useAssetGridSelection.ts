@@ -57,6 +57,9 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   let suppressClickResetTimeout: ReturnType<typeof setTimeout> | null = null
   let dragCards: { id: string; rect: DOMRect }[] = []
   let dragBounds: DOMRect | null = null
+  let pointerClientX = 0
+  let pointerClientY = 0
+  let hasPointerSample = false
 
   function collectCards(container: HTMLElement) {
     return [...container.querySelectorAll<HTMLElement>(CARD_SELECTOR)].flatMap(
@@ -88,6 +91,9 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   }
 
   function onPointerMove(e: PointerEvent) {
+    pointerClientX = e.clientX
+    pointerClientY = e.clientY
+    hasPointerSample = true
     if (!isTracking) return
     if (
       !isDragging &&
@@ -181,10 +187,25 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     e.preventDefault()
   }
 
+  // useElementHover latches stale-false when an overlay under the cursor (the
+  // selection bar) unmounts on "deselect all"; recheck the live pointer against
+  // the panel rect so Ctrl/Cmd+A still resolves against the panel it is over.
+  function isPointerInsidePanel(): boolean {
+    const el = hoverTargetRef.value
+    if (!el || !hasPointerSample) return false
+    const { left, top, right, bottom } = el.getBoundingClientRect()
+    return (
+      pointerClientX >= left &&
+      pointerClientX <= right &&
+      pointerClientY >= top &&
+      pointerClientY <= bottom
+    )
+  }
+
   function onKeydown(e: KeyboardEvent) {
     if (!(e.ctrlKey || e.metaKey) || (e.key !== 'a' && e.key !== 'A')) return
     if (
-      !isHoveringPanel.value ||
+      !(isHoveringPanel.value || isPointerInsidePanel()) ||
       isTextEntryTarget(document.activeElement) ||
       document.querySelector('[role="dialog"][aria-modal="true"]')
     ) {
