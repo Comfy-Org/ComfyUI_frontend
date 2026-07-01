@@ -273,6 +273,7 @@ import {
   RenderShape
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -744,9 +745,18 @@ const widgetValueStore = useWidgetValueStore()
 const widgetIds = computed(() => {
   const graphId = app.rootGraph?.id
   const bareNodeId = stripGraphPrefix(nodeData.id)
-  return graphId && bareNodeId
-    ? widgetValueStore.getNodeWidgetIds(graphId, bareNodeId)
-    : []
+  if (!graphId || !bareNodeId) return []
+
+  const node = lgraphNode.value
+  if (node?.widgets) {
+    widgetValueStore.replaceNodeWidgetOrder(
+      graphId,
+      bareNodeId,
+      getWidgetIds(node.widgets)
+    )
+  }
+
+  return widgetValueStore.getNodeWidgetIds(graphId, bareNodeId)
 })
 
 const hasRenderableWidgets = computed(() => widgetIds.value.length > 0)
