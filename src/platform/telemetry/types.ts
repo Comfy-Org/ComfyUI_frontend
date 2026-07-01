@@ -409,6 +409,7 @@ export interface PageViewMetadata {
 }
 
 export interface CheckoutAttributionMetadata {
+  platform_source?: PlatformSource
   ga_client_id?: string
   ga_session_id?: string
   ga_session_number?: string
@@ -423,6 +424,8 @@ export interface CheckoutAttributionMetadata {
   gbraid?: string
   wbraid?: string
 }
+
+export type PlatformSource = 'cloud' | 'desktop_cloud' | 'desktop_local'
 
 export interface SubscriptionMetadata {
   current_tier?: string

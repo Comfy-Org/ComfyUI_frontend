@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   mockAxiosInstance,
   mockGetAuthHeaderOrThrow,
-  mockGetFirebaseAuthHeaderOrThrow
+  mockGetFirebaseAuthHeaderOrThrow,
+  mockGetCheckoutPlatformSource
 } = vi.hoisted(() => ({
   mockAxiosInstance: {
     get: vi.fn(),
@@ -13,7 +14,8 @@ const {
     interceptors: { response: { use: vi.fn() } }
   },
   mockGetAuthHeaderOrThrow: vi.fn(),
-  mockGetFirebaseAuthHeaderOrThrow: vi.fn()
+  mockGetFirebaseAuthHeaderOrThrow: vi.fn(),
+  mockGetCheckoutPlatformSource: vi.fn()
 }))
 
 vi.mock('axios', () => ({
@@ -47,6 +49,10 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
+vi.mock('@/platform/telemetry/utils/platformSource', () => ({
+  getCheckoutPlatformSource: mockGetCheckoutPlatformSource
+}))
+
 import { workspaceApi } from './workspaceApi'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' }
@@ -56,6 +62,7 @@ describe('workspaceApi', () => {
     vi.clearAllMocks()
     mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
+    mockGetCheckoutPlatformSource.mockReturnValue('desktop_cloud')
   })
 
   describe('authentication', () => {
@@ -367,6 +374,7 @@ describe('workspaceApi', () => {
           plan_slug: 'pro-monthly',
           return_url: 'https://return.url',
           cancel_url: 'https://cancel.url',
+          platform_source: 'desktop_cloud',
           team_credit_stop_id: undefined,
           billing_cycle: undefined
         },
@@ -390,6 +398,7 @@ describe('workspaceApi', () => {
           plan_slug: 'team_per_credit_annual',
           return_url: undefined,
           cancel_url: undefined,
+          platform_source: 'desktop_cloud',
           team_credit_stop_id: 'team_700',
           billing_cycle: 'yearly'
         },
@@ -457,7 +466,11 @@ describe('workspaceApi', () => {
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/topup',
-        { amount_cents: 1000, idempotency_key: 'key-3' },
+        {
+          amount_cents: 1000,
+          idempotency_key: 'key-3',
+          platform_source: 'desktop_cloud'
+        },
         { headers: AUTH_HEADER }
       )
       expect(result).toEqual(data)
