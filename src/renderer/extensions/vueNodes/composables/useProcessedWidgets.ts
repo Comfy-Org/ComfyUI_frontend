@@ -27,6 +27,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   stripGraphPrefix,
@@ -365,6 +366,7 @@ export function computeProcessedWidgets({
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
   const widgetValueStore = useWidgetValueStore()
+  const nodeDefStore = useNodeDefStore()
 
   const nodeExecId = getProcessedNodeExecutionId(
     isGraphReady,
@@ -439,7 +441,11 @@ export function computeProcessedWidgets({
       linkedUpstream,
       nodeLocatorId: getWidgetNodeLocatorId(nodeData, bareWidgetId),
       options: widgetOptions,
-      spec: undefined
+      spec:
+        widgetValueStore.getWidgetSpec(id)?.spec ??
+        (live
+          ? nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
+          : undefined)
     }
     const valueTooltip =
       isTooltipValueType(widgetState.type) && String(value).length > 10

@@ -143,6 +143,7 @@ const previewWidgetIds = computed<WidgetId[]>(() =>
       widgetValueStore.registerWidgetRenderState(id, {
         advanced: input.advanced
       })
+      widgetValueStore.registerWidgetSpec(id, input)
       return id
     })
 )
