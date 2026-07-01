@@ -165,9 +165,9 @@ const DOWNLOAD_STATES = [
 ] as const
 
 const zDownloadSegment = z.object({
-  idx: z.number(),
-  bytes_done: z.number(),
-  length: z.number()
+  idx: z.number().int().nonnegative(),
+  bytes_done: z.number().int().nonnegative(),
+  length: z.number().int().nonnegative()
 })
 
 const zDownloadStatus = z.object({
@@ -175,12 +175,12 @@ const zDownloadStatus = z.object({
   model_id: z.string(),
   url: z.string(),
   status: z.enum(DOWNLOAD_STATES),
-  priority: z.number(),
-  total_bytes: z.number().nullable(),
-  bytes_done: z.number(),
+  priority: z.number().int(),
+  total_bytes: z.number().int().nonnegative().nullable(),
+  bytes_done: z.number().int().nonnegative(),
   progress: z.number().nullable(),
-  speed_bps: z.number().nullable(),
-  eta_seconds: z.number().nullable(),
+  speed_bps: z.number().nonnegative().nullable(),
+  eta_seconds: z.number().nonnegative().nullable(),
   segments: z.array(zDownloadSegment).nullable(),
   error: z.string().nullable(),
   created_at: z.number(),

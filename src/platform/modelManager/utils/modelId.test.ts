@@ -40,6 +40,18 @@ describe('modelId utils', () => {
     it('joins directory and filename with a single slash', () => {
       expect(buildModelId('loras', 'x.safetensors')).toBe('loras/x.safetensors')
     })
+
+    it('collapses redundant slashes at the join boundary', () => {
+      expect(buildModelId('loras/', 'x.safetensors')).toBe(
+        'loras/x.safetensors'
+      )
+      expect(buildModelId('loras', '/x.safetensors')).toBe(
+        'loras/x.safetensors'
+      )
+      expect(buildModelId('loras//', '//x.safetensors')).toBe(
+        'loras/x.safetensors'
+      )
+    })
   })
 
   describe('hostFromUrl', () => {
@@ -64,6 +76,11 @@ describe('modelId utils', () => {
     it('flags unknown hosts', () => {
       expect(isLikelyAllowedHost('https://example.com/x')).toBe(false)
       expect(isLikelyAllowedHost('garbage')).toBe(false)
+    })
+
+    it('does not treat a fake subdomain of an allowed IP literal as allowed', () => {
+      expect(isLikelyAllowedHost('https://127.0.0.1/x')).toBe(true)
+      expect(isLikelyAllowedHost('https://evil.127.0.0.1/x')).toBe(false)
     })
   })
 

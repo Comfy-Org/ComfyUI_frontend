@@ -146,6 +146,28 @@ describe('useHostCredentialsStore', () => {
       )
     })
 
+    it('skips a disabled subdomain credential and returns a later enabled match', () => {
+      const store = useHostCredentialsStore()
+      store.credentials.push(
+        createCredential({
+          id: 'disabled',
+          host: 'huggingface.co',
+          match_subdomains: true,
+          enabled: false
+        }),
+        createCredential({
+          id: 'enabled',
+          host: 'huggingface.co',
+          match_subdomains: true,
+          enabled: true
+        })
+      )
+
+      expect(store.enabledCredentialForHost('cdn.huggingface.co')?.id).toBe(
+        'enabled'
+      )
+    })
+
     it('does not subdomain-match when match_subdomains is false', () => {
       const store = useHostCredentialsStore()
       store.credentials.push(

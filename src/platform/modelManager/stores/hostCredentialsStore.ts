@@ -56,11 +56,12 @@ export const useHostCredentialsStore = defineStore('hostCredentials', () => {
     const exact = credentialsByHost.value.get(normalized)
     if (exact) return exact.enabled ? exact : undefined
 
-    const subdomainMatch = credentials.value.find(
+    return credentials.value.find(
       (c) =>
-        c.match_subdomains && normalized.endsWith(`.${normalizeHost(c.host)}`)
+        c.enabled &&
+        c.match_subdomains &&
+        normalized.endsWith(`.${normalizeHost(c.host)}`)
     )
-    return subdomainMatch?.enabled ? subdomainMatch : undefined
   }
 
   return {

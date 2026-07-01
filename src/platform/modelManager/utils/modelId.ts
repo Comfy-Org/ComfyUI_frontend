@@ -16,6 +16,24 @@ export function buildModelId(directory: string, filename: string): string {
 }
 
 /**
+ * Directory portion of a `directory/filename` model id, or an empty string when
+ * the id has no directory prefix.
+ */
+export function directoryOf(modelId: string): string {
+  const slash = modelId.indexOf('/')
+  return slash === -1 ? '' : modelId.slice(0, slash)
+}
+
+/**
+ * Filename portion of a `directory/filename` model id, falling back to the full
+ * id when there is no directory prefix.
+ */
+export function filenameOf(modelId: string): string {
+  const slash = modelId.indexOf('/')
+  return slash === -1 ? modelId : modelId.slice(slash + 1)
+}
+
+/**
  * Lowercased host of a URL, or `null` when the URL is unparseable.
  */
 export function hostFromUrl(url: string): string | null {

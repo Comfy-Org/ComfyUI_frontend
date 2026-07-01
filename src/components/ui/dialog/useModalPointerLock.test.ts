@@ -94,4 +94,21 @@ describe('modal dialog pointer lock', () => {
     await flush()
     expect(document.body.style.pointerEvents).toBe('')
   })
+
+  it('holds the body lock until every open modal dialog closes', async () => {
+    const first = mountDialogWithSelect(true)
+    const second = mountDialogWithSelect(true)
+    await flush()
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // With one modal still open the shared lock must keep the body inert.
+    first.dialogOpen.value = false
+    await flush()
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Once the last modal closes the lock releases and stops forcing inert.
+    second.dialogOpen.value = false
+    await flush()
+    expect(document.body.style.pointerEvents).not.toBe('none')
+  })
 })
