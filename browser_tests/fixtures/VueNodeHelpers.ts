@@ -142,22 +142,20 @@ export class VueNodeHelpers {
     await this.page.locator('#graph-canvas').focus()
     await this.page.keyboard.press('Backspace')
   }
+  async getNodeId(node: Locator) {
+    await node.waitFor({ state: 'visible' })
+    const nodeId = await node.evaluate((el) => el.getAttribute('data-node-id'))
+    if (!nodeId)
+      throw new Error('Vue node is missing its data-node-id attribute')
+
+    return nodeId
+  }
 
   /**
    * Resolve the data-node-id of the first rendered node matching the title.
    */
   async getNodeIdByTitle(title: string | RegExp): Promise<string> {
-    const node = this.getNodeByTitle(title).first()
-    await node.waitFor({ state: 'visible' })
-
-    const nodeId = await node.evaluate((el) => el.getAttribute('data-node-id'))
-    if (!nodeId) {
-      throw new Error(
-        `Vue node titled "${title}" is missing its data-node-id attribute`
-      )
-    }
-
-    return nodeId
+    return await this.getNodeId(this.getNodeByTitle(title).first())
   }
 
   /**

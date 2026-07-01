@@ -69,6 +69,7 @@ import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTra
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { connectImageBatchToCreatedNode } from '@/renderer/core/canvas/links/multiNodeLinkConnect'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -141,7 +142,10 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   if (!node) return
 
   if (disconnectOnReset && triggerEvent) {
-    canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
+    const canvas = canvasStore.getCanvas()
+    if (!connectImageBatchToCreatedNode(canvas, node)) {
+      canvas.linkConnector.connectToNode(node, triggerEvent)
+    }
   } else if (!triggerEvent) {
     console.warn('The trigger event was undefined when addNode was called.')
   }

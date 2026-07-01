@@ -4,6 +4,7 @@ import type { Locator } from '@playwright/test'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import type { Position } from '@e2e/fixtures/types'
 
 const { searchBoxV2 } = TestIds
@@ -119,5 +120,11 @@ export class ComfyNodeSearchBoxV2 {
     await this.comfyPage.page.keyboard.press('Enter')
     await expect(this.dialog).toBeHidden()
     await this.comfyPage.page.mouse.click(position.x, position.y)
+
+    const { vueNodes } = this.comfyPage
+    const nodeId = await this.comfyPage.page.evaluate(
+      () => graph!.nodes.at(-1)!.id
+    )
+    return new VueNodeFixture(vueNodes.getNodeLocator(nodeId))
   }
 }
