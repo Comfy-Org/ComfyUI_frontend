@@ -305,10 +305,11 @@ test.describe('FE-910 marquee selection and select all', () => {
     const right = Math.max(alpha.x + alpha.width, beta.x + beta.width)
     const bottom = Math.max(alpha.y + alpha.height, beta.y + beta.height)
 
-    // Press in empty space below the cards, then rubber-band up over both.
-    await page.mouse.move((left + right) / 2, bottom + 40)
+    // Press in empty space below the cards, then rubber-band up across both
+    // (the drag must span the full card width, not just to the center).
+    await page.mouse.move(right - 2, bottom + 40)
     await page.mouse.down()
-    await page.mouse.move(left + 4, top + 4, { steps: 12 })
+    await page.mouse.move(left + 2, top + 4, { steps: 12 })
     await page.mouse.up()
 
     await expect(tab.selectedCards).toHaveCount(2)
