@@ -633,6 +633,7 @@ export const useDialogService = () => {
     scenario: 'limit_reached' | 'payment_failed'
     capability: 'none' | 'one_time_only' | 'reusable'
     methodType?: string
+    capabilityError?: boolean
   }) {
     const { type } = useBillingContext()
     if (type.value !== 'workspace') return

@@ -3,6 +3,7 @@
     class="@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
   >
     <Button
+      ref="refreshButtonRef"
       variant="muted-textonly"
       size="icon-sm"
       class="absolute top-4 right-4"
@@ -173,6 +174,15 @@
           >{{ $t('billing.owedBalance.chargeAutomatic') }}</span
         >
 
+        <!-- consent note before add-payment-method CTA -->
+        <SubscriptionTermsNote
+          v-if="
+            paymentMethodCapability === 'none' ||
+            paymentMethodCapability === 'one_time_only'
+          "
+          context="payment_method"
+        />
+
         <!-- CTA: none / one_time_only → add payment method -->
         <Button
           v-if="
@@ -200,10 +210,10 @@
           variant="primary"
           size="sm"
           class="w-fit"
-          :disabled="isPayingOwed"
+          :disabled="isPayingOwed || isPayingNow"
           @click="handlePayNow"
         >
-          <span v-if="isPayingOwed" role="status">{{
+          <span v-if="isPayingOwed || isPayingNow" role="status">{{
             $t('billing.owedBalance.processing')
           }}</span>
           <template v-else>{{ $t('billing.owedBalance.payNow') }}</template>
@@ -264,6 +274,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import SubscriptionTermsNote from '@/platform/workspace/components/SubscriptionTermsNote.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogService } from '@/services/dialogService'
@@ -304,29 +315,44 @@ const toastStore = useToastStore()
 
 const settleEndpointEnabled = computed(() => flags.settleEndpointEnabled)
 
-/** Non-null when there is a positive pending balance owed by the workspace. */
 const owedBalanceAmount = computed(() => {
   const pendingMicros = balance.value?.pendingChargesMicros
   if (pendingMicros == null || pendingMicros <= 0) return null
   const currency = balance.value?.currency ?? 'USD'
-  return pendingMicros / 1_000_000
-    ? (pendingMicros / 1_000_000).toLocaleString(locale.value, {
-        style: 'currency',
-        currency: currency.toUpperCase()
-      })
-    : null
+  return (pendingMicros / 1_000_000).toLocaleString(locale.value, {
+    style: 'currency',
+    currency: currency.toUpperCase()
+  })
 })
 
 const isPayingOwed = computed(() => billingOperationStore.isPayingOwed)
+const isPayingNow = ref(false)
 
 const payNowButtonRef = ref<InstanceType<typeof Button> | null>(null)
+const refreshButtonRef = ref<InstanceType<typeof Button> | null>(null)
 
 let payNowOpId: string | null = null
 
 async function handleOwedAddPaymentMethod() {
   try {
     const response = await workspaceApi.initiateAddPaymentMethod()
-    window.open(response.payment_method_url, '_blank')
+    const url = response.payment_method_url
+    if (!new URL(url).hostname.endsWith('.stripe.com')) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.unknownError')
+      })
+      return
+    }
+    const win = window.open(url, '_blank')
+    if (!win) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('subscription.preview.paymentPopupBlocked')
+      })
+    }
   } catch (err) {
     toastStore.add({
       severity: 'error',
@@ -337,16 +363,18 @@ async function handleOwedAddPaymentMethod() {
 }
 
 async function handlePayNow() {
-  if (isPayingOwed.value) return
+  if (isPayingOwed.value || isPayingNow.value) return
+  isPayingNow.value = true
 
-  // Clear any previous operation before starting a new one
+  const idempotencyKey = crypto.randomUUID()
+
   if (payNowOpId) {
     billingOperationStore.clearOperation(payNowOpId)
     payNowOpId = null
   }
 
   try {
-    const response = await workspaceApi.settleOwedBalance()
+    const response = await workspaceApi.settleOwedBalance(idempotencyKey)
     payNowOpId = response.billing_op_id
     const operation = await billingOperationStore.startOperation(
       payNowOpId,
@@ -355,13 +383,9 @@ async function handlePayNow() {
 
     if (operation.status === 'succeeded') {
       await nextTick()
-      // Focus refresh button when notice disappears
-      const refreshBtn = document.querySelector<HTMLElement>(
-        '[aria-label="' + t('subscription.refreshCredits') + '"]'
-      )
-      refreshBtn?.focus()
+      const el = refreshButtonRef.value?.$el as HTMLElement | undefined
+      el?.focus()
     } else {
-      // Focus pay now button on failure
       await nextTick()
       const el = payNowButtonRef.value?.$el as HTMLElement | undefined
       el?.focus()
@@ -372,6 +396,11 @@ async function handlePayNow() {
       summary: t('g.error'),
       detail: err instanceof Error ? err.message : t('g.unknownError')
     })
+    await nextTick()
+    const el = payNowButtonRef.value?.$el as HTMLElement | undefined
+    el?.focus()
+  } finally {
+    isPayingNow.value = false
   }
 }
 

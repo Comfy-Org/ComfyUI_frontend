@@ -4502,7 +4502,8 @@
       "addPaymentMethodCta": "Add a payment method",
       "updatePaymentMethodCta": "Update payment method",
       "orBuyManually": "Or buy credits manually",
-      "capabilityError": "Unable to load payment method status. You can add a payment method below."
+      "capabilityError": "Unable to load payment method status. You can add a payment method below.",
+      "defaultMethod": "Your current payment method"
     },
     "owedBalance": {
       "title": "Outstanding balance: {amount}",

@@ -10,12 +10,16 @@ import type { CurrentTeamCreditStop } from '@/platform/workspace/api/workspaceAp
 
 type Balance = Pick<
   BalanceInfo,
-  'amountMicros' | 'cloudCreditBalanceMicros' | 'prepaidBalanceMicros'
+  | 'amountMicros'
+  | 'cloudCreditBalanceMicros'
+  | 'prepaidBalanceMicros'
+  | 'pendingChargesMicros'
 >
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
 type TeamStop = CurrentTeamCreditStop
+type PaymentMethodCapability = 'none' | 'one_time_only' | 'reusable'
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -25,12 +29,20 @@ const state = vi.hoisted(() => ({
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
+  paymentMethodCapability: null as PaymentMethodCapability | null,
+  settleEndpointEnabled: false,
+  isPayingOwed: false,
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
   showPricingTable: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
-  toastErrorHandler: vi.fn()
+  toastErrorHandler: vi.fn(),
+  toastAdd: vi.fn(),
+  initiateAddPaymentMethod: vi.fn(),
+  settleOwedBalance: vi.fn(),
+  startOperation: vi.fn(),
+  clearOperation: vi.fn()
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({
@@ -57,8 +69,43 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => state.isFreeTier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
+    paymentMethodCapability: computed(() => state.paymentMethodCapability),
     fetchBalance: state.fetchBalance,
     fetchStatus: state.fetchStatus
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get settleEndpointEnabled() {
+        return state.settleEndpointEnabled
+      }
+    }
+  })
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: {
+    initiateAddPaymentMethod: (...args: unknown[]) =>
+      state.initiateAddPaymentMethod(...args),
+    settleOwedBalance: (...args: unknown[]) => state.settleOwedBalance(...args)
+  }
+}))
+
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({
+    get isPayingOwed() {
+      return state.isPayingOwed
+    },
+    startOperation: (...args: unknown[]) => state.startOperation(...args),
+    clearOperation: (...args: unknown[]) => state.clearOperation(...args)
+  })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({
+    add: (...args: unknown[]) => state.toastAdd(...args)
   })
 }))
 
@@ -92,6 +139,11 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: {
+        error: 'Error',
+        warning: 'Warning',
+        unknownError: 'An unknown error occurred'
+      },
       subscription: {
         totalCredits: 'Total credits',
         remaining: 'remaining',
@@ -116,7 +168,23 @@ const i18n = createI18n({
         outOfCreditsTitleNoDate: "You're out of credits",
         outOfCreditsDescription: 'Add more credits to continue generating.',
         addCredits: 'Add credits',
-        upgradeToAddCredits: 'Upgrade to add credits'
+        upgradeToAddCredits: 'Upgrade to add credits',
+        preview: {
+          paymentPopupBlocked:
+            'Popup blocked. Please allow popups and try again.'
+        }
+      },
+      billing: {
+        owedBalance: {
+          title: 'Outstanding balance: {amount}',
+          addPaymentMethod: 'Add a payment method',
+          addCardOrBank: 'Add a card or bank account',
+          oneTimeOnlyHint:
+            "Your current method can't be used to settle a balance — add a card, bank account, or Link",
+          chargeAutomatic: 'A charge will process automatically.',
+          payNow: 'Pay now',
+          processing: 'Processing payment…'
+        }
       }
     }
   }
@@ -131,11 +199,17 @@ function renderTile(props: Record<string, unknown> = {}) {
       stubs: {
         Button: {
           template:
-            '<button v-bind="$attrs" :data-variant="variant" :disabled="loading" @click="$emit(\'click\')"><slot/></button>',
-          props: ['variant', 'size', 'loading'],
+            '<button v-bind="$attrs" :data-variant="variant" :disabled="disabled || loading" @click="$emit(\'click\')"><slot/></button>',
+          props: ['variant', 'size', 'loading', 'disabled'],
           emits: ['click']
         },
-        Skeleton: { template: '<div role="status" aria-label="Loading"></div>' }
+        Skeleton: {
+          template: '<div role="status" aria-label="Loading"></div>'
+        },
+        SubscriptionTermsNote: {
+          template: '<p data-testid="terms-note" :data-context="context"></p>',
+          props: ['context']
+        }
       }
     }
   })
@@ -165,6 +239,9 @@ describe('CreditsTile', () => {
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
+    state.paymentMethodCapability = null
+    state.settleEndpointEnabled = false
+    state.isPayingOwed = false
     vi.clearAllMocks()
   })
 
@@ -369,5 +446,100 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(state.toastErrorHandler).toHaveBeenCalledWith(failure)
     )
+  })
+
+  describe('owed balance notice', () => {
+    it('hides the notice when pendingChargesMicros is null', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: undefined }
+      renderTile()
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('hides the notice when pendingChargesMicros is zero', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 0 }
+      renderTile()
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('hides the notice when pendingChargesMicros is negative', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: -100 }
+      renderTile()
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('shows the notice with a formatted amount when pendingChargesMicros is positive', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 5_000_000 }
+      state.paymentMethodCapability = 'reusable'
+      renderTile()
+      const alert = screen.getByRole('alert')
+      expect(alert.textContent).toContain('$5.00')
+    })
+
+    it('shows "Add a payment method" CTA and terms note for capability=none', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 3_000_000 }
+      state.paymentMethodCapability = 'none'
+      renderTile()
+      expect(screen.getByText('Add a payment method')).toBeTruthy()
+      const termsNote = screen.getByTestId('terms-note')
+      expect(termsNote.dataset.context).toBe('payment_method')
+      expect(screen.queryByText('Pay now')).toBeNull()
+    })
+
+    it('shows "Add a card or bank account" CTA, hint, and terms note for capability=one_time_only', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 3_000_000 }
+      state.paymentMethodCapability = 'one_time_only'
+      renderTile()
+      expect(screen.getByText('Add a card or bank account')).toBeTruthy()
+      expect(
+        screen.getByText(
+          "Your current method can't be used to settle a balance — add a card, bank account, or Link"
+        )
+      ).toBeTruthy()
+      const termsNote = screen.getByTestId('terms-note')
+      expect(termsNote.dataset.context).toBe('payment_method')
+      expect(screen.queryByText('Pay now')).toBeNull()
+    })
+
+    it('shows an auto-charge message and no CTA for capability=reusable when settle flag is off', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 3_000_000 }
+      state.paymentMethodCapability = 'reusable'
+      state.settleEndpointEnabled = false
+      renderTile()
+      expect(
+        screen.getByText('A charge will process automatically.')
+      ).toBeTruthy()
+      expect(screen.queryByText('Pay now')).toBeNull()
+      expect(screen.queryByText('Add a payment method')).toBeNull()
+      expect(screen.queryByTestId('terms-note')).toBeNull()
+    })
+
+    it('shows "Pay now" CTA for capability=reusable when settle flag is on', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 3_000_000 }
+      state.paymentMethodCapability = 'reusable'
+      state.settleEndpointEnabled = true
+      const { container } = renderTile()
+      expect(container.textContent).toContain('Pay now')
+      expect(container.textContent).not.toContain('Add a payment method')
+    })
+
+    it('shows "Processing payment…" and disables the Pay now button while isPayingOwed', () => {
+      activeProSubscription()
+      state.balance = { amountMicros: 500, pendingChargesMicros: 3_000_000 }
+      state.paymentMethodCapability = 'reusable'
+      state.settleEndpointEnabled = true
+      state.isPayingOwed = true
+      const { container } = renderTile()
+      expect(container.textContent).toContain('Processing payment…')
+      const btn = screen.getByRole('button', { name: /Processing payment/i })
+      expect(btn.getAttribute('disabled')).not.toBeNull()
+    })
   })
 })

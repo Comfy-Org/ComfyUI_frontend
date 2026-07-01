@@ -42,6 +42,11 @@
 
     <!-- Actions -->
     <div class="flex flex-col gap-4 p-8">
+      <SubscriptionTermsNote
+        v-if="!(capability === 'reusable' && scenario === 'payment_failed')"
+        context="payment_method"
+      />
+
       <Button
         :disabled="ctaLoading"
         :loading="ctaLoading"
@@ -63,7 +68,7 @@
       </button>
     </div>
 
-    <!-- TODO: paused/dunning account states (day-7/day-21) -->
+    <!-- TODO: handle paused and dunning account states -->
   </div>
 </template>
 
@@ -76,6 +81,7 @@ import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import SubscriptionTermsNote from '@/platform/workspace/components/SubscriptionTermsNote.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -111,7 +117,7 @@ const METHOD_LABELS: Record<string, string> = {
 
 const methodLabel = computed(() => {
   if (!methodType) return t('billing.spendLimit.defaultMethod')
-  return METHOD_LABELS[methodType] ?? 'Your current payment method'
+  return METHOD_LABELS[methodType] ?? t('billing.spendLimit.defaultMethod')
 })
 
 const title = computed(() => {
@@ -137,7 +143,11 @@ const ctaLabel = computed(() => {
 })
 
 const ctaAriaLabel = computed(() => {
-  if (capability === 'reusable' && scenario === 'payment_failed') {
+  if (
+    !capabilityError &&
+    capability === 'reusable' &&
+    scenario === 'payment_failed'
+  ) {
     return t('billing.spendLimit.updatePaymentMethodCta')
   }
   return t('billing.spendLimit.addPaymentMethodCta')
@@ -155,7 +165,16 @@ async function handleMainCta() {
       await manageSubscription()
     } else {
       const response = await workspaceApi.initiateAddPaymentMethod()
-      const paymentWindow = window.open(response.payment_method_url, '_blank')
+      const url = response.payment_method_url
+      if (!new URL(url).hostname.endsWith('.stripe.com')) {
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('g.unknownError')
+        })
+        return
+      }
+      const paymentWindow = window.open(url, '_blank')
       if (!paymentWindow) {
         toastStore.add({
           severity: 'warn',
