@@ -30,7 +30,9 @@ vi.mock('../api/modelDownloadApi', () => ({
   pauseDownload: vi.fn(),
   resumeDownload: vi.fn(),
   cancelDownload: vi.fn(),
-  setDownloadPriority: vi.fn()
+  setDownloadPriority: vi.fn(),
+  deleteDownload: vi.fn(),
+  clearDownloads: vi.fn()
 }))
 
 function createStatus(overrides: Partial<DownloadStatus> = {}): DownloadStatus {
@@ -273,17 +275,48 @@ describe('useModelDownloadStore', () => {
     expect(store.lastCompletedDownload?.timestamp).toBe(firstTimestamp)
   })
 
-  it('removes a row from view and clears history', () => {
+  it('deletes a row through the backend so it stays gone', async () => {
+    vi.mocked(downloadApi.deleteDownload).mockResolvedValue()
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+    dispatch(createStatus({ download_id: 'd2', status: 'completed' }))
+
+    await store.remove('d2')
+
+    expect(downloadApi.deleteDownload).toHaveBeenCalledWith('d2')
+    expect(store.downloadList.map((d) => d.download_id)).toEqual(['d1'])
+  })
+
+  it('clears every history row in one backend call, leaving active downloads', async () => {
+    vi.mocked(downloadApi.clearDownloads).mockResolvedValue(2)
     const store = useModelDownloadStore()
     dispatch(createStatus({ download_id: 'd1', status: 'active' }))
     dispatch(createStatus({ download_id: 'd2', status: 'completed' }))
     dispatch(createStatus({ download_id: 'd3', status: 'failed' }))
 
-    store.removeFromView('d1')
-    expect(store.downloadList.map((d) => d.download_id)).toEqual(['d2', 'd3'])
+    await store.clearHistory()
 
-    store.clearHistory()
-    expect(store.downloadList).toHaveLength(0)
+    expect(downloadApi.clearDownloads).toHaveBeenCalledOnce()
+    expect(downloadApi.deleteDownload).not.toHaveBeenCalled()
+    expect(store.downloadList.map((d) => d.download_id)).toEqual(['d1'])
+  })
+
+  it('keeps history rows locally when the bulk clear fails', async () => {
+    vi.mocked(downloadApi.clearDownloads).mockRejectedValue(new Error('boom'))
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd2', status: 'completed' }))
+
+    await expect(store.clearHistory()).rejects.toThrow('boom')
+    expect(store.downloadList.map((d) => d.download_id)).toEqual(['d2'])
+  })
+
+  it('keeps the row locally when the backend delete fails', async () => {
+    vi.mocked(downloadApi.deleteDownload).mockRejectedValue(new Error('boom'))
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd2', status: 'completed' }))
+
+    await expect(store.remove('d2')).rejects.toThrow('boom')
+    expect(store.downloadList.map((d) => d.download_id)).toEqual(['d2'])
   })
 
   it('polls the list when active downloads go stale', async () => {

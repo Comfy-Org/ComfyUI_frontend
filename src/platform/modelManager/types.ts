@@ -103,6 +103,7 @@ const DOWNLOAD_ERROR_CODES = [
   'INVALID_CREDENTIAL',
   'ALREADY_AVAILABLE',
   'ALREADY_DOWNLOADING',
+  'DOWNLOAD_ACTIVE',
   'NOT_FOUND'
 ] as const
 export type DownloadErrorCode = (typeof DOWNLOAD_ERROR_CODES)[number]

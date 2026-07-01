@@ -38,7 +38,7 @@
             <h3 class="text-xs font-semibold text-muted-foreground uppercase">
               {{ $t('modelManager.history') }}
             </h3>
-            <Button variant="link" size="sm" @click="store.clearHistory()">
+            <Button variant="link" size="sm" @click="actions.clearHistory()">
               {{ $t('modelManager.clearHistory') }}
             </Button>
           </div>
@@ -81,9 +81,11 @@ import Button from '@/components/ui/button/Button.vue'
 import AddModelByUrlDialog from './AddModelByUrlDialog.vue'
 import HostCredentialsDialog from './HostCredentialsDialog.vue'
 import ModelDownloadRow from './ModelDownloadRow.vue'
+import { useModelDownloadActions } from '../composables/useModelDownloadActions'
 import { useModelDownloadStore } from '../stores/modelDownloadStore'
 
 const store = useModelDownloadStore()
+const actions = useModelDownloadActions()
 const { activeDownloads, historyDownloads } = storeToRefs(store)
 
 const addOpen = ref(false)

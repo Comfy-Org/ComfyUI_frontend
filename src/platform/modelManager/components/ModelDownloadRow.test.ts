@@ -5,7 +5,6 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import type * as ModelDownloadStoreModule from '../stores/modelDownloadStore'
 import type { DownloadStatus } from '../types'
 import ModelDownloadRow from './ModelDownloadRow.vue'
 
@@ -13,7 +12,7 @@ const mockPause = vi.fn()
 const mockResume = vi.fn()
 const mockCancel = vi.fn()
 const mockRaisePriority = vi.fn()
-const mockRemoveFromView = vi.fn()
+const mockRemove = vi.fn()
 
 vi.mock('../composables/useModelDownloadActions', () => ({
   useModelDownloadActions: () => ({
@@ -21,17 +20,10 @@ vi.mock('../composables/useModelDownloadActions', () => ({
     resume: mockResume,
     cancel: mockCancel,
     raisePriority: mockRaisePriority,
+    remove: mockRemove,
     toastError: vi.fn()
   })
 }))
-
-vi.mock('../stores/modelDownloadStore', async (importOriginal) => {
-  const actual = await importOriginal<typeof ModelDownloadStoreModule>()
-  return {
-    ...actual,
-    useModelDownloadStore: () => ({ removeFromView: mockRemoveFromView })
-  }
-})
 
 const i18n = createI18n({
   legacy: false,
@@ -253,11 +245,15 @@ describe('ModelDownloadRow', () => {
       expect(mockRaisePriority).toHaveBeenCalledWith(download, 1)
     })
 
-    it('removes from view on click', async () => {
-      mountRow(createDownload({ download_id: 'd1', status: 'completed' }))
+    it('removes the download on click', async () => {
+      const download = createDownload({
+        download_id: 'd1',
+        status: 'completed'
+      })
+      mountRow(download)
 
       await userEvent.click(screen.getByTitle('Remove from list'))
-      expect(mockRemoveFromView).toHaveBeenCalledWith('d1')
+      expect(mockRemove).toHaveBeenCalledWith(download)
     })
   })
 })

@@ -6,6 +6,8 @@ import { api } from '@/scripts/api'
 
 import {
   cancelDownload,
+  clearDownloads,
+  deleteDownload,
   enqueueDownload,
   listDownloads,
   pauseDownload,
@@ -173,13 +175,15 @@ export const useModelDownloadStore = defineStore('modelDownload', () => {
     await setDownloadPriority(id, priority)
   }
 
-  function removeFromView(id: string) {
+  async function remove(id: string) {
+    await deleteDownload(id)
     downloads.value.delete(id)
   }
 
-  function clearHistory() {
-    for (const download of historyDownloads.value) {
-      downloads.value.delete(download.download_id)
+  async function clearHistory() {
+    await clearDownloads()
+    for (const id of historyDownloads.value.map((d) => d.download_id)) {
+      downloads.value.delete(id)
     }
   }
 
@@ -212,7 +216,7 @@ export const useModelDownloadStore = defineStore('modelDownload', () => {
     resume,
     cancel,
     setPriority,
-    removeFromView,
+    remove,
     clearHistory
   }
 })
