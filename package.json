@@ -53,6 +53,7 @@
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
     "test:coverage": "vitest run --coverage",
+    "test:coverage:critical": "cross-env COVERAGE_CRITICAL=true vitest run --coverage",
     "test:unit": "vitest run",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
