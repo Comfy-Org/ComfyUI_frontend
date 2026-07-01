@@ -216,12 +216,9 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified()
-      requestAnimationFrame(
-        () =>
-          (this.activeState = clone(
-            app.rootGraph.serialize()
-          ) as ComfyWorkflowJSON)
-      )
+      requestAnimationFrame(() => {
+        this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+      })
     }
   }
 
