@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import type { NodeProgressState } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 
 const { handlers } = vi.hoisted(() => ({
@@ -53,12 +54,9 @@ vi.mock('@/utils/appMode', () => ({
   isAppModeValue: () => false
 }))
 
-interface NodeState {
-  state: string
-  value?: number
-  max?: number
-  node_id?: string
-}
+// Derive from the real schema type so the test shape can't drift; keep the
+// non-essential fields optional so cases only spell out what they assert on.
+type NodeState = Partial<NodeProgressState> & Pick<NodeProgressState, 'state'>
 
 function progressState(jobId: string, nodes: Record<string, NodeState>) {
   handlers['progress_state']?.({ detail: { prompt_id: jobId, nodes } })

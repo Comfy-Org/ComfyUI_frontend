@@ -691,9 +691,11 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
 
   it('does not rewrite initializing state when no requested ids are tracked', () => {
     store.initializingJobIds = new Set(['job-1'])
+    const before = store.initializingJobIds
 
     store.clearInitializationByJobIds(['missing'])
 
+    expect(store.initializingJobIds).toBe(before)
     expect(store.initializingJobIds).toEqual(new Set(['job-1']))
   })
 })

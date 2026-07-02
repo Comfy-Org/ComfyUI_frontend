@@ -96,6 +96,8 @@ describe('ResultItemImpl', () => {
   it('treats vhs format as such only with both format and frame_rate', () => {
     expect(item({ format: 'video/mp4', frame_rate: 24 }).isVhsFormat).toBe(true)
     expect(item({ format: 'video/mp4' }).isVhsFormat).toBe(false)
+    expect(item({ frame_rate: 24 }).isVhsFormat).toBe(false)
+    expect(item().isVhsFormat).toBe(false)
   })
 
   it('classifies video by suffix and by media type', () => {
