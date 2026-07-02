@@ -15,6 +15,7 @@ const IGNORE_PATTERNS = [
   /^dataTypes\./, // Data types might be referenced dynamically
   /^contextMenu\./, // Context menu items might be dynamic
   /^color\./, // Color names might be used dynamically
+  /^onboardingCoachmarks\./, // Tour step keys derived from tour/step names
   // Auto-generated categories from collect-i18n-general.ts
   /^menuLabels\./, // Menu labels generated from command labels
   /^settingsCategories\./, // Settings categories generated from setting definitions
