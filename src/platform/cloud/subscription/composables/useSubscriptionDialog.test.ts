@@ -5,8 +5,10 @@ import { useSubscriptionDialog } from './useSubscriptionDialog'
 const mockCloseDialog = vi.fn()
 const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
+const mockTrackSubscription = vi.hoisted(() => vi.fn())
 const mockIsInPersonalWorkspace = vi.hoisted(() => ({ value: true }))
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
+const mockTier = vi.hoisted(() => ({ value: 'FREE' as string | null }))
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -61,8 +63,13 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isFreeTier: mockIsFreeTier,
-    isLegacyTeamPlan: mockIsLegacyTeamPlan
+    isLegacyTeamPlan: mockIsLegacyTeamPlan,
+    tier: mockTier
   })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackSubscription: mockTrackSubscription })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
@@ -75,6 +82,7 @@ describe('useSubscriptionDialog', () => {
     mockIsCloud.value = true
     mockIsInPersonalWorkspace.value = true
     mockIsFreeTier.value = false
+    mockTier.value = 'FREE'
     mockTeamWorkspacesEnabled.value = false
     mockIsLegacyTeamPlan.value = false
     mockCanManageSubscription.value = true
@@ -217,6 +225,51 @@ describe('useSubscriptionDialog', () => {
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props.initialPlanMode).toBe('team')
     })
+
+    it('tracks modal_opened with the caller reason and current tier', () => {
+      mockTier.value = 'STANDARD'
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'upgrade_to_add_credits' })
+
+      expect(mockTrackSubscription).toHaveBeenCalledWith('modal_opened', {
+        current_tier: 'standard',
+        reason: 'upgrade_to_add_credits'
+      })
+    })
+
+    it('tracks modal_opened on the workspace (unified) path too', () => {
+      mockTeamWorkspacesEnabled.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockTrackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        expect.objectContaining({ reason: 'subscribe_to_run' })
+      )
+    })
+
+    it('does not track modal_opened for the inactive member dialog', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockCanManageSubscription.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      expect(mockTrackSubscription).not.toHaveBeenCalled()
+    })
+
+    it('does not track on non-cloud', () => {
+      mockIsCloud.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockTrackSubscription).not.toHaveBeenCalled()
+    })
   })
 
   describe('show', () => {
@@ -252,6 +305,20 @@ describe('useSubscriptionDialog', () => {
 
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'subscription-required' })
+      )
+    })
+
+    it('tracks modal_opened with the reason for the free-tier dialog', () => {
+      mockIsFreeTier.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { show } = useSubscriptionDialog()
+
+      show({ reason: 'out_of_credits' })
+
+      expect(mockTrackSubscription).toHaveBeenCalledTimes(1)
+      expect(mockTrackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        expect.objectContaining({ reason: 'out_of_credits' })
       )
     })
   })

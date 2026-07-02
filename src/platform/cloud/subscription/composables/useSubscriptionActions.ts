@@ -22,6 +22,9 @@ export function useSubscriptionActions() {
   })
 
   const handleAddApiCredits = () => {
+    telemetry?.trackAddApiCreditButtonClicked({
+      source: 'settings_billing_panel'
+    })
     void dialogService.showTopUpCreditsDialog()
   }
 
