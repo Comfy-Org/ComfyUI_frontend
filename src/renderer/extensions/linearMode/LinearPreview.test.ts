@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -20,7 +21,8 @@ const outputHistoryState = vi.hoisted(() => ({
 
 const spies = vi.hoisted(() => ({
   cancelActiveWorkflowJobs: vi.fn(),
-  deleteAssets: vi.fn()
+  deleteAssets: vi.fn(),
+  openShareDialog: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('@/composables/useAppMode', async () => {
@@ -52,12 +54,18 @@ vi.mock('@/scripts/app', () => ({
   app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
 }))
 
+vi.mock('@/platform/workflow/sharing/composables/lazyShareDialog', () => ({
+  openShareDialog: spies.openShareDialog,
+  prefetchShareDialog: vi.fn()
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download' },
+      g: { download: 'Download', moreOptions: 'More Options' },
+      actionbar: { shareTooltip: 'Share workflow' },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
@@ -88,7 +96,7 @@ function renderPreview(
   const result = render(LinearPreview, {
     props,
     global: {
-      plugins: [i18n],
+      plugins: [i18n, createPinia()],
       directives: { tooltip: {} },
       stubs: {
         ImagePreview: { template: '<div data-testid="image-preview" />' },
@@ -100,7 +108,6 @@ function renderPreview(
         LinearWelcome: { template: '<div data-testid="linear-welcome" />' },
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
         MediaOutputPreview: true,
-        Popover: { template: '<div data-testid="output-popover" />' },
         OutputHistory: outputHistoryStub
       }
     }
@@ -145,12 +152,34 @@ describe('LinearPreview', () => {
 
     const { user } = renderPreview()
 
+    expect(screen.getByTestId('linear-output-info')).toBeInTheDocument()
+
     await user.click(screen.getByTestId('generating-screen'))
 
     expect(spies.cancelActiveWorkflowJobs).toHaveBeenCalled()
   })
 
-  it('shows the selected asset actions and latent image when a selection is made', async () => {
+  it('disables the selection-dependent actions when nothing is selected', () => {
+    renderPreview()
+
+    expect(screen.getByRole('button', { name: 'Rerun' })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Reuse Parameters' })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'More Options' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Share workflow' })).toBeEnabled()
+  })
+
+  it('opens the share dialog from the share button', async () => {
+    const { user } = renderPreview()
+
+    await user.click(screen.getByRole('button', { name: 'Share workflow' }))
+
+    expect(spies.openShareDialog).toHaveBeenCalled()
+  })
+
+  it('enables the asset actions and shows the latent image when a selection is made', async () => {
     const asset: AssetItem = { id: 'a1', name: 'out.png', tags: [] }
     const selection: OutputSelection = {
       asset,
@@ -160,10 +189,12 @@ describe('LinearPreview', () => {
 
     renderPreview({}, selection)
 
-    expect(await screen.findByTestId('linear-output-info')).toBeInTheDocument()
+    const rerun = screen.getByRole('button', { name: 'Rerun' })
+    await waitFor(() => expect(rerun).toBeEnabled())
+    expect(
+      screen.getByRole('button', { name: 'Reuse Parameters' })
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'More Options' })).toBeEnabled()
     expect(screen.getByTestId('image-preview')).toBeInTheDocument()
-    expect(screen.getByTestId('output-popover')).toBeInTheDocument()
-    expect(screen.getByText('Rerun')).toBeInTheDocument()
-    expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
   })
 })
