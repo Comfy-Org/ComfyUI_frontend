@@ -471,25 +471,13 @@ const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
-  getTemplateThumbnailUrl,
   getTemplateTitle,
-  getTemplateDescription
+  getTemplateDescription,
+  getEffectiveSourceModule,
+  isAppTemplate,
+  getBaseThumbnailSrc,
+  getOverlayThumbnailSrc
 } = useTemplateWorkflows()
-
-const getEffectiveSourceModule = (template: TemplateInfo) =>
-  template.sourceModule || 'default'
-
-const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
-
-const getBaseThumbnailSrc = (template: TemplateInfo) => {
-  const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
-}
-
-const getOverlayThumbnailSrc = (template: TemplateInfo) => {
-  const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
-}
 
 // Open tutorial in new tab
 const openTutorial = (template: TemplateInfo) => {

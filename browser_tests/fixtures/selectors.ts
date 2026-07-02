@@ -218,10 +218,9 @@ export const TestIds = {
   appMode: {
     widgetItem: 'app-mode-widget-item',
     welcome: 'linear-welcome',
-    emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',
-    backToWorkflow: 'linear-welcome-back-to-workflow',
-    loadTemplate: 'linear-welcome-load-template',
+    getStarted: 'linear-get-started',
+    getStartedDiscover: 'linear-get-started-discover',
     arrangePreview: 'linear-arrange-preview',
     arrangeNoOutputs: 'linear-arrange-no-outputs',
     arrangeSwitchToOutputs: 'linear-arrange-switch-to-outputs',
