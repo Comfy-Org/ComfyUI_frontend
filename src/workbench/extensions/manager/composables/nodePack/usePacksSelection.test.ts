@@ -4,12 +4,18 @@ import { ref } from 'vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
 
-const { mockIsPackInstalled } = vi.hoisted(() => ({
-  mockIsPackInstalled: vi.fn<(packName: string | undefined) => boolean>()
-}))
+const { mockGetInstalledPackVersion, mockIsPackEnabled, mockIsPackInstalled } =
+  vi.hoisted(() => ({
+    mockGetInstalledPackVersion:
+      vi.fn<(packName: string) => string | undefined>(),
+    mockIsPackEnabled: vi.fn<(packName: string | undefined) => boolean>(),
+    mockIsPackInstalled: vi.fn<(packName: string | undefined) => boolean>()
+  }))
 
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: () => ({
+    getInstalledPackVersion: mockGetInstalledPackVersion,
+    isPackEnabled: mockIsPackEnabled,
     isPackInstalled: mockIsPackInstalled
   })
 }))
@@ -362,6 +368,34 @@ describe('usePacksSelection', () => {
       expect(selectionState.value).toBe('all-installed')
       expect(installedPacks.value).toHaveLength(2)
       expect(notInstalledPacks.value).toHaveLength(0)
+    })
+
+    it('only includes enabled installed packs with non-semver versions as nightly', () => {
+      const nodePacks = ref<NodePack[]>([
+        { ...createMockPack('missing-id'), id: undefined },
+        createMockPack('no-version'),
+        createMockPack('stable'),
+        createMockPack('disabled-nightly'),
+        createMockPack('enabled-nightly')
+      ])
+
+      mockIsPackInstalled.mockReturnValue(true)
+      mockGetInstalledPackVersion.mockImplementation((id) => {
+        const versions: Record<string, string | undefined> = {
+          stable: '1.2.3',
+          'disabled-nightly': 'abc123',
+          'enabled-nightly': 'def456'
+        }
+        return versions[id]
+      })
+      mockIsPackEnabled.mockImplementation((id) => id === 'enabled-nightly')
+
+      const { nightlyPacks, hasNightlyPacks } = usePacksSelection(nodePacks)
+
+      expect(nightlyPacks.value.map((pack) => pack.id)).toEqual([
+        'enabled-nightly'
+      ])
+      expect(hasNightlyPacks.value).toBe(true)
     })
   })
 })
