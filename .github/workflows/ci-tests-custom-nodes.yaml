@@ -9,13 +9,9 @@ name: 'CI: Tests Custom Nodes'
 on:
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths:
-      - 'browser_tests/**'
-      - 'src/**'
-      - 'package.json'
-      - '.github/workflows/ci-tests-custom-nodes.yaml'
   push:
     branches: [main, master]
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -23,15 +19,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Path gating lives here, not in a trigger-level `paths:` filter: a required
+  # check gated by trigger paths never creates a check run on an unrelated PR
+  # and leaves branch protection stuck Pending. A job-level `if:` still creates
+  # the check and marks it Skipped (= passing). Mirrors ci-tests-unit.yaml.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   custom-nodes-e2e:
-    # Fork PRs can edit the manifest's repo/pin URLs, and this job clones and
-    # pip-installs whatever they point at (setup.py runs at install time). Run
-    # only for same-repo PRs and pushes so an untrusted fork can't aim the
-    # clone at an attacker-controlled repo. Fork PRs still get the
-    # environment-agnostic coverage via the main e2e shards.
+    needs: changes
+    # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
+    # edit the manifest's repo/pin URLs, and this job clones and pip-installs
+    # whatever they point at (setup.py runs at install time), so an untrusted
+    # fork must not be able to aim the clone at an attacker-controlled repo.
+    # Fork PRs still get the environment-agnostic coverage via the main e2e
+    # shards. A skipped job counts as passing, so this stays required-safe.
     if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository
+      needs.changes.outputs.should-run == 'true' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
