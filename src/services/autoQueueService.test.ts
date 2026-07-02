@@ -92,7 +92,10 @@ describe('setupAutoQueueHandler', () => {
     queueCountStore.count = 1
 
     setupAutoQueueHandler()
+    await queueCountStore.subscription?.()
     listeners.get('graphChanged')?.()
+    expect(appState.queuePrompt).not.toHaveBeenCalled()
+
     queueCountStore.count = 0
     await queueCountStore.subscription?.()
 

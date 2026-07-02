@@ -387,14 +387,17 @@ describe('ComfyUI legacy menu', () => {
       'confirm',
       vi.fn(() => false)
     )
-    new ComfyUI(app)
+    try {
+      new ComfyUI(app)
 
-    await click(buttonByText(document, 'Clear'))
-    await click(buttonByText(document, 'Load Default'))
+      await click(buttonByText(document, 'Clear'))
+      await click(buttonByText(document, 'Load Default'))
 
-    expect(app.clean).not.toHaveBeenCalled()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
-    vi.unstubAllGlobals()
+      expect(app.clean).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('persists manual menu dragging', () => {

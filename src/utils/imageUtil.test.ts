@@ -140,7 +140,7 @@ describe('fitDimensionsToNodeWidth', () => {
     })
   })
 
-  it('returns zero dimensions when the aspect ratio is NaN', () => {
+  it('returns zero dimensions when the aspect ratio is zero or NaN', () => {
     expect(fitDimensionsToNodeWidth(0, 100, 200)).toEqual({
       minWidth: 0,
       minHeight: 0

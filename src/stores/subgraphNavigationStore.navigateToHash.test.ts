@@ -272,12 +272,14 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     appWithOptionalCanvas.canvas = undefined
     useSubgraphNavigationStore()
 
-    routeHashRef.value = '#not-a-valid-uuid'
-    await vi.waitFor(() =>
-      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
-    )
-
-    appWithOptionalCanvas.canvas = canvas
+    try {
+      routeHashRef.value = '#not-a-valid-uuid'
+      await vi.waitFor(() =>
+        expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+      )
+    } finally {
+      appWithOptionalCanvas.canvas = canvas
+    }
   })
 
   it('redirects when a workflow load resolves but the subgraph is still missing', async () => {

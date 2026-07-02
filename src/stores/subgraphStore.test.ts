@@ -12,6 +12,7 @@ import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { api } from '@/scripts/api'
@@ -481,6 +482,9 @@ describe('useSubgraphStore', () => {
     )
 
     expect(consoleSpy).toHaveBeenCalledTimes(4)
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: 'x4' })
+    )
     consoleSpy.mockRestore()
   })
 

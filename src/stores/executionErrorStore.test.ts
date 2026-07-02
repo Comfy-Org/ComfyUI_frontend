@@ -505,7 +505,7 @@ describe('executionErrorStore — node error operations', () => {
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
     })
 
-    it('clears simple widget errors when the numeric value has no node error entry', () => {
+    it('is a no-op when the target execution id has no node error entry', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
         '999': {
@@ -530,6 +530,7 @@ describe('executionErrorStore — node error operations', () => {
         { max: 10 }
       )
 
+      expect(store.lastNodeErrors?.['123']).toBeUndefined()
       expect(store.lastNodeErrors?.['999'].errors).toHaveLength(1)
     })
   })

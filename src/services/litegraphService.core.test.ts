@@ -418,8 +418,11 @@ async function registerTestNode() {
 }
 
 describe('litegraphService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    const { ComfyApp } = await import('@/scripts/app')
+    ComfyApp.clipspace = null
+    ComfyApp.clipspace_return_node = null
     mockFavoritedWidgetsStore.isFavorited.mockReturnValue(false)
     mockPrompt.mockReset()
     mockCreateBounds.mockReset()

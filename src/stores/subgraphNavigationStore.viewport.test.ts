@@ -145,10 +145,13 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       }
       appWithOptionalCanvas.canvas = undefined
 
-      store.saveViewport('root')
+      try {
+        store.saveViewport('root')
 
-      expect(store.viewportCache.has(':root')).toBe(false)
-      appWithOptionalCanvas.canvas = canvas
+        expect(store.viewportCache.has(':root')).toBe(false)
+      } finally {
+        appWithOptionalCanvas.canvas = canvas
+      }
     })
 
     it('saves viewport state for root graph', () => {
@@ -187,11 +190,14 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       }
       appWithOptionalCanvas.canvas = undefined
 
-      store.restoreViewport('root')
+      try {
+        store.restoreViewport('root')
 
-      expect(mockSetDirty).not.toHaveBeenCalled()
-      expect(rafCallbacks).toHaveLength(0)
-      appWithOptionalCanvas.canvas = canvas
+        expect(mockSetDirty).not.toHaveBeenCalled()
+        expect(rafCallbacks).toHaveLength(0)
+      } finally {
+        appWithOptionalCanvas.canvas = canvas
+      }
     })
 
     it('does not apply cached viewport when canvas disappears', () => {
@@ -203,10 +209,13 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       store.viewportCache.set(':root', { scale: 2.5, offset: [150, 250] })
       appWithOptionalCanvas.canvas = undefined
 
-      store.restoreViewport('root')
+      try {
+        store.restoreViewport('root')
 
-      expect(mockSetDirty).not.toHaveBeenCalled()
-      appWithOptionalCanvas.canvas = canvas
+        expect(mockSetDirty).not.toHaveBeenCalled()
+      } finally {
+        appWithOptionalCanvas.canvas = canvas
+      }
     })
 
     it('restores cached viewport', () => {
