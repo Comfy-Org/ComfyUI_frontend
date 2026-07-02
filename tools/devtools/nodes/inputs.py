@@ -217,6 +217,20 @@ class NodeWithBooleanInput:
         print(f"boolean_input: {boolean_input}")
 
 
+class NodeWithColorInput:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"color_input": ("COLOR", {"default": "#00ff00"})}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_color_input"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node with a color input that declares a non-black default"
+
+    def node_with_color_input(self, color_input: str):
+        print(f"color_input: {color_input}")
+
+
 class SimpleSlider:
     @classmethod
     def INPUT_TYPES(cls):
@@ -379,6 +393,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithStringInput": NodeWithStringInput,
     "DevToolsNodeWithUnionInput": NodeWithUnionInput,
     "DevToolsNodeWithBooleanInput": NodeWithBooleanInput,
+    "DevToolsNodeWithColorInput": NodeWithColorInput,
     "DevToolsSimpleSlider": SimpleSlider,
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
@@ -399,6 +414,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithStringInput": "Node With String Input",
     "DevToolsNodeWithUnionInput": "Node With Union Input",
     "DevToolsNodeWithBooleanInput": "Node With Boolean Input",
+    "DevToolsNodeWithColorInput": "Node With Color Input",
     "DevToolsSimpleSlider": "Simple Slider",
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
@@ -419,6 +435,7 @@ __all__ = [
     "NodeWithStringInput",
     "NodeWithUnionInput",
     "NodeWithBooleanInput",
+    "NodeWithColorInput",
     "SimpleSlider",
     "NodeWithSeedInput",
     "NodeWithValidation",

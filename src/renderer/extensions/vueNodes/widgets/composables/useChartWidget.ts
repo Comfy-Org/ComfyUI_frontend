@@ -1,10 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IChartWidget } from '@/lib/litegraph/src/types/widgets'
 import { isChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type {
-  ChartInputSpec,
-  InputSpec as InputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const useChartWidget = (): ComfyWidgetConstructorV2 => {
@@ -13,15 +10,17 @@ export const useChartWidget = (): ComfyWidgetConstructorV2 => {
       throw new Error('Invalid input spec for chart widget')
     }
 
-    const { name, options = {} } = inputSpec as ChartInputSpec
+    const { name, chartType = 'line', data = {} } = inputSpec
 
-    const chartType = options.type || 'line'
+    const widgetOptions = { serialize: true, type: chartType }
 
-    const widget = node.addWidget('chart', name, options.data || {}, () => {}, {
-      serialize: true,
-      type: chartType,
-      ...options
-    }) as IChartWidget
+    const widget = node.addWidget(
+      'chart',
+      name,
+      data,
+      () => {},
+      widgetOptions
+    ) as IChartWidget
 
     return widget
   }

@@ -1,76 +1,101 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IColorWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
+import type {
+  ColorInputSpec,
+  InputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
 
-function createMockNode(): LGraphNode {
-  const widgets: IColorWidget[] = []
-  const addWidget = vi.fn(
-    (
-      type: string,
-      name: string,
-      value: string,
-      _callback: () => void,
-      options: IWidgetOptions
-    ) => {
+const DECLARED_DEFAULT = '#00ff00'
+const BLACK_FALLBACK = '#000000'
+
+function createMockNode(): {
+  node: LGraphNode
+  addWidget: ReturnType<typeof vi.spyOn>
+} {
+  const node = new LGraphNode('TestColorNode')
+  const addWidget = vi
+    .spyOn(node, 'addWidget')
+    .mockImplementation((type, name, value, _callback, options) => {
       const widget = {
         type,
         name,
         value,
-        options,
-        callback: _callback
-      } as unknown as IColorWidget
-      widgets.push(widget)
+        options: typeof options === 'string' ? { property: options } : options,
+        y: 0
+      } as IBaseWidget
+      node.widgets ??= []
+      node.widgets.push(widget)
       return widget
-    }
-  )
-
-  return { widgets, addWidget } as unknown as LGraphNode
+    })
+  return { node, addWidget }
 }
 
-const colorSpec: InputSpec = {
-  type: 'COLOR',
-  name: 'color',
-  default: '#ffffff',
-  socketless: true
+function createColorSpec(
+  overrides: Partial<ColorInputSpec> = {}
+): ColorInputSpec {
+  return { type: 'COLOR', name: 'color', ...overrides }
 }
 
 describe('useColorWidget', () => {
-  it('reads the top-level default from the V2 spec', () => {
-    const node = createMockNode()
-    const widget = useColorWidget()(node, colorSpec)
-    expect(widget.value).toBe('#ffffff')
+  it('uses the declared default from the input spec', () => {
+    const { node, addWidget } = createMockNode()
+    const inputSpec = createColorSpec({ default: DECLARED_DEFAULT })
+
+    const widget = useColorWidget()(node, inputSpec)
+
+    expect(addWidget).toHaveBeenCalledWith(
+      'color',
+      'color',
+      DECLARED_DEFAULT,
+      expect.any(Function),
+      { serialize: true }
+    )
+    expect(widget.value).toBe(DECLARED_DEFAULT)
   })
 
-  it('falls back to nested options.default when top-level default is absent', () => {
-    const node = createMockNode()
-    const widget = useColorWidget()(node, {
-      type: 'COLOR',
-      name: 'color',
-      options: { default: '#abcdef' }
-    } as InputSpec)
-    expect(widget.value).toBe('#abcdef')
+  it('falls back to black when no default is supplied', () => {
+    const { node, addWidget } = createMockNode()
+
+    const widget = useColorWidget()(node, createColorSpec())
+
+    expect(addWidget).toHaveBeenCalledOnce()
+    expect(widget.type).toBe('color')
+    expect(widget.name).toBe('color')
+    expect(widget.value).toBe(BLACK_FALLBACK)
   })
 
-  it('falls back to #000000 when no default is declared', () => {
-    const node = createMockNode()
-    const widget = useColorWidget()(node, {
-      type: 'COLOR',
-      name: 'color'
-    } as InputSpec)
-    expect(widget.value).toBe('#000000')
+  it('honours a custom input name from the spec', () => {
+    const { node, addWidget } = createMockNode()
+
+    useColorWidget()(
+      node,
+      createColorSpec({ name: 'bg_color', default: DECLARED_DEFAULT })
+    )
+
+    expect(addWidget.mock.calls[0]![1]).toBe('bg_color')
   })
 
   it('returns the existing widget instead of creating a duplicate', () => {
-    const node = createMockNode()
-    const first = useColorWidget()(node, colorSpec)
-    const second = useColorWidget()(node, colorSpec)
+    const { node, addWidget } = createMockNode()
+    const inputSpec = createColorSpec({ default: DECLARED_DEFAULT })
+
+    const first = useColorWidget()(node, inputSpec)
+    const second = useColorWidget()(node, inputSpec)
+
     expect(second).toBe(first)
+    expect(addWidget).toHaveBeenCalledOnce()
     expect(node.widgets).toHaveLength(1)
+  })
+
+  it('throws when the input spec is not a color spec', () => {
+    const { node } = createMockNode()
+    const inputSpec = { type: 'STRING', name: 'color' } as unknown as InputSpec
+
+    expect(() => useColorWidget()(node, inputSpec)).toThrow(
+      'Invalid input spec for color widget'
+    )
   })
 })

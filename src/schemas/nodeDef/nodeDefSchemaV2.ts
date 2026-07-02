@@ -44,11 +44,7 @@ const zColorInputSpec = zBaseInputOptions.extend({
   type: z.literal('COLOR'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      default: z.string().optional()
-    })
-    .optional()
+  default: z.string().optional()
 })
 
 const zImageInputSpec = zBaseInputOptions.extend({
@@ -84,34 +80,22 @@ const zMarkdownInputSpec = zBaseInputOptions.extend({
   type: z.literal('MARKDOWN'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      content: z.string().optional()
-    })
-    .optional()
+  default: z.string().optional()
 })
 
 const zChartInputSpec = zBaseInputOptions.extend({
   type: z.literal('CHART'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      type: z.enum(['bar', 'line']).optional(),
-      data: z.object({}).optional()
-    })
-    .optional()
+  chartType: z.enum(['bar', 'line']).optional(),
+  data: z.object({}).optional()
 })
 
 const zGalleriaInputSpec = zBaseInputOptions.extend({
   type: z.literal('GALLERIA'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      images: z.array(z.string()).optional()
-    })
-    .optional()
+  images: z.array(z.string()).optional()
 })
 
 const zColorsInputSpec = zBaseInputOptions.extend({
@@ -147,13 +131,9 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
   type: z.literal('TEXTAREA'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      rows: z.number().optional(),
-      cols: z.number().optional(),
-      default: z.string().optional()
-    })
-    .optional()
+  rows: z.number().optional(),
+  cols: z.number().optional(),
+  default: z.string().optional()
 })
 
 const zCurvePoint = z.tuple([z.number(), z.number()])
@@ -301,4 +281,22 @@ export const isChartInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is ChartInputSpec => {
   return inputSpec.type === 'CHART'
+}
+
+export const isColorInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ColorInputSpec => {
+  return inputSpec.type === 'COLOR'
+}
+
+export const isTextareaInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is TextareaInputSpec => {
+  return inputSpec.type === 'TEXTAREA'
+}
+
+export const isGalleriaInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is GalleriaInputSpec => {
+  return inputSpec.type === 'GALLERIA'
 }
