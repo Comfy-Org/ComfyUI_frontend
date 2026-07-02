@@ -36,7 +36,7 @@ interface SubscriptionStatusSnapshot {
   subscription_duration?: SubscriptionDuration | null
 }
 
-export interface PendingSubscriptionCheckoutAttempt {
+interface PendingSubscriptionCheckoutAttempt {
   attempt_id: string
   started_at_ms: number
   tier: TierKey
