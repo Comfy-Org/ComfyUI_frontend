@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -67,6 +67,8 @@ const { cancelSubscription, fetchStatus, subscription, tier } =
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
+const didCancelSucceed = ref(false)
+const hasTrackedAbandoned = ref(false)
 
 function cancellationMetadata(): SubscriptionCancellationMetadata {
   const endDate = props.cancelAt ?? subscription.value?.endDate
@@ -92,6 +94,10 @@ onMounted(() => {
   )
 })
 
+onUnmounted(() => {
+  trackAbandoned()
+})
+
 const formattedEndDate = computed(() => {
   const date = parseIsoDateSafe(props.cancelAt ?? subscription.value?.endDate)
   if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
@@ -108,8 +114,16 @@ const description = computed(() =>
 
 function onClose() {
   if (isLoading.value) return
-  telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
+  trackAbandoned()
   dialogStore.closeDialog({ key: 'cancel-subscription' })
+}
+
+function trackAbandoned() {
+  if (didCancelSucceed.value || hasTrackedAbandoned.value || isLoading.value) {
+    return
+  }
+  hasTrackedAbandoned.value = true
+  telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
 }
 
 async function onConfirmCancel() {
@@ -117,13 +131,6 @@ async function onConfirmCancel() {
   isLoading.value = true
   try {
     await cancelSubscription()
-    await fetchStatus()
-    dialogStore.closeDialog({ key: 'cancel-subscription' })
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.cancelSuccess'),
-      life: 5000
-    })
   } catch (error) {
     telemetry?.trackSubscriptionCancellation('failed', {
       ...cancellationMetadata(),
@@ -134,8 +141,20 @@ async function onConfirmCancel() {
       summary: t('subscription.cancelDialog.failed'),
       detail: error instanceof Error ? error.message : t('g.unknownError')
     })
-  } finally {
     isLoading.value = false
+    return
   }
+
+  didCancelSucceed.value = true
+  await Promise.resolve()
+    .then(() => fetchStatus())
+    .catch(() => undefined)
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+  toast.add({
+    severity: 'success',
+    summary: t('subscription.cancelSuccess'),
+    life: 5000
+  })
+  isLoading.value = false
 }
 </script>
