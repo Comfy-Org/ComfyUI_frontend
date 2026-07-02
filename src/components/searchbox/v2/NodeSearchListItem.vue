@@ -51,7 +51,7 @@
             >
               <i
                 aria-hidden="true"
-                class="icon-[lucide--component] size-3 text-amber-400"
+                :class="cn(CREDITS_ICON, 'size-3 text-amber-400')"
               />
               <i
                 aria-hidden="true"
@@ -133,6 +133,8 @@ import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 
 const {
   nodeDef,

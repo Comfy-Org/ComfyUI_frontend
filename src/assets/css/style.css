@@ -1,5 +1,89 @@
 @import '@comfyorg/design-system/css/style.css';
 
+/* Generating screen ambient glow — a slowly rotating, blurred conic gradient.
+   --gen-angle must be a registered <angle> so the conic gradient interpolates
+   instead of jumping between keyframes. */
+@property --gen-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes gen-angle-spin {
+  to {
+    --gen-angle: 360deg;
+  }
+}
+
+.gen-glow {
+  position: absolute;
+  inset: -28%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from var(--gen-angle),
+    #3b82f63b,
+    #8b5cf633,
+    #d946ef2b,
+    #ec489933,
+    #f9731629,
+    #14b8a62e,
+    #3b82f63b
+  );
+  filter: blur(60px);
+  opacity: 0.34;
+  animation: gen-angle-spin 12s linear infinite;
+  mask-image: radial-gradient(circle, #000 0%, #000 22%, rgb(0 0 0 / 0) 70%);
+}
+
+.gen-glow::after {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from calc(var(--gen-angle) + 120deg),
+    #3b82f629,
+    #8b5cf621,
+    #d946ef1c,
+    #ec489924,
+    #f973161a,
+    #14b8a621,
+    #3b82f629
+  );
+  filter: blur(34px);
+  opacity: 0.39;
+  mask-image: radial-gradient(
+    circle,
+    #000 0%,
+    rgb(0 0 0 / 0.62) 36%,
+    rgb(0 0 0 / 0.22) 50%,
+    rgb(0 0 0 / 0) 64%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gen-glow {
+    animation: none;
+  }
+
+  .genfan-enter-active,
+  .genfan-leave-active,
+  .gen-card {
+    transition: none;
+  }
+}
+
+/* Generating fan cards fade in/out so adding and evicting cards stays smooth. */
+.genfan-enter-active,
+.genfan-leave-active {
+  transition: opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.genfan-enter-from,
+.genfan-leave-to {
+  opacity: 0;
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

@@ -28,7 +28,7 @@
           </span>
         </div>
         <div class="flex items-center gap-1 text-sm text-muted-foreground">
-          <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
+          <i :class="cn(CREDITS_ICON, 'size-4 shrink-0 bg-amber-400')" />
           <span>{{ displayCredits }} {{ $t('subscription.perMonth') }}</span>
         </div>
       </div>
@@ -97,6 +97,9 @@
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'

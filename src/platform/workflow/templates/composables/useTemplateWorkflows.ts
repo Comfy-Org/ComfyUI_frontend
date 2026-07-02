@@ -84,6 +84,34 @@ export function useTemplateWorkflows() {
   }
 
   /**
+   * Source module a template loads from, defaulting to the frontend-provided set.
+   */
+  const getEffectiveSourceModule = (template: TemplateInfo) =>
+    template.sourceModule || 'default'
+
+  /**
+   * Whether a template targets App mode (name suffixed with `.app`).
+   */
+  const isAppTemplate = (template: TemplateInfo) =>
+    template.name.endsWith('.app')
+
+  /**
+   * Primary thumbnail URL for a template.
+   */
+  const getBaseThumbnailSrc = (template: TemplateInfo) => {
+    const sm = getEffectiveSourceModule(template)
+    return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
+  }
+
+  /**
+   * Secondary/hover thumbnail URL for a template.
+   */
+  const getOverlayThumbnailSrc = (template: TemplateInfo) => {
+    const sm = getEffectiveSourceModule(template)
+    return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
+  }
+
+  /**
    * Gets formatted template description
    */
   const getTemplateDescription = (template: TemplateInfo) => {
@@ -180,6 +208,10 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
+    getEffectiveSourceModule,
+    isAppTemplate,
+    getBaseThumbnailSrc,
+    getOverlayThumbnailSrc,
     loadWorkflowTemplate
   }
 }

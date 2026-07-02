@@ -137,6 +137,125 @@ test.describe('App mode usage', () => {
     await expect.poll(() => fileComboWidget.getValue()).toBe(targetImage)
   })
 
+  test('Shares the graph side toolbar, filtered to assets + apps', async ({
+    comfyPage
+  }) => {
+    const { sideToolbar, nodeLibraryTab, assetsTab, appsTab } = comfyPage.menu
+
+    await test.step('Graph mode shows the full toolbar', async () => {
+      await expect(sideToolbar).toBeVisible()
+      await expect(nodeLibraryTab.tabButton).toBeVisible()
+    })
+
+    await test.step('App mode reuses it with only assets + apps', async () => {
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await expect(comfyPage.appMode.centerPanel).toBeVisible()
+
+      await expect(sideToolbar).toBeVisible()
+      await expect(assetsTab.tabButton).toBeVisible()
+      await expect(appsTab.tabButton).toBeVisible()
+      await expect(nodeLibraryTab.tabButton).toBeHidden()
+    })
+  })
+
+  test('Workflow actions menu keeps the same position across graph/app mode', async ({
+    comfyPage
+  }) => {
+    // Toggling graph<->app mode happens from this control, so it must not move
+    // out from under the cursor as the mode flips.
+    const graphActions = comfyPage.page
+      .getByTestId(TestIds.breadcrumb.subgraph)
+      .getByRole('button', { name: 'Workflow actions' })
+    await expect(graphActions).toBeVisible()
+    const graphBox = await graphActions.boundingBox()
+
+    expect(graphBox).not.toBeNull()
+
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+
+    const appActions = comfyPage.page
+      .getByTestId(TestIds.linear.centerPanel)
+      .getByRole('button', { name: 'Workflow actions' })
+    await expect(appActions).toBeVisible()
+
+    // The toggle segments reorder (morph) as the mode flips, so poll until the
+    // active control settles at the same x it occupied in graph mode.
+    await expect
+      .poll(async () => {
+        const box = await appActions.boundingBox()
+        return box ? Math.abs(box.x - graphBox!.x) : Infinity
+      })
+      .toBeLessThanOrEqual(1)
+  })
+
+  test('Toggle segment flips mode without opening the menu', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.page.getByTestId(
+      TestIds.workflowActions.viewModeToggle
+    )
+    await expect(toggle).toBeVisible()
+
+    await comfyPage.page.getByRole('button', { name: 'Enter app mode' }).click()
+
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    // The inactive segment switches mode; it must not also open the actions menu.
+    await expect(comfyPage.page.getByRole('menu')).toBeHidden()
+    await expect(toggle).toBeVisible()
+  })
+
+  test('Toggle segment flips mode via keyboard without opening the menu', async ({
+    comfyPage
+  }) => {
+    const appSegment = comfyPage.page.getByRole('button', {
+      name: 'Enter app mode'
+    })
+    await appSegment.focus()
+    await appSegment.press('Enter')
+
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    // Keyboard activation of the inactive segment must switch mode without the
+    // keydown bubbling to the trigger and opening the actions menu.
+    await expect(comfyPage.page.getByRole('menu')).toBeHidden()
+  })
+
+  test('Mode toggle re-appears after exiting the builder to graph mode', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.page.getByTestId(
+      TestIds.workflowActions.viewModeToggle
+    )
+    await comfyPage.appMode.enableLinearMode()
+    await expect(toggle).toBeVisible()
+
+    await comfyPage.appMode.enterBuilder()
+    await expect(toggle).toBeHidden()
+    await expect(comfyPage.appMode.centerPanel).toBeHidden()
+
+    await comfyPage.appMode.footer.exitButton.click()
+    // Exiting the builder lands in graph mode: the app-mode-only center panel
+    // stays hidden while the toggle's teleport host re-mounts and the toggle
+    // re-appears.
+    await expect(toggle).toBeVisible()
+    await expect(comfyPage.appMode.centerPanel).toBeHidden()
+  })
+
+  test('Mode toggle survives a sidebar tab remounting the app panel', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.page.getByTestId(
+      TestIds.workflowActions.viewModeToggle
+    )
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    await expect(toggle).toBeVisible()
+
+    // Opening a sidebar tab remounts the app panel; the toggle re-renders with it.
+    await comfyPage.menu.assetsTab.tabButton.click()
+    await expect(toggle).toBeVisible()
+  })
+
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
       const { mobile } = comfyPage.appMode
@@ -182,5 +301,47 @@ test.describe('App mode usage', () => {
         await expect(widgets.getByText(widgetNames[i])).toBeVisible()
       }
     })
+  })
+})
+
+test.describe('App mode credits', () => {
+  const API_PRICED_NODE = 'FluxProUltraImageNode'
+
+  test('shows the credit breakdown popover for priced nodes', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeBadge.ShowApiPricing', true)
+    await comfyPage.page.evaluate((type) => {
+      const registered = window.LiteGraph!.registered_node_types[type] as {
+        nodeData?: { price_badge?: unknown }
+      }
+      if (!registered?.nodeData) throw new Error(`No nodeData for ${type}`)
+      registered.nodeData.price_badge = {
+        engine: 'jsonata',
+        expr: "{'type': 'text', 'text': '99.9 credits/Run'}",
+        depends_on: { widgets: [], inputs: [], input_groups: [] }
+      }
+    }, API_PRICED_NODE)
+
+    await comfyPage.nodeOps.addNode(API_PRICED_NODE)
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+
+    // The run/subscribe button flags that the workflow needs credits, even when
+    // the pill collapses to its icon (kept in the accessible name).
+    const runButton = comfyPage.appMode.runButton
+    await expect(runButton).toBeVisible()
+    await expect(runButton).toHaveAccessibleName(/Uses credits/)
+
+    // Hovering the button reveals the per-node credit breakdown.
+    await runButton.hover()
+    const breakdown = comfyPage.page.getByRole('list', {
+      name: 'Credit breakdown by model'
+    })
+    await expect(breakdown).toBeVisible()
+    await expect(breakdown).toContainText('99.9 credits/Run')
+    await expect(
+      comfyPage.page.getByText('Requires additional credits')
+    ).toBeVisible()
   })
 })

@@ -10,41 +10,38 @@ import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAsse
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import GeneratingScreen from '@/renderer/extensions/linearMode/GeneratingScreen.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
-import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
-import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
-const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
+const { runButtonClick, mobile } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
-  typeformWidgetId?: string
 }>()
 
 const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
-const showSkeleton = ref(false)
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
   selectedOutput.value = sel.output
   canShowPreview.value = sel.canShowPreview
   latentPreview.value = sel.latentPreviewUrl
-  showSkeleton.value = sel.showSkeleton ?? false
 }
 
 function downloadAsset(item?: AssetItem) {
@@ -73,7 +70,7 @@ async function rerun(e: Event) {
 </script>
 <template>
   <section
-    v-if="selectedItem || selectedOutput || showSkeleton || isWorkflowActive"
+    v-if="!isWorkflowActive && (selectedItem || selectedOutput)"
     data-testid="linear-output-info"
     class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
@@ -101,15 +98,6 @@ async function rerun(e: Event) {
     >
       <i class="icon-[lucide--download]" />
     </Button>
-    <Button
-      v-if="isWorkflowActive && !selectedItem"
-      data-testid="linear-cancel-run"
-      variant="destructive"
-      @click="cancelActiveWorkflowJobs()"
-    >
-      <i class="icon-[lucide--x]" />
-      {{ t('linearMode.cancelThisRun') }}
-    </Button>
     <Popover
       v-if="selectedItem"
       :entries="[
@@ -133,8 +121,12 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
+  <GeneratingScreen
+    v-if="isWorkflowActive"
+    @stop="cancelActiveWorkflowJobs()"
+  />
   <ImagePreview
-    v-if="canShowPreview && latentPreview"
+    v-else-if="canShowPreview && latentPreview"
     :mobile
     :src="latentPreview"
     :show-size="false"
@@ -144,31 +136,11 @@ async function rerun(e: Event) {
     :output="selectedOutput"
     :mobile
   />
-  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
-  <div
-    v-if="!mobile"
-    class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
-  >
-    <LinearFeedback
-      v-if="typeformWidgetId"
-      side="left"
-      :widget-id="typeformWidgetId"
-    />
-    <OutputHistory
-      v-if="!isBuilderMode"
-      class="z-10 min-w-0"
-      @update-selection="handleSelection"
-    />
-    <LinearFeedback
-      v-if="typeformWidgetId"
-      side="right"
-      :widget-id="typeformWidgetId"
-    />
-  </div>
   <OutputHistory
-    v-else-if="!isBuilderMode"
+    v-if="!isBuilderMode"
+    :class="cn(!mobile && 'z-10 min-w-0')"
     @update-selection="handleSelection"
   />
 </template>

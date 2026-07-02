@@ -23,6 +23,7 @@
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
+          v-coachmark="tab.id === 'assets' ? 'assets-button' : undefined"
           :icon="tab.icon"
           :icon-badge="tab.iconBadge"
           :tooltip="tab.tooltip"
@@ -42,8 +43,14 @@
           :is-small="isSmall"
         />
         <SidebarHelpCenterIcon :is-small="isSmall" />
-        <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
-        <SidebarShortcutsToggleButton :is-small="isSmall" />
+        <SidebarBottomPanelToggleButton
+          v-if="!isCloud && !canvasStore.linearMode"
+          :is-small="isSmall"
+        />
+        <SidebarShortcutsToggleButton
+          v-if="!canvasStore.linearMode"
+          :is-small="isSmall"
+        />
         <SidebarSettingsButton :is-small="isSmall" />
       </div>
     </div>
@@ -73,6 +80,7 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -88,6 +96,11 @@ import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
+
+const { visibleTabIds, forceConnected = false } = defineProps<{
+  visibleTabIds?: string[]
+  forceConnected?: boolean
+}>()
 
 const NightlySurveyController =
   isNightly && !isCloud && !isDesktop
@@ -115,12 +128,18 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
 const isConnected = computed(
   () =>
+    forceConnected ||
     selectedTab.value ||
     isOverflowing.value ||
     sidebarStyle.value === 'connected'
 )
 
-const tabs = computed(() => workspaceStore.getSidebarTabs())
+const tabs = computed(() => {
+  const all = workspaceStore.getSidebarTabs()
+  return visibleTabIds
+    ? all.filter((tab) => visibleTabIds.includes(tab.id))
+    : all
+})
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 
 /**

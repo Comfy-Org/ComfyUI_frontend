@@ -7,7 +7,7 @@
       )
     "
   >
-    <i class="icon-[lucide--component] h-full bg-amber-400" />
+    <i :class="cn(CREDITS_ICON, 'h-full bg-amber-400')" />
     <span class="truncate" v-text="text" />
   </span>
   <span
@@ -20,6 +20,8 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 
 defineProps<{
   text: string
