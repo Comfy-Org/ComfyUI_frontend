@@ -21,7 +21,7 @@ const emit = defineEmits<{
   >
     <button
       type="button"
-      class="flex flex-1 cursor-pointer items-center gap-2 overflow-hidden border-0 bg-transparent text-left text-xs text-base-foreground"
+      class="flex flex-1 cursor-pointer items-center gap-2 overflow-hidden border-0 bg-transparent text-left text-sm text-base-foreground"
       @click="emit('select')"
     >
       <i

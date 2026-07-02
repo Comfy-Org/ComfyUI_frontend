@@ -12,6 +12,7 @@ export interface MessageAttachment {
   name: string
   type: string
   url: string
+  size: number
 }
 
 interface AgentMessage {
@@ -216,7 +217,8 @@ function send(text?: string, files: File[] = []) {
   const attachments: MessageAttachment[] = files.map((f) => ({
     name: f.name,
     type: f.type,
-    url: URL.createObjectURL(f)
+    url: URL.createObjectURL(f),
+    size: f.size
   }))
 
   messages.value.push({

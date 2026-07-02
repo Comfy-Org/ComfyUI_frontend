@@ -43,7 +43,7 @@ defineExpose({ focus: () => textareaEl.value?.focus() })
     :placeholder="placeholder"
     :class="
       cn(
-        'field-sizing-content max-h-48 min-h-20 w-full resize-none border-none bg-transparent px-4 py-3 font-[inherit] text-xs text-base-foreground placeholder:text-muted-foreground focus:outline-none',
+        'field-sizing-content max-h-48 min-h-20 w-full resize-none border-none bg-transparent px-4 py-3 font-[inherit] text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none',
         className
       )
     "
