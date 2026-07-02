@@ -24,9 +24,9 @@
         >
           <InputSlot
             v-if="widget.slotMetadata"
-            :key="`widget-slot-${widget.name}-${widget.slotMetadata.index}`"
+            :key="`widget-slot-${widget.simplified.name}-${widget.slotMetadata.index}`"
             :slot-data="{
-              name: widget.name,
+              name: widget.simplified.name,
               type: widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
@@ -40,12 +40,12 @@
         <!-- Widget Component -->
         <AppInput
           :widget-id="widget.widgetId"
-          :name="widget.name"
+          :name="widget.simplified.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
         >
           <component
             :is="widget.vueComponent"
-            v-model="widget.value"
+            v-model="widget.simplified.value"
             v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
             :widget="widget.simplified"
             :node-id="nodeId"
@@ -85,9 +85,6 @@ import InputSlot from './InputSlot.vue'
  * required fields and omits the interactive ones.
  */
 export interface WidgetGridItem {
-  name: string
-  type: string
-  value: WidgetValue
   simplified: SimplifiedWidget
   vueComponent: Component
   visible: boolean
@@ -119,7 +116,9 @@ const gridTemplateRows = computed(() =>
   processedWidgets
     .filter((widget) => widget.visible)
     .map((widget) =>
-      shouldExpand(widget.type) || widget.hasLayoutSize ? 'auto' : 'min-content'
+      shouldExpand(widget.simplified.type) || widget.hasLayoutSize
+        ? 'auto'
+        : 'min-content'
     )
     .join(' ')
 )

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -14,10 +14,10 @@ vi.mock('@/stores/widgetStore', () => ({
 
 const WidgetGridProbe = {
   props: ['processedWidgets'],
-  setup(props: { processedWidgets?: ProcessedWidget[] }) {
+  setup(props: { processedWidgets?: WidgetGridItem[] }) {
     const widgets = computed(() =>
       (props.processedWidgets ?? []).map((widget) => ({
-        name: widget.name,
+        name: widget.simplified.name,
         value: widget.simplified.value,
         options: { values: widget.simplified.options?.values }
       }))
