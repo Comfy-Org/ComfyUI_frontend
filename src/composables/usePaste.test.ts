@@ -23,6 +23,7 @@ import {
   pasteVideoNodes,
   usePaste
 } from './usePaste'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 function createMockNode(): LGraphNode {
   return createMockLGraphNode({
@@ -71,7 +72,7 @@ const mockCanvas = {
 } as Partial<LGraphCanvas> as LGraphCanvas
 
 const mockCanvasStore = {
-  canvas: mockCanvas,
+  canvas: mockCanvas as LGraphCanvas | null,
   getCanvas: vi.fn(() => mockCanvas)
 }
 
@@ -137,6 +138,17 @@ describe('pasteImageNode', () => {
 
     expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('returns null when image node creation fails', async () => {
+    vi.mocked(createNode).mockResolvedValue(null as never)
+
+    const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
+
+    await expect(
+      pasteImageNode(mockCanvas, dataTransfer.items)
+    ).resolves.toBeNull()
   })
 
   it('should use existing image node when provided', async () => {
@@ -216,6 +228,14 @@ describe('pasteImageNodes', () => {
     expect(createNode).not.toHaveBeenCalled()
     expect(result).toEqual([])
   })
+
+  it('omits files whose image node creation fails', async () => {
+    vi.mocked(createNode).mockResolvedValue(null as never)
+
+    const result = await pasteImageNodes(mockCanvas, [createImageFile()])
+
+    expect(result).toEqual([])
+  })
 })
 
 describe('pasteAudioNode', () => {
@@ -234,6 +254,17 @@ describe('pasteAudioNode', () => {
 
     expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadAudio')
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('returns null when audio node creation fails', async () => {
+    vi.mocked(createNode).mockResolvedValue(null as never)
+
+    const file = createAudioFile()
+    const dataTransfer = createDataTransfer([file])
+
+    await expect(
+      pasteAudioNode(mockCanvas, dataTransfer.items)
+    ).resolves.toBeNull()
   })
 
   it('should use existing audio node when provided', async () => {
@@ -312,6 +343,14 @@ describe('pasteAudioNodes', () => {
     expect(createNode).toHaveBeenCalledTimes(1)
     expect(result).toEqual([mockNode])
   })
+
+  it('omits files whose audio node creation fails', async () => {
+    vi.mocked(createNode).mockResolvedValue(null as never)
+
+    const result = await pasteAudioNodes(mockCanvas, [createAudioFile()])
+
+    expect(result).toEqual([])
+  })
 })
 
 describe('pasteVideoNode', () => {
@@ -330,6 +369,17 @@ describe('pasteVideoNode', () => {
 
     expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadVideo')
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('returns null when video node creation fails', async () => {
+    vi.mocked(createNode).mockResolvedValue(null as never)
+
+    const file = createVideoFile()
+    const dataTransfer = createDataTransfer([file])
+
+    await expect(
+      pasteVideoNode(mockCanvas, dataTransfer.items)
+    ).resolves.toBeNull()
   })
 
   it('should use existing video node when provided', async () => {
@@ -408,13 +458,23 @@ describe('pasteVideoNodes', () => {
     expect(createNode).toHaveBeenCalledTimes(1)
     expect(result).toEqual([mockNode])
   })
+
+  it('omits files whose video node creation fails', async () => {
+    vi.mocked(createNode).mockResolvedValue(null as never)
+
+    const result = await pasteVideoNodes(mockCanvas, [createVideoFile()])
+
+    expect(result).toEqual([])
+  })
 })
 
 describe('usePaste', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCanvasStore.canvas = mockCanvas
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
+    vi.mocked(shouldIgnoreCopyPaste).mockReturnValue(false)
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -544,6 +604,31 @@ describe('usePaste', () => {
     expect(createNode).not.toHaveBeenCalled()
   })
 
+  it('ignores paste when the target owns native copy paste', () => {
+    vi.mocked(shouldIgnoreCopyPaste).mockReturnValue(true)
+
+    usePaste()
+
+    const dataTransfer = createDataTransfer([createImageFile()])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    expect(createNode).not.toHaveBeenCalled()
+  })
+
+  it('ignores paste when the canvas is unavailable', () => {
+    mockCanvasStore.canvas = null
+
+    usePaste()
+
+    const dataTransfer = createDataTransfer([createImageFile()])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    expect(createNode).not.toHaveBeenCalled()
+    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+  })
+
   it('should use existing image node when selected', () => {
     const mockNode = createMockLGraphNode({
       is_selected: true,
@@ -594,6 +679,66 @@ describe('usePaste', () => {
         expect.any(Object)
       )
     })
+  })
+
+  it('falls back to litegraph paste when metadata cannot be decoded', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData(
+      'text/html',
+      `<div data-metadata="${btoa('{')}"></div>`
+    )
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+    errorSpy.mockRestore()
+  })
+
+  it('leaves plain text paste alone in text inputs', () => {
+    usePaste()
+
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.append(input)
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', 'plain text')
+
+    input.dispatchEvent(
+      new ClipboardEvent('paste', {
+        clipboardData: dataTransfer,
+        bubbles: true
+      })
+    )
+
+    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    input.remove()
+  })
+
+  it('leaves plain text paste alone in textareas', () => {
+    usePaste()
+
+    const textarea = document.createElement('textarea')
+    document.body.append(textarea)
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', 'plain text')
+
+    textarea.dispatchEvent(
+      new ClipboardEvent('paste', {
+        clipboardData: dataTransfer,
+        bubbles: true
+      })
+    )
+
+    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    textarea.remove()
   })
 
   it('should skip node metadata paste when a media node is selected', async () => {

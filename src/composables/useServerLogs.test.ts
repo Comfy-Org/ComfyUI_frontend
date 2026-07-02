@@ -20,6 +20,13 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 describe('useServerLogs', () => {
+  const listenerFor = <T>(eventType: string) =>
+    vi
+      .mocked(useEventListener)
+      .mock.calls.find(([, type]) => type === eventType)?.[2] as
+      | ((event: CustomEvent<T>) => void)
+      | undefined
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -118,5 +125,136 @@ describe('useServerLogs', () => {
     await nextTick()
 
     expect(logs.value).toEqual(['Log message 1 dont remove me', ''])
+  })
+
+  it('only captures logs while the matching task is active', async () => {
+    const { logs, startListening } = useServerLogs({ ui_id: 'task-1' })
+
+    await startListening()
+
+    expect(vi.mocked(useEventListener)).toHaveBeenCalledWith(
+      api,
+      'cm-task-started',
+      expect.any(Function)
+    )
+    expect(vi.mocked(useEventListener)).toHaveBeenCalledWith(
+      api,
+      'cm-task-completed',
+      expect.any(Function)
+    )
+
+    const onLogs = listenerFor<LogsWsMessage>('logs')
+    const onTaskStarted = listenerFor<{ ui_id: string }>('cm-task-started')
+    const onTaskDone = listenerFor<{ ui_id: string }>('cm-task-completed')
+
+    onLogs?.(
+      new CustomEvent('logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: [{ m: 'before start' }]
+        })
+      })
+    )
+    onTaskStarted?.(
+      new CustomEvent('cm-task-started', { detail: { ui_id: 'other-task' } })
+    )
+    onLogs?.(
+      new CustomEvent('logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: [{ m: 'wrong task' }]
+        })
+      })
+    )
+    onTaskStarted?.(
+      new CustomEvent('cm-task-started', { detail: { ui_id: 'task-1' } })
+    )
+    onLogs?.(
+      new CustomEvent('logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: [{ m: 'captured' }]
+        })
+      })
+    )
+    onTaskDone?.(
+      new CustomEvent('cm-task-completed', { detail: { ui_id: 'other-task' } })
+    )
+    onLogs?.(
+      new CustomEvent('logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: [{ m: 'still active' }]
+        })
+      })
+    )
+    onTaskDone?.(
+      new CustomEvent('cm-task-completed', { detail: { ui_id: 'task-1' } })
+    )
+    onLogs?.(
+      new CustomEvent('logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: [{ m: 'after done' }]
+        })
+      })
+    )
+
+    expect(logs.value).toEqual(['captured', 'still active'])
+  })
+
+  it('ignores invalid and empty log events', async () => {
+    const { logs, startListening } = useServerLogs()
+
+    await startListening()
+
+    const onLogs = listenerFor<LogsWsMessage>('logs')
+
+    onLogs?.(
+      new CustomEvent('not-logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: [{ m: 'wrong event' }]
+        })
+      })
+    )
+    onLogs?.(
+      new CustomEvent('logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: []
+        })
+      })
+    )
+    onLogs?.(
+      new CustomEvent('logs', {
+        detail: fromAny<LogsWsMessage, unknown>({
+          type: 'logs',
+          entries: [{ m: ' ' }]
+        })
+      })
+    )
+
+    expect(logs.value).toEqual([])
+  })
+
+  it('stops every registered listener', async () => {
+    const stopLogs = vi.fn()
+    const stopTaskStarted = vi.fn()
+    const stopTaskDone = vi.fn()
+    vi.mocked(useEventListener)
+      .mockReturnValueOnce(stopLogs)
+      .mockReturnValueOnce(stopTaskStarted)
+      .mockReturnValueOnce(stopTaskDone)
+
+    const { startListening, stopListening } = useServerLogs({ ui_id: 'task-1' })
+
+    await startListening()
+    await stopListening()
+
+    expect(stopLogs).toHaveBeenCalledTimes(1)
+    expect(stopTaskStarted).toHaveBeenCalledTimes(1)
+    expect(stopTaskDone).toHaveBeenCalledTimes(1)
+    expect(api.subscribeLogs).toHaveBeenLastCalledWith(false)
   })
 })

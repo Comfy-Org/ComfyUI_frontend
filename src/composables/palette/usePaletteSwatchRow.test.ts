@@ -51,6 +51,19 @@ describe('usePaletteSwatchRow', () => {
     expect(picker.value!.value).toBe('#ffffff')
   })
 
+  it('tracks the picker index even when the input is unavailable', () => {
+    const { modelValue, picker, openPicker, onPickerInput } = setup([
+      '#000000',
+      '#111111'
+    ])
+    picker.value = null
+
+    openPicker(1, mouseEvent())
+    onPickerInput({ target: { value: '#222222' } } as unknown as Event)
+
+    expect(modelValue.value).toEqual(['#000000', '#222222'])
+  })
+
   it('writes the picked color back to the open slot', () => {
     const { modelValue, openPicker, onPickerInput } = setup(['#a', '#b'])
     openPicker(1, mouseEvent())
@@ -97,6 +110,82 @@ describe('usePaletteSwatchRow', () => {
     document.dispatchEvent(
       new MouseEvent('pointermove', { clientX: 130, clientY: 10, buttons: 0 })
     )
+    expect(modelValue.value).toEqual(['#a', '#b'])
+  })
+
+  it('ignores pointer movement before a drag starts', () => {
+    const { modelValue } = setup(['#a', '#b'])
+
+    document.dispatchEvent(
+      new MouseEvent('pointermove', { clientX: 130, clientY: 10, buttons: 1 })
+    )
+
+    expect(modelValue.value).toEqual(['#a', '#b'])
+  })
+
+  it('waits until movement passes the drag threshold', () => {
+    const { modelValue, container, onPointerDown } = setup(['#a', '#b'])
+    const swatch = document.createElement('div')
+    swatch.setAttribute('data-index', '1')
+    container.value!.appendChild(swatch)
+
+    onPointerDown(0, { button: 0, clientX: 10, clientY: 10 } as PointerEvent)
+    document.dispatchEvent(
+      new MouseEvent('pointermove', { clientX: 12, clientY: 11, buttons: 1 })
+    )
+
+    expect(modelValue.value).toEqual(['#a', '#b'])
+  })
+
+  it('ignores active drags when the row container is gone', () => {
+    const { modelValue, container, onPointerDown } = setup(['#a', '#b'])
+    container.value = null
+
+    onPointerDown(0, { button: 0, clientX: 10, clientY: 10 } as PointerEvent)
+    document.dispatchEvent(
+      new MouseEvent('pointermove', { clientX: 130, clientY: 10, buttons: 1 })
+    )
+
+    expect(modelValue.value).toEqual(['#a', '#b'])
+  })
+
+  it('ignores invalid target rows during drag', () => {
+    const { modelValue, container, onPointerDown } = setup(['#a', '#b'])
+    const current = document.createElement('div')
+    current.setAttribute('data-index', '0')
+    const invalid = document.createElement('div')
+    invalid.setAttribute('data-index', '-1')
+    container.value!.append(current, invalid)
+    invalid.getBoundingClientRect = () =>
+      ({ left: 100, right: 140, top: 0, bottom: 20, width: 40 }) as DOMRect
+
+    onPointerDown(0, { button: 0, clientX: 10, clientY: 10 } as PointerEvent)
+    document.dispatchEvent(
+      new MouseEvent('pointermove', { clientX: 130, clientY: 10, buttons: 1 })
+    )
+
+    expect(modelValue.value).toEqual(['#a', '#b'])
+  })
+
+  it('cancels drags on pointerup and pointercancel', () => {
+    const { modelValue, container, onPointerDown } = setup(['#a', '#b'])
+    const swatch = document.createElement('div')
+    swatch.setAttribute('data-index', '1')
+    container.value!.appendChild(swatch)
+    swatch.getBoundingClientRect = () =>
+      ({ left: 100, right: 140, top: 0, bottom: 20, width: 40 }) as DOMRect
+
+    onPointerDown(0, { button: 0, clientX: 10, clientY: 10 } as PointerEvent)
+    document.dispatchEvent(new PointerEvent('pointerup'))
+    document.dispatchEvent(
+      new MouseEvent('pointermove', { clientX: 130, clientY: 10, buttons: 1 })
+    )
+    onPointerDown(0, { button: 0, clientX: 10, clientY: 10 } as PointerEvent)
+    document.dispatchEvent(new PointerEvent('pointercancel'))
+    document.dispatchEvent(
+      new MouseEvent('pointermove', { clientX: 130, clientY: 10, buttons: 1 })
+    )
+
     expect(modelValue.value).toEqual(['#a', '#b'])
   })
 

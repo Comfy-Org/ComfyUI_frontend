@@ -381,4 +381,57 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     // Should have second node's content, not first
     expect(helpContent.value).toBe('# Second node content')
   })
+
+  it('returns empty state when no node is selected', async () => {
+    const nodeRef = ref<ComfyNodeDefImpl | null>(null)
+
+    const { baseUrl, helpContent, isLoading, error } =
+      useNodeHelpContent(nodeRef)
+    await nextTick()
+
+    expect(baseUrl.value).toBe('')
+    expect(helpContent.value).toBe('')
+    expect(isLoading.value).toBe(false)
+    expect(error.value).toBeNull()
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('uses stringified non-error rejections with the node description', async () => {
+    const nodeRef = ref(mockCoreNode)
+    mockFetch.mockRejectedValueOnce('offline')
+
+    const { error, helpContent } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('offline')
+    expect(helpContent.value).toBe(mockCoreNode.description)
+  })
+
+  it('ignores stale rejected requests after the node changes', async () => {
+    const nodeRef = ref(mockCoreNode)
+    let rejectFirst: (reason?: unknown) => void
+    const firstRequest = new Promise((_resolve, reject) => {
+      rejectFirst = reject
+    })
+
+    mockFetch
+      .mockImplementationOnce(() => firstRequest)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => '# Current node content'
+      })
+
+    const { error, helpContent } = useNodeHelpContent(nodeRef)
+    await nextTick()
+
+    nodeRef.value = mockCustomNode
+    await nextTick()
+    await flushPromises()
+
+    rejectFirst!(new Error('stale failure'))
+    await flushPromises()
+
+    expect(error.value).toBeNull()
+    expect(helpContent.value).toBe('# Current node content')
+  })
 })

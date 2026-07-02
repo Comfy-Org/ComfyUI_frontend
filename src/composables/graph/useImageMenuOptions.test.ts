@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
@@ -19,12 +20,26 @@ vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 
+vi.mock('@/base/common/downloadUtil', () => ({
+  downloadFile: vi.fn(),
+  openFileInNewTab: vi.fn()
+}))
+
 function mockClipboard(clipboard: Partial<Clipboard> | undefined) {
   Object.defineProperty(navigator, 'clipboard', {
     value: clipboard,
     writable: true,
     configurable: true
   })
+}
+
+function stubClipboardItem() {
+  vi.stubGlobal(
+    'ClipboardItem',
+    class ClipboardItemStub {
+      constructor(public readonly items: Record<string, Blob>) {}
+    }
+  )
 }
 
 function createImageNode(
@@ -45,8 +60,13 @@ function createImageNode(
 }
 
 describe('useImageMenuOptions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   describe('getImageMenuOptions', () => {
@@ -73,6 +93,12 @@ describe('useImageMenuOptions', () => {
       const { getImageMenuOptions } = useImageMenuOptions()
 
       expect(getImageMenuOptions(node)).toEqual([])
+    })
+
+    it('returns empty array when node image capabilities are absent', () => {
+      const { getImageMenuOptions } = useImageMenuOptions()
+
+      expect(getImageMenuOptions(fromPartial<LGraphNode>({}))).toEqual([])
     })
 
     it('returns only Paste Image when node has no images but supports paste', () => {
@@ -180,6 +206,227 @@ describe('useImageMenuOptions', () => {
       await pasteOption!.action!()
 
       expect(node.pasteFiles).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('image actions', () => {
+    it('opens the selected image without preview query params', () => {
+      const node = createImageNode()
+      node.imgs![0].src = 'http://localhost/test.png?preview=1&foo=bar'
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const openOption = getImageMenuOptions(node).find(
+        (o) => o.label === 'Open Image'
+      )
+      openOption?.action?.()
+
+      expect(openFileInNewTab).toHaveBeenCalledWith(
+        'http://localhost/test.png?foo=bar'
+      )
+    })
+
+    it('saves the selected image without preview query params', () => {
+      const node = createImageNode()
+      node.imgs![0].src = 'http://localhost/test.png?preview=1&foo=bar'
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const saveOption = getImageMenuOptions(node).find(
+        (o) => o.label === 'Save Image'
+      )
+      saveOption?.action?.()
+
+      expect(downloadFile).toHaveBeenCalledWith(
+        'http://localhost/test.png?foo=bar'
+      )
+    })
+
+    it('does not open or save when the active image is missing', () => {
+      const node = createImageNode({ imageIndex: 1 })
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+      options.find((o) => o.label === 'Open Image')?.action?.()
+      options.find((o) => o.label === 'Save Image')?.action?.()
+
+      expect(openFileInNewTab).not.toHaveBeenCalled()
+      expect(downloadFile).not.toHaveBeenCalled()
+    })
+
+    it('does not run image actions when images are cleared after menu creation', async () => {
+      const node = createImageNode()
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+      node.imgs = []
+
+      options.find((o) => o.label === 'Open Image')?.action?.()
+      await options.find((o) => o.label === 'Copy Image')?.action?.()
+      options.find((o) => o.label === 'Save Image')?.action?.()
+
+      expect(openFileInNewTab).not.toHaveBeenCalled()
+      expect(downloadFile).not.toHaveBeenCalled()
+    })
+
+    it('does not copy when the active image is missing', async () => {
+      const node = createImageNode({ imageIndex: 1 })
+      const write = vi.fn()
+      mockClipboard(fromPartial<Clipboard>({ write }))
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      await getImageMenuOptions(node)
+        .find((o) => o.label === 'Copy Image')
+        ?.action?.()
+
+      expect(write).not.toHaveBeenCalled()
+    })
+
+    it('logs save failures for invalid image URLs', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const node = createImageNode()
+      Object.defineProperty(node.imgs![0], 'src', {
+        value: 'http://[',
+        configurable: true
+      })
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      getImageMenuOptions(node)
+        .find((o) => o.label === 'Save Image')
+        ?.action?.()
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to save image:',
+        expect.any(TypeError)
+      )
+      expect(downloadFile).not.toHaveBeenCalled()
+    })
+
+    it('copies the selected image to clipboard', async () => {
+      const node = createImageNode()
+      const drawImage = vi.fn()
+      const write = vi.fn().mockResolvedValue(undefined)
+      stubClipboardItem()
+      mockClipboard(fromPartial<Clipboard>({ write }))
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        (() =>
+          fromPartial<CanvasRenderingContext2D>({
+            drawImage
+          })) as unknown as HTMLCanvasElement['getContext']
+      )
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+        (callback: BlobCallback) => {
+          callback(new Blob(['image'], { type: 'image/png' }))
+        }
+      )
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      await getImageMenuOptions(node)
+        .find((o) => o.label === 'Copy Image')
+        ?.action?.()
+
+      expect(drawImage).toHaveBeenCalledWith(node.imgs![0], 0, 0)
+      expect(write).toHaveBeenCalledWith([
+        expect.objectContaining({
+          items: { 'image/png': expect.any(Blob) }
+        })
+      ])
+    })
+
+    it('does not copy when canvas context is unavailable', async () => {
+      const node = createImageNode()
+      const write = vi.fn()
+      mockClipboard(fromPartial<Clipboard>({ write }))
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        (() => null) as HTMLCanvasElement['getContext']
+      )
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      await getImageMenuOptions(node)
+        .find((o) => o.label === 'Copy Image')
+        ?.action?.()
+
+      expect(write).not.toHaveBeenCalled()
+    })
+
+    it('does not copy when canvas blob creation fails', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const node = createImageNode()
+      const write = vi.fn()
+      mockClipboard(fromPartial<Clipboard>({ write }))
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        (() =>
+          fromPartial<CanvasRenderingContext2D>({
+            drawImage: vi.fn()
+          })) as unknown as HTMLCanvasElement['getContext']
+      )
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+        (callback: BlobCallback) => {
+          callback(null)
+        }
+      )
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      await getImageMenuOptions(node)
+        .find((o) => o.label === 'Copy Image')
+        ?.action?.()
+
+      expect(warnSpy).toHaveBeenCalledWith('Failed to create image blob')
+      expect(write).not.toHaveBeenCalled()
+    })
+
+    it('does not copy when clipboard write is unavailable', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const node = createImageNode()
+      mockClipboard(fromPartial<Clipboard>({ write: undefined }))
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        (() =>
+          fromPartial<CanvasRenderingContext2D>({
+            drawImage: vi.fn()
+          })) as unknown as HTMLCanvasElement['getContext']
+      )
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+        (callback: BlobCallback) => {
+          callback(new Blob(['image'], { type: 'image/png' }))
+        }
+      )
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      await getImageMenuOptions(node)
+        .find((o) => o.label === 'Copy Image')
+        ?.action?.()
+
+      expect(warnSpy).toHaveBeenCalledWith('Clipboard API not available')
+    })
+
+    it('logs clipboard copy failures', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const node = createImageNode()
+      stubClipboardItem()
+      mockClipboard(
+        fromPartial<Clipboard>({
+          write: vi.fn().mockRejectedValue(new Error('blocked'))
+        })
+      )
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        (() =>
+          fromPartial<CanvasRenderingContext2D>({
+            drawImage: vi.fn()
+          })) as unknown as HTMLCanvasElement['getContext']
+      )
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+        (callback: BlobCallback) => {
+          callback(new Blob(['image'], { type: 'image/png' }))
+        }
+      )
+
+      const { getImageMenuOptions } = useImageMenuOptions()
+      await getImageMenuOptions(node)
+        .find((o) => o.label === 'Copy Image')
+        ?.action?.()
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to copy image to clipboard:',
+        expect.any(Error)
+      )
     })
   })
 })

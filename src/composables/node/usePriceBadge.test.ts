@@ -1,4 +1,4 @@
-import { describe, expect, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -12,20 +12,27 @@ const getNodeDisplayPrice = vi.fn(
     String(overrides?.get('prompt') ?? 'missing override')
 )
 
+const mockPalette = vi.hoisted(() => ({
+  completedActivePalette: {
+    light_theme: false,
+    colors: {
+      litegraph_base: {
+        BADGE_FG_COLOR: '#ffffff'
+      }
+    }
+  }
+}))
+
 vi.mock('@/composables/node/useNodePricing', () => ({
   useNodePricing: () => ({ getNodeDisplayPrice })
 }))
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: {
-      light_theme: false,
-      colors: { litegraph_base: {} }
-    }
-  })
+  useColorPaletteStore: () => mockPalette
 }))
 
-const { updateSubgraphCredits, getCreditsBadge } = usePriceBadge()
+const { updateSubgraphCredits, getCreditsBadge, isCreditsBadge } =
+  usePriceBadge()
 
 const mockNode = new LGraphNode('mock node')
 mockNode.badges = [getCreditsBadge('$0.05/Run')]
@@ -36,6 +43,32 @@ function getBadgeText(node: LGraphNode): string {
 }
 
 describe('subgraph pricing', () => {
+  beforeEach(() => {
+    mockPalette.completedActivePalette.light_theme = false
+  })
+
+  it('identifies credit badges and ignores unrelated badges', () => {
+    expect(isCreditsBadge(getCreditsBadge('$0.05/Run'))).toBe(true)
+    expect(isCreditsBadge(() => getCreditsBadge('$0.05/Run'))).toBe(true)
+    expect(isCreditsBadge({ text: 'other' })).toBe(false)
+  })
+
+  it('uses the adjusted credits background in light themes', () => {
+    mockPalette.completedActivePalette.light_theme = true
+
+    expect(getCreditsBadge('$0.05/Run').bgColor).not.toBe('#8D6932')
+  })
+
+  it('does nothing for non-subgraph nodes', () => {
+    const node = new LGraphNode('plain node')
+    const badge = getCreditsBadge('$0.05/Run')
+    node.badges = [badge]
+
+    updateSubgraphCredits(node)
+
+    expect(node.badges).toEqual([badge])
+  })
+
   subgraphTest(
     'should not display badge for subgraphs without API nodes',
     ({ subgraphWithNode }) => {
