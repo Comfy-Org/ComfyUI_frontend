@@ -112,6 +112,7 @@
     "firebase": "catalog:",
     "fuse.js": "^7.0.0",
     "glob": "catalog:",
+    "immer": "catalog:",
     "jsonata": "catalog:",
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
