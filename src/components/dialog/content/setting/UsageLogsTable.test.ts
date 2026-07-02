@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, nextTick, onMounted, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -106,6 +106,11 @@ const AutoRefreshWrapper = defineComponent({
   },
   template: '<UsageLogsTable ref="tableRef" />'
 })
+
+async function flushMicrotasks() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
+}
 
 function makeEventsResponse(
   events: Partial<AuditLog>[],
@@ -419,9 +424,9 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      await waitFor(() => {
-        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
-      })
+      await flushMicrotasks()
+
+      expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       expect(screen.queryByText('LegacyAPI')).not.toBeInTheDocument()
     })
 
