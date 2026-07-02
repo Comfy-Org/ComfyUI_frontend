@@ -21,6 +21,7 @@
       )
     "
     :data-selected="selected"
+    :data-asset-id="asset?.id"
     :draggable="true"
     @click.stop="$emit('click')"
     @contextmenu.prevent.stop="
@@ -316,6 +317,11 @@ const handleOutputCountClick = () => {
   emit('output-count-click')
 }
 function dragStart(e: DragEvent) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    return
+  }
+
   if (!asset?.preview_url) return
 
   const { dataTransfer } = e

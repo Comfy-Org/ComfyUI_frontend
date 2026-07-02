@@ -102,6 +102,19 @@ export function useAssetSelection() {
   }
 
   /**
+   * Replace the selection (e.g. from a marquee) and keep the shift-range anchor
+   * on the last selected asset, the same way selectAll maintains it.
+   */
+  function setSelectedIds(ids: string[], allAssets: AssetItem[]) {
+    selectionStore.setSelection(ids)
+    const selected = new Set(ids)
+    const anchorIndex = allAssets.findLastIndex((asset) =>
+      selected.has(asset.id)
+    )
+    setAnchor(anchorIndex, anchorIndex >= 0 ? allAssets[anchorIndex].id : null)
+  }
+
+  /**
    * Get the actual asset objects for selected IDs
    */
   function getSelectedAssets(allAssets: AssetItem[]): AssetItem[] {
@@ -182,6 +195,7 @@ export function useAssetSelection() {
     // Selection actions
     handleAssetClick,
     selectAll,
+    setSelectedIds,
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
     reconcileSelection,
