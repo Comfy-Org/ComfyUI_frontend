@@ -31,10 +31,12 @@ import type {
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  ResubscribeClickMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -52,7 +54,7 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
-import { TelemetryEvents } from '../../types'
+import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
 import { getActionbarDockState } from '../../utils/getActionbarDockState'
 import { getExecutionContext } from '../../utils/getExecutionContext'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
@@ -376,6 +378,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackMonthlySubscriptionCancelled(): void {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
+  }
+
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.trackEvent(CANCELLATION_STAGE_EVENTS[event], metadata)
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.trackEvent(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
