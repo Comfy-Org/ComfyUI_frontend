@@ -162,6 +162,26 @@ describe('fixBadLinks', () => {
     expect(graph.nodes[1]?.inputs?.[0]?.link).toBe(1)
   })
 
+  it('reports a missing target input link during a dry run', () => {
+    const graph = createGraph({
+      nodes: [
+        createNode({ id: 1, outputs: [createOutput([1])] }),
+        createNode({ id: 2, inputs: [createInput(null)] })
+      ],
+      links: [[1, 1, 0, 2, 0, '*']]
+    })
+
+    const result = fixBadLinks(graph)
+
+    expect(result).toMatchObject({
+      hasBadLinks: true,
+      fixed: false,
+      patched: 1,
+      deleted: 0
+    })
+    expect(graph.nodes[1]?.inputs?.[0]?.link).toBeNull()
+  })
+
   it('removes the origin reference when the target input slot is missing', () => {
     const graph = createGraph({
       nodes: [
@@ -206,6 +226,53 @@ describe('fixBadLinks', () => {
     expect(graph.links).toEqual([])
   })
 
+  it('keeps the later target link when two links target the same input slot', () => {
+    const graph = createGraph({
+      nodes: [
+        createNode({ id: 1, outputs: [createOutput([1])] }),
+        createNode({ id: 2, outputs: [createOutput([2])] }),
+        createNode({ id: 3, inputs: [createInput(null)] })
+      ],
+      links: [
+        [1, 1, 0, 3, 0, '*'],
+        [2, 2, 0, 3, 0, '*']
+      ]
+    })
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      deleted: 1
+    })
+    expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([])
+    expect(graph.nodes[1]?.outputs?.[0]?.links).toEqual([2])
+    expect(graph.nodes[2]?.inputs?.[0]?.link).toBe(2)
+    expect(graph.links).toEqual([[2, 2, 0, 3, 0, '*']])
+  })
+
+  it('reports stale origin references during a dry run', () => {
+    const graph = createGraph({
+      nodes: [
+        createNode({ id: 1, outputs: [createOutput([1])] }),
+        createNode({ id: 2, inputs: [createInput(2)] })
+      ],
+      links: [[1, 1, 0, 2, 0, '*']]
+    })
+
+    const result = fixBadLinks(graph)
+
+    expect(result).toMatchObject({
+      hasBadLinks: true,
+      fixed: false,
+      patched: 1,
+      deleted: 1
+    })
+    expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([1])
+    expect(graph.links).toEqual([[1, 1, 0, 2, 0, '*']])
+  })
+
   it('cleans dangling references when a linked node is missing', () => {
     const graph = createGraph({
       nodes: [createNode({ id: 2, inputs: [createInput(1)] })],
@@ -224,6 +291,24 @@ describe('fixBadLinks', () => {
     expect(graph.links).toEqual([])
   })
 
+  it('deletes missing-origin links when the target does not reference them', () => {
+    const graph = createGraph({
+      nodes: [createNode({ id: 2, inputs: [createInput(null)] })],
+      links: [[1, 1, 0, 2, 0, '*']]
+    })
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 0,
+      deleted: 1
+    })
+    expect(graph.nodes[0]?.inputs?.[0]?.link).toBeNull()
+    expect(graph.links).toEqual([])
+  })
+
   it('cleans dangling origin references when the target node is missing', () => {
     const graph = createGraph({
       nodes: [createNode({ id: 1, outputs: [createOutput([1])] })],
@@ -236,6 +321,24 @@ describe('fixBadLinks', () => {
       hasBadLinks: false,
       fixed: true,
       patched: 1,
+      deleted: 1
+    })
+    expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([])
+    expect(graph.links).toEqual([])
+  })
+
+  it('deletes missing-target links when the origin does not reference them', () => {
+    const graph = createGraph({
+      nodes: [createNode({ id: 1, outputs: [createOutput([])] })],
+      links: [[1, 1, 0, 2, 0, '*']]
+    })
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 0,
       deleted: 1
     })
     expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([])
@@ -316,5 +419,119 @@ describe('fixBadLinks', () => {
     })
     expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([1])
     expect(logger.log).not.toHaveBeenCalled()
+  })
+
+  it('creates missing origin output slots in fix mode', () => {
+    const graph = createGraph({
+      nodes: [
+        createNode({ id: 1 }),
+        createNode({ id: 2, inputs: [createInput(1)] })
+      ],
+      links: [[1, 1, 0, 2, 0, '*']]
+    })
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 1,
+      deleted: 0
+    })
+    expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([1])
+  })
+
+  it('deletes links whose serialized endpoints are both missing', () => {
+    const graph = createGraph({
+      nodes: [],
+      links: [[1, 1, 0, 2, 0, '*']]
+    })
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 0,
+      deleted: 1
+    })
+    expect(graph.links).toEqual([])
+  })
+
+  it('ignores null serialized link entries', () => {
+    const graph = {
+      ...createGraph({
+        nodes: [createNode({ id: 1 })],
+        links: []
+      }),
+      links: [null as unknown as SerialisedLLinkArray]
+    }
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: false,
+      patched: 0,
+      deleted: 0
+    })
+    expect(graph.links).toEqual([])
+  })
+
+  it('deletes object-shaped serialized links', () => {
+    const graph = {
+      ...createGraph({
+        nodes: [],
+        links: []
+      }),
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: '*'
+        }
+      ]
+    } as unknown as ISerialisedGraph
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 0,
+      deleted: 1
+    })
+    expect(graph.links).toEqual([])
+  })
+
+  it('treats invalid live graph endpoint ids as missing', () => {
+    const linkId = toLinkId(1)
+    const link = fromPartial<LLink>({
+      id: linkId,
+      origin_id: toNodeId(''),
+      origin_slot: 0,
+      target_id: toNodeId(''),
+      target_slot: 0,
+      type: '*'
+    })
+    const links = new Map([[linkId, link]])
+    const graph = fromAny<LGraph, unknown>({
+      links,
+      getNodeById: vi.fn()
+    })
+
+    const result = fixBadLinks(graph, { fix: true, silent: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 0,
+      deleted: 1
+    })
+    expect(graph.getNodeById).not.toHaveBeenCalled()
+    expect(links.has(linkId)).toBe(false)
   })
 })

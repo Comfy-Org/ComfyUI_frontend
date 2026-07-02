@@ -122,6 +122,22 @@ describe('downloadUtil', () => {
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
+    it('throws for an empty URL', () => {
+      expect(() => downloadFile('')).toThrow(
+        'Invalid URL provided for download'
+      )
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
+    })
+
+    it('throws for a whitespace URL', () => {
+      expect(() => downloadFile('   ')).toThrow(
+        'Invalid URL provided for download'
+      )
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
+    })
+
     it('should prefer custom filename over extracted filename', () => {
       const testUrl =
         'https://example.com/api/file?filename=extracted-image.jpg'
