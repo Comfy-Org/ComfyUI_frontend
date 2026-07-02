@@ -124,9 +124,6 @@ const previewWidgets = computed<WidgetGridItem[]>(() =>
           ? [leadValue, ...comboValues.filter((option) => option !== leadValue)]
           : comboValues
       return {
-        name,
-        type,
-        value,
         visible: true,
         renderKey: `preview:${nodeDef.name}:${name}`,
         vueComponent: getComponent(type) ?? WidgetLegacy,
