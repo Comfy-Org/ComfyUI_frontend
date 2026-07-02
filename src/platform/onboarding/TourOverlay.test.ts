@@ -1,47 +1,33 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
-import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TourOverlay from './TourOverlay.vue'
 import type { CoachStep } from './onboardingTours'
-import type { useCoachmarkTour } from './useCoachmarkTour'
+import { useCoachmarkTour } from './useCoachmarkTour'
 
-type TourApi = ReturnType<typeof useCoachmarkTour>
-type TourState = {
-  [K in keyof TourApi]: TourApi[K] extends (...args: never[]) => unknown
-    ? Mock
-    : TourApi[K] extends { value: infer V }
-      ? Ref<V>
-      : never
+vi.mock('./useCoachmarkTour', () => ({ useCoachmarkTour: vi.fn() }))
+
+function makeTourState() {
+  return {
+    step: ref<CoachStep | null>(null),
+    title: ref('Canvas title'),
+    body: ref('Canvas body'),
+    isLast: ref(false),
+    primaryLabel: ref('Next'),
+    skipLabel: ref('Skip'),
+    countedStepIdx: ref(0),
+    countedSteps: ref<CoachStep[]>([]),
+    suspendFocusGuard: ref(false),
+    next: vi.fn(),
+    end: vi.fn()
+  }
 }
 
-const mocks = vi.hoisted(() => ({ state: {} as TourState }))
-const seedState = vi.hoisted(
-  () => (makeRef: typeof ref) =>
-    Object.assign(mocks.state, {
-      step: makeRef<CoachStep | null>(null),
-      isLast: makeRef(false),
-      primaryLabel: makeRef('Next'),
-      skipLabel: makeRef('Skip'),
-      countedStepIdx: makeRef(0),
-      countedSteps: makeRef<CoachStep[]>([]),
-      suspendFocusGuard: makeRef(false),
-      next: vi.fn(),
-      end: vi.fn()
-    } satisfies TourState)
-)
-vi.mock('./useCoachmarkTour', async () => {
-  const { ref } = await import('vue')
-  seedState(ref)
-  return { useCoachmarkTour: () => mocks.state }
-})
-
-// Stub the spotlight so this suite covers TourOverlay's own job — branching
-// between landing and spotlight and wiring their intents back to the composable.
+// Stubbed so the suite covers only TourOverlay's branching and intent wiring.
 vi.mock('./TourSpotlight.vue', () => ({
   default: defineComponent({
     emits: ['advance', 'skip'],
@@ -60,23 +46,20 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close' },
-      tt: 'Canvas title',
-      bb: 'Canvas body'
+      g: { close: 'Close' }
     }
   }
 })
 
-const s = mocks.state
+let s: ReturnType<typeof makeTourState>
 
 const spotlightStep: CoachStep = {
-  titleKey: 'tt',
-  bodyKey: 'bb',
+  name: 'run',
   placement: 'right'
 }
 
 function landingStep(): CoachStep {
-  return { titleKey: 'tt', bodyKey: 'bb', placement: 'center', landing: true }
+  return { name: 'landing', placement: 'center', landing: true }
 }
 
 function renderOverlay() {
@@ -85,7 +68,8 @@ function renderOverlay() {
 
 describe('TourOverlay', () => {
   beforeEach(() => {
-    seedState(ref)
+    s = makeTourState()
+    vi.mocked(useCoachmarkTour).mockReturnValue(fromPartial(s))
   })
 
   afterEach(cleanup)

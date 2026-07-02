@@ -4,17 +4,16 @@ export type CoachTour = 'appMode'
 
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 
-/**
- * Coach-mark overlay (src/platform/onboarding/TourOverlay.vue).
- * The landing dialog opens the tour; spotlight steps and the card are exercised
- * via their `data-coach-id` anchors and the dialog role.
- */
+/** Accessible name of each tour's in-app replay (help) button. */
+const TOUR_REPLAY_BUTTONS: Record<CoachTour, string> = {
+  appMode: 'Take a tour of App Mode'
+}
+
+/** Coach-mark overlay (src/platform/onboarding/TourOverlay.vue). */
 export class OnboardingCoachmarks {
   public readonly landing: Locator
   public readonly landingStartButton: Locator
   public readonly landingSkipButton: Locator
-  /** App-mode help button that replays the tour in-place (past the seen-flag). */
-  public readonly startTourButton: Locator
   /** The current spotlight step card (the dialog carrying a "Step N of M" label). */
   public readonly card: Locator
   public readonly cardNextButton: Locator
@@ -27,11 +26,13 @@ export class OnboardingCoachmarks {
     this.landingSkipButton = this.landing.getByRole('button', {
       name: 'Skip for now'
     })
-    this.startTourButton = page.getByRole('button', {
-      name: 'Take a tour of App Mode'
-    })
     this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
     this.cardNextButton = this.card.getByRole('button', { name: 'Next' })
+  }
+
+  /** The tour's in-app help button, which replays it past the seen-flag. */
+  replayButton(tour: CoachTour): Locator {
+    return this.page.getByRole('button', { name: TOUR_REPLAY_BUTTONS[tour] })
   }
 
   /** The spotlight card while it is showing the given step number. */
@@ -40,14 +41,12 @@ export class OnboardingCoachmarks {
   }
 
   /**
-   * Replay the tour from a running app: clears the pre-seeded seen-flag (so
-   * dismissal assertions observe it being set again) and clicks the in-app help
-   * button, which starts the tour past the seen-flag. The caller must already be
-   * in app mode with a populated graph so the button is mounted.
+   * Clears the pre-seeded seen-flag (so dismissal assertions observe it being
+   * set again) and clicks the tour's replay button, which must be mounted.
    */
-  async startTour() {
+  async startTour(tour: CoachTour) {
     await this.clearSeen()
-    await this.startTourButton.click()
+    await this.replayButton(tour).click()
   }
 
   private async clearSeen() {

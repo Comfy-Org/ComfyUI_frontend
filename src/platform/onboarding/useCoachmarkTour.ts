@@ -15,21 +15,18 @@ const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 const DEFER_TIMEOUT_MS = 8000
 
 /**
- * The onboarding tour state machine: decides which tour starts and when (auto-open
- * triggers, explicit requests), resolves which steps run, and drives the
- * advance/skip/complete lifecycle. TourSpotlight owns the spotlight, focus trap
- * and modal stacking for whichever step is shown.
+ * The tour state machine: which tour starts and when, which steps run, and the
+ * advance/skip/complete lifecycle.
  */
 export function useCoachmarkTour() {
-  const { t } = useI18n()
+  const { t, te } = useI18n()
   const settingStore = useSettingStore()
   const telemetry = useTelemetry()
 
   const steps = ref<CoachStep[]>([])
   const stepIdx = ref(0)
-  // Lets a deferred target autofocus without the spotlight pulling focus back.
   const suspendFocusGuard = ref(false)
-  let activeTour: EntryPath | null = null
+  const activeTour = ref<EntryPath | null>(null)
   let stepController: AbortController | null = null
 
   const step = computed<CoachStep | null>(
@@ -37,20 +34,18 @@ export function useCoachmarkTour() {
   )
   const isLast = computed(() => stepIdx.value === steps.value.length - 1)
 
-  // Landing steps aren't numbered, so the indicator counts only spotlight steps.
   const countedSteps = computed(() => steps.value.filter((s) => !s.landing))
   const countedStepIdx = computed(() => {
     const s = step.value
     return s ? countedSteps.value.indexOf(s) : 0
   })
 
-  // Reports the numbering the user sees: `step_number` of `step_count` is the
-  // card's "Step N of M", so landing steps carry neither number nor coach id.
   function trackTour(stage: OnboardingTourStage) {
-    if (!activeTour) return
+    const tour = activeTour.value
+    if (!tour) return
     const coachId = step.value?.coachId
     telemetry?.trackOnboardingTour(stage, {
-      tour: activeTour,
+      tour,
       step_count: countedSteps.value.length,
       ...(stage !== 'started' &&
         countedStepIdx.value >= 0 && {
@@ -60,16 +55,26 @@ export function useCoachmarkTour() {
     })
   }
 
+  function stepKey(suffix: string) {
+    return `onboardingCoachmarks.${activeTour.value}.${step.value?.name}.${suffix}`
+  }
+
+  const title = computed(() => (step.value ? t(stepKey('title')) : ''))
+  const body = computed(() => (step.value ? t(stepKey('body')) : ''))
+
+  // A step overrides the generic button labels by declaring `primary`/`skip`
+  // entries under its translation keys.
   const primaryLabel = computed(() => {
-    const key = step.value?.primaryLabelKey
-    if (key) return t(key)
+    if (step.value && te(stepKey('primary'))) return t(stepKey('primary'))
     return isLast.value
       ? t('onboardingCoachmarks.done')
       : t('onboardingCoachmarks.next')
   })
 
   const skipLabel = computed(() =>
-    t(step.value?.skipLabelKey ?? 'onboardingCoachmarks.skip')
+    step.value && te(stepKey('skip'))
+      ? t(stepKey('skip'))
+      : t('onboardingCoachmarks.skip')
   )
 
   async function showStep(idx: number) {
@@ -93,8 +98,8 @@ export function useCoachmarkTour() {
       )
       if (signal.aborted) return
       suspendFocusGuard.value = false
-      // Abandon without the seen-flag, so a missed target isn't permanent.
-      // Point at the timed-out step first so telemetry reports its coachmark.
+      // Point at the timed-out step so telemetry reports it, and skip without
+      // the seen-flag so a missed target isn't permanent.
       if (!found) {
         stepIdx.value = idx
         end('skipped', false)
@@ -119,15 +124,14 @@ export function useCoachmarkTour() {
     suspendFocusGuard.value = false
     steps.value = []
     stepIdx.value = 0
-    if (markSeen && activeTour) markTourSeen(activeTour)
-    activeTour = null
+    if (markSeen && activeTour.value) markTourSeen(activeTour.value)
+    activeTour.value = null
   }
 
   onBeforeUnmount(() => {
     stepController?.abort()
   })
 
-  // Each tour declares its own activation condition; the engine just watches them.
   for (const [entryPath, active] of useTourTriggers()) {
     watch(
       active,
@@ -149,23 +153,23 @@ export function useCoachmarkTour() {
   }
 
   function startTour(entryPath: EntryPath, force = false) {
-    // startTour is synchronous, so a concurrent trigger sees the first's steps.
     if (steps.value.length) return
     if (!force && hasSeenTour(entryPath)) return
     const resolved = resolveSteps(TOURS[entryPath], targetMounted)
     if (!resolved.length) return
     steps.value = resolved
-    activeTour = entryPath
+    activeTour.value = entryPath
     trackTour('started')
     void showStep(0)
   }
 
-  // An explicit request (e.g. info button) replays the tour past its seen-flag.
   onTourRequested((tour) => startTour(tour, true))
 
   return {
     step,
     isLast,
+    title,
+    body,
     primaryLabel,
     skipLabel,
     countedStepIdx,

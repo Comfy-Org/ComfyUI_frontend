@@ -6,7 +6,7 @@ import type { CoachId, CoachStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
 function step(coachId: CoachId): CoachStep {
-  return { titleKey: 't', bodyKey: 'b', placement: 'right', coachId }
+  return { name: 'step', placement: 'right', coachId }
 }
 
 function laidOut(): HTMLElement {

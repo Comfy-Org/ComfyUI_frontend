@@ -14,7 +14,6 @@ const i18n = createI18n({
 function renderLanding() {
   return render(CoachmarkLanding, {
     props: {
-      open: true,
       title: 'Welcome to Apps',
       message: 'A quick tour of the essentials.',
       primaryLabel: 'Start tutorial',
@@ -42,20 +41,21 @@ describe('CoachmarkLanding', () => {
     expect(emitted().start).toHaveLength(1)
   })
 
-  it('closes (open model false) when Skip is clicked', async () => {
+  it('emits skip when Skip is clicked', async () => {
     const user = userEvent.setup()
     const { emitted } = renderLanding()
     await user.click(
       await screen.findByRole('button', { name: 'Skip for now' })
     )
-    expect(emitted()['update:open']).toEqual([[false]])
+    expect(emitted().skip).toHaveLength(1)
   })
 
-  it('closes (open model false) when Escape is pressed', async () => {
+  it('emits skip when Escape is pressed', async () => {
     const user = userEvent.setup()
     const { emitted } = renderLanding()
     await screen.findByText('Welcome to Apps')
     await user.keyboard('{Escape}')
-    expect(emitted()['update:open']).toContainEqual([false])
+    // The explicit listener and Reka's own dismiss may both fire here.
+    expect(emitted().skip?.length).toBeGreaterThanOrEqual(1)
   })
 })

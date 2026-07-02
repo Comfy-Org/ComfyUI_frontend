@@ -21,18 +21,18 @@ const i18n = createI18n({
   messages: {
     en: {
       g: { close: 'Close' },
-      tt: 'Run your app',
-      bb: 'Press to run',
       onboardingCoachmarks: { stepLabel: 'Step {current} of {total}' }
     }
   }
 })
 
 function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
-  return { titleKey: 'tt', bodyKey: 'bb', placement: 'right', ...overrides }
+  return { name: 'run', placement: 'right', ...overrides }
 }
 
 const baseProps = {
+  title: 'Run your app',
+  body: 'Press to run',
   isLast: false,
   primaryLabel: 'Next',
   skipLabel: 'Skip',
@@ -120,8 +120,8 @@ describe('TourSpotlight', () => {
     await nextTick()
 
     unmount()
-    // Each ZIndex.set pushes a fresh entry into the shared modal sequence, so
-    // every set must be preceded by a clear — plus the final unmount clear.
+    // Every set must pair with a clear (plus the unmount clear), or entries
+    // leak into the shared modal sequence.
     expect(vi.mocked(ZIndex.clear).mock.calls.length).toBe(
       vi.mocked(ZIndex.set).mock.calls.length + 1
     )

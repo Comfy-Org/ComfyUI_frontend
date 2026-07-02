@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:open="open">
+  <Dialog :open="true" @update:open="(value) => !value && emit('skip')">
     <DialogPortal>
       <DialogOverlay v-reka-z-index class="bg-black/60" />
       <DialogContent
@@ -45,7 +45,7 @@
             </DialogDescription>
           </div>
           <div class="flex w-full items-center justify-end gap-2">
-            <Button variant="secondary" size="lg" @click="open = false">
+            <Button variant="secondary" size="lg" @click="emit('skip')">
               {{ skipLabel }}
             </Button>
             <Button
@@ -86,29 +86,25 @@ const { title, message, image, primaryLabel, skipLabel } = defineProps<{
   skipLabel: string
 }>()
 
-const open = defineModel<boolean>('open', { required: true })
-
-// The global keybinding handler (window keydown) matches Escape and calls
-// preventDefault before Reka's DismissableLayer sees it, so Reka skips its own
-// dismiss (it only dismisses when !event.defaultPrevented). Close explicitly —
-// the same path Skip and Reka's dismissal would take.
-useEventListener(document, 'keydown', (e) => {
-  if (e.key === 'Escape' && open.value) open.value = false
-})
-
 const emit = defineEmits<{
   start: []
+  skip: []
 }>()
+
+const { t } = useI18n()
+
+// The global keybinding handler preventDefaults Escape before Reka's
+// DismissableLayer sees it, so Reka skips its own dismiss; do it explicitly.
+useEventListener(document, 'keydown', (e) => {
+  if (e.key === 'Escape') emit('skip')
+})
 
 const startButtonRef = useTemplateRef('startButtonRef')
 
-// Land focus on the primary action instead of the close button reka would
-// otherwise focus first.
+// Land focus on the primary action, not the close button Reka would pick.
 function onOpenAutoFocus(event: Event) {
   event.preventDefault()
   const el = startButtonRef.value?.$el as HTMLButtonElement | undefined
   el?.focus()
 }
-
-const { t } = useI18n()
 </script>

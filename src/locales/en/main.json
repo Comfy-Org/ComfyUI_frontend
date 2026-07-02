@@ -4500,7 +4500,7 @@
       "landing": {
         "title": "Welcome to Apps",
         "body": "A quick tour of the essentials, in about a minute. You'll fill inputs and see your first generation.",
-        "start": "Start tutorial",
+        "primary": "Start tutorial",
         "skip": "Skip for now"
       },
       "inputs": {

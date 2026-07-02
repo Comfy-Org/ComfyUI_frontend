@@ -5,8 +5,7 @@ import type { CoachStep } from './onboardingTours'
 
 function step(overrides: Partial<CoachStep> = {}): CoachStep {
   return {
-    titleKey: 'title',
-    bodyKey: 'body',
+    name: 'step',
     placement: 'center',
     ...overrides
   }

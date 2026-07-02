@@ -1,17 +1,22 @@
 <template>
   <div ref="overlayRef" class="pointer-events-none fixed inset-0">
-    <div class="pointer-events-auto absolute inset-0" :style="blockerStyle" />
+    <div
+      :class="
+        cn('pointer-events-auto absolute inset-0', !targetRect && 'bg-black/60')
+      "
+      :style="blockerStyle"
+    />
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
       :class="
         cn(
-          'pointer-events-none absolute rounded-[10px] motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
+          'pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] outline-2 outline-white motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
           outlinePulsing &&
             'motion-safe:animate-[coach-pulse_1.2s_ease-in-out_infinite]'
         )
       "
-      :style="[spotlightStyle, spotlightChrome]"
+      :style="spotlightStyle"
     />
     <div
       ref="cardRef"
@@ -30,9 +35,9 @@
           })
         "
         :subtitle-id="subtitleId"
-        :title="t(step.titleKey)"
+        :title
         :title-id="titleId"
-        :message="t(step.bodyKey)"
+        :message="body"
         :message-id="bodyId"
         :image="step.image"
       >
@@ -80,7 +85,6 @@ import Button from '@/components/ui/button/Button.vue'
 import CoachmarkCard from './CoachmarkCard.vue'
 import {
   CARD_WIDTH,
-  SCRIM_COLOR,
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
   blockerClipPath,
@@ -91,11 +95,12 @@ import type { CoachStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 import { useFocusTrap } from './useFocusTrap'
 
-// How long a user can stall on an interaction step before the outline pulses.
 const PULSE_IDLE_MS = 4000
 
 const {
   step,
+  title,
+  body,
   isLast,
   primaryLabel,
   skipLabel,
@@ -104,12 +109,13 @@ const {
   suspendFocusGuard
 } = defineProps<{
   step: CoachStep
+  title: string
+  body: string
   isLast: boolean
   primaryLabel: string
   skipLabel: string
   countedStepIdx: number
   countedStepsTotal: number
-  /** Suspends the focus pull-back while the engine awaits a deferred target. */
   suspendFocusGuard: boolean
 }>()
 
@@ -131,7 +137,6 @@ const stepRef = computed<CoachStep | null>(() => step)
 const { targetRect, targetEl, floatingStyles, isPositioned } =
   useCoachmarkTarget(stepRef, cardRef)
 
-// Steps the user advances by interacting with the target (click/close), not Next.
 const expectsTargetInteraction = computed(() => !!step.advanceOnTargetClick)
 // Last step's "Done" already dismisses, so hide Skip unless the step has no primary button.
 const showSkip = computed(() => !isLast || expectsTargetInteraction.value)
@@ -180,8 +185,8 @@ async function raiseOverlay() {
   ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
 }
 
-// Reclaim the modal stack top (a deferred dialog may have registered above us),
-// refocus the card, and reset the pulse whenever the step changes.
+// A deferred dialog may have registered above the overlay; reclaim the stack
+// top on every step.
 watch(
   () => step,
   () => {
@@ -201,35 +206,23 @@ const viewport = () => ({
   height: windowHeight.value
 })
 
-// The white ring (outline) plus the giant spread shadow that dims everything
-// outside the spotlight. The outline pulses via the coach-pulse keyframe.
-const spotlightChrome = {
-  outline: '2px solid #fff',
-  boxShadow: `0 0 0 9999px ${SCRIM_COLOR}`
-}
-
 const spotlightStyle = computed(() => {
   const r = targetRect.value
   if (!r) return { opacity: '0' }
   return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
 })
 
-// Eats pointer events everywhere (the spotlight's shadow does the dimming);
-// interaction steps punch a hole at the target's bounds so only it stays clickable.
+// Interaction steps punch a hole in the blocker so only the target stays clickable.
 const blockerStyle = computed(() => {
   const r = targetRect.value
-  // No target rect yet: the spotlight shadow isn't dimming anything, so dim here.
-  if (!r) return { background: SCRIM_COLOR }
-  if (!expectsTargetInteraction.value) return {}
-  return { clipPath: blockerClipPath(r) }
+  if (r && expectsTargetInteraction.value)
+    return { clipPath: blockerClipPath(r) }
+  return {}
 })
 
 const cardStyle = computed(() => {
-  // Cap the width on viewports narrower than the card so it never overflows.
   const width = `${CARD_WIDTH}px`
   const maxWidth = `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`
-  // No resolved target (a centred intro step, or a deferred target that hasn't
-  // laid out): centre the card in the viewport rather than hide it.
   if (!targetEl.value) {
     return {
       width,
@@ -238,8 +231,7 @@ const cardStyle = computed(() => {
       top: '30%'
     }
   }
-  // Floating UI places the card beside the target; stay hidden until it's
-  // positioned to avoid a first-frame jump from the origin.
+  // Hidden until Floating UI positions it, avoiding a first-frame jump.
   return {
     ...floatingStyles.value,
     width,

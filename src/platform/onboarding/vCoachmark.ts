@@ -4,10 +4,9 @@ import { registerCoachmark, unregisterCoachmark } from './coachmarkRegistry'
 import type { CoachId } from './onboardingTours'
 
 /**
- * Marks an element as a coach-mark target. Registers it in the reactive
- * registry the tour overlay reads, and mirrors the id to `data-coach-id` so
- * e2e locators and rect overrides keep working. A falsy value is a no-op, so it
- * can be bound to a conditional id (e.g. only some sidebar tabs).
+ * Marks an element as a coach-mark target: registers it in the reactive
+ * registry and mirrors the id to `data-coach-id` for e2e locators. A falsy
+ * value is a no-op, so it can be bound to a conditional id.
  */
 export const vCoachmark: Directive<HTMLElement, CoachId | undefined | null> = {
   mounted(el, { value }) {
@@ -16,6 +15,7 @@ export const vCoachmark: Directive<HTMLElement, CoachId | undefined | null> = {
     registerCoachmark(value, el)
   },
   updated(el, { value, oldValue }) {
+    // `updated` fires on every re-render, not only when the bound id changes.
     if (value === oldValue) return
     if (oldValue) {
       unregisterCoachmark(oldValue, el)

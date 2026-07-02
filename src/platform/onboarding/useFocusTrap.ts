@@ -7,9 +7,7 @@ const FOCUSABLE =
 
 interface FocusTrapOptions {
   cardRef: Ref<HTMLElement | null>
-  /** The spotlighted element, whose focusables join the cycle. */
   getTarget: () => HTMLElement | null
-  /** Suspend the focusin pull-back (e.g. while a deferred dialog autofocuses). */
   isSuspended: () => boolean
   onEscape: () => void
 }
@@ -17,8 +15,6 @@ interface FocusTrapOptions {
 /**
  * Traps focus across two disjoint subtrees — the coach card and the externally
  * spotlighted target — which a single-subtree trap (Reka FocusScope) can't model.
- * Tab/Shift+Tab cycle through both, wrapping; the focusin guard pulls stray
- * focus back into the card.
  */
 export function useFocusTrap(options: FocusTrapOptions) {
   const { cardRef, getTarget, isSuspended, onEscape } = options
@@ -30,7 +26,6 @@ export function useFocusTrap(options: FocusTrapOptions) {
     buttons?.[buttons.length - 1]?.focus()
   }
 
-  /** The Tab cycle: the target's focusables, then the card's buttons. */
   function focusCycle(): HTMLElement[] {
     const items: HTMLElement[] = []
     const target = getTarget()
@@ -59,7 +54,6 @@ export function useFocusTrap(options: FocusTrapOptions) {
       if (!items.length) return
       e.preventDefault()
       const current = items.indexOf(document.activeElement as HTMLElement)
-      // From outside the trap (current === -1): first item on Tab, last on Shift+Tab.
       const nextIdx =
         current === -1
           ? e.shiftKey

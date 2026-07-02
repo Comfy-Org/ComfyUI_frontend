@@ -1,17 +1,19 @@
 <template>
   <CoachmarkLanding
     v-if="step?.landing"
-    v-model:open="landingOpen"
-    :title="t(step.titleKey)"
-    :message="t(step.bodyKey)"
+    :title
+    :message="body"
     :image="step.image"
     :primary-label="primaryLabel"
     :skip-label="skipLabel"
     @start="next"
+    @skip="end('skipped')"
   />
   <TourSpotlight
     v-else-if="step"
     :step="step"
+    :title
+    :body
     :is-last="isLast"
     :primary-label="primaryLabel"
     :skip-label="skipLabel"
@@ -24,18 +26,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import CoachmarkLanding from './CoachmarkLanding.vue'
 import TourSpotlight from './TourSpotlight.vue'
 import { useCoachmarkTour } from './useCoachmarkTour'
 
-const { t } = useI18n()
-
 const {
   step,
   isLast,
+  title,
+  body,
   primaryLabel,
   skipLabel,
   countedStepIdx,
@@ -44,13 +43,4 @@ const {
   next,
   end
 } = useCoachmarkTour()
-
-// Dismissing the landing Dialog (escape/close/Skip) ends the tour; advancing flips
-// `step.landing` false to close it without skipping.
-const landingOpen = computed({
-  get: () => !!step.value?.landing,
-  set: (value) => {
-    if (!value) end('skipped')
-  }
-})
 </script>

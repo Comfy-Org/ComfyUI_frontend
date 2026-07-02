@@ -7,13 +7,10 @@ import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
 import { elementsFor, isLaidOut } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
-// A deferred target animates in via CSS transform, which neither scroll nor
-// resize events report; poll each frame until its rect stops changing for this
-// long, then fall back to the cheaper scroll/resize listeners.
+// A target animating in via CSS transform reports through neither scroll nor
+// resize events; poll each frame until its rect holds still this long.
 const MOTION_SETTLE_MS = 250
 
-// Maps a step's placement to a Floating UI placement. `auto` starts on the right
-// and flips to fit; `center` has no target, so it never reaches here.
 const PLACEMENT: Record<
   Exclude<CoachPlacement, 'auto' | 'center'>,
   Placement
@@ -31,7 +28,7 @@ function floatingPlacement(step: CoachStep | null): Placement {
   return PLACEMENT[placement]
 }
 
-// Surfaces the measured target rect on each reposition so the spotlight can trace it.
+// Surfaces the measured target rect so the spotlight can trace it.
 const captureReference: Middleware = {
   name: 'captureReference',
   fn: (state) => ({ data: { rect: state.rects.reference } })
@@ -40,9 +37,8 @@ const captureReference: Middleware = {
 function middleware(step: CoachStep | null): Middleware[] {
   const list: Middleware[] = [offset(CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
-  // crossAxis keeps vertically-centred placements (leftCenter) on-screen too —
-  // shift only guards the main axis by default. topSafeInset keeps the card off
-  // the top bar; the other edges use the standard viewport margin.
+  // shift only guards the main axis by default; crossAxis keeps vertically-
+  // centred placements (leftCenter) on-screen too.
   list.push(
     shift({
       crossAxis: true,
@@ -59,12 +55,8 @@ function middleware(step: CoachStep | null): Middleware[] {
 }
 
 /**
- * Locates a coach step's target in the reactive registry and positions the card
- * beside it with Floating UI: `offset`/`flip`/`shift` place the card and keep it
- * on-screen. `autoUpdate` follows the target through scroll and resize; while a
- * deferred target is still animating into place it also polls each frame, then
- * stops once the rect settles. The `captureReference` middleware surfaces the
- * live target rect for the spotlight to trace.
+ * Locates a step's target in the registry and positions the card beside it with
+ * Floating UI, following the target until its rect settles.
  */
 export function useCoachmarkTarget(
   step: Ref<CoachStep | null>,
@@ -75,7 +67,6 @@ export function useCoachmarkTarget(
     return id ? elementsFor(id) : []
   })
 
-  // The first laid-out candidate; skips a registered-but-hidden target (e.g. v-show).
   const targetEl = computed<HTMLElement | null>(
     () => candidateEls.value.find(isLaidOut) ?? null
   )
@@ -100,9 +91,6 @@ export function useCoachmarkTarget(
     return new DOMRect(rect.x, rect.y, rect.width, rect.height)
   })
 
-  // Poll every frame only while a deferred target settles in; a transform
-  // animation can't be observed any other way, but once the rect stops moving
-  // there is nothing to poll for.
   const trackMotion = ref(false)
   const rectKey = computed(() => {
     const r = targetRect.value

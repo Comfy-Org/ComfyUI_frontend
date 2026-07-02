@@ -10,8 +10,8 @@ export function isLaidOut(el: HTMLElement): boolean {
   return r.width > 0 && r.height > 0
 }
 
-// Populated by the `v-coachmark` directive; an id can map to several elements
-// (e.g. responsive variants) and the overlay picks the first laid-out one.
+// An id can map to several elements (e.g. responsive variants); consumers pick
+// the first laid-out one.
 const registry = shallowReactive(new Map<CoachId, readonly HTMLElement[]>())
 
 export function registerCoachmark(id: CoachId, el: HTMLElement) {
@@ -28,22 +28,16 @@ export function coachmarkElements(id: CoachId): readonly HTMLElement[] {
   return registry.get(id) ?? EMPTY
 }
 
-/** All elements registered for an id (or any of several ids). */
 export function elementsFor(id: CoachId | CoachId[]): readonly HTMLElement[] {
   if (!Array.isArray(id)) return coachmarkElements(id)
   return id.flatMap((coachId) => [...coachmarkElements(coachId)])
 }
 
-/** Whether a laid-out (visible, non-zero-size) element for the id is mounted. */
 export function targetMounted(id: CoachId | CoachId[]): boolean {
   return elementsFor(id).some(isLaidOut)
 }
 
-/**
- * Resolve once a laid-out element for the id exists; false on timeout or abort.
- * Polls per frame so a target that registers before it lays out (e.g. a panel
- * that animates open from zero size) still resolves only when it's measurable.
- */
+/** Resolves once a laid-out element for the id exists; false on timeout or abort. */
 export function waitForTarget(
   id: CoachId | CoachId[],
   signal: AbortSignal,
@@ -76,7 +70,7 @@ export function waitForTarget(
   })
 }
 
-/** Drops every registered element; for resetting shared state between tests. */
+/** Resets shared state between tests. */
 export function clearCoachmarks() {
   registry.clear()
 }

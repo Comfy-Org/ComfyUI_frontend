@@ -10,21 +10,14 @@ export interface BoxStyle {
   height: string
 }
 
-// Keeps the spotlight's 2px outline clear of the viewport edge.
 const SPOTLIGHT_EDGE_INSET = 2
 
 export const CARD_WIDTH = 300
 export const VIEWPORT_MARGIN = 12
-// Gap between the card and its target / the viewport edge.
 export const CARD_GAP = 16
-// Breathing room the spotlight glow adds around its target rect. Kept tight so
-// the glow doesn't spill onto an adjacent control the user might click.
+// Kept tight so the spotlight glow doesn't spill onto an adjacent clickable control.
 export const SPOTLIGHT_PAD = 4
-// Page dim: the spotlight's giant box-shadow and the no-target blocker fill.
-// Matches the landing dialog's `bg-black/60` so the two overlays don't jump.
-export const SCRIM_COLOR = 'rgba(0,0,0,0.6)'
 
-/** The spotlight box: the target rect grown by `pad`, clamped to the viewport. */
 export function clampSpotlight(
   r: DOMRect,
   pad: number,
@@ -57,17 +50,13 @@ export function blockerClipPath(r: DOMRect): string {
   return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1} ${y1}, ${x1} ${y2}, ${x2} ${y2}, ${x2} ${y1}, ${x1} ${y1})`
 }
 
-/** Horizontal position for a centered card with no target, clamped on narrow viewports. */
 export function noTargetCardLeft(viewportWidth: number): number {
   return Math.max(VIEWPORT_MARGIN, (viewportWidth - CARD_WIDTH) / 2)
 }
 
 const TOP_BAR_HEIGHT_VAR = '--comfy-topbar-height'
 
-/**
- * Keeps the card clear of the top bar: the bar's height read from the theme
- * token (so it tracks the design system) plus the standard gap.
- */
+/** The top bar's height, read from the theme token, plus the standard gap. */
 export function topSafeInset(): number {
   const root = document.documentElement
   const raw = getComputedStyle(root).getPropertyValue(TOP_BAR_HEIGHT_VAR).trim()

@@ -66,7 +66,23 @@ const APP_MODE_TARGETS: CoachId[] = [
   'assets-panel'
 ]
 
-const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  messages: {
+    en: {
+      onboardingCoachmarks: {
+        next: 'Next',
+        done: 'Done',
+        skip: 'Skip',
+        appMode: {
+          landing: { primary: 'Start tutorial', skip: 'Skip for now' }
+        }
+      }
+    }
+  }
+})
 
 const flush = () => new Promise((resolve) => setTimeout(resolve))
 
@@ -294,14 +310,10 @@ describe('useCoachmarkTour', () => {
     void requestTour('appMode')
     await flush()
 
-    // The landing step overrides both labels.
+    // The landing's `primary`/`skip` translation entries override both labels.
     expect(api.step.value?.landing).toBe(true)
-    expect(api.primaryLabel.value).toBe(
-      'onboardingCoachmarks.appMode.landing.start'
-    )
-    expect(api.skipLabel.value).toBe(
-      'onboardingCoachmarks.appMode.landing.skip'
-    )
+    expect(api.primaryLabel.value).toBe('Start tutorial')
+    expect(api.skipLabel.value).toBe('Skip for now')
 
     // Every target is mounted, so the tour is a landing plus four spotlight steps.
     expect(api.countedSteps.value.length).toBe(4)
@@ -309,8 +321,8 @@ describe('useCoachmarkTour', () => {
     // Landing → first spotlight: labels fall back to the generic Next/Skip.
     api.next()
     await flush()
-    expect(api.primaryLabel.value).toBe('onboardingCoachmarks.next')
-    expect(api.skipLabel.value).toBe('onboardingCoachmarks.skip')
+    expect(api.primaryLabel.value).toBe('Next')
+    expect(api.skipLabel.value).toBe('Skip')
 
     // Three more advances reach the final step, whose primary action reads Done.
     for (let i = 0; i < 3; i++) {
@@ -318,7 +330,7 @@ describe('useCoachmarkTour', () => {
       await flush()
     }
     expect(api.isLast.value).toBe(true)
-    expect(api.primaryLabel.value).toBe('onboardingCoachmarks.done')
+    expect(api.primaryLabel.value).toBe('Done')
   })
 
   it('reports the user-visible step numbering, omitting it for the landing', async () => {

@@ -6,10 +6,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 
 import type { EntryPath } from './onboardingTours'
 
-/**
- * Each tour's auto-open condition, paired with its entry path. Adding an
- * auto-opening tour means adding an entry here, not editing the engine.
- */
+/** Each tour's auto-open condition, paired with its entry path. */
 export function useTourTriggers(): [EntryPath, ComputedRef<boolean>][] {
   const { mode } = useAppMode()
   const appModeStore = useAppModeStore()
