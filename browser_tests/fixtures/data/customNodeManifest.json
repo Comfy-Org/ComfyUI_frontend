@@ -3,9 +3,16 @@
     "pack": "ComfyUI-Impact-Pack",
     "repo": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
     "pin": "",
-    "tiers": ["load", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/impact_primitives_run.json",
-    "expectedNodes": ["ImpactInt", "ImpactFloat"],
+    "expectedNodes": [
+      "ImpactInt",
+      "ImpactFloat"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 30000
@@ -14,9 +21,16 @@
     "pack": "ComfyUI-VideoHelperSuite",
     "repo": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite",
     "pin": "",
-    "tiers": ["load", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/vhs_video_pipeline_run.json",
-    "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],
+    "expectedNodes": [
+      "VHS_LoadVideoPath",
+      "VHS_VideoInfo"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 90000

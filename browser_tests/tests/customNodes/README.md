@@ -17,16 +17,17 @@ is one JSON row, no new test code.
 
 ## Running
 
-| Script                                 | What it does                                                                     |
-| -------------------------------------- | -------------------------------------------------------------------------------- |
-| `pnpm test:custom-nodes`               | whole suite headless - the pass/fail gate (expect `16 passed`, zero skips)       |
-| `pnpm test:custom-nodes:watch`         | headed slow-motion run of the browser tiers, hands-off watching                  |
-| `pnpm test:custom-nodes:debug`         | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume) |
-| `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector)                                |
-| `pnpm test:custom-nodes:impact-run`    | Impact group workflow executes on the backend (Inspector)                        |
-| `pnpm test:custom-nodes:vhs-render`    | VHS nodes render in both renderers (Inspector)                                   |
-| `pnpm test:custom-nodes:vhs-run`       | VHS decodes a real video through its node chain (Inspector)                      |
-| `pnpm test:custom-nodes:self-check`    | watches the harness catch a deliberate execution error                           |
+| Script                                 | What it does                                                                           |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| `pnpm test:custom-nodes`               | whole suite headless - the pass/fail gate (expect `23 passed`, zero skips)             |
+| `pnpm test:custom-nodes:watch`         | headed slow-motion run of the browser tiers, hands-off watching                        |
+| `pnpm test:custom-nodes:debug`         | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume)       |
+| `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector)                                      |
+| `pnpm test:custom-nodes:impact-run`    | Impact group workflow executes on the backend (Inspector)                              |
+| `pnpm test:custom-nodes:vhs-render`    | VHS nodes render in both renderers (Inspector)                                         |
+| `pnpm test:custom-nodes:vhs-run`       | VHS decodes a real video through its node chain (Inspector)                            |
+| `pnpm test:custom-nodes:connectivity`  | slot/type contract: type-paired links + real slot drags in both renderers (Inspector)  |
+| `pnpm test:custom-nodes:self-check`    | watches the harness catch a deliberate execution error                                 |
 
 Example - watch the VHS video-decode run step by step:
 
@@ -51,6 +52,16 @@ Any `-g` pattern works against the generic scripts, e.g.
 - **T1 run**: the manifest workflow is loaded and queued; the backend's
   `executing` event stream must contain every expected node id, and the run
   must end in `execution_success`.
+- **T-conn connectivity (contract)**: wiring-only, no execution. A
+  type-pairing generator (`fixtures/customNode/typePairing.ts`) indexes
+  `/object_info` producers/consumers and plans one representative typed edge
+  per slot (wildcard `*` slots excluded - they bypass the real type compare
+  and prove nothing). Each planned edge must connect through the real
+  `isValidConnection` veto, then survive `serialize()` -> `configure()` and
+  appear in `graphToPrompt()` output. A curated subset is additionally
+  dragged for real - slot dot to slot dot - under both renderers. Orphan
+  types (no partner in the corpus) are reported, never fake-failed. One
+  representative edge per slot bounds cost; it does not prove all pairs.
 - **Zero visible errors, always**: every browser test asserts the app's
   error surfaces (error overlay, error dialog, node render errors, error
   toasts) are absent at start and after every pass. A run is green only if a
@@ -62,10 +73,11 @@ Any `-g` pattern works against the generic scripts, e.g.
 
 Add one row to `browser_tests/fixtures/data/customNodeManifest.json` with the
 pack's `object_info` class_type keys (not Python class names) in
-`expectedNodes`, `tiers: ["load"]`, and a `timeoutMs`. For the run tier, add
-a model-free frontend-format workflow under `browser_tests/assets/customNodes/`
-and set `tiers: ["load", "run"]`. Reuse existing repo media assets - do not
-commit new binaries.
+`expectedNodes`, `tiers: ["load"]`, and a `timeoutMs`. The `connectivity`
+tier needs no extra assets - the pairing generator derives everything from
+`/object_info`. For the run tier, add a model-free frontend-format workflow
+under `browser_tests/assets/customNodes/` and set the tier. Reuse existing
+repo media assets - do not commit new binaries.
 
 ## Gotchas
 

@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 const MANIFEST_PATH = 'browser_tests/fixtures/data/customNodeManifest.json'
 
-export type CustomNodeTier = 'load' | 'run' | 'io'
+export type CustomNodeTier = 'load' | 'run' | 'connectivity' | 'io'
 
 export interface CustomNodeManifestEntry {
   pack: string
