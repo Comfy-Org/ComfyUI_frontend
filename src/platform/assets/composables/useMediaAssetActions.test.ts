@@ -18,6 +18,12 @@ const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 // Track the filename passed to createAnnotatedPath
 const capturedFilenames = vi.hoisted(() => ({ values: [] as string[] }))
+const capturedAnnotatedPaths = vi.hoisted(() => ({
+  values: [] as Array<{
+    item: { filename: string; subfolder?: string; type?: string }
+    options: { rootFolder?: string }
+  }>
+}))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -73,9 +79,10 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({})
 }))
 
+const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: () => ({
-    copyToClipboard: vi.fn()
+    copyToClipboard: mockCopyToClipboard
   })
 }))
 
@@ -93,45 +100,50 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
+const mockAddNodeOnGraph = vi.hoisted(() => vi.fn())
+const mockGetCanvasCenter = vi.hoisted(() => vi.fn())
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({
-    addNodeOnGraph: vi.fn().mockReturnValue(
-      fromAny<LGraphNode, unknown>({
-        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-        graph: { setDirtyCanvas: vi.fn() }
-      })
-    ),
-    getCanvasCenter: vi.fn().mockReturnValue([100, 100])
+    addNodeOnGraph: mockAddNodeOnGraph,
+    getCanvasCenter: mockGetCanvasCenter
   })
 }))
 
+const mockNodeDefsByName = vi.hoisted(() => ({
+  value: {
+    LoadImage: {
+      name: 'LoadImage',
+      display_name: 'Load Image'
+    }
+  } as Record<string, unknown>
+}))
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
-    nodeDefsByName: {
-      LoadImage: {
-        name: 'LoadImage',
-        display_name: 'Load Image'
-      }
-    }
+    nodeDefsByName: mockNodeDefsByName.value
   })
 }))
 
 vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: vi.fn((item: { filename: string }) => {
-    capturedFilenames.values.push(item.filename)
-    return item.filename
-  })
+  createAnnotatedPath: vi.fn(
+    (
+      item: { filename: string; subfolder?: string; type?: string },
+      options: { rootFolder?: string }
+    ) => {
+      capturedAnnotatedPaths.values.push({ item, options })
+      capturedFilenames.values.push(item.filename)
+      return item.filename
+    }
+  )
 }))
 
+const mockDetectNodeTypeFromFilename = vi.hoisted(() => vi.fn())
 vi.mock('@/utils/loaderNodeUtil', () => ({
-  detectNodeTypeFromFilename: vi.fn().mockReturnValue({
-    nodeType: 'LoadImage',
-    widgetName: 'image'
-  })
+  detectNodeTypeFromFilename: mockDetectNodeTypeFromFilename
 }))
 
+const mockIsResultItemType = vi.hoisted(() => vi.fn())
 vi.mock('@/utils/typeGuardUtil', () => ({
-  isResultItemType: vi.fn().mockReturnValue(true)
+  isResultItemType: mockIsResultItemType
 }))
 
 const mockGetAssetType = vi.hoisted(() => vi.fn())
@@ -186,7 +198,9 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+const mockAppGraph = vi.hoisted(() => ({
+  value: { _nodes: [] as unknown[] } as { _nodes: unknown[] } | null
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
     get graph() {
@@ -291,7 +305,33 @@ describe('useMediaAssetActions', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     capturedFilenames.values = []
+    capturedAnnotatedPaths.values = []
     mockIsCloud.value = false
+    mockAppGraph.value = { _nodes: [] }
+    mockDownloadFile.mockReset()
+    mockCopyToClipboard.mockReset()
+    mockAddNodeOnGraph.mockReset()
+    mockAddNodeOnGraph.mockReturnValue(
+      fromAny<LGraphNode, unknown>({
+        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+        graph: { setDirtyCanvas: vi.fn() }
+      })
+    )
+    mockGetCanvasCenter.mockReset()
+    mockGetCanvasCenter.mockReturnValue([100, 100])
+    mockNodeDefsByName.value = {
+      LoadImage: {
+        name: 'LoadImage',
+        display_name: 'Load Image'
+      }
+    }
+    mockDetectNodeTypeFromFilename.mockReset()
+    mockDetectNodeTypeFromFilename.mockReturnValue({
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
+    mockIsResultItemType.mockReset()
+    mockIsResultItemType.mockReturnValue(true)
     mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReset()

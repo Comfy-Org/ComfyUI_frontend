@@ -9,8 +9,31 @@ import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
+
+const {
+  mockApiURL,
+  mockExecutionIdToNodeLocatorId,
+  mockNodeIdToNodeLocatorId,
+  mockNodeToNodeLocatorId,
+  mockReleaseSharedObjectUrl,
+  mockRetainSharedObjectUrl
+} = vi.hoisted(() => ({
+  mockApiURL: vi.fn((path: string) => `api${path}`),
+  mockExecutionIdToNodeLocatorId: vi.fn(
+    (_rootGraph: unknown, id: NodeExecutionId) => id as unknown as NodeLocatorId
+  ),
+  mockNodeIdToNodeLocatorId: vi.fn(
+    (id: string | number) => String(id) as NodeLocatorId
+  ),
+  mockNodeToNodeLocatorId: vi.fn(
+    (node: { id: string | number }) => String(node.id) as NodeLocatorId
+  ),
+  mockReleaseSharedObjectUrl: vi.fn(),
+  mockRetainSharedObjectUrl: vi.fn()
+}))
 
 const mockResolveNode = vi.fn()
 
@@ -18,6 +41,19 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isAnimatedOutput: vi.fn(),
   isVideoNode: vi.fn(),
   resolveNode: (...args: unknown[]) => mockResolveNode(...args)
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: (...args: Parameters<typeof mockApiURL>) => mockApiURL(...args)
+  }
+}))
+
+vi.mock('@/utils/objectUrlUtil', () => ({
+  releaseSharedObjectUrl: (...args: [string | undefined]) =>
+    mockReleaseSharedObjectUrl(...args),
+  retainSharedObjectUrl: (...args: [string | undefined]) =>
+    mockRetainSharedObjectUrl(...args)
 }))
 
 const mockGetNodeById = vi.fn()
@@ -49,13 +85,31 @@ const createMockOutputs = (
 ): ExecutedWsMessage['output'] => ({ images })
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  executionIdToNodeLocatorId: (
+    ...args: Parameters<typeof mockExecutionIdToNodeLocatorId>
+  ) => mockExecutionIdToNodeLocatorId(...args)
 }))
+
+beforeEach(() => {
+  mockExecutionIdToNodeLocatorId.mockImplementation(
+    (_rootGraph: unknown, id: NodeExecutionId) => id as unknown as NodeLocatorId
+  )
+  mockNodeIdToNodeLocatorId.mockImplementation(
+    (id: string | number) => String(id) as NodeLocatorId
+  )
+  mockNodeToNodeLocatorId.mockImplementation(
+    (node: { id: string | number }) => String(node.id) as NodeLocatorId
+  )
+})
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
+    nodeIdToNodeLocatorId: (
+      ...args: Parameters<typeof mockNodeIdToNodeLocatorId>
+    ) => mockNodeIdToNodeLocatorId(...args),
+    nodeToNodeLocatorId: (
+      ...args: Parameters<typeof mockNodeToNodeLocatorId>
+    ) => mockNodeToNodeLocatorId(...args)
   }))
 }))
 
