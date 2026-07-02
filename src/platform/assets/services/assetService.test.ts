@@ -657,6 +657,42 @@ describe(assetService.getAssetModels, () => {
   })
 })
 
+describe(assetService.seedModelAssets, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('POSTs the models root to the seed endpoint', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({ status: 'started' }, { status: 202 })
+    )
+
+    await assetService.seedModelAssets()
+
+    expect(fetchApiMock).toHaveBeenCalledWith('/assets/seed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roots: ['models'] })
+    })
+  })
+
+  it('treats an already-running scan (409) as success', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({ status: 'already_running' }, { ok: false, status: 409 })
+    )
+
+    await expect(assetService.seedModelAssets()).resolves.toBeUndefined()
+  })
+
+  it('throws on other error statuses', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({}, { ok: false, status: 500 })
+    )
+
+    await expect(assetService.seedModelAssets()).rejects.toThrow('500')
+  })
+})
+
 describe(assetService.updateAsset, () => {
   beforeEach(() => {
     vi.clearAllMocks()

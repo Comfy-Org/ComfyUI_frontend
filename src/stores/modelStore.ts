@@ -271,12 +271,11 @@ export const useModelStore = defineStore('models', () => {
   }
 
   /**
-   * Refreshes the folder structure and re-loads any folder whose contents
-   * had previously been loaded. Used by manual refresh actions ("r" key,
-   * sidebar refresh button) to pick up on-disk changes without losing the
-   * currently-visible contents.
+   * Re-fetches the folder structure and re-loads any folder whose contents
+   * had previously been loaded, picking up server-side changes without
+   * losing the currently-visible contents.
    */
-  async function refresh() {
+  async function reloadModels() {
     assetService.invalidateModelBuckets()
     const previouslyLoaded = modelFolders.value
       .filter((folder) => folder.state === ResourceState.Loaded)
@@ -288,6 +287,35 @@ export const useModelStore = defineStore('models', () => {
         .map((name) => modelFolderByName.value[name].load())
     )
   }
+
+  /**
+   * Asks the backend to rescan the model roots so files added on disk since
+   * startup become assets. Skipped on Cloud (models are ingested via uploads,
+   * not scanned from disk) and on the legacy listing path (which reads the
+   * filesystem live on every request).
+   */
+  function requestModelScan() {
+    if (isCloud) return
+    if (!settingStore.get('Comfy.Assets.UseAssetAPI')) return
+    void assetService.seedModelAssets().catch((error) => {
+      console.warn('Unable to start model asset scan', error)
+    })
+  }
+
+  /**
+   * Manual refresh ("r" key, sidebar refresh button): kicks off a backend
+   * rescan and immediately re-loads the currently known server state. When
+   * the scan's fast phase completes, `assets.seed.fast_complete` re-loads
+   * again with whatever the scan discovered.
+   */
+  async function refresh() {
+    requestModelScan()
+    await reloadModels()
+  }
+
+  api.addCustomEventListener('assets.seed.fast_complete', () => {
+    void reloadModels()
+  })
 
   return {
     models,

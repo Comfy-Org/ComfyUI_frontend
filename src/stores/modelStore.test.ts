@@ -15,6 +15,7 @@ vi.mock('@/scripts/api', () => ({
     viewMetadata: vi.fn(),
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
+    addCustomEventListener: vi.fn(),
     removeEventListener: vi.fn()
   }
 }))
@@ -23,7 +24,8 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetModels: vi.fn(),
-    invalidateModelBuckets: vi.fn()
+    invalidateModelBuckets: vi.fn(),
+    seedModelAssets: vi.fn()
   }
 }))
 
@@ -64,6 +66,7 @@ function enableMocks(useAssetAPI = false) {
     { name: 'sdv15.safetensors', pathIndex: 0 },
     { name: 'noinfo.safetensors', pathIndex: 0 }
   ])
+  vi.mocked(assetService.seedModelAssets).mockResolvedValue(undefined)
 
   vi.mocked(api.viewMetadata).mockImplementation((_, model) => {
     if (model === 'noinfo.safetensors') {
@@ -205,6 +208,46 @@ describe('useModelStore', () => {
 
       expect(api.getModelFolders).toHaveBeenCalledTimes(2)
       expect(api.getModels).not.toHaveBeenCalled()
+    })
+
+    it('kicks off a backend scan when models come from the asset API', async () => {
+      enableMocks(true)
+      store = useModelStore()
+
+      await store.refresh()
+
+      expect(assetService.seedModelAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not scan on the legacy listing path', async () => {
+      enableMocks(false)
+      store = useModelStore()
+
+      await store.refresh()
+
+      expect(assetService.seedModelAssets).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('scan fast-phase completion', () => {
+    it('re-loads previously loaded folders when the event fires', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
+
+      const fastCompleteHandler = vi
+        .mocked(api.addCustomEventListener)
+        .mock.calls.find(([type]) => type === 'assets.seed.fast_complete')?.[1]
+      expect(fastCompleteHandler).toBeDefined()
+      await fastCompleteHandler!(new CustomEvent('assets.seed.fast_complete'))
+      await vi.waitFor(() => {
+        expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+      })
+
+      expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
+      expect(assetService.seedModelAssets).not.toHaveBeenCalled()
     })
   })
 

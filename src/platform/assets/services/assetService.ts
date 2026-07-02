@@ -181,6 +181,7 @@ function getLocalizedErrorMessage(errorCode: string): string {
 }
 
 const ASSETS_ENDPOINT = '/assets'
+const ASSETS_SEED_ENDPOINT = '/assets/seed'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
@@ -484,6 +485,26 @@ function createAssetService() {
       name: asset.loader_path ?? getAssetFilename(asset),
       pathIndex: 0
     }))
+  }
+
+  /**
+   * Asks the backend to rescan the model roots on disk so newly added files
+   * become assets. Fire-and-forget: the scan's fast (insert) phase already
+   * writes the category tags and filenames the sidebar needs and is announced
+   * by an `assets.seed.fast_complete` websocket event. A 409 means a scan is
+   * already running, which will emit the same event, so it is not an error.
+   */
+  async function seedModelAssets(): Promise<void> {
+    const res = await api.fetchApi(ASSETS_SEED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roots: ['models'] })
+    })
+    if (!res.ok && res.status !== 409) {
+      throw new Error(
+        `Unable to start asset scan: Server returned ${res.status}`
+      )
+    }
   }
 
   /**
@@ -1112,6 +1133,7 @@ function createAssetService() {
   return {
     getAssetModels,
     invalidateModelBuckets,
+    seedModelAssets,
     isAssetAPIEnabled,
     isAssetBrowserEligible,
     shouldUseAssetBrowser,
