@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -22,6 +23,8 @@ type NodePack = components['schemas']['Node']
 describe('usePacksSelection', () => {
   let managerStore: ReturnType<typeof useComfyManagerStore>
   let mockIsPackInstalled: (packName: string | undefined) => boolean
+  let mockGetInstalledPackVersion: (packName: string) => string | undefined
+  let mockIsPackEnabled: (packName: string | undefined) => boolean
 
   const createMockPack = (id: string): NodePack => ({
     id,
@@ -44,7 +47,12 @@ describe('usePacksSelection', () => {
 
     // Mock the isPackInstalled method
     mockIsPackInstalled = vi.fn()
+    mockGetInstalledPackVersion = vi.fn()
+    mockIsPackEnabled = vi.fn()
     managerStore.isPackInstalled = mockIsPackInstalled
+    // Real store types this as returning string, but it can be undefined at runtime
+    managerStore.getInstalledPackVersion = fromAny(mockGetInstalledPackVersion)
+    managerStore.isPackEnabled = mockIsPackEnabled
   })
 
   afterEach(() => {
@@ -374,6 +382,36 @@ describe('usePacksSelection', () => {
       expect(selectionState.value).toBe('all-installed')
       expect(installedPacks.value).toHaveLength(2)
       expect(notInstalledPacks.value).toHaveLength(0)
+    })
+
+    it('should only include enabled installed packs with non-semver versions as nightly', () => {
+      const nodePacks = ref<NodePack[]>([
+        { ...createMockPack('missing-id'), id: undefined },
+        createMockPack('no-version'),
+        createMockPack('stable'),
+        createMockPack('disabled-nightly'),
+        createMockPack('enabled-nightly')
+      ])
+
+      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
+      vi.mocked(mockGetInstalledPackVersion).mockImplementation((id) => {
+        const versions: Record<string, string | undefined> = {
+          stable: '1.2.3',
+          'disabled-nightly': 'abc123',
+          'enabled-nightly': 'def456'
+        }
+        return versions[id]
+      })
+      vi.mocked(mockIsPackEnabled).mockImplementation(
+        (id) => id === 'enabled-nightly'
+      )
+
+      const { nightlyPacks, hasNightlyPacks } = usePacksSelection(nodePacks)
+
+      expect(nightlyPacks.value.map((pack) => pack.id)).toEqual([
+        'enabled-nightly'
+      ])
+      expect(hasNightlyPacks.value).toBe(true)
     })
   })
 })
