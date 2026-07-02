@@ -5,6 +5,7 @@ import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphI
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -64,11 +65,11 @@ export function findHostInputForPromotion(
 
 function resolvePromotionSource(
   subgraphNode: SubgraphNode,
-  subgraphInput: { name: string }
+  subgraphInput: SubgraphInput
 ): PromotedWidgetSource | undefined {
   return resolveSubgraphInputLink(
     subgraphNode,
-    subgraphInput.name,
+    subgraphInput,
     ({ inputNode, targetInput, getTargetWidget }) => {
       if (inputNode.isSubgraphNode()) {
         return {
@@ -164,7 +165,7 @@ function isSamePromotedInput(
   return (
     resolveSubgraphInputLink(
       subgraphNode,
-      linkedInput.name,
+      linkedInput,
       ({ getTargetWidget }) =>
         getTargetWidget() === orderedWidget || matchesHostWidgetId || undefined
     ) ?? false

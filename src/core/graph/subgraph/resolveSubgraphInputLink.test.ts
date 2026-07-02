@@ -178,6 +178,33 @@ describe('resolveSubgraphInputLink', () => {
     expect(result).toBe('first_input')
   })
 
+  test('resolves the passed slot by identity when inputs share a name', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    const second = subgraph.addInput('prompt_dupe', '*')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(
+      subgraph,
+      'prompt_dupe',
+      'second_input',
+      'secondWidget'
+    )
+    second.name = 'prompt'
+
+    const byName = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+    const bySlot = resolveSubgraphInputLink(
+      subgraphNode,
+      second,
+      ({ targetInput }) => targetInput.name
+    )
+
+    expect(byName).toBe('first_input')
+    expect(bySlot).toBe('second_input')
+  })
+
   test('returns undefined when all links fail to resolve', () => {
     const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
     addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')

@@ -1,5 +1,6 @@
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 
 type SubgraphInputLinkContext = {
   inputNode: LGraphNode
@@ -7,16 +8,25 @@ type SubgraphInputLinkContext = {
   getTargetWidget: () => ReturnType<LGraphNode['getWidgetFromSlot']>
 }
 
+/**
+ * Resolves the interior link of a subgraph input.
+ *
+ * Accepts either the input name or the concrete `SubgraphInput` slot. Pass the
+ * slot when the caller already holds it: resolving by name matches the first
+ * slot sharing that name, which is the wrong target when subgraph inputs have
+ * duplicate names (user rename or imported graph).
+ */
 export function resolveSubgraphInputLink<TResult>(
   node: LGraphNode,
-  inputName: string,
+  input: string | SubgraphInput,
   resolve: (context: SubgraphInputLinkContext) => TResult | undefined
 ): TResult | undefined {
   if (!node.isSubgraphNode()) return undefined
 
-  const inputSlot = node.subgraph.inputNode.slots.find(
-    (slot) => slot.name === inputName
-  )
+  const inputSlot =
+    typeof input === 'string'
+      ? node.subgraph.inputNode.slots.find((slot) => slot.name === input)
+      : input
   if (!inputSlot) return undefined
 
   // Iterate forward so the first connected source is the promoted representative.
