@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -182,7 +183,7 @@ describe('ComfyApi', () => {
     api.addEventListener('status', listener)
     api.addEventListener('status', throwingListener)
     api.addEventListener('status', asyncListener)
-    api.addEventListener('status', objectListener)
+    api.addEventListener('status', fromAny(objectListener))
 
     api.dispatchCustomEvent('status', { exec_info: { queue_remaining: 1 } })
     await Promise.resolve()
@@ -555,7 +556,11 @@ describe('ComfyApi', () => {
     api.authToken = 'token-1'
     api.apiKey = 'key-1'
     const prompt: ComfyApiWorkflow = {
-      1: { class_type: 'PreviewAny', inputs: {} }
+      1: {
+        class_type: 'PreviewAny',
+        inputs: {},
+        _meta: { title: 'PreviewAny' }
+      }
     }
     const fetchApi = vi
       .spyOn(api, 'fetchApi')
@@ -601,7 +606,11 @@ describe('ComfyApi', () => {
   it('omits queue position and default preview method for normal queueing', async () => {
     const api = new ComfyApi()
     const prompt: ComfyApiWorkflow = {
-      1: { class_type: 'PreviewAny', inputs: {} }
+      1: {
+        class_type: 'PreviewAny',
+        inputs: {},
+        _meta: { title: 'PreviewAny' }
+      }
     }
     const fetchApi = vi
       .spyOn(api, 'fetchApi')
@@ -624,7 +633,11 @@ describe('ComfyApi', () => {
   it('handles shareable assets, settings, userdata, subgraphs, and memory APIs', async () => {
     const api = new ComfyApi()
     const prompt: ComfyApiWorkflow = {
-      1: { class_type: 'PreviewAny', inputs: {} }
+      1: {
+        class_type: 'PreviewAny',
+        inputs: {},
+        _meta: { title: 'PreviewAny' }
+      }
     }
     vi.spyOn(api, 'fetchApi')
       .mockResolvedValueOnce(jsonResponse({ assets: [] }))

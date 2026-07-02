@@ -88,7 +88,9 @@ function udtaWithMeta(...children: Uint8Array[]) {
 
 async function readMp4(bytes: Uint8Array) {
   return getFromIsobmffFile(
-    new File([bytes], 'test.mp4', { type: 'video/mp4' })
+    new File([bytes as Uint8Array<ArrayBuffer>], 'test.mp4', {
+      type: 'video/mp4'
+    })
   )
 }
 

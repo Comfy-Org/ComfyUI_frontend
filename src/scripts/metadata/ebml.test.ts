@@ -61,7 +61,11 @@ function simpleTag(name: string, value: string, useTwoByteSize = false) {
 }
 
 async function readWebm(bytes: Uint8Array) {
-  return getFromWebmFile(new File([bytes], 'test.webm', { type: 'video/webm' }))
+  return getFromWebmFile(
+    new File([bytes as Uint8Array<ArrayBuffer>], 'test.webm', {
+      type: 'video/webm'
+    })
+  )
 }
 
 describe('WebM/EBML metadata', () => {

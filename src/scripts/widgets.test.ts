@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -142,12 +143,9 @@ import {
   updateControlWidgetLabel
 } from './widgets'
 
-interface MockWidget extends IBaseWidget {
-  type?: string
-  linkedWidgets?: IBaseWidget[]
-  beforeQueued?: (args?: { isPartialExecution?: boolean }) => void
-  afterQueued?: (args?: { isPartialExecution?: boolean }) => void
-}
+// `linkedWidgets`, `beforeQueued`, and `afterQueued` already exist on
+// IBaseWidget (via the litegraph augmentation), so no extra members needed.
+type MockWidget = IBaseWidget
 
 function makeTargetWidget(overrides: Partial<MockWidget> = {}): MockWidget {
   return {
@@ -174,7 +172,7 @@ function makeNode(inputs: LGraphNode['inputs'] = []) {
         callback: () => void,
         options: Record<string, unknown>
       ) => {
-        const widget = {
+        const widget: MockWidget = fromAny({
           type,
           name,
           value,
@@ -182,7 +180,7 @@ function makeNode(inputs: LGraphNode['inputs'] = []) {
           options,
           linkedWidgets: [],
           computedDisabled: false
-        } as MockWidget
+        })
         widgets.push(widget)
         return widget
       }

@@ -65,7 +65,7 @@ describe('deserialiseAndCreate', () => {
     deserialiseAndCreate(data, canvas)
 
     expect(canvas.emitBeforeChange).toHaveBeenCalled()
-    expect(canvas.graph.beforeChange).toHaveBeenCalled()
+    expect(canvas.graph!.beforeChange).toHaveBeenCalled()
     expect(first.configure).toHaveBeenCalledWith({
       type: 'First',
       pos: [10, 20]
@@ -76,11 +76,11 @@ describe('deserialiseAndCreate', () => {
     })
     expect(first.pos).toEqual([100, 200])
     expect(second.pos).toEqual([120, 220])
-    expect(canvas.graph.add).toHaveBeenNthCalledWith(1, first, true)
-    expect(canvas.graph.add).toHaveBeenNthCalledWith(2, second, true)
+    expect(canvas.graph!.add).toHaveBeenNthCalledWith(1, first, true)
+    expect(canvas.graph!.add).toHaveBeenNthCalledWith(2, second, true)
     expect(first.connect).toHaveBeenCalledWith(0, second, 0)
     expect(canvas.selectNodes).toHaveBeenCalledWith([first, second])
-    expect(canvas.graph.afterChange).toHaveBeenCalled()
+    expect(canvas.graph!.afterChange).toHaveBeenCalled()
     expect(canvas.emitAfterChange).toHaveBeenCalled()
   })
 
@@ -101,7 +101,7 @@ describe('deserialiseAndCreate', () => {
 
     deserialiseAndCreate(data, canvas)
 
-    expect(canvas.graph.add).toHaveBeenCalledTimes(1)
+    expect(canvas.graph!.add).toHaveBeenCalledTimes(1)
     expect(warn).toHaveBeenCalledWith('Warning, nodes missing on pasting')
     expect(canvas.emitAfterChange).toHaveBeenCalled()
   })

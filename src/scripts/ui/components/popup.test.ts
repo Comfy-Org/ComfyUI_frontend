@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 type ElChild = Node | string
@@ -246,7 +247,7 @@ describe('ComfyPopup and related UI components', () => {
 
     const group = new ComfyButtonGroup(primary)
     group.append(itemButton)
-    group.insert(rawItem, 1)
+    group.insert(fromAny(rawItem), 1)
 
     expect(group.element.children).toHaveLength(3)
     expect(group.remove(itemButton)).toEqual([itemButton])
@@ -278,6 +279,6 @@ describe('ComfyPopup and related UI components', () => {
     prompt?.querySelector<HTMLButtonElement>('button')?.click()
 
     await expect(promptPromise).resolves.toBe('yes')
-    expect(document.body).not.toContainElement(prompt)
+    expect(document.body).not.toContainElement(prompt ?? null)
   })
 })

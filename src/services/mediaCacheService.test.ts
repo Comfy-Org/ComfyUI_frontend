@@ -10,11 +10,11 @@ const mockRevokeObjectURL = vi.fn()
 const NativeURL = URL
 
 class MockURL extends NativeURL {
-  static createObjectURL(blob: Blob): string {
+  static override createObjectURL(blob: Blob): string {
     return mockCreateObjectURL(blob)
   }
 
-  static revokeObjectURL(url: string): void {
+  static override revokeObjectURL(url: string): void {
     mockRevokeObjectURL(url)
   }
 }

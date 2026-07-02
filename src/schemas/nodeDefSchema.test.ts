@@ -52,6 +52,6 @@ describe('node definition schema helpers', () => {
     expect(isMediaUploadComboInput(['STRING', { image_upload: true }])).toBe(
       false
     )
-    expect(isMediaUploadComboInput(['COMBO'])).toBe(false)
+    expect(isMediaUploadComboInput(['COMBO', undefined])).toBe(false)
   })
 })

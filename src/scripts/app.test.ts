@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -298,7 +299,9 @@ vi.mock('@/stores/subgraphNavigationStore', () => ({
   useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
 }))
 
-function createMockNode(options: Partial<LGraphNode> = {}) {
+function createMockNode(
+  options: Partial<LGraphNode> | Record<string, unknown> = {}
+) {
   return {
     id: 1,
     pos: [0, 0],
@@ -306,7 +309,7 @@ function createMockNode(options: Partial<LGraphNode> = {}) {
     type: 'LoadImage',
     connect: vi.fn(),
     getBounding: vi.fn(() => new Float64Array([0, 0, 200, 100])),
-    ...options
+    ...(options as Partial<LGraphNode>)
   } as LGraphNode
 }
 
@@ -494,7 +497,7 @@ describe('ComfyApp', () => {
           requestId: expect.any(Number)
         })
       )
-      expect(useExecutionStore().queuedJobs['job-ok']?.workflow.path).toBe(
+      expect(useExecutionStore().queuedJobs['job-ok']?.workflow?.path).toBe(
         workflow.path
       )
     })
@@ -1159,7 +1162,7 @@ describe('ComfyApp', () => {
     it('pastes back into the return node when the editor saves', () => {
       const node = createMockNode()
       const paste = vi.spyOn(ComfyApp, 'pasteFromClipspace')
-      ComfyApp.clipspace_return_node = node
+      ComfyApp.clipspace_return_node = fromAny(node)
 
       ComfyApp.onClipspaceEditorSave()
       ComfyApp.onClipspaceEditorClosed()
@@ -1338,7 +1341,7 @@ describe('ComfyApp', () => {
         graph_mouse: graphMouse,
         selected_nodes,
         pasteFromClipboard
-      } as LGraphCanvas
+      } as unknown as LGraphCanvas
 
       app.loadTemplateData({
         templates: [{}, { data: '{"nodes":[]}' }, { data: '{"reroutes":[1]}' }]
@@ -1662,12 +1665,24 @@ describe('ComfyApp', () => {
       sampler.addWidget('combo', 'sampler_name', 'sample_euler', () => {}, {
         values: ['euler']
       })
-      sampler.addWidget('combo', 'control_after_generate', true, () => {}, {
-        values: ['fixed', 'randomize']
-      })
-      sampler.addWidget('combo', 'ckpt_name', null, () => {}, {
-        values: ['model.safetensors']
-      })
+      sampler.addWidget(
+        'combo',
+        'control_after_generate',
+        fromAny<string, boolean>(true),
+        () => {},
+        {
+          values: ['fixed', 'randomize']
+        }
+      )
+      sampler.addWidget(
+        'combo',
+        'ckpt_name',
+        fromAny<string, null>(null),
+        () => {},
+        {
+          values: ['model.safetensors']
+        }
+      )
       rootGraph.add(sampler)
       vi.spyOn(rootGraph, 'configure').mockImplementation(() => undefined)
       mockSettingStore.get.mockImplementation((key: string) => {
@@ -1871,7 +1886,7 @@ describe('ComfyApp', () => {
         }
       )
 
-      await app.loadGraphData([], true, true)
+      await app.loadGraphData(fromAny([]), true, true)
 
       expect(node.widgets?.[0].value).toBe('fixed')
       expect(mockLitegraphService.fitView).toHaveBeenCalled()
@@ -2184,7 +2199,8 @@ describe('ComfyApp', () => {
         {
           1: {
             class_type: 'MissingApiNode',
-            inputs: {}
+            inputs: {},
+            _meta: { title: 'MissingApiNode' }
           }
         },
         'missing'
@@ -2232,15 +2248,18 @@ describe('ComfyApp', () => {
               inputs: {
                 strength: [3, 0],
                 missing: [404, 0]
-              }
+              },
+              _meta: { title: 'WidgetInputNode' }
             },
             2: {
               class_type: 'NoInputNode',
-              inputs: undefined
+              inputs: fromAny(undefined),
+              _meta: { title: 'NoInputNode' }
             },
             3: {
               class_type: 'SourceNode',
-              inputs: {}
+              inputs: {},
+              _meta: { title: 'SourceNode' }
             }
           },
           'converted'
@@ -2286,13 +2305,15 @@ describe('ComfyApp', () => {
           {
             1: {
               class_type: 'ThrowingSourceNode',
-              inputs: {}
+              inputs: {},
+              _meta: { title: 'ThrowingSourceNode' }
             },
             2: {
               class_type: 'ThrowingWidgetNode',
               inputs: {
                 strength: [1, 0]
-              }
+              },
+              _meta: { title: 'ThrowingWidgetNode' }
             }
           },
           'conversion-failed'
@@ -2413,7 +2434,9 @@ describe('ComfyApp', () => {
     it('falls back to parameters when workflow metadata is invalid', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(graph, 'serialize').mockReturnValue(createWorkflowGraphData())
+      vi.spyOn(graph, 'serialize').mockReturnValue(
+        fromAny(createWorkflowGraphData())
+      )
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         workflow: '[]',
         parameters: 'Steps: 12'
@@ -2481,7 +2504,8 @@ describe('ComfyApp', () => {
       const prompt: ComfyApiWorkflow = {
         '1': {
           class_type: 'PreviewAny',
-          inputs: {}
+          inputs: {},
+          _meta: { title: 'PreviewAny' }
         }
       }
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ prompt })
@@ -2497,7 +2521,9 @@ describe('ComfyApp', () => {
     it('falls back to parameters when prompt metadata cannot be parsed', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(graph, 'serialize').mockReturnValue(createWorkflowGraphData())
+      vi.spyOn(graph, 'serialize').mockReturnValue(
+        fromAny(createWorkflowGraphData())
+      )
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         prompt: '{',
         parameters: 'Steps: 6'
@@ -2687,7 +2713,7 @@ describe('ComfyApp', () => {
 
     it('lets the hovered node consume a file drop before app routing', async () => {
       const dragOverNode = {
-        id: 1,
+        id: toNodeId(1),
         onDragDrop: vi.fn().mockResolvedValue(true)
       }
       app.dragOverNode = dragOverNode
@@ -2753,7 +2779,7 @@ describe('ComfyApp', () => {
       const canvasEl = document.createElement('canvas')
       app.canvasElRef.value = canvasEl
       app.dragOverNode = {
-        id: 4
+        id: toNodeId(4)
       }
       app.canvas = {
         ...mockCanvas,
@@ -2917,7 +2943,7 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'init').mockImplementation(() => undefined)
       const graph = new LGraph()
       const node = new LGraphNode('PreviewAny', 'PreviewAny')
-      node.id = 7
+      node.id = toNodeId(7)
       node.onExecuted = vi.fn()
       graph.add(node)
       Reflect.set(app, 'rootGraphInternal', graph)

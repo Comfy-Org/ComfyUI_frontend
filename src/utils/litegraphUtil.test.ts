@@ -13,7 +13,10 @@ import {
   Reroute
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph
+} from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
   IComboWidget
@@ -391,9 +394,9 @@ describe('legacy workflow migration helpers', () => {
   it('repairs root and subgraph link input slots from current input order', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
-    source.id = 1
+    source.id = toNodeId(1)
     const target = new LGraphNode('Target')
-    target.id = 2
+    target.id = toNodeId(2)
     target.inputs = [
       fromPartial({ name: 'unlinked', link: null }),
       fromPartial({ name: 'missing', link: toLinkId(99) }),
@@ -406,9 +409,9 @@ describe('legacy workflow migration helpers', () => {
 
     const subgraph = createTestSubgraph({ nodeCount: 0 })
     const innerSource = new LGraphNode('InnerSource')
-    innerSource.id = 3
+    innerSource.id = toNodeId(3)
     const innerTarget = new LGraphNode('InnerTarget')
-    innerTarget.id = 4
+    innerTarget.id = toNodeId(4)
     innerTarget.inputs = [
       fromPartial({ name: 'inner-unlinked', link: null }),
       fromPartial({ name: 'inner-linked', link: toLinkId(8) })
@@ -426,9 +429,9 @@ describe('legacy workflow migration helpers', () => {
     subgraph.links.set(innerLink.id, innerLink)
 
     const host = new LGraphNode('Host')
-    host.id = 5
+    host.id = toNodeId(5)
     vi.spyOn(host, 'isSubgraphNode').mockReturnValue(true)
-    host.subgraph = subgraph
+    Object.assign(host, { subgraph })
     graph.add(host)
 
     fixLinkInputSlots(graph)
@@ -557,9 +560,7 @@ describe('legacy workflow migration helpers', () => {
       links: [],
       definitions: { subgraphs: [] }
     })
-    const child = fromPartial<
-      NonNullable<ISerialisedGraph['definitions']>['subgraphs'][number]
-    >({
+    const child = fromPartial<ExportedSubgraph>({
       name: 'child',
       nodes: [{ id: 1, type: 'Inner' }]
     })
@@ -567,9 +568,7 @@ describe('legacy workflow migration helpers', () => {
 
     expect(() => compressWidgetInputSlots(cyclic)).not.toThrow()
 
-    const loop = fromPartial<
-      NonNullable<ISerialisedGraph['definitions']>['subgraphs'][number]
-    >({
+    const loop = fromPartial<ExportedSubgraph>({
       name: 'loop',
       nodes: [],
       definitions: { subgraphs: [] }
@@ -605,13 +604,13 @@ describe('resolveNodeWidget', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     const graph = new LGraph()
     const host = new LGraphNode('Host')
-    host.id = 8
+    host.id = toNodeId(8)
     const widget = host.addWidget('text', 'mode', 'fast', () => {})
     graph.add(host)
     vi.spyOn(host, 'isSubgraphNode').mockReturnValue(true)
     const locator = createNodeLocatorId(
       '00000000-0000-0000-0000-000000000001',
-      toNodeId(host.id)
+      host.id
     )
 
     expect(resolveNodeWidget(locator, 'mode', graph)).toEqual([host, widget])

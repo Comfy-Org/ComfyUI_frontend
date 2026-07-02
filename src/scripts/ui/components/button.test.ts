@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyApp } from '@/scripts/app'
@@ -155,7 +156,7 @@ describe('ComfyButton', () => {
 
   it('toggles click popups and reflects popup open state in classes', () => {
     const popup = new MockPopup()
-    const button = new ComfyButton({ icon: 'dots' }).withPopup(popup)
+    const button = new ComfyButton({ icon: 'dots' }).withPopup(fromAny(popup))
 
     button.element.dispatchEvent(new MouseEvent('click'))
 
@@ -169,7 +170,10 @@ describe('ComfyButton', () => {
 
   it('opens hover popups while either the button or popup is hovered', () => {
     const popup = new MockPopup()
-    const button = new ComfyButton({ icon: 'dots' }).withPopup(popup, 'hover')
+    const button = new ComfyButton({ icon: 'dots' }).withPopup(
+      fromAny(popup),
+      'hover'
+    )
 
     button.element.dispatchEvent(new MouseEvent('mouseenter'))
     expect(popup.open).toBe(true)
@@ -182,7 +186,10 @@ describe('ComfyButton', () => {
 
   it('does not click-toggle a hover popup while hovered', () => {
     const popup = new MockPopup()
-    const button = new ComfyButton({ icon: 'dots' }).withPopup(popup, 'hover')
+    const button = new ComfyButton({ icon: 'dots' }).withPopup(
+      fromAny(popup),
+      'hover'
+    )
 
     button.element.dispatchEvent(new MouseEvent('mouseenter'))
     button.element.dispatchEvent(new MouseEvent('click'))

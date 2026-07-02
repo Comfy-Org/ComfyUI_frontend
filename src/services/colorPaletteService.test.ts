@@ -245,7 +245,12 @@ describe('useColorPaletteService', () => {
 
   it('removes Vue node theme variables when completed palette values are absent', async () => {
     const completedPalette = makeCompletedPalette()
-    delete completedPalette.colors.litegraph_base.NODE_BOX_OUTLINE_COLOR
+    // NODE_BOX_OUTLINE_COLOR is required on the completed palette type; the
+    // test needs it absent, so delete via Reflect to keep the type intact.
+    Reflect.deleteProperty(
+      completedPalette.colors.litegraph_base,
+      'NODE_BOX_OUTLINE_COLOR'
+    )
     mockColorPaletteStore.completePalette.mockReturnValue(completedPalette)
     document.documentElement.style.setProperty(
       '--component-node-border',

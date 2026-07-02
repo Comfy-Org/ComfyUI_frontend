@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockSettingStore } = vi.hoisted(() => ({
@@ -95,7 +96,7 @@ beforeEach(() => {
 async function click(button: HTMLButtonElement) {
   const handler = button.onclick
   expect(handler).toBeTypeOf('function')
-  await Promise.resolve(handler?.call(button, new MouseEvent('click')))
+  await Promise.resolve(handler?.call(button, fromAny(new MouseEvent('click'))))
 }
 
 function buttonByText(root: ParentNode, text: string): HTMLButtonElement {
@@ -266,12 +267,12 @@ describe('ComfyUI legacy menu', () => {
     ui.autoQueueEnabled = true
     ui.autoQueueMode = 'change'
     ui.lastQueueSize = 1
-    graphChanged(new CustomEvent('graphChanged'))
+    graphChanged(fromAny(new CustomEvent('graphChanged')))
 
     expect(ui.graphHasChanged).toBe(true)
 
     ui.lastQueueSize = 0
-    graphChanged(new CustomEvent('graphChanged'))
+    graphChanged(fromAny(new CustomEvent('graphChanged')))
 
     expect(app.queuePrompt).toHaveBeenCalledWith(0, 1)
     expect(ui.graphHasChanged).toBe(false)
@@ -331,33 +332,36 @@ describe('ComfyUI legacy menu', () => {
       'label input[type="checkbox"]'
     ) as HTMLInputElement
     extraOptionsCheckbox.checked = true
-    extraOptionsCheckbox.onchange?.call(extraOptionsCheckbox, {
-      srcElement: extraOptionsCheckbox
-    } as Event)
+    extraOptionsCheckbox.onchange?.call(
+      extraOptionsCheckbox,
+      fromPartial({ srcElement: extraOptionsCheckbox })
+    )
     expect(ui.batchCount).toBe(4)
     expect(document.getElementById('extraOptions')?.style.display).toBe('block')
 
     number.value = '7'
-    number.oninput?.call(number, { target: number } as Event)
+    number.oninput?.call(number, fromPartial({ target: number }))
     expect(range.value).toBe('7')
 
     range.value = '9'
-    range.oninput?.call(range, { srcElement: range } as Event)
+    range.oninput?.call(range, fromPartial({ srcElement: range }))
     expect(number.value).toBe('9')
 
     const autoQueueCheckbox = document.getElementById(
       'autoQueueCheckbox'
     ) as HTMLInputElement
     autoQueueCheckbox.checked = true
-    autoQueueCheckbox.onchange?.call(autoQueueCheckbox, {
-      target: autoQueueCheckbox
-    } as Event)
+    autoQueueCheckbox.onchange?.call(
+      autoQueueCheckbox,
+      fromPartial({ target: autoQueueCheckbox })
+    )
     expect(ui.autoQueueEnabled).toBe(true)
 
     extraOptionsCheckbox.checked = false
-    extraOptionsCheckbox.onchange?.call(extraOptionsCheckbox, {
-      srcElement: extraOptionsCheckbox
-    } as Event)
+    extraOptionsCheckbox.onchange?.call(
+      extraOptionsCheckbox,
+      fromPartial({ srcElement: extraOptionsCheckbox })
+    )
     expect(ui.batchCount).toBe(1)
     expect(ui.autoQueueEnabled).toBe(false)
     expect(document.getElementById('extraOptions')?.style.display).toBe('none')

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
@@ -149,9 +150,9 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata).toBeDefined()
     expect(metadata.prompt).toBeDefined()
 
-    const prompt = metadata.prompt as {
+    const prompt: {
       node1: { class_type: string; inputs: { seed: number } }
-    }
+    } = fromAny(metadata.prompt)
     expect(prompt.node1.class_type).toBe('TestNode')
     expect(prompt.node1.inputs.seed).toBe(123456)
   })

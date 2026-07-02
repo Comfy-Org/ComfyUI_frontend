@@ -1,6 +1,10 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LGraphNode,
@@ -57,17 +61,19 @@ const mockCanvas = vi.hoisted(() => ({
     getNodeById: vi.fn(),
     add: vi.fn(),
     setDirtyCanvas: vi.fn(),
+    trigger: vi.fn(),
     isRootGraph: true
   },
   animateToBounds: vi.fn(),
+  startGhostPlacement: vi.fn(),
   _deserializeItems: vi.fn()
 }))
 
 const mockApp = vi.hoisted(() => ({
   canvas: undefined as unknown,
   graph: undefined as unknown,
-  dragOverNode: null,
-  lastExecutionError: null,
+  dragOverNode: null as { id: unknown } | null,
+  lastExecutionError: null as { node_id: unknown } | null,
   rootGraph: {}
 }))
 
@@ -1066,11 +1072,11 @@ describe('litegraphService', () => {
           overIndex: null,
           getWidgetOnPos: vi.fn().mockReturnValue(createMockWidget())
         })
-        ComfyApp.clipspace = { widgets: [] }
+        ComfyApp.clipspace = fromPartial({ widgets: [] })
         ComfyApp.clipspace_return_node = null
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
 
         expect(options.map((option) => option.content)).toEqual(
           expect.arrayContaining([
@@ -1114,9 +1120,7 @@ describe('litegraphService', () => {
         const drawImage = vi.fn()
         const bitmap = { close: vi.fn() } as unknown as ImageBitmap
         const canvas = document.createElement('canvas')
-        vi.spyOn(canvas, 'getContext').mockReturnValue({
-          drawImage
-        } as unknown as CanvasRenderingContext2D)
+        vi.spyOn(canvas, 'getContext').mockReturnValue(fromAny({ drawImage }))
         vi.spyOn(canvas, 'toBlob').mockImplementation((callback, type) => {
           expect(type).toBe('image/png')
           callback(pngBlob)
@@ -1145,7 +1149,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1186,7 +1190,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1223,7 +1227,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1265,7 +1269,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1283,9 +1287,9 @@ describe('litegraphService', () => {
           .fn<Clipboard['write']>()
           .mockRejectedValue(new Error('png only'))
         const canvas = document.createElement('canvas')
-        vi.spyOn(canvas, 'getContext').mockReturnValue({
-          drawImage: vi.fn()
-        } as unknown as CanvasRenderingContext2D)
+        vi.spyOn(canvas, 'getContext').mockReturnValue(
+          fromAny({ drawImage: vi.fn() })
+        )
         vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => {
           callback(null)
         })
@@ -1313,7 +1317,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1339,10 +1343,11 @@ describe('litegraphService', () => {
           overIndex: 0,
           getWidgetOnPos: vi.fn().mockReturnValue(undefined)
         })
-        ComfyApp.clipspace_return_node = node
+        // ComfyApp.clipspace_return_node is inferred as `null` in app.ts; widen for the test.
+        ComfyApp.clipspace_return_node = fromAny(node)
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
 
         expect(options.map((option) => option.content)).not.toContain(
           'Copy Image'
@@ -1370,7 +1375,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
 
         expect(options.map((option) => option.content)).not.toContain(
           'Open Image'
@@ -1393,7 +1398,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
 
         expect(options.map((option) => option.content)).toContain(
           'Open in MaskEditor | Image Canvas'
@@ -1415,7 +1420,7 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
         await invokeMenuCallback(
           options.find((option) => option.content === 'Save Image')!
         )
@@ -1427,8 +1432,7 @@ describe('litegraphService', () => {
       })
 
       it('adds subgraph menu actions for subgraph nodes', async () => {
-        const { LiteGraph, SubgraphNode } =
-          await import('@/lib/litegraph/src/litegraph')
+        const { LiteGraph } = await import('@/lib/litegraph/src/litegraph')
         const { createTestSubgraph } =
           await import('@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers')
         const { useSubgraphOperations } =
@@ -1470,7 +1474,7 @@ describe('litegraphService', () => {
         const node = new NodeCtor()
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(mockCanvas, options)
+        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
 
         await invokeMenuCallback(
           options.find((option) => option.content === 'Edit Subgraph Widgets')!

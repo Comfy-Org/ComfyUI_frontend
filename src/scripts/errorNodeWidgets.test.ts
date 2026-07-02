@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -12,12 +13,12 @@ interface TestWidgetOptions {
 
 function createWidgetFactory() {
   return (node: LGraphNode, options: TestWidgetOptions): IBaseWidget => {
-    const widget = {
+    const widget: IBaseWidget = fromAny({
       name: options.name,
       type: options.type,
       value: options.default,
       options
-    } as IBaseWidget
+    })
     node.widgets = [...(node.widgets ?? []), widget]
     return widget
   }
@@ -52,16 +53,18 @@ describe('errorNodeWidgets', () => {
     const longText = 'serialized value with more than twenty chars'
     node.has_errors = true
 
-    node.onConfigure?.({
-      widgets_values: {
-        length: 5,
-        0: 'short text',
-        1: longText,
-        2: 12,
-        3: true,
-        4: { nested: 'value' }
-      }
-    })
+    node.onConfigure?.(
+      fromAny({
+        widgets_values: {
+          length: 5,
+          0: 'short text',
+          1: longText,
+          2: 12,
+          3: true,
+          4: { nested: 'value' }
+        }
+      })
+    )
 
     expect(node.widgets).toHaveLength(5)
     expect(node.widgets?.map((widget) => widget.name)).toEqual([
@@ -91,9 +94,11 @@ describe('errorNodeWidgets', () => {
   it('leaves normal nodes unchanged', () => {
     const node = new LGraphNode('HealthyNode')
 
-    node.onConfigure?.({
-      widgets_values: ['ignored']
-    })
+    node.onConfigure?.(
+      fromPartial({
+        widgets_values: ['ignored']
+      })
+    )
 
     expect(node.widgets).toBeUndefined()
     expect(node.serialize_widgets).toBeUndefined()

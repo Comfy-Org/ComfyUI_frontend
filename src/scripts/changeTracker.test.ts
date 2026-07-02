@@ -715,7 +715,7 @@ describe('ChangeTracker', () => {
         expect(undoRedo).toHaveBeenCalledOnce()
         expect(capture).toHaveBeenCalledTimes(5)
 
-        undoRedo.mockResolvedValue(false)
+        undoRedo.mockResolvedValue(undefined)
         dispatchStored(
           windowListeners,
           'keydown',
