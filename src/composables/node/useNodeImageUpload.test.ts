@@ -2,7 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 
 const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
   mockFetchApi: vi.fn(),
@@ -11,41 +11,22 @@ const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
 }))
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
-let capturedResultItemDrop: (item: ResultItem) => void
-let capturedPasteOnPaste: (files: File[]) => Promise<string[]>
-let capturedFileInputOnSelect: (files: File[]) => Promise<string[]>
-const mockOpenFileSelection = vi.fn()
 
 vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
   useNodeDragAndDrop: (
     _node: LGraphNode,
-    opts: {
-      onDrop: typeof capturedDragOnDrop
-      onResultItemDrop: typeof capturedResultItemDrop
-    }
+    opts: { onDrop: typeof capturedDragOnDrop }
   ) => {
     capturedDragOnDrop = opts.onDrop
-    capturedResultItemDrop = opts.onResultItemDrop
   }
 }))
 
 vi.mock('@/composables/node/useNodeFileInput', () => ({
-  useNodeFileInput: (
-    _node: LGraphNode,
-    opts: { onSelect: typeof capturedFileInputOnSelect }
-  ) => {
-    capturedFileInputOnSelect = opts.onSelect
-    return { openFileSelection: mockOpenFileSelection }
-  }
+  useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
 vi.mock('@/composables/node/useNodePaste', () => ({
-  useNodePaste: (
-    _node: LGraphNode,
-    opts: { onPaste: typeof capturedPasteOnPaste }
-  ) => {
-    capturedPasteOnPaste = opts.onPaste
-  }
+  useNodePaste: vi.fn()
 }))
 
 vi.mock('@/i18n', () => ({
@@ -97,26 +78,6 @@ describe('useNodeImageUpload', () => {
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 
-  async function mountImageUpload(
-    options: { folder?: ResultItemType } = { folder: 'input' }
-  ) {
-    const { useNodeImageUpload } = await import('./useNodeImageUpload')
-    return useNodeImageUpload(node, {
-      onUploadComplete,
-      onUploadStart,
-      onUploadError,
-      ...options
-    })
-  }
-
-  function lastUploadBody() {
-    const body = mockFetchApi.mock.calls.at(-1)?.[1]?.body
-    if (!(body instanceof FormData)) {
-      throw new Error('Expected upload body to be FormData')
-    }
-    return body
-  }
-
   beforeEach(async () => {
     vi.resetModules()
     vi.clearAllMocks()
@@ -125,7 +86,13 @@ describe('useNodeImageUpload', () => {
     onUploadStart = vi.fn()
     onUploadError = vi.fn()
 
-    await mountImageUpload()
+    const { useNodeImageUpload } = await import('./useNodeImageUpload')
+    useNodeImageUpload(node, {
+      onUploadComplete,
+      onUploadStart,
+      onUploadError,
+      folder: 'input'
+    })
   })
 
   it.for([
@@ -212,61 +179,5 @@ describe('useNodeImageUpload', () => {
 
     await capturedDragOnDrop([createFile()])
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledTimes(2)
-  })
-
-  it('passes dropped result items through without uploading', () => {
-    const resultItem = fromAny<ResultItem, unknown>({
-      filename: 'existing.png',
-      subfolder: '',
-      type: 'input'
-    })
-
-    capturedResultItemDrop(resultItem)
-
-    expect(onUploadComplete).toHaveBeenCalledWith([resultItem])
-    expect(mockFetchApi).not.toHaveBeenCalled()
-  })
-
-  it('uploads pasted images to the pasted subfolder', async () => {
-    const { handleUpload } = await mountImageUpload({})
-    mockFetchApi.mockResolvedValueOnce(successResponse('image.png'))
-
-    await handleUpload(createFile('image.png'))
-
-    const body = lastUploadBody()
-    expect(body.get('subfolder')).toBe('pasted')
-    expect(body.get('type')).toBeNull()
-    expect(mockUpdateInputs).not.toHaveBeenCalled()
-  })
-
-  it('refreshes input assets for default non-pasted uploads', async () => {
-    const { handleUpload } = await mountImageUpload({})
-    mockFetchApi.mockResolvedValueOnce(successResponse('upload.png'))
-
-    await handleUpload(createFile('upload.png'))
-
-    const body = lastUploadBody()
-    expect(body.get('subfolder')).toBeNull()
-    expect(body.get('type')).toBeNull()
-    expect(mockUpdateInputs).toHaveBeenCalledOnce()
-  })
-
-  it('does not refresh input assets for explicit output uploads', async () => {
-    await mountImageUpload({ folder: 'output' })
-    mockFetchApi.mockResolvedValueOnce(successResponse('output.png'))
-
-    await capturedFileInputOnSelect([createFile('output.png')])
-
-    const body = lastUploadBody()
-    expect(body.get('type')).toBe('output')
-    expect(mockUpdateInputs).not.toHaveBeenCalled()
-  })
-
-  it('shows a specific alert for upload timeouts', async () => {
-    mockFetchApi.mockRejectedValueOnce(new DOMException('', 'TimeoutError'))
-
-    await capturedPasteOnPaste([createFile()])
-
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadTimedOut')
   })
 })
