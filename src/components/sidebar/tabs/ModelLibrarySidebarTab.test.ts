@@ -18,7 +18,9 @@ const {
   mockGetNodeProvider,
   mockToggleNodeOnEvent,
   mockRefreshModelFolder,
-  downloadStoreState
+  mockLoadModels,
+  downloadStoreState,
+  settingState
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode<unknown> | null = null
   return {
@@ -33,7 +35,9 @@ const {
     mockGetNodeProvider: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
     mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
-    downloadStoreState: { setLastCompleted: (_: unknown) => {} }
+    mockLoadModels: vi.fn().mockResolvedValue([]),
+    downloadStoreState: { setLastCompleted: (_: unknown) => {} },
+    settingState: { useAssetAPI: false, autoLoadAll: false }
   }
 })
 
@@ -62,7 +66,7 @@ vi.mock('@/stores/modelStore', () => ({
   useModelStore: () => ({
     modelFolders: [],
     models: [mockModel],
-    loadModels: vi.fn().mockResolvedValue([]),
+    loadModels: mockLoadModels,
     loadModelFolders: vi.fn().mockResolvedValue([]),
     refresh: vi.fn().mockResolvedValue(undefined),
     refreshModelFolder: mockRefreshModelFolder
@@ -92,6 +96,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.ModelLibrary.NameFormat') return 'filename'
+      if (key === 'Comfy.Assets.UseAssetAPI') return settingState.useAssetAPI
+      if (key === 'Comfy.ModelLibrary.AutoLoadAll') {
+        return settingState.autoLoadAll
+      }
       return false
     })
   })
@@ -134,7 +142,8 @@ vi.mock('./SidebarTopArea.vue', () => ({
 vi.mock('./SidebarTabTemplate.vue', () => ({
   default: {
     name: 'SidebarTabTemplate',
-    template: '<div><slot name="header" /><slot name="body" /></div>'
+    template:
+      '<div><slot name="tool-buttons" /><slot name="header" /><slot name="body" /></div>'
   }
 }))
 
@@ -157,13 +166,16 @@ describe('ModelLibrarySidebarTab', () => {
     vi.clearAllMocks()
     resetRoot()
     downloadStoreState.setLastCompleted(null)
+    settingState.useAssetAPI = false
+    settingState.autoLoadAll = false
   })
 
   function renderComponent() {
     return render(ModelLibrarySidebarTab, {
       global: {
         plugins: [createTestingPinia({ stubActions: false }), i18n],
-        stubs: { teleport: true }
+        stubs: { teleport: true },
+        directives: { tooltip: {} }
       }
     })
   }
@@ -235,5 +247,33 @@ describe('ModelLibrarySidebarTab', () => {
     await nextTick()
 
     expect(mockRefreshModelFolder).not.toHaveBeenCalled()
+  })
+
+  describe('asset mode', () => {
+    it('hides the load-all button and eager-loads models on mount', async () => {
+      settingState.useAssetAPI = true
+      renderComponent()
+      await nextTick()
+
+      expect(screen.queryByLabelText('g.loadAllFolders')).toBeNull()
+      expect(screen.getByLabelText('g.refresh')).toBeInTheDocument()
+      expect(mockLoadModels).toHaveBeenCalledTimes(1)
+    })
+
+    it('legacy mode keeps the load-all button and stays lazy by default', async () => {
+      renderComponent()
+      await nextTick()
+
+      expect(screen.getByLabelText('g.loadAllFolders')).toBeInTheDocument()
+      expect(mockLoadModels).not.toHaveBeenCalled()
+    })
+
+    it('legacy mode still honors AutoLoadAll', async () => {
+      settingState.autoLoadAll = true
+      renderComponent()
+      await nextTick()
+
+      expect(mockLoadModels).toHaveBeenCalledTimes(1)
+    })
   })
 })

@@ -11,6 +11,7 @@
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
       <Button
+        v-if="!usesAssetAPI"
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
@@ -77,6 +78,9 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const usesAssetAPI = computed(() =>
+  settingStore.get('Comfy.Assets.UseAssetAPI')
+)
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
@@ -193,7 +197,13 @@ watch(
 
 onMounted(async () => {
   searchBoxRef.value?.focus()
-  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
+  // In asset mode the whole library resolves from one cached walk, so eager
+  // loading is cheap and keeps search and folder badges complete from the
+  // start; AutoLoadAll remains the opt-in for the request-per-folder legacy path.
+  if (
+    usesAssetAPI.value ||
+    settingStore.get('Comfy.ModelLibrary.AutoLoadAll')
+  ) {
     await modelStore.loadModels()
   }
 })
