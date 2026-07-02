@@ -13,7 +13,10 @@ const LOAD3D_ALL_NODES = new Set([
   ...LOAD3D_PREVIEW_NODES,
   'Load3D',
   'Load3DAdvanced',
-  'SaveGLB'
+  'SaveGLB',
+  'Save3DAdvanced',
+  'SaveGaussianSplat',
+  'SavePointCloud'
 ])
 
 export const isLoad3dPreviewNode = (nodeType: string): boolean =>
