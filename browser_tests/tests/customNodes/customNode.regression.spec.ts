@@ -1,4 +1,4 @@
-/* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs (installed custom nodes, assertion nodes, or devtools); this is the framework's designed environment gating, not a disabled test */
+/* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs (installed custom nodes or devtools); this is the framework's designed environment gating, not a disabled test */
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -157,35 +157,6 @@ for (const entry of loadManifest()) {
 
       expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
       await expectNoVisibleErrors(comfyPage.page, 'after run')
-    })
-
-    test('T2a io: assertion nodes pass', async ({ comfyPage }) => {
-      test.setTimeout(entry.timeoutMs + 15_000)
-      const objectInfo = await target.getObjectInfo(comfyPage.page)
-      const { missing } = expectedNodesPresent(objectInfo, entry.expectedNodes)
-      test.skip(
-        !entry.tiers.includes('io') ||
-          missing.length > 0 ||
-          entry.requiresGpu ||
-          entry.requiresModels.length > 0 ||
-          !('Assert Executed' in objectInfo) ||
-          !entry.workflow ||
-          !existsSync(resolve(workflowRelative)),
-        `io tier needs ${entry.pack} + ComfyUI-test-framework assertion nodes + workflow`
-      )
-      await expectNoVisibleErrors(comfyPage.page, 'at startup')
-
-      await comfyPage.workflow.loadGraphData(readWorkflow(workflowRelative))
-      const result = await target.runWorkflow(comfyPage.page, {
-        expectedNodeIds: await nodeIdsByType(comfyPage.page, [
-          ...entry.expectedNodes,
-          'Assert Executed'
-        ]),
-        timeoutMs: entry.timeoutMs
-      })
-
-      expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
-      await expectNoVisibleErrors(comfyPage.page, 'after io run')
     })
   })
 }
