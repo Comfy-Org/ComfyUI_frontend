@@ -629,6 +629,10 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __COMFYUI_FRONTEND_COMMIT__: JSON.stringify(GIT_COMMIT),
+    __VERCEL_ENV__: JSON.stringify(process.env.VERCEL_ENV || ''),
+    __VERCEL_GIT_COMMIT_REF__: JSON.stringify(
+      process.env.VERCEL_GIT_COMMIT_REF || ''
+    ),
     __SENTRY_ENABLED__: JSON.stringify(
       !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
     ),

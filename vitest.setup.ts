@@ -56,6 +56,8 @@ globalThis.__ALGOLIA_API_KEY__ = ''
 globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
 globalThis.__IS_NIGHTLY__ = false
+globalThis.__VERCEL_ENV__ = ''
+globalThis.__VERCEL_GIT_COMMIT_REF__ = ''
 
 // Define runtime config for tests
 window.__CONFIG__ = {

@@ -9,6 +9,10 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
+const VERCEL_BRANCH_PREFIX =
+  __VERCEL_ENV__ === 'preview' && __VERCEL_GIT_COMMIT_REF__
+    ? `[${__VERCEL_GIT_COMMIT_REF__}] `
+    : ''
 
 export const useBrowserTabTitle = () => {
   const executionStore = useExecutionStore()
@@ -90,6 +94,9 @@ export const useBrowserTabTitle = () => {
       (newMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
   )
 
-  const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)
+  const title = computed(
+    () =>
+      VERCEL_BRANCH_PREFIX + (nodeExecutionTitle.value || workflowTitle.value)
+  )
   useTitle(title)
 }
