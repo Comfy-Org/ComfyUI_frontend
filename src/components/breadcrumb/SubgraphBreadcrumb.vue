@@ -14,7 +14,10 @@
       '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
     }"
   >
-    <WorkflowActionsDropdown source="breadcrumb_subgraph_menu_selected" />
+    <WorkflowActionsDropdown
+      v-if="!canvasStore.linearMode"
+      source="breadcrumb_subgraph_menu_selected"
+    />
     <Button
       v-if="isInSubgraph"
       class="back-button pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
@@ -71,6 +74,7 @@ const ICON_WIDTH = 20
 
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
+const canvasStore = useCanvasStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>
