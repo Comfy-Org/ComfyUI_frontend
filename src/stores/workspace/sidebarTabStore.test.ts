@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,15 +10,19 @@ const {
   mockRegisterCommand,
   mockRegisterCommands,
   mockBrowseModelAssets,
+  mockT,
+  mockTe,
   registeredCommands,
   commandStoreCommands
 } = vi.hoisted(() => {
   const registeredCommands: { id: string; function: () => unknown }[] = []
   return {
     mockGetSetting: vi.fn(),
-    mockRegisterCommand: vi.fn((command) => registeredCommands.push(command)),
+    mockRegisterCommand: vi.fn(),
     mockRegisterCommands: vi.fn(),
     mockBrowseModelAssets: vi.fn(),
+    mockT: vi.fn(),
+    mockTe: vi.fn(),
     registeredCommands,
     commandStoreCommands: [] as { id: string; function: () => unknown }[]
   }
@@ -42,8 +48,8 @@ vi.mock('@/stores/menuItemStore', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  t: (key: string) => key,
-  te: () => false
+  t: mockT,
+  te: mockTe
 }))
 
 vi.mock('@/composables/sidebarTabs/useAssetsSidebarTab', () => ({
@@ -105,8 +111,14 @@ vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
 
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     registeredCommands.length = 0
     commandStoreCommands.length = 0
+    mockRegisterCommand.mockImplementation((command) =>
+      registeredCommands.push(command)
+    )
+    mockT.mockImplementation((key: string) => `translated:${key}`)
+    mockTe.mockReturnValue(false)
   })
 
   const toggleModelLibrary = async () => {
