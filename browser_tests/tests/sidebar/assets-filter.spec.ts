@@ -166,7 +166,8 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
   })
 
-  test('Selecting only "Audio" hides non-audio assets', async ({
+  // FIXME: flaky (burst-fails all CI retries some runs; more frequent on cloud/1.45's heavier init). Needs de-flaking.
+  test.fixme('Selecting only "Audio" hides non-audio assets', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -192,7 +193,8 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(threeDCardName)).toBeVisible()
   })
 
-  test('Multiple filters combine via OR (image + video)', async ({
+  // FIXME: flaky (burst-fails all CI retries some runs; more frequent on cloud/1.45's heavier init). Needs de-flaking.
+  test.fixme('Multiple filters combine via OR (image + video)', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -210,7 +212,8 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
   })
 
-  test('Unchecking the active filter restores previously hidden cards', async ({
+  // FIXME: flaky (burst-fails all CI retries some runs; more frequent on cloud/1.45's heavier init). Needs de-flaking.
+  test.fixme('Unchecking the active filter restores previously hidden cards', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab

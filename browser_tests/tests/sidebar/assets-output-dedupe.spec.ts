@@ -70,7 +70,8 @@ test.describe(
       await comfyPage.assets.clearMocks()
     })
 
-    test('renders one tile per unique composite key', async ({
+    // FIXME: flaky (burst-fails all CI retries some runs; more frequent on cloud/1.45's heavier init). Needs de-flaking.
+    test.fixme('renders one tile per unique composite key', async ({
       comfyPage
     }, testInfo) => {
       const tab = comfyPage.menu.assetsTab

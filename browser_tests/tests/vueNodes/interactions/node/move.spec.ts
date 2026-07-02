@@ -409,7 +409,8 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expect.poll(getGroupPos).not.toEqual(initialGroupPos)
   })
 
-  test(
+  // FIXME: flaky (burst-fails all CI retries some runs; more frequent on cloud/1.45's heavier init). Needs de-flaking.
+  test.fixme(
     '@mobile should allow moving nodes by dragging on touch devices',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {

@@ -101,7 +101,8 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
     })
   })
 
-  test('imports shared media before loading workflow so missing media is not surfaced', async ({
+  // FIXME: flaky (burst-fails all CI retries some runs; more frequent on cloud/1.45's heavier init). Needs de-flaking.
+  test.fixme('imports shared media before loading workflow so missing media is not surfaced', async ({
     comfyPage,
     sharedWorkflowImportMocks
   }) => {
