@@ -200,7 +200,9 @@ error handlers). Never for actions that have a UI equivalent.
 const nodeCount = await page.evaluate(() => window.app!.graph!.nodes.length)
 
 // ❌ Bad: setting a widget value programmatically
-await page.evaluate(() => { node.widgets![0].value = 512 })
+await page.evaluate(() => {
+  node.widgets![0].value = 512
+})
 // ✅ Good: interact like a user
 await widgetLocator.click()
 await widgetLocator.fill('512')
