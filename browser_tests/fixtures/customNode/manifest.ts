@@ -5,14 +5,9 @@ const MANIFEST_PATH = fileURLToPath(
   new URL('../data/customNodeManifest.json', import.meta.url)
 )
 
-type CustomNodeTier = 'load' | 'run' | 'connectivity' | 'io'
+const VALID_TIERS = ['load', 'run', 'connectivity', 'io'] as const
 
-const VALID_TIERS: readonly CustomNodeTier[] = [
-  'load',
-  'run',
-  'connectivity',
-  'io'
-]
+type CustomNodeTier = (typeof VALID_TIERS)[number]
 
 export interface CustomNodeManifestEntry {
   pack: string

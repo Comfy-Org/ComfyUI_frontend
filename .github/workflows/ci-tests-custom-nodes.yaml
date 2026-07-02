@@ -135,7 +135,12 @@ jobs:
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
-            jq -r '.. | .title? // empty' custom-nodes-results.json | sort -u | head -40
+            # Recurse so specs nested under describe() blocks are found, and
+            # print only the specs that actually skipped.
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
             exit 1
           fi
 
