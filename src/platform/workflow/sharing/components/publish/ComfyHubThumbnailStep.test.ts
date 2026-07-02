@@ -285,17 +285,14 @@ describe('ComfyHubThumbnailStep', () => {
   })
 
   it('restores both comparison images on the comparison tab', () => {
-    const { container } = renderStep({
+    renderStep({
       thumbnailType: 'imageComparison',
       thumbnailUrl: 'https://cdn.example.com/before.png',
       comparisonAfterUrl: 'https://cdn.example.com/after.png',
       existingThumbnailType: 'imageComparison'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
-    const srcs = Array.from(container.querySelectorAll('img')).map((el) =>
-      el.getAttribute('src')
-    )
+    const srcs = screen.getAllByRole('img').map((el) => el.getAttribute('src'))
     expect(srcs).toContain('https://cdn.example.com/before.png')
     expect(srcs).toContain('https://cdn.example.com/after.png')
   })
