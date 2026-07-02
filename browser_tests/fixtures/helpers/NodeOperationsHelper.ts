@@ -5,10 +5,9 @@ import type {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
@@ -18,9 +17,7 @@ export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator
 
   constructor(private comfyPage: ComfyPage) {
-    this.promptDialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
+    this.promptDialogInput = this.page.getByRole('dialog').getByRole('textbox')
   }
 
   private get page() {
@@ -44,40 +41,44 @@ export class NodeOperationsHelper {
   }
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
-    return await this.page.evaluate(() => {
+    const selectedNodeIds = await this.page.evaluate(() => {
       const selected = window.app?.canvas?.selected_nodes
       if (!selected) return []
-      return Object.keys(selected).map(Number)
+      return Object.keys(selected)
     })
+    return selectedNodeIds.map(toNodeId)
   }
 
   /**
    * Add a node to the graph by type.
    * @param type - The node type (e.g. 'KSampler', 'VAEDecode')
    * @param options - GraphAddOptions (ghost, skipComputeOrder). When ghost is
-   *   true and cursorPosition is provided, a synthetic MouseEvent is created
-   *   as the dragEvent.
-   * @param cursorPosition - Client coordinates for ghost placement dragEvent
+   *   true and position is provided, a synthetic MouseEvent is created as the
+   *   dragEvent.
+   * @param position - When ghost is true, client coordinates for the ghost
+   *   placement dragEvent. Otherwise, world coordinates assigned to node.pos.
    */
   async addNode(
     type: string,
     options?: Omit<GraphAddOptions, 'dragEvent'>,
-    cursorPosition?: Position
+    position?: Position
   ): Promise<NodeReference> {
     const id = await this.page.evaluate(
-      ([nodeType, opts, cursor]) => {
+      ([nodeType, opts, pos]) => {
         const node = window.LiteGraph!.createNode(nodeType)!
         const addOpts: Record<string, unknown> = { ...opts }
-        if (opts?.ghost && cursor) {
+        if (opts?.ghost && pos) {
           addOpts.dragEvent = new MouseEvent('click', {
-            clientX: cursor.x,
-            clientY: cursor.y
+            clientX: pos.x,
+            clientY: pos.y
           })
+        } else if (pos) {
+          node.pos = [pos.x, pos.y]
         }
         window.app!.graph.add(node, addOpts as GraphAddOptions)
         return node.id
       },
-      [type, options ?? {}, cursorPosition ?? null] as const
+      [type, options ?? {}, position ?? null] as const
     )
     return new NodeReference(id, this.comfyPage)
   }
@@ -113,8 +114,8 @@ export class NodeOperationsHelper {
     return this.getNodeRefById(id)
   }
 
-  async getNodeRefById(id: NodeId): Promise<NodeReference> {
-    return new NodeReference(id, this.comfyPage)
+  async getNodeRefById(id: SerializedNodeId): Promise<NodeReference> {
+    return new NodeReference(toNodeId(id), this.comfyPage)
   }
 
   async getNodeRefsByType(
@@ -135,7 +136,7 @@ export class NodeOperationsHelper {
           },
           { type, includeSubgraph }
         )
-      ).map((id: NodeId) => this.getNodeRefById(id))
+      ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
   }
 
@@ -147,7 +148,7 @@ export class NodeOperationsHelper {
             .app!.graph.nodes.filter((n: LGraphNode) => n.title === title)
             .map((n: LGraphNode) => n.id)
         }, title)
-      ).map((id: NodeId) => this.getNodeRefById(id))
+      ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
   }
 
@@ -213,16 +214,6 @@ export class NodeOperationsHelper {
         bottomRight
       )
     }
-  }
-
-  async convertAllNodesToGroupNode(groupNodeName: string): Promise<void> {
-    await this.comfyPage.canvas.press('Control+a')
-    const node = await this.getFirstNodeRef()
-    if (!node) {
-      throw new Error('No nodes found to convert')
-    }
-    await node.clickContextMenuOption('Convert to Group Node')
-    await this.fillPromptDialog(groupNodeName)
   }
 
   async fillPromptDialog(value: string): Promise<void> {

@@ -6,6 +6,10 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import {
+  fetchWithUnifiedRemint,
+  shouldRemintCloudRequest
+} from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
   ModelFile,
@@ -23,9 +27,9 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -108,6 +112,11 @@ interface QueuePromptRequestBody {
      * ```
      */
     api_key_comfy_org?: string
+    /**
+     * Identifies the client submitting the prompt. Forwarded by the backend
+     * to API nodes' upstream requests via the Comfy-Usage-Source header.
+     */
+    comfy_usage_source?: string
     /**
      * Override the preview method for this prompt execution.
      * 'default' uses the server's CLI setting.
@@ -216,7 +225,7 @@ type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
     ? StatusWsMessageStatus
     : K extends 'executing'
-      ? NodeId
+      ? SerializedNodeId
       : T[K]
 }
 
@@ -313,6 +322,15 @@ export class PromptExecutionError extends Error {
 
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
+  /**
+   * Maps an original event listener to its error-guarded wrapper, so that
+   * {@link removeEventListener} can match the wrapper installed by
+   * {@link addEventListener}. Keyed weakly so wrappers are GC'd with listeners.
+   */
+  private _listenerWrappers = new WeakMap<
+    EventListenerOrEventListenerObject,
+    EventListener
+  >()
   api_host: string
   api_base: string
   /**
@@ -432,6 +450,7 @@ export class ComfyApi extends EventTarget {
 
   async fetchApi(route: string, options?: RequestInit) {
     const headers: HeadersInit = options?.headers ?? {}
+    let unifiedRetryOn401 = false
 
     if (isCloud) {
       await this.waitForAuthInitialization()
@@ -453,15 +472,78 @@ export class ComfyApi extends EventTarget {
         for (const [key, value] of Object.entries(authHeader)) {
           addHeaderEntry(headers, key, value)
         }
+        unifiedRetryOn401 = await shouldRemintCloudRequest()
       }
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
-    return fetch(this.apiURL(route), {
-      cache: 'no-cache',
-      ...options,
-      headers
-    })
+    return fetchWithUnifiedRemint(
+      this.apiURL(route),
+      { cache: 'no-cache', ...options, headers },
+      unifiedRetryOn401
+    )
+  }
+
+  /**
+   * Wraps an event listener so an exception thrown by it — most often from a
+   * third-party custom node — is caught and logged instead of surfacing as an
+   * unhandled error in global telemetry (which RUM captures as a high-volume,
+   * non-actionable error). Native EventTarget already isolates listeners from
+   * one another; this only changes where the error goes.
+   *
+   * The same original listener always maps to the same wrapper, so
+   * {@link removeEventListener} still matches. Logged at `warn` level on
+   * purpose: RUM collects `console.error` by default, which would re-introduce
+   * the noise this guard removes.
+   */
+  private wrapListener(
+    callback: EventListenerOrEventListenerObject | null
+  ): EventListenerOrEventListenerObject | null {
+    if (!callback) return callback
+    let wrapped = this._listenerWrappers.get(callback)
+    if (!wrapped) {
+      const logError = (event: Event, error: unknown) =>
+        console.warn(
+          `[ComfyApi] Uncaught error in "${event.type}" event listener:`,
+          error
+        )
+      // Regular function (not arrow) so the listener keeps the native
+      // `this === currentTarget` binding that EventTarget provides.
+      wrapped = function (this: unknown, event: Event) {
+        try {
+          const result: unknown =
+            typeof callback === 'function'
+              ? callback.call(this, event)
+              : callback.handleEvent(event)
+          // Async listeners: route a rejected promise through the same guard so
+          // it does not escape as an unhandled rejection (which RUM also logs).
+          if (
+            result != null &&
+            typeof (result as PromiseLike<unknown>).then === 'function'
+          ) {
+            void Promise.resolve(result).catch((error: unknown) =>
+              logError(event, error)
+            )
+          }
+        } catch (error) {
+          logError(event, error)
+        }
+      }
+      this._listenerWrappers.set(callback, wrapped)
+    }
+    return wrapped
+  }
+
+  /**
+   * Looks up the guarded wrapper for a listener without creating one — used on
+   * the remove path so a never-registered callback does not leave a stray
+   * WeakMap entry. Falls back to the original callback (a harmless no-op).
+   */
+  private getWrappedListener(
+    callback: EventListenerOrEventListenerObject | null
+  ): EventListenerOrEventListenerObject | null {
+    if (!callback) return callback
+    return this._listenerWrappers.get(callback) ?? callback
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(
@@ -470,7 +552,11 @@ export class ComfyApi extends EventTarget {
     options?: AddEventListenerOptions | boolean
   ) {
     // Type assertion: strictFunctionTypes.  So long as we emit events in a type-safe fashion, this is safe.
-    super.addEventListener(type, callback as EventListener, options)
+    super.addEventListener(
+      type,
+      this.wrapListener(callback as EventListener),
+      options
+    )
     this._registered.add(type)
   }
 
@@ -479,7 +565,11 @@ export class ComfyApi extends EventTarget {
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: EventListenerOptions | boolean
   ): void {
-    super.removeEventListener(type, callback as EventListener, options)
+    super.removeEventListener(
+      type,
+      this.getWrappedListener(callback as EventListener),
+      options
+    )
   }
 
   addCustomEventListener(
@@ -487,7 +577,11 @@ export class ComfyApi extends EventTarget {
     callback: ((event: CustomEvent<unknown>) => void) | null,
     options?: AddEventListenerOptions | boolean
   ) {
-    super.addEventListener(type, callback as EventListener, options)
+    super.addEventListener(
+      type,
+      this.wrapListener(callback as EventListener),
+      options
+    )
     this._registered.add(type)
   }
 
@@ -496,7 +590,11 @@ export class ComfyApi extends EventTarget {
     callback: ((event: CustomEvent<unknown>) => void) | null,
     options?: EventListenerOptions | boolean
   ) {
-    super.removeEventListener(type, callback as EventListener, options)
+    super.removeEventListener(
+      type,
+      this.getWrappedListener(callback as EventListener),
+      options
+    )
   }
 
   /**
@@ -812,8 +910,8 @@ export class ComfyApi extends EventTarget {
       locale && locale !== 'en' ? `index.${locale}.json` : 'index.json'
     try {
       const res = await axios.get(this.fileURL(`/templates/${fileName}`))
-      const contentType = res.headers['content-type']
-      return contentType?.includes('application/json') ? res.data : []
+      const contentType = String(res.headers['content-type'] ?? '')
+      return contentType.includes('application/json') ? res.data : []
     } catch (error) {
       // Fallback to default English version if localized version doesn't exist
       if (locale && locale !== 'en') {
@@ -867,6 +965,7 @@ export class ComfyApi extends EventTarget {
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
+        comfy_usage_source: 'comfyui-frontend',
         extra_pnginfo: { workflow },
         ...(options?.previewMethod &&
           options.previewMethod !== 'default' && {
@@ -1005,13 +1104,14 @@ export class ComfyApi extends EventTarget {
    * Gets the current state of the queue
    * @returns The currently running and queued items
    */
-  async getQueue(): Promise<{
+  async getQueue(options?: { throwOnError?: boolean }): Promise<{
     Running: JobListItem[]
     Pending: JobListItem[]
   }> {
     try {
       return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
+      if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
@@ -1101,6 +1201,52 @@ export class ComfyApi extends EventTarget {
       'interrupt',
       runningJobId ? { prompt_id: runningJobId } : undefined
     )
+  }
+
+  /**
+   * Cancels a single job by id via `POST /api/jobs/{job_id}/cancel` (idempotent:
+   * already-terminal jobs are a no-op). Requires runtime parity — not every
+   * runtime exposes this endpoint yet; do not merge callers before parity lands.
+   *
+   * @param {string} jobId The id of the job to cancel
+   */
+  async cancelJob(jobId: string) {
+    const res = await this.fetchApi(
+      `/jobs/${encodeURIComponent(jobId)}/cancel`,
+      {
+        method: 'POST'
+      }
+    )
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(
+        `Failed to cancel job ${jobId}: ${res.status}${body ? ` — ${body}` : ''}`
+      )
+    }
+  }
+
+  /**
+   * Cancels multiple jobs in a single request via `POST /api/jobs/cancel` with
+   * body `{ job_ids: [...] }`. Already-terminal jobs are no-ops. Same runtime
+   * parity requirement as {@link cancelJob}.
+   *
+   * @param {string[]} jobIds The ids of the jobs to cancel
+   */
+  async cancelJobs(jobIds: string[]) {
+    if (!jobIds.length) return
+    const res = await this.fetchApi('/jobs/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ job_ids: jobIds })
+    })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(
+        `Failed to cancel jobs: ${res.status}${body ? ` — ${body}` : ''}`
+      )
+    }
   }
 
   /**
@@ -1410,8 +1556,8 @@ export class ComfyApi extends EventTarget {
           }
         }
       )
-      const contentType = res.headers['content-type']
-      return contentType?.includes('application/json') ? res.data : null
+      const contentType = String(res.headers['content-type'] ?? '')
+      return contentType.includes('application/json') ? res.data : null
     } catch (error) {
       console.error('Error loading fuse options:', error)
       return null

@@ -1,5 +1,8 @@
 <template>
-  <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
+  <div
+    class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1"
+    data-testid="bounding-box"
+  >
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.x') }}
     </label>

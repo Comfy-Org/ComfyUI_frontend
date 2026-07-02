@@ -2,15 +2,16 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
+import { toNodeId } from '@/types/nodeId'
 
 const getGizmoConfig = (page: Page) =>
-  page.evaluate(() => {
-    const n = window.app!.graph.getNodeById(1)
+  page.evaluate((nodeId) => {
+    const n = window.app!.graph.getNodeById(nodeId)
     const modelConfig = n?.properties?.['Model Config'] as
       | { gizmo?: { enabled: boolean; mode: string } }
       | undefined
     return modelConfig?.gizmo
-  })
+  }, toNodeId(1))
 
 test.describe('Load3D Gizmo Controls', () => {
   test(

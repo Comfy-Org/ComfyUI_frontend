@@ -21,7 +21,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
     useTransformState: () => ({
       camera: computed(() => mockData.mockCamera),
       transformStyle: computed(() => mockData.mockTransformStyle),
-      canvasToScreen: vi.fn(),
       screenToCanvas: vi.fn(),
       isNodeInViewport: vi.fn(),
       syncWithCanvas
@@ -180,7 +179,6 @@ describe('TransformPane', () => {
 
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.canvasToScreen).toBeDefined()
       expect(transformState.screenToCanvas).toBeDefined()
     })
   })

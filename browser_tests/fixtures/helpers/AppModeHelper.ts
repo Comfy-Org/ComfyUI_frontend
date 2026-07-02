@@ -9,13 +9,15 @@ import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
 import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
+import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
 
 export class AppModeHelper {
-  readonly steps: BuilderStepsHelper
   readonly footer: BuilderFooterHelper
+  readonly mobile: MobileAppHelper
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
   readonly outputHistory: OutputHistoryComponent
+  readonly steps: BuilderStepsHelper
   readonly widgets: AppModeWidgetHelper
 
   /** The "Connect an output" popover shown when saving without outputs. */
@@ -32,6 +34,10 @@ export class AppModeHelper {
   public readonly outputPlaceholder: Locator
   /** The linear-mode widget list container (visible in app mode). */
   public readonly linearWidgets: Locator
+  /** The validation warning shown above the app mode run button. */
+  public readonly validationWarning: Locator
+  /** The action that opens graph mode errors from the validation warning. */
+  public readonly viewErrorsInGraphButton: Locator
   /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
   public readonly imagePickerPopover: Locator
   /** The Run button in the app mode footer. */
@@ -60,13 +66,16 @@ export class AppModeHelper {
   public readonly vueNodeSwitchDismissButton: Locator
   /** The "Don't show again" checkbox inside the Vue Node switch popup. */
   public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
+  /** The main content area where outputs are displayed*/
+  public readonly centerPanel: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
-    this.steps = new BuilderStepsHelper(comfyPage)
+    this.mobile = new MobileAppHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
+    this.steps = new BuilderStepsHelper(comfyPage)
     this.widgets = new AppModeWidgetHelper(comfyPage)
 
     this.connectOutputPopover = this.page.getByTestId(
@@ -87,13 +96,19 @@ export class AppModeHelper {
     this.outputPlaceholder = this.page.getByTestId(
       TestIds.builder.outputPlaceholder
     )
-    this.linearWidgets = this.page.getByTestId('linear-widgets')
+    this.linearWidgets = this.page.getByTestId(TestIds.linear.widgetContainer)
+    this.validationWarning = this.page.getByTestId(
+      TestIds.linear.validationWarning
+    )
+    this.viewErrorsInGraphButton = this.validationWarning.getByTestId(
+      TestIds.linear.viewErrorsInGraph
+    )
     this.imagePickerPopover = this.page
       .getByRole('dialog')
       .filter({ has: this.page.getByRole('button', { name: 'All' }) })
       .first()
     this.runButton = this.page
-      .getByTestId('linear-run-button')
+      .getByTestId(TestIds.linear.runButton)
       .getByRole('button', { name: /run/i })
     this.welcome = this.page.getByTestId(TestIds.appMode.welcome)
     this.emptyWorkflowText = this.page.getByTestId(
@@ -125,6 +140,7 @@ export class AppModeHelper {
     this.vueNodeSwitchDontShowAgainCheckbox = this.page.getByTestId(
       TestIds.appMode.vueNodeSwitchDontShowAgain
     )
+    this.centerPanel = this.page.getByTestId(TestIds.linear.centerPanel)
   }
 
   private get page(): Page {

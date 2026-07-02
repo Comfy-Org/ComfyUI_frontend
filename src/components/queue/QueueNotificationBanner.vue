@@ -140,11 +140,11 @@ const iconClass = computed(() => {
 
 const iconColorClass = computed(() => {
   if (notification.type === 'queuedPending') {
-    return 'animate-spin text-slate-100'
+    return 'animate-spin text-text-secondary'
   }
   if (notification.type === 'failed') {
     return 'text-danger-200'
   }
-  return 'text-slate-100'
+  return 'text-text-secondary'
 })
 </script>

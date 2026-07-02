@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -8,6 +8,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -66,7 +67,7 @@ function slotLocator(
   slotIndex: number,
   isInput: boolean
 ) {
-  const key = getSlotKey(String(nodeId), slotIndex, isInput)
+  const key = getSlotKey(nodeId, slotIndex, isInput)
   return page.locator(`[data-slot-key="${key}"]`)
 }
 
@@ -1082,17 +1083,10 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeSearchBoxImpl',
-        'v1 (legacy)'
-      )
-
       // Setup workflow with a KSampler node
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.nodeOps.waitForGraphNodes(0)
-      await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
-      await comfyPage.nextFrame()
-      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+      await comfyPage.searchBoxV2.addNode('KSampler')
       await comfyPage.nodeOps.waitForGraphNodes(1)
 
       // Convert the KSampler node to a subgraph
@@ -1130,6 +1124,149 @@ test.describe(
       // Verify connection went to the correct slot
       await expect.poll(() => positiveInput.getLinkCount()).toBe(1)
       await expect.poll(() => negativeInput.getLinkCount()).toBe(0)
+    })
+  }
+)
+
+test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
+  test('should keep widget-input link aligned after persisted-workflow reload', async ({
+    comfyPage
+  }) => {
+    test.setTimeout(30000)
+
+    await comfyPage.workflow.loadWorkflow(
+      'vueNodes/ksampler-denoise-widget-link'
+    )
+    await comfyPage.vueNodes.waitForNodes(2)
+    await comfyPage.workflow.waitForDraftPersisted()
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await comfyPage.vueNodes.waitForNodes(2)
+
+    const ksampler = await comfyPage.page.evaluate(() => {
+      const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')
+      if (!node) return null
+      const findIndex = (name: string) =>
+        node.inputs.findIndex(
+          (input) => input.name === name || input.widget?.name === name
+        )
+      return {
+        id: node.id,
+        denoiseIndex: findIndex('denoise'),
+        schedulerIndex: findIndex('scheduler')
+      }
+    })
+    if (!ksampler) {
+      throw new Error('KSampler should be present in fixture')
+    }
+    expect(
+      ksampler.denoiseIndex,
+      'denoise input slot not found'
+    ).toBeGreaterThanOrEqual(0)
+    expect(
+      ksampler.schedulerIndex,
+      'scheduler input slot not found'
+    ).toBeGreaterThanOrEqual(0)
+
+    const denoiseSlot = slotLocator(
+      comfyPage.page,
+      ksampler.id,
+      ksampler.denoiseIndex,
+      true
+    )
+    const schedulerSlot = slotLocator(
+      comfyPage.page,
+      ksampler.id,
+      ksampler.schedulerIndex,
+      true
+    )
+    await expectVisibleAll(denoiseSlot, schedulerSlot)
+
+    await expect
+      .poll(() =>
+        getInputLinkDetails(comfyPage.page, ksampler.id, ksampler.denoiseIndex)
+      )
+      .toMatchObject({
+        targetId: ksampler.id,
+        targetSlot: ksampler.denoiseIndex
+      })
+
+    // If the regression returns, getInputPos stays stale relative to the
+    // grown slot DOM and the endpoint drifts toward scheduler. Re-read
+    // positions each retry so layout settle doesn't cause flakes.
+    await expect(async () => {
+      const linkEnd = await comfyPage.page.evaluate(
+        ([nodeId, targetSlotIndex]) => {
+          const node = window.app!.graph.getNodeById(nodeId)
+          if (!node) return null
+          const slotPos = node.getInputPos(targetSlotIndex)
+          const [cx, cy] = window.app!.canvas.ds.convertOffsetToCanvas([
+            slotPos[0],
+            slotPos[1]
+          ])
+          const rect = window.app!.canvas.canvas.getBoundingClientRect()
+          return { x: cx + rect.left, y: cy + rect.top }
+        },
+        [ksampler.id, ksampler.denoiseIndex] as const
+      )
+      expect(linkEnd, 'link endpoint should resolve').not.toBeNull()
+
+      const denoiseCenter = await getCenter(denoiseSlot)
+      const schedulerCenter = await getCenter(schedulerSlot)
+      const distToDenoise = Math.hypot(
+        linkEnd!.x - denoiseCenter.x,
+        linkEnd!.y - denoiseCenter.y
+      )
+      const rowGap = Math.hypot(
+        denoiseCenter.x - schedulerCenter.x,
+        denoiseCenter.y - schedulerCenter.y
+      )
+
+      // Bound at rowGap / 4 - half the inter-slot midpoint, so any drift
+      // toward scheduler fails well before reaching it.
+      expect(
+        distToDenoise,
+        `Link endpoint (${linkEnd!.x.toFixed(1)}, ${linkEnd!.y.toFixed(1)}) is ` +
+          `${distToDenoise.toFixed(1)}px from denoise — should be within ` +
+          `${(rowGap / 4).toFixed(1)}px (quarter of inter-slot gap ${rowGap.toFixed(1)}px)`
+      ).toBeLessThan(rowGap / 4)
+    }).toPass({ timeout: 5000 })
+  })
+})
+
+test(
+  'Fast disconnection support',
+  { tag: '@vue-nodes' },
+  async ({ comfyMouse, comfyPage }) => {
+    async function performDisconnect(slot: Locator, isFast: boolean) {
+      await comfyMouse.dragElementBy(slot, { x: isFast ? -25 : -80 })
+
+      if (!isFast) {
+        await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
+        await comfyMouse.click(100, 100)
+      }
+      const isConnected = () => comfyPage.vueNodes.isSlotConnected(slot)
+      await expect.poll(isConnected).toBe(false)
+      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+    }
+
+    const ksamplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const ksampler = new VueNodeFixture(ksamplerLocator)
+    await comfyMouse.dragElementBy(ksamplerLocator, { x: 100 })
+
+    await test.step('Disconnection with normal links', async () => {
+      await performDisconnect(ksampler.getSlot('model'), true)
+      await performDisconnect(ksampler.getSlot('positive'), false)
+    })
+
+    await test.step('Create subgraph', async () => {
+      await ksampler.title.click()
+      await comfyPage.page.keyboard.press('Control+Shift+e')
+      await comfyPage.vueNodes.enterSubgraph()
+    })
+
+    await test.step('Disconnection with subgraph IO', async () => {
+      await performDisconnect(ksampler.getSlot('negative'), true)
+      await performDisconnect(ksampler.getSlot('latent_image'), false)
     })
   }
 )

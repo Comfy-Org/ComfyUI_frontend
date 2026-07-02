@@ -1,6 +1,6 @@
 import type { MaybeRef } from 'vue'
 
-import { toRef } from '@vueuse/core'
+import { toRef, useDebounceFn } from '@vueuse/core'
 import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
@@ -22,6 +22,7 @@ import type {
   GizmoMode,
   LightConfig,
   MaterialMode,
+  Model3DInfo,
   ModelConfig,
   SceneConfig,
   UpDirection
@@ -31,18 +32,89 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/services/load3dService'
 
 type Load3dReadyCallback = (load3d: Load3d) => void
 export const nodeToLoad3dMap = new Map<LGraphNode, Load3d>()
+
+export type Load3dCachedOutput = {
+  image: string
+  mask: string
+  normal: string
+  camera_info: CameraState | null
+  recording: string
+  model_3d_info: Model3DInfo
+}
+
+const load3dSceneDirty = new WeakMap<LGraphNode, boolean>()
+const load3dOutputCache = new WeakMap<LGraphNode, Load3dCachedOutput>()
+
+export const markLoad3dSceneDirty = (node: LGraphNode | null): void => {
+  if (!node) return
+  load3dSceneDirty.set(node, true)
+}
+
+export const isLoad3dSceneDirty = (node: LGraphNode): boolean =>
+  load3dSceneDirty.get(node) !== false
+
+export const getLoad3dOutputCache = (
+  node: LGraphNode
+): Load3dCachedOutput | undefined => load3dOutputCache.get(node)
+
+export const setLoad3dOutputCache = (
+  node: LGraphNode,
+  output: Load3dCachedOutput
+): void => {
+  load3dOutputCache.set(node, output)
+  load3dSceneDirty.set(node, false)
+}
 const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+
+const nodesWithCleanup = new WeakSet<LGraphNode>()
+
+const ensureNodeCleanupChained = (node: LGraphNode): void => {
+  if (nodesWithCleanup.has(node)) return
+  nodesWithCleanup.add(node)
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    useLoad3dService().removeLoad3d(node)
+    pendingCallbacks.delete(node)
+    persistentReadyCallbacks.delete(node)
+  })
+}
+
+const invokeReadyCallback = (
+  callback: Load3dReadyCallback,
+  instance: Load3d
+): void => {
+  try {
+    callback(instance)
+  } catch (error) {
+    console.error('Load3d ready callback failed:', error)
+  }
+}
 
 export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
   let isFirstModelLoad = true
+
+  const markDirty = () => {
+    const rawNode = toRaw(nodeRef.value)
+    if (rawNode) markLoad3dSceneDirty(rawNode as LGraphNode)
+  }
+
+  const debouncedHandleResize = useDebounceFn(() => {
+    load3d?.handleResize()
+  }, 150)
+
+  watch(
+    () => (getActivePinia() ? useCanvasStore().appScalePercentage : 0),
+    debouncedHandleResize
+  )
 
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
@@ -97,6 +169,17 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const isPreview = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const sourceFormat = ref<string | null>(null)
+  const canFitToViewer = ref(true)
+  const canCenterCameraOnModel = ref(false)
+  const canUseGizmo = ref(true)
+  const canUseLighting = ref(true)
+  const canExport = ref(true)
+  const materialModes = ref<readonly MaterialMode[]>([
+    'original',
+    'normal',
+    'wireframe'
+  ])
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -108,7 +191,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
 
-      if (!(widthWidget && heightWidget)) {
+      if (
+        node.constructor.comfyClass?.startsWith('Preview') ||
+        !(widthWidget && heightWidget)
+      ) {
         isPreview.value = true
       }
 
@@ -123,6 +209,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
                 height: heightWidget.value as number
               })
             : undefined,
+        getZoomScale: () => app.canvas?.ds?.scale ?? 1,
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
           new LiteGraph.ContextMenu(menuOptions, {
@@ -157,10 +244,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         }
       )
 
-      node.onRemoved = useChainCallback(node.onRemoved, () => {
-        useLoad3dService().removeLoad3d(node)
-        pendingCallbacks.delete(node)
-      })
+      ensureNodeCleanupChained(node)
 
       nodeToLoad3dMap.set(node, load3d)
 
@@ -168,11 +252,16 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       if (callbacks && load3d) {
         callbacks.forEach((callback) => {
-          if (load3d) {
-            callback(load3d)
-          }
+          if (load3d) invokeReadyCallback(callback, load3d)
         })
         pendingCallbacks.delete(node)
+      }
+
+      const persistent = persistentReadyCallbacks.get(node)
+      if (persistent && load3d) {
+        persistent.forEach((callback) => {
+          if (load3d) invokeReadyCallback(callback, load3d)
+        })
       }
 
       handleEvents('add')
@@ -321,6 +410,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (n) {
       n.properties['Light Config'] = lightConfig.value
     }
+    markDirty()
   }
 
   const waitForLoad3d = (callback: Load3dReadyCallback) => {
@@ -331,8 +421,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const existingInstance = nodeToLoad3dMap.get(node)
 
     if (existingInstance) {
-      callback(existingInstance)
-
+      invokeReadyCallback(callback, existingInstance)
       return
     }
 
@@ -341,6 +430,23 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
 
     pendingCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+  }
+
+  const onLoad3dReady = (callback: Load3dReadyCallback) => {
+    const rawNode = toRaw(nodeRef.value)
+    if (!rawNode) return
+
+    const node = rawNode as LGraphNode
+
+    if (!persistentReadyCallbacks.has(node)) {
+      persistentReadyCallbacks.set(node, [])
+    }
+    persistentReadyCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+
+    const existingInstance = nodeToLoad3dMap.get(node)
+    if (existingInstance) invokeReadyCallback(callback, existingInstance)
   }
 
   watch(
@@ -349,6 +455,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       if (nodeRef.value) {
         nodeRef.value.properties['Scene Config'] = newValue
       }
+      markDirty()
     },
     { deep: true }
   )
@@ -389,6 +496,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       if (nodeRef.value) {
         nodeRef.value.properties['Model Config'] = newValue
       }
+      markDirty()
     },
     { deep: true }
   )
@@ -422,6 +530,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         load3d.toggleCamera(newValue.cameraType)
         load3d.setFOV(newValue.fov)
       }
+      markDirty()
     },
     { deep: true }
   )
@@ -481,18 +590,21 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (load3d) {
       load3d.toggleAnimation(newValue)
     }
+    markDirty()
   })
 
   watch(selectedSpeed, (newValue) => {
     if (load3d && newValue) {
       load3d.setAnimationSpeed(newValue)
     }
+    markDirty()
   })
 
   watch(selectedAnimation, (newValue) => {
     if (load3d && newValue !== undefined) {
       load3d.updateSelectedAnimation(newValue)
     }
+    markDirty()
   })
 
   const handleMouseEnter = () => {
@@ -507,6 +619,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (load3d) {
       await load3d.startRecording()
       isRecording.value = true
+      markDirty()
     }
   }
 
@@ -516,6 +629,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       isRecording.value = false
       recordingDuration.value = load3d.getRecordingDuration()
       hasRecording.value = recordingDuration.value > 0
+      if (hasRecording.value) markDirty()
     }
   }
 
@@ -532,6 +646,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       load3d.clearRecording()
       hasRecording.value = false
       recordingDuration.value = 0
+      markDirty()
     }
   }
 
@@ -539,6 +654,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (load3d && animationDuration.value > 0) {
       const time = (progress / 100) * animationDuration.value
       load3d.setAnimationTime(time)
+      markDirty()
     }
   }
 
@@ -726,6 +842,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
+  const syncSceneModels = () => {
+    const modelInfo = load3d?.getModelInfo()
+    sceneConfig.value.models = modelInfo ? [modelInfo] : []
+  }
+
   const eventConfig = {
     materialModeChange: (value: string) => {
       modelConfig.value.materialMode = value as MaterialMode
@@ -785,27 +906,40 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      sourceFormat.value = load3d?.getSourceFormat() ?? null
+      canCenterCameraOnModel.value = isSplatModel.value || isPlyModel.value
+      const caps = load3d?.getCurrentModelCapabilities()
+      canFitToViewer.value = caps?.fitToViewer ?? true
+      canUseGizmo.value = caps?.gizmoTransform ?? true
+      canUseLighting.value = caps?.lighting ?? true
+      canExport.value = caps?.exportable ?? true
+      materialModes.value = caps?.materialModes ?? [
+        'original',
+        'normal',
+        'wireframe'
+      ]
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       applyGizmoConfigToLoad3d()
+      syncSceneModels()
       isFirstModelLoad = false
+    },
+    modelReady: () => {
+      if (!load3d || !isAssetPreviewSupported()) return
 
-      if (load3d && isAssetPreviewSupported()) {
-        const node = nodeRef.value
+      const node = nodeRef.value
+      const modelWidget = node?.widgets?.find(
+        (w) => w.name === 'model_file' || w.name === 'image'
+      )
+      const value = modelWidget?.value
+      if (typeof value !== 'string' || !value) return
 
-        const modelWidget = node?.widgets?.find(
-          (w) => w.name === 'model_file' || w.name === 'image'
-        )
-        const value = modelWidget?.value
-        if (typeof value === 'string' && value) {
-          const filename = value.trim().replace(/\s*\[output\]$/, '')
-          const modelName = Load3dUtils.splitFilePath(filename)[1]
-          load3d
-            .captureThumbnail(256, 256)
-            .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-            .then((blob) => persistThumbnail(modelName, blob))
-            .catch(() => {})
-        }
-      }
+      const filename = value.trim().replace(/\s*\[output\]$/, '')
+      const modelName = Load3dUtils.splitFilePath(filename)[1]
+      load3d
+        .captureThumbnail(256, 256)
+        .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+        .then((blob) => persistThumbnail(modelName, blob))
+        .catch(() => {})
     },
     skeletonVisibilityChange: (value: boolean) => {
       modelConfig.value.showSkeleton = value
@@ -853,6 +987,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
             state: cameraState
           }
         }
+        markLoad3dSceneDirty(node)
       }
     },
     gizmoTransformChange: (data: GizmoConfig) => {
@@ -863,6 +998,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         modelConfig.value.gizmo.enabled = data.enabled
         modelConfig.value.gizmo.mode = data.mode
       }
+      syncSceneModels()
     }
   } as const
 
@@ -881,9 +1017,20 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const handleFitToViewer = () => {
-    if (load3d) {
-      load3d.fitToViewer()
-    }
+    if (!load3d) return
+    load3d.fitToViewer()
+
+    if (!modelConfig.value.gizmo) return
+    const transform = load3d.getGizmoTransform()
+    modelConfig.value.gizmo.position = transform.position
+    modelConfig.value.gizmo.scale = transform.scale
+    syncSceneModels()
+  }
+
+  const handleCenterCameraOnModel = () => {
+    if (!load3d) return
+    load3d.centerCameraOnModel()
+    markDirty()
   }
 
   const handleResetGizmoTransform = () => {
@@ -925,6 +1072,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    sourceFormat,
+    canFitToViewer,
+    canCenterCameraOnModel,
+    canUseGizmo,
+    canUseLighting,
+    canExport,
+    materialModes,
     hasSkeleton,
     hasRecording,
     recordingDuration,
@@ -940,6 +1094,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     // Methods
     initializeLoad3d,
     waitForLoad3d,
+    onLoad3dReady,
     handleMouseEnter,
     handleMouseLeave,
     handleStartRecording,
@@ -955,6 +1110,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     handleSetGizmoMode,
     handleResetGizmoTransform,
     handleFitToViewer,
+    handleCenterCameraOnModel,
     cleanup
   }
 }

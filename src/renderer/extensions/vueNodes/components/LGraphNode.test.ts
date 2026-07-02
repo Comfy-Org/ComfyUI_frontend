@@ -1,6 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -10,7 +13,8 @@ import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setActivePinia } from 'pinia'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { app } from '@/scripts/app'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -114,6 +118,13 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: {
+        error: 'Error'
+      },
+      rightSidePanel: {
+        showAdvancedShort: 'Show Advanced',
+        showAdvancedInputsButton: 'Show Advanced Inputs'
+      },
       'Node Render Error': 'Node Render Error'
     }
   }
@@ -143,7 +154,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   })
 }
 const mockNodeData: VueNodeData = {
-  id: 'test-node-123',
+  id: toNodeId('test-node-123'),
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
@@ -157,7 +168,7 @@ const mockNodeData: VueNodeData = {
 
 const mockRerouteNodeData: VueNodeData = {
   ...mockNodeData,
-  id: 'reroute-node-1',
+  id: toNodeId('reroute-node-1'),
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE
@@ -171,6 +182,12 @@ describe('LGraphNode', () => {
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) => {
+      if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+      if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
+      if (key === 'Comfy.Node.Opacity') return 1
+    })
   })
 
   it('should call resize tracking composable with node ID', () => {
@@ -207,7 +224,7 @@ describe('LGraphNode', () => {
   it('should apply selected styling when selected prop is true', async () => {
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add('test-node-123')
+    canvasStore.selectedNodeIds.add(mockNodeData.id)
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
@@ -254,6 +271,48 @@ describe('LGraphNode', () => {
 
     expect(root.style.getPropertyValue('--node-height')).toBe('130px')
     expect(root.style.getPropertyValue('--node-height-x')).toBe('')
+  })
+
+  it('should hide advanced footer button while the node is collapsed', () => {
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: true },
+        widgets: [
+          {
+            name: 'advancedWidget',
+            type: 'number',
+            options: { advanced: true }
+          }
+        ]
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('should show error-only footer for collapsed nodes with advanced widgets', () => {
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: true },
+        hasErrors: true,
+        widgets: [
+          {
+            name: 'advancedWidget',
+            type: 'number',
+            options: { advanced: true }
+          }
+        ]
+      }
+    })
+
+    expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
   })
 
   describe('Reroute node sizing', () => {
@@ -306,24 +365,7 @@ describe('LGraphNode', () => {
   })
 
   describe('handleDrop', () => {
-    it('should call onDragDrop with claimEvent=true so the handler can claim the event sync', async () => {
-      const onDragDrop = vi.fn().mockResolvedValue(true)
-      mockData.mockLgraphNode = {
-        onDragDrop,
-        onDragOver: vi.fn(),
-        isSubgraphNode: () => false
-      }
-
-      const { container } = renderLGraphNode({ nodeData: mockNodeData })
-      const nodeEl = getNodeRoot(container)
-
-      const dropEvent = new Event('drop', { bubbles: true, cancelable: true })
-      nodeEl.dispatchEvent(dropEvent)
-
-      expect(onDragDrop).toHaveBeenCalledWith(dropEvent, true)
-    })
-
-    it('should not stop propagation when node has no onDragDrop handler', async () => {
+    it('should set app.dragOverNode and let event bubble', async () => {
       mockData.mockLgraphNode = {
         onDragOver: vi.fn(),
         isSubgraphNode: () => false
@@ -343,6 +385,7 @@ describe('LGraphNode', () => {
       )
 
       expect(parentListener).toHaveBeenCalled()
+      expect(app.dragOverNode).toBe(mockData.mockLgraphNode)
     })
   })
 })

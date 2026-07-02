@@ -1,12 +1,12 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position } from '@e2e/fixtures/types'
 
 const { searchBoxV2 } = TestIds
-
-export type { RootCategoryId }
 
 export class ComfyNodeSearchBoxV2 {
   readonly dialog: Locator
@@ -17,6 +17,9 @@ export class ComfyNodeSearchBoxV2 {
   readonly filterChips: Locator
   readonly noResults: Locator
   readonly nodeIdBadge: Locator
+  readonly sidebarToggle: Locator
+  readonly sidebarBackdrop: Locator
+  readonly filterChipsScroll: Locator
 
   constructor(private comfyPage: ComfyPage) {
     const page = comfyPage.page
@@ -28,6 +31,11 @@ export class ComfyNodeSearchBoxV2 {
     this.filterChips = this.dialog.getByTestId(searchBoxV2.filterChip)
     this.noResults = this.dialog.getByTestId(searchBoxV2.noResults)
     this.nodeIdBadge = this.dialog.getByTestId(searchBoxV2.nodeIdBadge)
+    this.sidebarToggle = this.dialog.getByTestId(searchBoxV2.sidebarToggle)
+    this.sidebarBackdrop = this.dialog.getByTestId(searchBoxV2.sidebarBackdrop)
+    this.filterChipsScroll = this.dialog.getByTestId(
+      searchBoxV2.filterChipsScroll
+    )
   }
 
   /** Sidebar category tree button (e.g. `sampling`, `sampling/custom_sampling`). */
@@ -76,11 +84,12 @@ export class ComfyNodeSearchBoxV2 {
     await this.input.waitFor({ state: 'visible' })
   }
 
-  async openByDoubleClickCanvas(): Promise<void> {
+  async openByDoubleClickCanvas(position?: Position) {
+    const { x, y } = position ?? { x: 200, y: 200 }
     // Use page.mouse.dblclick (not canvas.dblclick) so the z-999 Vue overlay
     // does not intercept; coords target a viewport spot that is on the canvas
     // and clear of both the side toolbar and any default-graph nodes.
-    await this.comfyPage.page.mouse.dblclick(200, 200, { delay: 5 })
+    await this.comfyPage.page.mouse.dblclick(x, y, { delay: 5 })
   }
 
   async ensureV2Search(): Promise<void> {
@@ -100,5 +109,15 @@ export class ComfyNodeSearchBoxV2 {
       'Comfy.LinkRelease.ActionShift',
       'search box'
     )
+  }
+
+  async addNode(query: string, options: { position?: Position } = {}) {
+    const position = options.position ?? { x: 200, y: 200 }
+    await this.openByDoubleClickCanvas(position)
+    await this.input.fill(query)
+    await expect(this.results.first()).toContainText(query)
+    await this.comfyPage.page.keyboard.press('Enter')
+    await expect(this.dialog).toBeHidden()
+    await this.comfyPage.page.mouse.click(position.x, position.y)
   }
 }

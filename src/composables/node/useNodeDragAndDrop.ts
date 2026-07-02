@@ -1,5 +1,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -7,6 +9,7 @@ type DropHandler<T> = (files: File[]) => Promise<T[]>
 interface DragAndDropOptions<T> {
   onDragOver?: DragHandler
   onDrop: DropHandler<T>
+  onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
 }
 
@@ -47,30 +50,28 @@ export const useNodeDragAndDrop = <T>(
   const installedDragOver = isDraggingFiles
   node.onDragOver = installedDragOver
 
-  const installedDragDrop = async function (e: DragEvent, claimEvent = false) {
+  const installedDragDrop = async function (e: DragEvent) {
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)
     if (files.length) {
-      if (claimEvent) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
       await onDrop(files)
       return true
     }
-
-    const uri = URL.parse(e?.dataTransfer?.getData('text/uri-list') ?? '')
-    if (!uri || uri.origin !== location.origin) return false
-
-    if (claimEvent) {
-      e.preventDefault()
-      e.stopPropagation()
+    const asset = parseAssetInfo(e.dataTransfer!)
+    if (asset?.filename && options.onResultItemDrop) {
+      await options.onResultItemDrop(asset)
+      return true
     }
+
+    const baseUri = e?.dataTransfer?.getData('text/uri-list') ?? ''
+    const uri = URL.parse(baseUri, location.href)
+    if (!uri || uri.origin !== location.origin) return false
 
     try {
       const resp = await fetch(uri)
-      const fileName = uri?.searchParams?.get('filename')
+      const fileName =
+        uri?.searchParams?.get('filename') ?? baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
 
       const blob = await resp.blob()

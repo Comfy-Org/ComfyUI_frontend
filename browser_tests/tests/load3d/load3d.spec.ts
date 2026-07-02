@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
+import { toNodeId } from '@/types/nodeId'
 
 test.describe('Load3D', () => {
   test(
@@ -67,13 +68,13 @@ test.describe('Load3D', () => {
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const n = window.app!.graph.getNodeById(1)
+          comfyPage.page.evaluate((nodeId) => {
+            const n = window.app!.graph.getNodeById(nodeId)
             const config = n?.properties?.['Scene Config'] as
               | Record<string, string>
               | undefined
             return config?.backgroundColor
-          })
+          }, toNodeId(1))
         )
         .toBe('#cc3333')
 
@@ -279,6 +280,57 @@ test.describe('Load3D', () => {
       await expect(load3d.exportRecordingButton).toHaveCount(0)
       await expect(load3d.clearRecordingButton).toHaveCount(0)
     })
+  })
+})
+
+test.describe('Load3D silent 404 on missing output model', () => {
+  test('Does not show an error toast when the output model file is missing (404)', async ({
+    comfyPage
+  }) => {
+    // Intercept model fetch and return 404 to simulate a missing output file
+    // (e.g. shared workflow opened on a machine that never ran it)
+    await comfyPage.page.route('**/view?**', (route) =>
+      route.fulfill({ status: 404, body: 'Not Found' })
+    )
+
+    // This workflow has a Preview3D node with Last Time Model File set,
+    // triggering the loadFolder: 'output' + silentOnNotFound: true path.
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    // Wait for the 404 response before asserting — gives the load attempt time
+    // to complete without using waitForTimeout
+    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+    await responsePromise
+
+    await expect(
+      comfyPage.toast.visibleToasts.filter({ hasText: 'Error loading model' })
+    ).toHaveCount(0)
+  })
+
+  test('Shows an error toast when a non-404 error occurs loading the output model', async ({
+    comfyPage
+  }) => {
+    // Intercept with a 500 to simulate a real server error (not 404) — toast must appear
+    await comfyPage.page.route('**/view?**', (route) =>
+      route.fulfill({ status: 500, body: 'Internal Server Error' })
+    )
+
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+    await responsePromise
+
+    await expect
+      .poll(
+        () =>
+          comfyPage.toast.visibleToasts
+            .filter({ hasText: 'Error loading model' })
+            .count(),
+        { timeout: 10000 }
+      )
+      .toBeGreaterThan(0)
   })
 })
 

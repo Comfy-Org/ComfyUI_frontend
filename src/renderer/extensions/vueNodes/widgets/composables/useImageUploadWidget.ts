@@ -3,7 +3,7 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -52,7 +52,7 @@ export const useImageUploadWidget = () => {
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
     }
-    const formatPath = (value: string) =>
+    const formatPath = (value: string | ResultItem) =>
       createAnnotatedPath(value, { rootFolder: image_folder })
 
     // Setup file upload handling
@@ -83,10 +83,17 @@ export const useImageUploadWidget = () => {
         })
 
         const newValue = allow_batch ? annotated : annotated[0]
+        const oldValue = fileComboWidget.value
 
         // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
         fileComboWidget.callback?.(newValue)
+        node.onWidgetChanged?.(
+          fileComboWidget.name,
+          newValue,
+          oldValue,
+          fileComboWidget
+        )
       }
     })
 

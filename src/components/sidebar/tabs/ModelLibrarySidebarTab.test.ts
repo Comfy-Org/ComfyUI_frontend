@@ -14,9 +14,11 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
+  mockStartDrag,
   mockGetNodeProvider,
-  mockToggleNodeOnEvent
+  mockToggleNodeOnEvent,
+  mockRefreshModelFolder,
+  downloadStoreState
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode<unknown> | null = null
   return {
@@ -27,14 +29,16 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
+    mockStartDrag: vi.fn(),
     mockGetNodeProvider: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn()
+    mockToggleNodeOnEvent: vi.fn(),
+    mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
+    downloadStoreState: { setLastCompleted: (_: unknown) => {} }
   }
 })
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
+vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
 }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
@@ -59,9 +63,30 @@ vi.mock('@/stores/modelStore', () => ({
     modelFolders: [],
     models: [mockModel],
     loadModels: vi.fn().mockResolvedValue([]),
-    loadModelFolders: vi.fn().mockResolvedValue([])
+    loadModelFolders: vi.fn().mockResolvedValue([]),
+    refresh: vi.fn().mockResolvedValue(undefined),
+    refreshModelFolder: mockRefreshModelFolder
   })
 }))
+
+vi.mock('@/stores/assetDownloadStore', async () => {
+  const { ref } = await import('vue')
+  const lastCompletedDownload = ref<{
+    taskId: string
+    modelType: string
+    timestamp: number
+  } | null>(null)
+  downloadStoreState.setLastCompleted = (value) => {
+    lastCompletedDownload.value = value as typeof lastCompletedDownload.value
+  }
+  return {
+    useAssetDownloadStore: () => ({
+      get lastCompletedDownload() {
+        return lastCompletedDownload.value
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -131,6 +156,7 @@ describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetRoot()
+    downloadStoreState.setLastCompleted(null)
   })
 
   function renderComponent() {
@@ -147,16 +173,13 @@ describe('ModelLibrarySidebarTab', () => {
     expect(screen.getByTestId('search-input')).toBeInTheDocument()
   })
 
-  it('handles model click and adds node to graph', async () => {
+  it('starts a ghost drag carrying the widget value to fill on placement', async () => {
     const mockNodeDef = { name: 'CheckpointLoaderSimple' }
-    const mockWidget = { name: 'ckpt_name', value: '' }
-    const mockGraphNode = { widgets: [mockWidget] }
 
     mockGetNodeProvider.mockReturnValue({
       nodeDef: mockNodeDef,
       key: 'ckpt_name'
     })
-    mockAddNodeOnGraph.mockReturnValue(mockGraphNode)
 
     renderComponent()
     await nextTick()
@@ -172,8 +195,10 @@ describe('ModelLibrarySidebarTab', () => {
     await modelLeaf?.handleClick?.(mockEvent)
 
     expect(mockGetNodeProvider).toHaveBeenCalledWith('checkpoints')
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef)
-    expect(mockWidget.value).toBe('model.safetensors')
+    expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+      widgetValues: { ckpt_name: 'model.safetensors' },
+      source: 'sidebar_drag'
+    })
   })
 
   it('toggles folder expansion on click', async () => {
@@ -187,5 +212,28 @@ describe('ModelLibrarySidebarTab', () => {
     await checkpointsFolder?.handleClick?.(mockEvent)
 
     expect(mockToggleNodeOnEvent).toHaveBeenCalled()
+  })
+
+  it('refreshes the affected folder when an asset download completes', async () => {
+    renderComponent()
+    await nextTick()
+
+    expect(mockRefreshModelFolder).not.toHaveBeenCalled()
+
+    downloadStoreState.setLastCompleted({
+      taskId: 'task-1',
+      modelType: 'checkpoints',
+      timestamp: Date.now()
+    })
+    await nextTick()
+
+    expect(mockRefreshModelFolder).toHaveBeenCalledWith('checkpoints')
+  })
+
+  it('does not refresh when no download has completed', async () => {
+    renderComponent()
+    await nextTick()
+
+    expect(mockRefreshModelFolder).not.toHaveBeenCalled()
   })
 })

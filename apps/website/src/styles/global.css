@@ -1,6 +1,16 @@
+@import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
+@import 'tw-animate-css';
 
+/* PP Formula's native vertical metrics place the baseline too high, so caps
+   sit in the upper half of the line box. Overriding ascent/descent re-anchors
+   the baseline so caps render optically centered when line-height is tight. 
+    BUT, IT IS NOT WELL SUPPORTED:
+    ascent-override: 92%;
+    descent-override: 8%;
+    line-gap-override: 0%; */
 @font-face {
   font-family: 'PP Formula';
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
@@ -51,12 +61,19 @@
 
 @theme {
   --color-site-dropdown: #332b38;
+  --color-site-bg-soft: color-mix(
+    in srgb,
+    var(--color-primary-comfy-ink) 88%,
+    black 12%
+  );
   --color-primary-comfy-yellow: #f2ff59;
   --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
   --color-primary-warm-white: #f0efed;
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
+  --color-destructive: #f44336;
   --color-primary-comfy-plum: #49378b;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
@@ -100,26 +117,32 @@
   0% {
     transform: translateX(0);
   }
+
   100% {
-    transform: translateX(-50%);
+    transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
 }
 
 @keyframes marquee-reverse {
   0% {
-    transform: translateX(-50%);
+    transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
+
   100% {
     transform: translateX(0);
   }
 }
 
 @utility animate-marquee {
-  animation: marquee 30s linear infinite;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: marquee 30s linear infinite;
+  }
 }
 
 @utility animate-marquee-reverse {
-  animation: marquee-reverse 30s linear infinite;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: marquee-reverse 30s linear infinite;
+  }
 }
 
 @keyframes ripple-effect {
@@ -127,9 +150,11 @@
     transform: scale(1);
     opacity: 1;
   }
+
   85% {
     opacity: 1;
   }
+
   100% {
     transform: scale(1.75);
     opacity: 0;
@@ -140,6 +165,45 @@
   transform-origin: center;
   transform-box: fill-box;
   animation: ripple-effect 4s linear infinite;
+}
+
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@utility animate-cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+.card-slide-enter-active {
+  transition:
+    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.4s ease;
+}
+
+.card-slide-enter-from {
+  transform: translateX(56px);
+  opacity: 0;
+}
+
+/* Existing cards slide down smoothly when a new card is prepended. */
+.card-slide-move {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card-slide-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.card-slide-leave-to {
+  opacity: 0;
 }
 
 @utility animate-delay-* {
@@ -170,6 +234,7 @@
 @utility scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+
   &::-webkit-scrollbar {
     display: none;
   }
@@ -201,6 +266,6 @@ video::-webkit-media-controls-panel {
 
 :root {
   --site-bg: var(--color-primary-comfy-ink);
-  --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
+  --site-bg-soft: var(--color-site-bg-soft);
   --site-border-subtle: rgb(255 255 255 / 0.1);
 }

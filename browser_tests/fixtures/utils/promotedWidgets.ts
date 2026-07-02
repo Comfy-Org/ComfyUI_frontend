@@ -1,48 +1,108 @@
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { toNodeId } from '@/types/nodeId'
+
+import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export type PromotedWidgetEntry = [string, string]
 
-function isPromotedWidgetEntry(entry: unknown): entry is PromotedWidgetEntry {
-  return (
-    Array.isArray(entry) &&
-    entry.length === 2 &&
-    typeof entry[0] === 'string' &&
-    typeof entry[1] === 'string'
-  )
+interface ResolvedWidgetSource {
+  sourceNodeId: string
+  sourceWidgetName: string
 }
 
-function normalizePromotedWidgets(value: unknown): PromotedWidgetEntry[] {
-  if (!Array.isArray(value)) return []
-  return value.filter(isPromotedWidgetEntry)
+function widgetSourceToEntry(
+  source: ResolvedWidgetSource
+): PromotedWidgetEntry {
+  return [source.sourceNodeId, source.sourceWidgetName]
 }
 
+function previewExposureToEntry(
+  exposure: PreviewExposure
+): PromotedWidgetEntry {
+  return [exposure.sourceNodeId, exposure.sourcePreviewName]
+}
+
+function isNodeProperty(value: unknown): value is NodeProperty {
+  if (value === null || value === undefined) return false
+  const t = typeof value
+  return t === 'string' || t === 'number' || t === 'boolean' || t === 'object'
+}
+
+/**
+ * Reads the promoted widgets of a subgraph host node from the live graph.
+ *
+ * Promoted widgets are now store-backed: a host input is promoted iff it
+ * carries a `widgetId`, and its interior source identity is resolved on demand
+ * by walking the subgraph input link (mirroring `resolveSubgraphInputTarget`).
+ * This intentionally avoids the removed `widget.sourceNodeId`/`sourceWidgetName`
+ * denormalization, so the helper reflects the real projection rather than a
+ * deleted widget-object contract.
+ */
 export async function getPromotedWidgets(
   comfyPage: ComfyPage,
   nodeId: string
 ): Promise<PromotedWidgetEntry[]> {
-  const raw = await comfyPage.page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)
-    const widgets = node?.widgets ?? []
+  const localNodeId = toNodeId(nodeId)
+  const { widgetSources, previewExposures } = await comfyPage.page.evaluate(
+    (id) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)
+      const previewExposures = node?.serialize()?.properties?.previewExposures
+      if (!node?.isSubgraphNode?.())
+        return { widgetSources: [], previewExposures }
 
-    // Read the live promoted widget views from the host node instead of the
-    // serialized proxyWidgets snapshot, which can lag behind the current graph
-    // state during promotion and cleanup flows.
-    return widgets.flatMap((widget) => {
-      if (
-        widget &&
-        typeof widget === 'object' &&
-        'sourceNodeId' in widget &&
-        typeof widget.sourceNodeId === 'string' &&
-        'sourceWidgetName' in widget &&
-        typeof widget.sourceWidgetName === 'string'
-      ) {
-        return [[widget.sourceNodeId, widget.sourceWidgetName]]
+      const { subgraph } = node
+      const resolveSource = (
+        inputName: string
+      ): ResolvedWidgetSource | undefined => {
+        const inputSlot = subgraph.inputNode.slots.find(
+          (slot) => slot.name === inputName
+        )
+        if (!inputSlot) return undefined
+        for (const linkId of inputSlot.linkIds) {
+          const link = subgraph.getLink(linkId)
+          if (!link) continue
+          const { inputNode } = link.resolve(subgraph)
+          if (!inputNode || !Array.isArray(inputNode.inputs)) continue
+          const targetInput = inputNode.inputs.find(
+            (entry) => entry.link === linkId
+          )
+          if (!targetInput) continue
+          if (inputNode.isSubgraphNode?.()) {
+            return {
+              sourceNodeId: String(inputNode.id),
+              sourceWidgetName: targetInput.name
+            }
+          }
+          const widget = inputNode.getWidgetFromSlot(targetInput)
+          if (!widget) continue
+          return {
+            sourceNodeId: String(inputNode.id),
+            sourceWidgetName: widget.name
+          }
+        }
+        return undefined
       }
-      return []
-    })
-  }, nodeId)
 
-  return normalizePromotedWidgets(raw)
+      const widgetSources = (node.inputs ?? []).flatMap((input) => {
+        if (!input.widgetId) return []
+        const source = resolveSource(input.name)
+        return source ? [source] : []
+      })
+      return { widgetSources, previewExposures }
+    },
+    localNodeId
+  )
+
+  const exposures = isNodeProperty(previewExposures)
+    ? parsePreviewExposures(previewExposures)
+    : []
+  return [
+    ...widgetSources.map(widgetSourceToEntry),
+    ...exposures.map(previewExposureToEntry)
+  ]
 }
 
 export async function getPromotedWidgetNames(
@@ -78,12 +138,29 @@ export async function getPromotedWidgetCountByName(
   nodeId: string,
   widgetName: string
 ): Promise<number> {
-  return comfyPage.page.evaluate(
-    ([id, name]) => {
-      const node = window.app!.canvas.graph!.getNodeById(id)
-      const widgets = node?.widgets ?? []
-      return widgets.filter((widget) => widget.name === name).length
-    },
-    [nodeId, widgetName] as const
+  const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
+  return promotedWidgets.filter(([, name]) => name === widgetName).length
+}
+
+export async function getAllHostPromotedWidgets(
+  comfyPage: ComfyPage
+): Promise<{ hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]> {
+  const hostNodeIds = await comfyPage.page.evaluate(() => {
+    const graph = window.app!.canvas.graph!
+    return graph._nodes
+      .filter(
+        (node) =>
+          typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+      )
+      .map((node) => String(node.id))
+  })
+
+  const entries = await Promise.all(
+    hostNodeIds.map(async (hostNodeId) => ({
+      hostNodeId,
+      promotedWidgets: await getPromotedWidgets(comfyPage, hostNodeId)
+    }))
   )
+
+  return entries.sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
 }

@@ -1,0 +1,22 @@
+---
+import VideoPlayer from '../../common/VideoPlayer.vue'
+
+interface Props {
+  src: string
+  poster?: string
+  caption?: string
+}
+
+const { src, poster, caption } = Astro.props
+---
+
+<figure class="my-8">
+  <VideoPlayer src={src} poster={poster} client:visible />
+  {
+    caption && (
+      <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>

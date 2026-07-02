@@ -12,7 +12,8 @@
         :key="`input-${input.name}-${getActualInputIndex(input, index)}`"
         :slot-data="input"
         :node-type="nodeData?.type || ''"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :node-id="nodeData.id"
+        :has-error="inputHasError(input)"
         :index="getActualInputIndex(input, index)"
       />
     </div>
@@ -26,7 +27,7 @@
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
         :node-type="nodeData?.type || ''"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :node-id="nodeData.id"
         :index="index"
       />
     </div>
@@ -44,6 +45,8 @@ import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -55,6 +58,8 @@ interface NodeSlotsProps {
 }
 
 const { nodeData, unified = false } = defineProps<NodeSlotsProps>()
+const executionErrorStore = useExecutionErrorStore()
+const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 
 const linkedWidgetInputs = computed(() =>
   unified ? linkedWidgetedInputs(nodeData) : []
@@ -64,6 +69,13 @@ const filteredInputs = computed(() => [
   ...nonWidgetedInputs(nodeData),
   ...linkedWidgetInputs.value
 ])
+
+function inputHasError(input: INodeSlot): boolean {
+  const locatorId = nodeLocatorId.value
+  if (!locatorId) return false
+
+  return executionErrorStore.slotHasError(locatorId, input.name)
+}
 
 const unifiedWrapperClass = computed((): string =>
   cn(

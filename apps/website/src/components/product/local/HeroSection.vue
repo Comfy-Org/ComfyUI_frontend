@@ -168,7 +168,7 @@ onUnmounted(() => {
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div
-      class="aspect-550/800 w-4/5 max-w-md scale-150 self-center overflow-visible md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-x-[10%] lg:translate-y-20 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="aspect-550/800 w-4/5 max-w-xs self-center overflow-visible md:max-w-sm lg:pointer-events-none lg:z-1 lg:-mr-12 lg:max-w-md lg:translate-x-[10%] lg:translate-y-20 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         ref="svgRef"
@@ -276,29 +276,6 @@ onUnmounted(() => {
             fill="#211927"
           />
         </g>
-
-        <!-- Left-edge fade -->
-        <rect
-          x="300"
-          y="150"
-          width="250"
-          height="900"
-          fill="url(#localHeroFadeLeft)"
-        />
-
-        <defs>
-          <linearGradient
-            id="localHeroFadeLeft"
-            x1="550"
-            y1="600"
-            x2="300"
-            y2="600"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#211927" stop-opacity="0" />
-            <stop offset="1" stop-color="#211927" />
-          </linearGradient>
-        </defs>
       </svg>
     </div>
 
@@ -306,16 +283,16 @@ onUnmounted(() => {
     <div
       class="relative z-10 mt-17 w-full px-4 pb-16 lg:mt-0 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
     >
-      <ProductHeroBadge />
+      <ProductHeroBadge text="DESKTOP" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('download.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-6 max-w-md text-sm lg:mt-6 lg:text-base"
+        class="mt-6 max-w-md text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
         {{ t('download.hero.subtitle', locale) }}
       </p>
@@ -323,7 +300,7 @@ onUnmounted(() => {
       <div class="mt-8 flex flex-col gap-4 lg:flex-row">
         <DownloadLocalButton :locale class="lg:min-w-60 lg:p-4" />
         <BrandButton
-          :href="externalLinks.github"
+          :href="externalLinks.githubInstall"
           variant="outline"
           size="lg"
           class="lg:min-w-60 lg:p-4"

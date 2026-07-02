@@ -2,6 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 type ComfyPage = Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
 
@@ -32,12 +34,13 @@ async function addGhostAtCenter(comfyPage: ComfyPage) {
   return { nodeId: nodeRef.id, centerX, centerY }
 }
 
-function getNodeById(comfyPage: ComfyPage, nodeId: number | string) {
+function getNodeById(comfyPage: ComfyPage, nodeId: SerializedNodeId) {
+  const localNodeId = toNodeId(nodeId)
   return comfyPage.page.evaluate((id) => {
     const node = window.app!.graph.getNodeById(id)
     if (!node) return null
     return { ghost: !!node.flags.ghost }
-  }, nodeId)
+  }, localNodeId)
 }
 
 for (const mode of ['litegraph', 'vue'] as const) {
@@ -265,6 +268,66 @@ for (const mode of ['litegraph', 'vue'] as const) {
         const afterPlace = await getNodeById(comfyPage, ghostNodeId!)
         expect(afterPlace).not.toBeNull()
         expect(afterPlace!.ghost).toBe(false)
+      }
+    )
+
+    test(
+      'Escape during ghost placement inside a subgraph cancels the ghost without exiting the subgraph',
+      { tag: ['@subgraph'] },
+      async ({ comfyPage }) => {
+        await comfyPage.searchBoxV2.setup()
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeSearchBoxImpl.FollowCursor',
+          true
+        )
+        await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+        if (mode === 'vue') {
+          await comfyPage.vueNodes.waitForNodes()
+          await comfyPage.vueNodes.enterSubgraph('2')
+        } else {
+          const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+          await subgraphNode.navigateIntoSubgraph()
+        }
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+
+        const subgraphId = await comfyPage.subgraph.getActiveGraphId()
+        const initialNodeCount = await comfyPage.subgraph.getNodeCount()
+
+        const { searchBoxV2 } = comfyPage
+        await searchBoxV2.open()
+        await searchBoxV2.input.fill('KSampler')
+        await expect(searchBoxV2.results.first()).toBeVisible()
+        await comfyPage.page.keyboard.press('Enter')
+        await expect(searchBoxV2.input).toBeHidden()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              () => window.app!.canvas.state.ghostNodeId != null
+            )
+          )
+          .toBe(true)
+
+        await comfyPage.keyboard.press('Escape')
+
+        await expect
+          .poll(() => comfyPage.subgraph.isInSubgraph(), {
+            message:
+              'Escape during ghost placement should cancel the ghost, not exit the subgraph'
+          })
+          .toBe(true)
+        await expect
+          .poll(() => comfyPage.subgraph.getActiveGraphId())
+          .toBe(subgraphId)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.canvas.state.ghostNodeId)
+          )
+          .toBeNull()
+        await expect
+          .poll(() => comfyPage.subgraph.getNodeCount())
+          .toBe(initialNodeCount)
       }
     )
   })

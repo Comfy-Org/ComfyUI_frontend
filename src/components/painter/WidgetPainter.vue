@@ -23,6 +23,7 @@
         />
         <canvas
           ref="canvasEl"
+          data-testid="painter-canvas"
           class="absolute inset-0 size-full cursor-none touch-none"
           @pointerdown="handlePointerDown"
           @pointermove="handlePointerMove"
@@ -58,7 +59,6 @@
       "
     >
       <div
-        v-if="!compact"
         class="flex w-28 items-center truncate text-sm text-muted-foreground"
       >
         {{ $t('painter.tool') }}
@@ -99,7 +99,6 @@
       </div>
 
       <div
-        v-if="!compact"
         class="flex w-28 items-center truncate text-sm text-muted-foreground"
       >
         {{ $t('painter.size') }}
@@ -126,7 +125,6 @@
 
       <template v-if="tool === PAINTER_TOOLS.BRUSH">
         <div
-          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.color') }}
@@ -170,7 +168,6 @@
         </div>
 
         <div
-          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.hardness') }}
@@ -199,7 +196,6 @@
 
       <template v-if="!isImageInputConnected">
         <div
-          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.width') }}
@@ -222,7 +218,6 @@
         </div>
 
         <div
-          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.height') }}
@@ -245,7 +240,6 @@
         </div>
 
         <div
-          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.background') }}
@@ -295,11 +289,12 @@ import { computed, useTemplateRef } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { PAINTER_TOOLS, usePainter } from '@/composables/painter/usePainter'
+import type { NodeId } from '@/types/nodeId'
 import { toHexFromFormat } from '@/utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeId } = defineProps<{
-  nodeId: string
+  nodeId: NodeId
 }>()
 
 const modelValue = defineModel<string>({ default: '' })

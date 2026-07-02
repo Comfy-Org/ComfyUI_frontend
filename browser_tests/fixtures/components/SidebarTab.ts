@@ -93,16 +93,18 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly searchInput: Locator
   public readonly sidebarContent: Locator
   public readonly allTab: Locator
-  public readonly blueprintsTab: Locator
+  public readonly essentialsTab: Locator
   public readonly sortButton: Locator
+  public readonly nodePreview: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
     this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
-    this.allTab = this.getTab('All')
-    this.blueprintsTab = this.getTab('Blueprints')
+    this.allTab = this.getTab('All nodes')
+    this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
+    this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
   }
 
   getTab(name: string) {
@@ -137,6 +139,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   public readonly root: Locator
   public readonly activeWorkflowLabel: Locator
   public readonly searchInput: Locator
+  public readonly refreshButton: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -145,6 +148,9 @@ export class WorkflowsSidebarTab extends SidebarTab {
       '.comfyui-workflows-open .p-tree-node-selected .node-label'
     )
     this.searchInput = this.root.getByRole('combobox').first()
+    this.refreshButton = this.root.getByTestId(
+      TestIds.sidebar.workflowsRefreshButton
+    )
   }
 
   async getOpenedWorkflowNames() {
@@ -346,20 +352,11 @@ export class AssetsSidebarTab extends SidebarTab {
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
-    this.selectionFooter = page
-      .locator('.sidebar-content-container')
-      .locator('..')
-      .locator('[class*="h-18"]')
-    this.selectionCountButton = page.getByText(/Assets Selected: \d+/)
-    this.deselectAllButton = page.getByText('Deselect all')
-    this.deleteSelectedButton = page
-      .getByTestId('assets-delete-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
-      .first()
-    this.downloadSelectedButton = page
-      .getByTestId('assets-download-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
-      .first()
+    this.selectionFooter = page.getByTestId('assets-selection-bar')
+    this.selectionCountButton = page.getByText(/\d+ selected/)
+    this.deselectAllButton = page.getByTestId('assets-deselect-selected')
+    this.deleteSelectedButton = page.getByTestId('assets-delete-selected')
+    this.downloadSelectedButton = page.getByTestId('assets-download-selected')
     this.backToAssetsButton = page.getByText('Back to all assets')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
@@ -384,11 +381,14 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
-  override async open() {
+  override async open({ waitForAssets = true } = {}) {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
+    if (waitForAssets) {
+      await this.waitForAssets()
+    }
   }
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */

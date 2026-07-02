@@ -1,3 +1,7 @@
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 
 export const subgraphComplexPromotion1 = {
@@ -126,11 +130,11 @@ export const subgraphComplexPromotion1 = {
         config: {},
         name: 'New Subgraph',
         inputNode: {
-          id: -10,
+          id: SUBGRAPH_INPUT_ID,
           bounding: [596.9206067268835, 805.5404332481304, 120, 60]
         },
         outputNode: {
-          id: -20,
+          id: SUBGRAPH_OUTPUT_ID,
           bounding: [1376.7286067268833, 769.5404332481304, 120, 100]
         },
         inputs: [
@@ -266,7 +270,7 @@ export const subgraphComplexPromotion1 = {
             id: 16,
             origin_id: 18,
             origin_slot: 0,
-            target_id: -20,
+            target_id: SUBGRAPH_OUTPUT_ID,
             target_slot: 0,
             type: 'STRING'
           },
@@ -274,7 +278,7 @@ export const subgraphComplexPromotion1 = {
             id: 17,
             origin_id: 19,
             origin_slot: 0,
-            target_id: -20,
+            target_id: SUBGRAPH_OUTPUT_ID,
             target_slot: 1,
             type: 'STRING'
           },
@@ -282,13 +286,13 @@ export const subgraphComplexPromotion1 = {
             id: 18,
             origin_id: 20,
             origin_slot: 0,
-            target_id: -20,
+            target_id: SUBGRAPH_OUTPUT_ID,
             target_slot: 2,
             type: 'STRING'
           },
           {
             id: 22,
-            origin_id: -10,
+            origin_id: SUBGRAPH_INPUT_ID,
             origin_slot: 0,
             target_id: 20,
             target_slot: 0,
@@ -296,7 +300,7 @@ export const subgraphComplexPromotion1 = {
           },
           {
             id: 23,
-            origin_id: -10,
+            origin_id: SUBGRAPH_INPUT_ID,
             origin_slot: 0,
             target_id: 18,
             target_slot: 0,

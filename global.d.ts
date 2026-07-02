@@ -11,6 +11,18 @@ interface ImpactQueueFunction {
   a?: unknown[][]
 }
 
+interface RewardfulGlobal {
+  referral?: string
+  affiliate?: { id?: string; token?: string; name?: string }
+  campaign?: { id?: string; name?: string }
+}
+
+interface RewardfulQueueFunction {
+  (method: 'ready', callback: () => void): void
+  (...args: unknown[]): void
+  q?: unknown[][]
+}
+
 type GtagGetFieldName = 'client_id' | 'session_id' | 'session_number'
 
 interface GtagGetFieldValueMap {
@@ -37,6 +49,11 @@ interface Window {
     posthog_project_token?: string
     posthog_api_host?: string
     posthog_config?: Record<string, unknown>
+    customer_io?: {
+      write_key?: string
+      site_id?: string
+      user_id?: string
+    }
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number
@@ -63,6 +80,8 @@ interface Window {
   gtag?: GtagFunction
   ire_o?: string
   ire?: ImpactQueueFunction
+  rewardful?: RewardfulQueueFunction
+  Rewardful?: RewardfulGlobal
 }
 
 interface Navigator {

@@ -4,6 +4,8 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
@@ -31,11 +33,34 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Get the inner wrapper element of a Vue node.
+   */
+  getNodeInnerWrapper(nodeId: string): Locator {
+    return this.getNodeLocator(nodeId).getByTestId(TestIds.node.innerWrapper)
+  }
+
+  getInputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--input')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, true)}"]`
+        )
+      })
+  }
+
+  getInputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getInputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
+  }
+
+  /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
-  getNodeByTitle(title: string): Locator {
+  getNodeByTitle(title: string | RegExp): Locator {
     return this.page.locator('[data-node-id]').filter({
       has: this.page.getByTestId('node-title').filter({ hasText: title })
     })
@@ -119,10 +144,9 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Return a DOM-focused VueNodeFixture for the first node matching the title.
-   * Resolves the node id up front so subsequent interactions survive title changes.
+   * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getNodeIdByTitle(title: string | RegExp): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -133,6 +157,15 @@ export class VueNodeHelpers {
       )
     }
 
+    return nodeId
+  }
+
+  /**
+   * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   * Resolves the node id up front so subsequent interactions survive title changes.
+   */
+  async getFixtureByTitle(title: string | RegExp): Promise<VueNodeFixture> {
+    const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
 
@@ -181,8 +214,17 @@ export class VueNodeHelpers {
     return {
       input: widget.locator('input'),
       decrementButton: widget.getByTestId(TestIds.widgets.decrement),
-      incrementButton: widget.getByTestId(TestIds.widgets.increment)
+      incrementButton: widget.getByTestId(TestIds.widgets.increment),
+      valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
+  }
+
+  /**
+   * Locator for the Enter Subgraph footer button.
+   */
+  getSubgraphEnterButton(nodeId?: string): Locator {
+    const root = nodeId ? this.getNodeLocator(nodeId) : this.page
+    return root.getByTestId(TestIds.widgets.subgraphEnterButton).first()
   }
 
   /**
@@ -190,8 +232,7 @@ export class VueNodeHelpers {
    * @param nodeId - The ID of the node to enter the subgraph of. If not provided, the first matched subgraph will be entered.
    */
   async enterSubgraph(nodeId?: string): Promise<void> {
-    const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
-    const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
+    const editButton = this.getSubgraphEnterButton(nodeId)
 
     // The footer tab button extends below the node body (visible area),
     // but its bounding box center overlaps the node body div.
@@ -206,5 +247,23 @@ export class VueNodeHelpers {
     await editButton.click({
       position: { x: box.width / 2, y: box.height * 0.75 }
     })
+  }
+  async isSlotConnected(slot: Locator) {
+    const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
+    if (!key) return false
+
+    const [rawNodeId, type, slotId] = key.split('-')
+    const nodeId = toNodeId(rawNodeId)
+    return await this.page.evaluate(
+      ([nodeId, type, slotId]) => {
+        const node = app?.canvas?.graph?.getNodeById(nodeId)
+        if (!node) return false
+
+        return type === 'in'
+          ? node.inputs[Number(slotId)]?.link !== null
+          : !!node.outputs[Number(slotId)]?.links?.length
+      },
+      [nodeId, type, slotId] as const
+    )
   }
 }

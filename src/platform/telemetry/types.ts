@@ -12,10 +12,28 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
+import type { AppMode } from '@/utils/appMode'
+
+export type PaymentIntentSource =
+  | 'subscription_required'
+  | 'out_of_credits'
+  | 'top_up_blocked'
+  | 'deep_link'
+  | 'subscribe_to_run'
+  | 'subscribe_now_button'
+  | 'upgrade_to_add_credits'
+  | 'settings_billing_panel'
+  | 'avatar_menu_plans'
+  | 'team_members_panel'
+  | 'invite_member_upsell'
+  | 'upload_model_upgrade'
+  | 'team_upgrade_resume'
+
+export type SubscriptionCheckoutType = 'new' | 'change'
+export type SubscriptionCheckoutTier = TierKey | 'team'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -25,6 +43,7 @@ export interface AuthMetadata {
   is_new_user?: boolean
   user_id?: string
   email?: string
+  share_id?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -40,6 +59,11 @@ export interface SurveyResponses {
   industry?: string
   useCase?: string
   making?: string[]
+  role?: string
+  teamSize?: string
+  source?: string
+  usage?: string
+  intent?: string[]
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
@@ -64,8 +88,9 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
-  view_mode?: string
-  is_app_mode?: boolean
+  view_mode: AppMode
+  is_app_mode: boolean
+  dock_state: ActionbarDockState
 }
 
 /**
@@ -111,6 +136,15 @@ export interface ExecutionSuccessMetadata {
   jobId: string
 }
 
+export interface SharedWorkflowRunMetadata {
+  job_id: string
+  share_id: string
+  view_mode: AppMode
+  is_app_mode: boolean
+}
+
+export type ActionbarDockState = 'docked' | 'floating'
+
 /**
  * Template metadata for workflow tracking
  */
@@ -134,9 +168,23 @@ export interface CreditTopupMetadata {
 /**
  * Workflow import metadata
  */
+export interface MissingNodePack {
+  /**
+   * Custom node pack identifier (cnrId / aux_id from node properties).
+   * `'unknown'` when the workflow JSON has no pack hint for the node.
+   */
+  pack_id: string
+  node_types: string[]
+}
+
 export interface WorkflowImportMetadata {
   missing_node_count: number
   missing_node_types: string[]
+  /**
+   * Missing nodes grouped by their custom node pack. Populated from the
+   * `cnr_id` / `aux_id` baked into node properties — no network lookups.
+   */
+  missing_node_packs?: MissingNodePack[]
   /**
    * The source of the workflow open/import action
    */
@@ -146,6 +194,7 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  share_id?: string
 }
 
 export interface EnterLinearMetadata {
@@ -170,6 +219,16 @@ type ShareFlowStep =
 export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
+  share_id?: string
+  view_mode: AppMode
+  is_app_mode: boolean
+}
+
+export interface ShareLinkOpenedMetadata {
+  share_id: string
+  is_authenticated: boolean
+  view_mode: AppMode
+  is_app_mode: boolean
 }
 
 /**
@@ -212,6 +271,20 @@ export interface TabCountMetadata {
 }
 
 /**
+ * Shell layout snapshot, sent once per session when the app is ready
+ */
+export interface ShellLayoutMetadata {
+  view_mode: AppMode
+  is_app_mode: boolean
+  dock_state: ActionbarDockState
+  actionbar_position: string
+  active_sidebar_tab: string | null
+  right_side_panel_open: boolean
+  bottom_panel_open: boolean
+  open_workflow_tabs: number
+}
+
+/**
  * Settings change metadata
  */
 export interface SettingChangedMetadata {
@@ -225,6 +298,43 @@ export interface SettingChangedMetadata {
  */
 export interface NodeSearchMetadata {
   query: string
+}
+
+/**
+ * Search query metadata. One event per debounced query change across
+ * each search surface.
+ */
+export type SearchSurface =
+  | 'node_modal'
+  | 'node_sidebar'
+  | 'apps'
+  | 'templates'
+  | 'settings'
+
+export interface SearchQueryMetadata {
+  surface: SearchSurface
+  query: string
+  query_length: number
+  result_count: number
+  has_results: boolean
+}
+
+/**
+ * Node added metadata. `source` indicates how the user initiated the add.
+ * Bulk additions during workflow load are excluded — workflow_imported
+ * already covers that.
+ */
+export type NodeAddSource =
+  | 'sidebar_drag'
+  | 'asset_browser'
+  | 'search_modal'
+  | 'paste'
+  | 'programmatic'
+  | 'unknown'
+
+export interface NodeAddedMetadata {
+  node_type: string
+  source: NodeAddSource
 }
 
 /**
@@ -259,8 +369,8 @@ export interface TemplateFilterMetadata {
  * UI button click tracking metadata
  */
 export interface UiButtonClickMetadata {
-  /** Canonical identifier for the button (e.g., "comfy_logo") */
   button_id: string
+  element_group: string
 }
 
 /**
@@ -320,6 +430,7 @@ export interface CheckoutAttributionMetadata {
   ga_session_id?: string
   ga_session_number?: string
   im_ref?: string
+  rewardful_referral?: string
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
@@ -332,16 +443,23 @@ export interface CheckoutAttributionMetadata {
 
 export interface SubscriptionMetadata {
   current_tier?: string
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
+}
+
+export interface AddCreditsClickMetadata {
+  source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
 }
 
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
-  tier: TierKey
+  tier: SubscriptionCheckoutTier
   cycle: BillingCycle
-  checkout_type: 'new' | 'change'
+  checkout_type: SubscriptionCheckoutType
+  checkout_attempt_id?: string
+  billing_op_id?: string
   previous_tier?: TierKey
+  payment_intent_source?: PaymentIntentSource
 }
 
 interface EcommerceItemMetadata {
@@ -363,11 +481,17 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   checkout_attempt_id: string
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: 'new' | 'change'
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
+  payment_intent_source?: PaymentIntentSource
   value: number
   currency: string
   ecommerce: EcommerceMetadata
+}
+
+export interface WorkspaceInviteMetadata extends Record<string, unknown> {
+  source: 'post_upgrade_success' | 'settings_members'
+  count: number
 }
 
 /**
@@ -390,13 +514,11 @@ export interface TelemetryProvider {
     metadata?: SubscriptionSuccessMetadata
   ): void
   trackMonthlySubscriptionCancelled?(): void
-  trackAddApiCreditButtonClicked?(): void
+  trackAddApiCreditButtonClicked?(metadata?: AddCreditsClickMetadata): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
-  trackRunButton?(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void
+  trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
+  trackRunButton?(properties: RunButtonProperties): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
@@ -421,6 +543,7 @@ export interface TelemetryProvider {
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
   trackShareFlow?(metadata: ShareFlowMetadata): void
+  trackShareLinkOpened?(metadata: ShareLinkOpenedMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged?(metadata: PageVisibilityMetadata): void
@@ -428,9 +551,18 @@ export interface TelemetryProvider {
   // Tab tracking events
   trackTabCount?(metadata: TabCountMetadata): void
 
+  // Shell layout snapshot events
+  trackShellLayout?(metadata: ShellLayoutMetadata): void
+
   // Node search analytics events
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
+
+  // Search query analytics
+  trackSearchQuery?(metadata: SearchQueryMetadata): void
+
+  // Node-added-to-canvas analytics
+  trackNodeAdded?(metadata: NodeAddedMetadata): void
 
   // Template filter tracking events
   trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
@@ -447,6 +579,7 @@ export interface TelemetryProvider {
   trackWorkflowExecution?(): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
+  trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void
 
   // Settings events
   trackSettingChanged?(metadata: SettingChangedMetadata): void
@@ -488,6 +621,8 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
+  WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
+  BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -508,6 +643,7 @@ export const TelemetryEvents = {
   WORKFLOW_OPENED: 'app:workflow_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
+  SHARE_LINK_OPENED: 'app:share_link_opened',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -515,9 +651,14 @@ export const TelemetryEvents = {
   // Tab Tracking
   TAB_COUNT_TRACKING: 'app:tab_count_tracking',
 
+  // Shell Layout
+  SHELL_LAYOUT: 'app:shell_layout',
+
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
+  SEARCH_QUERY: 'app:search_query',
+  NODE_ADDED: 'app:node_added_to_workflow',
 
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
@@ -539,6 +680,7 @@ export const TelemetryEvents = {
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
   EXECUTION_SUCCESS: 'execution_success',
+  SHARED_WORKFLOW_RUN: 'app:shared_workflow_run',
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
@@ -567,14 +709,17 @@ export type TelemetryEventProperties =
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
+  | SharedWorkflowRunMetadata
   | CreditTopupMetadata
   | WorkflowImportMetadata
   | TemplateLibraryMetadata
   | TemplateLibraryClosedMetadata
   | PageVisibilityMetadata
   | TabCountMetadata
+  | ShellLayoutMetadata
   | NodeSearchMetadata
   | NodeSearchResultMetadata
+  | SearchQueryMetadata
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
@@ -584,6 +729,7 @@ export type TelemetryEventProperties =
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | ShareFlowMetadata
+  | ShareLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata

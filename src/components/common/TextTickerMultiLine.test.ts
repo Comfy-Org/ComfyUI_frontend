@@ -1,56 +1,37 @@
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import TextTickerMultiLine from './TextTickerMultiLine.vue'
 
-type Callback = () => void
-
-const resizeCallbacks: Callback[] = []
-const mutationCallbacks: Callback[] = []
+const hoisted = vi.hoisted(() => ({
+  widths: [] as { value: number }[]
+}))
 
 vi.mock('@vueuse/core', async () => {
   const actual = await vi.importActual('@vueuse/core')
+  const { ref } = await import('vue')
   return {
     ...actual,
-    useResizeObserver: (_target: unknown, cb: Callback) => {
-      resizeCallbacks.push(cb)
-      return { stop: vi.fn() }
-    },
-    useMutationObserver: (_target: unknown, cb: Callback) => {
-      mutationCallbacks.push(cb)
-      return { stop: vi.fn() }
+    useElementSize: () => {
+      const width = ref(0)
+      hoisted.widths.push(width)
+      return { width, height: ref(0) }
     }
   }
 })
-
-function mockElementSize(
-  el: HTMLElement,
-  clientWidth: number,
-  scrollWidth: number
-) {
-  Object.defineProperty(el, 'clientWidth', {
-    value: clientWidth,
-    configurable: true
-  })
-  Object.defineProperty(el, 'scrollWidth', {
-    value: scrollWidth,
-    configurable: true
-  })
-}
 
 describe(TextTickerMultiLine, () => {
   let unmountFn: () => void
 
   afterEach(() => {
     unmountFn?.()
-    resizeCallbacks.length = 0
-    mutationCallbacks.length = 0
+    hoisted.widths.length = 0
   })
 
   function renderComponent(text: string) {
     const result = render(TextTickerMultiLine, {
-      slots: { default: text }
+      props: { text }
     })
     unmountFn = result.unmount
     return {
@@ -74,38 +55,30 @@ describe(TextTickerMultiLine, () => {
     /* eslint-enable testing-library/no-node-access */
   }
 
-  async function triggerSplitLines() {
-    resizeCallbacks.forEach((cb) => cb())
+  async function setWidths(textWidth: number, containerWidth: number) {
+    const [text, container] = hoisted.widths
+    text.value = textWidth
+    container.value = containerWidth
     await nextTick()
   }
 
-  it('renders slot content', () => {
-    renderComponent('Load Checkpoint')
-    expect(
-      screen.getAllByText('Load Checkpoint').length
-    ).toBeGreaterThanOrEqual(1)
-  })
-
   it('renders a single line when text fits', async () => {
     const { container } = renderComponent('Short')
-    mockElementSize(getMeasureEl(container), 200, 100)
-    await triggerSplitLines()
+    await setWidths(100, 200)
 
     expect(getVisibleLines(container)).toHaveLength(1)
   })
 
   it('renders two lines when text overflows', async () => {
     const { container } = renderComponent('Load Checkpoint Loader Simple')
-    mockElementSize(getMeasureEl(container), 100, 300)
-    await triggerSplitLines()
+    await setWidths(300, 100)
 
     expect(getVisibleLines(container)).toHaveLength(2)
   })
 
   it('splits text at word boundary when overflowing', async () => {
     const { container } = renderComponent('Load Checkpoint Loader')
-    mockElementSize(getMeasureEl(container), 100, 200)
-    await triggerSplitLines()
+    await setWidths(200, 100)
 
     const lines = getVisibleLines(container)
     expect(lines[0].textContent).toBe('Load')

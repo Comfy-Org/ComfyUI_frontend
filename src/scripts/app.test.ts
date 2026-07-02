@@ -1,15 +1,14 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflowJSON,
-  ModelFile
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -22,15 +21,37 @@ import {
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { api } from '@/scripts/api'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeError } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const {
+  mockApiKeyAuthStore,
+  mockAuthStore,
+  mockSettingStore,
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
-  mockWorkspaceWorkflow
+  mockWorkspaceWorkflow,
+  mockRefreshMissingModelPipeline
 } = vi.hoisted(() => ({
+  mockApiKeyAuthStore: {
+    getApiKey: vi.fn()
+  },
+  mockAuthStore: {
+    getAuthToken: vi.fn()
+  },
+  mockSettingStore: {
+    get: vi.fn()
+  },
   mockToastStore: {
     addAlert: vi.fn(),
     add: vi.fn(),
@@ -44,8 +65,9 @@ const {
     refreshNodeOutputs: vi.fn()
   },
   mockWorkspaceWorkflow: {
-    activeWorkflow: null as unknown
-  }
+    activeWorkflow: null as ComfyWorkflow | null
+  },
+  mockRefreshMissingModelPipeline: vi.fn()
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -55,6 +77,18 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isAudioNode: vi.fn(),
   executeWidgetsCallback: vi.fn(),
   fixLinkInputSlots: vi.fn()
+}))
+
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: vi.fn(() => mockApiKeyAuthStore)
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => mockAuthStore)
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
 vi.mock('@/composables/usePaste', () => ({
@@ -88,6 +122,11 @@ vi.mock('@/stores/workspaceStore', () => ({
   }))
 }))
 
+vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+  refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
+  runMissingModelPipeline: vi.fn()
+}))
+
 function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
   return {
     id: 1,
@@ -107,22 +146,13 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
   return {
     graph: mockGraph as LGraph,
+    draw: vi.fn(),
     selectItems: vi.fn()
   }
 }
 
 function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
-}
-
-type ComfyAppMissingModelPipelineTarget = {
-  runMissingModelPipeline: (
-    graphData: ComfyWorkflowJSON,
-    options?: { silent?: boolean; missingNodeTypes?: string[] }
-  ) => Promise<{
-    missingModels: ModelFile[]
-    confirmedCandidates: MissingModelCandidate[]
-  }>
 }
 
 function createWorkflowGraphData(): ComfyWorkflowJSON {
@@ -143,13 +173,75 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    mockWorkspaceWorkflow.activeWorkflow = null
+    mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    mockSettingStore.get.mockImplementation((key: string) =>
+      key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
+    )
+  })
+
+  describe('queuePrompt', () => {
+    it('shows the error overlay for successful prompt responses with node errors', async () => {
+      const graph = new LGraph()
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/review.json',
+        modified: 0,
+        size: 0
+      })
+      const promptOutput: ComfyApiWorkflow = {
+        '1': {
+          class_type: 'PreviewAny',
+          inputs: {},
+          _meta: { title: 'PreviewAny' }
+        }
+      }
+      const nodeErrors: Record<string, NodeError> = {
+        '1': {
+          class_type: 'PreviewAny',
+          dependent_outputs: ['1'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing: source',
+              details: '',
+              extra_info: { input_name: 'source' }
+            }
+          ]
+        }
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = workflow
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: promptOutput,
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        node_errors: nodeErrors,
+        error: ''
+      })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      const errorStore = useExecutionErrorStore()
+      const executionStore = useExecutionStore()
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        'workflows/review.json'
+      )
+      expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
   })
 
   describe('refreshComboInNodes', () => {
@@ -186,105 +278,109 @@ describe('ComfyApp', () => {
     })
   })
 
-  describe('refreshMissingModels', () => {
-    function mockRefreshMissingModelsApp(
-      graphData: ComfyWorkflowJSON,
-      candidates: MissingModelCandidate[] = []
-    ) {
-      mockWorkspaceWorkflow.activeWorkflow = null
-      Reflect.set(app, 'rootGraphInternal', {
-        nodes: [],
-        serialize: vi.fn(() => graphData)
+  describe('reloadNodeDefs', () => {
+    it('syncs refreshed combo options into promoted combo host state', async () => {
+      const initialOptions = ['missing.safetensors']
+      const refreshedOptions = ['missing.safetensors', 'present.safetensors']
+
+      const rootGraph = createTestRootGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'ckpt_name', type: '*' }]
       })
-      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
-      const appWithPrivate =
-        app as unknown as ComfyAppMissingModelPipelineTarget
-      const pipelineSpy = vi
-        .spyOn(appWithPrivate, 'runMissingModelPipeline')
-        .mockResolvedValue({
-          missingModels: [],
-          confirmedCandidates: []
-        })
-      useMissingModelStore().missingModelCandidates = candidates
-      return pipelineSpy
-    }
 
-    it('reuses active workflow model metadata when refreshing the current graph', async () => {
-      const graphData = createWorkflowGraphData()
-      const activeModels = [
-        {
-          name: 'embedded.safetensors',
-          url: 'https://example.com/embedded.safetensors',
-          directory: 'checkpoints'
+      const interiorNode = new LGraphNode(
+        'CheckpointLoaderSimple',
+        'CheckpointLoaderSimple'
+      )
+      const interiorInput = interiorNode.addInput('ckpt_name', '*')
+      interiorInput.widget = { name: 'ckpt_name' }
+      const interiorWidget = interiorNode.addWidget(
+        'combo',
+        'ckpt_name',
+        'missing.safetensors',
+        () => {},
+        { values: initialOptions }
+      )
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const host = createTestSubgraphNode(subgraph)
+      rootGraph.add(host)
+
+      const hostWidgetId = host.inputs[0].widgetId
+      if (!hostWidgetId) throw new Error('Expected a promoted host widgetId')
+
+      const widgetValueStore = useWidgetValueStore()
+      expect(widgetValueStore.getWidget(hostWidgetId)?.options).toEqual({
+        values: initialOptions
+      })
+
+      const defs: Record<string, ComfyNodeDef> = {
+        CheckpointLoaderSimple: {
+          name: 'CheckpointLoaderSimple',
+          display_name: 'CheckpointLoaderSimple',
+          category: 'loaders',
+          python_module: 'nodes',
+          description: '',
+          input: {
+            required: {
+              ckpt_name: [refreshedOptions, {}]
+            },
+            optional: {}
+          },
+          output: [],
+          output_name: [],
+          output_tooltips: [],
+          output_node: false,
+          deprecated: false,
+          experimental: false
         }
-      ]
-      const pipelineSpy = mockRefreshMissingModelsApp(graphData, [
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'candidate.safetensors',
-          url: 'https://example.com/candidate.safetensors',
-          directory: 'checkpoints',
-          isMissing: true,
-          isAssetSupported: true
-        }
-      ])
-      mockWorkspaceWorkflow.activeWorkflow = {
-        activeState: { models: activeModels }
-      } as LoadedComfyWorkflow
+      }
+      Reflect.set(app, 'rootGraphInternal', rootGraph)
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
-      await app.refreshMissingModels({ silent: false })
+      await app.reloadNodeDefs()
 
-      expect(app.reloadNodeDefs).toHaveBeenCalled()
-      expect(pipelineSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ models: activeModels }),
-        { silent: false }
+      expect(interiorWidget.options.values).toEqual(refreshedOptions)
+      expect(widgetValueStore.getWidget(hostWidgetId)?.options.values).toEqual(
+        refreshedOptions
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'refreshComboInNodes',
+        defs
       )
     })
+  })
 
-    it('falls back to current missing model metadata when workflow state has no models', async () => {
-      const graphData = createWorkflowGraphData()
-      const pipelineSpy = mockRefreshMissingModelsApp(graphData, [
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'candidate.safetensors',
-          url: 'https://example.com/candidate.safetensors',
-          directory: 'checkpoints',
-          hash: 'abc123',
-          hashType: 'sha256',
-          isMissing: true,
-          isAssetSupported: true
-        },
-        {
-          nodeId: '2',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'missing-url.safetensors',
-          directory: 'checkpoints',
-          isMissing: true,
-          isAssetSupported: true
-        }
-      ])
+  describe('refreshMissingModels', () => {
+    it('delegates to the app-independent missing model refresh pipeline', async () => {
+      const graph = {
+        nodes: [],
+        serialize: vi.fn(() => createWorkflowGraphData())
+      }
+      const result = {
+        missingModels: [],
+        confirmedCandidates: []
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
-      await app.refreshMissingModels()
-
-      expect(pipelineSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          models: [
-            {
-              name: 'candidate.safetensors',
-              url: 'https://example.com/candidate.safetensors',
-              directory: 'checkpoints',
-              hash: 'abc123',
-              hash_type: 'sha256'
-            }
-          ]
-        }),
-        { silent: true }
+      await expect(app.refreshMissingModels({ silent: false })).resolves.toBe(
+        result
       )
+
+      expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
+        graph,
+        reloadNodeDefs: expect.any(Function),
+        missingModelStore: useMissingModelStore(),
+        silent: false
+      })
+
+      await mockRefreshMissingModelPipeline.mock.calls[0][0].reloadNodeDefs()
+      expect(app.reloadNodeDefs).toHaveBeenCalled()
     })
   })
 
@@ -513,6 +609,32 @@ describe('ComfyApp', () => {
         expect.any(DataTransferItemList),
         mockNode
       )
+    })
+  })
+
+  describe('drop handler', () => {
+    it('syncs graph_mouse from the drop event before downstream handlers run', async () => {
+      // graph_mouse is only updated on mousemove, so when files are dragged in
+      // from another window the canvas-space cursor is stale. The drop handler
+      // must derive the position from the drop event itself.
+      const graphMouse: [number, number] = [-999, -999]
+      const adjustMouseEvent = vi.fn((e: DragEvent) => {
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
+      })
+      app.canvas = {
+        ...mockCanvas,
+        graph_mouse: graphMouse,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+      await Promise.resolve()
+
+      expect(adjustMouseEvent).toHaveBeenCalledTimes(1)
+      expect(graphMouse).toEqual([123, 456])
     })
   })
 })

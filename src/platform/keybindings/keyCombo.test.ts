@@ -15,7 +15,7 @@ describe('KeyComboImpl', () => {
   }
 
   describe('getKeySequences', () => {
-    it.each([
+    it.for([
       {
         event: { key: 'Shift', shiftKey: true },
         expected: ['Shift'],
@@ -66,7 +66,7 @@ describe('KeyComboImpl', () => {
   })
 
   describe('isBrowserReserved', () => {
-    it.each([
+    it.for([
       { key: 't', ctrl: true, label: 'Ctrl + t' },
       { key: 'w', ctrl: true, label: 'Ctrl + w' },
       { key: 'F12', label: 'F12' },
@@ -83,7 +83,7 @@ describe('KeyComboImpl', () => {
       expect(combo.isBrowserReserved).toBe(true)
     })
 
-    it.each([
+    it.for([
       { key: 'k', ctrl: true, label: 'Ctrl + k' },
       { key: 's', alt: true, label: 'Alt + s' },
       { key: 'z', ctrl: true, label: 'Ctrl + z' },

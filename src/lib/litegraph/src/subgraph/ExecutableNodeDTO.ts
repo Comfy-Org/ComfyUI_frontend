@@ -1,7 +1,10 @@
+import { toLinkId } from '@/types/linkId'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
@@ -98,7 +101,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     /** The actual node that this DTO wraps. */
     readonly node: LGraphNode | SubgraphNode,
     /** A list of subgraph instance node IDs from the root graph to the containing instance. @see {@link id} */
-    readonly subgraphNodePath: readonly NodeId[],
+    readonly subgraphNodePath: readonly SerializedNodeId[],
     /** A flattened map of all DTOs in this node network. Subgraph instances have been expanded into their inner nodes. */
     readonly nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
     /** The actual subgraph instance that contains this node, otherwise undefined. */
@@ -110,7 +113,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     this._id = [...this.subgraphNodePath, this.node.id].join(':')
     this.graph = node.graph
     this.inputs = this.node.inputs.map((x) => ({
-      linkId: x.link,
+      linkId: x.link == null ? null : toLinkId(x.link),
       name: x.name,
       type: x.type
     }))
@@ -183,20 +186,14 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       // Nothing connected
       const linkId = subgraphNodeInput.link
       if (linkId == null) {
-        const widget = subgraphNode.getWidgetFromSlot(subgraphNodeInput)
-        if (!widget) return
+        const id = subgraphNodeInput.widgetId
+        if (!id) return
 
-        // Special case: SubgraphNode widget.
-        // Prefer serializeValue (per-instance) over the shared .value getter
-        // so multiple SubgraphNode instances return their own configured values.
-        const widgetValue = widget.serializeValue
-          ? widget.serializeValue(subgraphNode, -1)
-          : widget.value
         return {
           node: this,
           origin_id: this.id,
           origin_slot: -1,
-          widgetInfo: { value: widgetValue }
+          widgetInfo: { value: useWidgetValueStore().getWidget(id)?.value }
         }
       }
 

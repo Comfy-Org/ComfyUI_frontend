@@ -17,6 +17,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   isBoundsEqual,
@@ -24,14 +25,16 @@ import {
 } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
-import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
+import {
+  scheduleSlotLayoutSync,
+  syncNodeSlotLayoutsFromDOM
+} from './useSlotElementTracking'
 
 /**
  * Generic update item for element bounds tracking
  */
 interface ElementBoundsUpdate {
-  /** Element identifier (could be nodeId, widgetId, slotId, etc.) */
-  id: string
+  id: NodeId
   /** Updated bounds */
   bounds: Bounds
 }
@@ -47,27 +50,30 @@ interface CachedNodeMeasurement {
 interface ElementTrackingConfig {
   /** Data attribute name (e.g., 'nodeId') */
   dataAttribute: string
-  /** Handler for processing bounds updates */
-  updateHandler: (updates: ElementBoundsUpdate[]) => void
+  /** Handler for processing bounds updates. Omit for signal-only entries. */
+  updateHandler?: (updates: ElementBoundsUpdate[]) => void
 }
 
 /**
  * Registry of tracking configurations by element type
  */
-const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
+const trackingConfigs = new Map<string, ElementTrackingConfig>([
   [
     'node',
     {
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
         const nodeUpdates = updates.map(({ id, bounds }) => ({
-          nodeId: id as NodeId,
+          nodeId: id,
           bounds
         }))
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
       }
     }
-  ]
+  ],
+  // Signal-only: outer node stays at its persisted min-h floor during
+  // widget hydration, so the inner grid's RO is the only slot-drift signal.
+  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId' }]
 ])
 
 // Elements whose ResizeObserver fired while the tab was hidden
@@ -121,6 +127,14 @@ const resizeObserver = new ResizeObserver((entries) => {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
+    // Signal-only widgets-grid resize - route the parent node through the
+    // slot-layout pipeline and skip bounds processing entirely.
+    const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
+    if (widgetsGridParentNodeId) {
+      scheduleSlotLayoutSync(toNodeId(widgetsGridParentNodeId))
+      continue
+    }
+
     // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
@@ -136,7 +150,7 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
     const nodeId: NodeId | undefined =
-      elementType === 'node' ? elementId : undefined
+      elementType === 'node' ? toNodeId(elementId) : undefined
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
@@ -222,12 +236,11 @@ const resizeObserver = new ResizeObserver((entries) => {
       updates = []
       updatesByType.set(elementType, updates)
     }
-    updates.push({ id: elementId, bounds })
+    if (!nodeId) continue
+    updates.push({ id: nodeId, bounds })
 
     // If this entry is a node, mark it for slot layout resync
-    if (nodeId) {
-      nodesNeedingSlotResync.add(nodeId)
-    }
+    nodesNeedingSlotResync.add(nodeId)
   }
 
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
@@ -238,7 +251,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // Flush per-type
     for (const [type, updates] of updatesByType) {
       const config = trackingConfigs.get(type)
-      if (config && updates.length) config.updateHandler(updates)
+      if (config?.updateHandler && updates.length) config.updateHandler(updates)
     }
   }
 

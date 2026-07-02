@@ -1,6 +1,7 @@
 <template>
   <svg
     ref="svgRef"
+    data-testid="curve-editor"
     viewBox="-0.04 -0.04 1.08 1.08"
     preserveAspectRatio="xMidYMid meet"
     :class="
@@ -68,6 +69,7 @@
       <circle
         v-for="(point, i) in modelValue"
         :key="i"
+        data-testid="curve-point"
         :cx="point[0]"
         :cy="1 - point[1]"
         r="0.02"

@@ -369,5 +369,32 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(searchBoxV2.nodeIdBadge.first()).toBeVisible()
       await expect(searchBoxV2.nodeIdBadge.first()).toContainText('VAEDecode')
     })
+
+    test('Follow-cursor disabled places node without ghost mode', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.NodeSearchBoxImpl.FollowCursor',
+        false
+      )
+      const { searchBoxV2 } = comfyPage
+      const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+      await searchBoxV2.open()
+
+      await searchBoxV2.input.fill('KSampler')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+
+      await searchBoxV2.results.first().click()
+      await expect(searchBoxV2.input).toBeHidden()
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
+
+      await expect(
+        comfyPage.page.locator('[data-node-id][data-ghost]')
+      ).toHaveCount(0)
+    })
   })
 })

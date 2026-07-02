@@ -81,6 +81,7 @@
     </Button>
     <div
       v-if="isIntegratedTabBar"
+      data-testid="integrated-tab-bar-actions"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
@@ -116,9 +117,10 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackUrl } from '@/platform/support/config'
+import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -144,6 +146,9 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
+
+// Dismiss a tab's terminal status badge once it has been viewed
+useWorkflowStatusDismissal()
 const { flags } = useFeatureFlags()
 
 const isIntegratedTabBar = computed(
@@ -151,9 +156,12 @@ const isIntegratedTabBar = computed(
 )
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
 
-const feedbackUrl = buildFeedbackUrl()
 function openFeedback() {
-  window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
+  window.open(
+    buildFeedbackTypeformUrl('topbar'),
+    '_blank',
+    'noopener,noreferrer'
+  )
 }
 
 const containerRef = ref<HTMLElement | null>(null)

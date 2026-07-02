@@ -9,11 +9,11 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 /** ComfyUI extensions of litegraph */
 declare module '@/lib/litegraph/src/types/widgets' {
@@ -109,21 +109,15 @@ declare module '@/lib/litegraph/src/litegraph' {
      */
     onExecuted?(output: NodeExecutionOutput): void
     onNodeCreated?(this: LGraphNode): void
-    /** @deprecated groupNode */
-    setInnerNodes?(nodes: LGraphNode[]): void
-    /** Originally a group node API. */
+    /** Flattens a subgraph node into its executable inner nodes. */
     getInnerNodes?(
       nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
-      subgraphNodePath?: readonly NodeId[],
+      subgraphNodePath?: readonly SerializedNodeId[],
       nodes?: ExecutableLGraphNode[],
       subgraphs?: Set<LGraphNode>
     ): ExecutableLGraphNode[]
-    /** @deprecated groupNode */
-    convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
-    /** @deprecated groupNode */
-    updateLink?(link: LLink): LLink | null
     /**
      * @deprecated primitive node.
      * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.
@@ -144,16 +138,12 @@ declare module '@/lib/litegraph/src/litegraph' {
      * Callback invoked when the node is dropped from an external source, i.e.
      * a file or another HTML element.
      * @param e The drag event
-     * @param claimEvent If true, the handler should call preventDefault and
-     *   stopPropagation synchronously before any await once it has decided to
-     *   accept the drop, so bubbling fallback handlers know not to also process
-     *   the event.
      * @returns {boolean} True if the drag event should be handled by this node, false otherwise
      */
-    onDragDrop?(e: DragEvent, claimEvent?: boolean): Promise<boolean> | boolean
+    onDragDrop?(e: DragEvent): Promise<boolean> | boolean
 
     index?: number
-    runningInternalNodeId?: NodeId
+    runningInternalNodeId?: SerializedNodeId
 
     comfyClass?: string
 

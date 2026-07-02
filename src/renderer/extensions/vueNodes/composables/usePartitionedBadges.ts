@@ -4,14 +4,17 @@ import { computed, toValue } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import { widgetId } from '@/types/widgetId'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -20,7 +23,7 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
 }
 
 type TrackableNode = {
-  id: NodeId
+  id: SerializedNodeId
   type: string
   inputs?: INodeInputSlot[]
 }
@@ -34,7 +37,8 @@ export function trackNodePrice(node: TrackableNode) {
     getNodeRevisionRef
   } = useNodePricing()
   // Access per-node revision ref to establish dependency (each node has its own ref)
-  void getNodeRevisionRef(node.id).value
+  const nodeId = toNodeId(node.id)
+  void getNodeRevisionRef(nodeId).value
 
   if (!hasDynamicPricing(node.type)) return
 
@@ -46,7 +50,7 @@ export function trackNodePrice(node: TrackableNode) {
     for (const name of relevantNames) {
       // Access value from store to create reactive dependency
       if (!graphId) continue
-      void widgetStore.getWidget(graphId, node.id, name)?.value
+      void widgetStore.getWidget(widgetId(graphId, nodeId, name))?.value
     }
   }
   // Access input connections for regular inputs
@@ -67,6 +71,38 @@ export function trackNodePrice(node: TrackableNode) {
       }
     })
   }
+}
+
+/**
+ * Register reactive deps on every contained api node's pricing inputs so the
+ * SubgraphNode wrapper's badge computed re-runs when an inner (e.g. promoted)
+ * widget value changes. Also tracks the wrapper's own promoted widget host
+ * values so user edits on the wrapper trigger re-evaluation.
+ */
+function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
+  if (!wrapper.isSubgraphNode()) return
+  // Touch each promoted widget's host value to register reactive deps.
+  for (const w of wrapper.widgets ?? []) void w.value
+
+  const visited = new Set<string>()
+  function walk(nodes: LGraphNode[]) {
+    for (const inner of nodes) {
+      if (inner.isSubgraphNode()) {
+        const id = String(inner.subgraph.id)
+        if (visited.has(id)) continue
+        visited.add(id)
+        walk(inner.subgraph.nodes)
+        continue
+      }
+      if (!inner.constructor?.nodeData?.api_node) continue
+      trackNodePrice({
+        id: inner.id,
+        type: inner.type ?? '',
+        inputs: inner.inputs
+      })
+    }
+  }
+  walk(wrapper.subgraph.nodes)
 }
 
 export function usePartitionedBadges(nodeData: VueNodeData) {
@@ -96,6 +132,10 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     nodeData?.apiNode ? getInputNames(nodeData.type) : []
   )
   const unpartitionedBadges = computed<NodeBadgeProps[]>(() => {
+    if (nodeData?.id != null) {
+      const wrapper = app.canvas?.graph?.getNodeById(nodeData.id)
+      if (wrapper?.isSubgraphNode()) trackSubgraphInnerNodePrices(wrapper)
+    }
     // For ALL API nodes: access per-node revision ref to detect when async pricing evaluation completes
     // This is needed even for static pricing because JSONata 2.x evaluation is async
     if (nodeData?.apiNode && nodeData?.id != null) {
@@ -112,7 +152,8 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
           for (const name of relevantNames) {
             // Access value from store to create reactive dependency
             if (!graphId) continue
-            void widgetStore.getWidget(graphId, nodeData.id, name)?.value
+            void widgetStore.getWidget(widgetId(graphId, nodeData.id, name))
+              ?.value
           }
         }
         // Access input connections for regular inputs

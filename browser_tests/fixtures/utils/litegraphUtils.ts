@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { ManageGroupNode } from '@e2e/fixtures/components/ManageGroupNode'
+import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
+import type { NodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -169,9 +169,39 @@ class NodeSlotReference {
       [this.type, this.node.id, this.index] as const
     )
   }
+
+  async getLink(): Promise<SerialisableLLink | null> {
+    return await this.node.comfyPage.page.evaluate(
+      ([type, id, index]) => {
+        const graph = window.app!.canvas.graph!
+        const node = graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        const linkId =
+          type === 'input'
+            ? node.inputs[index].link
+            : (node.outputs[index].links ?? [])[0]
+        if (linkId == null) return null
+        const link =
+          graph.links instanceof Map
+            ? graph.links.get(linkId)
+            : graph.links[linkId]
+        if (!link) return null
+        return {
+          id: link.id,
+          origin_id: link.origin_id,
+          origin_slot: link.origin_slot,
+          target_id: link.target_id,
+          target_slot: link.target_slot,
+          type: link.type,
+          parentId: link.parentId
+        }
+      },
+      [this.type, this.node.id, this.index] as const
+    )
+  }
 }
 
-export class NodeWidgetReference {
+class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference
@@ -326,6 +356,23 @@ export class NodeReference {
     const nodeSize = await this.getSize()
     return { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
   }
+  async dragBy(
+    delta: Position,
+    options?: {
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
+    }
+  ): Promise<void> {
+    const titlePos = await this.getTitlePosition()
+    const target = { x: titlePos.x + delta.x, y: titlePos.y + delta.y }
+    const modifiers = options?.modifiers ?? []
+    const keyboard = this.comfyPage.page.keyboard
+    for (const mod of modifiers) await keyboard.down(mod)
+    try {
+      await this.comfyPage.canvasOps.dragAndDrop(titlePos, target)
+    } finally {
+      for (const mod of modifiers) await keyboard.up(mod)
+    }
+  }
   async isPinned() {
     return !!(await this.getFlags()).pinned
   }
@@ -463,19 +510,7 @@ export class NodeReference {
   }
   async clickContextMenuOption(optionText: string) {
     await this.click('title', { button: 'right' })
-    const ctx = this.comfyPage.page.locator('.litecontextmenu')
-    await ctx.getByText(optionText).click()
-  }
-  async convertToGroupNode(groupNodeName: string = 'GroupNode') {
-    await this.clickContextMenuOption('Convert to Group Node')
-    await this.comfyPage.nodeOps.fillPromptDialog(groupNodeName)
-    const nodes = await this.comfyPage.nodeOps.getNodeRefsByType(
-      `workflow>${groupNodeName}`
-    )
-    if (nodes.length !== 1) {
-      throw new Error(`Did not find single group node (found=${nodes.length})`)
-    }
-    return nodes[0]
+    await this.comfyPage.contextMenu.clickMenuItem(optionText)
   }
   async convertToSubgraph() {
     await this.clickContextMenuOption('Convert to Subgraph')
@@ -488,14 +523,6 @@ export class NodeReference {
       )
     }
     return nodes[0]
-  }
-  async manageGroupNode() {
-    await this.clickContextMenuOption('Manage Group Node')
-    await this.comfyPage.nextFrame()
-    return new ManageGroupNode(
-      this.comfyPage.page,
-      this.comfyPage.page.locator('.comfy-group-manage')
-    )
   }
   async navigateIntoSubgraph() {
     const titleHeight = await this.comfyPage.page.evaluate(() => {

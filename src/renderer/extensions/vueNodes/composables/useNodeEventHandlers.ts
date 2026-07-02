@@ -15,13 +15,17 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
   const { nodeManager } = useVueNodeLifecycle()
   const { bringNodeToFront } = useNodeZIndex()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
+
+  function getNode(nodeId: NodeId) {
+    return nodeManager.value?.getNode(nodeId)
+  }
 
   /**
    * Handle node selection events
@@ -30,9 +34,9 @@ function useNodeEventHandlersIndividual() {
   function handleNodeSelect(event: PointerEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
-    if (!canvasStore.canvas || !nodeManager.value) return
+    if (!canvasStore.canvas) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = getNode(nodeId)
     if (!node) return
 
     const multiSelect = isMultiSelectKey(event)
@@ -67,9 +71,7 @@ function useNodeEventHandlersIndividual() {
   function handleNodeCollapse(nodeId: NodeId, collapsed: boolean) {
     if (!shouldHandleNodePointerEvents.value) return
 
-    if (!nodeManager.value) return
-
-    const node = nodeManager.value.getNode(nodeId)
+    const node = getNode(nodeId)
     if (!node) return
 
     // Use LiteGraph's collapse method if the state needs to change
@@ -86,9 +88,7 @@ function useNodeEventHandlersIndividual() {
   function handleNodeTitleUpdate(nodeId: NodeId, newTitle: string) {
     if (!shouldHandleNodePointerEvents.value) return
 
-    if (!nodeManager.value) return
-
-    const node = nodeManager.value.getNode(nodeId)
+    const node = getNode(nodeId)
     if (!node) return
 
     // Update the node title in LiteGraph for persistence
@@ -107,9 +107,9 @@ function useNodeEventHandlersIndividual() {
   function handleNodeRightClick(event: PointerEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
-    if (!canvasStore.canvas || !nodeManager.value) return
+    if (!canvasStore.canvas) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = getNode(nodeId)
     if (!node) return
 
     // Prevent default context menu
@@ -130,9 +130,9 @@ function useNodeEventHandlersIndividual() {
   ) {
     if (!shouldHandleNodePointerEvents.value) return
 
-    if (!canvasStore.canvas || !nodeManager.value) return
+    if (!canvasStore.canvas) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = getNode(nodeId)
     if (!node) return
 
     if (!multiSelect) {
