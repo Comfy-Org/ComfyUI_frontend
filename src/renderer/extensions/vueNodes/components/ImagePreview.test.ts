@@ -84,6 +84,13 @@ describe('ImagePreview', () => {
     await nextTick()
   }
 
+  function spyOnParentPropagation(container: Element) {
+    const preview = container.querySelector('.image-preview') as HTMLElement
+    const parentListener = vi.fn()
+    preview.parentElement!.addEventListener('keydown', parentListener)
+    return { preview, parentListener }
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -391,10 +398,7 @@ describe('ImagePreview', () => {
         const { container } = renderImagePreview()
         const user = userEvent.setup()
         await switchToGallery(user)
-
-        const preview = container.querySelector('.image-preview') as HTMLElement
-        const parentListener = vi.fn()
-        preview.parentElement!.addEventListener('keydown', parentListener)
+        const { preview, parentListener } = spyOnParentPropagation(container)
 
         await fireEvent.keyDown(preview, { key })
         await nextTick()
@@ -407,10 +411,7 @@ describe('ImagePreview', () => {
       const { container } = renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      const parentListener = vi.fn()
-      preview.parentElement!.addEventListener('keydown', parentListener)
+      const { preview, parentListener } = spyOnParentPropagation(container)
 
       await fireEvent.keyDown(preview, { key: 'Escape' })
       await nextTick()
@@ -420,10 +421,7 @@ describe('ImagePreview', () => {
 
     it('does not stop propagation for arrow keys in grid mode', async () => {
       const { container } = renderImagePreview()
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      const parentListener = vi.fn()
-      preview.parentElement!.addEventListener('keydown', parentListener)
+      const { preview, parentListener } = spyOnParentPropagation(container)
 
       await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
@@ -435,10 +433,7 @@ describe('ImagePreview', () => {
       const { container } = renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      const parentListener = vi.fn()
-      preview.parentElement!.addEventListener('keydown', parentListener)
+      const { preview, parentListener } = spyOnParentPropagation(container)
 
       await fireEvent.keyDown(preview, { key: 'Delete' })
       await nextTick()
