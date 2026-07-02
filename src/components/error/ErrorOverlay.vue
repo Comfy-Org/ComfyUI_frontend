@@ -37,7 +37,7 @@
             size="unset"
             class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
             data-testid="error-overlay-see-errors"
-            @click="seeErrors"
+            @click="viewErrorsInGraph"
           >
             {{
               appMode
@@ -67,31 +67,18 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const canvasStore = useCanvasStore()
+const { viewErrorsInGraph } = useViewErrorsInGraph()
 
 const { isVisible, overlayMessage, overlayTitle } = useErrorOverlayState()
 
 function dismiss() {
-  executionErrorStore.dismissErrorOverlay()
-}
-
-function seeErrors() {
-  canvasStore.linearMode = false
-  if (canvasStore.canvas) {
-    canvasStore.canvas.deselectAll()
-    canvasStore.updateSelectedItems()
-  }
-
-  rightSidePanelStore.openPanel('errors')
   executionErrorStore.dismissErrorOverlay()
 }
 </script>
