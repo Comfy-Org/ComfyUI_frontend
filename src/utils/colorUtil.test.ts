@@ -8,10 +8,12 @@ import {
   hexToRgb,
   hsbToRgb,
   hsvaToHex,
+  isColorFormat,
   isTransparent,
   luminance,
   parseToRgb,
   readableTextColor,
+  rgbToHsl,
   rgbToHex,
   textOnColor,
   toHexFromFormat
@@ -236,6 +238,24 @@ describe('colorUtil conversions', () => {
     it('parses 8-digit hex and ignores the alpha channel in RGB output', () => {
       expect(parseToRgb('#ff000080')).toEqual({ r: 255, g: 0, b: 0 })
     })
+
+    it('covers HSL hue sectors outside primary colors', () => {
+      expect(parseToRgb('hsl(60, 100%, 50%)')).toEqual({
+        r: 255,
+        g: 255,
+        b: 0
+      })
+      expect(parseToRgb('hsl(180, 100%, 50%)')).toEqual({
+        r: 0,
+        g: 255,
+        b: 255
+      })
+      expect(parseToRgb('hsl(300, 100%, 50%)')).toEqual({
+        r: 255,
+        g: 0,
+        b: 255
+      })
+    })
   })
 
   describe('hsbToRgb normalization', () => {
@@ -243,6 +263,24 @@ describe('colorUtil conversions', () => {
       // h = -120 should map to h = 240 (blue) when s and b are both 100.
       expect(hsbToRgb({ h: -120, s: 100, b: 100 })).toEqual({
         r: 0,
+        g: 0,
+        b: 255
+      })
+    })
+
+    it('covers all hue ranges', () => {
+      expect(hsbToRgb({ h: 90, s: 100, b: 100 })).toEqual({
+        r: 127,
+        g: 255,
+        b: 0
+      })
+      expect(hsbToRgb({ h: 180, s: 100, b: 100 })).toEqual({
+        r: 0,
+        g: 255,
+        b: 255
+      })
+      expect(hsbToRgb({ h: 300, s: 100, b: 100 })).toEqual({
+        r: 255,
         g: 0,
         b: 255
       })
@@ -263,12 +301,27 @@ describe('colorUtil conversions', () => {
     })
 
     it('returns false for fully opaque hex colors', () => {
+      expect(isTransparent('red')).toBe(false)
       expect(isTransparent('#ff0000')).toBe(false)
       expect(isTransparent('#ff0000ff')).toBe(false)
     })
   })
 
   describe('toHexFromFormat', () => {
+    it('normalizes supported hex spellings', () => {
+      expect(toHexFromFormat('', 'hex')).toBe('#000000')
+      expect(toHexFromFormat('abc', 'hex')).toBe('#abc')
+      expect(toHexFromFormat('#abc', 'hex')).toBe('#abc')
+      expect(toHexFromFormat('#abcdef', 'hex')).toBe('#abcdef')
+      expect(toHexFromFormat('abcdef12', 'hex')).toBe('#abcdef12')
+      expect(toHexFromFormat('#abcdef12', 'hex')).toBe('#abcdef12')
+    })
+
+    it('converts rgb strings and rejects non-string rgb input', () => {
+      expect(toHexFromFormat('rgb(255, 128, 0)', 'rgb')).toBe('#ff8000')
+      expect(toHexFromFormat({ r: 255, g: 128, b: 0 }, 'rgb')).toBe('#000000')
+    })
+
     it('treats an HSV object (with v field) the same as an HSB object', () => {
       const hsbObject = { h: 120, s: 100, b: 100 }
       const hsvObject = { h: 120, s: 100, v: 100 }
@@ -281,6 +334,7 @@ describe('colorUtil conversions', () => {
 
     it('returns #000000 for unparseable hsb input', () => {
       expect(toHexFromFormat({ h: 0 }, 'hsb')).toBe('#000000')
+      expect(toHexFromFormat('hsb()', 'hsb')).toBe('#000000')
     })
 
     it('prefixes a bare 6-digit hex with #', () => {
@@ -292,6 +346,22 @@ describe('colorUtil conversions', () => {
     it('computes perceptual luminance', () => {
       expect(luminance({ r: 255, g: 0, b: 0 })).toBeCloseTo(76.245, 2)
       expect(luminance({ r: 255, g: 255, b: 255 })).toBeCloseTo(255, 2)
+    })
+  })
+
+  describe('rgbToHsl', () => {
+    it('handles light colors and wrapped red hue', () => {
+      expect(rgbToHsl({ r: 255, g: 128, b: 128 }).s).toBeCloseTo(1)
+      expect(rgbToHsl({ r: 255, g: 0, b: 128 }).h).toBeCloseTo(0.916, 2)
+    })
+  })
+
+  describe('isColorFormat', () => {
+    it('recognizes public color format ids', () => {
+      expect(isColorFormat('hex')).toBe(true)
+      expect(isColorFormat('rgb')).toBe(true)
+      expect(isColorFormat('hsb')).toBe(true)
+      expect(isColorFormat('hsl')).toBe(false)
     })
   })
 
@@ -357,6 +427,10 @@ describe('colorUtil - adjustColor', () => {
       })
       expect(result).toBe(color)
     })
+  })
+
+  it('returns the original value when no adjustments are requested', () => {
+    expect(adjustColor('#123456', {})).toBe('#123456')
   })
 
   it('treats 5-char hex as valid color with alpha', () => {

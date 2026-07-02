@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   mockFileReaderAbort,
-  mockFileReaderError
+  mockFileReaderError,
+  mockFileReaderResult
 } from './__fixtures__/helpers'
 import { getFromPngBuffer, getFromPngFile } from './png'
 
@@ -191,6 +192,27 @@ describe('getFromPngBuffer', () => {
     const result = await getFromPngBuffer(buffer)
     expect(result['workflow']).toBe(workflow)
   })
+
+  it('logs error and skips compressed iTXt with invalid deflate data', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const buffer = createPngWithChunk(
+      'iTXt',
+      'workflow',
+      new Uint8Array([1, 2, 3]),
+      {
+        compressionFlag: 1,
+        compressionMethod: 0
+      }
+    )
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result['workflow']).toBeUndefined()
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to decompress iTXt chunk "workflow"'),
+      expect.anything()
+    )
+  })
 })
 
 describe('getFromPngFile', () => {
@@ -227,6 +249,13 @@ describe('getFromPngFile', () => {
     it('rejects when the FileReader fires abort', async () => {
       mockFileReaderAbort('readAsArrayBuffer')
       await expect(getFromPngFile(file)).rejects.toThrow('FileReader aborted')
+    })
+
+    it('rejects when the FileReader load has no ArrayBuffer result', async () => {
+      mockFileReaderResult('readAsArrayBuffer', null)
+      await expect(getFromPngFile(file)).rejects.toThrow(
+        'Failed to read file as ArrayBuffer'
+      )
     })
   })
 })
