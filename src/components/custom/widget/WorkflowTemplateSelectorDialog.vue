@@ -556,7 +556,6 @@ const {
   selectedModels,
   selectedUseCases,
   selectedRunsOn,
-  sortBy,
   sortSelection,
   hasActiveQuery,
   activeModels,
@@ -596,15 +595,13 @@ watch(searchQuery, (value) => {
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
   const isPopularNav = selectedNavItem.value === 'popular'
-  const isPopularSort = sortBy.value === 'popular'
+  const isPopularSort = sortSelection.value === 'popular'
 
   if (source === 'nav') {
     if (isPopularNav && !isPopularSort) {
-      // When navigating to 'Popular' category, automatically set sort to 'Popular'.
-      sortBy.value = 'popular'
+      sortSelection.value = 'popular'
     } else if (!isPopularNav && isPopularSort) {
-      // When navigating away from 'Popular' category while sort is 'Popular', reset sort to default.
-      sortBy.value = 'default'
+      sortSelection.value = 'default'
     }
   } else if (source === 'sort') {
     // When sort is changed away from 'Popular' while in the 'Popular' category,
@@ -617,7 +614,7 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
 
 // Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
 watch(selectedNavItem, () => coordinateNavAndSort('nav'))
-watch(sortBy, () => coordinateNavAndSort('sort'))
+watch(sortSelection, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
 // Only show selected items that exist in the current scope
@@ -797,7 +794,7 @@ watch(
   [
     filteredTemplates,
     selectedNavItem,
-    sortBy,
+    sortSelection,
     selectedModels,
     selectedUseCases,
     selectedRunsOn

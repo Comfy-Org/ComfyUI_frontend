@@ -23,7 +23,9 @@ const defaultSettingStore = {
 }
 
 const defaultRankingStore = {
-  computeDefaultScore: vi.fn(() => 0),
+  computeDefaultScore: vi.fn(
+    (_date?: string, _rank?: number, usage: number = 0) => usage
+  ),
   computePopularScore: vi.fn((usage: number = 0) => usage),
   computeFreshness: vi.fn(() => 0.5),
   largestUsageScore: 0
@@ -235,6 +237,73 @@ describe('useTemplateFiltering', () => {
       'zeta-extended',
       'alpha-starter',
       'beta-pro'
+    ])
+  })
+
+  it('supports recommended and popular usage-based sorting', async () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'low',
+        title: 'Low',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        usage: 10
+      },
+      {
+        name: 'high',
+        title: 'High',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        usage: 900
+      }
+    ])
+
+    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
+
+    sortBy.value = 'recommended'
+    await nextTick()
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'high',
+      'low'
+    ])
+
+    sortBy.value = 'popular'
+    await nextTick()
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'high',
+      'low'
+    ])
+  })
+
+  it('filters to ComfyUI templates via the Runs On filter', async () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'open',
+        title: 'Open',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: true
+      },
+      {
+        name: 'partner',
+        title: 'Partner',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: false
+      }
+    ])
+
+    const { selectedRunsOn, filteredTemplates } =
+      useTemplateFiltering(templates)
+    selectedRunsOn.value = ['ComfyUI']
+    await nextTick()
+
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'open'
     ])
   })
 
@@ -451,6 +520,24 @@ describe('useTemplateFiltering', () => {
       // Browse sort is untouched by the search; relevance is never persisted.
       expect(composable.sortSelection.value).toBe('popular')
       expect(composable.sortBy.value).toBe('popular')
+    })
+
+    it('keeps a browse sort chosen mid-search ephemeral', async () => {
+      const composable = useTemplateFiltering(
+        ref([buildTemplate({ name: 'only', title: 'Only' })])
+      )
+      composable.sortBy.value = 'newest'
+
+      composable.searchQuery.value = 'only'
+      await nextTick()
+      // Simulates the nav coordinator picking Popular during a search.
+      composable.sortSelection.value = 'popular'
+      await nextTick()
+      expect(composable.sortBy.value).toBe('newest') // persisted sort untouched
+
+      composable.searchQuery.value = ''
+      await nextTick()
+      expect(composable.sortSelection.value).toBe('newest')
     })
 
     it('returns no results for a query that matches nothing', async () => {

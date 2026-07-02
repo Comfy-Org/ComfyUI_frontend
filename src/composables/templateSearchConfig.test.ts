@@ -177,4 +177,9 @@ describe('searchTemplates', () => {
     expect(searchTemplates(index, 'aquarela')).toEqual(['localized'])
     expect(searchTemplates(index, 'pintura')).toEqual(['localized'])
   })
+
+  it('falls back to the name when a template has no title or description', () => {
+    const index = buildIndex([buildTemplate({ name: 'flux_kontext_edit' })])
+    expect(searchTemplates(index, 'kontext')).toEqual(['flux_kontext_edit'])
+  })
 })
