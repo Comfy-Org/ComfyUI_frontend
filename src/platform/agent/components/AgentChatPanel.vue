@@ -46,6 +46,7 @@ const {
   stop,
   applySuggestion,
   startNewChat,
+  loadConversation,
   deleteConversation,
   copyConversation
 } = useAgentChatPrototype()
@@ -108,6 +109,11 @@ function copyMessage(text: string) {
   navigator.clipboard.writeText(text)
 }
 
+function onSelectConversation(id: string) {
+  loadConversation(id)
+  showHistory.value = false
+}
+
 function onNewChatFromHistory() {
   startNewChat()
   showHistory.value = false
@@ -124,7 +130,7 @@ function onNewChatFromHistory() {
         :conversations="chatHistory"
         :active-id="currentConversationId"
         @back="showHistory = false"
-        @select="showHistory = false"
+        @select="onSelectConversation"
         @delete="deleteConversation"
         @copy="copyConversation"
         @new-chat="onNewChatFromHistory"

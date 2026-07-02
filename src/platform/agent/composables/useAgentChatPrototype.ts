@@ -45,56 +45,183 @@ const MOCK_TOOL_CALLS: ToolCall[] = [
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
 
+const FENCE = '```'
+
+const DEMO_CONVERSATIONS: AgentConversation[] = [
+  {
+    id: 'demo-code-block',
+    title: 'Code block',
+    createdAt: daysAgo(0),
+    messages: [
+      { id: 'demo-code-1', role: 'user', text: 'Show me a workflow as code' },
+      {
+        id: 'demo-code-2',
+        role: 'assistant',
+        text: `${FENCE}javascript:workflow.js
+export default {
+  nodes: [
+    { id: 1, type: "CheckpointLoaderSimple", inputs: { ckpt_name: "flux1-dev-fp8.safetensors" } },
+    { id: 2, type: "CLIPTextEncode", inputs: { text: "a golden hour sunset over mountains" } },
+    { id: 3, type: "KSampler", inputs: { seed: 42, steps: 20, cfg: 7, sampler_name: "euler" } },
+    { id: 4, type: "VAEDecode" },
+    { id: 5, type: "SaveImage", inputs: { filename_prefix: "output" } },
+  ],
+  links: [
+    [1, 0, 3, 0], // model → KSampler
+    [2, 0, 3, 1], // conditioning → KSampler
+    [3, 0, 4, 0], // latent → VAEDecode
+    [4, 0, 5, 0], // image → SaveImage
+  ],
+}
+${FENCE}`
+      }
+    ]
+  },
+  {
+    id: 'demo-markdown',
+    title: 'Markdown',
+    createdAt: daysAgo(0),
+    messages: [
+      {
+        id: 'demo-md-1',
+        role: 'user',
+        text: 'Explain how to build a basic workflow'
+      },
+      {
+        id: 'demo-md-2',
+        role: 'assistant',
+        text: `# Workflow Overview
+
+This guide explains how to **build a basic image generation workflow** in ComfyUI.
+
+## Key Concepts
+
+- **Nodes** are the building blocks — each one performs a single operation
+- **Edges** carry data between nodes
+- Use _italics_ for emphasis and \`inline code\` for node names
+
+## Steps
+
+1. Load a checkpoint with \`CheckpointLoaderSimple\`
+2. Add \`CLIPTextEncode\` and write your prompt
+3. Connect both to \`KSampler\` to run diffusion
+4. Decode the result with \`VAEDecode\`
+5. Save the image with \`SaveImage\`
+
+> Start with a simple 4-node chain and expand from there.
+
+See the full reference at [docs.comfy.org](https://docs.comfy.org).`
+      }
+    ]
+  },
+  {
+    id: 'demo-table',
+    title: 'Table',
+    createdAt: daysAgo(0),
+    messages: [
+      {
+        id: 'demo-table-1',
+        role: 'user',
+        text: 'Compare the available samplers'
+      },
+      {
+        id: 'demo-table-2',
+        role: 'assistant',
+        text: `Here is a comparison of common samplers:
+
+| Sampler | Steps | Quality | Speed |
+| --- | --- | --- | --- |
+| euler | 20 | Good | Fast |
+| euler_a | 20 | Great | Fast |
+| dpm++ 2m | 25 | Excellent | Medium |
+| dpm++ sde | 30 | Best | Slow |
+| ddim | 50 | Good | Slow |
+
+Use **euler** or **euler_a** to get started quickly.`
+      }
+    ]
+  },
+  {
+    id: 'demo-thinking',
+    title: 'Thinking',
+    createdAt: daysAgo(0),
+    messages: [
+      { id: 'demo-think-1', role: 'user', text: 'Analyze my current workflow' },
+      { id: 'demo-think-2', role: 'assistant', text: '', thinking: true }
+    ]
+  },
+  {
+    id: 'demo-tool-calls',
+    title: 'Tool calls',
+    createdAt: daysAgo(0),
+    messages: [
+      {
+        id: 'demo-tools-1',
+        role: 'user',
+        text: 'Build a workflow for image to video'
+      },
+      {
+        id: 'demo-tools-2',
+        role: 'assistant',
+        text: 'I set up the nodes and connections for your image-to-video workflow. The KSampler is configured with sensible defaults — adjust the steps and CFG scale to taste.',
+        toolCalls: MOCK_TOOL_CALLS
+      }
+    ]
+  },
+  {
+    id: 'demo-attachments',
+    title: 'Attachments',
+    createdAt: daysAgo(0),
+    messages: [
+      {
+        id: 'demo-attach-1',
+        role: 'user',
+        text: 'Use this image as a reference',
+        attachments: [
+          {
+            name: 'reference.png',
+            type: 'image/png',
+            url: '',
+            size: 204800
+          },
+          {
+            name: 'style-guide.pdf',
+            type: 'application/pdf',
+            url: '',
+            size: 512000
+          }
+        ]
+      },
+      {
+        id: 'demo-attach-2',
+        role: 'assistant',
+        text: "I can see the reference image. I'll use the visual style and color palette as a guide when configuring the workflow nodes."
+      }
+    ]
+  }
+]
+
 const messages = ref<AgentMessage[]>([])
 const input = ref('')
 const status = ref<ChatStatus>('ready')
 const currentConversationId = ref<string | null>(null)
 const chatHistory = ref<AgentConversation[]>([
+  ...DEMO_CONVERSATIONS,
   {
-    id: 'h-1',
+    id: 'h-yesterday',
     title: 'Generate a yellow duck with a hockey mask',
-    createdAt: daysAgo(0),
-    messages: []
-  },
-  {
-    id: 'h-2',
-    title: 'Build me a workflow for image to video with 3 models',
-    createdAt: daysAgo(0),
-    messages: []
-  },
-  {
-    id: 'h-3',
-    title: 'Build me a workflow for image to video with 3 models',
-    createdAt: daysAgo(0),
-    messages: []
-  },
-  {
-    id: 'h-4',
-    title: 'Build me a workflow for image to video with 3 models',
     createdAt: daysAgo(1),
     messages: []
   },
   {
-    id: 'h-5',
-    title: 'Build me a workflow for image to video with 3 models',
-    createdAt: daysAgo(1),
+    id: 'h-last7',
+    title: 'Build a workflow for image to video with 3 models',
+    createdAt: daysAgo(4),
     messages: []
   },
   {
-    id: 'h-6',
-    title: 'Build me a workflow for image to video with 3 models',
-    createdAt: daysAgo(1),
-    messages: []
-  },
-  {
-    id: 'h-7',
-    title: 'Build me a workflow for image to video with 3 models',
-    createdAt: daysAgo(5),
-    messages: []
-  },
-  {
-    id: 'h-8',
-    title: 'Build me a workflow for image to video with 3 models',
+    id: 'h-last30',
+    title: 'Find the best workflow for skin upscaling',
     createdAt: daysAgo(15),
     messages: []
   }
@@ -129,6 +256,10 @@ function buildMockReply(prompt: string) {
     '- **Nodes** are the building blocks of a workflow.',
     '- **Edges** connect nodes and carry data between them.',
     '- Use _italics_ for emphasis and `inline code` for node names.',
+    '',
+    '## Before You Start',
+    '',
+    '> Make sure your checkpoint model is downloaded and placed in the `models/checkpoints` folder. The workflow will not run without it.',
     '',
     '## Node Reference',
     '',
@@ -264,6 +395,15 @@ function startNewChat() {
   currentConversationId.value = null
 }
 
+function loadConversation(id: string) {
+  const conv = chatHistory.value.find((c) => c.id === id)
+  if (!conv) return
+  clearTimers()
+  messages.value = conv.messages.map((m) => ({ ...m }))
+  currentConversationId.value = id
+  status.value = 'ready'
+}
+
 function deleteConversation(id: string) {
   const idx = chatHistory.value.findIndex((c) => c.id === id)
   if (idx !== -1) chatHistory.value.splice(idx, 1)
@@ -294,6 +434,7 @@ export function useAgentChatPrototype() {
     stop,
     applySuggestion,
     startNewChat,
+    loadConversation,
     deleteConversation,
     copyConversation
   }
