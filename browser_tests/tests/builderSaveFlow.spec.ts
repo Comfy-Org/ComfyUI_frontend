@@ -306,7 +306,8 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
       .toBe(true)
   })
 
-  test('save as with same name and same mode overwrites in place', async ({
+  // Skipped on cloud/1.45: confirm dialog renders on legacy PrimeVue (pre-Reka-cutover) — mask enter-transition race. Un-fixme after backporting the Reka dialog cutover.
+  test.fixme('save as with same name and same mode overwrites in place', async ({
     comfyPage
   }) => {
     const { appMode } = comfyPage

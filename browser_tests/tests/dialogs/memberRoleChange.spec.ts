@@ -97,7 +97,8 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await expect(page.getByText('Remove this member?')).toBeVisible()
   })
 
-  test('selecting the current role is a no-op', async ({ page }) => {
+  // Skipped on cloud/1.45: confirm dialog renders on legacy PrimeVue (pre-Reka-cutover) — mask enter-transition race. Un-fixme after backporting the Reka dialog cutover.
+  test.fixme('selecting the current role is a no-op', async ({ page }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup()
     const content = await openMembersTab(page)
 
@@ -124,7 +125,8 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     expect(state.patches).toHaveLength(0)
   })
 
-  test('promote dialog shows the Figma copy and cancelling keeps the role', async ({
+  // Skipped on cloud/1.45: confirm dialog renders on legacy PrimeVue (pre-Reka-cutover) — mask enter-transition race. Un-fixme after backporting the Reka dialog cutover.
+  test.fixme('promote dialog shows the Figma copy and cancelling keeps the role', async ({
     page
   }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup()
@@ -159,7 +161,8 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     expect(state.patches).toHaveLength(0)
   })
 
-  test('promoting a member re-sorts the row under the creator and stays demotable', async ({
+  // Skipped on cloud/1.45: confirm dialog renders on legacy PrimeVue (pre-Reka-cutover) — mask enter-transition race. Un-fixme after backporting the Reka dialog cutover.
+  test.fixme('promoting a member re-sorts the row under the creator and stays demotable', async ({
     page
   }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup()
@@ -200,7 +203,8 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await expect(menuButton(janeRow)).toBeVisible()
   })
 
-  test('demoting an owner returns them to member', async ({ page }) => {
+  // Skipped on cloud/1.45: confirm dialog renders on legacy PrimeVue (pre-Reka-cutover) — mask enter-transition race. Un-fixme after backporting the Reka dialog cutover.
+  test.fixme('demoting an owner returns them to member', async ({ page }) => {
     const ownerJane: Member = { ...MEMBER_JANE, role: 'owner' }
     const state = await new CloudWorkspaceMockHelper(page).setup([
       CREATOR,
@@ -233,7 +237,8 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     ])
   })
 
-  test('failed role change keeps the dialog open with an error toast', async ({
+  // Skipped on cloud/1.45: confirm dialog renders on legacy PrimeVue (pre-Reka-cutover) — mask enter-transition race. Un-fixme after backporting the Reka dialog cutover.
+  test.fixme('failed role change keeps the dialog open with an error toast', async ({
     page
   }) => {
     await new CloudWorkspaceMockHelper(page).setup()
