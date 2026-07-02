@@ -25,6 +25,6 @@ function handleClose() {
 }
 
 function handleSubscribe() {
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'upload_model_upgrade' })
 }
 </script>
