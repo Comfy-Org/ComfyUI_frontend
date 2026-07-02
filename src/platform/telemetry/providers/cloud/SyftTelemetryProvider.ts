@@ -1,19 +1,22 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+import { createScriptLoader } from '@/utils/loadExternalScript'
 
-import type { AuthMetadata, TelemetryProvider } from '../../types'
+import type { AuthMetadata, AuthMethod, TelemetryProvider } from '../../types'
 
 const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
 
-let scriptPromise: Promise<void> | null = null
+let currentStub: SyftDataClient | null = null
+let lastIdentifiedEmail: string | null = null
 
-function normalizeEmail(email: string | null | undefined): string | null {
-  return email?.trim().toLowerCase() || null
-}
+const loadSyftSdk = createScriptLoader<SyftDataClient>(SYFT_SRC, () =>
+  window.syft && window.syft !== currentStub ? window.syft : null
+)
 
 function createTraits(
-  source: SyftDataSource,
-  method?: SyftDataAuthMethod
+  source: 'signup' | 'login',
+  method?: AuthMethod
 ): SyftDataTraits {
   return method ? { source, method } : { source }
 }
@@ -53,42 +56,32 @@ function bootstrapSyftClient(): SyftDataClient | null {
   if (window.syft) return window.syft
 
   const stub = createSyftStub()
+  currentStub = stub
   window.syft = stub
 
-  const existingScript = document.querySelector<HTMLScriptElement>(
-    `script[src="${SYFT_SRC}"]`
-  )
-  if (existingScript || scriptPromise) return window.syft
-
-  const scriptEl = document.createElement('script')
-  scriptEl.src = SYFT_SRC
-  scriptEl.async = true
-
-  scriptPromise = new Promise<void>((resolve, reject) => {
-    scriptEl.addEventListener('load', () => resolve(), { once: true })
-    scriptEl.addEventListener(
-      'error',
-      () => {
-        scriptEl.remove()
-        if (window.syft === stub) {
-          delete window.syft
-        }
-        scriptPromise = null
-        reject(new Error('Syft script failed to load'))
-      },
-      { once: true }
-    )
-  }).catch((error) => {
+  loadSyftSdk().catch((error: unknown) => {
+    if (window.syft === stub) {
+      delete window.syft
+      lastIdentifiedEmail = null
+    }
+    if (currentStub === stub) {
+      currentStub = null
+    }
     console.warn('[Syft] SDK failed to load', error)
   })
 
-  document.head.appendChild(scriptEl)
   return window.syft
 }
 
-export class SyftTelemetryProvider implements TelemetryProvider {
-  private lastHandledEmail: string | null = null
+function identifyUser(email: string, traits: SyftDataTraits): void {
+  const syft = bootstrapSyftClient()
+  if (!syft) return
 
+  syft.identify(email, traits)
+  lastIdentifiedEmail = email
+}
+
+export class SyftTelemetryProvider implements TelemetryProvider {
   constructor() {
     bootstrapSyftClient()
   }
@@ -97,7 +90,7 @@ export class SyftTelemetryProvider implements TelemetryProvider {
     const normalizedEmail = normalizeEmail(email)
     if (!normalizedEmail) return
 
-    this.identify(
+    identifyUser(
       normalizedEmail,
       createTraits(is_new_user ? 'signup' : 'login', method)
     )
@@ -105,16 +98,8 @@ export class SyftTelemetryProvider implements TelemetryProvider {
 
   trackUserLoggedIn(): void {
     const normalizedEmail = normalizeEmail(useCurrentUser().userEmail.value)
-    if (!normalizedEmail || normalizedEmail === this.lastHandledEmail) return
+    if (!normalizedEmail || normalizedEmail === lastIdentifiedEmail) return
 
-    this.identify(normalizedEmail, createTraits('login'))
-  }
-
-  private identify(email: string, traits: SyftDataTraits): void {
-    const syft = bootstrapSyftClient()
-    if (!syft) return
-
-    syft.identify(email, traits)
-    this.lastHandledEmail = email
+    identifyUser(normalizedEmail, createTraits('login'))
   }
 }

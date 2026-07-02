@@ -41,8 +41,6 @@ interface GtagFunction {
   (...args: unknown[]): void
 }
 
-type SyftDataAuthMethod = 'email' | 'google' | 'github'
-type SyftDataSource = 'signup' | 'login'
 type SyftDataTraits = Record<string, string | number | null | undefined>
 
 interface SyftDataPendingFetch {

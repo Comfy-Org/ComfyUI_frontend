@@ -111,6 +111,34 @@ describe('SyftTelemetryProvider', () => {
     ])
   })
 
+  it('re-identifies via trackUserLoggedIn after SDK load failure', async () => {
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    const appendChild = mockScriptAppend()
+    mockCurrentUser.userEmail.value = 'restored@example.com'
+    const SyftTelemetryProvider = await importProvider()
+    const provider = new SyftTelemetryProvider()
+
+    provider.trackUserLoggedIn()
+
+    const failedScript = appendChild.mock.calls[0]?.[0]
+    if (!(failedScript instanceof HTMLScriptElement)) {
+      throw new Error('Expected Syft script to be appended')
+    }
+    failedScript.dispatchEvent(new Event('error'))
+    await Promise.resolve()
+
+    expect(window.syft).toBeUndefined()
+
+    provider.trackUserLoggedIn()
+
+    expect(appendChild).toHaveBeenCalledTimes(2)
+    expect(window.syft?.q).toContainEqual([
+      'identify',
+      'restored@example.com',
+      { source: 'login' }
+    ])
+  })
+
   it('does not touch the current user store during construction', async () => {
     mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     mockScriptAppend()
