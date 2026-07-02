@@ -92,7 +92,11 @@ function renderPreview(
       directives: { tooltip: {} },
       stubs: {
         ImagePreview: { template: '<div data-testid="image-preview" />' },
-        LatentPreview: { template: '<div data-testid="latent-preview" />' },
+        GeneratingScreen: {
+          emits: ['stop'],
+          template:
+            '<button data-testid="generating-screen" @click="$emit(\'stop\')" />'
+        },
         LinearWelcome: { template: '<div data-testid="linear-welcome" />' },
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
         MediaOutputPreview: true,
@@ -136,14 +140,12 @@ describe('LinearPreview', () => {
     expect(screen.queryByTestId('linear-welcome')).not.toBeInTheDocument()
   })
 
-  it('shows the latent preview and cancel control while a workflow is active', async () => {
+  it('shows the generating screen and cancels the run on stop while a workflow is active', async () => {
     outputHistoryState.isWorkflowActive = true
 
     const { user } = renderPreview()
 
-    expect(screen.getByTestId('latent-preview')).toBeInTheDocument()
-
-    await user.click(screen.getByTestId('linear-cancel-run'))
+    await user.click(screen.getByTestId('generating-screen'))
 
     expect(spies.cancelActiveWorkflowJobs).toHaveBeenCalled()
   })
