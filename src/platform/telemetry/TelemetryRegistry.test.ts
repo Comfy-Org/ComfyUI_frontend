@@ -30,6 +30,39 @@ describe('TelemetryRegistry', () => {
     expect(b.trackSearchQuery).toHaveBeenCalledExactlyOnceWith(payload)
   })
 
+  it('dispatches trackBeginCheckout with intent metadata to every provider', () => {
+    const a: TelemetryProvider = { trackBeginCheckout: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const metadata = {
+      user_id: 'user-1',
+      tier: 'pro' as const,
+      cycle: 'monthly' as const,
+      checkout_type: 'new' as const,
+      payment_intent_source: 'subscribe_to_run' as const
+    }
+    registry.trackBeginCheckout(metadata)
+
+    expect(a.trackBeginCheckout).toHaveBeenCalledExactlyOnceWith(metadata)
+  })
+
+  it('dispatches trackAddApiCreditButtonClicked with its source', () => {
+    const provider: TelemetryProvider = {
+      trackAddApiCreditButtonClicked: vi.fn()
+    }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(provider)
+
+    registry.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+
+    expect(
+      provider.trackAddApiCreditButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'credits_panel' })
+  })
+
   it('skips providers that do not implement trackSearchQuery', () => {
     const empty: TelemetryProvider = {}
     const registry = new TelemetryRegistry()
