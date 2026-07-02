@@ -60,7 +60,7 @@ function isTooltipValueType(val: unknown): val is TooltipValueType {
   return TOOLTIP_VALUE_TYPES.includes(val as TooltipValueType)
 }
 
-interface WidgetSlotMetadata {
+export interface WidgetSlotMetadata {
   index: number
   linked: boolean
   originNodeId?: NodeId
@@ -78,7 +78,7 @@ interface WidgetErrorTarget {
   widgetName: string
 }
 
-interface ProcessedWidget {
+export interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
   hasLayoutSize: boolean
