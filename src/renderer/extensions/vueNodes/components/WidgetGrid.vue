@@ -80,9 +80,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import InputSlot from './InputSlot.vue'
 
 /**
- * The fields WidgetGrid renders. The store-backed path passes richer
- * `ProcessedWidget`s (a structural superset); a static preview fills only the
- * required fields and omits the interactive ones.
+ * Required fields cover the static preview path; the optional (interactive)
+ * fields arrive only via the store-backed `ProcessedWidget` superset.
  */
 export interface WidgetGridItem {
   simplified: SimplifiedWidget
