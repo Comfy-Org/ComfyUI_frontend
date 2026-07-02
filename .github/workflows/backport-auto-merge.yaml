@@ -23,16 +23,19 @@ name: Backport Auto-Merge
 # backport PR's `pull_request: closed` event to create the release tag).
 
 on:
+  # Fires when someone approves — if the required checks are already green, the
+  # PR merges immediately.
   pull_request_review:
     types: [submitted]
-  check_suite:
-    types: [completed]
-  # Fallback sweep: catches PRs whose "ready" moment isn't captured by the events
-  # above (e.g. a required check reported via the commit-status API rather than a
-  # check suite, or a stale-review dismissal that doesn't fire a review event).
-  # Backports are not latency-critical, so a periodic sweep is a cheap backstop.
+  # Primary catch for the "approved first, checks went green later" case, plus a
+  # general backstop. A `check_suite`/`workflow_run` trigger would react faster to
+  # checks completing, but GitHub suppresses `check_suite` events for its own
+  # Actions suites (so it wouldn't fire for this repo's CI), and `workflow_run` is
+  # a secrets-bearing "dangerous" trigger we don't want on a public repo for a
+  # non-latency-critical task. Backports wait hours today, so a short sweep is a
+  # large improvement and needs neither.
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
 
 # Only constrains the default github.token (used for read-only PR lookups below).
 # It does NOT constrain PR_GH_TOKEN, whose authority is fixed by its own scopes.
@@ -40,12 +43,11 @@ permissions:
   contents: read # read-only; required for gh api / gh pr list to resolve candidates
   pull-requests: read # read-only; required for gh pr view eligibility checks
 
-# Serialize runs that act on the same PR so overlapping runs don't double-attempt
-# a merge. Keyed by PR number (review events) / head SHA (check_suite) / a fixed
-# key for scheduled sweeps. Cross-key overlaps are still possible but harmless:
-# the merge loop treats an already-merged PR as success (idempotent).
+# Serialize runs that act on the same PR (review events keyed by PR number; all
+# scheduled sweeps share one key). Cross-key overlaps are still possible but
+# harmless: the merge loop treats an already-merged PR as success (idempotent).
 concurrency:
-  group: backport-auto-merge-${{ github.event.pull_request.number || github.event.check_suite.head_sha || 'sweep' }}
+  group: backport-auto-merge-${{ github.event.pull_request.number || 'sweep' }}
   cancel-in-progress: false
 
 jobs:
@@ -63,18 +65,12 @@ jobs:
           GH_REPO: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
           PR_FROM_REVIEW: ${{ github.event.pull_request.number }}
-          CHECK_SUITE_SHA: ${{ github.event.check_suite.head_sha }}
         run: |
           set -euo pipefail
           numbers=""
           case "$EVENT_NAME" in
             pull_request_review)
               numbers="$PR_FROM_REVIEW"
-              ;;
-            check_suite)
-              # check_suite.pull_requests can be empty; resolve from the head SHA.
-              numbers=$(gh api "repos/${GH_REPO}/commits/${CHECK_SUITE_SHA}/pulls" \
-                --jq '.[] | select(.state=="open") | .number' 2>/dev/null || true)
               ;;
             schedule)
               # Sweep every open backport PR.
