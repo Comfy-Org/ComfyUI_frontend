@@ -17,6 +17,7 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -44,16 +45,6 @@ export interface WidgetEventOptions {
   e: CanvasPointerEvent
   node: LGraphNode
   canvas: LGraphCanvas
-}
-
-function isDOMBackedWidget(widget: IBaseWidget): boolean {
-  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
-    return widget.isDOMWidget
-  }
-  return (
-    ('element' in widget && !!widget.element) ||
-    ('component' in widget && !!widget.component)
-  )
 }
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
@@ -164,12 +155,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       type: this.type,
       value: this.value
     })
-    store.registerWidgetRenderState(id, {
-      advanced: this.options?.advanced ?? this.advanced,
-      hasLayoutSize: typeof this.computeLayoutSize === 'function',
-      isDOMWidget: isDOMBackedWidget(this),
-      tooltip: this.tooltip
-    })
+    store.registerWidgetRenderState(id, deriveWidgetRenderState(this))
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

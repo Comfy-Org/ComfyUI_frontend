@@ -11,6 +11,7 @@ import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { WidgetId } from '@/types/widgetId'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
@@ -56,16 +57,6 @@ provide(WidgetHeightKey, mobile ? 'h-10' : 'h-7')
 
 const resolvedInputs = useResolvedSelectedInputs()
 
-function isDOMBackedWidget(widget: IBaseWidget): boolean {
-  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
-    return widget.isDOMWidget
-  }
-  return (
-    ('element' in widget && !!widget.element) ||
-    ('component' in widget && !!widget.component)
-  )
-}
-
 function ensureSelectedWidgetState(
   widgetId: WidgetId,
   widget: IBaseWidget
@@ -80,12 +71,10 @@ function ensureSelectedWidgetState(
     serialize: widget.serialize,
     disabled: widget.disabled
   })
-  widgetValueStore.registerWidgetRenderState(widgetId, {
-    advanced: widget.options?.advanced ?? widget.advanced,
-    hasLayoutSize: typeof widget.computeLayoutSize === 'function',
-    isDOMWidget: isDOMBackedWidget(widget),
-    tooltip: widget.tooltip
-  })
+  widgetValueStore.registerWidgetRenderState(
+    widgetId,
+    deriveWidgetRenderState(widget)
+  )
 }
 
 const mappedSelections = computed((): WidgetEntry[] => {
