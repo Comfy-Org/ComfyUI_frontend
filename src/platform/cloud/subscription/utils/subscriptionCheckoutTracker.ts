@@ -47,7 +47,7 @@ export interface PendingSubscriptionCheckoutAttempt {
   payment_intent_source?: PaymentIntentSource
 }
 
-export interface PendingSubscriptionCheckoutAttemptInput {
+interface PendingSubscriptionCheckoutAttemptInput {
   tier: TierKey
   cycle: BillingCycle
   checkout_type: SubscriptionCheckoutType

@@ -1,5 +1,3 @@
-import { storeToRefs } from 'pinia'
-
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   PaymentIntentSource,
@@ -24,11 +22,11 @@ export function trackWorkspaceCheckoutStarted({
   billingOpId,
   paymentIntentSource
 }: TrackWorkspaceCheckoutStartedOptions) {
-  const { userId } = storeToRefs(useAuthStore())
-  if (!userId.value) return
+  const { userId } = useAuthStore()
+  if (!userId) return
 
   useTelemetry()?.trackBeginCheckout({
-    user_id: userId.value,
+    user_id: userId,
     tier,
     cycle,
     checkout_type: checkoutType,
