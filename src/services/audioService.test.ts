@@ -38,6 +38,12 @@ describe('useAudioService', () => {
     name: 'test-audio-123.wav'
   }
 
+  async function freshService() {
+    vi.resetModules()
+    const audioServiceModule = await import('@/services/audioService')
+    return audioServiceModule.useAudioService()
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
 
@@ -90,11 +96,40 @@ describe('useAudioService', () => {
       )
       mockRegister.mockRejectedValueOnce(error)
 
-      await service.registerWavEncoder()
+      const isolatedService = await freshService()
+      await isolatedService.registerWavEncoder()
+      await isolatedService.registerWavEncoder()
 
-      expect(mockConnect).toHaveBeenCalledTimes(0)
-      expect(mockRegister).toHaveBeenCalledTimes(0)
+      expect(mockConnect).toHaveBeenCalledTimes(1)
+      expect(mockRegister).toHaveBeenCalledTimes(1)
       expect(console.error).not.toHaveBeenCalled()
+    })
+
+    it('should log encoder registration errors', async () => {
+      const error = new Error('Encoder failed')
+      mockRegister.mockRejectedValueOnce(error)
+
+      const isolatedService = await freshService()
+      await isolatedService.registerWavEncoder()
+
+      expect(console.error).toHaveBeenCalledWith(
+        'Audio Service Error (encoder):',
+        'Failed to register WAV encoder',
+        error
+      )
+    })
+
+    it('should log non-Error encoder registration failures', async () => {
+      mockRegister.mockRejectedValueOnce('Encoder failed')
+
+      const isolatedService = await freshService()
+      await isolatedService.registerWavEncoder()
+
+      expect(console.error).toHaveBeenCalledWith(
+        'Audio Service Error (encoder):',
+        'Failed to register WAV encoder',
+        'Encoder failed'
+      )
     })
   })
 

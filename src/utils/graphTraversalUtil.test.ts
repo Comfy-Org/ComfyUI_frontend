@@ -9,21 +9,27 @@ import type {
 import {
   collectAllNodes,
   collectFromNodes,
+  executionIdToNodeLocatorId,
   findNodeInHierarchy,
   findSubgraphByUuid,
+  findSubgraphPathById,
+  getActiveGraphNodeIds,
   forEachNode,
   forEachSubgraphNode,
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes,
   getLocalNodeIdFromExecutionId,
+  getLocatorIdFromNodeData,
   getNodeByExecutionId,
   getNodeByLocatorId,
   getRootGraph,
+  getRootParentNode,
   getSubgraphPathFromExecutionId,
   getExecutionIdFromNodeData,
   mapAllNodes,
   mapSubgraphNodes,
   parseExecutionId,
+  reduceAllNodes,
   traverseNodesDepthFirst,
   traverseSubgraphPath,
   triggerCallbackOnAllNodes,
@@ -36,6 +42,7 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
@@ -97,6 +104,8 @@ describe('graphTraversalUtil', () => {
       expect(findNodeInHierarchy(graph, '')).toBeNull()
       expect(getExecutionIdForNodeInGraph(graph, graph, '')).toBeNull()
       expect(getExecutionIdFromNodeData(graph, { id: '' })).toBeNull()
+      expect(getLocatorIdFromNodeData({ id: '' })).toBeNull()
+      expect(executionIdToNodeLocatorId(graph, '')).toBeUndefined()
     })
   })
 
@@ -214,6 +223,12 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph([createMockNode('1')])
         const result = traverseSubgraphPath(graph, ['999'])
         expect(result).toBeNull()
+      })
+
+      it('returns null for an unparseable path segment', () => {
+        const graph = createMockGraph([])
+
+        expect(traverseSubgraphPath(graph, [''])).toBeNull()
       })
     })
   })
@@ -501,6 +516,17 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('findSubgraphByUuid', () => {
+      it('uses the root graph subgraph registry when available', () => {
+        const subgraph = createMockSubgraph('registered-uuid', [])
+        const graph = {
+          ...createMockGraph([]),
+          subgraphs: new Map([[subgraph.id, subgraph]])
+        } satisfies Partial<LGraph> as LGraph
+
+        expect(findSubgraphByUuid(graph, subgraph.id)).toBe(subgraph)
+        expect(findSubgraphByUuid(graph, 'missing-uuid')).toBeNull()
+      })
+
       it('should find subgraph by UUID', () => {
         const targetUuid = 'target-uuid'
         const subgraph = createMockSubgraph(targetUuid, [])
@@ -543,6 +569,60 @@ describe('graphTraversalUtil', () => {
 
         const found = findSubgraphByUuid(graph, 'non-existent-uuid')
         expect(found).toBeNull()
+      })
+    })
+
+    describe('findSubgraphPathById', () => {
+      it('returns the path to a nested subgraph', () => {
+        const targetSubgraph = createMockSubgraph('target-uuid', [])
+        const middleNode = createMockNode('20', {
+          isSubgraph: true,
+          subgraph: targetSubgraph
+        })
+        const middleSubgraph = createMockSubgraph('middle-uuid', [middleNode])
+        const rootNode = createMockNode('10', {
+          isSubgraph: true,
+          subgraph: middleSubgraph
+        })
+        const graph = createMockGraph([rootNode])
+
+        expect(findSubgraphPathById(graph, 'target-uuid')).toEqual([
+          'middle-uuid',
+          'target-uuid'
+        ])
+      })
+
+      it('skips malformed graph entries while searching', () => {
+        const malformedSubgraph = {
+          id: 'malformed',
+          nodes: []
+        } as unknown as Subgraph
+        const graph = createMockGraph([
+          createMockNode('10', {
+            isSubgraph: true,
+            subgraph: malformedSubgraph
+          })
+        ])
+
+        expect(findSubgraphPathById(graph, 'missing-uuid')).toBeNull()
+      })
+    })
+
+    describe('getRootParentNode', () => {
+      it('returns null for root-level or invalid execution IDs', () => {
+        const graph = createMockGraph([createMockNode('10')])
+
+        expect(getRootParentNode(graph, '10')).toBeNull()
+        expect(getRootParentNode(graph, '')).toBeNull()
+        expect(getRootParentNode(graph, 'invalid:20')).toBeNull()
+      })
+
+      it('returns the root parent for a nested execution ID', () => {
+        const parent = createMockNode('10')
+        const graph = createMockGraph([parent])
+
+        expect(getRootParentNode(graph, '10:20:30')).toBe(parent)
+        expect(getRootParentNode(graph, '10:20:30')?.id).toBe('10')
       })
     })
 
@@ -616,6 +696,14 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('getExecutionIdByNode', () => {
+      it('returns null when the node has no graph', () => {
+        const node = createMockNode('123')
+        node.graph = null as unknown as LGraph
+        const graph = createMockGraph([])
+
+        expect(getExecutionIdByNode(graph, node)).toBeNull()
+      })
+
       it('should return node id if graph is rootGraph', () => {
         const node = createMockNode('123')
         const graph = createMockGraph([node])
@@ -736,6 +824,21 @@ describe('graphTraversalUtil', () => {
           getExecutionIdForNodeInGraph(rootGraph, orphanSubgraph, '63')
         ).toBe('63')
       })
+
+      it('falls back to local id when the parent path is not parseable', () => {
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub-uuid', [interior])
+        const subgraphNode = createMockLGraphNode({
+          id: toNodeId(''),
+          isSubgraphNode: () => true,
+          subgraph
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([subgraphNode])
+
+        expect(getExecutionIdForNodeInGraph(rootGraph, subgraph, '63')).toBe(
+          '63'
+        )
+      })
     })
 
     describe('isAncestorPathActive', () => {
@@ -808,6 +911,22 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('isExecutionPathActive', () => {
+      it('returns true when the graph is unavailable', () => {
+        expect(isExecutionPathActive(null, '42')).toBe(true)
+        expect(isExecutionPathActive(undefined, '42')).toBe(true)
+      })
+
+      it('returns false when the target node cannot be resolved', () => {
+        expect(isExecutionPathActive(createMockGraph([]), '42')).toBe(false)
+      })
+
+      it('returns true for an active target with active ancestors', () => {
+        const node = createMockNode('42')
+        const rootGraph = createMockGraph([node])
+
+        expect(isExecutionPathActive(rootGraph, '42')).toBe(true)
+      })
+
       it('returns false when the target node itself is bypassed', () => {
         const node = createMockLGraphNode({
           id: 42,
@@ -914,6 +1033,10 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('isCandidateScopeActive', () => {
+      it('treats candidates without a scoped node as active', () => {
+        expect(isCandidateScopeActive(createMockGraph([]), {})).toBe(true)
+      })
+
       it('uses sourceExecutionId before nodeId', () => {
         const rootNode = createMockNode('65')
         const sourceNode = createMockLGraphNode({
@@ -1017,6 +1140,51 @@ describe('graphTraversalUtil', () => {
         const locatorId = 'non-existent-uuid:789'
         const found = getNodeByLocatorId(graph, locatorId)
         expect(found).toBeNull()
+      })
+
+      it('returns null when the root graph is unavailable', () => {
+        expect(getNodeByLocatorId(null as unknown as LGraph, '123')).toBeNull()
+      })
+    })
+
+    describe('executionIdToNodeLocatorId', () => {
+      it('returns a root locator for root execution IDs', () => {
+        const graph = createMockGraph([])
+
+        expect(executionIdToNodeLocatorId(graph, '123')).toBe('123')
+      })
+
+      it('returns a subgraph locator for nested execution IDs', () => {
+        const targetNode = createMockNode('789')
+        const subgraph = createMockSubgraph(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          [targetNode]
+        )
+        const graph = createMockGraph([
+          createMockNode('456', { isSubgraph: true, subgraph })
+        ])
+
+        expect(executionIdToNodeLocatorId(graph, '456:789')).toBe(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:789'
+        )
+      })
+
+      it('returns undefined when the nested path cannot be resolved', () => {
+        const graph = createMockGraph([createMockNode('456')])
+
+        expect(executionIdToNodeLocatorId(graph, '456:789')).toBeUndefined()
+      })
+
+      it('returns undefined when the nested local id is invalid', () => {
+        const subgraph = createMockSubgraph(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          []
+        )
+        const graph = createMockGraph([
+          createMockNode('456', { isSubgraph: true, subgraph })
+        ])
+
+        expect(executionIdToNodeLocatorId(graph, '456:')).toBeUndefined()
       })
     })
 
@@ -1207,7 +1375,27 @@ describe('graphTraversalUtil', () => {
       })
     })
 
+    describe('reduceAllNodes', () => {
+      it('reduces nodes across nested subgraphs', () => {
+        const subgraph = createMockSubgraph('sub-uuid', [createMockNode('10')])
+        const graph = createMockGraph([
+          createMockNode('1'),
+          createMockNode('2', { isSubgraph: true, subgraph })
+        ])
+
+        expect(
+          reduceAllNodes(graph, (sum, node) => sum + Number(node.id), 0)
+        ).toBe(13)
+      })
+    })
+
     describe('traverseNodesDepthFirst', () => {
+      it('handles missing traversal options', () => {
+        const node = createMockNode('1')
+
+        expect(() => traverseNodesDepthFirst([node])).not.toThrow()
+      })
+
       it('should traverse nodes in depth-first order', () => {
         const visited: string[] = []
         const nodes = [
@@ -1299,6 +1487,15 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('collectFromNodes', () => {
+      it('collects nodes with default options', () => {
+        const nodes = [createMockNode('1'), createMockNode('2')]
+
+        expect(collectFromNodes(nodes).map((node) => String(node.id))).toEqual([
+          '2',
+          '1'
+        ])
+      })
+
       it('should collect data from all nodes', () => {
         const nodes = [
           createMockNode('1'),
@@ -1582,6 +1779,44 @@ describe('graphTraversalUtil', () => {
         const executionIds = getExecutionIdsForSelectedNodes(subgraph.nodes)
 
         expect(executionIds).toEqual(['2:10', '2:11'])
+      })
+
+      it('returns an empty list when the starting subgraph is unreachable', () => {
+        const rootGraph = createMockGraph([])
+        const orphanSubgraph = createMockSubgraph('orphan', [], rootGraph)
+        createMockNode('10', { graph: orphanSubgraph })
+
+        expect(
+          getExecutionIdsForSelectedNodes(orphanSubgraph.nodes, orphanSubgraph)
+        ).toEqual([])
+      })
+    })
+
+    describe('getActiveGraphNodeIds', () => {
+      it('returns local ids for execution ids in the active graph', () => {
+        const rootNode = createMockNode('1')
+        const subNode = createMockNode('10')
+        const subgraph = createMockSubgraph('sub-uuid', [subNode])
+        const subgraphNode = createMockNode('2', {
+          isSubgraph: true,
+          subgraph
+        })
+        const graph = createMockGraph([rootNode, subgraphNode])
+        rootNode.graph = graph
+        subgraphNode.graph = graph
+        subNode.graph = subgraph
+        const executionIds = new Set([
+          createNodeExecutionId([toNodeId(1)]),
+          createNodeExecutionId([toNodeId(2), toNodeId(10)]),
+          createNodeExecutionId([toNodeId(999)])
+        ])
+
+        expect(getActiveGraphNodeIds(graph, graph, executionIds)).toEqual(
+          new Set(['1'])
+        )
+        expect(getActiveGraphNodeIds(graph, subgraph, executionIds)).toEqual(
+          new Set(['10'])
+        )
       })
     })
   })

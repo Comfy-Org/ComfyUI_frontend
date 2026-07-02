@@ -5,7 +5,8 @@ import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 import {
   EXPECTED_PROMPT_NAN_COERCED,
   mockFileReaderAbort,
-  mockFileReaderError
+  mockFileReaderError,
+  mockFileReaderResult
 } from './__fixtures__/helpers'
 import { getGltfBinaryMetadata } from './gltf'
 
@@ -16,11 +17,15 @@ describe('GLTF binary metadata parser', () => {
     return { header, headerView }
   }
 
-  const createJSONChunk = (jsonData: ArrayBuffer) => {
+  const createJSONChunk = (
+    jsonData: ArrayBuffer,
+    chunkType = ASCII.JSON,
+    chunkLength = jsonData.byteLength
+  ) => {
     const chunkHeader = new ArrayBuffer(GltfSizeBytes.CHUNK_HEADER)
     const chunkView = new DataView(chunkHeader)
-    chunkView.setUint32(0, jsonData.byteLength, true)
-    chunkView.setUint32(4, ASCII.JSON, true)
+    chunkView.setUint32(0, chunkLength, true)
+    chunkView.setUint32(4, chunkType, true)
     return chunkHeader
   }
 
@@ -52,13 +57,27 @@ describe('GLTF binary metadata parser', () => {
   // Builds a GLB whose JSON chunk is the literal text passed in - used to
   // embed Python generated bare NaN/Infinity tokens that JSON.stringify
   // would otherwise coerce to null.
-  function createMockGltfFileFromText(jsonText: string): File {
+  interface MockGltfFileOptions {
+    chunkLength?: number
+    chunkType?: number
+    magicNumber?: number
+  }
+
+  function createMockGltfFileFromText(
+    jsonText: string,
+    {
+      chunkLength,
+      chunkType = ASCII.JSON,
+      magicNumber = ASCII.GLTF
+    }: MockGltfFileOptions = {}
+  ): File {
     const jsonData = new TextEncoder().encode(jsonText)
     const { header, headerView } = createGLTFFileStructure()
 
     setHeaders(headerView, jsonData.buffer)
+    setTypeHeader(headerView, magicNumber)
 
-    const chunkHeader = createJSONChunk(jsonData.buffer)
+    const chunkHeader = createJSONChunk(jsonData.buffer, chunkType, chunkLength)
 
     const fileContent = new Uint8Array(
       header.byteLength + chunkHeader.byteLength + jsonData.byteLength
@@ -130,7 +149,9 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata).toBeDefined()
     expect(metadata.prompt).toBeDefined()
 
-    const prompt = metadata.prompt as Record<string, any>
+    const prompt = metadata.prompt as {
+      node1: { class_type: string; inputs: { seed: number } }
+    }
     expect(prompt.node1.class_type).toBe('TestNode')
     expect(prompt.node1.inputs.seed).toBe(123456)
   })
@@ -179,6 +200,74 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata).toEqual({})
   })
 
+  it('returns empty when the GLB magic number is invalid', async () => {
+    const mockFile = createMockGltfFileFromText('{}', { magicNumber: 0 })
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata).toEqual({})
+  })
+
+  it('returns empty when the GLB is missing the first chunk header', async () => {
+    const { header, headerView } = createGLTFFileStructure()
+    setTypeHeader(headerView, ASCII.GLTF)
+    setVersionHeader(headerView, 2)
+    setTotalLengthHeader(headerView, GltfSizeBytes.HEADER)
+    const mockFile = new File([header], 'header-only.glb')
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata).toEqual({})
+  })
+
+  it('returns empty when the first chunk is not JSON', async () => {
+    const mockFile = createMockGltfFileFromText('{}', { chunkType: 0 })
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata).toEqual({})
+  })
+
+  it('returns empty when the declared JSON chunk exceeds the buffer', async () => {
+    const mockFile = createMockGltfFileFromText('{}', { chunkLength: 1024 })
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata).toEqual({})
+  })
+
+  it('returns empty when the JSON chunk cannot be parsed', async () => {
+    const mockFile = createMockGltfFileFromText('{not json')
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata).toEqual({})
+  })
+
+  it('returns empty when asset extras are missing', async () => {
+    const mockFile = createMockGltfFile({ asset: { version: '2.0' } })
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata).toEqual({})
+  })
+
+  it('skips string metadata values that are not valid JSON', async () => {
+    const mockFile = createMockGltfFile({
+      asset: {
+        version: '2.0',
+        extras: {
+          prompt: '{not json',
+          workflow: '{not json'
+        }
+      }
+    })
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata).toEqual({})
+  })
+
   describe('FileReader failure modes', () => {
     afterEach(() => vi.restoreAllMocks())
 
@@ -191,6 +280,16 @@ describe('GLTF binary metadata parser', () => {
 
     it('resolves empty when the FileReader fires abort', async () => {
       mockFileReaderAbort('readAsArrayBuffer')
+      expect(await getGltfBinaryMetadata(file)).toEqual({})
+    })
+
+    it('resolves empty when the FileReader load result is missing', async () => {
+      mockFileReaderResult('readAsArrayBuffer', null)
+      expect(await getGltfBinaryMetadata(file)).toEqual({})
+    })
+
+    it('resolves empty when the FileReader result is not a buffer', async () => {
+      mockFileReaderResult('readAsArrayBuffer', 'not a buffer')
       expect(await getGltfBinaryMetadata(file)).toEqual({})
     })
   })
