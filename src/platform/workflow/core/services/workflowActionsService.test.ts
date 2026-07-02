@@ -18,12 +18,14 @@ vi.mock('@/scripts/utils', () => ({
   downloadBlob: mockDownloadBlob
 }))
 
+const mockCreateTemporary = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ createTemporary: vi.fn() })
+  useWorkflowStore: () => ({ createTemporary: mockCreateTemporary })
 }))
 
+const mockOpenWorkflow = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({ openWorkflow: vi.fn() })
+  useWorkflowService: () => ({ openWorkflow: mockOpenWorkflow })
 }))
 
 const minimalWorkflow: ComfyWorkflowJSON = {
@@ -37,6 +39,8 @@ const minimalWorkflow: ComfyWorkflowJSON = {
 describe('workflowActionsService.exportWorkflowAction', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCreateTemporary.mockReturnValue({ path: 'temporary.json' })
+    mockOpenWorkflow.mockResolvedValue({ path: 'temporary.json' })
   })
 
   it('returns { cancelled: true } when the user dismisses the filename prompt', async () => {
@@ -88,5 +92,74 @@ describe('workflowActionsService.exportWorkflowAction', () => {
       error: 'No workflow data available'
     })
     expect(mockDownloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('returns a fallback error when export throws a non-error value', async () => {
+    mockGetSetting.mockReturnValue(false)
+    mockDownloadBlob.mockImplementationOnce(() => {
+      throw 'download failed'
+    })
+    const { exportWorkflowAction } = useWorkflowActionsService()
+
+    const result = await exportWorkflowAction(minimalWorkflow, 'wf.json')
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to export workflow'
+    })
+  })
+})
+
+describe('workflowActionsService.openWorkflowAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCreateTemporary.mockReturnValue({ path: 'temporary.json' })
+    mockOpenWorkflow.mockResolvedValue({ path: 'temporary.json' })
+  })
+
+  it('opens a temporary workflow and returns success', async () => {
+    const { openWorkflowAction } = useWorkflowActionsService()
+
+    const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
+
+    expect(result).toEqual({ success: true })
+    expect(mockCreateTemporary).toHaveBeenCalledWith('wf.json', minimalWorkflow)
+    expect(mockOpenWorkflow).toHaveBeenCalledWith({ path: 'temporary.json' })
+  })
+
+  it('returns the no-workflow error when opening null', async () => {
+    const { openWorkflowAction } = useWorkflowActionsService()
+
+    const result = await openWorkflowAction(null, 'wf.json')
+
+    expect(result).toEqual({
+      success: false,
+      error: 'No workflow data available'
+    })
+    expect(mockCreateTemporary).not.toHaveBeenCalled()
+  })
+
+  it('returns thrown error messages from failed opens', async () => {
+    mockOpenWorkflow.mockRejectedValueOnce(new Error('Open failed'))
+    const { openWorkflowAction } = useWorkflowActionsService()
+
+    const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Open failed'
+    })
+  })
+
+  it('returns a fallback error when opening throws a non-error value', async () => {
+    mockOpenWorkflow.mockRejectedValueOnce('Open failed')
+    const { openWorkflowAction } = useWorkflowActionsService()
+
+    const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to open workflow'
+    })
   })
 })

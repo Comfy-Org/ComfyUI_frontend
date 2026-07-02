@@ -127,4 +127,45 @@ describe('MatchType during configure', () => {
     expect(switchNode.inputs[1].link).not.toBeNull()
     expect(switchNode.outputs[0].type).toBe('IMAGE')
   })
+
+  test('keeps compatible downstream links after output type recalculation', () => {
+    const graph = new LGraph()
+    const switchNode = createMatchTypeNode(graph)
+    const target = new LGraphNode('target')
+    target.addInput('image', 'IMAGE')
+    target.onConnectionsChange = vi.fn()
+    graph.add(target)
+    const source = createSourceNode(graph, 'IMAGE')
+
+    switchNode.connect(0, target, 0)
+    vi.mocked(target.onConnectionsChange).mockClear()
+    source.connect(0, switchNode, 0)
+
+    expect(switchNode.outputs[0].type).toBe('IMAGE')
+    expect(target.inputs[0].link).not.toBeNull()
+    expect(target.onConnectionsChange).toHaveBeenCalledWith(
+      LiteGraph.INPUT,
+      0,
+      true,
+      expect.anything(),
+      target.inputs[0]
+    )
+  })
+
+  test('disconnects incompatible downstream links after output type recalculation', () => {
+    const graph = new LGraph()
+    const switchNode = createMatchTypeNode(graph)
+    const target = new LGraphNode('target')
+    target.addInput('image', 'IMAGE')
+    graph.add(target)
+    const source = createSourceNode(graph, 'LATENT')
+
+    switchNode.connect(0, target, 0)
+    expect(target.inputs[0].link).not.toBeNull()
+
+    source.connect(0, switchNode, 0)
+
+    expect(switchNode.outputs[0].type).toBe('LATENT')
+    expect(target.inputs[0].link).toBeNull()
+  })
 })
