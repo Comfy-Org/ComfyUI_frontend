@@ -19,6 +19,7 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 
 const {
   mockTeamWorkspacesEnabled,
+  mockConsolidatedBillingEnabled,
   mockIsPersonal,
   mockPlans,
   mockPurchaseCredits,
@@ -26,6 +27,7 @@ const {
   mockBillingStatus
 } = vi.hoisted(() => ({
   mockTeamWorkspacesEnabled: { value: false },
+  mockConsolidatedBillingEnabled: { value: false },
   mockIsPersonal: { value: true },
   mockPlans: { value: [] as Plan[] },
   mockPurchaseCredits: vi.fn(),
@@ -57,11 +59,23 @@ vi.mock('@/composables/useFeatureFlags', async () => {
       teamWorkspacesEnabledRef.value = value
     }
   })
+  const consolidatedBillingEnabledRef = ref(
+    mockConsolidatedBillingEnabled.value
+  )
+  Object.defineProperty(mockConsolidatedBillingEnabled, 'value', {
+    get: () => consolidatedBillingEnabledRef.value,
+    set: (value: boolean) => {
+      consolidatedBillingEnabledRef.value = value
+    }
+  })
   return {
     useFeatureFlags: () => ({
       flags: {
         get teamWorkspacesEnabled() {
           return mockTeamWorkspacesEnabled.value
+        },
+        get consolidatedBillingEnabled() {
+          return mockConsolidatedBillingEnabled.value
         }
       }
     })
@@ -151,6 +165,7 @@ describe('useBillingContext', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockTeamWorkspacesEnabled.value = false
+    mockConsolidatedBillingEnabled.value = false
     mockIsPersonal.value = true
     mockPlans.value = []
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
@@ -162,16 +177,27 @@ describe('useBillingContext', () => {
     expect(type.value).toBe('legacy')
   })
 
-  it('selects workspace type for personal when team workspaces are enabled', () => {
+  it('keeps personal on legacy when consolidated billing is disabled', () => {
     mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = false
+    mockIsPersonal.value = true
+
+    const { type } = useBillingContext()
+    expect(type.value).toBe('legacy')
+  })
+
+  it('selects workspace type for personal when consolidated billing is enabled', () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     expect(type.value).toBe('workspace')
   })
 
-  it('selects workspace type for team when team workspaces are enabled', () => {
+  it('selects workspace type for team regardless of consolidated billing', () => {
     mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = false
     mockIsPersonal.value = false
 
     const { type } = useBillingContext()
@@ -272,6 +298,7 @@ describe('useBillingContext', () => {
     expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
 
     // Authenticated remote config resolves the flag on for the same workspace
+    mockConsolidatedBillingEnabled.value = true
     mockTeamWorkspacesEnabled.value = true
 
     await vi.waitFor(() => {
@@ -280,9 +307,27 @@ describe('useBillingContext', () => {
     })
   })
 
+  it('moves a personal workspace to workspace billing when consolidated billing flips on', async () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = false
+    mockIsPersonal.value = true
+
+    const { type } = useBillingContext()
+    await nextTick()
+    expect(type.value).toBe('legacy')
+
+    mockConsolidatedBillingEnabled.value = true
+
+    await vi.waitFor(() => {
+      expect(type.value).toBe('workspace')
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+    })
+  })
+
   describe('subscription mirror to workspace store', () => {
-    it('mirrors subscription for personal workspaces when team workspaces are enabled', async () => {
+    it('mirrors subscription for personal workspaces on the consolidated billing flow', async () => {
       mockTeamWorkspacesEnabled.value = true
+      mockConsolidatedBillingEnabled.value = true
       mockIsPersonal.value = true
 
       const { initialize } = useBillingContext()
@@ -291,6 +336,20 @@ describe('useBillingContext', () => {
 
       expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
         isSubscribed: true,
+        subscriptionPlan: null
+      })
+    })
+
+    it('never clobbers the list-derived store when a subscription is absent', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+
+      const { initialize } = useBillingContext()
+      await initialize()
+      await nextTick()
+
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalledWith({
+        isSubscribed: false,
         subscriptionPlan: null
       })
     })
