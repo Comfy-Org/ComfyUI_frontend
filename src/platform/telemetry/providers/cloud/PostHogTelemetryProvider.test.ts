@@ -313,41 +313,32 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('maps cancellation stages to their events', async () => {
-      const provider = createProvider()
-      await vi.dynamicImportSettled()
-
-      provider.trackSubscriptionCancellation('flow_opened', {
-        current_tier: 'standard'
-      })
-      provider.trackSubscriptionCancellation('failed', {
-        current_tier: 'standard',
-        error_message: 'timed out'
-      })
-      provider.trackSubscriptionCancellation('confirmed', {
-        current_tier: 'pro'
-      })
-      provider.trackSubscriptionCancellation('abandoned', {
-        current_tier: 'creator'
-      })
-
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED,
-        { current_tier: 'standard' }
-      )
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+    it.for([
+      ['flow_opened', TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED, {}],
+      ['confirmed', TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED, {}],
+      ['abandoned', TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED, {}],
+      [
+        'failed',
         TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED,
-        { current_tier: 'standard', error_message: 'timed out' }
-      )
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED,
-        { current_tier: 'pro' }
-      )
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED,
-        { current_tier: 'creator' }
-      )
-    })
+        { error_message: 'timed out' }
+      ]
+    ] as const)(
+      'captures %s cancellation stage',
+      async ([stage, event, extra]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        provider.trackSubscriptionCancellation(stage, {
+          current_tier: 'standard',
+          ...extra
+        })
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(event, {
+          current_tier: 'standard',
+          ...extra
+        })
+      }
+    )
 
     it('captures resubscribe clicks with their source', async () => {
       const provider = createProvider()
