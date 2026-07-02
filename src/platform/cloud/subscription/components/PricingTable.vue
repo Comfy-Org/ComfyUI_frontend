@@ -123,7 +123,7 @@
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  :class="cn(CREDITS_ICON, 'size-4 shrink-0 bg-amber-400')"
                   aria-hidden="true"
                 />
                 <span
@@ -264,6 +264,7 @@ import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'

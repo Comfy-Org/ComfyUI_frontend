@@ -14,7 +14,7 @@
       class="p-1 text-amber-400"
     >
       <template #icon>
-        <i class="icon-[lucide--component]" />
+        <i :class="CREDITS_ICON" />
       </template>
     </Tag>
     <div :class="textClass">
@@ -29,7 +29,10 @@ import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import {
+  CREDITS_ICON,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import { useAuthStore } from '@/stores/authStore'
 
 const { textClass, showCreditsOnly } = defineProps<{

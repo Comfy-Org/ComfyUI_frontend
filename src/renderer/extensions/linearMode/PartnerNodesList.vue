@@ -1,85 +1,59 @@
 <script setup lang="ts">
 import {
-  CollapsibleContent,
-  CollapsibleRoot,
-  CollapsibleTrigger
+  TooltipContent,
+  TooltipPortal,
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger
 } from 'reka-ui'
-import { computed, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
-import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
-import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
-import { app } from '@/scripts/app'
-import { mapAllNodes } from '@/utils/graphTraversalUtil'
+import type { NodeId } from '@/types/nodeId'
 
-defineProps<{ mobile?: boolean }>()
+defineProps<{ badges: readonly (readonly [string, string, NodeId])[] }>()
 
-const { isCreditsBadge } = usePriceBadge()
 const { t } = useI18n()
-
-const creditsBadges = computed(() =>
-  mapAllNodes(app.graph, (node) => {
-    if (node.isSubgraphNode()) return
-
-    const priceBadge = node.badges.find(isCreditsBadge)
-    if (!priceBadge) return
-
-    trackNodePrice(node)
-    return [node.title, toValue(priceBadge).text, node.id] as const
-  })
-)
 </script>
 <template>
-  <Popover v-if="mobile && creditsBadges.length" side="top">
-    <template #button>
-      <Button class="mr-2 size-10">
-        <i class="icon-[comfy--credits] bg-amber-400" />
-      </Button>
-    </template>
-    <section
-      class="max-h-(--reka-popover-content-available-height) scroll-shadows-comfy-menu-bg overflow-y-auto"
+  <div
+    class="flex flex-col gap-2.5 rounded-xl border border-border-default bg-secondary-background p-3 text-base-foreground shadow-interface"
+  >
+    <div class="flex items-center gap-1">
+      <p
+        class="m-0 text-xs/snug font-semibold"
+        v-text="t('linearMode.hasCreditCost')"
+      />
+      <TooltipProvider :delay-duration="100">
+        <TooltipRoot>
+          <TooltipTrigger as-child>
+            <i
+              class="icon-[lucide--info] size-3.5 shrink-0 cursor-help text-muted-foreground"
+            />
+          </TooltipTrigger>
+          <TooltipPortal>
+            <TooltipContent
+              side="top"
+              :side-offset="4"
+              :collision-padding="10"
+              class="z-2000 max-w-64 rounded-md bg-base-foreground px-2 py-1.5 text-xs/snug text-base-background shadow-interface"
+            >
+              {{ t('linearMode.creditApproximateInfo') }}
+            </TooltipContent>
+          </TooltipPortal>
+        </TooltipRoot>
+      </TooltipProvider>
+    </div>
+    <ul
+      :aria-label="t('linearMode.creditBreakdown')"
+      class="m-0 grid max-h-31 list-none grid-cols-[1fr_auto] gap-x-3 gap-y-2 overflow-y-auto pr-0.5 pl-0"
     >
       <PartnerNodeItem
-        v-for="[title, price, key] in creditsBadges"
+        v-for="[title, price, key] in badges"
         :key
         :title
         :price
       />
-    </section>
-  </Popover>
-  <div v-else-if="creditsBadges.length === 1">
-    <PartnerNodeItem
-      v-for="[title, price, key] in creditsBadges"
-      :key
-      :title
-      :price
-      class="border-t border-border-subtle pt-2"
-    />
+    </ul>
   </div>
-  <CollapsibleRoot
-    v-else-if="creditsBadges.length"
-    v-slot="{ open }"
-    class="flex max-h-1/2 w-full flex-col"
-  >
-    <div class="mb-1 w-full border-b border-border-subtle" />
-    <CollapsibleTrigger as-child>
-      <Button variant="textonly" class="w-full text-sm">
-        <i class="icon-[comfy--credits] size-4 bg-amber-400" />
-        {{ t('linearMode.hasCreditCost') }}
-        <i v-if="open" class="ml-auto icon-[lucide--chevron-up]" />
-        <i v-else class="ml-auto icon-[lucide--chevron-down]" />
-      </Button>
-    </CollapsibleTrigger>
-    <CollapsibleContent class="scroll-shadows-comfy-menu-bg overflow-y-auto">
-      <PartnerNodeItem
-        v-for="[title, price, key] in creditsBadges"
-        :key
-        :title
-        :price
-      />
-    </CollapsibleContent>
-  </CollapsibleRoot>
 </template>

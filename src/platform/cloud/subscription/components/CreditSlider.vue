@@ -10,6 +10,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
@@ -215,7 +216,8 @@ const { t } = useI18n()
         <i
           :class="
             cn(
-              'icon-[comfy--credits] size-3 shrink-0',
+              CREDITS_ICON,
+              'size-3 shrink-0',
               i === selectedIndex ? 'bg-amber-400' : 'bg-muted-foreground'
             )
           "
