@@ -165,6 +165,12 @@ describe('useSystemStatsStore', () => {
       expect(store.getFormFactor()).toBe('other')
     })
 
+    it('should return "cloud" in cloud mode', () => {
+      mockData.isCloud = true
+
+      expect(store.getFormFactor()).toBe('cloud')
+    })
+
     describe('desktop environment', () => {
       beforeEach(() => {
         mockData.isDesktop = true

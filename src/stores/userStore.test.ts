@@ -24,6 +24,12 @@ describe('userStore', () => {
   })
 
   describe('initialize', () => {
+    it('returns an empty user list before initialization', () => {
+      const store = useUserStore()
+
+      expect(store.users).toEqual([])
+    })
+
     it('fetches user config on first call', async () => {
       apiMock.getUserConfig.mockResolvedValue({})
       const store = useUserStore()
@@ -74,6 +80,99 @@ describe('userStore', () => {
       await Promise.all([a, b])
 
       expect(apiMock.getUserConfig).toHaveBeenCalledTimes(1)
+    })
+
+    it('derives multi-user state and restores the current user from storage', async () => {
+      localStorage['Comfy.userId'] = 'user-2'
+      apiMock.getUserConfig.mockResolvedValue({
+        users: { 'user-1': 'Ada', 'user-2': 'Grace' }
+      })
+      const store = useUserStore()
+
+      await store.initialize()
+
+      expect(store.isMultiUserServer).toBe(true)
+      expect(store.needsLogin).toBe(false)
+      expect(store.users).toEqual([
+        { userId: 'user-1', username: 'Ada' },
+        { userId: 'user-2', username: 'Grace' }
+      ])
+      expect(store.currentUser).toEqual({ userId: 'user-2', username: 'Grace' })
+      await vi.waitFor(() => expect(apiMock.user).toBe('user-2'))
+    })
+
+    it('requires login on multi-user servers without a stored user', async () => {
+      apiMock.getUserConfig.mockResolvedValue({
+        users: { 'user-1': 'Ada' }
+      })
+      const store = useUserStore()
+
+      await store.initialize()
+
+      expect(store.needsLogin).toBe(true)
+      expect(store.currentUser).toBeNull()
+      expect(apiMock.user).toBeUndefined()
+    })
+  })
+
+  describe('createUser', () => {
+    it('returns the created user id with the requested username', async () => {
+      apiMock.createUser.mockResolvedValue({
+        json: () => Promise.resolve('user-1'),
+        status: 201
+      })
+      const store = useUserStore()
+
+      await expect(store.createUser('Ada')).resolves.toEqual({
+        userId: 'user-1',
+        username: 'Ada'
+      })
+    })
+
+    it('throws API errors returned by user creation', async () => {
+      apiMock.createUser.mockResolvedValue({
+        json: () => Promise.resolve({ error: 'name taken' }),
+        status: 409,
+        statusText: 'Conflict'
+      })
+      const store = useUserStore()
+
+      await expect(store.createUser('Ada')).rejects.toThrow('name taken')
+    })
+
+    it('throws a fallback error when user creation has no error body', async () => {
+      apiMock.createUser.mockResolvedValue({
+        json: () => Promise.resolve({}),
+        status: 500,
+        statusText: 'Server Error'
+      })
+      const store = useUserStore()
+
+      await expect(store.createUser('Ada')).rejects.toThrow(
+        'Error creating user: 500 Server Error'
+      )
+    })
+  })
+
+  describe('login/logout', () => {
+    it('persists login identity and clears it on logout', async () => {
+      const store = useUserStore()
+
+      await store.login({ userId: 'user-1', username: 'Ada' })
+      expect(localStorage['Comfy.userId']).toBe('user-1')
+      expect(localStorage['Comfy.userName']).toBe('Ada')
+
+      await store.logout()
+      expect(localStorage['Comfy.userId']).toBeUndefined()
+      expect(localStorage['Comfy.userName']).toBeUndefined()
+    })
+
+    it('does not set api.user when login happens before user config loads', async () => {
+      const store = useUserStore()
+
+      await store.login({ userId: 'user-1', username: 'Ada' })
+
+      expect(apiMock.user).toBeUndefined()
     })
   })
 })
