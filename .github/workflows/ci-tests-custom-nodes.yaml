@@ -1,0 +1,98 @@
+# Runs the custom-node regression suite against a backend that has the manifest
+# packs actually installed, so the load/run tiers execute instead of skipping.
+# Informational (not a required check): pack installs and upstream pack updates
+# can be noisy, so this reports without gating merges.
+name: 'CI: Tests Custom Nodes'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'browser_tests/**'
+      - 'src/**'
+      - 'package.json'
+      - '.github/workflows/ci-tests-custom-nodes.yaml'
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  custom-nodes-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # Checks out ComfyUI, installs Python/torch/requirements and ComfyUI_devtools.
+      # launch_server:false so we can add the manifest packs before booting.
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+
+      # Install every pack the manifest declares (DRY: a new pack row installs
+      # itself here, no workflow change). A pack whose deps fail to install just
+      # won't register, and its tiers skip with a reason - the suite stays green.
+      - name: Install manifest custom nodes
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=browser_tests/fixtures/data/customNodeManifest.json
+          jq -c '.[]' "$manifest" | while read -r entry; do
+            repo=$(echo "$entry" | jq -r '.repo')
+            pin=$(echo "$entry" | jq -r '.pin')
+            name=$(basename "$repo")
+            dir="ComfyUI/custom_nodes/$name"
+            echo "::group::install $name"
+            git clone --depth 1 "$repo" "$dir"
+            if [ -n "$pin" ]; then
+              git -C "$dir" fetch --depth 1 origin "$pin"
+              git -C "$dir" checkout "$pin"
+            fi
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt" \
+                || echo "::warning::deps failed for $name; its tiers will skip"
+            fi
+            echo "::endgroup::"
+          done
+
+      # The VHS run-tier workflow reads input/plain_video.mp4.
+      - name: Stage run-tier assets
+        shell: bash
+        run: cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4
+
+      # --cache-none so retried run-tier tests re-execute every node (a cached
+      # node emits no `executing` event and would false-fail PARTIAL).
+      - name: Start ComfyUI server
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run custom-node suite
+        run: pnpm exec playwright test browser_tests/tests/customNodes/ --project=chromium
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: warn
