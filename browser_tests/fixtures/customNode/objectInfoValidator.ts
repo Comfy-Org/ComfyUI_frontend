@@ -1,6 +1,6 @@
 import type { CustomNodeOutcome } from '@e2e/fixtures/customNode/runResult'
 
-export interface ObjectInfoNode {
+interface ObjectInfoNode {
   input?: { required?: Record<string, unknown> }
 }
 export type ObjectInfo = Record<string, ObjectInfoNode>

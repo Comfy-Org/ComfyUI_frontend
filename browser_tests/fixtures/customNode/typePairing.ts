@@ -13,7 +13,7 @@ export interface RawNodeDef {
   python_module?: string
 }
 
-export interface NormalizedSlot {
+interface NormalizedSlot {
   name: string
   type: string
 }
@@ -25,7 +25,7 @@ export interface NormalizedNode {
   outputs: NormalizedSlot[]
 }
 
-export interface SlotRef {
+interface SlotRef {
   nodeType: string
   pack: string
   slotName: string
