@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ComfyCommand } from '@/stores/commandStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const {
@@ -15,7 +16,7 @@ const {
   registeredCommands,
   commandStoreCommands
 } = vi.hoisted(() => {
-  const registeredCommands: { id: string; function: () => unknown }[] = []
+  const registeredCommands: ComfyCommand[] = []
   return {
     mockGetSetting: vi.fn(),
     mockRegisterCommand: vi.fn(),
@@ -24,7 +25,7 @@ const {
     mockT: vi.fn(),
     mockTe: vi.fn(),
     registeredCommands,
-    commandStoreCommands: [] as { id: string; function: () => unknown }[]
+    commandStoreCommands: [] as ComfyCommand[]
   }
 })
 
@@ -245,5 +246,82 @@ describe('useSidebarTabStore', () => {
       expect(store.activeSidebarTabId).toBe('model-library')
       expect(mockBrowseModelAssets).not.toHaveBeenCalled()
     })
+  })
+
+  it('registers command metadata and toggles a custom sidebar tab', async () => {
+    mockTe.mockImplementation((key: string) => key === 'custom.title')
+    const store = useSidebarTabStore()
+    store.registerSidebarTab({
+      id: 'custom',
+      title: 'custom.title',
+      tooltip: 'custom.tooltip',
+      icon: { render: () => null },
+      type: 'vue',
+      component: {}
+    })
+
+    const command = registeredCommands[0]
+    if (
+      typeof command.label !== 'function' ||
+      typeof command.menubarLabel !== 'function' ||
+      !command.active
+    ) {
+      throw new Error('expected dynamic command metadata')
+    }
+    expect(command.icon).toBeUndefined()
+    expect(command.label()).toBe('Toggle translated:custom.title Sidebar')
+    expect(command.tooltip).toBe('custom.tooltip')
+    expect(command.menubarLabel()).toBe('custom.title')
+
+    await command.function()
+    expect(store.activeSidebarTabId).toBe('custom')
+    expect(command.active()).toBe(true)
+
+    await command.function()
+    expect(store.activeSidebarTabId).toBeNull()
+  })
+
+  it('uses translated menubar labels for known core tabs', () => {
+    mockTe.mockImplementation((key: string) => key === 'sideToolbar.assets')
+    const store = useSidebarTabStore()
+    store.registerSidebarTab({
+      id: 'assets',
+      title: 'assets',
+      type: 'vue',
+      component: {}
+    })
+
+    const { menubarLabel } = registeredCommands[0]
+    if (typeof menubarLabel !== 'function') {
+      throw new Error('expected a dynamic menubar label')
+    }
+    expect(menubarLabel()).toBe('translated:sideToolbar.assets')
+  })
+
+  it('destroys custom tabs and clears active state on unregister', () => {
+    const destroy = vi.fn()
+    const store = useSidebarTabStore()
+    store.registerSidebarTab({
+      id: 'custom',
+      title: 'Custom',
+      type: 'custom',
+      render: vi.fn(),
+      destroy
+    })
+    store.toggleSidebarTab('custom')
+
+    store.unregisterSidebarTab('custom')
+
+    expect(destroy).toHaveBeenCalledOnce()
+    expect(store.sidebarTabs).toHaveLength(0)
+    expect(store.activeSidebarTabId).toBeNull()
+  })
+
+  it('ignores unregister requests for missing tabs', () => {
+    const store = useSidebarTabStore()
+
+    store.unregisterSidebarTab('missing')
+
+    expect(store.sidebarTabs).toHaveLength(0)
   })
 })
