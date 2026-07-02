@@ -110,4 +110,27 @@ describe('useImageUploadWidget', () => {
       fileComboWidget
     )
   })
+
+  it('does not preload preview when the file widget starts empty', () => {
+    const { node } = createUploadNode()
+    node.widgets![0].value = ''
+    const constructor = useImageUploadWidget()
+
+    constructor(
+      node,
+      'upload',
+      [
+        'IMAGEUPLOAD',
+        { imageInputName: 'image', image_upload: true }
+      ] as InputSpec,
+      fromPartial({})
+    )
+
+    const raf = vi.mocked(requestAnimationFrame)
+    expect(raf).toHaveBeenCalledTimes(1)
+    raf.mock.calls[0]?.[0]?.(0)
+
+    expect(mocks.setNodeOutputs).not.toHaveBeenCalled()
+    expect(mocks.showPreview).not.toHaveBeenCalled()
+  })
 })

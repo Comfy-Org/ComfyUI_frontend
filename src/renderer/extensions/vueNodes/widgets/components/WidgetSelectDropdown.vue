@@ -3,6 +3,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { computed, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useLoadVideoPreview } from '@/composables/video/useLoadVideoPreview'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
@@ -14,7 +15,9 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import type { NodeId } from '@/types/nodeId'
 import type { ResultItemType } from '@/schemas/apiSchema'
+import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -24,6 +27,7 @@ import {
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
+  nodeId?: NodeId
   nodeType?: string
   assetKind?: AssetKind
   allowUpload?: boolean
@@ -108,7 +112,9 @@ const mediaPlaceholder = computed(() => {
     case 'image':
       return t('widgets.uploadSelect.placeholderImage')
     case 'video':
-      return t('widgets.uploadSelect.placeholderVideo')
+      return props.nodeType === 'LoadVideo'
+        ? t('widgets.uploadSelect.browseAssetLibrary')
+        : t('widgets.uploadSelect.placeholderVideo')
     case 'audio':
       return t('widgets.uploadSelect.placeholderAudio')
     case 'mesh':
@@ -124,6 +130,7 @@ const mediaPlaceholder = computed(() => {
 
 const uploadable = computed(() => {
   if (props.isAssetMode) return false
+  if (props.nodeType === 'LoadVideo') return false
   return props.allowUpload === true
 })
 
@@ -163,6 +170,38 @@ const handleApproachEnd = useDebounceFn(async () => {
 }, 300)
 
 const isUploading = ref(false)
+
+const node = computed(() => {
+  if (!props.nodeId) return undefined
+  return app.canvas.graph?.getNodeById(props.nodeId)
+})
+
+const { videoUrl: loadVideoPreviewUrl } = useLoadVideoPreview(node)
+
+const nodeIsUploading = computed(() => node.value?.isUploading ?? false)
+
+const awaitingVideoPreview = computed(() => {
+  if (props.nodeType !== 'LoadVideo' || props.assetKind !== 'video') {
+    return false
+  }
+  if (!modelValue.value) return false
+  if (!node.value) return false
+  return !loadVideoPreviewUrl.value
+})
+
+const isLoadVideoProcessing = computed(
+  () =>
+    props.nodeType === 'LoadVideo' &&
+    props.assetKind === 'video' &&
+    (nodeIsUploading.value || awaitingVideoPreview.value)
+)
+
+const dropdownDisabled = computed(() => isLoadVideoProcessing.value)
+
+const dropdownIsUploading = computed(
+  () => isUploading.value || isLoadVideoProcessing.value
+)
+
 async function updateFiles(files: File[]) {
   isUploading.value = true
   await handleFilesUpdate(files)
@@ -183,13 +222,14 @@ async function updateFiles(files: File[]) {
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable
+      :disabled="dropdownDisabled"
       :accept="acceptTypes"
       :filter-options
       :show-ownership-filter
       :ownership-options
       :show-base-model-filter
       :base-model-options
-      :is-uploading
+      :is-uploading="dropdownIsUploading"
       v-bind="combinedProps"
       :loading-more="outputMediaAssets.isLoadingMore.value"
       class="w-full"

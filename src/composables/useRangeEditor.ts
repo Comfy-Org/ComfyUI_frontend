@@ -14,6 +14,7 @@ interface UseRangeEditorOptions {
   valueMin: Ref<number>
   valueMax: Ref<number>
   showMidpoint: Ref<boolean>
+  contentInsetX?: Ref<number>
 }
 
 export function useRangeEditor({
@@ -21,7 +22,8 @@ export function useRangeEditor({
   modelValue,
   valueMin,
   valueMax,
-  showMidpoint
+  showMidpoint,
+  contentInsetX
 }: UseRangeEditorOptions) {
   const activeHandle = ref<HandleType | null>(null)
   let cleanupDrag: (() => void) | null = null
@@ -30,7 +32,13 @@ export function useRangeEditor({
     const el = trackRef.value
     if (!el) return valueMin.value
     const rect = el.getBoundingClientRect()
-    const normalized = clamp((e.clientX - rect.left) / rect.width, 0, 1)
+    const inset = contentInsetX?.value ?? 0
+    const contentWidth = Math.max(rect.width - 2 * inset, 1)
+    const normalized = clamp(
+      (e.clientX - rect.left - inset) / contentWidth,
+      0,
+      1
+    )
     return denormalize(normalized, valueMin.value, valueMax.value)
   }
 
@@ -108,6 +116,7 @@ export function useRangeEditor({
 
   return {
     handleTrackPointerDown,
-    startDrag
+    startDrag,
+    activeHandle
   }
 }

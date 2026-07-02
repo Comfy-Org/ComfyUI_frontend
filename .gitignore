@@ -97,3 +97,6 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
+.vercel
+.env*
+!.env_example

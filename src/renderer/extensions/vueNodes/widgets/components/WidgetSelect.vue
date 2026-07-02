@@ -3,6 +3,7 @@
     v-if="isDropdownUIWidget"
     v-model="modelValue"
     :widget
+    :node-id="nodeId"
     :node-type="widget.nodeType ?? nodeType"
     :asset-kind="assetKind"
     :allow-upload="allowUpload"
@@ -35,6 +36,7 @@ import type {
   SimplifiedControlWidget,
   SimplifiedWidget
 } from '@/types/simplifiedWidget'
+import type { NodeId } from '@/types/nodeId'
 import type { AssetKind } from '@/types/widgetTypes'
 
 type StringControlWidget = SimplifiedControlWidget<string | undefined>
@@ -42,6 +44,7 @@ type StringControlWidget = SimplifiedControlWidget<string | undefined>
 const props = defineProps<{
   widget: SimplifiedWidget<string | undefined>
   nodeType?: string
+  nodeId?: NodeId
 }>()
 
 const modelValue = defineModel<string | undefined>()

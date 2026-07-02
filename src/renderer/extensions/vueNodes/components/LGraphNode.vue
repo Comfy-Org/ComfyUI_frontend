@@ -15,7 +15,9 @@
         'flex flex-col contain-layout contain-style',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : loadVideoShrinkWrapBody
+            ? 'h-auto min-h-0 min-w-(--min-node-width)'
+            : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -77,7 +79,9 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
+          loadVideoShrinkWrapBody
+            ? 'flex flex-none flex-col border border-solid border-transparent bg-node-component-header-surface'
+            : 'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
@@ -151,7 +155,8 @@
         <div
           :class="
             cn(
-              'flex flex-1 flex-col gap-1 bg-component-node-background pt-1 pb-3',
+              'flex flex-col gap-1 bg-component-node-background pt-1',
+              loadVideoShrinkWrapBody ? 'flex-none' : 'flex-1',
               bodyRoundingClass
             )
           "
@@ -182,7 +187,7 @@
             v-if="!isTransparentHeaderless"
             v-bind="badges"
             :pricing="undefined"
-            class="mt-auto"
+            :class="loadVideoShrinkWrapBody ? undefined : 'mt-auto'"
           />
         </div>
       </template>
@@ -260,6 +265,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { nodeHasLoadVideoPreview } from '@/composables/video/useLoadVideoPreview'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -290,7 +296,10 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  requestVueElementFreshMeasurement,
+  useVueElementTracking
+} from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -473,7 +482,11 @@ function initSizeStyles() {
   const fullHeight = height + LiteGraph.NODE_TITLE_HEIGHT
 
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${fullHeight}px`)
+  if (loadVideoShrinkWrapBody.value) {
+    el.style.removeProperty(`--node-height${suffix}`)
+  } else {
+    el.style.setProperty(`--node-height${suffix}`, `${fullHeight}px`)
+  }
 }
 
 /**
@@ -494,9 +507,11 @@ function handleLayoutChange(change: LayoutChange) {
   if (!el) return
 
   const newSize = size.value
-  const fullHeight = newSize.height + LiteGraph.NODE_TITLE_HEIGHT
   el.style.setProperty('--node-width', `${newSize.width}px`)
-  el.style.setProperty('--node-height', `${fullHeight}px`)
+  if (!loadVideoShrinkWrapBody.value) {
+    const fullHeight = newSize.height + LiteGraph.NODE_TITLE_HEIGHT
+    el.style.setProperty('--node-height', `${fullHeight}px`)
+  }
 }
 
 let unsubscribeLayoutChange: (() => void) | null = null
@@ -728,6 +743,28 @@ const lgraphNode = computed(() => {
   if (!locatorId) return null
 
   return getNodeByLocatorId(app.rootGraph, locatorId)
+})
+
+const loadVideoShrinkWrapBody = computed(() => {
+  if (nodeData.type !== 'LoadVideo') return false
+  void nodeOutputs.nodeOutputs
+  return nodeHasLoadVideoPreview(lgraphNode.value)
+})
+
+watch(loadVideoShrinkWrapBody, async (shrinkWrap, wasShrinkWrap) => {
+  if (shrinkWrap === wasShrinkWrap) return
+
+  const el = nodeContainerRef.value
+  if (!el) return
+
+  if (shrinkWrap) {
+    el.style.removeProperty('--node-height')
+  } else {
+    initSizeStyles()
+  }
+
+  await nextTick()
+  requestVueElementFreshMeasurement(el)
 })
 
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of

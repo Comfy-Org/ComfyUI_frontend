@@ -437,8 +437,11 @@ describe('useComboWidget', () => {
           ]
         )
 
-        expect(getInputWidgetDefault(mockNode)).toBe(scenario.assetHash)
-        expect(widget.value).toBe(scenario.assetHash)
+        const expectedDefault =
+          scenario.nodeClass === 'LoadVideo' ? '' : scenario.assetHash
+
+        expect(getInputWidgetDefault(mockNode)).toBe(expectedDefault)
+        expect(widget.value).toBe(expectedDefault)
       }
     )
 
@@ -468,8 +471,11 @@ describe('useComboWidget', () => {
           ]
         )
 
-        expect(getInputWidgetDefault(mockNode)).toBe(scenario.assetHash)
-        expect(widget.value).toBe(scenario.assetHash)
+        const expectedDefault =
+          scenario.nodeClass === 'LoadVideo' ? '' : scenario.assetHash
+
+        expect(getInputWidgetDefault(mockNode)).toBe(expectedDefault)
+        expect(widget.value).toBe(expectedDefault)
       }
     )
 
@@ -735,6 +741,30 @@ describe('useComboWidget', () => {
         expect.any(Function),
         {
           values: [scenario.assetHash, 'other-option']
+        }
+      )
+      expect(widget).toBe(mockWidget)
+    })
+
+    it('should start LoadVideo with an empty file selection in OSS', () => {
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget()
+      const mockNode = createMockNode('LoadVideo')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'file',
+        options: ['edu social.mp4', 'other-video.mp4']
+      })
+
+      const widget = constructor(mockNode, inputSpec)
+
+      expect(mockNode.addWidget).toHaveBeenCalledWith(
+        'combo',
+        'file',
+        '',
+        expect.any(Function),
+        {
+          values: ['edu social.mp4', 'other-video.mp4']
         }
       )
       expect(widget).toBe(mockWidget)
