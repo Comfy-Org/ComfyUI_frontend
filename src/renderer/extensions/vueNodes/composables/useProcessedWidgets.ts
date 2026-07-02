@@ -126,16 +126,7 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
   ) {
     return value
   }
-  if (typeof value === 'object') {
-    if (
-      Array.isArray(value) &&
-      value.length > 0 &&
-      value.every((item): item is File => item instanceof File)
-    ) {
-      return value
-    }
-    return value
-  }
+  if (typeof value === 'object') return value
   console.warn(`Invalid widget value type: ${typeof value}`, value)
   return undefined
 }
@@ -449,11 +440,9 @@ export function computeProcessedWidgets({
       linkedUpstream,
       nodeLocatorId: getWidgetNodeLocatorId(nodeData, bareWidgetId),
       options: widgetOptions,
-      spec:
-        widgetValueStore.getWidgetSpec(id)?.spec ??
-        (live
-          ? nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
-          : undefined)
+      spec: live
+        ? nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
+        : undefined
     }
     const valueTooltip =
       isTooltipValueType(widgetState.type) && String(value).length > 10

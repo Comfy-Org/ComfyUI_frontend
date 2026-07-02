@@ -4,7 +4,6 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import {
@@ -421,21 +420,6 @@ describe('computeProcessedWidgets', () => {
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
-  })
-
-  it('passes input spec to simplified widgets', () => {
-    const id = widgetId(GRAPH_ID, toNodeId('host'), 'prompt')
-    const spec = {
-      type: 'STRING',
-      name: 'prompt',
-      socketless: true
-    } satisfies InputSpec
-    registerWidgetState(id, { type: 'text', value: 'hello' })
-    useWidgetValueStore().registerWidgetSpec(id, spec)
-
-    const result = processWidgets({ widgetIds: [id], nodeId: toNodeId('host') })
-
-    expect(result[0].simplified.spec).toStrictEqual(spec)
   })
 
   it('treats explicit isDOMWidget false as authoritative', () => {

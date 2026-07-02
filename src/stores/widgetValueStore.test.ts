@@ -192,23 +192,6 @@ describe('useWidgetValueStore', () => {
 
       expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
     })
-    it('replaceNodeWidgetOrder prunes widgets missing from the live order', () => {
-      const store = useWidgetValueStore()
-      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
-      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
-      const cfg = widgetId(graphA, toNodeId('node-1'), 'cfg')
-      store.registerWidget(seed, state('number', 1))
-      store.registerWidget(steps, state('number', 20))
-      store.registerWidget(cfg, state('number', 7))
-
-      store.replaceNodeWidgetOrder(graphA, toNodeId('node-1'), [cfg, seed])
-
-      expect(store.getWidget(steps)).toBeUndefined()
-      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
-        cfg,
-        seed
-      ])
-    })
   })
 
   describe('value mutation', () => {

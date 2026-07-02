@@ -15,7 +15,6 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -203,18 +202,6 @@ describe('LGraphNode', () => {
     expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
       'test-node-123'
     )
-  })
-
-  it('does not prune widget store state while rendering', () => {
-    mockData.mockLgraphNode = {
-      widgets: [],
-      isSubgraphNode: () => false
-    }
-    const widgetValueStore = useWidgetValueStore()
-
-    renderLGraphNode({ nodeData: mockNodeData })
-
-    expect(widgetValueStore.replaceNodeWidgetOrder).not.toHaveBeenCalled()
   })
 
   it('should render node title', () => {

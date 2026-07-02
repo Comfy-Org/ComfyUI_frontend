@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
 import type { UUID } from '@/utils/uuid'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { parseWidgetId } from '@/types/widgetId'
@@ -16,10 +15,6 @@ export interface WidgetRenderState {
   tooltip?: string
 }
 
-export interface WidgetSpec {
-  spec: InputSpecV2
-}
-
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
@@ -29,7 +24,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetRenderStates = ref(
     new Map<UUID, Map<WidgetId, WidgetRenderState>>()
   )
-  const graphWidgetSpecs = ref(new Map<UUID, Map<WidgetId, WidgetSpec>>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
@@ -52,15 +46,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     )
     graphWidgetRenderStates.value.set(graphId, nextWidgetRenderStates)
     return nextWidgetRenderStates
-  }
-
-  function getGraphWidgetSpecs(graphId: UUID): Map<WidgetId, WidgetSpec> {
-    const widgetSpecs = graphWidgetSpecs.value.get(graphId)
-    if (widgetSpecs) return widgetSpecs
-
-    const nextWidgetSpecs = reactive(new Map<WidgetId, WidgetSpec>())
-    graphWidgetSpecs.value.set(graphId, nextWidgetSpecs)
-    return nextWidgetSpecs
   }
 
   function getGraphNodeWidgetOrders(graphId: UUID): Map<NodeId, WidgetId[]> {
@@ -144,28 +129,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getGraphWidgetStates(graphId).get(widgetId)
   }
 
-  function registerWidgetSpec(
-    widgetId: WidgetId,
-    spec: InputSpecV2
-  ): WidgetSpec {
-    const { graphId } = parseWidgetId(widgetId)
-    const widgetSpecs = getGraphWidgetSpecs(graphId)
-    const existing = widgetSpecs.get(widgetId)
-    if (existing) {
-      existing.spec = spec
-      return existing
-    }
-
-    const component: WidgetSpec = { spec }
-    widgetSpecs.set(widgetId, component)
-    return widgetSpecs.get(widgetId) as WidgetSpec
-  }
-
-  function getWidgetSpec(widgetId: WidgetId): WidgetSpec | undefined {
-    const { graphId } = parseWidgetId(widgetId)
-    return getGraphWidgetSpecs(graphId).get(widgetId)
-  }
-
   function getWidgetRenderState(
     widgetId: WidgetId
   ): WidgetRenderState | undefined {
@@ -183,7 +146,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function deleteWidget(widgetId: WidgetId): boolean {
     const { graphId } = parseWidgetId(widgetId)
     getGraphWidgetRenderStates(graphId).delete(widgetId)
-    getGraphWidgetSpecs(graphId).delete(widgetId)
     removeNodeWidgetOrder(widgetId)
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
@@ -238,49 +200,22 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     order.splice(0, order.length, ...nextOrder)
   }
 
-  function replaceNodeWidgetOrder(
-    graphId: UUID,
-    localNodeId: NodeId,
-    orderedWidgetIds: readonly WidgetId[]
-  ): void {
-    const registeredIds = getNodeWidgetIds(graphId, localNodeId)
-    const nextOrder = getOrderedRegisteredNodeWidgetIds(
-      registeredIds,
-      orderedWidgetIds
-    )
-    const nextOrderSet = new Set(nextOrder)
-    const widgetStates = getGraphWidgetStates(graphId)
-    for (const id of registeredIds) {
-      if (nextOrderSet.has(id)) continue
-      widgetStates.delete(id)
-      getGraphWidgetRenderStates(graphId).delete(id)
-      getGraphWidgetSpecs(graphId).delete(id)
-    }
-
-    const order = getNodeWidgetOrder(graphId, localNodeId)
-    order.splice(0, order.length, ...nextOrder)
-  }
-
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
-    graphWidgetSpecs.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
   }
 
   return {
     registerWidget,
     registerWidgetRenderState,
-    registerWidgetSpec,
     getWidget,
     getWidgetRenderState,
-    getWidgetSpec,
     setValue,
     deleteWidget,
     getNodeWidgets,
     getNodeWidgetIds,
     setNodeWidgetOrder,
-    replaceNodeWidgetOrder,
     clearGraph
   }
 })

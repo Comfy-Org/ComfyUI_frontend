@@ -33,18 +33,6 @@ export function getWidgetIds(
     .filter((id): id is WidgetId => id !== undefined)
 }
 
-export function getNodeWidgetIds(node: {
-  readonly widgets?: readonly { readonly widgetId?: WidgetId }[]
-  readonly inputs?: readonly { readonly widgetId?: WidgetId }[]
-}): WidgetId[] {
-  return Array.from(
-    new Set([
-      ...getWidgetIds(node.widgets ?? []),
-      ...getWidgetIds(node.inputs ?? [])
-    ])
-  )
-}
-
 export function resolveNodeRootGraphId(
   node: Pick<LGraphNode, 'graph'>
 ): UUID | undefined
