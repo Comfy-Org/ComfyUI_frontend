@@ -2,8 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const flushPromises = () =>
-  new Promise<void>((resolve) => queueMicrotask(() => resolve()))
+const flushPromises = () => vi.advanceTimersByTimeAsync(0)
 
 import * as downloadApi from '../api/modelDownloadApi'
 import type { DownloadState, DownloadStatus } from '../types'

@@ -210,6 +210,12 @@ describe('ModelDownloadRow', () => {
       expect(screen.getByText('disk full')).toBeInTheDocument()
       expect(screen.queryByTitle('Add credentials')).not.toBeInTheDocument()
     })
+
+    it('hides a leftover error while the download is not yet terminal', () => {
+      mountRow(createDownload({ status: 'active', error: 'disk full' }))
+
+      expect(screen.queryByText('disk full')).not.toBeInTheDocument()
+    })
   })
 
   describe('gated models', () => {

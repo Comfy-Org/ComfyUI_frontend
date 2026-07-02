@@ -112,6 +112,16 @@ export const useModelDownloadStore = defineStore('modelDownload', () => {
         timestamp: Date.now()
       }
     }
+    // The live failure event carries the terminal status but not the error
+    // text, and polling stops once nothing is active. Refetch so the failure
+    // reason surfaces without the user reopening the panel.
+    if (
+      e.detail.status === 'failed' &&
+      previous?.status !== 'failed' &&
+      !e.detail.error
+    ) {
+      void hydrate().catch(() => {})
+    }
   }
 
   async function hydrate() {

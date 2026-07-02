@@ -120,7 +120,7 @@
       }}
     </p>
     <p
-      v-else-if="download.error"
+      v-else-if="isFailed && download.error"
       class="relative text-xs wrap-break-word text-red-400"
     >
       {{ download.error }}
