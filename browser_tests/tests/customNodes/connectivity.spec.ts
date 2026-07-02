@@ -15,6 +15,7 @@ import type {
   RawNodeDef
 } from '@e2e/fixtures/customNode/typePairing'
 import {
+  isWildcard,
   normalizeNodeDefs,
   planPairs
 } from '@e2e/fixtures/customNode/typePairing'
@@ -42,7 +43,7 @@ async function expectNoVisibleErrors(
 }
 
 function concrete(slot: { type: string }): boolean {
-  return slot.type !== '' && slot.type !== '*'
+  return !isWildcard(slot.type)
 }
 
 const connectivityEntries = loadManifest().filter((entry) =>
@@ -89,6 +90,9 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
   const consoleErrors = collectConsoleErrors(comfyPage.page)
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   consoleErrors.stop()
+  expect(consoleErrors.errors, 'console errors during breadth sweep').toEqual(
+    []
+  )
 
   const failures = results.filter(
     (result) =>

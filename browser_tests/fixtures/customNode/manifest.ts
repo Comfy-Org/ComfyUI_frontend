@@ -25,17 +25,19 @@ export interface CustomNodeManifestEntry {
 }
 
 function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
-  const missing: string[] = (
-    [
-      'pack',
-      'workflow',
-      'expectedNodes',
-      'tiers',
-      'requiresModels',
-      'requiresGpu'
-    ] as const
-  ).filter((key) => entry[key] == null)
-  if (typeof entry.timeoutMs !== 'number') missing.push('timeoutMs')
+  const missing: string[] = []
+  if (typeof entry.pack !== 'string' || entry.pack.length === 0)
+    missing.push('pack')
+  // workflow may be an empty string until the pack gains a run-tier fixture.
+  if (typeof entry.workflow !== 'string') missing.push('workflow')
+  if (!Array.isArray(entry.expectedNodes) || entry.expectedNodes.length === 0)
+    missing.push('expectedNodes')
+  if (!Array.isArray(entry.tiers) || entry.tiers.length === 0)
+    missing.push('tiers')
+  if (!Array.isArray(entry.requiresModels)) missing.push('requiresModels')
+  if (typeof entry.requiresGpu !== 'boolean') missing.push('requiresGpu')
+  if (!Number.isFinite(entry.timeoutMs) || entry.timeoutMs <= 0)
+    missing.push('timeoutMs')
   if (missing.length > 0)
     throw new Error(
       `custom-node manifest entry ${index} (${entry.pack ?? '?'}) missing: ${missing.join(', ')}`

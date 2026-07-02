@@ -59,7 +59,7 @@ export function packOf(pythonModule: string | undefined): string {
   return 'core'
 }
 
-function isWildcard(type: string): boolean {
+export function isWildcard(type: string): boolean {
   return type === '' || type === '*'
 }
 
