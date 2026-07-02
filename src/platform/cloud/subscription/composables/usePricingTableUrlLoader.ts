@@ -7,7 +7,6 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -62,7 +61,6 @@ export function usePricingTableUrlLoader() {
     const planMode =
       param === 'team' || param === 'personal' ? param : undefined
 
-    useTelemetry()?.trackSubscription('modal_opened', { reason: 'deep_link' })
     subscriptionDialog.showPricingTable({ reason: 'deep_link', planMode })
   }
 

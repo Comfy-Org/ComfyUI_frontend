@@ -391,12 +391,13 @@ const showZeroState = computed(
 )
 
 function handleSubscribeWorkspace() {
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function handleUpgrade() {
-  if (isFreeTierPlan.value) showPricingTable()
-  else showSubscriptionDialog()
+  if (isFreeTierPlan.value)
+    showPricingTable({ reason: 'settings_billing_panel' })
+  else showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function handleViewMoreDetails() {
