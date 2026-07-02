@@ -97,6 +97,7 @@ import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onScopeDispose, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -107,6 +108,8 @@ import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
+
+const { t } = useI18n()
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -186,11 +189,13 @@ const loadEvents = async () => {
         pagination.value.totalPages = response.totalPages
       }
     } else {
-      error.value = customerEventService.error.value || 'Failed to load events'
+      error.value =
+        customerEventService.error.value || t('credits.loadEventsError')
     }
   } catch (err) {
     if (loadToken !== latestLoadToken) return
-    error.value = err instanceof Error ? err.message : 'Unknown error'
+    error.value =
+      err instanceof Error ? err.message : t('credits.loadEventsUnknownError')
     console.error('Error loading events:', err)
   } finally {
     if (loadToken === latestLoadToken) loading.value = false

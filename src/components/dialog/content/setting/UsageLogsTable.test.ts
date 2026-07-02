@@ -77,7 +77,10 @@ const i18n = createI18n({
         additionalInfo: 'Additional Info',
         added: 'Added',
         accountInitialized: 'Account initialized',
-        model: 'Model'
+        model: 'Model',
+        loadEventsError: 'Failed to load activity. Please try again.',
+        loadEventsUnknownError:
+          'Something went wrong while loading activity. Please refresh and try again.'
       }
     }
   }
@@ -246,6 +249,33 @@ describe('UsageLogsTable', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Network error')).toBeInTheDocument()
+      })
+    })
+
+    it('shows a localized fallback when the service reports no message', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
+      mockCustomerEventsService.error.value = null
+
+      renderWithAutoRefresh()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Failed to load activity. Please try again.')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('shows a localized fallback for a non-Error throw', async () => {
+      mockCustomerEventsService.getMyEvents.mockRejectedValue('boom')
+
+      renderWithAutoRefresh()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Something went wrong while loading activity. Please refresh and try again.'
+          )
+        ).toBeInTheDocument()
       })
     })
 
