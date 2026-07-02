@@ -75,6 +75,10 @@ const WidgetBoundingBoxes = defineAsyncComponent(
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
+const WidgetDynamicGroup = defineAsyncComponent(
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroup.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -239,6 +243,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: WidgetColors,
       aliases: ['COLORS'],
+      essential: false
+    }
+  ],
+  [
+    'dynamic_group',
+    {
+      component: WidgetDynamicGroup,
+      aliases: [],
       essential: false
     }
   ]

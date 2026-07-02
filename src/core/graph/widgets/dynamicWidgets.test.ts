@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -45,6 +45,22 @@ function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
   addNodeInput(
     node,
     transformInputSpecV1ToV2(inputSpec, { name: namePrefix, isOptional: false })
+  )
+}
+function addDynamicGroup(
+  node: LGraphNode,
+  template: object,
+  { min, max, name = 'g' }: { min?: number; max?: number; name?: string } = {}
+) {
+  const options: Record<string, unknown> = { template }
+  if (min !== undefined) options.min = min
+  if (max !== undefined) options.max = max
+  addNodeInput(
+    node,
+    transformInputSpecV1ToV2(['COMFY_DYNAMICGROUP_V3', options] as InputSpec, {
+      name,
+      isOptional: false
+    })
   )
 }
 function addAutogrow(node: LGraphNode, template: unknown) {
@@ -285,5 +301,87 @@ describe('Autogrow', () => {
       '2.b2',
       'aa'
     ])
+  })
+})
+describe('Dynamic Groups', () => {
+  const stringTemplate = { required: { a: ['STRING', {}] } }
+  const widgetNames = (node: LGraphNode) => node.widgets!.map((w) => w.name)
+  const inputNames = (node: LGraphNode) => node.inputs.map((i) => i.name)
+  const widgetNamed = (node: LGraphNode, name: string) =>
+    node.widgets!.find((w) => w.name === name)!
+
+  test('renders min rows on creation', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 2, max: 5 })
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+    expect(inputNames(node)).toStrictEqual([])
+  })
+
+  test('add row appends a new row up to max', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 2 })
+    expect(widgetNames(node)).toStrictEqual(['g'])
+
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
+
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+
+    // At max, further adds are ignored.
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+  })
+
+  test('controller disabled option set at max', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 1 })
+    expect(widgetNamed(node, 'g').options?.disabled).toBe(false)
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNamed(node, 'g').options?.disabled).toBe(true)
+  })
+
+  test('remove row renumbers later rows', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<
+            string,
+            { addRow: () => void; removeRow: (r: number) => void }
+          >
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+    state.addRow()
+
+    const row0Field = widgetNamed(node, 'g.0.a')
+    const row2Field = widgetNamed(node, 'g.2.a')
+
+    state.removeRow(1)
+
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+    // Row 0 is untouched; the former row 2 shifts down into row 1.
+    expect(widgetNamed(node, 'g.0.a')).toBe(row0Field)
+    expect(widgetNamed(node, 'g.1.a')).toBe(row2Field)
+  })
+
+  test('rows below min cannot be removed', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 1, max: 5 })
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<string, { removeRow: (r: number) => void }>
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
+
+    // Row 0 is at the min boundary — removing it is a no-op.
+    state.removeRow(0)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
   })
 })

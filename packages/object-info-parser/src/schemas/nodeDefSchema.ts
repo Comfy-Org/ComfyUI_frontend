@@ -344,6 +344,16 @@ export const zDynamicComboInputSpec = z.tuple([
   })
 ])
 
+export const zDynamicGroupInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICGROUP_V3'),
+  zBaseInputOptions.extend({
+    template: zComfyInputsSpec,
+    min: z.number().int().nonnegative().optional().default(0),
+    max: z.number().int().positive().max(100).optional().default(50),
+    group_name: z.string().optional()
+  })
+])
+
 export const zMatchTypeOptions = z.object({
   ...zBaseInputOptions.shape,
   type: z.literal('COMFY_MATCHTYPE_V3'),
