@@ -211,19 +211,57 @@ const chatHistory = ref<AgentConversation[]>([
     id: 'h-yesterday',
     title: 'Generate a yellow duck with a hockey mask',
     createdAt: daysAgo(1),
-    messages: []
+    messages: [
+      {
+        id: 'h-y-1',
+        role: 'user',
+        text: 'Generate a yellow duck with a hockey mask'
+      },
+      {
+        id: 'h-y-2',
+        role: 'assistant',
+        text: buildMockReply('Generate a yellow duck with a hockey mask'),
+        toolCalls: MOCK_TOOL_CALLS
+      }
+    ]
   },
   {
     id: 'h-last7',
     title: 'Build a workflow for image to video with 3 models',
     createdAt: daysAgo(4),
-    messages: []
+    messages: [
+      {
+        id: 'h-l7-1',
+        role: 'user',
+        text: 'Build a workflow for image to video with 3 models'
+      },
+      {
+        id: 'h-l7-2',
+        role: 'assistant',
+        text: buildMockReply(
+          'Build a workflow for image to video with 3 models'
+        ),
+        toolCalls: MOCK_TOOL_CALLS
+      }
+    ]
   },
   {
     id: 'h-last30',
     title: 'Find the best workflow for skin upscaling',
     createdAt: daysAgo(15),
-    messages: []
+    messages: [
+      {
+        id: 'h-l30-1',
+        role: 'user',
+        text: 'Find the best workflow for skin upscaling'
+      },
+      {
+        id: 'h-l30-2',
+        role: 'assistant',
+        text: buildMockReply('Find the best workflow for skin upscaling'),
+        toolCalls: MOCK_TOOL_CALLS
+      }
+    ]
   }
 ])
 
