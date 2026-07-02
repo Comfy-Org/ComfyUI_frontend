@@ -212,5 +212,26 @@ describe('useSettingUI', () => {
       expect(navKeys(navGroups.value)).not.toContain('subscription')
       expect(navKeys(navGroups.value)).toContain('workspace')
     })
+
+    it('never renders the plan panel in more than one tab', () => {
+      const countSubscription = () => {
+        const { navGroups } = useSettingUI()
+        return navKeys(navGroups.value).filter((id) => id === 'subscription')
+          .length
+      }
+
+      for (const teamWorkspacesEnabled of [true, false]) {
+        for (const billingType of ['legacy', 'workspace'] as const) {
+          for (const isLoggedIn of [true, false]) {
+            Object.assign(env.state, {
+              teamWorkspacesEnabled,
+              billingType,
+              isLoggedIn
+            })
+            expect(countSubscription()).toBeLessThanOrEqual(1)
+          }
+        }
+      }
+    })
   })
 })
