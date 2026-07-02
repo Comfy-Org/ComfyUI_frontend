@@ -41,7 +41,12 @@ export async function getFromFlacFile(
   const buffer = await readFileAsArrayBuffer(file)
   if (!buffer) return {}
 
-  return getFromFlacBuffer(buffer)
+  try {
+    return getFromFlacBuffer(buffer)
+  } catch (e) {
+    console.error('Parser: Error parsing FLAC metadata:', e)
+    return {}
+  }
 }
 
 // Function to parse the Vorbis Comment block

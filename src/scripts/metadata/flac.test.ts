@@ -53,4 +53,14 @@ describe('FLAC metadata', () => {
       expect(result).toEqual({})
     })
   })
+
+  it('resolves empty when parsing throws on malformed data', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const malformed = new Uint8Array([0x66, 0x4c, 0x61, 0x43, 0xff, 0xff])
+    const file = new File([malformed], 'malformed.flac')
+
+    const result = await getFromFlacFile(file)
+
+    expect(result).toEqual({})
+  })
 })
