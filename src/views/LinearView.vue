@@ -12,6 +12,7 @@ import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
@@ -134,6 +135,7 @@ function dragDrop(e: DragEvent) {
         <AppBuilder v-if="showLeftBuilder" />
         <div
           v-else-if="sidebarOnLeft && activeTab"
+          v-coachmark="activeTab?.id === 'assets' ? 'assets-panel' : undefined"
           class="size-full overflow-x-hidden border-r border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />
@@ -146,6 +148,7 @@ function dragDrop(e: DragEvent) {
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
+        v-coachmark="'outputs'"
         data-testid="linear-center-panel"
         :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
@@ -188,6 +191,7 @@ function dragDrop(e: DragEvent) {
         />
         <div
           v-else-if="activeTab"
+          v-coachmark="activeTab?.id === 'assets' ? 'assets-panel' : undefined"
           class="h-full overflow-x-hidden border-l border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />

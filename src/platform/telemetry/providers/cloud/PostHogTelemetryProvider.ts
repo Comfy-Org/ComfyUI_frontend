@@ -23,6 +23,8 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -47,7 +49,7 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
-import { TelemetryEvents } from '../../types'
+import { OnboardingTourEvents, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -386,6 +388,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackRunButton(properties: RunButtonProperties): void {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  }
+
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
   }
 
   trackSurvey(
