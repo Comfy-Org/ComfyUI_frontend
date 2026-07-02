@@ -100,6 +100,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
@@ -109,12 +110,14 @@ import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { stripModelTypePrefix } from '@/platform/assets/utils/assetMetadataUtils'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -196,7 +199,11 @@ const primaryCategoryTag = computed(() => {
     .map((asset) => asset.tags?.find((tag) => tag !== 'models'))
     .find((tag): tag is string => typeof tag === 'string' && tag.length > 0)
 
-  if (tagFromAssets) return tagFromAssets
+  if (tagFromAssets) {
+    return flags.supportsModelTypeTags
+      ? stripModelTypePrefix(tagFromAssets)
+      : tagFromAssets
+  }
 
   if (props.nodeType) {
     const mapped = modelToNodeStore.getCategoryForNodeType(props.nodeType)

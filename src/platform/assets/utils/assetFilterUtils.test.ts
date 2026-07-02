@@ -26,19 +26,54 @@ function createAsset(
 
 describe('filterByCategory', () => {
   it.for([
-    { category: 'all', tags: ['checkpoint'], expected: true },
-    { category: 'checkpoint', tags: ['checkpoint'], expected: true },
-    { category: 'lora', tags: ['checkpoint'], expected: false },
+    { category: 'all', tags: ['checkpoint'], mode: false, expected: true },
+    {
+      category: 'checkpoint',
+      tags: ['checkpoint'],
+      mode: false,
+      expected: true
+    },
+    { category: 'lora', tags: ['checkpoint'], mode: false, expected: false },
     {
       category: 'checkpoint',
       tags: ['models', 'checkpoint/xl'],
+      mode: false,
       expected: true
     },
-    { category: 'xl', tags: ['models', 'checkpoint/xl'], expected: false }
+    {
+      category: 'xl',
+      tags: ['models', 'checkpoint/xl'],
+      mode: false,
+      expected: false
+    },
+    {
+      category: 'checkpoints',
+      tags: ['models', 'model_type:checkpoints'],
+      mode: true,
+      expected: true
+    },
+    {
+      category: 'LLM',
+      tags: ['models', 'model_type:LLM'],
+      mode: true,
+      expected: true
+    },
+    {
+      category: 'sdxl',
+      tags: ['models', 'model_type:checkpoints', 'sdxl'],
+      mode: true,
+      expected: false
+    },
+    {
+      category: 'checkpoints',
+      tags: ['models', 'model_type:checkpoints'],
+      mode: false,
+      expected: false
+    }
   ])(
-    'category=$category with tags=$tags returns $expected',
-    ({ category, tags, expected }) => {
-      const filter = filterByCategory(category)
+    'category=$category tags=$tags mode=$mode returns $expected',
+    ({ category, tags, mode, expected }) => {
+      const filter = filterByCategory(category, mode)
       const asset = createAsset('model.safetensors', { tags })
       expect(filter(asset)).toBe(expected)
     }

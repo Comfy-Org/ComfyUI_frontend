@@ -875,6 +875,32 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
+  describe('pagination safety', () => {
+    it('stops instead of looping when the backend ignores offset', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      // A backend that ignores offset returns the same full page every time.
+      const fullPage = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`asset-${i}`)
+      )
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(fullPage)
+
+      await store.updateModelsForNodeType(nodeType)
+
+      await vi.waitFor(() => {
+        expect(
+          vi.mocked(assetService.getAssetsForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      })
+
+      expect(
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).toHaveBeenCalledTimes(2)
+      expect(store.getAssets(nodeType)).toHaveLength(500)
+    })
+  })
+
   describe('concurrent request handling', () => {
     it('should short-circuit concurrent calls to prevent duplicate work', async () => {
       const store = useAssetsStore()
@@ -1432,6 +1458,35 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(store.hasCategory('loras')).toBe(false)
       expect(store.hasCategory('tag:models')).toBe(false)
     })
+  })
+})
+
+describe('assetsStore - Model Assets Cache (non-cloud)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    mockIsCloud.value = false
+    vi.clearAllMocks()
+  })
+
+  it('caches model assets fetched by tag on non-cloud builds', async () => {
+    const store = useAssetsStore()
+    vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+      {
+        id: 'm1',
+        name: 'sd_xl_base_1.0.safetensors',
+        tags: ['checkpoints', 'models']
+      },
+      { id: 'm2', name: 'lora.safetensors', tags: ['loras', 'models'] }
+    ])
+
+    await store.updateModelsForTag('models')
+
+    expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+      'models',
+      true,
+      expect.anything()
+    )
+    expect(store.getAssets('tag:models')).toHaveLength(2)
   })
 })
 
