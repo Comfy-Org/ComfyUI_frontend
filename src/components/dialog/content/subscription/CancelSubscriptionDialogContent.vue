@@ -54,6 +54,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const props = defineProps<{
   cancelAt?: string
@@ -132,23 +133,26 @@ async function onConfirmCancel() {
   try {
     await cancelSubscription()
   } catch (error) {
+    const errorMessage = getErrorMessage(error)
     telemetry?.trackSubscriptionCancellation('failed', {
       ...cancellationMetadata(),
-      error_message: error instanceof Error ? error.message : String(error)
+      error_message: errorMessage ?? String(error)
     })
     toast.add({
       severity: 'error',
       summary: t('subscription.cancelDialog.failed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+      detail: errorMessage ?? t('g.unknownError')
     })
     isLoading.value = false
     return
   }
 
   didCancelSucceed.value = true
-  await Promise.resolve()
-    .then(() => fetchStatus())
-    .catch(() => undefined)
+  try {
+    await fetchStatus()
+  } catch {
+    // Cancellation already succeeded; stale local subscription status should not report failure.
+  }
   dialogStore.closeDialog({ key: 'cancel-subscription' })
   toast.add({
     severity: 'success',

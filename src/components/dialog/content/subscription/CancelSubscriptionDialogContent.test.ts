@@ -143,9 +143,9 @@ describe('CancelSubscriptionDialogContent', () => {
       )
     })
 
-    it('tracks confirmed and failed with the error message when the request rejects', async () => {
+    it('tracks confirmed and failed with message-carrying rejection values', async () => {
       mockSubscription.value = null
-      mockCancelSubscription.mockRejectedValueOnce(new Error('timed out'))
+      mockCancelSubscription.mockRejectedValueOnce({ message: 'timed out' })
 
       renderComponent()
       await userEvent.click(
