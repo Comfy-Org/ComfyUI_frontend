@@ -692,6 +692,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
+    id: 'Comfy.UI.DisabledCommands',
+    name: 'Disabled command IDs',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.47.0'
+  },
+  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',

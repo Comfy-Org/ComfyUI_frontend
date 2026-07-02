@@ -4,6 +4,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
+import { isCommandDisabled } from '@/platform/settings/utils/uiDisableList'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -78,7 +79,12 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   }
 
   const registerCommands = (path: string[], commandIds: string[]) => {
-    const items = commandIds.map((id) => commandIdToMenuItem(id, path))
+    const enabledCommandIds = commandIds.filter((id) => !isCommandDisabled(id))
+    if (!enabledCommandIds.length) {
+      return
+    }
+
+    const items = enabledCommandIds.map((id) => commandIdToMenuItem(id, path))
     registerMenuGroup(path, items)
   }
 
