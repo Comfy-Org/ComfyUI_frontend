@@ -153,11 +153,7 @@
         >
           <NodeSlots :node-data />
 
-          <NodeWidgets
-            v-if="hasRenderableWidgets"
-            :node-data
-            :widget-ids
-          />
+          <NodeWidgets v-if="hasRenderableWidgets" :node-data :widget-ids />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
