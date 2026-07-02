@@ -1,10 +1,19 @@
 @import '@comfyorg/design-system/css/style.css';
 
 /* Markdown prose styles for the agent chat, matching Figma DES-455 tokens */
+.agent-markdown h1,
+.agent-markdown h2,
+.agent-markdown p,
+.agent-markdown ol,
+.agent-markdown ul,
+.agent-markdown li,
+.agent-markdown table {
+  margin: 0;
+}
+
 .agent-markdown h1 {
   font-size: 1.5rem;
   font-weight: 600;
-  line-height: normal;
   padding-top: 1rem;
   padding-bottom: 0.5rem;
 }
@@ -12,22 +21,18 @@
 .agent-markdown h2 {
   font-size: 1rem;
   font-weight: 600;
-  line-height: 1;
   padding-top: 0.875rem;
   padding-bottom: 0.375rem;
 }
 
 .agent-markdown p {
   font-size: 0.875rem;
-  font-weight: 400;
-  line-height: 1.25rem;
   padding-bottom: 0.5rem;
 }
 
 .agent-markdown ol,
 .agent-markdown ul {
   font-size: 0.875rem;
-  line-height: 1.25rem;
   padding-left: 1.25rem;
   padding-bottom: 0.5rem;
 }
@@ -38,11 +43,6 @@
 
 .agent-markdown ul {
   list-style-type: disc;
-  padding-left: 1.3125rem;
-}
-
-.agent-markdown li {
-  padding-bottom: 0;
 }
 
 .agent-markdown strong {
@@ -57,12 +57,11 @@
 .agent-markdown table {
   width: 100%;
   font-size: 0.875rem;
-  line-height: 1.25rem;
+  margin-bottom: 0.5rem;
   border-collapse: collapse;
-  padding-bottom: 0.5rem;
-  background-color: var(--color-secondary-background);
   border-radius: 0.5rem;
   overflow: hidden;
+  background-color: var(--color-secondary-background);
 }
 
 .agent-markdown th {
@@ -73,7 +72,6 @@
 }
 
 .agent-markdown td {
-  font-weight: 600;
   padding: 0.625rem 1rem;
   border-bottom: 1px solid var(--color-border-default);
 }
@@ -88,6 +86,7 @@
 
 .agent-markdown > *:last-child {
   padding-bottom: 0;
+  margin-bottom: 0;
 }
 
 
