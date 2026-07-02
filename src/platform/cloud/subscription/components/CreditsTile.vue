@@ -351,12 +351,12 @@ const handleRefresh = wrapWithErrorHandlingAsync(async () => {
 })
 
 function handleAddCredits() {
-  telemetry?.trackAddApiCreditButtonClicked()
+  telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
   void dialogService.showTopUpCreditsDialog()
 }
 
 function handleUpgradeToAddCredits() {
-  showPricingTable()
+  showPricingTable({ reason: 'upgrade_to_add_credits' })
 }
 
 async function handleWindowFocus() {
