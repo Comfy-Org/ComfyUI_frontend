@@ -5,7 +5,6 @@
   <WidgetGrid
     v-else
     :processed-widgets="processedWidgets"
-    :grid-template-rows="gridTemplateRows"
     :node-type="nodeType"
     :can-select-inputs="canSelectInputs"
     :node-id="nodeData?.id"
@@ -68,11 +67,10 @@ onErrorCaptured((error) => {
   return false
 })
 
-const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
-  useProcessedWidgets(
-    () => nodeData,
-    () => widgetIds
-  )
+const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
+  () => nodeData,
+  () => widgetIds
+)
 
 // Tracks widget-row growth that the node-level RO can't see
 if (nodeData?.id != null) {
