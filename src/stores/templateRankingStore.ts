@@ -44,17 +44,9 @@ export const useTemplateRankingStore = defineStore('templateRanking', () => {
     return normalizeUsageScore(usage) * 0.5 + internal * 0.3 + freshness * 0.2
   }
 
-  /**
-   * Compute composite score for "popular" sort.
-   * Formula: usage × 0.9 + freshness × 0.1
-   */
-  const computePopularScore = (
-    dateStr: string | undefined,
-    usage: number = 0
-  ): number => {
-    const freshness = computeFreshness(dateStr)
-
-    return normalizeUsageScore(usage) * 0.9 + freshness * 0.1
+  /** "Popular" ranks on usage alone — no freshness, unlike the default score. */
+  const computePopularScore = (usage: number = 0): number => {
+    return usage
   }
 
   return {

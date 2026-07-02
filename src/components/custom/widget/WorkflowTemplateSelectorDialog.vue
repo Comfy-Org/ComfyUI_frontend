@@ -97,7 +97,7 @@
         <!-- Sort Options -->
         <div>
           <SingleSelect
-            v-model="sortBy"
+            v-model="sortSelection"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
             :content-style="selectContentStyle"
@@ -557,6 +557,8 @@ const {
   selectedUseCases,
   selectedRunsOn,
   sortBy,
+  sortSelection,
+  hasActiveQuery,
   activeModels,
   activeUseCases,
   filteredTemplates,
@@ -565,14 +567,13 @@ const {
   availableRunsOn,
   filteredCount,
   totalCount,
-  resetFilters,
-  loadFuseOptions
+  resetFilters
 } = useTemplateFiltering(navigationFilteredTemplates)
 
 /**
  * Raw search input bound to the search box. The actual `searchQuery` consumed
  * by the filtering composable is only updated via `applySearchQuery` after the
- * debounce settles, keeping Fuse/grid re-renders off the keystroke critical path.
+ * debounce settles, keeping search/grid re-renders off the keystroke critical path.
  */
 const searchInput = ref(searchQuery.value)
 
@@ -726,8 +727,15 @@ const runsOnFilterLabel = computed(() => {
   }
 })
 
-// Sort options
 const sortOptions = computed(() => [
+  ...(hasActiveQuery.value
+    ? [
+        {
+          name: t('templateWorkflows.sort.relevance', 'Relevance'),
+          value: 'relevance'
+        }
+      ]
+    : []),
   {
     name: t('templateWorkflows.sort.default', 'Default'),
     value: 'default'
@@ -839,8 +847,7 @@ const { isLoading } = useAsyncState(
   async () => {
     await Promise.all([
       loadTemplates(),
-      workflowTemplatesStore.loadWorkflowTemplates(),
-      loadFuseOptions()
+      workflowTemplatesStore.loadWorkflowTemplates()
     ])
     return true
   },

@@ -90,22 +90,17 @@ describe('templateRankingStore', () => {
   })
 
   describe('computePopularScore', () => {
-    it('does not use searchRank', () => {
+    it('orders strictly by usage, ignoring date', () => {
       const store = useTemplateRankingStore()
-      store.largestUsageScore = 100
-      // Popular score ignores searchRank - just usage + freshness
-      const score1 = store.computePopularScore('2024-01-01', 0)
-      const score2 = store.computePopularScore('2024-01-01', 0)
-      expect(score1).toBe(score2)
+      const higherUsage = store.computePopularScore(500)
+      const lowerUsage = store.computePopularScore(100)
+      expect(higherUsage).toBeGreaterThan(lowerUsage)
     })
 
-    it('newer templates score higher', () => {
+    it('returns the raw usage value', () => {
       const store = useTemplateRankingStore()
-      store.largestUsageScore = 100
-      const today = new Date().toISOString().split('T')[0]
-      const oldScore = store.computePopularScore('2020-01-01', 0)
-      const newScore = store.computePopularScore(today, 0)
-      expect(newScore).toBeGreaterThan(oldScore)
+      expect(store.computePopularScore(742)).toBe(742)
+      expect(store.computePopularScore()).toBe(0)
     })
   })
 
