@@ -37,14 +37,6 @@ type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
 
 type MockAuth = Record<string, unknown>
 
-/**
- * Centralizes the type-boundary double-cast for Firebase mock credentials
- * so individual tests only deal with the mock user.
- */
-function asUserCredential(user: Partial<MockUser>): UserCredential {
-  return { user } as Partial<UserCredential> as UserCredential
-}
-
 // Mock fetch
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
@@ -357,18 +349,18 @@ describe('useAuthStore', () => {
     }
 
     // Now, succeed on next attempt
-    vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValueOnce(
-      asUserCredential(mockUser)
-    )
+    vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValueOnce({
+      user: mockUser
+    } as Partial<UserCredential> as UserCredential)
 
     await store.login('test@example.com', 'correct-password')
   })
 
   describe('login', () => {
     it('should login with valid credentials', async () => {
-      const mockUserCredential = asUserCredential(mockUser)
+      const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const result = await store.login('test@example.com', 'password')
@@ -402,9 +394,9 @@ describe('useAuthStore', () => {
 
     it('tracks login when Firebase returns no email', async () => {
       const userWithoutEmail = { ...mockUser, email: null }
-      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(userWithoutEmail)
-      )
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: userWithoutEmail
+      } as Partial<UserCredential> as UserCredential)
 
       await store.login('test@example.com', 'password')
 
@@ -415,9 +407,9 @@ describe('useAuthStore', () => {
 
     it('fails customer creation when the signed-in user has no token yet', async () => {
       authStateCallback(null)
-      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(mockUser)
-      )
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
 
       await expect(store.login('test@example.com', 'password')).rejects.toThrow(
         'Cannot create customer: User not authenticated'
@@ -426,9 +418,9 @@ describe('useAuthStore', () => {
 
     it('should handle concurrent login attempts correctly', async () => {
       // Set up multiple login promises
-      const mockUserCredential = asUserCredential(mockUser)
+      const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const loginPromise1 = store.login('user1@example.com', 'password1')
@@ -444,9 +436,9 @@ describe('useAuthStore', () => {
 
   describe('register', () => {
     it('should register a new user', async () => {
-      const mockUserCredential = asUserCredential(mockUser)
+      const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const result = await store.register('new@example.com', 'password')
@@ -479,9 +471,9 @@ describe('useAuthStore', () => {
     })
 
     it('forwards the turnstile token to createCustomer as turnstile_token', async () => {
-      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(mockUser)
-      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
 
       await store.register('new@example.com', 'password', 'turnstile-abc')
 
@@ -495,9 +487,9 @@ describe('useAuthStore', () => {
     })
 
     it('omits the request body when no turnstile token is provided', async () => {
-      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(mockUser)
-      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
 
       await store.register('new@example.com', 'password')
 
@@ -508,9 +500,9 @@ describe('useAuthStore', () => {
     })
 
     it('rolls back the orphaned Firebase user when customer creation fails', async () => {
-      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(mockUser)
-      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
       // The server-side customer creation (where Turnstile is validated) fails.
       mockFetch.mockImplementation((url: string) =>
         url.endsWith('/customers')
@@ -531,9 +523,9 @@ describe('useAuthStore', () => {
     })
 
     it('does not delete the user on a successful registration', async () => {
-      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(mockUser)
-      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
 
       await store.register('new@example.com', 'password')
 
@@ -543,9 +535,9 @@ describe('useAuthStore', () => {
     it('does not delete an existing user when customer creation fails during login', async () => {
       // Regression guard: the rollback must be scoped to register only — login
       // signs in an EXISTING user, so a customer hiccup must never delete it.
-      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(mockUser)
-      )
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
       mockFetch.mockImplementation((url: string) =>
         url.endsWith('/customers')
           ? Promise.resolve({
@@ -564,9 +556,9 @@ describe('useAuthStore', () => {
 
     it('tracks registration when Firebase returns no email', async () => {
       const userWithoutEmail = { ...mockUser, email: null }
-      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        asUserCredential(userWithoutEmail)
-      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: userWithoutEmail
+      } as Partial<UserCredential> as UserCredential)
 
       await store.register('new@example.com', 'password')
 
@@ -618,9 +610,9 @@ describe('useAuthStore', () => {
 
     it('should return null for token after login and logout sequence', async () => {
       // Setup mock for login
-      const mockUserCredential = asUserCredential(mockUser)
+      const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       // Login
@@ -760,9 +752,9 @@ describe('useAuthStore', () => {
   describe('social authentication', () => {
     describe('loginWithGoogle', () => {
       it('should sign in with Google', async () => {
-        const mockUserCredential = asUserCredential(mockUser)
+        const mockUserCredential = { user: mockUser }
         vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          mockUserCredential
+          mockUserCredential as Partial<UserCredential> as UserCredential
         )
 
         const result = await store.loginWithGoogle()
@@ -776,9 +768,9 @@ describe('useAuthStore', () => {
       })
 
       it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
-        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          asUserCredential(mockUser)
-        )
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
 
         await store.loginWithGoogle()
 
@@ -807,9 +799,9 @@ describe('useAuthStore', () => {
 
     describe('loginWithGithub', () => {
       it('should sign in with Github', async () => {
-        const mockUserCredential = asUserCredential(mockUser)
+        const mockUserCredential = { user: mockUser }
         vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          mockUserCredential
+          mockUserCredential as Partial<UserCredential> as UserCredential
         )
 
         const result = await store.loginWithGithub()
@@ -823,9 +815,9 @@ describe('useAuthStore', () => {
       })
 
       it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
-        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          asUserCredential(mockUser)
-        )
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
 
         await store.loginWithGithub()
 
@@ -853,9 +845,9 @@ describe('useAuthStore', () => {
     })
 
     it('should handle concurrent social login attempts correctly', async () => {
-      const mockUserCredential = asUserCredential(mockUser)
+      const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-        mockUserCredential
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const googleLoginPromise = store.loginWithGoogle()
@@ -867,7 +859,9 @@ describe('useAuthStore', () => {
     })
 
     describe('sign-up telemetry OR logic', () => {
-      const mockUserCredential = asUserCredential(mockUser)
+      const mockUserCredential = {
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential
 
       beforeEach(() => {
         vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
@@ -943,9 +937,9 @@ describe('useAuthStore', () => {
         '%s should track undefined email when Firebase returns no email',
         async (method) => {
           const userWithoutEmail = { ...mockUser, email: null }
-          vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-            asUserCredential(userWithoutEmail)
-          )
+          vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+            user: userWithoutEmail
+          } as Partial<UserCredential> as UserCredential)
 
           await store[method]()
 
