@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import PricingSection from '../../components/pricing/PricingSection.vue'
 import CtaSection from '../../templates/education/CtaSection.vue'
 import FAQSection from '../../templates/education/FAQSection.vue'
 import HeroSection from '../../templates/education/HeroSection.vue'
@@ -36,6 +37,7 @@ const faqJsonLd = {
   </Fragment>
 
   <HeroSection locale="zh-CN" />
+  <PricingSection client:visible locale="zh-CN" />
   <HowItWorksSection locale="zh-CN" />
   <FAQSection locale="zh-CN" client:visible />
   <CtaSection locale="zh-CN" />
