@@ -30,8 +30,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login || github.event.issue.user.login }}
-          BASE_ALLOWLIST: actions-user,ampagent,claude,comfy-pr-bot,github-actions,github-actions[bot]
-,*[bot],Glary Bot
+          BASE_ALLOWLIST: actions-user,ampagent,claude,comfy-pr-bot,github-actions,github-actions[bot],*[bot],Glary Bot
         run: |
           others=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUMBER}/commits" --paginate \
             --jq '.[] | (.author.login // empty), (.committer.login // empty)' \
