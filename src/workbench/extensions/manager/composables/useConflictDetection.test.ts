@@ -10,10 +10,15 @@ import { useInstalledPacks } from '@/workbench/extensions/manager/composables/no
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import type { ConflictAcknowledgmentState } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import {
+  checkAcceleratorCompatibility,
+  checkOSCompatibility
+} from '@/workbench/extensions/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
 // Mock @vueuse/core until function
@@ -218,12 +223,14 @@ describe('useConflictDetection', () => {
     typeof useSystemStatsStore
   >
 
+  const mockShouldShowConflictModal = ref(false)
+
   const mockAcknowledgment = {
     checkComfyUIVersionChange: vi.fn(),
     acknowledgmentState: computed(
       () => ({}) as Partial<ConflictAcknowledgmentState>
     ),
-    shouldShowConflictModal: computed(() => false),
+    shouldShowConflictModal: computed(() => mockShouldShowConflictModal.value),
     shouldShowRedDot: computed(() => false),
     shouldShowManagerBanner: computed(() => false),
     dismissRedDotNotification: vi.fn(),
@@ -246,6 +253,12 @@ describe('useConflictDetection', () => {
     vi.mocked(useInstalledPacks).mockReturnValue(mockInstalledPacks)
     vi.mocked(useComfyManagerStore).mockReturnValue(mockManagerStore)
     vi.mocked(useConflictDetectionStore).mockReturnValue(mockConflictStore)
+    vi.mocked(useManagerState).mockReturnValue({
+      isNewManagerUI: ref(true)
+    } as ReturnType<typeof useManagerState>)
+    vi.mocked(checkVersionCompatibility).mockReturnValue(null)
+    vi.mocked(checkOSCompatibility).mockReturnValue(null)
+    vi.mocked(checkAcceleratorCompatibility).mockReturnValue(null)
 
     // Reset mock implementations
     vi.mocked(mockInstalledPacks.startFetchInstalled).mockResolvedValue(
@@ -263,6 +276,7 @@ describe('useConflictDetection', () => {
     mockInstalledPacksWithVersions.value = []
     // Reset conflicted packages
     mockConflictedPackages = []
+    mockShouldShowConflictModal.value = false
   })
 
   afterEach(() => {

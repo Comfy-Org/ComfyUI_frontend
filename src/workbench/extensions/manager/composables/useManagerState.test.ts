@@ -31,22 +31,36 @@ vi.mock('@/composables/useFeatureFlags', () => {
   }
 })
 
+const {
+  commandExecuteMock,
+  managerDialogHideMock,
+  managerDialogShowMock,
+  settingsHideMock,
+  settingsShowAboutMock,
+  settingsShowMock,
+  toastAddMock
+} = vi.hoisted(() => ({
+  commandExecuteMock: vi.fn(),
+  managerDialogHideMock: vi.fn(),
+  managerDialogShowMock: vi.fn(),
+  settingsHideMock: vi.fn(),
+  settingsShowAboutMock: vi.fn(),
+  settingsShowMock: vi.fn(),
+  toastAddMock: vi.fn()
+}))
+
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: vi.fn(() => ({
-    show: vi.fn(),
-    hide: vi.fn(),
-    showAbout: vi.fn()
+    show: settingsShowMock,
+    hide: settingsHideMock,
+    showAbout: settingsShowAboutMock
   }))
 }))
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: vi.fn(() => ({
-    execute: vi.fn()
+    execute: commandExecuteMock
   }))
-}))
-
-const { toastAddMock } = vi.hoisted(() => ({
-  toastAddMock: vi.fn()
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -56,12 +70,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 vi.mock('@/workbench/extensions/manager/composables/useManagerDialog', () => {
-  const show = vi.fn()
-  const hide = vi.fn()
   return {
     useManagerDialog: vi.fn(() => ({
-      show,
-      hide
+      show: managerDialogShowMock,
+      hide: managerDialogHideMock
     }))
   }
 })
@@ -83,6 +95,17 @@ const systemStatsFixture = (argv: string[]) => ({
   },
   devices: []
 })
+
+const enabledManagerStats = () =>
+  systemStatsFixture(['python', 'main.py', '--enable-manager'])
+
+const legacyManagerStats = () =>
+  systemStatsFixture([
+    'python',
+    'main.py',
+    '--enable-manager',
+    '--enable-manager-legacy-ui'
+  ])
 
 /**
  * Mocks the two server feature flags queried by useManagerState.
@@ -138,12 +161,7 @@ describe('useManagerState', () => {
 
     it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
       systemStatsStore.$patch({
-        systemStats: systemStatsFixture([
-          'python',
-          'main.py',
-          '--enable-manager',
-          '--enable-manager-legacy-ui'
-        ]),
+        systemStats: legacyManagerStats(),
         isInitialized: true
       })
 
@@ -240,9 +258,6 @@ describe('useManagerState', () => {
   })
 
   describe('INCOMPATIBLE state (missing supports_csrf_post)', () => {
-    const enabledManagerStats = () =>
-      systemStatsFixture(['python', 'main.py', '--enable-manager'])
-
     it('returns INCOMPATIBLE when server supports v4 but csrf_post is false', () => {
       systemStatsStore.$patch({
         systemStats: enabledManagerStats(),
@@ -369,9 +384,6 @@ describe('useManagerState', () => {
   })
 
   describe('helper properties', () => {
-    const enabledManagerStats = () =>
-      systemStatsFixture(['python', 'main.py', '--enable-manager'])
-
     it('isManagerEnabled should return true when state is not DISABLED / INCOMPATIBLE', () => {
       systemStatsStore.$patch({
         systemStats: enabledManagerStats(),
@@ -412,12 +424,7 @@ describe('useManagerState', () => {
 
     it('isLegacyManagerUI should return true when state is LEGACY_UI', () => {
       systemStatsStore.$patch({
-        systemStats: systemStatsFixture([
-          'python',
-          'main.py',
-          '--enable-manager',
-          '--enable-manager-legacy-ui'
-        ]),
+        systemStats: legacyManagerStats(),
         isInitialized: true
       })
 

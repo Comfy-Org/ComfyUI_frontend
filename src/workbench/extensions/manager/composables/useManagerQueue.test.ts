@@ -5,12 +5,23 @@ import { ref } from 'vue'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
-// Mock the app API
+const mockAppApi = vi.hoisted(() => ({
+  addEventListener: vi.fn((type: string, listener: EventListener) => {
+    mockAppApi.listeners.set(type, listener)
+  }),
+  listeners: new Map<string, EventListener>(),
+  removeEventListener: vi.fn((type: string, listener: EventListener) => {
+    if (mockAppApi.listeners.get(type) === listener) {
+      mockAppApi.listeners.delete(type)
+    }
+  })
+}))
+
 vi.mock('@/scripts/app', () => ({
   app: {
     api: {
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
+      addEventListener: mockAppApi.addEventListener,
+      removeEventListener: mockAppApi.removeEventListener,
       clientId: 'test-client-id'
     }
   }
@@ -44,10 +55,12 @@ describe('useManagerQueue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAppApi.listeners.clear()
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    mockAppApi.listeners.clear()
   })
 
   describe('initialization', () => {
