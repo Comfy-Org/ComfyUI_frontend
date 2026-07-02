@@ -75,3 +75,43 @@ export function parsePreloadError(error: Error): PreloadErrorInfo {
     message
   }
 }
+
+/**
+ * Custom node extension files are served under `/extensions/` and loaded via
+ * dynamic import, so their failures surface through the same
+ * `vite:preloadError` event as first-party chunk failures.
+ */
+function isExtensionFileUrl(url: string): boolean {
+  try {
+    // Base only matters for relative URLs; any origin works.
+    const { pathname } = new URL(url, 'https://localhost')
+    // Self-hosted deployments behind a reverse proxy serve extensions under a
+    // path prefix (e.g. `/comfy/extensions/...`), so match the segment anywhere
+    // rather than anchoring to root, while excluding the dev-server source path.
+    if (pathname.includes('/src/extensions/')) return false
+    return pathname.includes('/extensions/')
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Whether a preload/dynamic-import failure originates from a custom node
+ * extension file rather than a first-party chunk.
+ *
+ * Fetch failures carry the extension URL in the error message. Evaluation
+ * errors thrown while an extension module (or one of its static imports)
+ * executes carry no URL in the message, but their stack references the served
+ * `/extensions/` file.
+ */
+export function isExtensionOriginPreloadError(
+  error: Error,
+  info: PreloadErrorInfo
+): boolean {
+  if (info.url) return isExtensionFileUrl(info.url)
+
+  const stack = error?.stack
+  if (typeof stack !== 'string') return false
+  const stackUrls = stack.match(/https?:\/\/[^\s)]+/g) ?? []
+  return stackUrls.some(isExtensionFileUrl)
+}

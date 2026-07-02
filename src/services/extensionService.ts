@@ -46,7 +46,12 @@ export const useExtensionService = () => {
           try {
             await import(/* @vite-ignore */ api.fileURL(ext))
           } catch (error) {
-            console.error('Error loading extension', ext, error)
+            // A custom node extension failing to load is a third-party
+            // compatibility problem, not a first-party failure. Loading
+            // deliberately continues, so log a warning rather than an error
+            // (console.error here pollutes error tracking with
+            // extension-origin noise).
+            console.warn('Error loading extension', ext, error)
           }
         })
     )
@@ -57,7 +62,11 @@ export const useExtensionService = () => {
    * @param extension The extension to register
    */
   const registerExtension = (extension: ComfyExtension) => {
-    extensionStore.registerExtension(extension)
+    // Duplicate registrations are skipped by the store (warn + keep the first
+    // registration). Don't re-process keybindings/commands/settings for them.
+    if (!extensionStore.registerExtension(extension)) {
+      return
+    }
 
     const addKeybinding = wrapWithErrorHandling(
       keybindingStore.addDefaultKeybinding

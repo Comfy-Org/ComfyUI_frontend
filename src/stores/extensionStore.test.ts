@@ -12,7 +12,7 @@ describe('extensionStore', () => {
   describe('registerExtension', () => {
     it('registers an extension by name', () => {
       const store = useExtensionStore()
-      store.registerExtension({ name: 'test.ext' })
+      expect(store.registerExtension({ name: 'test.ext' })).toBe(true)
       expect(store.isExtensionInstalled('test.ext')).toBe(true)
     })
 
@@ -23,12 +23,30 @@ describe('extensionStore', () => {
       )
     })
 
-    it('throws for duplicate registration', () => {
+    it('warns and keeps the first registration on duplicate', () => {
       const store = useExtensionStore()
-      store.registerExtension({ name: 'dup' })
-      expect(() => store.registerExtension({ name: 'dup' })).toThrow(
-        "Extension named 'dup' already registered."
-      )
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const first = { name: 'dup', aboutPageBadges: [] }
+        expect(store.registerExtension(first)).toBe(true)
+
+        expect(store.registerExtension({ name: 'dup' })).toBe(false)
+        expect(warnSpy).toHaveBeenCalledWith(
+          "Extension named 'dup' already registered. Skipping duplicate registration."
+        )
+        // The first registration wins.
+        expect(store.extensions.filter((ext) => ext.name === 'dup')).toEqual([
+          first
+        ])
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    it('registers an extension named after a built-in property', () => {
+      const store = useExtensionStore()
+      expect(store.registerExtension({ name: 'toString' })).toBe(true)
+      expect(store.isExtensionInstalled('toString')).toBe(true)
     })
 
     it('warns when registering a disabled extension but still installs it', () => {
