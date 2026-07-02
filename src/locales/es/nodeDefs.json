@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "Condicionamiento (Multiplicar)",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamiento"
+      },
+      "multiplier": {
+        "name": "multiplicador"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "Acondicionamiento (Establecer Área)",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "Genera un video con audio a partir de un prompt de texto usando el modelo Gemini Omni Flash de Google. Opcionalmente, proporciona imágenes y/o videos de referencia para guiar o editar el resultado. Describe la duración deseada (3-10 s) y la relación de aspecto (16:9 o 9:16) directamente en el prompt.",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "El modelo de video Gemini utilizado para generar el video."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

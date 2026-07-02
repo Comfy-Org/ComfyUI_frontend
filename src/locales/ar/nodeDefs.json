@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "التهيئة (ضرب)",
+    "inputs": {
+      "conditioning": {
+        "name": "التهيئة"
+      },
+      "multiplier": {
+        "name": "المضاعف"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "التهيئة (تعيين منطقة)",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "إنشاء فيديو مع صوت من نص برومبت باستخدام نموذج Gemini Omni Flash من Google. يمكنك اختيارياً إضافة صور أو فيديوهات مرجعية لتوجيه أو تعديل النتيجة. صف الطول المطلوب (٣-١٠ ثوانٍ) ونسبة العرض إلى الارتفاع (١٦:٩ أو ٩:١٦) مباشرة في البرومبت.",
+    "display_name": "Google Gemini Omni (فيديو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Gemini للفيديو المستخدم في إنشاء الفيديو."
+      },
+      "model_prompt": {
+        "name": "برومبت"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

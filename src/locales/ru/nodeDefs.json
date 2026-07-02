@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "Conditioning (Умножение)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "множитель"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "Кондиционирование (Установить область)",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "Создайте видео со звуком по текстовому промпту с помощью модели Gemini Omni Flash от Google. При необходимости добавьте референсные изображения и/или видео для управления или редактирования результата. Укажите желаемую длительность (3–10 сек) и соотношение сторон (16:9 или 9:16) прямо в промпте.",
+    "display_name": "Google Gemini Omni (Видео)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель Gemini video, используемая для генерации видео."
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_temperature": {
+        "name": "температура"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

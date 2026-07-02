@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "Conditionnement (Multiplication)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditionnement"
+      },
+      "multiplier": {
+        "name": "multiplicateur"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "Conditionnement (Définir Zone)",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "Générez une vidéo avec audio à partir d'une invite textuelle en utilisant le modèle Gemini Omni Flash de Google. Vous pouvez fournir des images et/ou des vidéos de référence pour guider ou modifier le résultat. Indiquez la durée souhaitée (3-10s) et le format d'image (16:9 ou 9:16) directement dans l'invite.",
+    "display_name": "Google Gemini Omni (Vidéo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle vidéo Gemini utilisé pour générer la vidéo."
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

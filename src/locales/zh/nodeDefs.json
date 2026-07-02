@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "条件（乘法）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "multiplier": {
+        "name": "乘数"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "条件采样区域",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型，通过文本提示生成带音频的视频。可选地提供参考图像和/或视频以引导或编辑结果。在提示中直接描述所需时长（3-10秒）和宽高比（16:9 或 9:16）。",
+    "display_name": "Google Gemini Omni（视频）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的 Gemini 视频模型。"
+      },
+      "model_prompt": {
+        "name": "提示"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

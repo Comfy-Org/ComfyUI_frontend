@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "Koşullandırma (Çarpma)",
+    "inputs": {
+      "conditioning": {
+        "name": "koşullandırma"
+      },
+      "multiplier": {
+        "name": "çarpan"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "Koşullandırma (Alan Ayarla)",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "Google'ın Gemini Omni Flash modeliyle bir metin isteminden sesli video oluşturun. Sonucu yönlendirmek veya düzenlemek için isteğe bağlı olarak referans görseller ve/veya videolar ekleyebilirsiniz. İstenen uzunluğu (3-10 sn) ve en-boy oranını (16:9 veya 9:16) doğrudan istemde belirtin.",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Videoyu oluşturmak için kullanılan Gemini video modeli."
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_temperature": {
+        "name": "sıcaklık"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "התניה (כפל)",
+    "inputs": {
+      "conditioning": {
+        "name": "התניה"
+      },
+      "multiplier": {
+        "name": "מכפיל"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "התניה (הגדרת אזור)",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "יצירת וידאו עם אודיו מתוך פרומפט טקסטואלי באמצעות מודל Gemini Omni Flash של Google. ניתן להוסיף תמונות ו/או סרטונים כהפניות להכוונה או עריכה של התוצאה. יש לציין את האורך הרצוי (3-10 שניות) ואת יחס הגובה-רוחב (16:9 או 9:16) ישירות בפרומפט.",
+    "display_name": "Google Gemini Omni (וידאו)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל הווידאו של Gemini המשמש ליצירת הווידאו."
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

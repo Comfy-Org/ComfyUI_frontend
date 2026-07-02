@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "コンディショニング（乗算）",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "multiplier": {
+        "name": "乗数"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "条件付け（エリア設定）",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "GoogleのGemini Omni Flashモデルを使用して、テキストプロンプトから音声付きのビデオを生成します。必要に応じて、参照画像やビデオを指定して結果をガイドまたは編集できます。希望する長さ（3～10秒）やアスペクト比（16:9 または 9:16）はプロンプト内で直接指定してください。",
+    "display_name": "Google Gemini Omni（ビデオ）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するGeminiビデオモデルです。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }

@@ -2236,6 +2236,17 @@
       }
     }
   },
+  "ConditioningMultiply": {
+    "display_name": "شرط‌گذاری (ضرب)",
+    "inputs": {
+      "conditioning": {
+        "name": "شرط‌گذاری"
+      },
+      "multiplier": {
+        "name": "ضریب"
+      }
+    }
+  },
   "ConditioningSetArea": {
     "display_name": "شرطی‌سازی (تنظیم ناحیه)",
     "inputs": {
@@ -5192,6 +5203,40 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiVideoOmni": {
+    "description": "تولید ویدیو همراه با صدا از یک پرامپت متنی با استفاده از مدل Gemini Omni Flash گوگل. می‌توانید تصاویر یا ویدیوهای مرجع را برای راهنمایی یا ویرایش نتیجه به صورت اختیاری وارد کنید. طول مورد نظر (۳ تا ۱۰ ثانیه) و نسبت تصویر (۱۶:۹ یا ۹:۱۶) را مستقیماً در پرامپت مشخص نمایید.",
+    "display_name": "Google Gemini Omni (ویدیو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل ویدیویی Gemini که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_temperature": {
+        "name": "دمای مدل"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از بذر، غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
