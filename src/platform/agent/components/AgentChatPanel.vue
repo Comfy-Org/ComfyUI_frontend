@@ -114,6 +114,11 @@ function onSelectConversation(id: string) {
   showHistory.value = false
 }
 
+function onSuggestionSelect(text: string) {
+  applySuggestion(text)
+  setTimeout(() => promptTextarea.value?.focus(), 0)
+}
+
 function onNewChatFromHistory() {
   startNewChat()
   showHistory.value = false
@@ -127,7 +132,7 @@ function onNewChatFromHistory() {
   >
     <AgentChatHeader
       :is-maximized="agentPanelStore.isMaximized"
-      @new-chat="startNewChat"
+      @new-chat="onNewChatFromHistory"
       @toggle-maximize="agentPanelStore.toggleMaximize"
       @close="close"
     />
@@ -247,7 +252,7 @@ function onNewChatFromHistory() {
         <div
           class="@container mx-auto flex w-full max-w-[640px] flex-col gap-4"
         >
-          <AgentPromptSuggestions v-if="isEmpty" @select="applySuggestion" />
+          <AgentPromptSuggestions v-if="isEmpty" @select="onSuggestionSelect" />
           <div class="flex flex-col gap-2.5">
             <PromptInput @submit="onSubmit">
               <PromptInputBody>

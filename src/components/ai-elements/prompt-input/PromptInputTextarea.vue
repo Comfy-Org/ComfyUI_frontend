@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
-import { inject, ref } from 'vue'
-
-import type { PromptInputFocusedContext } from './promptInputContext'
-import { PROMPT_INPUT_FOCUSED_KEY } from './promptInputContext'
+import { ref } from 'vue'
 
 const { class: className, placeholder } = defineProps<{
   class?: HTMLAttributes['class']
@@ -15,15 +12,6 @@ const model = defineModel<string>({ default: '' })
 
 const isComposing = ref(false)
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
-const isFocused = inject<PromptInputFocusedContext>(PROMPT_INPUT_FOCUSED_KEY)
-
-function onFocus() {
-  if (isFocused) isFocused.value = true
-}
-
-function onBlur() {
-  if (isFocused) isFocused.value = false
-}
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key !== 'Enter' || event.shiftKey || isComposing.value) return
@@ -32,7 +20,14 @@ function onKeydown(event: KeyboardEvent) {
   form?.requestSubmit()
 }
 
-defineExpose({ focus: () => textareaEl.value?.focus() })
+function focus() {
+  const el = textareaEl.value
+  if (!el) return
+  el.focus()
+  el.setSelectionRange(el.value.length, el.value.length)
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
@@ -47,8 +42,6 @@ defineExpose({ focus: () => textareaEl.value?.focus() })
         className
       )
     "
-    @focus="onFocus"
-    @blur="onBlur"
     @keydown="onKeydown"
     @compositionstart="isComposing = true"
     @compositionend="isComposing = false"

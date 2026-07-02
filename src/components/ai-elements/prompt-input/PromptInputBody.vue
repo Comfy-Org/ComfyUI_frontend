@@ -11,6 +11,17 @@ const { class: className } = defineProps<{
 }>()
 
 const isFocused = inject<PromptInputFocusedContext>(PROMPT_INPUT_FOCUSED_KEY)
+
+function onFocusIn() {
+  if (isFocused) isFocused.value = true
+}
+
+function onFocusOut(e: FocusEvent) {
+  const current = e.currentTarget as HTMLElement | null
+  if (isFocused && !current?.contains(e.relatedTarget as Node)) {
+    isFocused.value = false
+  }
+}
 </script>
 
 <template>
@@ -22,6 +33,8 @@ const isFocused = inject<PromptInputFocusedContext>(PROMPT_INPUT_FOCUSED_KEY)
         className
       )
     "
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
   >
     <slot />
   </div>

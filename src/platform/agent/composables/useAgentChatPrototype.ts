@@ -181,7 +181,7 @@ Use **euler** or **euler_a** to get started quickly.`
           {
             name: 'reference.png',
             type: 'image/png',
-            url: '',
+            url: '/assets/images/reference.png',
             size: 204800
           },
           {
