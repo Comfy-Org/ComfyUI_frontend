@@ -14,6 +14,7 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   noindex?: boolean
+  includeDefaultJsonLd?: boolean
 }
 
 const {
@@ -22,6 +23,9 @@ const {
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
+  // Pages that emit their own connected @graph (e.g. the customer stories) opt
+  // out so the site-wide Organization/WebSite are not duplicated on the page.
+  includeDefaultJsonLd = true,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -100,10 +104,12 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(organizationJsonLd)} />
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
-    <slot name="head" />
-
+    {includeDefaultJsonLd && (
+      <Fragment>
+        <script is:inline type="application/ld+json" set:html={escapeJsonLd(organizationJsonLd)} />
+        <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
+      </Fragment>
+    )}
     <slot name="head" />
 
     <!-- Google Tag Manager -->
@@ -123,7 +129,6 @@ const websiteJsonLd = {
     )}
 
     <ClientRouter />
-    <slot name="head" />
   </head>
   <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (

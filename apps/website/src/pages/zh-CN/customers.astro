@@ -3,15 +3,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import ContactSection from '../../components/customers/ContactSection.vue'
 import FeedbackSection from '../../components/customers/FeedbackSection.vue'
 import HeroSection from '../../components/customers/HeroSection.vue'
+import JsonLdGraph from '../../components/common/JsonLdGraph.astro'
 import StorySection from '../../components/customers/StorySection.vue'
 import VideoSection from '../../components/customers/VideoSection.vue'
+import { t } from '../../i18n/translations'
 import { toCardProps } from '../../utils/customers'
+import { buildCustomersCollectionJsonLd } from '../../utils/customerStoryJsonLd'
 import { loadStories } from '../../utils/loadStories'
 
 const stories = (await loadStories('zh-CN')).map(toCardProps)
+
+const siteUrl = (Astro.site?.href ?? 'https://comfy.org/').replace(/\/$/, '')
+const jsonLd = buildCustomersCollectionJsonLd(stories, {
+  siteUrl,
+  locale: 'zh-CN',
+  homeLabel: t('customers.breadcrumb.home', 'zh-CN'),
+  collectionLabel: t('nav.customerStories', 'zh-CN')
+})
 ---
 
-<BaseLayout title="客户故事 — Comfy">
+<BaseLayout title="客户故事 — Comfy" includeDefaultJsonLd={false}>
+  <JsonLdGraph graph={jsonLd} slot="head" />
   <HeroSection locale="zh-CN" client:load />
   <StorySection stories={stories} locale="zh-CN" />
   <FeedbackSection locale="zh-CN" client:load />

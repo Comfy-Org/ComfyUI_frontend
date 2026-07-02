@@ -105,4 +105,27 @@ test.describe('Customer story detail @smoke', () => {
       page.getByRole('link', { name: /Explore the Education Program/i })
     ).toBeVisible()
   })
+
+  test('emits one connected JSON-LD graph describing the story as an Article', async ({
+    page
+  }) => {
+    await page.goto('/customers/series-entertainment')
+
+    const blocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+
+    // Single self-contained @graph, so the site-wide Organization/WebSite are
+    // not duplicated (guards the head-slot triple-render regression too).
+    expect(blocks).toHaveLength(1)
+
+    const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+    const types = graph.map((node) => node['@type'])
+    expect(types.filter((type) => type === 'Organization')).toHaveLength(1)
+    expect(types).toContain('Article')
+    expect(types).toContain('BreadcrumbList')
+
+    const article = graph.find((node) => node['@type'] === 'Article')
+    expect(article?.headline).toMatch(/Series Entertainment/)
+  })
 })
