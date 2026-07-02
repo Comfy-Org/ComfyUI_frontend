@@ -123,9 +123,12 @@ vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
+const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackMonthlySubscriptionSucceeded: vi.fn(),
+    trackResubscribeClicked: mockTrackResubscribeClicked,
     trackBeginCheckout: mockTrackBeginCheckout
   })
 }))
@@ -854,7 +857,7 @@ describe('useSubscriptionCheckout', () => {
 
   describe('handleResubscribe', () => {
     it('emits close on success', async () => {
-      const checkout = await setup()
+      const checkout = await setup('subscribe_to_run')
       mockResubscribe.mockResolvedValueOnce({
         billing_op_id: 'op-4',
         status: 'active'
@@ -866,6 +869,10 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockResubscribe).toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', true)
+      expect(mockTrackResubscribeClicked).toHaveBeenCalledWith({
+        source: 'pricing_dialog',
+        payment_intent_source: 'subscribe_to_run'
+      })
     })
 
     it('shows error toast on failure', async () => {
