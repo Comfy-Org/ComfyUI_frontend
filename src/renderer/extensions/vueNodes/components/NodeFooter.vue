@@ -9,7 +9,7 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
       "
@@ -28,7 +28,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
           enterRadiusClass
         )
       "
@@ -58,7 +58,7 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
       "
@@ -77,13 +77,17 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
           enterRadiusClass
         )
       "
       :style="headerColorStyle"
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
+      @pointerenter="emit('advancedHoverChange', true)"
+      @pointerleave="emit('advancedHoverChange', false)"
+      @focusin="emit('advancedHoverChange', true)"
+      @focusout="emit('advancedHoverChange', false)"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{
@@ -112,7 +116,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'box-border w-full rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
           footerRadiusClass
         )
       "
@@ -142,8 +146,8 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface',
-          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
+          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
       "
@@ -160,10 +164,14 @@
 
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
-    v-else-if="showAdvancedInputsButton || showAdvancedState"
+    v-else-if="
+      (showAdvancedInputsButton || showAdvancedState) &&
+      !globalAlwaysShowAdvanced
+    "
     :class="
       cn(
         footerWrapperBase,
+        'relative',
         hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
       )
     "
@@ -174,29 +182,47 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface',
-          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
+          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
       "
       :style="headerColorStyle"
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
+      @pointerenter="emit('advancedHoverChange', true)"
+      @pointerleave="emit('advancedHoverChange', false)"
+      @focusin="emit('advancedHoverChange', true)"
+      @focusout="emit('advancedHoverChange', false)"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <template v-if="showAdvancedState">
-          <span class="truncate">{{
-            t('rightSidePanel.hideAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
-        </template>
-        <template v-else>
-          <span class="truncate">{{
-            t('rightSidePanel.showAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
-        </template>
+        <span class="truncate">{{
+          showAdvancedState
+            ? t('rightSidePanel.hideAdvancedInputsButton')
+            : t('rightSidePanel.showAdvancedInputsButton')
+        }}</span>
       </div>
+    </Button>
+
+    <Button
+      v-if="showAdvancedState"
+      v-tooltip.bottom="settingsTooltipConfig"
+      variant="textonly"
+      data-testid="advanced-inputs-settings-button"
+      :aria-label="t('rightSidePanel.advancedAffordance.settingsTooltip')"
+      :class="
+        cn(
+          tabStyles,
+          'absolute inset-y-0 right-0 box-border w-10 rounded-none bg-transparent pr-4 text-node-component-slot-text transition-colors duration-150 hover:bg-base-foreground/10',
+          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
+          advancedSettingsRadiusClass
+        )
+      "
+      @pointerdown.stop
+      @pointerup.stop
+      @click.stop="emit('openAdvancedSetting')"
+    >
+      <i class="icon-[lucide--settings-2] size-4" />
     </Button>
   </div>
 </template>
@@ -207,9 +233,15 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
+const { createTooltipConfig } = useNodeTooltips('')
+
+const settingsTooltipConfig = computed(() =>
+  createTooltipConfig(t('rightSidePanel.advancedAffordance.settingsTooltip'))
+)
 
 interface Props {
   isSubgraph: boolean
@@ -217,6 +249,7 @@ interface Props {
   showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
   showAdvancedState?: boolean
+  globalAlwaysShowAdvanced?: boolean
   headerColor?: string
   shape?: RenderShape
 }
@@ -227,6 +260,7 @@ const {
   showErrorsTabEnabled,
   showAdvancedInputsButton,
   showAdvancedState,
+  globalAlwaysShowAdvanced,
   headerColor,
   shape
 } = defineProps<Props>()
@@ -235,6 +269,8 @@ const emit = defineEmits<{
   enterSubgraph: []
   openErrors: []
   toggleAdvanced: []
+  openAdvancedSetting: []
+  advancedHoverChange: [hovered: boolean]
 }>()
 
 let suppressNextClick = false
@@ -254,37 +290,28 @@ function emitIfNotDragged(
   else emit('toggleAdvanced')
 }
 
-const RADIUS_CLASS = {
-  'rounded-b-17': 'rounded-b-[17px]',
-  'rounded-b-20': 'rounded-b-[20px]',
-  'rounded-br-17': 'rounded-br-[17px]',
-  'rounded-br-20': 'rounded-br-[20px]'
-} as const
-
 function getBottomRadius(
   nodeShape: RenderShape | undefined,
-  size: '17px' | '20px',
-  corners: 'both' | 'right' = 'both'
+  corners: 'both' | 'right' | 'left' = 'both'
 ): string {
   if (nodeShape === RenderShape.BOX) return ''
-  const prefix =
-    nodeShape === RenderShape.CARD || corners === 'right'
-      ? 'rounded-br'
-      : 'rounded-b'
-  const key =
-    `${prefix}-${size === '17px' ? '17' : '20'}` as keyof typeof RADIUS_CLASS
-  return RADIUS_CLASS[key]
+  if (corners === 'right') return 'rounded-br-xl'
+  if (corners === 'left')
+    return nodeShape === RenderShape.CARD ? '' : 'rounded-bl-xl'
+  return nodeShape === RenderShape.CARD ? 'rounded-br-xl' : 'rounded-b-xl'
 }
 
-const footerRadiusClass = computed(() =>
-  getBottomRadius(shape, hasAnyError ? '20px' : '17px')
+const footerRadiusClass = computed(() => getBottomRadius(shape))
+
+const errorRadiusClass = computed(() => getBottomRadius(shape))
+
+const enterRadiusClass = computed(() => getBottomRadius(shape, 'right'))
+
+const advancedSettingsRadiusClass = computed(() =>
+  getBottomRadius(shape, 'right')
 )
 
-const errorRadiusClass = computed(() => getBottomRadius(shape, '20px'))
-
-const enterRadiusClass = computed(() => getBottomRadius(shape, '20px', 'right'))
-
-const tabStyles = 'pointer-events-auto h-9 text-xs'
+const tabStyles = 'pointer-events-auto h-11 text-xs font-normal'
 const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
 const errorWrapperStyles = cn(
   footerWrapperBase,

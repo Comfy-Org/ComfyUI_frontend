@@ -314,9 +314,7 @@ export function computeProcessedWidgets({
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
 
-    const borderStyle = mergedOptions.advanced
-      ? 'ring ring-component-node-widget-advanced'
-      : undefined
+    const borderStyle = undefined
 
     const linkedUpstream: LinkedUpstreamInfo | undefined =
       slotMetadata?.linked && slotMetadata.originNodeId
