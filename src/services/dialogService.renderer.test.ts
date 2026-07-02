@@ -38,26 +38,31 @@ describe('dialogService Reka renderer opt-in', () => {
     showDialog.mockReset()
   })
 
-  it("prompt() sets renderer 'reka' and size 'md'", () => {
+  it("prompt() sets renderer 'reka', size 'md', and the standardized modal styling", () => {
     void useDialogService().prompt({ title: 'T', message: 'M' })
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.contentClass).toContain('rounded-2xl')
   })
 
-  it("confirm() sets renderer 'reka' and size 'md'", () => {
+  it("confirm() sets renderer 'reka', size 'md', and the standardized modal styling", () => {
     void useDialogService().confirm({ title: 'T', message: 'M' })
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.contentClass).toContain('rounded-2xl')
   })
 
-  it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
+  it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and the standardized confirmation modal styling", () => {
     useDialogService().showBillingComingSoonDialog()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('sm')
-    expect(args.dialogComponentProps.contentClass).toBe('max-w-[360px]')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.contentClass).toContain('rounded-2xl')
   })
 
   it("showExecutionErrorDialog() sets renderer 'reka' and size 'lg'", () => {
@@ -130,5 +135,30 @@ describe('dialogService Reka renderer opt-in', () => {
     expect(args.dialogComponentProps.headerClass).toBe('p-0')
     expect(args.dialogComponentProps.bodyClass).toBe('p-0 overflow-y-hidden')
     expect(args.dialogComponentProps.footerClass).toBe('p-0')
+  })
+})
+
+/**
+ * The headless confirm/prompt dialogs resolve their promise on dismissal via
+ * the `onClose` callback (the close button and outside-click both route through
+ * it). Locks that cancel resolves to the documented sentinel.
+ */
+describe('dialogService dismissal contract', () => {
+  beforeEach(() => {
+    showDialog.mockReset()
+  })
+
+  it('confirm() resolves null when dismissed via onClose', async () => {
+    const promise = useDialogService().confirm({ title: 'T', message: 'M' })
+    const [args] = showDialog.mock.calls[0]
+    args.dialogComponentProps.onClose()
+    await expect(promise).resolves.toBeNull()
+  })
+
+  it('prompt() resolves null when dismissed via onClose', async () => {
+    const promise = useDialogService().prompt({ title: 'T', message: 'M' })
+    const [args] = showDialog.mock.calls[0]
+    args.dialogComponentProps.onClose()
+    await expect(promise).resolves.toBeNull()
   })
 })

@@ -40,6 +40,13 @@ interface CustomDialogComponentProps {
   dismissableMask?: boolean
   unstyled?: boolean
   headless?: boolean
+  /**
+   * Headless dialogs whose content renders its own message element. When set,
+   * `GlobalDialog` wires `aria-describedby` to that element so screen readers
+   * announce the message. Left unset for headless dialogs without a textual
+   * description, to avoid a dangling `aria-describedby` reference.
+   */
+  describedBy?: boolean
   renderer?: DialogRenderer
   size?: DialogContentSize
   /**

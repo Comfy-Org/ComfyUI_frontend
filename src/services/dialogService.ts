@@ -58,6 +58,16 @@ export type ConfirmationDialogType =
   | 'reinstall'
   | 'info'
 
+/**
+ * Styling for the standardized small modal box (confirmation and prompt
+ * dialogs). Overrides the default Reka `DialogContent` chrome to match the
+ * design-system modal: 16px radius, default border, clipped corners, and a
+ * 360px max width. The content component renders its own header / body /
+ * footer, so the dialog is opened with `headless: true`.
+ */
+export const CONFIRMATION_DIALOG_CONTENT_CLASS =
+  'overflow-hidden rounded-2xl border-border-default sm:max-w-[360px]'
+
 interface BaseConfirmOptions {
   /** Dialog heading */
   title: string
@@ -271,6 +281,7 @@ export const useDialogService = () => {
         title,
         component: PromptDialogContent,
         props: {
+          title,
           message,
           defaultValue,
           onConfirm: (value: string) => {
@@ -281,6 +292,9 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
+          headless: true,
+          describedBy: true,
+          contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS,
           onClose: () => {
             resolve(null)
           }
@@ -308,6 +322,7 @@ export const useDialogService = () => {
         title,
         component: ConfirmationDialogContent,
         props: {
+          title,
           message,
           type,
           itemList,
@@ -318,6 +333,9 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
+          headless: true,
+          describedBy: true,
+          contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS,
           onClose: () => resolve(null)
         }
       }
@@ -599,6 +617,7 @@ export const useDialogService = () => {
       title: t('subscription.billingComingSoon.title'),
       component: ConfirmationDialogContent,
       props: {
+        title: t('subscription.billingComingSoon.title'),
         message: t('subscription.billingComingSoon.message'),
         type: 'info' as ConfirmationDialogType,
         onConfirm: () => {}
@@ -606,7 +625,9 @@ export const useDialogService = () => {
       dialogComponentProps: {
         renderer: 'reka',
         size: 'sm',
-        contentClass: 'max-w-[360px]'
+        headless: true,
+        describedBy: true,
+        contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS
       }
     })
   }

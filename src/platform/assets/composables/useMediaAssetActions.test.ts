@@ -1143,6 +1143,54 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('deleteAssets - resolution contract (FE-624)', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('input')
+      mockDeleteAsset.mockResolvedValue(undefined)
+    })
+
+    it('resolves true on confirm even though onConfirm suspends and closeDialog fires onClose first', async () => {
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: '1', tags: ['input'] })
+
+      // Mirror ConfirmationDialogContent's confirm click: the async onConfirm
+      // suspends at its first await, then closeDialog() synchronously fires
+      // onClose before onConfirm settles.
+      mockShowDialog.mockImplementation(
+        ({
+          props,
+          dialogComponentProps
+        }: {
+          props: { onConfirm: () => Promise<void> }
+          dialogComponentProps: { onClose: () => void }
+        }) => {
+          void props.onConfirm()
+          dialogComponentProps.onClose()
+        }
+      )
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+    })
+
+    it('resolves false when dismissed without confirming', async () => {
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: '1', tags: ['input'] })
+
+      mockShowDialog.mockImplementation(
+        ({
+          dialogComponentProps
+        }: {
+          dialogComponentProps: { onClose: () => void }
+        }) => {
+          dialogComponentProps.onClose()
+        }
+      )
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(false)
+    })
+  })
+
   describe('deleteAssets - confirmation dialog item names', () => {
     beforeEach(() => {
       mockIsCloud.value = true
