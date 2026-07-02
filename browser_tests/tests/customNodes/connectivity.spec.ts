@@ -4,6 +4,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import {
+  customNodeSuiteSettings,
+  dismissTemplatesDialog
+} from '@e2e/fixtures/utils/customNodeSuite'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
@@ -23,19 +27,10 @@ const CORE_PROOF_NODE_COUNT = 16
 // subset of this list.
 const CONNECT_REJECTED_ALLOWLIST: string[] = []
 
-test.use({
-  initialSettings: {
-    'Comfy.TutorialCompleted': false,
-    'Comfy.userId': 'default',
-    'Comfy.RightSidePanel.ShowErrorsTab': true
-  }
-})
+test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
-  const templates = comfyPage.page.getByTestId('template-workflows-content')
-  await templates.waitFor({ state: 'visible' })
-  await comfyPage.page.keyboard.press('Escape')
-  await templates.waitFor({ state: 'hidden' })
+  await dismissTemplatesDialog(comfyPage)
 })
 
 async function expectNoVisibleErrors(

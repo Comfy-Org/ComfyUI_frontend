@@ -9,6 +9,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import {
+  customNodeSuiteSettings,
+  dismissTemplatesDialog
+} from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 import { expectedNodesPresent } from '@e2e/fixtures/customNode/objectInfoValidator'
@@ -19,31 +23,10 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 const target = new LocalDesktopTarget()
 const OBJECT_INFO_SANITY_FLOOR = 50
 
-// Boot every session with a blank graph (loadBlankWorkflow) instead of the
-// bundled default template, whose model references error on the model-less
-// harness backend and would trip the zero-visible-errors invariant.
-// Comfy.userId must be 'default': this harness backend runs single-user
-// server storage, so the browser session always reads users/default/ - the
-// devtools set_settings endpoint must write there or no pre-boot setting
-// (including this one) ever reaches the session.
-test.use({
-  initialSettings: {
-    'Comfy.TutorialCompleted': false,
-    'Comfy.userId': 'default',
-    // The shared fixture disables the errors tab to hide missing-model
-    // indicators in unrelated suites. This suite exists to SEE errors -
-    // keep every error surface live so the invariant means something.
-    'Comfy.RightSidePanel.ShowErrorsTab': true
-  }
-})
+test.use({ initialSettings: customNodeSuiteSettings })
 
-// The tutorial path auto-opens the templates browser over the blank graph.
-// Dismiss it deterministically so no window ever shows unexpected UI.
 test.beforeEach(async ({ comfyPage }) => {
-  const templates = comfyPage.page.getByTestId('template-workflows-content')
-  await templates.waitFor({ state: 'visible' })
-  await comfyPage.page.keyboard.press('Escape')
-  await templates.waitFor({ state: 'hidden' })
+  await dismissTemplatesDialog(comfyPage)
 })
 
 async function expectNoVisibleErrors(

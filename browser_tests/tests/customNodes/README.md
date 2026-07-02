@@ -19,7 +19,7 @@ is one JSON row, no new test code.
 
 | Script                                 | What it does                                                                           |
 | -------------------------------------- | -------------------------------------------------------------------------------------- |
-| `pnpm test:custom-nodes`               | whole suite headless - the pass/fail gate (expect `23 passed`, zero skips)             |
+| `pnpm test:custom-nodes`               | whole suite headless - the pass/fail gate (every tier passes, zero skips)             |
 | `pnpm test:custom-nodes:watch`         | headed slow-motion run of the browser tiers, hands-off watching                        |
 | `pnpm test:custom-nodes:debug`         | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume)       |
 | `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector)                                      |
@@ -71,13 +71,15 @@ Any `-g` pattern works against the generic scripts, e.g.
 
 ## Adding a pack
 
-Add one row to `browser_tests/fixtures/data/customNodeManifest.json` with the
-pack's `object_info` class_type keys (not Python class names) in
-`expectedNodes`, `tiers: ["load"]`, and a `timeoutMs`. The `connectivity`
-tier needs no extra assets - the pairing generator derives everything from
-`/object_info`. For the run tier, add a model-free frontend-format workflow
-under `browser_tests/assets/customNodes/` and set the tier. Reuse existing
-repo media assets - do not commit new binaries.
+Add one row to `browser_tests/fixtures/data/customNodeManifest.json` with
+every field of the schema: `pack`, `repo`, `pin`, `tiers`, `workflow` (empty
+string until the run tier), `expectedNodes` (the pack's `object_info`
+class_type keys, not Python class names), `requiresGpu`, `requiresModels`,
+and `timeoutMs` - `loadManifest()` fails loudly on missing fields. The
+`connectivity` tier needs no extra assets - the pairing generator derives
+everything from `/object_info`. For the run tier, add a model-free
+frontend-format workflow under `browser_tests/assets/customNodes/` and set
+the tier. Reuse existing repo media assets - do not commit new binaries.
 
 ## Gotchas
 

@@ -6,6 +6,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import {
+  customNodeSuiteSettings,
+  dismissTemplatesDialog
+} from '@e2e/fixtures/utils/customNodeSuite'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -17,19 +21,10 @@ const smokeWorkflow = JSON.parse(
   readFileSync(resolve(assetPath('customNodes/core_smoke.json')), 'utf-8')
 ) as ComfyWorkflowJSON
 
-test.use({
-  initialSettings: {
-    'Comfy.TutorialCompleted': false,
-    'Comfy.userId': 'default',
-    'Comfy.RightSidePanel.ShowErrorsTab': true
-  }
-})
+test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
-  const templates = comfyPage.page.getByTestId('template-workflows-content')
-  await templates.waitFor({ state: 'visible' })
-  await comfyPage.page.keyboard.press('Escape')
-  await templates.waitFor({ state: 'hidden' })
+  await dismissTemplatesDialog(comfyPage)
 })
 
 test.describe('smoke: core workflow', () => {

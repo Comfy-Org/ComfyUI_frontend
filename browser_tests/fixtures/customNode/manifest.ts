@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const MANIFEST_PATH = 'browser_tests/fixtures/data/customNodeManifest.json'
+const MANIFEST_PATH = fileURLToPath(
+  new URL('../data/customNodeManifest.json', import.meta.url)
+)
 
 export type CustomNodeTier = 'load' | 'run' | 'connectivity' | 'io'
 
@@ -24,7 +26,14 @@ export interface CustomNodeManifestEntry {
 
 function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
   const missing: string[] = (
-    ['pack', 'workflow', 'expectedNodes', 'tiers', 'requiresModels'] as const
+    [
+      'pack',
+      'workflow',
+      'expectedNodes',
+      'tiers',
+      'requiresModels',
+      'requiresGpu'
+    ] as const
   ).filter((key) => entry[key] == null)
   if (typeof entry.timeoutMs !== 'number') missing.push('timeoutMs')
   if (missing.length > 0)
@@ -35,7 +44,7 @@ function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
 
 export function loadManifest(): CustomNodeManifestEntry[] {
   const entries = JSON.parse(
-    readFileSync(resolve(MANIFEST_PATH), 'utf-8')
+    readFileSync(MANIFEST_PATH, 'utf-8')
   ) as CustomNodeManifestEntry[]
   entries.forEach(assertEntry)
   return entries
