@@ -1,7 +1,9 @@
 # Runs the custom-node regression suite against a backend that has the manifest
-# packs actually installed, so the load/run tiers execute instead of skipping.
-# Informational (not a required check): pack installs and upstream pack updates
-# can be noisy, so this reports without gating merges.
+# packs actually installed, so the load/run tiers execute for real. This is a
+# GATING check: if a pack fails to install or any tier is skipped, the job goes
+# red - a regression gate that let a broken pack through as a "skip" would be
+# pointless. Mark `custom-nodes-e2e` as a required status check in branch
+# protection to block merges on failure.
 name: 'CI: Tests Custom Nodes'
 
 on:
@@ -46,16 +48,19 @@ jobs:
           launch_server: 'false'
 
       # Install every pack the manifest declares (DRY: a new pack row installs
-      # itself here, no workflow change). A pack whose deps fail to install just
-      # won't register, and its tiers skip with a reason - the suite stays green.
+      # itself here, no workflow change). A clone or dependency failure fails the
+      # job - if a pack can't be installed, its coverage can't run, and that is a
+      # gate failure, not something to paper over. The `jq | while` pipe hides
+      # failures in a subshell, so read into an array and loop with `set -e`.
       - name: Install manifest custom nodes
         shell: bash
         run: |
           set -euo pipefail
           manifest=browser_tests/fixtures/data/customNodeManifest.json
-          jq -c '.[]' "$manifest" | while read -r entry; do
-            repo=$(echo "$entry" | jq -r '.repo')
-            pin=$(echo "$entry" | jq -r '.pin')
+          mapfile -t entries < <(jq -c '.[]' "$manifest")
+          for entry in "${entries[@]}"; do
+            repo=$(jq -r '.repo' <<<"$entry")
+            pin=$(jq -r '.pin' <<<"$entry")
             name=$(basename "$repo")
             dir="ComfyUI/custom_nodes/$name"
             echo "::group::install $name"
@@ -65,8 +70,7 @@ jobs:
               git -C "$dir" checkout "$pin"
             fi
             if [ -f "$dir/requirements.txt" ]; then
-              pip install -r "$dir/requirements.txt" \
-                || echo "::warning::deps failed for $name; its tiers will skip"
+              pip install -r "$dir/requirements.txt"
             fi
             echo "::endgroup::"
           done
@@ -86,7 +90,26 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Run custom-node suite
-        run: pnpm exec playwright test browser_tests/tests/customNodes/ --project=chromium
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=chromium --reporter=list,json
+
+      # A skip here means a pack or devtools did not load: on this backend every
+      # tier is meant to run, so a skip is a gate failure, not an honest pass.
+      - name: Forbid skipped tests
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          echo "skipped tests: $skipped"
+          if [ "$skipped" != "0" ]; then
+            echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
+            jq -r '.. | .title? // empty' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
 
       - name: Upload Playwright report
         if: always()
