@@ -36,15 +36,10 @@
         >
           <i class="icon-[lucide--monitor-x] size-4" />
         </Button>
-        <Button
-          variant="textonly"
-          size="icon-sm"
-          class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-          :aria-label="t('rightSidePanel.locateNode')"
-          @click.stop="handleLocateNode"
-        >
-          <i class="icon-[lucide--locate] size-4" />
-        </Button>
+        <LocateNodeButton
+          :label="t('rightSidePanel.locateNode')"
+          @locate="handleLocateNode"
+        />
       </div>
     </div>
 
@@ -177,6 +172,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import LocateNodeButton from './LocateNodeButton.vue'
 import TransitionCollapse from '../layout/TransitionCollapse.vue'
 
 import type { ErrorCardData, ErrorItem } from './types'

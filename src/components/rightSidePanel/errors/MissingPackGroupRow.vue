@@ -154,16 +154,11 @@
           </span>
         </Button>
       </div>
-      <Button
+      <LocateNodeButton
         v-if="primaryLocatableNodeType"
-        variant="textonly"
-        size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-        :aria-label="t('rightSidePanel.locateNode')"
-        @click="handleLocateNode(primaryLocatableNodeType)"
-      >
-        <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-      </Button>
+        :label="t('rightSidePanel.locateNode')"
+        @locate="handleLocateNode(primaryLocatableNodeType)"
+      />
     </div>
 
     <TransitionCollapse>
@@ -203,16 +198,11 @@
                 {{ getLabel(nodeType) }}
               </span>
             </span>
-            <Button
+            <LocateNodeButton
               v-if="isLocatableNodeType(nodeType)"
-              variant="textonly"
-              size="icon-sm"
-              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-              :aria-label="t('rightSidePanel.locateNode')"
-              @click="handleLocateNode(nodeType)"
-            >
-              <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-            </Button>
+              :label="t('rightSidePanel.locateNode')"
+              @locate="handleLocateNode(nodeType)"
+            />
           </div>
         </li>
       </ul>
@@ -228,6 +218,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
