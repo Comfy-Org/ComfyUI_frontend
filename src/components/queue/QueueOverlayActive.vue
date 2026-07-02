@@ -42,18 +42,22 @@
               t('sideToolbar.queueProgressOverlay.running')
             }}</span>
           </span>
-          <Button
+          <BaseTooltip
             v-if="runningCount > 0"
-            v-tooltip.top="cancelJobTooltip"
-            variant="destructive"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
-            @click="$emit('interruptAll')"
+            :text="t('sideToolbar.queueProgressOverlay.cancelJobTooltip')"
+            side="top"
           >
-            <i
-              class="icon-[lucide--x] block size-4 leading-none text-text-primary"
-            />
-          </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
+              @click="$emit('interruptAll')"
+            >
+              <i
+                class="icon-[lucide--x] block size-4 leading-none text-text-primary"
+              />
+            </Button>
+          </BaseTooltip>
         </div>
 
         <div class="flex items-center gap-2">
@@ -63,18 +67,22 @@
               t('sideToolbar.queueProgressOverlay.queuedSuffix')
             }}</span>
           </span>
-          <Button
+          <BaseTooltip
             v-if="queuedCount > 0"
-            v-tooltip.top="clearQueueTooltip"
-            variant="destructive"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
-            @click="$emit('clearQueued')"
+            :text="t('sideToolbar.queueProgressOverlay.clearQueueTooltip')"
+            side="top"
           >
-            <i
-              class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
-            />
-          </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+              @click="$emit('clearQueued')"
+            >
+              <i
+                class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
+              />
+            </Button>
+          </BaseTooltip>
         </div>
       </div>
 
@@ -91,11 +99,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 
 defineProps<{
   totalProgressStyle: Record<string, string>
@@ -115,10 +122,4 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const cancelJobTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.cancelJobTooltip'))
-)
-const clearQueueTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearQueueTooltip'))
-)
 </script>

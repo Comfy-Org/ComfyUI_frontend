@@ -11,28 +11,31 @@
       <span :class="{ 'opacity-50': queuedCount === 0 }">{{
         t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
       }}</span>
-      <Button
-        v-tooltip.top="clearAllJobsTooltip"
-        variant="destructive"
-        size="icon"
-        :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
-        :disabled="queuedCount === 0"
-        @click="$emit('clearQueued')"
+      <BaseTooltip
+        :text="t('sideToolbar.queueProgressOverlay.clearAllJobsTooltip')"
+        side="top"
       >
-        <i class="icon-[lucide--list-x] size-4" />
-      </Button>
+        <Button
+          variant="destructive"
+          size="icon"
+          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+          :disabled="queuedCount === 0"
+          @click="$emit('clearQueued')"
+        >
+          <i class="icon-[lucide--list-x] size-4" />
+        </Button>
+      </BaseTooltip>
     </div>
     <JobHistoryActionsMenu @clear-history="$emit('clearHistory')" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 
 defineProps<{
   headerTitle: string
@@ -45,7 +48,4 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const clearAllJobsTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearAllJobsTooltip'))
-)
 </script>

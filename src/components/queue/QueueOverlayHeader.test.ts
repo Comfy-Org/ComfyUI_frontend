@@ -49,11 +49,9 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 }))
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
+const BaseTooltipStub = {
+  template: '<slot />'
 }
 
 const renderHeader = (props = {}) =>
@@ -65,7 +63,9 @@ const renderHeader = (props = {}) =>
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      stubs: {
+        BaseTooltip: BaseTooltipStub
+      }
     }
   })
 
@@ -108,7 +108,6 @@ describe('QueueOverlayHeader', () => {
 
   it('emits clear history from the menu', async () => {
     const user = userEvent.setup()
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
     const clearHistorySpy = vi.fn()
 
     renderHeader({ onClearHistory: clearHistorySpy })
@@ -116,7 +115,6 @@ describe('QueueOverlayHeader', () => {
     expect(
       screen.getByRole('button', { name: 'More options' })
     ).toBeInTheDocument()
-    expect(spy).toHaveBeenCalledWith('More')
 
     await user.click(screen.getByTestId('clear-history-action'))
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
