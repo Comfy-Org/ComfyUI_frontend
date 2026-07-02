@@ -154,6 +154,39 @@ const zAssetDownloadWsMessage = z.object({
   error: z.string().optional()
 })
 
+const DOWNLOAD_STATES = [
+  'queued',
+  'active',
+  'paused',
+  'verifying',
+  'completed',
+  'failed',
+  'cancelled'
+] as const
+
+const zDownloadSegment = z.object({
+  idx: z.number().int().nonnegative(),
+  bytes_done: z.number().int().nonnegative(),
+  length: z.number().int().nonnegative()
+})
+
+const zDownloadStatus = z.object({
+  download_id: z.string(),
+  model_id: z.string(),
+  url: z.string(),
+  status: z.enum(DOWNLOAD_STATES),
+  priority: z.number().int(),
+  total_bytes: z.number().int().nonnegative().nullable(),
+  bytes_done: z.number().int().nonnegative(),
+  progress: z.number().nullable(),
+  speed_bps: z.number().nonnegative().nullable(),
+  eta_seconds: z.number().nonnegative().nullable(),
+  segments: z.array(zDownloadSegment).nullable(),
+  error: z.string().nullable(),
+  created_at: z.number(),
+  updated_at: z.number()
+})
+
 const zAssetExportWsMessage = z.object({
   task_id: z.string(),
   export_name: z.string().optional(),
@@ -188,6 +221,8 @@ export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
 export type AssetExportWsMessage = z.infer<typeof zAssetExportWsMessage>
+export type DownloadState = (typeof DOWNLOAD_STATES)[number]
+export type DownloadStatus = z.infer<typeof zDownloadStatus>
 // End of ws messages
 
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>

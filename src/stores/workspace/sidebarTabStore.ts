@@ -5,7 +5,9 @@ import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarT
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t, te } from '@/i18n'
+import { useModelManagerSidebarTab } from '@/platform/modelManager/composables/useModelManagerSidebarTab'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'
 import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
@@ -53,7 +55,8 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         'model-library': 'sideToolbar.modelLibrary',
         workflows: 'sideToolbar.workflows',
         assets: 'sideToolbar.assets',
-        'job-history': 'queue.jobHistory'
+        'job-history': 'queue.jobHistory',
+        'model-manager': 'modelManager.title'
       }
 
       const key = menubarLabelKeys[tab.id]
@@ -130,6 +133,27 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     watch(
       () => settingStore.get('Comfy.Queue.QPOV2'),
       (enabled) => syncJobHistoryTab(enabled)
+    )
+
+    const modelManagerTabId = 'model-manager'
+    const { flags } = useFeatureFlags()
+    const syncModelManagerTab = (enabled: boolean) => {
+      const hasTab = sidebarTabs.value.some(
+        (tab) => tab.id === modelManagerTabId
+      )
+      if (enabled && !hasTab) {
+        registerSidebarTab(useModelManagerSidebarTab())
+      } else if (!enabled && hasTab) {
+        unregisterSidebarTab(modelManagerTabId)
+        useCommandStore().unregisterCommand(
+          `Workspace.ToggleSidebarTab.${modelManagerTabId}`
+        )
+      }
+    }
+    watch(
+      () => flags.serverSideModelDownloads,
+      (enabled) => syncModelManagerTab(enabled),
+      { immediate: true }
     )
 
     registerSidebarTab(useAssetsSidebarTab())
