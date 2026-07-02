@@ -221,10 +221,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
-    // `order` is maintained incrementally on register/set/replace/delete, so it
-    // already holds exactly this node's registered widgets in order. Reads are
-    // a copy with no full-graph scan and no mutation — this runs inside a Vue
-    // computed via computeProcessedWidgets.
     return [...getNodeWidgetOrder(graphId, localNodeId)]
   }
 
