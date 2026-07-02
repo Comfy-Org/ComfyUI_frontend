@@ -10,7 +10,9 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
+  AddCreditsClickMetadata,
   AuthMetadata,
+  BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -352,8 +354,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName, metadata)
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
+  }
+
+  trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
+    this.trackEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackMonthlySubscriptionSucceeded(
