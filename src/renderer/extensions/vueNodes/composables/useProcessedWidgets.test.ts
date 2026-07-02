@@ -8,7 +8,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import {
   computeProcessedWidgets,
-  getWidgetIdentity,
   hasWidgetError,
   isWidgetVisible
 } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
@@ -141,20 +140,6 @@ function processWidgets({
     ui: noopUi
   })
 }
-
-describe('getWidgetIdentity', () => {
-  it('keys render identity by widgetId and widget type', () => {
-    const id = widgetId(GRAPH_ID, toNodeId('subgraph:19'), 'text')
-    const { dedupeIdentity, renderKey } = getWidgetIdentity(
-      { widgetId: id, type: 'text' },
-      toNodeId('1'),
-      0
-    )
-
-    expect(dedupeIdentity).toBe(`${id}:text`)
-    expect(renderKey).toBe(dedupeIdentity)
-  })
-})
 
 describe('isWidgetVisible', () => {
   it('returns true for normal widgets', () => {

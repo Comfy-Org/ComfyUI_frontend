@@ -232,18 +232,6 @@ export function hasWidgetError(
   )
 }
 
-export function getWidgetIdentity(
-  widget: { widgetId: WidgetId; type: string },
-  _nodeId: NodeId | undefined,
-  _index: number
-): {
-  dedupeIdentity: string
-  renderKey: string
-} {
-  const dedupeIdentity = `${widget.widgetId}:${widget.type}`
-  return { dedupeIdentity, renderKey: dedupeIdentity }
-}
-
 function createWidgetUpdateHandler({
   id,
   live,
@@ -341,7 +329,7 @@ export function computeProcessedWidgets({
   const result: ProcessedWidget[] = []
   const seenIdentities = new Set<string>()
 
-  ids.forEach((id, index) => {
+  ids.forEach((id) => {
     const widgetState = widgetValueStore.getWidget(id)
     if (!widgetState) return
 
@@ -431,13 +419,9 @@ export function computeProcessedWidgets({
       ui.handleNodeRightClick(e, nodeData.id)
       showNodeOptions(e, widgetState.name)
     }
-    const identity = getWidgetIdentity(
-      { widgetId: id, type: widgetState.type },
-      nodeData.id,
-      index
-    )
-    if (seenIdentities.has(identity.dedupeIdentity)) return
-    seenIdentities.add(identity.dedupeIdentity)
+    const renderKey = `${id}:${widgetState.type}`
+    if (seenIdentities.has(renderKey)) return
+    seenIdentities.add(renderKey)
 
     result.push({
       advanced: widgetOptions.advanced ?? false,
@@ -453,7 +437,7 @@ export function computeProcessedWidgets({
       hidden: widgetOptions.hidden ?? false,
       widgetId: id,
       name: widgetState.name,
-      renderKey: identity.renderKey,
+      renderKey,
       type: widgetState.type,
       vueComponent,
       simplified,
