@@ -6,7 +6,7 @@ import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
+const mockData = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 
 // Mock the API
 vi.mock('@/scripts/api', () => ({
@@ -19,7 +19,9 @@ vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return mockData.isDesktop
   },
-  isCloud: false
+  get isCloud() {
+    return mockData.isCloud
+  }
 }))
 
 describe('useSystemStatsStore', () => {
@@ -138,6 +140,7 @@ describe('useSystemStatsStore', () => {
   describe('getFormFactor', () => {
     beforeEach(() => {
       // Reset systemStats for each test
+      mockData.isCloud = false
       store.systemStats = null
     })
 

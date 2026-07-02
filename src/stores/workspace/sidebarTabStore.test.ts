@@ -5,12 +5,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const { mockGetSetting, mockRegisterCommand, mockRegisterCommands } =
-  vi.hoisted(() => ({
-    mockGetSetting: vi.fn(),
-    mockRegisterCommand: vi.fn(),
-    mockRegisterCommands: vi.fn()
-  }))
+const {
+  mockCommands,
+  mockGetSetting,
+  mockRegisterCommand,
+  mockRegisterCommands,
+  mockT,
+  mockTe
+} = vi.hoisted(() => ({
+  mockCommands: [] as Array<{ id: string; function?: () => void }>,
+  mockGetSetting: vi.fn(),
+  mockRegisterCommand: vi.fn(),
+  mockRegisterCommands: vi.fn(),
+  mockT: vi.fn((key: string) => `translated:${key}`),
+  mockTe: vi.fn((_key: string) => false)
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -21,7 +30,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
     registerCommand: mockRegisterCommand,
-    commands: []
+    commands: mockCommands
   })
 }))
 
@@ -32,8 +41,8 @@ vi.mock('@/stores/menuItemStore', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  t: (key: string) => key,
-  te: () => false
+  t: mockT,
+  te: mockTe
 }))
 
 vi.mock('@/composables/sidebarTabs/useAssetsSidebarTab', () => ({
@@ -96,7 +105,11 @@ vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    mockCommands.length = 0
     mockGetSetting.mockReset()
+    mockT.mockClear()
+    mockTe.mockReset()
+    mockTe.mockReturnValue(false)
     mockRegisterCommand.mockClear()
     mockRegisterCommands.mockClear()
   })

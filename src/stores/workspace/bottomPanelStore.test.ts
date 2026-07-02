@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
+const { mockRegisterCommand } = vi.hoisted(() => ({
+  mockRegisterCommand: vi.fn()
+}))
+
 // Mock dependencies
 vi.mock('@/composables/bottomPanelTabs/useShortcutsTab', () => ({
   useShortcutsTab: () => [
@@ -44,7 +48,7 @@ vi.mock('@/composables/bottomPanelTabs/useTerminalTabs', () => ({
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
-    registerCommand: vi.fn()
+    registerCommand: mockRegisterCommand
   })
 }))
 
@@ -59,6 +63,8 @@ vi.mock('@/platform/distribution/types', () => ({
 describe('useBottomPanelStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    mockRegisterCommand.mockClear()
+    mockData.isDesktop = false
   })
 
   it('should initialize with empty panels', () => {
