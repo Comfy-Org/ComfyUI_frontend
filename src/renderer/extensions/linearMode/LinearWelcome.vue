@@ -19,7 +19,7 @@ const showGetStarted = computed(() => !hasOutputs.value && !hasNodes.value)
     v-else
     role="article"
     data-testid="linear-welcome"
-    class="flex size-full flex-col items-center justify-center bg-base-background p-8 text-center"
+    class="flex size-full flex-col items-center justify-center p-8 text-center"
   >
     <div class="flex w-full max-w-xl flex-col items-center gap-6">
       <template v-if="hasOutputs">
