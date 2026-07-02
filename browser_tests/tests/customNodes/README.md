@@ -9,8 +9,10 @@ is one JSON row, no new test code.
 
 1. A ComfyUI backend on `127.0.0.1:8288` with the manifest packs
    (ComfyUI-Impact-Pack, ComfyUI-VideoHelperSuite) and ComfyUI_devtools
-   installed. Launch it with `--cache-none` (repeat runs must re-execute
-   every node or the executed-set check fails honestly with `PARTIAL`) and
+   installed. Launch it with `--multi-user` (the repo-wide browser-test
+   prerequisite; the fixture writes per-worker user settings and the suite
+   depends on them landing), `--cache-none` (repeat runs must re-execute
+   every node or the executed-set check fails honestly with `PARTIAL`), and
    with `browser_tests/assets/plain_video.mp4` copied into its `input/` dir.
 2. The dev server proxying that backend:
    `DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8288 pnpm dev`

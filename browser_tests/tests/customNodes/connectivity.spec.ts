@@ -59,7 +59,17 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
   )) as unknown as Record<string, RawNodeDef>
   const nodes = normalizeNodeDefs(defs)
 
-  const packTypes = connectivityEntries.flatMap((entry) => entry.expectedNodes)
+  // Pack-specific expectations apply only where the pack is installed; on a
+  // backend without it (e.g. a generic CI runner) the core sweep still runs
+  // and the absence is reported, never fake-failed or fake-passed.
+  const nodeTypes = new Set(nodes.map((node) => node.type))
+  const installedEntries = connectivityEntries.filter((entry) =>
+    entry.expectedNodes.every((type) => nodeTypes.has(type))
+  )
+  for (const entry of connectivityEntries)
+    if (!installedEntries.includes(entry))
+      console.log(`T-conn: ${entry.pack} not installed on this backend`)
+  const packTypes = installedEntries.flatMap((entry) => entry.expectedNodes)
   const coreProof = nodes
     .filter(
       (node) =>
@@ -77,7 +87,7 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
     `T-conn plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard slots (excluded by design)`
   )
 
-  for (const entry of connectivityEntries) {
+  for (const entry of installedEntries) {
     expect(
       plan.pairs.some(
         (pair) =>
@@ -247,7 +257,12 @@ test('T-conn fidelity: curated slot drags connect under both renderers', async (
       }
     }
   ]
+  const nodeTypes = new Set(nodes.map((node) => node.type))
   for (const entry of connectivityEntries) {
+    if (!entry.expectedNodes.every((type) => nodeTypes.has(type))) {
+      console.log(`T-conn drag: ${entry.pack} not installed on this backend`)
+      continue
+    }
     // Restrict the partner pool to the pack itself so the drag proves an
     // in-pack wiring; widget-backed primitive inputs render real slot dots
     // in Vue (verified empirically), so no slot type is excluded here.
