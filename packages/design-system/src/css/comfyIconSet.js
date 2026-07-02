@@ -11,17 +11,12 @@ export const COMFY_ICON_PREFIX = 'comfy'
 
 const COMFY_ICONS_DIR = resolve(import.meta.dirname, '../icons')
 
-let cached
+const PRESERVE_COLOR_ICONS = new Set(['claude', 'bria'])
 
-/**
- * Load the comfy icon folder as a normalized Iconify icon set.
- *
- * Mirrors the pipeline that `@plugin "@iconify/tailwind4" { from-folder(...) }`
- * runs internally so monotone hardcoded colors become `currentColor` and
- * outer-svg attributes like `fill="none"` survive the body extraction.
- */
-export function loadComfyIconSet() {
-  if (cached) return cached
+let cached
+let cachedRaw
+
+function buildIconSet(preserveAllColors) {
   const iconSet = importDirectorySync(COMFY_ICONS_DIR)
   iconSet.forEachSync((name, type) => {
     if (type !== 'icon') return
@@ -32,17 +27,19 @@ export function loadComfyIconSet() {
     }
     try {
       cleanupSVG(svg)
-      const palette = parseColors(svg)
-      const colors = palette.colors.filter(
-        (color) => typeof color === 'string' || !isEmptyColor(color)
-      )
-      const totalColors = colors.length + (palette.hasUnsetColor ? 1 : 0)
-      if (totalColors < 2) {
-        parseColors(svg, {
-          defaultColor: 'currentColor',
-          callback: (_attr, colorStr, color) =>
-            !color || isEmptyColor(color) ? colorStr : 'currentColor'
-        })
+      if (!preserveAllColors && !PRESERVE_COLOR_ICONS.has(name)) {
+        const palette = parseColors(svg)
+        const colors = palette.colors.filter(
+          (color) => typeof color === 'string' || !isEmptyColor(color)
+        )
+        const totalColors = colors.length + (palette.hasUnsetColor ? 1 : 0)
+        if (totalColors < 2) {
+          parseColors(svg, {
+            defaultColor: 'currentColor',
+            callback: (_attr, colorStr, color) =>
+              !color || isEmptyColor(color) ? colorStr : 'currentColor'
+          })
+        }
       }
       runSVGO(svg)
       iconSet.fromSVG(name, svg)
@@ -50,6 +47,13 @@ export function loadComfyIconSet() {
       iconSet.remove(name)
     }
   })
-  cached = iconSet.export()
-  return cached
+  return iconSet.export()
+}
+
+export function loadComfyIconSet() {
+  return (cached ??= buildIconSet(false))
+}
+
+export function loadComfyIconSetRaw() {
+  return (cachedRaw ??= buildIconSet(true))
 }
