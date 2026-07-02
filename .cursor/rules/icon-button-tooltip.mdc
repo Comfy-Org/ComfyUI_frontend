@@ -1,0 +1,34 @@
+---
+description: Icon buttons must always have a tooltip
+globs: src/**/*.vue
+alwaysApply: false
+---
+
+# Icon Button Tooltip Requirement
+
+Every icon-only button (`size="icon"` or any button containing only an icon with no visible label) **must** be wrapped in a `Tooltip` so users can discover what it does.
+
+## Required Pattern
+
+```vue
+<Tooltip>
+  <TooltipTrigger>
+    <Button size="icon" border-interface-stroke" :aria-label="$t('...')">
+      <i class="icon-[lucide--some-icon] size-4" />
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent side="top">{{ $t('...') }}</TooltipContent>
+</Tooltip>
+```
+
+## Imports
+
+```ts
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+```
+
+- Always use `side="top"` unless a different direction is needed for layout reasons.
+- The `aria-label` on the button and the tooltip text should be the same translated string.
+- Use `vue-i18n` (`$t(...)`) for the label — never hardcode strings.

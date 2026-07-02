@@ -45,6 +45,9 @@ export function createMarkdownRenderer(baseUrl?: string): Renderer {
     return `<div class="agent-code-block"><div class="agent-code-block-header"><div class="agent-code-block-label">${icon}${label}</div><button class="agent-code-block-copy" type="button">Copy</button></div><pre><code>${escapeHtml(text)}</code></pre></div>`
   }
 
+  renderer.codespan = ({ text }) =>
+    `<code class="agent-inline-code">${text}</code>`
+
   renderer.image = ({ href, title, text }) => {
     let src = href
     if (normalizedBase && !/^(?:\/|https?:\/\/)/.test(href)) {

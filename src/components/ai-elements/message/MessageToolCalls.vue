@@ -33,7 +33,7 @@ function formatDuration(ms: number) {
   <div class="flex flex-col">
     <button
       type="button"
-      class="flex h-8 cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+      class="flex h-8 cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
       @click="expanded = !expanded"
     >
       <i class="icon-[lucide--wrench] size-4 shrink-0" />
@@ -88,10 +88,10 @@ function formatDuration(ms: number) {
               "
               class="size-4 shrink-0"
             />
-            <span class="flex-1 truncate text-xs text-muted-foreground">{{
+            <span class="flex-1 truncate text-sm text-muted-foreground">{{
               call.name
             }}</span>
-            <span class="text-xs text-muted-foreground/60 tabular-nums">{{
+            <span class="text-sm text-muted-foreground/60 tabular-nums">{{
               formatDuration(call.durationMs)
             }}</span>
           </div>

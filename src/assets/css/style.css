@@ -157,6 +157,15 @@
 }
 
 
+.agent-inline-code {
+  background-color: var(--color-secondary-background-hover);
+  border: 1px solid var(--color-border-default);
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  padding: 0.125rem 0.375rem;
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

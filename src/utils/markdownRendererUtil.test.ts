@@ -115,6 +115,14 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('utils.ts')
     })
 
+    it('should render inline code with agent-inline-code class', () => {
+      const markdown = 'Use the `KSampler` node.'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).toContain('class="agent-inline-code"')
+      expect(html).toContain('KSampler')
+    })
+
     it('should HTML-escape code block content', () => {
       const markdown = '```html\n<script>alert("xss")</script>\n```'
       const html = renderMarkdownToHtml(markdown)
