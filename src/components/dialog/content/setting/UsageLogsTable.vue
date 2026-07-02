@@ -186,13 +186,14 @@ const loadEvents = async () => {
         pagination.value.totalPages = response.totalPages
       }
     } else {
-      error.value =
-        customerEventService.error.value || t('credits.loadEventsError')
+      const legacyError = shouldUseWorkspaceBilling.value
+        ? null
+        : customerEventService.error.value
+      error.value = legacyError || t('credits.loadEventsError')
     }
   } catch (err) {
     if (loadToken !== latestLoadToken) return
-    error.value =
-      err instanceof Error ? err.message : t('credits.loadEventsUnknownError')
+    error.value = t('credits.loadEventsUnknownError')
     console.error('Error loading events:', err)
   } finally {
     if (loadToken === latestLoadToken) loading.value = false

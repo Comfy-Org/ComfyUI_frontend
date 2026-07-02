@@ -240,7 +240,7 @@ describe('UsageLogsTable', () => {
       })
     })
 
-    it('shows error message when service throws', async () => {
+    it('shows a localized fallback instead of a raw Error message', async () => {
       mockCustomerEventsService.getMyEvents.mockRejectedValue(
         new Error('Network error')
       )
@@ -248,8 +248,13 @@ describe('UsageLogsTable', () => {
       renderWithAutoRefresh()
 
       await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument()
+        expect(
+          screen.getByText(
+            'Something went wrong while loading activity. Please refresh and try again.'
+          )
+        ).toBeInTheDocument()
       })
+      expect(screen.queryByText('Network error')).not.toBeInTheDocument()
     })
 
     it('shows a localized fallback when the service reports no message', async () => {
@@ -261,20 +266,6 @@ describe('UsageLogsTable', () => {
       await waitFor(() => {
         expect(
           screen.getByText('Failed to load activity. Please try again.')
-        ).toBeInTheDocument()
-      })
-    })
-
-    it('shows a localized fallback for a non-Error throw', async () => {
-      mockCustomerEventsService.getMyEvents.mockRejectedValue('boom')
-
-      renderWithAutoRefresh()
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(
-            'Something went wrong while loading activity. Please refresh and try again.'
-          )
         ).toBeInTheDocument()
       })
     })

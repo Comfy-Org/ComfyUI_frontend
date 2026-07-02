@@ -340,13 +340,15 @@ describe('useBillingContext', () => {
       })
     })
 
-    it('clears the mirror while a fresh context has no subscription yet', () => {
+    it('never clobbers the list-derived store when a subscription is absent', async () => {
       mockTeamWorkspacesEnabled.value = true
       mockIsPersonal.value = false
 
-      useBillingContext()
+      const { initialize } = useBillingContext()
+      await initialize()
+      await nextTick()
 
-      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalledWith({
         isSubscribed: false,
         subscriptionPlan: null
       })

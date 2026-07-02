@@ -160,15 +160,20 @@ function useBillingContextInternal(): BillingContext {
     return plan?.max_seats ?? getTierFeatures(tierKey).maxMembers
   }
 
-  // Sync subscription info to workspace store for display in workspace switcher
-  // A subscription is considered "subscribed" for workspace purposes if it's active AND not cancelled
-  // This ensures the delete button is enabled after cancellation, even before the period ends
+  // Sync subscription info to workspace store for display in workspace switcher.
+  // Subscribed means active AND not cancelled, so the delete button enables
+  // after cancellation, even before the period ends. A null subscription means
+  // "not loaded yet" (adapters are discarded on every workspace/type switch);
+  // skip it so the transient reinit gap can't clobber the list-derived baseline
+  // (personal workspaces and subscribed teams already read subscribed there).
   watch(
     subscription,
     (sub) => {
+      if (!sub) return
+
       store.updateActiveWorkspace({
-        isSubscribed: sub ? sub.isActive && !sub.isCancelled : false,
-        subscriptionPlan: sub?.planSlug ?? null
+        isSubscribed: sub.isActive && !sub.isCancelled,
+        subscriptionPlan: sub.planSlug
       })
     },
     { immediate: true }
