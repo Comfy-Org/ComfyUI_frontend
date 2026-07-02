@@ -32,10 +32,7 @@ describe('applyTextReplacements', () => {
         } as LGraphNode
       ]
 
-      const mockGraph = new LGraph()
-      for (const node of mockNodes) {
-        mockGraph.add(node)
-      }
+      const mockGraph = createGraph(mockNodes)
       const result = applyTextReplacements(mockGraph, '%TestNode.testWidget%')
 
       // The expected result should have all invalid characters replaced with underscores
@@ -66,10 +63,7 @@ describe('applyTextReplacements', () => {
           } as LGraphNode
         ]
 
-        const mockGraph = new LGraph()
-        for (const node of mockNodes) {
-          mockGraph.add(node)
-        }
+        const mockGraph = createGraph(mockNodes)
         const result = applyTextReplacements(mockGraph, '%TestNode.testWidget%')
         expect(result).toBe(expected)
       }
@@ -85,10 +79,7 @@ describe('applyTextReplacements', () => {
         } as LGraphNode
       ]
 
-      const mockGraph = new LGraph()
-      for (const node of mockNodes) {
-        mockGraph.add(node)
-      }
+      const mockGraph = createGraph(mockNodes)
       const result = applyTextReplacements(mockGraph, '%TestNode.testWidget%')
       expect(result).toBe(validChars)
     })

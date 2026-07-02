@@ -1,47 +1,13 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useMediaCache } from './mediaCacheService'
-
-const NativeURL = URL
-
-// Mock fetch
-global.fetch = vi.fn()
-global.URL = fromPartial<typeof URL>({
-  createObjectURL: vi.fn(() => 'blob:mock-url'),
-  revokeObjectURL: vi.fn()
-})
-
-describe('mediaCacheService', () => {
-  describe('URL reference counting', () => {
-    it('should handle URL acquisition for non-existent cache entry', () => {
-      const { acquireUrl } = useMediaCache()
-
-      const url = acquireUrl('non-existent.jpg')
-      expect(url).toBeUndefined()
-    })
-
-    it('should handle URL release for non-existent cache entry', () => {
-      const { releaseUrl } = useMediaCache()
-
-      // Should not throw error
-      expect(() => releaseUrl('non-existent.jpg')).not.toThrow()
-    })
-
-    it('should provide acquireUrl and releaseUrl methods', () => {
-      const cache = useMediaCache()
-
-      expect(typeof cache.acquireUrl).toBe('function')
-      expect(typeof cache.releaseUrl).toBe('function')
-    })
-  })
-})
+import type { useMediaCache } from './mediaCacheService'
 
 type MediaCache = ReturnType<typeof useMediaCache>
 
 const mockFetch = vi.fn()
 const mockCreateObjectURL = vi.fn()
 const mockRevokeObjectURL = vi.fn()
+const NativeURL = URL
 
 class MockURL extends NativeURL {
   static override createObjectURL(blob: Blob): string {
@@ -66,8 +32,8 @@ async function freshCache(options?: {
   maxAge?: number
 }): Promise<MediaCache> {
   vi.resetModules()
-  const module = await import('./mediaCacheService')
-  return module.useMediaCache(options)
+  const { useMediaCache } = await import('./mediaCacheService')
+  return useMediaCache(options)
 }
 
 describe('useMediaCache', () => {

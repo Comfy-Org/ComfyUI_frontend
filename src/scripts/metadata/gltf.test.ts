@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
@@ -17,15 +18,7 @@ describe('GLTF binary metadata parser', () => {
     return { header, headerView }
   }
 
-  const createJSONChunk = (jsonData: ArrayBuffer) => {
-    const chunkHeader = new ArrayBuffer(GltfSizeBytes.CHUNK_HEADER)
-    const chunkView = new DataView(chunkHeader)
-    chunkView.setUint32(0, jsonData.byteLength, true)
-    chunkView.setUint32(4, ASCII.JSON, true)
-    return chunkHeader
-  }
-
-  const createChunkHeaderWithOptions = (
+  const createJSONChunk = (
     jsonData: ArrayBuffer,
     chunkType = ASCII.JSON,
     chunkLength = jsonData.byteLength
@@ -65,31 +58,13 @@ describe('GLTF binary metadata parser', () => {
   // Builds a GLB whose JSON chunk is the literal text passed in - used to
   // embed Python generated bare NaN/Infinity tokens that JSON.stringify
   // would otherwise coerce to null.
-  function createMockGltfFileFromText(jsonText: string): File {
-    const jsonData = new TextEncoder().encode(jsonText)
-    const { header, headerView } = createGLTFFileStructure()
-
-    setHeaders(headerView, jsonData.buffer)
-
-    const chunkHeader = createJSONChunk(jsonData.buffer)
-
-    const fileContent = new Uint8Array(
-      header.byteLength + chunkHeader.byteLength + jsonData.byteLength
-    )
-    fileContent.set(new Uint8Array(header), 0)
-    fileContent.set(new Uint8Array(chunkHeader), header.byteLength)
-    fileContent.set(jsonData, header.byteLength + chunkHeader.byteLength)
-
-    return new File([fileContent], 'test.glb', { type: 'model/gltf-binary' })
-  }
-
   interface MockGltfFileOptions {
     chunkLength?: number
     chunkType?: number
     magicNumber?: number
   }
 
-  function createMockGltfFileFromTextWithOptions(
+  function createMockGltfFileFromText(
     jsonText: string,
     {
       chunkLength,
@@ -103,11 +78,7 @@ describe('GLTF binary metadata parser', () => {
     setHeaders(headerView, jsonData.buffer)
     setTypeHeader(headerView, magicNumber)
 
-    const chunkHeader = createChunkHeaderWithOptions(
-      jsonData.buffer,
-      chunkType,
-      chunkLength
-    )
+    const chunkHeader = createJSONChunk(jsonData.buffer, chunkType, chunkLength)
 
     const fileContent = new Uint8Array(
       header.byteLength + chunkHeader.byteLength + jsonData.byteLength
@@ -179,7 +150,9 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata).toBeDefined()
     expect(metadata.prompt).toBeDefined()
 
-    const prompt = metadata.prompt as Record<string, any>
+    const prompt: {
+      node1: { class_type: string; inputs: { seed: number } }
+    } = fromAny(metadata.prompt)
     expect(prompt.node1.class_type).toBe('TestNode')
     expect(prompt.node1.inputs.seed).toBe(123456)
   })
@@ -229,9 +202,7 @@ describe('GLTF binary metadata parser', () => {
   })
 
   it('returns empty when the GLB magic number is invalid', async () => {
-    const mockFile = createMockGltfFileFromTextWithOptions('{}', {
-      magicNumber: 0
-    })
+    const mockFile = createMockGltfFileFromText('{}', { magicNumber: 0 })
 
     const metadata = await getGltfBinaryMetadata(mockFile)
 
@@ -251,9 +222,7 @@ describe('GLTF binary metadata parser', () => {
   })
 
   it('returns empty when the first chunk is not JSON', async () => {
-    const mockFile = createMockGltfFileFromTextWithOptions('{}', {
-      chunkType: 0
-    })
+    const mockFile = createMockGltfFileFromText('{}', { chunkType: 0 })
 
     const metadata = await getGltfBinaryMetadata(mockFile)
 
@@ -261,9 +230,7 @@ describe('GLTF binary metadata parser', () => {
   })
 
   it('returns empty when the declared JSON chunk exceeds the buffer', async () => {
-    const mockFile = createMockGltfFileFromTextWithOptions('{}', {
-      chunkLength: 1024
-    })
+    const mockFile = createMockGltfFileFromText('{}', { chunkLength: 1024 })
 
     const metadata = await getGltfBinaryMetadata(mockFile)
 
