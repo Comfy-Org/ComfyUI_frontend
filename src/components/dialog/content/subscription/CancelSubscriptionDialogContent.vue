@@ -69,7 +69,6 @@ const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
-const hasTrackedAbandoned = ref(false)
 
 function cancellationMetadata(): SubscriptionCancellationMetadata {
   const endDate = props.cancelAt ?? subscription.value?.endDate
@@ -96,7 +95,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  trackAbandoned()
+  if (didCancelSucceed.value || isLoading.value) return
+  telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
 })
 
 const formattedEndDate = computed(() => {
@@ -115,16 +115,7 @@ const description = computed(() =>
 
 function onClose() {
   if (isLoading.value) return
-  trackAbandoned()
   dialogStore.closeDialog({ key: 'cancel-subscription' })
-}
-
-function trackAbandoned() {
-  if (didCancelSucceed.value || hasTrackedAbandoned.value || isLoading.value) {
-    return
-  }
-  hasTrackedAbandoned.value = true
-  telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
 }
 
 async function onConfirmCancel() {

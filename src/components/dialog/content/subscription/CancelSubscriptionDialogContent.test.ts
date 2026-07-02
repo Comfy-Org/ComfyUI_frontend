@@ -167,11 +167,15 @@ describe('CancelSubscriptionDialogContent', () => {
     it('tracks abandoned when the user keeps the subscription', async () => {
       mockSubscription.value = null
 
-      renderComponent()
+      const { unmount } = renderComponent()
       await userEvent.click(
         screen.getByRole('button', { name: /keep subscription/i })
       )
 
+      expect(mockCloseDialog).toHaveBeenCalledWith({
+        key: 'cancel-subscription'
+      })
+      unmount()
       expect(mockTrackCancellation).toHaveBeenCalledWith(
         'abandoned',
         expect.objectContaining({ current_tier: 'standard' })
