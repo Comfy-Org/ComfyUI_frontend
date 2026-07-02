@@ -1,0 +1,96 @@
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
+import ComfyHubPublishNav from './ComfyHubPublishNav.vue'
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}))
+
+vi.mock('@formkit/auto-animate/vue', () => ({
+  vAutoAnimate: {}
+}))
+
+vi.mock('@/components/ui/button/Button.vue', () => ({
+  default: {
+    emits: ['click'],
+    template: `
+      <button type="button" v-bind="$attrs" @click="$emit('click')">
+        <slot />
+      </button>
+    `
+  }
+}))
+
+vi.mock('@/components/common/StatusBadge.vue', () => ({
+  default: {
+    props: ['label'],
+    template:
+      '<span data-testid="step-badge" v-bind="$attrs">{{ label }}</span>'
+  }
+}))
+
+describe('ComfyHubPublishNav', () => {
+  it('marks current and completed steps and emits clicked steps', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(ComfyHubPublishNav, {
+      props: {
+        currentStep: 'examples'
+      },
+      global: {
+        config: {
+          globalProperties: {
+            $t: (key: string) => key
+          }
+        }
+      }
+    })
+
+    const nav = screen.getByTestId('publish-nav')
+    expect(
+      within(nav).getByText('comfyHubPublish.stepExamples')
+    ).toBeInTheDocument()
+    expect(screen.getByRole('listitem', { current: 'step' })).toHaveTextContent(
+      'comfyHubPublish.stepExamples'
+    )
+    expect(screen.getByRole('listitem', { current: 'step' })).toHaveAttribute(
+      'aria-current',
+      'step'
+    )
+    expect(screen.getAllByTestId('step-badge')[0]).toHaveClass(
+      'border-base-foreground'
+    )
+    expect(screen.getAllByTestId('step-badge')[2]).toHaveClass(
+      'border-muted-foreground'
+    )
+
+    await user.click(screen.getByText('comfyHubPublish.stepFinish'))
+
+    expect(emitted('stepClick')).toEqual([['finish']])
+  })
+
+  it('renders the profile creation sub-step as part of the finish step', () => {
+    render(ComfyHubPublishNav, {
+      props: {
+        currentStep: 'profileCreation'
+      },
+      global: {
+        config: {
+          globalProperties: {
+            $t: (key: string) => key
+          }
+        }
+      }
+    })
+
+    expect(
+      screen.getByText('comfyHubProfile.profileCreationNav')
+    ).toBeInTheDocument()
+    const finishStep = screen.getAllByRole('listitem')[2]
+    expect(finishStep).toHaveClass('bg-secondary-background-hover')
+    expect(finishStep).not.toHaveAttribute('aria-current')
+  })
+})
