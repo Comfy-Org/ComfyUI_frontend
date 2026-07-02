@@ -3715,6 +3715,7 @@
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
+      "startTour": "Take a tour of App Mode",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
       "getStarted": "Click {runButton} to get started.",
@@ -4495,5 +4496,39 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "onboardingCoachmarks": {
+    "stepLabel": "Step {current} of {total}",
+    "skip": "Skip",
+    "next": "Next",
+    "done": "Done",
+    "appMode": {
+      "landing": {
+        "title": "Welcome to Apps",
+        "body": "A quick tour of the essentials, in about a minute. You'll fill inputs and see your first generation.",
+        "primary": "Start tutorial",
+        "skip": "Skip for now"
+      },
+      "inputs": {
+        "title": "Add your inputs",
+        "body": "Add what you want to work with. Your inputs are what the app turns into results."
+      },
+      "run": {
+        "title": "Run your app",
+        "body": "Happy with your inputs? Hit Run and your result appears in the center the moment it's ready."
+      },
+      "outputs": {
+        "title": "Get your results",
+        "body": "Your finished results show up here in the center. Download them, or tweak an input and run again."
+      },
+      "assetsButton": {
+        "title": "Open your assets",
+        "body": "Click the Assets button in the left toolbar to open your media library."
+      },
+      "assets": {
+        "title": "Find all your assets",
+        "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
+      }
+    }
   }
 }

@@ -23,6 +23,7 @@
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
+          v-coachmark="tab.id === 'assets' ? 'assets-button' : undefined"
           :icon="tab.icon"
           :icon-badge="tab.iconBadge"
           :tooltip="tab.tooltip"
@@ -79,6 +80,7 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
