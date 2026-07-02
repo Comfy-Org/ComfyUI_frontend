@@ -25,9 +25,18 @@ vi.mock('@/platform/keybindings/keybindingStore', () => ({
   })
 }))
 
+const mockGetSetting = vi.fn()
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: mockGetSetting
+  })
+}))
+
 describe('commandStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    mockGetSetting.mockReturnValue([])
   })
 
   describe('registerCommand', () => {
@@ -110,6 +119,15 @@ describe('commandStore', () => {
       const handler = vi.fn()
       await store.execute('err.test', { errorHandler: handler })
       expect(handler).toHaveBeenCalledWith(error)
+    })
+
+    it('does not execute disabled commands', async () => {
+      mockGetSetting.mockReturnValue(['exec.test'])
+      const store = useCommandStore()
+      const fn = vi.fn()
+      store.registerCommand({ id: 'exec.test', function: fn })
+      await store.execute('exec.test')
+      expect(fn).not.toHaveBeenCalled()
     })
   })
 
