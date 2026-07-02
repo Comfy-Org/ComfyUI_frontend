@@ -1,3 +1,4 @@
+import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
@@ -216,11 +217,12 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified()
-      requestAnimationFrame(() => {
-        this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
-      })
+      this.squashState()
     }
   }
+  squashState = useDebounceFn(() => {
+    this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+  }, 50)
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
