@@ -6,7 +6,7 @@ const mockBillingFetchBalance = vi.fn()
 const mockAuthFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
-const mockExecute = vi.fn()
+const mockOpenSupport = vi.fn()
 const mockToastAdd = vi.fn()
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -32,13 +32,14 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: mockExecute
+vi.mock('@/platform/support/useSupportContext', () => ({
+  useSupportContext: () => ({
+    openSupport: mockOpenSupport
   })
 }))
 
-// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
+// mockIsCloud drives both the `isCloud` build flag (which gates the telemetry
+// call) and useTelemetry() (which returns null in OSS, a dispatcher in cloud).
 const {
   mockIsCloud,
   mockTrackHelpResourceClicked,
@@ -57,6 +58,14 @@ vi.mock('@/platform/telemetry', () => ({
           trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
         }
       : null
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  isDesktop: false,
+  isNightly: false,
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 // Mock window.open
@@ -84,24 +93,24 @@ describe('useSubscriptionActions', () => {
   })
 
   describe('handleMessageSupport', () => {
-    it('should execute support command and manage loading state', async () => {
+    it('opens the Pylon billing form and resets loading state', () => {
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
       expect(isLoadingSupport.value).toBe(false)
 
-      const promise = handleMessageSupport()
-      expect(isLoadingSupport.value).toBe(true)
+      handleMessageSupport()
 
-      await promise
-      expect(mockExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
+      expect(mockOpenSupport).toHaveBeenCalledWith('billing-refund-issue', {
+        productArea: 'Billing'
+      })
       expect(isLoadingSupport.value).toBe(false)
     })
 
-    it('tracks help-resource telemetry when messaging support in cloud', async () => {
+    it('tracks help-resource telemetry when messaging support in cloud', () => {
       const { handleMessageSupport } = useSubscriptionActions()
 
-      await handleMessageSupport()
+      handleMessageSupport()
 
       expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith({
         resource_type: 'help_feedback',
@@ -110,21 +119,23 @@ describe('useSubscriptionActions', () => {
       })
     })
 
-    it('does not fire telemetry when messaging support in OSS builds', async () => {
+    it('does not fire telemetry when messaging support in OSS builds', () => {
       mockIsCloud.value = false
       const { handleMessageSupport } = useSubscriptionActions()
 
-      await handleMessageSupport()
+      handleMessageSupport()
 
       expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
-      mockExecute.mockRejectedValueOnce(new Error('Command failed'))
+    it('handles errors gracefully', () => {
+      mockOpenSupport.mockImplementationOnce(() => {
+        throw new Error('open failed')
+      })
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
-      await handleMessageSupport()
+      handleMessageSupport()
       expect(isLoadingSupport.value).toBe(false)
     })
   })
