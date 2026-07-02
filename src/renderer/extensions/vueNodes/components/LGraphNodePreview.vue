@@ -120,7 +120,7 @@ const previewWidgets = computed<WidgetGridItem[]>(() =>
         '') as WidgetValue
       const type = input.widgetType || input.type
       const values =
-        leadValue && comboValues
+        leadValue !== undefined && comboValues
           ? [leadValue, ...comboValues.filter((option) => option !== leadValue)]
           : comboValues
       return {
