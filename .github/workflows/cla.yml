@@ -17,6 +17,31 @@ jobs:
   cla-assistant:
     runs-on: ubuntu-latest
     steps:
+      # The CLA action normally requires every commit author in a PR to sign.
+      # We only want the PR author to sign, so we allowlist all other committers
+      # by computing them from the PR's commits and excluding the PR author.
+      - name: Build author-only allowlist
+        id: allowlist
+        if: >
+          github.event_name == 'pull_request_target' ||
+          github.event.comment.body == 'recheck' ||
+          github.event.comment.body == 'I have read and agree to the Contributor License Agreement'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.event.issue.user.login }}
+          BASE_ALLOWLIST: actions-user,ampagent,claude,comfy-pr-bot,github-actions,github-actions[bot]
+,*[bot],Glary Bot
+        run: |
+          others=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUMBER}/commits" --paginate \
+            --jq '.[] | (.author.login // empty), (.committer.login // empty)' \
+            | sort -u | grep -vix "${PR_AUTHOR}" | paste -sd, -)
+          if [ -n "$others" ]; then
+            echo "allowlist=${BASE_ALLOWLIST},${others}" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowlist=${BASE_ALLOWLIST}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: CLA Assistant
         # Run on PR events, on "recheck" comment, or when someone posts the exact signing phrase.
         # IMPORTANT: this phrase must match `custom-pr-sign-comment` below.
@@ -39,9 +64,10 @@ jobs:
           path-to-signatures: signatures/cla.json
           branch: main
 
-          # Allowlist bots so they don't need to sign (optional, comma-separated).
+          # Only the PR author must sign: bots plus every non-author committer
+          # are allowlisted via the "Build author-only allowlist" step above.
           # *[bot] is a catch-all for any GitHub App bot account.
-          allowlist: action@github.com,actions-user,ampagent,claude,comfy-pr-bot,GitHub Action,github-actions,Glary Bot,Glary-Bot,*[bot]
+          allowlist: ${{ steps.allowlist.outputs.allowlist }}
 
           # Custom PR comment messages
           custom-notsigned-prcomment: |
