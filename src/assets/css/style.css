@@ -51,6 +51,7 @@
 }
 
 .agent-markdown a {
+  color: var(--color-primary-background);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -89,6 +90,70 @@
 .agent-markdown > *:last-child {
   padding-bottom: 0;
   margin-bottom: 0;
+}
+
+.agent-code-block {
+  border: 1px solid var(--color-border-default);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.agent-code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.75rem;
+  background-color: var(--color-secondary-background-hover);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.agent-code-block-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.6875rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.agent-code-block-filename {
+  color: var(--color-base-foreground);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.agent-code-block-copy {
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: 0.25rem;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  font-size: 0.6875rem;
+  font-family: inherit;
+  padding: 0.125rem 0.5rem;
+  line-height: 1.5;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.agent-code-block-copy:hover {
+  background-color: var(--color-secondary-background);
+  color: var(--color-base-foreground);
+}
+
+.agent-code-block pre {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+
+.agent-code-block code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--color-base-foreground);
+  white-space: pre;
 }
 
 

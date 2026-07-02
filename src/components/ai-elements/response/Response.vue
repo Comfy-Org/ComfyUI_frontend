@@ -21,6 +21,24 @@ const markdown = computed(() => {
 })
 
 const renderedHtml = computed(() => renderMarkdownToHtml(markdown.value))
+
+function onContainerClick(event: MouseEvent) {
+  const btn = (event.target as Element).closest<HTMLButtonElement>(
+    '.agent-code-block-copy'
+  )
+  if (!btn) return
+  const code = btn.closest('.agent-code-block')?.querySelector('code')
+  if (!code) return
+  navigator.clipboard
+    .writeText(code.textContent ?? '')
+    .then(() => {
+      btn.textContent = 'Copied!'
+      setTimeout(() => {
+        btn.textContent = 'Copy'
+      }, 2000)
+    })
+    .catch(() => {})
+}
 </script>
 
 <template>
@@ -31,6 +49,7 @@ const renderedHtml = computed(() => renderMarkdownToHtml(markdown.value))
         className
       )
     "
+    @click="onContainerClick"
     v-html="renderedHtml"
   />
 </template>

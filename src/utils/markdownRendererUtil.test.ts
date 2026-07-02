@@ -96,6 +96,33 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('rel="noopener noreferrer"')
     })
 
+    it('should render code blocks with header and copy button', () => {
+      const markdown = '```typescript\nconst x = 1\n```'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).toContain('class="agent-code-block"')
+      expect(html).toContain('class="agent-code-block-header"')
+      expect(html).toContain('class="agent-code-block-copy"')
+      expect(html).toContain('typescript')
+      expect(html).toContain('const x = 1')
+    })
+
+    it('should show filename in code block header when lang:filename syntax is used', () => {
+      const markdown = '```typescript:utils.ts\nconst x = 1\n```'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).toContain('class="agent-code-block-filename"')
+      expect(html).toContain('utils.ts')
+    })
+
+    it('should HTML-escape code block content', () => {
+      const markdown = '```html\n<script>alert("xss")</script>\n```'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).toContain('&lt;script&gt;')
+      expect(html).not.toContain('<script>alert')
+    })
+
     it('should render complex markdown with links, images, and text', () => {
       const markdown = `
 # Release Notes
