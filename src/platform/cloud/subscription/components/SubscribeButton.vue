@@ -58,7 +58,7 @@ const handleSubscribe = () => {
     })
   }
   isAwaitingStripeSubscription.value = true
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'subscribe_now_button' })
 }
 
 onBeforeUnmount(() => {

@@ -38,6 +38,27 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
+// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
+const {
+  mockIsCloud,
+  mockTrackHelpResourceClicked,
+  mockTrackAddApiCreditButtonClicked
+} = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockTrackHelpResourceClicked: vi.fn(),
+  mockTrackAddApiCreditButtonClicked: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () =>
+    mockIsCloud.value
+      ? {
+          trackHelpResourceClicked: mockTrackHelpResourceClicked,
+          trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
+        }
+      : null
+}))
+
 // Mock window.open
 const mockOpen = vi.fn()
 Object.defineProperty(window, 'open', {
@@ -55,6 +76,9 @@ describe('useSubscriptionActions', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
       expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
+        source: 'settings_billing_panel'
+      })
     })
   })
 

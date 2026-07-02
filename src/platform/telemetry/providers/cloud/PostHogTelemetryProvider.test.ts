@@ -313,6 +313,42 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures begin_checkout with intent metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackBeginCheckout({
+        user_id: 'user-1',
+        tier: 'pro',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: 'subscribe_to_run'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BEGIN_CHECKOUT,
+        {
+          user_id: 'user-1',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          payment_intent_source: 'subscribe_to_run'
+        }
+      )
+    })
+
+    it('captures add-credit clicks with their source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
+        { source: 'credits_panel' }
+      )
+    })
+
     it('captures share attribution events', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
