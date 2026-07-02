@@ -44,6 +44,20 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
+
+/**
+ * Request body for createCustomer. The Cloudflare Turnstile token captured at
+ * signup is forwarded to the backend as `turnstile_token` (snake_case), which
+ * reads this field on the CreateCustomer request; it is omitted for non-signup
+ * flows and on OSS / localhost where Turnstile is not rendered.
+ *
+ * TODO: replace with the generated `operations['createCustomer']` request-body
+ * type once the backend OpenAPI spec includes `turnstile_token`, so the field
+ * name/optionality drift-checks against the backend at compile time.
+ */
+type CreateCustomerPayload = {
+  turnstile_token?: string
+}
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 type AccessBillingPortalResponse =
@@ -57,9 +71,12 @@ export type BillingPortalTargetTier = NonNullable<
 >['target_tier']
 
 export class AuthStoreError extends Error {
-  constructor(message: string) {
+  readonly status: number | undefined
+
+  constructor(message: string, status?: number) {
     super(message)
     this.name = 'AuthStoreError'
+    this.status = status
   }
 }
 
@@ -310,7 +327,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const createCustomer = async (): Promise<CreateCustomerResponse> => {
+  const createCustomer = async (
+    payload?: CreateCustomerPayload
+  ): Promise<CreateCustomerResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -323,7 +342,9 @@ export const useAuthStore = defineStore('auth', () => {
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'
-        }
+        },
+        ...(payload &&
+          Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
       },
       isCloud && flags.unifiedCloudAuthEnabled
     )
@@ -331,7 +352,8 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText
-        })
+        }),
+        createCustomerRes.status
       )
     }
 
@@ -352,6 +374,7 @@ export const useAuthStore = defineStore('auth', () => {
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
+      customerPayload?: CreateCustomerPayload
     } = {}
   ): Promise<T> => {
     loading.value = true
@@ -365,7 +388,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (!token) {
           throw new Error('Cannot create customer: User not authenticated')
         }
-        await createCustomer()
+        await createCustomer(options.customerPayload)
       }
 
       return result
@@ -397,13 +420,41 @@ export const useAuthStore = defineStore('auth', () => {
 
   const register = async (
     email: string,
-    password: string
+    password: string,
+    turnstileToken?: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) =>
-        createUserWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
-    )
+    // Drive create + customer inside one action so a failed customer step can
+    // roll back the just-created Firebase user. createCustomer is where the
+    // Turnstile token is validated server-side; if it fails (rejection, 5xx,
+    // network) the Firebase user is already created and, without rollback, the
+    // account is orphaned — every retry then fails "email already in use",
+    // permanently bricking signup. Rollback is scoped to register only; login /
+    // social sign-in must never delete an existing user on a customer hiccup.
+    const result = await executeAuthAction(async (authInstance) => {
+      const credential = await createUserWithEmailAndPassword(
+        authInstance,
+        email,
+        password
+      )
+      try {
+        await createCustomer(
+          turnstileToken ? { turnstile_token: turnstileToken } : undefined
+        )
+      } catch (error) {
+        // Best-effort rollback of the user created in THIS call; never let a
+        // cleanup failure mask the original error.
+        try {
+          await credential.user.delete()
+        } catch (deleteError) {
+          console.warn(
+            'Failed to roll back orphaned Firebase user after customer creation failed',
+            deleteError
+          )
+        }
+        throw error
+      }
+      return credential
+    })
 
     useTelemetry()?.trackAuth({
       method: 'email',

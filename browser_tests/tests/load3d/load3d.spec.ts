@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
+import { toNodeId } from '@/types/nodeId'
 
 test.describe('Load3D', () => {
   test(
@@ -67,13 +68,13 @@ test.describe('Load3D', () => {
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const n = window.app!.graph.getNodeById(1)
+          comfyPage.page.evaluate((nodeId) => {
+            const n = window.app!.graph.getNodeById(nodeId)
             const config = n?.properties?.['Scene Config'] as
               | Record<string, string>
               | undefined
             return config?.backgroundColor
-          })
+          }, toNodeId(1))
         )
         .toBe('#cc3333')
 
