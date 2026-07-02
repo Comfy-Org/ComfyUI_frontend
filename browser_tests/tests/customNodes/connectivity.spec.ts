@@ -46,6 +46,13 @@ function concrete(slot: { type: string }): boolean {
   return !isWildcard(slot.type)
 }
 
+function isEntryInstalled(
+  nodeTypes: Set<string>,
+  entry: { expectedNodes: string[] }
+): boolean {
+  return entry.expectedNodes.every((type) => nodeTypes.has(type))
+}
+
 const connectivityEntries = loadManifest().filter((entry) =>
   entry.tiers.includes('connectivity')
 )
@@ -64,7 +71,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // and the absence is reported, never fake-failed or fake-passed.
   const nodeTypes = new Set(nodes.map((node) => node.type))
   const installedEntries = connectivityEntries.filter((entry) =>
-    entry.expectedNodes.every((type) => nodeTypes.has(type))
+    isEntryInstalled(nodeTypes, entry)
   )
   for (const entry of connectivityEntries)
     if (!installedEntries.includes(entry))
@@ -259,7 +266,7 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
   ]
   const nodeTypes = new Set(nodes.map((node) => node.type))
   for (const entry of connectivityEntries) {
-    if (!entry.expectedNodes.every((type) => nodeTypes.has(type))) {
+    if (!isEntryInstalled(nodeTypes, entry)) {
       console.log(
         `connectivity drag: ${entry.pack} not installed on this backend`
       )

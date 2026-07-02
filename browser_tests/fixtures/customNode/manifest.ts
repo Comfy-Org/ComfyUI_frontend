@@ -7,6 +7,13 @@ const MANIFEST_PATH = fileURLToPath(
 
 type CustomNodeTier = 'load' | 'run' | 'connectivity' | 'io'
 
+const VALID_TIERS: readonly CustomNodeTier[] = [
+  'load',
+  'run',
+  'connectivity',
+  'io'
+]
+
 export interface CustomNodeManifestEntry {
   pack: string
   repo: string
@@ -34,6 +41,10 @@ function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
     missing.push('expectedNodes')
   if (!Array.isArray(entry.tiers) || entry.tiers.length === 0)
     missing.push('tiers')
+  // A typo like "connectivty" would otherwise pass and silently drop that
+  // tier's coverage - the exact drift this manifest exists to catch.
+  else if (entry.tiers.some((tier) => !VALID_TIERS.includes(tier)))
+    missing.push(`tiers (unknown value; allowed: ${VALID_TIERS.join(', ')})`)
   if (!Array.isArray(entry.requiresModels)) missing.push('requiresModels')
   if (typeof entry.requiresGpu !== 'boolean') missing.push('requiresGpu')
   if (!Number.isFinite(entry.timeoutMs) || entry.timeoutMs <= 0)

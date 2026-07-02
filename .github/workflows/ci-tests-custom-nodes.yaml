@@ -24,6 +24,14 @@ concurrency:
 
 jobs:
   custom-nodes-e2e:
+    # Fork PRs can edit the manifest's repo/pin URLs, and this job clones and
+    # pip-installs whatever they point at (setup.py runs at install time). Run
+    # only for same-repo PRs and pushes so an untrusted fork can't aim the
+    # clone at an attacker-controlled repo. Fork PRs still get the
+    # environment-agnostic coverage via the main e2e shards.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -56,6 +64,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Pin the CPU torch stack that setup-comfyui-server installed so no
+          # pack's requirements.txt can pull a GPU/incompatible torch onto this
+          # --cpu runner. A pack that genuinely needs a different torch fails
+          # the constrained install loudly rather than silently swapping it.
+          pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
+            > /tmp/torch-constraints.txt || true
           manifest=browser_tests/fixtures/data/customNodeManifest.json
           mapfile -t entries < <(jq -c '.[]' "$manifest")
           for entry in "${entries[@]}"; do
@@ -70,7 +84,7 @@ jobs:
               git -C "$dir" checkout "$pin"
             fi
             if [ -f "$dir/requirements.txt" ]; then
-              pip install -r "$dir/requirements.txt"
+              pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
             fi
             echo "::endgroup::"
           done
