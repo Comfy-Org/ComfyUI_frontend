@@ -588,6 +588,34 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('round-trips values across a serialize:false widget in the middle', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+      node.addWidget('number', 'a', 1, null)
+      node.addWidget('number', 'shim', 0, null)
+      node.addWidget('number', 'b', 2, null)
+      node.widgets![1].serialize = false
+
+      const serialized = node.serialize()
+      // Dense: the middle serialize:false widget must not leave a gap.
+      expect(serialized.widgets_values).toEqual([1, 2])
+
+      node.widgets![0].value = 0
+      node.widgets![2].value = 0
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          type: 'TestNode',
+          pos: [0, 0],
+          size: [100, 100],
+          properties: {},
+          widgets_values: serialized.widgets_values
+        })
+      )
+      expect(node.widgets![0].value).toBe(1)
+      expect(node.widgets![2].value).toBe(2)
+    })
   })
 
   describe('getInputSlotPos', () => {
