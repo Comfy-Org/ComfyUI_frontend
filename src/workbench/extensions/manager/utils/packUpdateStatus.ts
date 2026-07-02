@@ -38,8 +38,9 @@ export const getPackUpdateStatus = (
   const isUpdateAvailable =
     isInstalled &&
     !isNightly &&
-    !!latestVersion &&
     !!installedVersion &&
+    !!latestVersion &&
+    !!valid(latestVersion) &&
     compare(latestVersion, installedVersion) > 0
 
   return {

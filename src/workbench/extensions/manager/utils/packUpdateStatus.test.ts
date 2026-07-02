@@ -78,6 +78,13 @@ describe('getPackUpdateStatus', () => {
     expect(status.isUpdateAvailable).toBe(false)
   })
 
+  it('reports no update when the latest version is not valid semver', () => {
+    const store = createStore({ 'pack-1': '1.0.0' })
+    const status = getPackUpdateStatus(createPack('pack-1', 'deadbeef'), store)
+
+    expect(status.isUpdateAvailable).toBe(false)
+  })
+
   it('reports no update when the pack has no latest version', () => {
     const store = createStore({ 'pack-1': '1.0.0' })
     const status = getPackUpdateStatus(createPack('pack-1'), store)
