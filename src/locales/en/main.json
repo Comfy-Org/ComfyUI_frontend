@@ -1102,6 +1102,8 @@
     "addCredentials": "Add credentials",
     "authErrorHint": "{host} needs an API key. Add one in the Credentials Manager, then resume.",
     "authErrorHintNoHost": "This host/model needs an API key. Add one in the Credentials Manager, then resume.",
+    "gatedModelHint": "This model is gated. Accept its license on the model's page, then add an API key and resume.",
+    "openModelPage": "Accept license",
     "actionFailed": "Action failed",
     "cancelConfirmTitle": "Cancel download?",
     "cancelConfirmMessage": "This will stop the download and delete the partial file for \"{name}\".",

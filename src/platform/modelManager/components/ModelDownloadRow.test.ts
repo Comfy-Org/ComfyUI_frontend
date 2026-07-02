@@ -212,6 +212,77 @@ describe('ModelDownloadRow', () => {
     })
   })
 
+  describe('gated models', () => {
+    const gatedError =
+      'https://huggingface.co/black-forest-labs/FLUX.2-dev/blob/main/vae/diffusion_pytorch_model.safetensors is a gated model — Access to model black-forest-labs/FLUX.2-dev is restricted. You must have access to it and be authenticated to access it.'
+
+    it('shows the gated hint, credentials button, and a link to accept the license on the model page', () => {
+      mountRow(
+        createDownload({
+          status: 'failed',
+          url: 'https://huggingface.co/black-forest-labs/FLUX.2-dev/blob/main/vae/diffusion_pytorch_model.safetensors',
+          error: gatedError
+        })
+      )
+
+      expect(
+        screen.getByText(
+          "This model is gated. Accept its license on the model's page, then add an API key and resume."
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByTitle('Add credentials')).toBeInTheDocument()
+
+      const link = screen.getByRole('link', { name: 'Accept license' })
+      expect(link).toHaveAttribute(
+        'href',
+        'https://huggingface.co/black-forest-labs/FLUX.2-dev'
+      )
+    })
+
+    it('derives the model page from the error when the download url is a cdn link', () => {
+      mountRow(
+        createDownload({
+          status: 'failed',
+          url: 'https://cas-bridge.xethub.hf.co/xet-bridge-us/abc/def',
+          error: gatedError
+        })
+      )
+
+      expect(
+        screen.getByRole('link', { name: 'Accept license' })
+      ).toHaveAttribute(
+        'href',
+        'https://huggingface.co/black-forest-labs/FLUX.2-dev'
+      )
+    })
+
+    it('hides the raw backend error text for gated failures', () => {
+      mountRow(
+        createDownload({
+          status: 'failed',
+          url: 'https://huggingface.co/black-forest-labs/FLUX.2-dev/blob/main/model.safetensors',
+          error: gatedError
+        })
+      )
+
+      expect(screen.queryByText(gatedError)).not.toBeInTheDocument()
+    })
+
+    it('omits the accept-license link when no huggingface url is present', () => {
+      mountRow(
+        createDownload({
+          status: 'failed',
+          url: 'https://example.com/model.safetensors',
+          error: 'Access to this model is restricted, request access.'
+        })
+      )
+
+      expect(
+        screen.queryByRole('link', { name: 'Accept license' })
+      ).not.toBeInTheDocument()
+    })
+  })
+
   describe('user actions', () => {
     it('pauses on click', async () => {
       const download = createDownload({ status: 'active' })

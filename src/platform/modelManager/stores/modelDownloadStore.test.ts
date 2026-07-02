@@ -2,6 +2,9 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const flushPromises = () =>
+  new Promise<void>((resolve) => queueMicrotask(() => resolve()))
+
 import * as downloadApi from '../api/modelDownloadApi'
 import type { DownloadState, DownloadStatus } from '../types'
 import {
@@ -273,6 +276,37 @@ describe('useModelDownloadStore', () => {
     const firstTimestamp = store.lastCompletedDownload?.timestamp
     dispatch(createStatus({ download_id: 'd1', status: 'completed' }))
     expect(store.lastCompletedDownload?.timestamp).toBe(firstTimestamp)
+  })
+
+  it('refetches when a download fails without an error message', async () => {
+    vi.mocked(downloadApi.listDownloads).mockResolvedValue([
+      createStatus({ download_id: 'd1', status: 'failed', error: 'gated' })
+    ])
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+
+    dispatch(createStatus({ download_id: 'd1', status: 'failed', error: null }))
+    await flushPromises()
+
+    expect(downloadApi.listDownloads).toHaveBeenCalledOnce()
+    expect(store.downloadList.find((d) => d.download_id === 'd1')?.error).toBe(
+      'gated'
+    )
+  })
+
+  it('does not refetch when the failure event already carries an error', async () => {
+    const store = useModelDownloadStore()
+    dispatch(createStatus({ download_id: 'd1', status: 'active' }))
+
+    dispatch(
+      createStatus({ download_id: 'd1', status: 'failed', error: 'disk full' })
+    )
+    await flushPromises()
+
+    expect(downloadApi.listDownloads).not.toHaveBeenCalled()
+    expect(store.downloadList.find((d) => d.download_id === 'd1')?.error).toBe(
+      'disk full'
+    )
   })
 
   it('deletes a row through the backend so it stays gone', async () => {
