@@ -2130,13 +2130,6 @@
     "viewGraph": "Voir le graphe des nœuds",
     "viewJob": "Voir la tâche",
     "welcome": {
-      "buildApp": "Créer une application",
-      "controls": "Vos sorties apparaissent en bas, vos contrôles sont à droite. Tout le reste reste à l'écart.",
-      "getStarted": "Cliquez sur {runButton} pour commencer.",
-      "message": "Une vue simplifiée qui masque le graphe de nœuds pour vous permettre de vous concentrer sur la création.",
-      "noOutputs": "Une application nécessite au moins {count} pour être utilisable.",
-      "oneOutput": "1 sortie",
-      "sharing": "Le partage est facile : créez votre workflow, ouvrez le mode App, faites un clic droit sur l’onglet et exportez. Quand d’autres ouvrent votre fichier, il s’ouvre directement dans cette vue épurée. Vous pouvez partager des workflows puissants comme des outils simples, sans que personne n’ait besoin de comprendre les graphes de nœuds.",
       "title": "Bienvenue en mode App"
     }
   },

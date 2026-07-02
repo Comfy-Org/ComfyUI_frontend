@@ -30,3 +30,22 @@
     width: 100%;
   }
 }
+
+#linearCenterPanel {
+  background:
+    radial-gradient(
+      60% 45% at 50% 38%,
+      rgb(70 78 104 / 0.35) 0%,
+      rgb(70 78 104 / 0) 100%
+    ),
+    radial-gradient(
+      45% 40% at 28% 68%,
+      rgb(78 62 98 / 0.28) 0%,
+      rgb(78 62 98 / 0) 100%
+    ),
+    radial-gradient(
+      45% 40% at 74% 62%,
+      rgb(46 70 94 / 0.28) 0%,
+      rgb(46 70 94 / 0) 100%
+    );
+}

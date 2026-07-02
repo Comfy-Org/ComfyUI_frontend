@@ -2130,13 +2130,6 @@
     "viewGraph": "Ver grafo de nodos",
     "viewJob": "Ver tarea",
     "welcome": {
-      "buildApp": "Crear aplicación",
-      "controls": "Tus resultados aparecen abajo, tus controles están a la derecha. Todo lo demás se mantiene fuera del camino.",
-      "getStarted": "Haz clic en {runButton} para comenzar.",
-      "message": "Una vista simplificada que oculta el grafo de nodos para que puedas concentrarte en crear.",
-      "noOutputs": "Una aplicación necesita al menos {count} para ser utilizable.",
-      "oneOutput": "1 salida",
-      "sharing": "Compartir es fácil: crea tu flujo de trabajo, abre el Modo App, haz clic derecho en la pestaña y exporta. Cuando otros abran tu archivo, se lanzará directamente en esta vista limpia. Puedes compartir flujos de trabajo potentes como herramientas simples sin que nadie tenga que entender grafos de nodos.",
       "title": "Bienvenido al Modo App"
     }
   },

@@ -2130,13 +2130,6 @@
     "viewGraph": "Ver grafo de nós",
     "viewJob": "Ver tarefa",
     "welcome": {
-      "buildApp": "Criar aplicativo",
-      "controls": "Seus resultados aparecem na parte inferior, seus controles estão à direita. Todo o resto fica fora do caminho.",
-      "getStarted": "Clique em {runButton} para começar.",
-      "message": "Uma visualização simplificada que oculta o grafo de nós para você focar na criação.",
-      "noOutputs": "Um app precisa de pelo menos {count} para ser utilizável.",
-      "oneOutput": "1 saída",
-      "sharing": "Compartilhar é fácil: crie seu fluxo de trabalho, abra o Modo App, clique com o botão direito na aba e exporte. Quando outros abrirem seu arquivo, ele será iniciado diretamente nesta visualização limpa. Você pode compartilhar fluxos de trabalho poderosos como ferramentas simples, sem que ninguém precise entender grafos de nós.",
       "title": "Bem-vindo ao Modo App"
     }
   },

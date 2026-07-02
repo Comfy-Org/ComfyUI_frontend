@@ -110,7 +110,7 @@ function dragDrop(e: DragEvent) {
     </div>
     <Splitter
       :key="splitterKey"
-      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
+      class="h-[calc(100%-var(--workflow-tabs-height))] w-full border-none bg-base-background"
       @resizestart="$event.originalEvent.preventDefault()"
       @resizeend="onResizeEnd"
     >

@@ -2130,13 +2130,6 @@
     "viewGraph": "Düğüm grafiğini görüntüle",
     "viewJob": "İşi Görüntüle",
     "welcome": {
-      "buildApp": "Uygulama oluştur",
-      "controls": "Çıktılarınız altta, kontrolleriniz sağda görünür. Diğer her şey arka planda kalır.",
-      "getStarted": "Başlamak için {runButton} tıklayın.",
-      "message": "Düğüm grafiğini gizleyerek odaklanmanıza yardımcı olan basitleştirilmiş bir görünüm.",
-      "noOutputs": "Bir uygulamanın kullanılabilir olması için en az {count} gereklidir.",
-      "oneOutput": "1 çıktı",
-      "sharing": "Paylaşmak çok kolay: iş akışınızı oluşturun, Uygulama Modunu açın, sekmeye sağ tıklayın ve dışa aktarın. Başkaları dosyanızı açtığında, doğrudan bu sade görünüme geçer. Güçlü iş akışlarını, kimsenin düğüm grafiğini anlamasına gerek kalmadan basit araçlar olarak paylaşabilirsiniz.",
       "title": "Uygulama Moduna Hoş Geldiniz"
     }
   },
