@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted } from 'vue'
+import { computed, onUnmounted, watchEffect } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type {
@@ -112,7 +112,7 @@ const nodeData = computed<VueNodeData>(() => {
   }
 })
 
-const previewWidgetIds = computed<WidgetId[]>(() =>
+const previewWidgets = computed(() =>
   Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
     .map(([name, input]) => {
@@ -121,7 +121,6 @@ const previewWidgetIds = computed<WidgetId[]>(() =>
           ? input.options
           : undefined
       const leadValue = widgetValues?.[name]
-      const id = widgetId(previewGraphId, nodeData.value.id, name)
       const value =
         leadValue ??
         (input.default !== undefined ? input.default : (comboValues?.[0] ?? ''))
@@ -133,21 +132,29 @@ const previewWidgetIds = computed<WidgetId[]>(() =>
             ? [leadValue, ...comboValues.filter((o) => o !== leadValue)]
             : comboValues
       } satisfies IWidgetOptions
-      const state = widgetValueStore.registerWidget(id, {
+      return {
+        id: widgetId(previewGraphId, nodeData.value.id, name),
+        input,
         type: input.widgetType || input.type,
         value,
         options
-      })
-      state.type = input.widgetType || input.type
-      state.value = value
-      state.options = options
-      widgetValueStore.registerWidgetRenderState(id, {
-        advanced: input.advanced
-      })
-      widgetValueStore.registerWidgetSpec(id, input)
-      return id
+      }
     })
 )
+
+const previewWidgetIds = computed<WidgetId[]>(() =>
+  previewWidgets.value.map((widget) => widget.id)
+)
+
+watchEffect(() => {
+  for (const { id, input, type, value, options } of previewWidgets.value) {
+    const state = widgetValueStore.registerWidget(id, { type, value, options })
+    state.value = value
+    state.options = options
+    widgetValueStore.registerWidgetRenderState(id, { advanced: input.advanced })
+    widgetValueStore.registerWidgetSpec(id, input)
+  }
+})
 
 onUnmounted(() => {
   for (const id of previewWidgetIds.value) {
