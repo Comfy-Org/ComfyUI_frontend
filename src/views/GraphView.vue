@@ -27,6 +27,7 @@
   <AssetExportProgressDialog />
   <ManagerProgressToast />
   <DesktopCloudNotificationController />
+  <OpenInDesktopBanner />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
 </template>
@@ -65,6 +66,7 @@ import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import OpenInDesktopBanner from '@/platform/cloud/desktop/OpenInDesktopBanner.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'

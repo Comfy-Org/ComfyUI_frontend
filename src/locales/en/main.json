@@ -3787,6 +3787,12 @@
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   },
+  "openInDesktop": {
+    "message": "Get the full experience in Comfy Desktop.",
+    "action": "Open in Comfy Desktop",
+    "getApp": "Get the app",
+    "dismiss": "Dismiss"
+  },
   "nodeReplacement": {
     "quickFixAvailable": "Quick Fix Available",
     "installationRequired": "Installation Required",
