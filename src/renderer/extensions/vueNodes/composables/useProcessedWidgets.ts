@@ -45,13 +45,12 @@ import type {
   WidgetValue
 } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
-import { parseWidgetId } from '@/types/widgetId'
 import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
-import { getWidgetIdForNode } from '@/utils/litegraphUtil'
+import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
 type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
@@ -194,44 +193,6 @@ function getHostNode(
   return locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
 }
 
-function getLiveWidget(
-  rootGraph: LGraph | null,
-  nodeData: VueNodeData,
-  id: WidgetId
-): { node: LGraphNode; widget: IBaseWidget } | undefined {
-  if (!rootGraph) return undefined
-
-  const { nodeId } = parseWidgetId(id)
-  const locatorId = createNodeLocatorId(nodeData.subgraphId ?? null, nodeId)
-  const node = locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
-  if (!node) return undefined
-
-  const duplicateIndexByKey = new Map<string, number>()
-  for (const widget of node.widgets ?? []) {
-    const duplicateKey = `${widget.name}:${widget.type}`
-    const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
-    duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
-    if (getWidgetIdForNode(node, widget, duplicateIndex) === id) {
-      return { node, widget }
-    }
-  }
-}
-
-function getWidgetErrorTarget(
-  rootGraph: LGraph | null,
-  hostNode: LGraphNode | null,
-  liveWidget: IBaseWidget | undefined
-): WidgetErrorTarget | undefined {
-  if (!hostNode || !liveWidget) return undefined
-  const source = resolvePromotedWidgetSource(rootGraph, hostNode, liveWidget)
-  if (!source?.sourceExecutionId) return undefined
-
-  return {
-    executionId: source.sourceExecutionId,
-    widgetName: source.sourceWidgetName
-  }
-}
-
 export function isWidgetVisible(
   options: IWidgetOptions,
   showAdvanced: boolean,
@@ -369,6 +330,9 @@ export function computeProcessedWidgets({
 
   const ids = getWidgetIds(graphId, nodeData.id, widgetIds, widgetValueStore)
   const hostNode = getHostNode(rootGraph, nodeData)
+  const liveWidgetsById = hostNode
+    ? mapLiveWidgetsById(hostNode)
+    : new Map<WidgetId, IBaseWidget>()
   const slotMetadata = buildSlotMetadata(
     nodeData.inputs ?? hostNode?.inputs,
     hostNode?.graph ?? rootGraph
@@ -382,13 +346,16 @@ export function computeProcessedWidgets({
     if (!widgetState) return
 
     const renderState = widgetValueStore.getWidgetRenderState(id)
-    const live = getLiveWidget(rootGraph, nodeData, id)
-    const liveWidget = live?.widget
-    const sourceWidget =
+    const liveWidget = liveWidgetsById.get(id)
+    const live =
+      hostNode && liveWidget
+        ? { node: hostNode, widget: liveWidget }
+        : undefined
+    const promotedSource =
       hostNode && liveWidget
         ? resolvePromotedWidgetSource(rootGraph, hostNode, liveWidget)
-            ?.sourceWidget
         : undefined
+    const sourceWidget = promotedSource?.sourceWidget
     const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
     if (options.advanced === undefined) {
       options.advanced = renderState?.advanced
@@ -400,7 +367,13 @@ export function computeProcessedWidgets({
     const isDisabled = slotInfo?.linked || widgetState.disabled
     const widgetOptions = isDisabled ? { ...options, disabled: true } : options
     const value = widgetState.value as WidgetValue
-    const errorTarget = getWidgetErrorTarget(rootGraph, hostNode, liveWidget)
+    const errorTarget: WidgetErrorTarget | undefined =
+      promotedSource?.sourceExecutionId
+        ? {
+            executionId: promotedSource.sourceExecutionId,
+            widgetName: promotedSource.sourceWidgetName
+          }
+        : undefined
     const tooltip = renderState?.tooltip
     const hasLayoutSize = renderState?.hasLayoutSize ?? false
     const isDOMWidget = renderState?.isDOMWidget ?? false
