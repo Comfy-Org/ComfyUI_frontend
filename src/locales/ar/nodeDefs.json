@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "إنشاء موجه JSON لنموذج Ideogram 4.",
+    "display_name": "إنشاء موجه JSON (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "الجماليات",
+        "tooltip": "كلمات مفتاحية جمالية إلزامية (مثل: مزاجي، سينمائي، باهت الألوان)."
+      },
+      "background": {
+        "name": "الخلفية",
+        "tooltip": "وصف إلزامي لخلفية الصورة أو البيئة المحيطة."
+      },
+      "color_palette": {
+        "name": "لوحة الألوان",
+        "tooltip": "رموز ألوان Hex لتوجيه الألوان السائدة في الصورة. حتى ١٦ إدخالاً."
+      },
+      "element": {
+        "name": "عنصر",
+        "tooltip": "عناصر الموجه من عقدة إنشاء الصناديق المحيطة."
+      },
+      "high_level_description": {
+        "name": "وصف عالي المستوى",
+        "tooltip": "وصف اختياري للصورة في جملة أو جملتين. يُنصح به بشدة."
+      },
+      "lighting": {
+        "name": "الإضاءة",
+        "tooltip": "وصف إلزامي للإضاءة (مثل: ساعة ذهبية، إضاءة حواف، ظلال درامية)."
+      },
+      "medium": {
+        "name": "الوسيط",
+        "tooltip": "نوع الوسيط الإلزامي (مثل: صورة فوتوغرافية، رسم توضيحي، ثلاثي الأبعاد، لوحة، تصميم جرافيكي). عند اختيار النمط = صورة، اختر صورة فوتوغرافية."
+      },
+      "style": {
+        "name": "النمط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "موجه",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
     "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
@@ -2633,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "تحويل مصفوفة إلى نص",
+    "inputs": {
+      "array": {
+        "name": "مصفوفة"
+      },
+      "indent": {
+        "name": "المسافة البادئة",
+        "tooltip": "عدد المسافات لكل مستوى مسافة بادئة. ٠ ينتج نصاً مضغوطاً في سطر واحد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "تحويل قاموس إلى نص",
+    "inputs": {
+      "dictionary": {
+        "name": "قاموس"
+      },
+      "indent": {
+        "name": "المسافة البادئة",
+        "tooltip": "عدد المسافات لكل مستوى مسافة بادئة. ٠ ينتج نصاً مضغوطاً في سطر واحد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "تحويل صورة كوزموس إلى فيديو كامِن",
     "inputs": {
@@ -2691,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "رسم صناديق محيطة في لوحة الرسم. يخرج عناصر موجه Ideogram، وصناديق محيطة في مساحة البكسل، وصورة معاينة.",
+    "display_name": "إنشاء صناديق محيطة",
+    "inputs": {
+      "background": {
+        "name": "الخلفية",
+        "tooltip": "صورة اختيارية تُستخدم كخلفية في لوحة الرسم والمعاينة."
+      },
+      "editor_state": {
+        "name": "حالة المحرر",
+        "tooltip": "ارسم الصناديق المحيطة وحدد نوع كل صندوق، النص، الوصف، لوحة الألوان. ابدأ بعنصر الخلفية أولاً والعناصر الأمامية أخيراً."
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع لوحة الرسم وشبكة البكسل للصناديق المحيطة."
+      },
+      "width": {
+        "name": "العرض",
+        "tooltip": "عرض لوحة الرسم وشبكة البكسل للصناديق المحيطة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معاينة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "صناديق محيطة",
+        "tooltip": null
+      },
+      "2": {
+        "name": "عناصر",
         "tooltip": null
       }
     }
@@ -12025,6 +12138,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "الكتل.0."
+      },
+      "blocks_10_": {
+        "name": "الكتل.10."
+      },
+      "blocks_11_": {
+        "name": "الكتل.11."
+      },
+      "blocks_12_": {
+        "name": "الكتل.12."
+      },
+      "blocks_13_": {
+        "name": "الكتل.13."
+      },
+      "blocks_14_": {
+        "name": "الكتل.14."
+      },
+      "blocks_15_": {
+        "name": "الكتل.15."
+      },
+      "blocks_16_": {
+        "name": "الكتل.16."
+      },
+      "blocks_17_": {
+        "name": "الكتل.17."
+      },
+      "blocks_18_": {
+        "name": "الكتل.18."
+      },
+      "blocks_19_": {
+        "name": "الكتل.19."
+      },
+      "blocks_1_": {
+        "name": "الكتل.1."
+      },
+      "blocks_20_": {
+        "name": "الكتل.20."
+      },
+      "blocks_21_": {
+        "name": "الكتل.21."
+      },
+      "blocks_22_": {
+        "name": "الكتل.22."
+      },
+      "blocks_23_": {
+        "name": "الكتل.23."
+      },
+      "blocks_24_": {
+        "name": "الكتل.24."
+      },
+      "blocks_25_": {
+        "name": "الكتل.25."
+      },
+      "blocks_26_": {
+        "name": "الكتل.26."
+      },
+      "blocks_27_": {
+        "name": "الكتل.27."
+      },
+      "blocks_2_": {
+        "name": "الكتل.2."
+      },
+      "blocks_3_": {
+        "name": "الكتل.3."
+      },
+      "blocks_4_": {
+        "name": "الكتل.4."
+      },
+      "blocks_5_": {
+        "name": "الكتل.5."
+      },
+      "blocks_6_": {
+        "name": "الكتل.6."
+      },
+      "blocks_7_": {
+        "name": "الكتل.7."
+      },
+      "blocks_8_": {
+        "name": "الكتل.8."
+      },
+      "blocks_9_": {
+        "name": "الكتل.9."
+      },
+      "first_": {
+        "name": "الأول."
+      },
+      "last_": {
+        "name": "الأخير."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "ModelMergeLTXV",
     "inputs": {
@@ -17694,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "البذرة",
+    "inputs": {
+      "fixed": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "البذرة",
         "tooltip": null
       }
     }

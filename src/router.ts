@@ -43,8 +43,6 @@ function getBasePath(): string {
 const basePath = getBasePath()
 
 function trackPageView(): void {
-  if (!isCloud || typeof window === 'undefined') return
-
   useTelemetry()?.trackPageView(document.title, {
     path: window.location.href
   })
@@ -116,6 +114,10 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
     keys: ['oauth_request_id']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
+    keys: ['pricing']
   }
 ])
 
