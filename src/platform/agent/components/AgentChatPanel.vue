@@ -24,6 +24,10 @@ import { useAgentChatPrototype } from '@/platform/agent/composables/useAgentChat
 import { useAgentPanelStore } from '@/platform/agent/stores/agentPanelStore'
 import { useAuthStore } from '@/stores/authStore'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+
 import AgentChatEmptyState from './AgentChatEmptyState.vue'
 import AgentChatHeader from './AgentChatHeader.vue'
 import AgentChatHistory from './AgentChatHistory.vue'
@@ -51,6 +55,8 @@ const model = ref('Auto')
 const showHistory = ref(false)
 const promptTextarea = ref<{ focus: () => void } | null>(null)
 const reactions = ref<Record<string, 'liked' | 'disliked' | null>>({})
+const fileInput = ref<HTMLInputElement | null>(null)
+const attachments = ref<File[]>([])
 
 const userName = computed(
   () => authStore.currentUser?.displayName?.split(' ')[0] ?? ''
@@ -74,6 +80,17 @@ function onSubmit() {
 
 function close() {
   agentPanelStore.close()
+}
+
+function openFilePicker() {
+  fileInput.value?.click()
+}
+
+function onFilesSelected(e: Event) {
+  const files = (e.target as HTMLInputElement).files
+  if (!files) return
+  attachments.value = [...attachments.value, ...Array.from(files)]
+  ;(e.target as HTMLInputElement).value = ''
 }
 
 function toggleReaction(id: string, reaction: 'liked' | 'disliked') {
@@ -192,9 +209,26 @@ function onNewChatFromHistory() {
                 />
                 <PromptInputToolbar>
                   <PromptInputTools>
-                    <PromptInputButton :aria-label="$t('agent.attach')">
-                      <i class="icon-[lucide--paperclip] size-4" />
-                    </PromptInputButton>
+                    <input
+                      ref="fileInput"
+                      type="file"
+                      multiple
+                      class="hidden"
+                      @change="onFilesSelected"
+                    />
+                    <Tooltip :delay-duration="500">
+                      <TooltipTrigger>
+                        <PromptInputButton
+                          :aria-label="$t('agent.attach')"
+                          @click="openFilePicker"
+                        >
+                          <i class="icon-[lucide--paperclip] size-4" />
+                        </PromptInputButton>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" class="whitespace-nowrap">
+                        {{ $t('agent.attach') }}
+                      </TooltipContent>
+                    </Tooltip>
                     <PromptInputButton :aria-label="$t('agent.mention')">
                       <i class="icon-[lucide--at-sign] size-4" />
                     </PromptInputButton>

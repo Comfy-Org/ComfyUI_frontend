@@ -10,7 +10,7 @@
     "greetingNamed": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Ask Comfy Agent…",
-    "attach": "Attach files",
+    "attach": "Attach files or photos",
     "mention": "Mention",
     "send": "Send",
     "scrollToBottom": "Scroll to bottom",
