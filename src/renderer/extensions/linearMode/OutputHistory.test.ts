@@ -162,7 +162,7 @@ function makeInProgressItem(
   state: InProgressItem['state'] = 'skeleton',
   opts?: Partial<InProgressItem>
 ): InProgressItem {
-  return { id, jobId: `job-${id}`, state, ...opts }
+  return { id, jobId: `job-${id}`, seq: 0, state, ...opts }
 }
 
 let activeResult: RenderResult | null = null
@@ -388,7 +388,7 @@ describe('OutputHistory', () => {
       expect(lastEmission(result)).toEqual({ canShowPreview: true })
     })
 
-    it('emits showSkeleton for in-progress skeleton item', async () => {
+    it('emits canShowPreview for in-progress skeleton item', async () => {
       activeWorkflowInProgressItemsRef.value = [
         makeInProgressItem('ip1', 'skeleton')
       ]
@@ -398,10 +398,7 @@ describe('OutputHistory', () => {
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(result)).toMatchObject({
-        canShowPreview: true,
-        showSkeleton: true
-      })
+      expect(lastEmission(result)).toEqual({ canShowPreview: true })
     })
 
     it('emits latentPreviewUrl for in-progress latent item', async () => {
@@ -499,7 +496,7 @@ describe('OutputHistory', () => {
       expect(lastEmission(result).canShowPreview).toBe(false)
     })
 
-    it('emits skeleton for pending slot selection', async () => {
+    it('emits canShowPreview for pending slot selection', async () => {
       mayBeActiveWorkflowPendingRef.value = true
       runningTasksRef.value = [{ jobId: 'j1' }]
 
@@ -510,10 +507,7 @@ describe('OutputHistory', () => {
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(result)).toMatchObject({
-        canShowPreview: true,
-        showSkeleton: true
-      })
+      expect(lastEmission(result)).toEqual({ canShowPreview: true })
     })
   })
 
