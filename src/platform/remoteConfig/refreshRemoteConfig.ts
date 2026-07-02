@@ -1,6 +1,7 @@
 import { api } from '@/scripts/api'
 
 import {
+  cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
   remoteConfig,
   remoteConfigState
@@ -38,10 +39,14 @@ export async function refreshRemoteConfig(
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
-      if (useAuth)
+      if (useAuth) {
         cachedTeamWorkspacesEnabled.value = Boolean(
           config.team_workspaces_enabled
         )
+        cachedConsolidatedBillingEnabled.value = Boolean(
+          config.consolidated_billing_enabled
+        )
+      }
       return
     }
 
