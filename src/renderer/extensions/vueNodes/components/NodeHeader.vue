@@ -159,7 +159,7 @@ const headerShapeClass = computed(() => {
       case RenderShape.BOX:
         return 'rounded-none'
       case RenderShape.CARD:
-        return 'rounded-tl-xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+        return 'rounded-tl-xl rounded-br-xl rounded-tr-none rounded-bl-none'
       default:
         return 'rounded-xl'
     }

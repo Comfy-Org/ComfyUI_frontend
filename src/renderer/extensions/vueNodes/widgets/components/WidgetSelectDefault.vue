@@ -1,7 +1,7 @@
 <template>
   <WidgetLayoutField :widget>
     <ComboboxRoot
-      v-model:open="isOpen"
+      :open="isOpen"
       :model-value="comboboxValue"
       :disabled
       ignore-filter
@@ -45,27 +45,26 @@
             </button>
           </ComboboxTrigger>
           <slot />
-          <ComboboxTrigger as-child>
-            <button
-              type="button"
-              tabindex="-1"
+          <button
+            type="button"
+            tabindex="-1"
+            aria-hidden="true"
+            :disabled
+            class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
+            @click="handleOpenChange(true)"
+          >
+            <i
+              :class="
+                cn(
+                  'icon-[lucide--chevron-down] size-4',
+                  disabled
+                    ? 'bg-component-node-foreground-secondary'
+                    : 'bg-muted-foreground'
+                )
+              "
               aria-hidden="true"
-              :disabled
-              class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
-            >
-              <i
-                :class="
-                  cn(
-                    'icon-[lucide--chevron-down] size-4',
-                    disabled
-                      ? 'bg-component-node-foreground-secondary'
-                      : 'bg-muted-foreground'
-                  )
-                "
-                aria-hidden="true"
-              />
-            </button>
-          </ComboboxTrigger>
+            />
+          </button>
         </div>
       </ComboboxAnchor>
 
