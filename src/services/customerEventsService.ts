@@ -1,13 +1,13 @@
-import type { AxiosError, AxiosResponse } from 'axios'
+import type { AxiosError } from 'axios'
 import axios from 'axios'
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 
+import { useApiRequest } from '@/composables/useApiRequest'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
-import { isAbortError } from '@/utils/typeGuardUtil'
 
 export enum EventType {
   CREDIT_ADDED = 'credit_added',
@@ -34,9 +34,6 @@ const customerApiClient = axios.create({
 attachUnifiedRemintInterceptor(customerApiClient)
 
 export const useCustomerEventsService = () => {
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-
   watch(
     () => getComfyApiBaseUrl(),
     (url) => {
@@ -44,54 +41,31 @@ export const useCustomerEventsService = () => {
     }
   )
 
-  const handleRequestError = (
+  const mapError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ) => {
-    // Don't treat cancellation as an error
-    if (isAbortError(err)) return
-
-    let message: string
+  ): string => {
     if (!axios.isAxiosError(err)) {
-      message = `${context} failed: ${err instanceof Error ? err.message : String(err)}`
-    } else {
-      const axiosError = err as AxiosError<{ message: string }>
-      const status = axiosError.response?.status
-      if (status && routeSpecificErrors?.[status]) {
-        message = routeSpecificErrors[status]
-      } else {
-        message =
-          axiosError.response?.data?.message ??
-          `${context} failed with status ${status}`
-      }
+      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
     }
 
-    error.value = message
+    const axiosError = err as AxiosError<{ message: string }>
+    const status = axiosError.response?.status
+    if (status && routeSpecificErrors?.[status]) {
+      return routeSpecificErrors[status]
+    }
+
+    return (
+      axiosError.response?.data?.message ??
+      `${context} failed with status ${status}`
+    )
   }
 
-  const executeRequest = async <T>(
-    requestCall: () => Promise<AxiosResponse<T>>,
-    options: {
-      errorContext: string
-      routeSpecificErrors?: Record<number, string>
-    }
-  ): Promise<T | null> => {
-    const { errorContext, routeSpecificErrors } = options
-
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await requestCall()
-      return response.data
-    } catch (err) {
-      handleRequestError(err, errorContext, routeSpecificErrors)
-      return null
-    } finally {
-      isLoading.value = false
-    }
-  }
+  const { isLoading, error, executeRequest } = useApiRequest({
+    client: customerApiClient,
+    mapError
+  })
 
   function formatEventType(eventType: string) {
     switch (eventType) {
@@ -198,8 +172,8 @@ export const useCustomerEventsService = () => {
     }
 
     const result = await executeRequest<CustomerEventsResponse>(
-      () =>
-        customerApiClient.get('/customers/events', {
+      (client) =>
+        client.get('/customers/events', {
           params: { page, limit },
           headers: authHeaders
         }),

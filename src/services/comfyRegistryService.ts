@@ -1,9 +1,8 @@
-import type { AxiosError, AxiosResponse } from 'axios'
+import type { AxiosError } from 'axios'
 import axios from 'axios'
-import { ref } from 'vue'
 
+import { useApiRequest } from '@/composables/useApiRequest'
 import type { components, operations } from '@/types/comfyRegistryTypes'
-import { isAbortError } from '@/utils/typeGuardUtil'
 
 const API_BASE_URL = 'https://api.comfy.org'
 
@@ -22,10 +21,7 @@ const registryApiClient = axios.create({
  * Service for interacting with the Comfy Registry API
  */
 export const useComfyRegistryService = () => {
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-
-  const handleApiError = (
+  const mapError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
@@ -64,34 +60,10 @@ export const useComfyRegistryService = () => {
     return `${context}: ${axiosError.message}`
   }
 
-  /**
-   * Execute an API request with error and loading state handling
-   * @param apiCall - Function that returns a promise with the API call
-   * @param errorContext - Context description for error messages
-   * @param routeSpecificErrors - Optional map of status codes to custom error messages
-   * @returns Promise with the API response data or null if the request failed
-   */
-  const executeApiRequest = async <T>(
-    apiCall: () => Promise<AxiosResponse<T>>,
-    errorContext: string,
-    routeSpecificErrors?: Record<number, string>
-  ): Promise<T | null> => {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await apiCall()
-      return response.data
-    } catch (err) {
-      // Don't treat cancellations as errors
-      if (isAbortError(err)) return null
-
-      error.value = handleApiError(err, errorContext, routeSpecificErrors)
-      return null
-    } finally {
-      isLoading.value = false
-    }
-  }
+  const { isLoading, error, executeRequest } = useApiRequest({
+    client: registryApiClient,
+    mapError
+  })
 
   /**
    * Get the Comfy Node definitions in a specific version of a node pack
@@ -116,16 +88,15 @@ export const useComfyRegistryService = () => {
       404: 'The requested node, version, or comfy node does not exist'
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<
+    return executeRequest(
+      (client) =>
+        client.get<
           operations['ListComfyNodes']['responses'][200]['content']['application/json']
         >(endpoint, {
           params: queryParams,
           signal
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -140,12 +111,12 @@ export const useComfyRegistryService = () => {
     const endpoint = '/nodes/search'
     const errorContext = 'Failed to perform search'
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<
+    return executeRequest(
+      (client) =>
+        client.get<
           operations['searchNodes']['responses'][200]['content']['application/json']
         >(endpoint, { params, signal }),
-      errorContext
+      { errorContext }
     )
   }
 
@@ -162,13 +133,12 @@ export const useComfyRegistryService = () => {
       404: `Publisher not found: The publisher with ID ${publisherId} does not exist`
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<components['schemas']['Publisher']>(endpoint, {
+    return executeRequest(
+      (client) =>
+        client.get<components['schemas']['Publisher']>(endpoint, {
           signal
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -188,14 +158,13 @@ export const useComfyRegistryService = () => {
       404: `Publisher not found: The publisher with ID ${publisherId} does not exist`
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<components['schemas']['Node'][]>(endpoint, {
+    return executeRequest(
+      (client) =>
+        client.get<components['schemas']['Node'][]>(endpoint, {
           params,
           signal
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -215,14 +184,13 @@ export const useComfyRegistryService = () => {
       404: `Pack not found: Pack with ID ${packId} does not exist`
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.post<components['schemas']['Node']>(endpoint, null, {
+    return executeRequest(
+      (client) =>
+        client.post<components['schemas']['Node']>(endpoint, null, {
           params,
           signal
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -236,12 +204,12 @@ export const useComfyRegistryService = () => {
     const endpoint = '/nodes'
     const errorContext = 'Failed to list packs'
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<
+    return executeRequest(
+      (client) =>
+        client.get<
           operations['listAllNodes']['responses'][200]['content']['application/json']
         >(endpoint, { params, signal }),
-      errorContext
+      { errorContext }
     )
   }
 
@@ -260,14 +228,13 @@ export const useComfyRegistryService = () => {
       404: `Pack not found: Pack with ID ${packId} does not exist`
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<components['schemas']['NodeVersion'][]>(
-          endpoint,
-          { params, signal }
-        ),
-      errorContext,
-      routeSpecificErrors
+    return executeRequest(
+      (client) =>
+        client.get<components['schemas']['NodeVersion'][]>(endpoint, {
+          params,
+          signal
+        }),
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -286,13 +253,12 @@ export const useComfyRegistryService = () => {
       404: `Pack not found: Pack with ID ${packId} does not exist`
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<components['schemas']['NodeVersion']>(endpoint, {
+    return executeRequest(
+      (client) =>
+        client.get<components['schemas']['NodeVersion']>(endpoint, {
           signal
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -309,13 +275,12 @@ export const useComfyRegistryService = () => {
       404: `Pack not found: The pack with ID ${packId} does not exist`
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<components['schemas']['Node']>(endpoint, {
+    return executeRequest(
+      (client) =>
+        client.get<components['schemas']['Node']>(endpoint, {
           signal
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -350,13 +315,12 @@ export const useComfyRegistryService = () => {
       404: `Comfy node not found: The node with name ${nodeName} does not exist in the registry`
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.get<components['schemas']['Node']>(endpoint, {
+    return executeRequest(
+      (client) =>
+        client.get<components['schemas']['Node']>(endpoint, {
           signal
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -397,15 +361,16 @@ export const useComfyRegistryService = () => {
       node_versions: nodeVersions
     }
 
-    return executeApiRequest(
-      () =>
-        registryApiClient.post<
-          components['schemas']['BulkNodeVersionsResponse']
-        >(endpoint, requestBody, {
-          signal
-        }),
-      errorContext,
-      routeSpecificErrors
+    return executeRequest(
+      (client) =>
+        client.post<components['schemas']['BulkNodeVersionsResponse']>(
+          endpoint,
+          requestBody,
+          {
+            signal
+          }
+        ),
+      { errorContext, routeSpecificErrors }
     )
   }
 
