@@ -10,7 +10,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
 const VERCEL_BRANCH_PREFIX =
-  __VERCEL_ENV__ === 'preview' && __VERCEL_GIT_COMMIT_REF__
+  __VERCEL_ENV__ !== 'production' && __VERCEL_GIT_COMMIT_REF__
     ? `[${__VERCEL_GIT_COMMIT_REF__}] `
     : ''
 
