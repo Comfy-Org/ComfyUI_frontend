@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 import SubscriptionRequiredDialogContentWorkspace from './SubscriptionRequiredDialogContentWorkspace.vue'
 
@@ -17,25 +17,10 @@ const mockHandleResubscribe = vi.fn()
 const mockHandleSuccessClose = vi.fn()
 const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
+const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: () => ({
-    checkoutStep: mockCheckoutStep,
-    isLoadingPreview: ref(false),
-    loadingTier: ref(null),
-    isSubscribing: ref(false),
-    isResubscribing: ref(false),
-    previewData: mockPreviewData,
-    selectedTierKey: ref('standard'),
-    selectedBillingCycle: ref('yearly'),
-    isPolling: ref(false),
-    handleSubscribeClick: mockHandleSubscribeClick,
-    handleBackToPricing: mockHandleBackToPricing,
-    handleAddCreditCard: mockHandleAddCreditCard,
-    handleConfirmTransition: mockHandleConfirmTransition,
-    handleResubscribe: mockHandleResubscribe,
-    handleSuccessClose: mockHandleSuccessClose
-  })
+  useSubscriptionCheckout: mockUseSubscriptionCheckout
 }))
 
 const i18n = createI18n({
@@ -91,7 +76,7 @@ const SuccessStub = {
 function renderComponent(
   props: {
     onClose?: () => void
-    reason?: SubscriptionDialogReason
+    reason?: PaymentIntentSource
     isPersonal?: boolean
   } = {}
 ) {
@@ -121,6 +106,23 @@ function renderComponent(
 describe('SubscriptionRequiredDialogContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseSubscriptionCheckout.mockReturnValue({
+      checkoutStep: mockCheckoutStep,
+      isLoadingPreview: ref(false),
+      loadingTier: ref(null),
+      isSubscribing: ref(false),
+      isResubscribing: ref(false),
+      previewData: mockPreviewData,
+      selectedTierKey: ref('standard'),
+      selectedBillingCycle: ref('yearly'),
+      isPolling: ref(false),
+      handleSubscribeClick: mockHandleSubscribeClick,
+      handleBackToPricing: mockHandleBackToPricing,
+      handleAddCreditCard: mockHandleAddCreditCard,
+      handleConfirmTransition: mockHandleConfirmTransition,
+      handleResubscribe: mockHandleResubscribe,
+      handleSuccessClose: mockHandleSuccessClose
+    })
     mockCheckoutStep.value = 'pricing'
     mockPreviewData.value = null
   })
@@ -130,6 +132,15 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.getByTestId('pricing-table')).toBeInTheDocument()
     expect(screen.queryByTestId('add-payment-preview')).not.toBeInTheDocument()
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
+  })
+
+  it('passes the reason into subscription checkout', () => {
+    renderComponent({ reason: 'out_of_credits' })
+
+    expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
+      expect.any(Function),
+      'out_of_credits'
+    )
   })
 
   it('shows the team workspace header by default', () => {

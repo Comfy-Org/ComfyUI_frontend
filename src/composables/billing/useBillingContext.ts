@@ -7,6 +7,7 @@ import {
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
@@ -281,8 +282,8 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.requireActiveSubscription()
   }
 
-  function showSubscriptionDialog() {
-    return activeContext.value.showSubscriptionDialog()
+  function showSubscriptionDialog(options?: SubscriptionDialogOptions) {
+    return activeContext.value.showSubscriptionDialog(options)
   }
 
   return {

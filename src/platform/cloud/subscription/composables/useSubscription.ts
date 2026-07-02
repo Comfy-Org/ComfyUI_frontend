@@ -15,7 +15,7 @@ import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
@@ -237,16 +237,7 @@ function useSubscriptionInternal() {
     })
   }, reportError)
 
-  const showSubscriptionDialog = (options?: {
-    reason?: SubscriptionDialogReason
-  }) => {
-    if (isCloud) {
-      useTelemetry()?.trackSubscription('modal_opened', {
-        current_tier: subscriptionTier.value?.toLowerCase(),
-        reason: options?.reason
-      })
-    }
-
+  const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
     void showSubscriptionRequiredDialog(options)
   }
 
@@ -279,7 +270,7 @@ function useSubscriptionInternal() {
     await fetchSubscriptionStatus()
 
     if (!isSubscribedOrIsNotCloud.value) {
-      showSubscriptionDialog()
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 
