@@ -13,6 +13,26 @@ type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
 type ManagerDatabaseSource =
   ManagerComponents['schemas']['ManagerDatabaseSource']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
+type TaskHistoryItem = ManagerComponents['schemas']['TaskHistoryItem']
+
+const { mockAppApi, mockClientId } = vi.hoisted(() => ({
+  mockAppApi: new EventTarget(),
+  mockClientId: { value: 'client-id' }
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    api: mockAppApi
+  }
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    get clientId() {
+      return mockClientId.value
+    }
+  }
+}))
 
 vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
@@ -79,6 +99,7 @@ describe('useComfyManagerStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    mockClientId.value = 'client-id'
     mockManagerService = {
       isLoading: ref(false),
       error: ref(null),
@@ -499,6 +520,229 @@ describe('useComfyManagerStore', () => {
       // Pack should be accessible by base name with version preserved
       expect(store.getInstalledPackVersion('disabled-pack')).toBe('2.0.0')
       expect(store.isPackInstalled('disabled-pack')).toBe(true)
+    })
+  })
+
+  describe('task state', () => {
+    it('cleans installing state when manager reports task completion', async () => {
+      const store = useComfyManagerStore()
+
+      await store.installPack.call({
+        id: 'event-pack',
+        repository: 'https://github.com/test/event-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+      const taskId = vi.mocked(mockManagerService.installPack).mock.calls[0][1]
+
+      mockAppApi.dispatchEvent(
+        new CustomEvent('cm-task-completed', { detail: {} })
+      )
+      mockAppApi.dispatchEvent(
+        new CustomEvent('cm-task-completed', {
+          detail: { ui_id: 'unknown-task' }
+        })
+      )
+      expect(store.isPackInstalling('event-pack')).toBe(true)
+
+      mockAppApi.dispatchEvent(
+        new CustomEvent('cm-task-completed', { detail: { ui_id: taskId } })
+      )
+
+      expect(store.isPackInstalling('event-pack')).toBe(false)
+    })
+
+    it('partitions task ids and logs by task status', async () => {
+      const store = useComfyManagerStore()
+      store.taskLogs = [
+        { taskName: 'Success', taskId: 'success', logs: [] },
+        { taskName: 'Failed', taskId: 'failed', logs: [] },
+        { taskName: 'Unknown', taskId: 'unknown', logs: [] }
+      ]
+      store.taskHistory = {
+        success: {
+          ui_id: 'success',
+          status: { status_str: 'success' }
+        } as TaskHistoryItem,
+        failed: {
+          ui_id: 'failed',
+          status: { status_str: 'error' }
+        } as TaskHistoryItem,
+        unknown: {
+          ui_id: 'unknown'
+        } as TaskHistoryItem
+      }
+
+      await nextTick()
+
+      expect(store.succeededTasksIds).toEqual(['success'])
+      expect(store.failedTasksIds).toEqual(['failed', 'unknown'])
+      expect(store.succeededTasksLogs.map((log) => log.taskId)).toEqual([
+        'success'
+      ])
+      expect(store.failedTasksLogs.map((log) => log.taskId)).toEqual([
+        'failed',
+        'unknown'
+      ])
+    })
+
+    it('records client-side task errors with fallback client ids and messages', async () => {
+      mockClientId.value = ''
+      vi.mocked(mockManagerService.installPack).mockRejectedValueOnce(
+        new Error('install failed')
+      )
+      const store = useComfyManagerStore()
+
+      await store.installPack.call({
+        id: 'error-pack',
+        repository: 'https://github.com/test/error-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+      const taskId = vi.mocked(mockManagerService.installPack).mock.calls[0][1]
+
+      expect(store.taskHistory[taskId].client_id).toBe('unknown')
+      expect(store.taskHistory[taskId].status?.messages).toEqual([
+        'install failed'
+      ])
+      expect(store.isProcessingTasks).toBe(false)
+    })
+
+    it('records string task errors', async () => {
+      vi.mocked(mockManagerService.installPack).mockRejectedValueOnce(
+        'install failed'
+      )
+      const store = useComfyManagerStore()
+
+      await store.installPack.call({
+        id: 'string-error-pack',
+        repository: 'https://github.com/test/string-error-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+      const taskId = vi.mocked(mockManagerService.installPack).mock.calls[0][1]
+
+      expect(store.taskHistory[taskId].status?.messages).toEqual([
+        'install failed'
+      ])
+    })
+
+    it('resets task state and clears logs', async () => {
+      const store = useComfyManagerStore()
+      await store.installPack.call({
+        id: 'reset-pack',
+        repository: 'https://github.com/test/reset-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+      store.clearLogs()
+      store.taskHistory = {
+        success: {
+          ui_id: 'success',
+          status: { status_str: 'success' }
+        } as TaskHistoryItem
+      }
+
+      await nextTick()
+      store.resetTaskState()
+
+      expect(store.taskLogs).toEqual([])
+      expect(store.taskHistory).toEqual({})
+      expect(store.succeededTasksIds).toEqual([])
+      expect(store.isPackInstalling('reset-pack')).toBe(false)
+    })
+  })
+
+  describe('edge cases', () => {
+    it('ignores installed entries without pack ids', async () => {
+      const store = useComfyManagerStore()
+
+      await triggerPacksChange(
+        {
+          nameless: {
+            enabled: true,
+            cnr_id: undefined,
+            aux_id: undefined,
+            ver: '1.0.0'
+          }
+        },
+        store
+      )
+
+      expect(store.installedPacksIds.size).toBe(0)
+      expect(store.isPackInstalled('nameless')).toBe(false)
+    })
+
+    it('marks the store fresh when refresh returns no packs', async () => {
+      vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(null)
+      const store = useComfyManagerStore()
+
+      await store.refreshInstalledList()
+
+      expect(store.installedPacks).toEqual({})
+    })
+
+    it('ignores install requests without ids', async () => {
+      const store = useComfyManagerStore()
+
+      await store.installPack.call({
+        id: '',
+        repository: 'https://github.com/test/missing-id',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+
+      expect(mockManagerService.installPack).not.toHaveBeenCalled()
+    })
+
+    it('handles installed package install actions for version changes and enabling', async () => {
+      const store = useComfyManagerStore()
+      await triggerPacksChange(
+        {
+          'change-pack': {
+            enabled: true,
+            cnr_id: 'change-pack',
+            aux_id: undefined,
+            ver: '1.0.0'
+          },
+          'enable-pack': {
+            enabled: true,
+            cnr_id: 'enable-pack',
+            aux_id: undefined,
+            ver: 'latest'
+          }
+        },
+        store
+      )
+
+      await store.installPack.call({
+        id: 'change-pack',
+        repository: 'https://github.com/test/change-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: '2.0.0',
+        version: '2.0.0'
+      })
+      await store.installPack.call({
+        id: 'enable-pack',
+        repository: 'https://github.com/test/enable-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+
+      expect(mockManagerService.installPack).toHaveBeenCalledTimes(2)
     })
   })
 })
