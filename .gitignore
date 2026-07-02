@@ -16,6 +16,7 @@ yarn.lock
 .eslintcache
 .prettiercache
 .stylelintcache
+.fallow/
 
 node_modules
 .pnpm-store
