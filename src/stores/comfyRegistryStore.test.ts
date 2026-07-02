@@ -208,6 +208,56 @@ describe('useComfyRegistryStore', () => {
     )
   })
 
+  it('should reuse cached packs by ID', async () => {
+    const store = useComfyRegistryStore()
+
+    await store.getPacksByIds.call(['test-pack-id'])
+    const result = await store.getPacksByIds.call(['test-pack-id'])
+
+    expect(result).toEqual([mockNodePack])
+    expect(mockRegistryService.listAllPacks).toHaveBeenCalledTimes(1)
+  })
+
+  it('should ignore missing packs by ID', async () => {
+    mockRegistryService.listAllPacks.mockResolvedValueOnce({
+      nodes: [fromAny<components['schemas']['Node'], unknown>({ name: 'bad' })],
+      total: 1,
+      page: 1,
+      limit: 10
+    })
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(['unknown-pack-id'])
+
+    expect(result).toEqual([])
+  })
+
+  it('should handle empty pack lookup responses', async () => {
+    mockRegistryService.listAllPacks.mockResolvedValueOnce(null)
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(['unknown-pack-id'])
+
+    expect(result).toEqual([])
+  })
+
+  it('should filter undefined pack IDs before lookup', async () => {
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call(
+      fromAny<components['schemas']['Node']['id'][], unknown>([
+        'test-pack-id',
+        undefined
+      ])
+    )
+
+    expect(result).toEqual([mockNodePack])
+    expect(mockRegistryService.listAllPacks).toHaveBeenCalledWith(
+      { node_id: ['test-pack-id'] },
+      expect.any(Object)
+    )
+  })
+
   describe('inferPackFromNodeName', () => {
     it('should fetch a pack by comfy node name', async () => {
       const store = useComfyRegistryStore()
