@@ -8,13 +8,26 @@ import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
 
-const { appState } = vi.hoisted(() => ({
-  appState: { node: null as unknown }
+const { appState, outputState } = vi.hoisted(() => ({
+  appState: { node: null as unknown },
+  outputState: { outputs: undefined as unknown }
 }))
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: { getNodeById: () => appState.node } } }
 }))
+
+vi.mock('@/stores/nodeOutputStore', async () => {
+  const { ref } = await import('vue')
+  return {
+    useNodeOutputStore: () => ({
+      nodeOutputs: ref({}),
+      nodePreviewImages: ref({}),
+      getNodeImageUrls: () => undefined,
+      getNodeOutputs: () => outputState.outputs
+    })
+  }
+})
 
 const ctx = {
   measureText: (s: string) => ({ width: s.length * 7 }),
@@ -27,6 +40,8 @@ const ctx = {
   save: () => {},
   restore: () => {},
   beginPath: () => {},
+  arc: () => {},
+  fill: () => {},
   rect: () => {},
   clip: () => {},
   font: '',
@@ -128,9 +143,22 @@ const box = (over: Partial<BoundingBox> = {}): BoundingBox => ({
   ...over
 })
 
+function makeConnectedNode() {
+  return {
+    widgets: [
+      { name: 'width', value: 512 },
+      { name: 'height', value: 512 }
+    ],
+    findInputSlot: (name: string) => (name === 'bboxes' ? 1 : -1),
+    getInputNode: () => null,
+    isInputConnected: () => true
+  }
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   appState.node = makeNode()
+  outputState.outputs = undefined
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     void Promise.resolve().then(() => cb(0))
     return 1
@@ -236,6 +264,67 @@ describe('useBoundingBoxes inline editor', () => {
     await flush()
     c.onInlineKeyDown({ key: 'Escape' } as KeyboardEvent)
     expect(c.inlineEditor.value).toBeNull()
+  })
+})
+
+describe('useBoundingBoxes incoming bboxes input', () => {
+  it('overrides the canvas when the bboxes input is connected', () => {
+    appState.node = makeConnectedNode()
+    outputState.outputs = {
+      input_bboxes: [box({ x: 0, y: 0, width: 100, height: 100 })]
+    }
+    const c = setup([])
+    expect(c.modelValue.value).toHaveLength(1)
+    expect(c.modelValue.value[0].width).toBe(100)
+  })
+
+  it('replaces existing drawn boxes with the incoming ones', () => {
+    appState.node = makeConnectedNode()
+    outputState.outputs = { input_bboxes: [box({ x: 0, width: 100 })] }
+    const c = setup([box({ x: 200, width: 300 }), box({ x: 400, width: 50 })])
+    expect(c.modelValue.value).toHaveLength(1)
+    expect(c.modelValue.value[0].width).toBe(100)
+  })
+
+  it('ignores incoming output when the input is not connected', () => {
+    outputState.outputs = { input_bboxes: [box({ x: 0, width: 100 })] }
+    const c = setup([])
+    expect(c.modelValue.value).toHaveLength(0)
+  })
+})
+
+describe('useBoundingBoxes grid snapping', () => {
+  it('snaps a drawn box to the grid when snap is enabled', async () => {
+    const c = setup()
+    c.setGridPattern('dots')
+    c.toggleSnap()
+    c.onPointerDown(pe(10, 10))
+    c.onCanvasPointerMove(pe(60, 60))
+    c.onDocPointerUp(pe(60, 60))
+    await flush()
+    expect(c.modelValue.value).toHaveLength(1)
+    expect(c.modelValue.value[0].x).toBe(64)
+    expect(c.modelValue.value[0].width).toBe(256)
+  })
+
+  it('does not snap when snap is disabled', async () => {
+    const c = setup()
+    c.setGridPattern('dots')
+    c.onPointerDown(pe(10, 10))
+    c.onCanvasPointerMove(pe(55, 55))
+    c.onDocPointerUp(pe(55, 55))
+    await flush()
+    expect(c.modelValue.value[0].width).toBe(230)
+  })
+
+  it('does not snap when the grid pattern is none', async () => {
+    const c = setup()
+    c.toggleSnap()
+    c.onPointerDown(pe(10, 10))
+    c.onCanvasPointerMove(pe(55, 55))
+    c.onDocPointerUp(pe(55, 55))
+    await flush()
+    expect(c.modelValue.value[0].width).toBe(230)
   })
 })
 

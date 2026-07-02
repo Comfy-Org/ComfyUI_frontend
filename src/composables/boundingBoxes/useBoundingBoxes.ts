@@ -15,6 +15,7 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
@@ -25,6 +26,12 @@ const HANDLE_PX = 8
 const DIMENSION_STEP = 16
 const BG_DIM = 0.75
 const MAX_ELEMENT_COLORS = 5
+const GRID_PX = 64
+const MAX_GRID_CELLS = 32
+const DOT_COLOR = 'rgba(255,255,255,0.18)'
+const DOT_RADIUS = 1
+
+type GridPattern = 'none' | 'dots'
 
 interface InlineEditorState {
   value: string
@@ -57,6 +64,8 @@ export function useBoundingBoxes(
   const hoverTagIndex = ref<number | null>(null)
   const bgImage = ref<HTMLImageElement | null>(null)
   const inlineEditor = ref<InlineEditorState | null>(null)
+  const gridPattern = ref<GridPattern>('none')
+  const snapToGrid = ref(false)
 
   const { width: containerWidth } = useElementSize(canvasContainer)
 
@@ -94,6 +103,73 @@ export function useBoundingBoxes(
 
   function clampToCanvas(n: number) {
     return Math.max(0, Math.min(1, n))
+  }
+
+  function gridSpec() {
+    const stepX = Math.max(
+      GRID_PX,
+      Math.ceil(widthValue.value / MAX_GRID_CELLS)
+    )
+    const stepY = Math.max(
+      GRID_PX,
+      Math.ceil(heightValue.value / MAX_GRID_CELLS)
+    )
+    return {
+      fx: stepX / (widthValue.value || 1),
+      fy: stepY / (heightValue.value || 1)
+    }
+  }
+
+  const snapEnabled = computed(
+    () => snapToGrid.value && gridPattern.value !== 'none'
+  )
+
+  function snapFraction(value: number, step: number) {
+    return step > 0 ? clampToCanvas(Math.round(value / step) * step) : value
+  }
+
+  function snapRegion(region: Region, mode: HitMode): Region {
+    if (!snapEnabled.value) return region
+    const { fx, fy } = gridSpec()
+    if (mode === 'move') {
+      return {
+        ...region,
+        x: Math.min(snapFraction(region.x, fx), 1 - region.w),
+        y: Math.min(snapFraction(region.y, fy), 1 - region.h)
+      }
+    }
+    const x1 = snapFraction(region.x, fx)
+    const y1 = snapFraction(region.y, fy)
+    const x2 = snapFraction(region.x + region.w, fx)
+    const y2 = snapFraction(region.y + region.h, fy)
+    return {
+      ...region,
+      x: x1,
+      y: y1,
+      w: Math.max(0, x2 - x1),
+      h: Math.max(0, y2 - y1)
+    }
+  }
+
+  function setGridPattern(pattern: GridPattern) {
+    gridPattern.value = pattern
+  }
+
+  function toggleSnap() {
+    snapToGrid.value = !snapToGrid.value
+  }
+
+  function drawDots(ctx: CanvasRenderingContext2D, W: number, H: number) {
+    const { fx, fy } = gridSpec()
+    if (fx <= 0 || fy <= 0) return
+    ctx.fillStyle = DOT_COLOR
+    for (let gx = 0; gx <= 1.0001; gx += fx) {
+      for (let gy = 0; gy <= 1.0001; gy += fy) {
+        ctx.beginPath()
+        ctx.arc(gx * W, gy * H, DOT_RADIUS, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
   }
 
   function logicalSize() {
@@ -145,6 +221,8 @@ export function useBoundingBoxes(
       ctx.fillStyle = `rgba(0,0,0,${BG_DIM})`
       ctx.fillRect(0, 0, W, H)
     }
+
+    if (gridPattern.value === 'dots') drawDots(ctx, W, H)
 
     const showActive = focused.value || isNodeSelected.value
     const aIdx = showActive ? activeIndex.value : -1
@@ -366,7 +444,7 @@ export function useBoundingBoxes(
     const dx = mN.x - dragStartNorm.value.x
     const dy = mN.y - dragStartNorm.value.y
     const nb = applyDrag(dragMode.value, boxAtStart.value, dx, dy)
-    state.value.regions[activeIndex.value] = nb
+    state.value.regions[activeIndex.value] = snapRegion(nb, dragMode.value)
     requestDraw()
   }
 
@@ -530,6 +608,34 @@ export function useBoundingBoxes(
   watch(isNodeSelected, () => requestDraw())
   watch([widthValue, heightValue], () => syncState())
 
+  watch(
+    litegraphNode,
+    (node) => {
+      const props = node?.properties as
+        | { bboxGridPattern?: unknown; bboxSnapToGrid?: unknown }
+        | undefined
+      if (!props) return
+      if (props.bboxGridPattern === 'dots' || props.bboxGridPattern === 'none')
+        gridPattern.value = props.bboxGridPattern
+      if (typeof props.bboxSnapToGrid === 'boolean')
+        snapToGrid.value = props.bboxSnapToGrid
+    },
+    { immediate: true }
+  )
+  watch(gridPattern, (pattern) => {
+    const props = litegraphNode.value?.properties as
+      | Record<string, unknown>
+      | undefined
+    if (props) props.bboxGridPattern = pattern
+    requestDraw()
+  })
+  watch(snapToGrid, (enabled) => {
+    const props = litegraphNode.value?.properties as
+      | Record<string, unknown>
+      | undefined
+    if (props) props.bboxSnapToGrid = enabled
+  })
+
   const nodeOutputStore = useNodeOutputStore()
   function applyImageDimensions(naturalWidth: number, naturalHeight: number) {
     const node = litegraphNode.value
@@ -580,10 +686,38 @@ export function useBoundingBoxes(
     }
     img.src = url
   }
+  let lastIncoming = ''
+  function applyIncomingBoxes() {
+    const node = litegraphNode.value
+    if (!node) return
+    const slot = node.findInputSlot('bboxes')
+    if (slot < 0 || !node.isInputConnected(slot)) {
+      lastIncoming = ''
+      return
+    }
+    const outputs = nodeOutputStore.getNodeOutputs(node) as
+      | NodeOutputWith<{ input_bboxes?: BoundingBox[] }>
+      | undefined
+    const incoming = outputs?.input_bboxes
+    if (!incoming?.length) return
+    const key = JSON.stringify(incoming)
+    if (key === lastIncoming) return
+    lastIncoming = key
+    state.value.regions = fromBoundingBoxes(
+      incoming,
+      widthValue.value,
+      heightValue.value
+    )
+    activeIndex.value = state.value.regions.length ? 0 : -1
+    syncState()
+  }
+
   watch(() => nodeOutputStore.nodeOutputs, updateBgImage, { deep: true })
   watch(() => nodeOutputStore.nodePreviewImages, updateBgImage, { deep: true })
+  watch(() => nodeOutputStore.nodeOutputs, applyIncomingBoxes, { deep: true })
 
   updateBgImage()
+  applyIncomingBoxes()
   void nextTick(() => requestDraw())
 
   onBeforeUnmount(() => {
@@ -608,6 +742,10 @@ export function useBoundingBoxes(
     commitInlineEditor,
     setActiveType,
     clearAll,
-    syncState
+    syncState,
+    gridPattern,
+    snapToGrid,
+    setGridPattern,
+    toggleSnap
   }
 }
