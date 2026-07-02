@@ -71,5 +71,35 @@ describe('getAssetUrl', () => {
 
   it('omits the subfolder param for an asset at the type root', () => {
     expect(getAssetUrl(createAsset())).not.toContain('subfolder')
+
+  it('builds encoded view URLs with type and subfolder', () => {
+    const url = getAssetUrl(
+      createAsset({
+        name: 'folder image.png',
+        user_metadata: { subfolder: 'nested/path' }
+      })
+    )
+
+    expect(mockApiURL).toHaveBeenCalledWith(
+      '/view?filename=folder+image.png&type=output&subfolder=nested%2Fpath'
+    )
+    expect(url).toBe(
+      'http://localhost:8188/api/view?filename=folder+image.png&type=output&subfolder=nested%2Fpath'
+    )
+  })
+
+  it('uses preview URL type and omits empty subfolders', () => {
+    getAssetUrl(
+      createAsset({
+        name: 'folder image.png',
+        preview_url: '/api/view?filename=image.png&type=temp',
+        tags: ['output'],
+        user_metadata: { subfolder: '' }
+      })
+    )
+
+    expect(mockApiURL).toHaveBeenCalledWith(
+      '/view?filename=folder+image.png&type=temp'
+    )
   })
 })
