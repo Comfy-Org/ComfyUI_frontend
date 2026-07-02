@@ -2967,7 +2967,6 @@
       "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
       "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
       "title": "{client} يطلب الوصول",
-      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {

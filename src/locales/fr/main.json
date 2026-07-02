@@ -2967,7 +2967,6 @@
       "sessionErrorToastSummary": "Impossible de poursuivre la connexion OAuth",
       "subtitle": "Connectez-vous à {resource} pour continuer",
       "title": "{client} souhaite accéder",
-      "workspaceHelp": "Les autorisations s’appliquent uniquement à cet espace de travail.",
       "workspaceLabel": "Espace de travail"
     },
     "scopes": {

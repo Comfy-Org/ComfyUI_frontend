@@ -2967,7 +2967,6 @@
       "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
       "subtitle": "Faça login em {resource} para continuar",
       "title": "{client} deseja acesso",
-      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
       "workspaceLabel": "Workspace"
     },
     "scopes": {

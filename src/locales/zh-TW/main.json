@@ -2967,7 +2967,6 @@
       "sessionErrorToastSummary": "無法繼續 OAuth 登入",
       "subtitle": "登入 {resource} 以繼續",
       "title": "{client} 想要存取",
-      "workspaceHelp": "權限僅適用於此工作區。",
       "workspaceLabel": "工作區"
     },
     "scopes": {

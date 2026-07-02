@@ -2967,7 +2967,6 @@
       "sessionErrorToastSummary": "OAuth 로그인 진행을 계속할 수 없습니다",
       "subtitle": "계속하려면 {resource}에 로그인하세요",
       "title": "{client}에서 접근을 요청합니다",
-      "workspaceHelp": "권한은 이 워크스페이스에만 적용됩니다.",
       "workspaceLabel": "워크스페이스"
     },
     "scopes": {
