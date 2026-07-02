@@ -61,6 +61,11 @@
 
 @theme {
   --color-site-dropdown: #332b38;
+  --color-site-bg-soft: color-mix(
+    in srgb,
+    var(--color-primary-comfy-ink) 88%,
+    black 12%
+  );
   --color-primary-comfy-yellow: #f2ff59;
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-ink-light: #2a2330;
@@ -261,6 +266,6 @@ video::-webkit-media-controls-panel {
 
 :root {
   --site-bg: var(--color-primary-comfy-ink);
-  --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
+  --site-bg-soft: var(--color-site-bg-soft);
   --site-border-subtle: rgb(255 255 255 / 0.1);
 }

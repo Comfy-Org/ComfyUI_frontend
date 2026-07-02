@@ -2484,6 +2484,8 @@
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized",
+    "loadEventsError": "Failed to load activity. Please try again.",
+    "loadEventsUnknownError": "Something went wrong while loading activity. Please refresh and try again.",
     "eventTypes": {
       "creditAdded": "Credits Added",
       "accountCreated": "Account Created",

@@ -8,6 +8,7 @@ import {
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { adjustColor } from '@/utils/colorUtil'
@@ -2940,8 +2941,11 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
+
     const link = new LLink(
-      ++graph.state.lastLinkId,
+      linkId,
       maybeCommonType || input.type || output.type,
       this.id,
       outputIndex,
@@ -3051,7 +3055,7 @@ export class LGraphNode
     // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
     if (afterRerouteId == null || !fromLastFloatingReroute) {
       const link = new LLink(
-        -1,
+        toLinkId(-1),
         slot.type,
         outputIndex === -1 ? -1 : id,
         outputIndex,
