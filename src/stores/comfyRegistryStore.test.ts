@@ -1,3 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -173,9 +176,10 @@ describe('useComfyRegistryStore', () => {
 
   it('should return null when fetching a pack with null ID', async () => {
     const store = useComfyRegistryStore()
-    vi.spyOn(store.getPackById, 'call').mockResolvedValueOnce(null)
 
-    const result = await store.getPackById.call(null!)
+    const result = await store.getPackById.call(
+      fromAny<Parameters<typeof store.getPackById.call>[0], unknown>(null)
+    )
 
     expect(result).toBeNull()
     expect(mockRegistryService.getPackById).not.toHaveBeenCalled()

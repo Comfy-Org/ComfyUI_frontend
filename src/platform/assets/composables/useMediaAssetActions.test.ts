@@ -1,5 +1,7 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
+import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -16,6 +18,14 @@ import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
+
+const capturedFilenames = vi.hoisted(() => ({ values: [] as string[] }))
+const capturedAnnotatedPaths = vi.hoisted(() => ({
+  values: [] as Array<{
+    item: { filename: string; subfolder?: string; type?: string }
+    options: { rootFolder?: string }
+  }>
+}))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -71,9 +81,10 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({})
 }))
 
+const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: () => ({
-    copyToClipboard: vi.fn()
+    copyToClipboard: mockCopyToClipboard
   })
 }))
 
@@ -91,34 +102,50 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
-const litegraphServiceMock = vi.hoisted(() => ({
-  addNodeOnGraph: vi.fn<(nodeDef: unknown, options?: unknown) => LGraphNode>(),
-  getCanvasCenter: vi.fn<() => [number, number]>()
-}))
+const mockAddNodeOnGraph = vi.hoisted(() => vi.fn())
+const mockGetCanvasCenter = vi.hoisted(() => vi.fn())
 vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => litegraphServiceMock
-}))
-
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    nodeDefsByName: {
-      LoadImage: {
-        name: 'LoadImage',
-        display_name: 'Load Image'
-      }
-    }
+  useLitegraphService: () => ({
+    addNodeOnGraph: mockAddNodeOnGraph,
+    getCanvasCenter: mockGetCanvasCenter
   })
 }))
 
-vi.mock('@/utils/loaderNodeUtil', () => ({
-  detectNodeTypeFromFilename: vi.fn(() => ({
-    nodeType: 'LoadImage',
-    widgetName: 'image'
-  }))
+const mockNodeDefsByName = vi.hoisted(() => ({
+  value: {
+    LoadImage: {
+      name: 'LoadImage',
+      display_name: 'Load Image'
+    }
+  } as Record<string, unknown>
+}))
+vi.mock('@/stores/nodeDefStore', () => ({
+  useNodeDefStore: () => ({
+    nodeDefsByName: mockNodeDefsByName.value
+  })
 }))
 
+vi.mock('@/utils/createAnnotatedPath', () => ({
+  createAnnotatedPath: vi.fn(
+    (
+      item: { filename: string; subfolder?: string; type?: string },
+      options: { rootFolder?: string }
+    ) => {
+      capturedAnnotatedPaths.values.push({ item, options })
+      capturedFilenames.values.push(item.filename)
+      return item.filename
+    }
+  )
+}))
+
+const mockDetectNodeTypeFromFilename = vi.hoisted(() => vi.fn())
+vi.mock('@/utils/loaderNodeUtil', () => ({
+  detectNodeTypeFromFilename: mockDetectNodeTypeFromFilename
+}))
+
+const mockIsResultItemType = vi.hoisted(() => vi.fn())
 vi.mock('@/utils/typeGuardUtil', () => ({
-  isResultItemType: vi.fn(() => true)
+  isResultItemType: mockIsResultItemType
 }))
 
 const mockGetAssetType = vi.hoisted(() => vi.fn())
@@ -181,7 +208,9 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+const mockAppGraph = vi.hoisted(() => ({
+  value: { _nodes: [] as unknown[] } as { _nodes: unknown[] } | null
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
     get graph() {
@@ -297,9 +326,36 @@ function mountMediaActions(asset?: AssetMeta) {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    capturedFilenames.values = []
+    capturedAnnotatedPaths.values = []
     mockIsCloud.value = false
-    litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
-    litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
+    mockAppGraph.value = { _nodes: [] }
+    mockDownloadFile.mockReset()
+    mockCopyToClipboard.mockReset()
+    mockAddNodeOnGraph.mockReset()
+    mockAddNodeOnGraph.mockReturnValue(
+      fromAny<LGraphNode, unknown>({
+        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+        graph: { setDirtyCanvas: vi.fn() }
+      })
+    )
+    mockGetCanvasCenter.mockReset()
+    mockGetCanvasCenter.mockReturnValue([100, 100])
+    mockNodeDefsByName.value = {
+      LoadImage: {
+        name: 'LoadImage',
+        display_name: 'Load Image'
+      }
+    }
+    mockDetectNodeTypeFromFilename.mockReset()
+    mockDetectNodeTypeFromFilename.mockReturnValue({
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
+    mockIsResultItemType.mockReset()
+    mockIsResultItemType.mockReturnValue(true)
+    mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockResolvedValue([])
