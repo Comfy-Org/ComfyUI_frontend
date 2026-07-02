@@ -3696,7 +3696,7 @@
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
     "mobileControls": "Edit & Run",
-    "runCount": "Number of runs",
+    "runCount": "Generations",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download {count} assets from this run",
@@ -3708,6 +3708,9 @@
     "cancelThisRun": "Cancel this run",
     "deleteAllAssets": "Delete all assets from this run",
     "hasCreditCost": "Requires additional credits",
+    "creditApproximateInfo": "Credit consumption shown here is approximate due to 3rd party provider calculations, exact values are available in your job history once the workflow is executed",
+    "creditBreakdown": "Credit breakdown by model",
+    "usesCredits": "Uses credits",
     "viewGraph": "View node graph",
     "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "welcome": {

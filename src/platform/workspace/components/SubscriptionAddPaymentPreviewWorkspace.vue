@@ -38,7 +38,7 @@
             {{ $t(creditsRefillLabelKey) }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
+            <i :class="cn(CREDITS_ICON, 'size-4 shrink-0 bg-amber-400')" />
             <span class="font-bold text-base-foreground">
               {{ refillCredits }}
             </span>
@@ -175,6 +175,8 @@ import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDurati
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
