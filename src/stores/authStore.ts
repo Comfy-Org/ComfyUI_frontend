@@ -35,6 +35,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
@@ -308,10 +309,10 @@ export const useAuthStore = defineStore('auth', () => {
           // Customer not found is expected for new users
           return null
         }
-        const errorData = await response.json()
+        const { message } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
-            error: errorData.message
+            error: message
           })
         )
       }
@@ -550,10 +551,10 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const errorData = await response.json()
+      const { message } = await parseErrorResponse(response)
       throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
-          error: errorData.message
+          error: message
         })
       )
     }
@@ -590,10 +591,10 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const errorData = await response.json()
+      const { message } = await parseErrorResponse(response)
       throw new AuthStoreError(
         t('toastMessages.failedToAccessBillingPortal', {
-          error: errorData.message
+          error: message
         })
       )
     }
