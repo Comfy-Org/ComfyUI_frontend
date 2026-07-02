@@ -98,6 +98,26 @@ test.describe('typePairing', () => {
     expect(again.pairs).toEqual(plan.pairs)
   })
 
+  test('COMBO literals are excluded from pairing with names coerced to strings', () => {
+    const nodes = normalizeNodeDefs({
+      ComboSource: {
+        input: { required: {} },
+        output: [['A', 'B', 'C']],
+        output_name: [['A', 'B', 'C'] as unknown as string],
+        python_module: 'nodes'
+      },
+      ...DEFS
+    })
+    const source = nodes.find((n) => n.type === 'ComboSource')!
+    expect(source.outputs).toEqual([{ name: 'COMBO', type: 'COMBO' }])
+    const plan = planPairs(nodes, ['ComboSource', 'ComboNode'])
+    expect(plan.pairs).toEqual([])
+    expect(plan.combos.map((s) => `${s.nodeType}.${s.slotName}`)).toEqual([
+      'ComboSource.COMBO',
+      'ComboNode.choice'
+    ])
+  })
+
   test('wildcard slots are excluded, orphan types recorded not failed', () => {
     const nodes = normalizeNodeDefs(DEFS)
     const plan = planPairs(nodes, ['WildcardNode', 'OrphanNode'])

@@ -43,6 +43,11 @@ export interface PairingPlan {
   orphans: Array<SlotRef & { dir: 'in' | 'out' }>
   // `*` / empty-typed slots, excluded by design (false confidence).
   wildcards: Array<SlotRef & { dir: 'in' | 'out' }>
+  // COMBO-literal slots, excluded by design: isValidConnection only compares
+  // the string COMBO while each slot carries its own option set, so a
+  // type-level pairing proves nothing (a checkpoint dropdown would "connect"
+  // to a scheduler dropdown). Targeted fixtures cover combo behavior.
+  combos: Array<SlotRef & { dir: 'in' | 'out' }>
 }
 
 // Extends the shared outcome taxonomy (runResult.ts); ORPHAN_TYPE is a
@@ -99,7 +104,15 @@ export function normalizeNodeDefs(
     outputs: (def.output ?? []).flatMap((rawType, index) => {
       const slotType = slotTypeOf(rawType)
       if (slotType === null) return []
-      return [{ name: def.output_name?.[index] ?? slotType, type: slotType }]
+      // output_name entries can be non-strings (COMBO literals repeat the
+      // option array); the slot name must stay a string.
+      const rawName = def.output_name?.[index]
+      return [
+        {
+          name: typeof rawName === 'string' ? rawName : slotType,
+          type: slotType
+        }
+      ]
     })
   }))
 }
@@ -139,18 +152,21 @@ export function planPairs(
   corpusTypes: string[]
 ): PairingPlan {
   const sorted = [...all].sort((a, b) => a.type.localeCompare(b.type))
+  const pairable = (slot: NormalizedSlot) =>
+    !isWildcard(slot.type) && slot.type !== 'COMBO'
   const producers: Array<SlotRef> = sorted.flatMap((node) =>
-    node.outputs
-      .filter((slot) => !isWildcard(slot.type))
-      .map((slot) => slotRef(node, slot))
+    node.outputs.filter(pairable).map((slot) => slotRef(node, slot))
   )
   const consumers: Array<SlotRef> = sorted.flatMap((node) =>
-    node.inputs
-      .filter((slot) => !isWildcard(slot.type))
-      .map((slot) => slotRef(node, slot))
+    node.inputs.filter(pairable).map((slot) => slotRef(node, slot))
   )
 
-  const plan: PairingPlan = { pairs: [], orphans: [], wildcards: [] }
+  const plan: PairingPlan = {
+    pairs: [],
+    orphans: [],
+    wildcards: [],
+    combos: []
+  }
   const seen = new Set<string>()
   const addPair = (producer: SlotRef, consumer: SlotRef) => {
     const key = `${producer.nodeType}.${producer.slotName}->${consumer.nodeType}.${consumer.slotName}`
@@ -166,6 +182,10 @@ export function planPairs(
         plan.wildcards.push({ ...slotRef(node, slot), dir: 'in' })
         continue
       }
+      if (slot.type === 'COMBO') {
+        plan.combos.push({ ...slotRef(node, slot), dir: 'in' })
+        continue
+      }
       const producer = producers.find((candidate) =>
         isTypeCompatible(candidate.slotType, slot.type)
       )
@@ -175,6 +195,10 @@ export function planPairs(
     for (const slot of node.outputs) {
       if (isWildcard(slot.type)) {
         plan.wildcards.push({ ...slotRef(node, slot), dir: 'out' })
+        continue
+      }
+      if (slot.type === 'COMBO') {
+        plan.combos.push({ ...slotRef(node, slot), dir: 'out' })
         continue
       }
       const consumer = consumers.find((candidate) =>

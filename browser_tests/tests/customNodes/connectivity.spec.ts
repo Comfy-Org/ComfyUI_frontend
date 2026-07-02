@@ -84,7 +84,7 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
 
   expect(plan.pairs.length, 'pairing produced no edges').toBeGreaterThan(0)
   console.log(
-    `T-conn plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard slots (excluded by design)`
+    `T-conn plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design)`
   )
 
   for (const entry of installedEntries) {
