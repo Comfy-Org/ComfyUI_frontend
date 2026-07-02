@@ -17,16 +17,16 @@ is one JSON row, no new test code.
 
 ## Running
 
-| Script | What it does |
-| --- | --- |
-| `pnpm test:custom-nodes` | whole suite headless - the pass/fail gate (expect `16 passed`, zero skips) |
-| `pnpm test:custom-nodes:watch` | headed slow-motion run of the browser tiers, hands-off watching |
-| `pnpm test:custom-nodes:debug` | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume) |
-| `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector) |
-| `pnpm test:custom-nodes:impact-run` | Impact group workflow executes on the backend (Inspector) |
-| `pnpm test:custom-nodes:vhs-render` | VHS nodes render in both renderers (Inspector) |
-| `pnpm test:custom-nodes:vhs-run` | VHS decodes a real video through its node chain (Inspector) |
-| `pnpm test:custom-nodes:self-check` | watches the harness catch a deliberate execution error |
+| Script                                 | What it does                                                                     |
+| -------------------------------------- | -------------------------------------------------------------------------------- |
+| `pnpm test:custom-nodes`               | whole suite headless - the pass/fail gate (expect `16 passed`, zero skips)       |
+| `pnpm test:custom-nodes:watch`         | headed slow-motion run of the browser tiers, hands-off watching                  |
+| `pnpm test:custom-nodes:debug`         | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume) |
+| `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector)                                |
+| `pnpm test:custom-nodes:impact-run`    | Impact group workflow executes on the backend (Inspector)                        |
+| `pnpm test:custom-nodes:vhs-render`    | VHS nodes render in both renderers (Inspector)                                   |
+| `pnpm test:custom-nodes:vhs-run`       | VHS decodes a real video through its node chain (Inspector)                      |
+| `pnpm test:custom-nodes:self-check`    | watches the harness catch a deliberate execution error                           |
 
 Example - watch the VHS video-decode run step by step:
 
