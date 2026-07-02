@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',
@@ -24,9 +25,8 @@ type Story = StoryObj<typeof meta>
 const singleErrorCard: ErrorCardData = {
   id: 'node-10',
   title: 'CLIPTextEncode',
-  nodeId: createNodeExecutionId([10]),
+  nodeId: createNodeExecutionId([toNodeId(10)]),
   nodeTitle: 'CLIP Text Encode (Prompt)',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'Required input "text" is missing.',
@@ -38,9 +38,8 @@ const singleErrorCard: ErrorCardData = {
 const multipleErrorsCard: ErrorCardData = {
   id: 'node-24',
   title: 'VAEDecode',
-  nodeId: createNodeExecutionId([24]),
+  nodeId: createNodeExecutionId([toNodeId(24)]),
   nodeTitle: 'VAE Decode',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'Required input "samples" is missing.',
@@ -56,9 +55,8 @@ const multipleErrorsCard: ErrorCardData = {
 const runtimeErrorCard: ErrorCardData = {
   id: 'exec-45',
   title: 'KSampler',
-  nodeId: createNodeExecutionId([45]),
+  nodeId: createNodeExecutionId([toNodeId(45)]),
   nodeTitle: 'KSampler',
-  isSubgraphNode: false,
   errors: [
     {
       message: 'OutOfMemoryError: CUDA out of memory. Tried to allocate 1.2GB.',
@@ -76,9 +74,8 @@ const runtimeErrorCard: ErrorCardData = {
 const subgraphErrorCard: ErrorCardData = {
   id: 'node-3:15',
   title: 'KSampler',
-  nodeId: createNodeExecutionId([3, 15]),
+  nodeId: createNodeExecutionId([toNodeId(3), toNodeId(15)]),
   nodeTitle: 'Nested KSampler',
-  isSubgraphNode: true,
   errors: [
     {
       message: 'Latent input is required.',
@@ -104,8 +101,7 @@ export const SingleValidationError: Story = {
   }
 }
 
-/** Subgraph node error — shows "Enter subgraph" button */
-export const WithEnterSubgraphButton: Story = {
+export const NestedNodeError: Story = {
   args: {
     card: subgraphErrorCard
   }

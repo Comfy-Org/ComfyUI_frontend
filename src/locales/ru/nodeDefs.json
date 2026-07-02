@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "Создайте JSON-промпт для модели Ideogram 4.",
+    "display_name": "Создать JSON-промпт (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "эстетика",
+        "tooltip": "Обязательные эстетические ключевые слова (например, мрачный, кинематографичный, обесцвеченный)."
+      },
+      "background": {
+        "name": "фон",
+        "tooltip": "Обязательное описание фона или окружения изображения."
+      },
+      "color_palette": {
+        "name": "цветовая_палитра",
+        "tooltip": "Hex-коды цветов, определяющие доминирующие цвета изображения. До 16 значений."
+      },
+      "element": {
+        "name": "элемент",
+        "tooltip": "Элементы промпта из узла Create Bounding Boxes."
+      },
+      "high_level_description": {
+        "name": "высокоуровневое_описание",
+        "tooltip": "Необязательное описание изображения в одном-двух предложениях. Настоятельно рекомендуется."
+      },
+      "lighting": {
+        "name": "освещение",
+        "tooltip": "Обязательное описание освещения (например, золотой час, контровой свет, драматичные тени)."
+      },
+      "medium": {
+        "name": "носитель",
+        "tooltip": "Обязательный тип носителя (например, фотография, иллюстрация, 3d_render, живопись, graphic_design). Если стиль = фото, установить как фотография."
+      },
+      "style": {
+        "name": "стиль"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "промпт",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Генерируйте видео с помощью Seedance 2.0, используя изображение первого кадра и, при необходимости, последнего кадра.",
     "display_name": "ByteDance Seedance 2.0: от первого и последнего кадра к видео",
@@ -2633,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Преобразовать массив в строку",
+    "inputs": {
+      "array": {
+        "name": "массив"
+      },
+      "indent": {
+        "name": "отступ",
+        "tooltip": "Количество пробелов на уровень отступа. 0 — компактная однострочная строка."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Преобразовать словарь в строку",
+    "inputs": {
+      "dictionary": {
+        "name": "словарь"
+      },
+      "indent": {
+        "name": "отступ",
+        "tooltip": "Количество пробелов на уровень отступа. 0 — компактная однострочная строка."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2691,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "Нарисуйте ограничивающие рамки на холсте. Выходные данные: элементы промпта Ideogram, ограничивающие рамки в пикселях и изображение предпросмотра.",
+    "display_name": "Создать ограничивающие рамки",
+    "inputs": {
+      "background": {
+        "name": "фон",
+        "tooltip": "Необязательное изображение, используемое как фон на холсте и в предпросмотре."
+      },
+      "editor_state": {
+        "name": "состояние_редактора",
+        "tooltip": "Нарисуйте ограничивающие рамки и задайте для каждой рамки тип, текст, описание, цветовую палитру. Начинайте с фонового элемента, затем передний план."
+      },
+      "height": {
+        "name": "высота",
+        "tooltip": "Высота холста и пиксельной сетки для ограничивающих рамок."
+      },
+      "width": {
+        "name": "ширина",
+        "tooltip": "Ширина холста и пиксельной сетки для ограничивающих рамок."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "предпросмотр",
+        "tooltip": null
+      },
+      "1": {
+        "name": "рамки",
+        "tooltip": null
+      },
+      "2": {
+        "name": "элементы",
         "tooltip": null
       }
     }
@@ -12025,6 +12138,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "Слияние моделей LTXV",
     "inputs": {
@@ -17694,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Seed",
+    "inputs": {
+      "fixed": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "seed",
         "tooltip": null
       }
     }

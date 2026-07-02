@@ -1,7 +1,7 @@
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 export interface FlattenableWorkflowNode {
-  id: NodeId
+  id: SerializedNodeId
   type: string
   mode?: number
   widgets_values?: readonly unknown[] | Record<string, unknown>
