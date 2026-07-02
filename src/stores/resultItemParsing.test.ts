@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
@@ -146,6 +146,22 @@ describe(parseNodeOutput, () => {
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
         { subfolder: '', type: 'output' }
+      ]
+    })
+
+    const result = parseNodeOutput('1', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('valid.png')
+  })
+
+  it('excludes non-object and invalid-type items', () => {
+    const output = fromAny<NodeExecutionOutput, unknown>({
+      images: [
+        null,
+        'not-an-item',
+        { filename: 'bad.png', type: 'invalid' },
+        { filename: 'valid.png', type: 'output' }
       ]
     })
 
