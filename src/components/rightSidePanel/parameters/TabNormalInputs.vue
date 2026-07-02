@@ -5,13 +5,13 @@ import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes, mustShowNodeTitle } = defineProps<{
@@ -124,15 +124,11 @@ const advancedLabel = computed(() => {
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+  <PanelSearchHeader
+    v-model="searchQuery"
+    :searcher
+    :update-key="widgetsSectionDataList"
   >
-    <AsyncSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="widgetsSectionDataList"
-      class="flex-1"
-    />
     <CollapseToggleButton
       v-model="isAllCollapsed"
       :show="
@@ -141,7 +137,7 @@ const advancedLabel = computed(() => {
           1
       "
     />
-  </div>
+  </PanelSearchHeader>
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div
       v-if="searchedWidgetsSectionDataList.length === 0"
