@@ -54,7 +54,7 @@ function discoverAll() {
 <template>
   <div
     data-testid="linear-get-started"
-    class="flex size-full min-h-0 flex-col items-center overflow-y-auto bg-base-background px-8 pt-[clamp(96px,18vh,200px)] pb-16"
+    class="flex size-full min-h-0 flex-col items-center overflow-y-auto px-8 pt-[clamp(96px,18vh,200px)] pb-16"
   >
     <div class="flex w-full max-w-[860px] flex-col items-center gap-8">
       <div class="flex flex-col items-center gap-1 text-center">
