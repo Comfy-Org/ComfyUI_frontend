@@ -56,7 +56,7 @@ const handleSubscribe = () => {
     current_tier: tier.value?.toLowerCase()
   })
   isAwaitingStripeSubscription.value = true
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'subscribe_now_button' })
 }
 
 onBeforeUnmount(() => {

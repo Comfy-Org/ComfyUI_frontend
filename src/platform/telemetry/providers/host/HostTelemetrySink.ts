@@ -10,6 +10,7 @@ import {
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AddCreditsClickMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -139,8 +140,8 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.capture(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.capture(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
