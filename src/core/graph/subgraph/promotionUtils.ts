@@ -186,13 +186,14 @@ function isPreviewExposed(
   source: PromotedWidgetSource
 ): boolean {
   const hostLocator = String(subgraphNode.id)
-  return usePreviewExposureStore()
-    .getExposures(subgraphNode.rootGraph.id, hostLocator)
-    .some(
-      (exposure) =>
-        exposure.sourceNodeId === source.sourceNodeId &&
-        exposure.sourcePreviewName === source.sourceWidgetName
-    )
+  return usePreviewExposureStore().hasExposure(
+    subgraphNode.rootGraph.id,
+    hostLocator,
+    {
+      sourceNodeId: source.sourceNodeId,
+      sourcePreviewName: source.sourceWidgetName
+    }
+  )
 }
 
 export function isWidgetPromotedOnSubgraphNode(
@@ -307,19 +308,10 @@ function promotePreviewViaExposure(
   const store = usePreviewExposureStore()
   const rootGraphId = subgraphNode.rootGraph.id
   const hostLocator = String(subgraphNode.id)
-  const existing = store
-    .getExposures(rootGraphId, hostLocator)
-    .some(
-      (exposure) =>
-        exposure.sourceNodeId === String(sourceNode.id) &&
-        exposure.sourcePreviewName === sourcePreviewName
-    )
-  if (existing) return
+  const source = { sourceNodeId: sourceNode.id, sourcePreviewName }
+  if (store.hasExposure(rootGraphId, hostLocator, source)) return
 
-  store.addExposure(rootGraphId, hostLocator, {
-    sourceNodeId: sourceNode.id,
-    sourcePreviewName
-  })
+  store.addExposure(rootGraphId, hostLocator, source)
 }
 
 const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
@@ -402,13 +394,14 @@ export function demoteWidget(
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
       const hostLocator = String(parent.id)
-      const exposure = previewStore
-        .getExposures(parent.rootGraph.id, hostLocator)
-        .find(
-          (entry) =>
-            entry.sourceNodeId === source.sourceNodeId &&
-            entry.sourcePreviewName === source.sourceWidgetName
-        )
+      const exposure = previewStore.findExposure(
+        parent.rootGraph.id,
+        hostLocator,
+        {
+          sourceNodeId: source.sourceNodeId,
+          sourcePreviewName: source.sourceWidgetName
+        }
+      )
       if (exposure) {
         previewStore.removeExposure(
           parent.rootGraph.id,

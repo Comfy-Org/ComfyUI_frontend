@@ -23,6 +23,11 @@ type PreviewExposureInput = Omit<PreviewExposure, 'sourceNodeId'> & {
   sourceNodeId: SerializedNodeId
 }
 
+type ExposureSource = {
+  sourceNodeId: SerializedNodeId
+  sourcePreviewName: string
+}
+
 function normalizePreviewExposure(
   exposure: PreviewExposureInput
 ): PreviewExposure {
@@ -30,6 +35,16 @@ function normalizePreviewExposure(
     ...exposure,
     sourceNodeId: toNodeId(exposure.sourceNodeId)
   }
+}
+
+function matchesExposureSource(
+  entry: PreviewExposure,
+  source: ExposureSource
+): boolean {
+  return (
+    entry.sourceNodeId === toNodeId(source.sourceNodeId) &&
+    entry.sourcePreviewName === source.sourcePreviewName
+  )
 }
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
@@ -74,10 +89,28 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     hosts.set(hostNodeLocator, next.map(normalizePreviewExposure))
   }
 
+  function findExposure(
+    rootGraphId: UUID,
+    hostNodeLocator: string,
+    source: ExposureSource
+  ): PreviewExposure | undefined {
+    return _getExposuresRef(rootGraphId, hostNodeLocator)?.find((entry) =>
+      matchesExposureSource(entry, source)
+    )
+  }
+
+  function hasExposure(
+    rootGraphId: UUID,
+    hostNodeLocator: string,
+    source: ExposureSource
+  ): boolean {
+    return findExposure(rootGraphId, hostNodeLocator, source) !== undefined
+  }
+
   function addExposure(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    source: { sourceNodeId: SerializedNodeId; sourcePreviewName: string }
+    source: ExposureSource
   ): PreviewExposure {
     const hosts = _getHostsForGraph(rootGraphId)
     const current = hosts.get(hostNodeLocator) ?? []
@@ -138,6 +171,8 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   return {
     getExposures,
     getExposuresAsPromotionShape,
+    findExposure,
+    hasExposure,
     setExposures,
     addExposure,
     removeExposure,
