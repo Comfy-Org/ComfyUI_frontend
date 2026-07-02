@@ -166,13 +166,12 @@ No imports needed - icons are auto-discovered!
 
 ## Render Mode: Mask vs Image
 
-The render mode is decided by the SVG's own colors — no configuration:
+The default render mode is decided by the SVG's own colors:
 
-- **Mask** — the SVG uses `currentColor`. The shape is painted with
-  `currentColor`, so it adapts to the theme via `text-*` classes. Author every
-  themeable UI glyph this way.
+- **Mask** — SVG with `currentColor`. The shape is displayed as a background
+  mask, so it adapts to the theme via `text-*` classes.
 - **Image** — the SVG uses concrete colors (e.g. `#d97757`). It is embedded
-  verbatim, preserving its own colors; `text-*` has no effect. Use this for
+  as an image, preserving its own colors; `text-*` has no effect. Use this for
   brand logos that must keep their palette.
 
 ```
