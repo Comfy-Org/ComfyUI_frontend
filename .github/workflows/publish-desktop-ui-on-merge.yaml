@@ -8,6 +8,10 @@ on:
     paths:
       - 'apps/desktop-ui/package.json'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   resolve:
     name: Resolve Version and Dist Tag
@@ -81,3 +85,4 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           version_file: apps/desktop-ui/package.json
+
