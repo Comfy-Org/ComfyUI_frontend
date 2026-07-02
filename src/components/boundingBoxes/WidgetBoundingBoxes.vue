@@ -6,7 +6,7 @@
   >
     <div
       ref="canvasContainer"
-      class="relative w-full shrink-0 overflow-hidden rounded-sm border border-component-node-border bg-node-component-surface"
+      class="relative w-full shrink-0 overflow-hidden rounded-sm border border-component-node-border bg-base-background"
       :style="canvasStyle"
     >
       <canvas
@@ -35,6 +35,42 @@
         @keydown.stop="onInlineKeyDown"
         @blur="commitInlineEditor"
       />
+    </div>
+
+    <div class="flex flex-col gap-1 px-1 text-xs text-node-component-slot-text">
+      <div class="flex items-center justify-between gap-1">
+        <span class="content-center-safe truncate">
+          {{ $t('boundingBoxes.background') }}
+        </span>
+        <ToggleGroup
+          type="single"
+          :model-value="gridPattern"
+          class="flex flex-1 items-center justify-center gap-1 rounded-lg bg-component-node-widget-background p-1"
+          @update:model-value="
+            (value) => value && setGridPattern(value as 'none' | 'dots')
+          "
+        >
+          <ToggleGroupItem value="none" size="sm">
+            {{ $t('boundingBoxes.gridNone') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="dots" size="sm">
+            {{ $t('boundingBoxes.gridDots') }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <div
+        v-if="gridPattern !== 'none'"
+        class="flex items-center justify-between gap-1"
+      >
+        <span class="content-center-safe truncate">
+          {{ $t('boundingBoxes.snapToGrid') }}
+        </span>
+        <ToggleSwitch
+          v-model="snapToGrid"
+          :aria-label="$t('boundingBoxes.snapToGrid')"
+          class="transition-transform active:scale-90"
+        />
+      </div>
     </div>
 
     <div
@@ -136,12 +172,14 @@
 </template>
 
 <script setup lang="ts">
+import ToggleSwitch from 'primevue/toggleswitch'
 import { useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import PaletteSwatchRow from '@/components/palette/PaletteSwatchRow.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
@@ -172,7 +210,10 @@ const {
   commitInlineEditor,
   setActiveType,
   clearAll,
-  syncState
+  syncState,
+  gridPattern,
+  snapToGrid,
+  setGridPattern
 } = useBoundingBoxes(nodeId, {
   canvasEl,
   canvasContainer,
