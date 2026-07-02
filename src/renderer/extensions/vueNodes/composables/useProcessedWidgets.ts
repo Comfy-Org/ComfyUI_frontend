@@ -22,7 +22,6 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
-  shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
@@ -556,23 +555,9 @@ export function useProcessedWidgets(
     })
   )
 
-  const visibleWidgets = computed(() =>
-    processedWidgets.value.filter((w) => w.visible)
-  )
-
-  const gridTemplateRows = computed((): string =>
-    visibleWidgets.value
-      .map((w) =>
-        shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
-      )
-      .join(' ')
-  )
-
   return {
     canSelectInputs,
-    gridTemplateRows,
     nodeType,
-    processedWidgets,
-    visibleWidgets
+    processedWidgets
   }
 }

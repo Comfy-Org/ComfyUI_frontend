@@ -20,9 +20,8 @@
       <NodeSlots :node-data="nodeData" />
 
       <WidgetGrid
-        v-if="processedWidgets.length"
-        :processed-widgets="processedWidgets"
-        :grid-template-rows="gridTemplateRows"
+        v-if="previewWidgets.length"
+        :processed-widgets="previewWidgets"
         :node-type="nodeData.type"
         :node-id="nodeData.id"
         class="pointer-events-none"
@@ -43,10 +42,13 @@ import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
-import { usePreviewWidgets } from '@/renderer/extensions/vueNodes/composables/usePreviewWidgets'
+import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -103,8 +105,33 @@ const nodeData = computed<VueNodeData>(() => {
   }
 })
 
-const { processedWidgets, gridTemplateRows } = usePreviewWidgets(
-  () => nodeDef,
-  () => widgetValues
+const previewWidgets = computed<WidgetGridItem[]>(() =>
+  Object.entries(nodeDef.inputs || {})
+    .filter(([, input]) => widgetStore.inputIsWidget(input) && !input.hidden)
+    .map(([name, input]) => {
+      const comboValues =
+        input.type === 'COMBO' && Array.isArray(input.options)
+          ? input.options
+          : undefined
+      const leadValue = widgetValues?.[name]
+      const value = (leadValue ??
+        input.default ??
+        comboValues?.[0] ??
+        '') as WidgetValue
+      const type = input.widgetType || input.type
+      const values =
+        leadValue && comboValues
+          ? [leadValue, ...comboValues.filter((option) => option !== leadValue)]
+          : comboValues
+      return {
+        name,
+        type,
+        value,
+        visible: true,
+        renderKey: `preview:${nodeDef.name}:${name}`,
+        vueComponent: getComponent(type) ?? WidgetLegacy,
+        simplified: { name, type, value, options: { values }, spec: input }
+      }
+    })
 )
 </script>
