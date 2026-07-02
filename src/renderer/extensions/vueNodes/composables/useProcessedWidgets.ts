@@ -6,7 +6,6 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type {
@@ -141,37 +140,33 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
   return undefined
 }
 
-function buildSlotMetadata(
-  inputs: INodeInputSlot[] | undefined,
-  graphRef: LGraph | null | undefined
-): Map<string, WidgetSlotMetadata> {
-  const metadata = new Map<string, WidgetSlotMetadata>()
-  inputs?.forEach((input, index) => {
-    let originNodeId: NodeId | undefined
-    let originOutputName: string | undefined
+function getWidgetSlotMetadata(
+  live: { node: LGraphNode; widget: IBaseWidget } | undefined
+): WidgetSlotMetadata | undefined {
+  if (!live) return undefined
+  const slot = live.node.getSlotFromWidget(live.widget)
+  if (!slot) return undefined
 
-    let linked = input.link != null
-    if (input.link != null && graphRef) {
-      const link = graphRef.getLink(input.link)
-      linked = Boolean(link)
-      const originNode = link ? graphRef.getNodeById(link.origin_id) : null
-      if (link && originNode) {
-        originNodeId = link.origin_id
-        originOutputName = originNode.outputs?.[link.origin_slot]?.name
-      }
-    }
+  let originNodeId: NodeId | undefined
+  let originOutputName: string | undefined
 
-    const slotInfo: WidgetSlotMetadata = {
-      index,
-      linked,
-      originNodeId,
-      originOutputName,
-      type: String(input.type)
+  const graph = live.node.graph
+  if (slot.link != null && graph) {
+    const link = graph.getLink(slot.link)
+    const originNode = link ? graph.getNodeById(link.origin_id) : null
+    if (link && originNode) {
+      originNodeId = link.origin_id
+      originOutputName = originNode.outputs?.[link.origin_slot]?.name
     }
-    if (input.name) metadata.set(input.name, slotInfo)
-    if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
-  })
-  return metadata
+  }
+
+  return {
+    index: live.node.inputs.indexOf(slot),
+    linked: slot.link != null,
+    originNodeId,
+    originOutputName,
+    type: String(slot.type)
+  }
 }
 
 function getProcessedNodeExecutionId(
@@ -379,10 +374,6 @@ export function computeProcessedWidgets({
 
   const ids = getWidgetIds(graphId, nodeData.id, widgetIds, widgetValueStore)
   const hostNode = getHostNode(rootGraph, nodeData)
-  const slotMetadata = buildSlotMetadata(
-    nodeData.inputs ?? hostNode?.inputs,
-    hostNode?.graph ?? rootGraph
-  )
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
   const result: ProcessedWidget[] = []
   const seenIdentities = new Set<string>()
@@ -405,7 +396,7 @@ export function computeProcessedWidgets({
     }
     if (!shouldRenderAsVue({ type: widgetState.type, options })) return
 
-    const slotInfo = slotMetadata.get(widgetState.name)
+    const slotInfo = getWidgetSlotMetadata(live)
     const visible = isWidgetVisible(options, showAdvanced, slotInfo?.linked)
     const isDisabled = slotInfo?.linked || widgetState.disabled
     const widgetOptions = isDisabled ? { ...options, disabled: true } : options
