@@ -22,7 +22,7 @@ const label = t('agent.scrollToBottom')
 <template>
   <div
     v-if="!isAtBottom"
-    class="pointer-events-none sticky bottom-2 z-10 flex justify-center"
+    class="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
   >
     <Tooltip>
       <TooltipTrigger>

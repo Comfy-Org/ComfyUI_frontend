@@ -39,11 +39,14 @@ provide(conversationKey, { isAtBottom, scrollToBottom })
 </script>
 
 <template>
-  <div
-    ref="scrollEl"
-    :class="cn('relative scrollbar-custom flex-1', className)"
-    @scroll="updateAtBottom"
-  >
-    <slot />
+  <div class="relative flex-1 overflow-hidden">
+    <div
+      ref="scrollEl"
+      :class="cn('scroll-fade absolute inset-0 scrollbar-custom', className)"
+      @scroll="updateAtBottom"
+    >
+      <slot />
+    </div>
+    <slot name="overlay" />
   </div>
 </template>

@@ -139,22 +139,32 @@ function onNewChatFromHistory() {
 
     <template v-else>
       <div class="flex shrink-0 items-center px-2 py-1.5">
-        <button
-          type="button"
-          class="flex h-6 cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
-          @click="showHistory = true"
-        >
-          <i class="icon-[lucide--align-justify] size-3.5" />
-          <span class="max-w-56 truncate">
-            {{ conversationTitle ?? $t('agent.newChat') }}
-          </span>
-        </button>
+        <Tooltip :delay-duration="500">
+          <TooltipTrigger>
+            <button
+              type="button"
+              class="flex h-6 cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
+              @click="showHistory = true"
+            >
+              <i class="icon-[lucide--align-justify] size-3.5" />
+              <span class="max-w-56 truncate">
+                {{ conversationTitle ?? $t('agent.newChat') }}
+              </span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {{ $t('agent.history.title') }}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <ConversationEmptyState v-if="isEmpty">
         <AgentChatEmptyState :name="userName" />
       </ConversationEmptyState>
       <Conversation v-else>
+        <template #overlay>
+          <ConversationScrollButton />
+        </template>
         <ConversationContent class="mx-auto w-full max-w-[640px]">
           <Message
             v-for="message in messages"
@@ -224,7 +234,6 @@ function onNewChatFromHistory() {
             </MessageContent>
           </Message>
         </ConversationContent>
-        <ConversationScrollButton />
       </Conversation>
 
       <div class="flex shrink-0 flex-col gap-4 p-4">

@@ -104,6 +104,44 @@
   margin-bottom: 0;
 }
 
+/* Scroll-driven fade mask for conversation containers.
+   Top edge fades in as you scroll away from the start;
+   bottom edge fades out when you reach the end. */
+@property --sf-top {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --sf-bottom {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 40px;
+}
+
+@keyframes sf-grow-top {
+  from { --sf-top: 0; }
+  to { --sf-top: 40px; }
+}
+
+@keyframes sf-shrink-bottom {
+  from { --sf-bottom: 40px; }
+  to { --sf-bottom: 0; }
+}
+
+.scroll-fade {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--sf-top),
+    black calc(100% - var(--sf-bottom)),
+    transparent 100%
+  );
+  animation: sf-grow-top linear both, sf-shrink-bottom linear both;
+  animation-timeline: scroll(self y), scroll(self y);
+  animation-range: 0 80px, calc(100% - 80px) 100%;
+}
+
 .agent-code-block {
   border: 1px solid var(--color-border-default);
   border-radius: 0.5rem;
