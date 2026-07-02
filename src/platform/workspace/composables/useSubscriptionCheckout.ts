@@ -343,6 +343,10 @@ export function useSubscriptionCheckout(
   }
 
   async function handleResubscribe() {
+    telemetry?.trackResubscribeClicked({
+      source: 'pricing_dialog',
+      payment_intent_source: paymentIntentSource
+    })
     isResubscribing.value = true
     try {
       await resubscribe()

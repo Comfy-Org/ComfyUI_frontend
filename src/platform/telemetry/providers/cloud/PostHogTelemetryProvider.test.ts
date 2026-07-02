@@ -313,6 +313,54 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('maps cancellation stages to their events', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSubscriptionCancellation('flow_opened', {
+        current_tier: 'standard'
+      })
+      provider.trackSubscriptionCancellation('failed', {
+        current_tier: 'standard',
+        error_message: 'timed out'
+      })
+      provider.trackSubscriptionCancellation('confirmed', {
+        current_tier: 'pro'
+      })
+      provider.trackSubscriptionCancellation('abandoned', {
+        current_tier: 'creator'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED,
+        { current_tier: 'standard' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED,
+        { current_tier: 'standard', error_message: 'timed out' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED,
+        { current_tier: 'pro' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED,
+        { current_tier: 'creator' }
+      )
+    })
+
+    it('captures resubscribe clicks with their source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackResubscribeClicked({ source: 'settings_billing_panel' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED,
+        { source: 'settings_billing_panel' }
+      )
+    })
+
     it('captures begin_checkout with intent metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
