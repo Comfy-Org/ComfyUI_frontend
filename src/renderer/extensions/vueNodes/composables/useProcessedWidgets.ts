@@ -60,7 +60,7 @@ function isTooltipValueType(val: unknown): val is TooltipValueType {
   return TOOLTIP_VALUE_TYPES.includes(val as TooltipValueType)
 }
 
-export interface WidgetSlotMetadata {
+interface WidgetSlotMetadata {
   index: number
   linked: boolean
   originNodeId?: NodeId
