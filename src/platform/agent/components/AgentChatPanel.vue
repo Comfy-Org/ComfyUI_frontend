@@ -158,7 +158,11 @@ function onNewChatFromHistory() {
                   message !== messages[messages.length - 1]
                 "
               />
-              <MessageResponse v-if="message.text" :content="message.text" />
+              <MessageResponse
+                v-if="message.text"
+                :content="message.text"
+                class="agent-markdown"
+              />
               <MessageActions
                 v-if="
                   message.role === 'assistant' &&

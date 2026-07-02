@@ -103,11 +103,32 @@ function nextId() {
 
 function buildMockReply(prompt: string) {
   return [
-    `Sure — here is a mocked plan for **${prompt}**:`,
+    `# Plan for ${prompt}`,
+    '',
+    '## Overview',
+    '',
+    `This is a mocked response for **${prompt}**. It demonstrates the markdown rendering capabilities of the agent chat panel.`,
+    '',
+    '## Steps',
     '',
     '1. Inspect the current graph and selected nodes.',
     '2. Assemble the nodes needed for the request.',
     '3. Wire the connections and set sensible defaults.',
+    '4. Validate the output and iterate as needed.',
+    '',
+    '## Key Concepts',
+    '',
+    '- **Nodes** are the building blocks of a workflow.',
+    '- **Edges** connect nodes and carry data between them.',
+    '- Use _italics_ for emphasis and `inline code` for node names.',
+    '',
+    '## Node Reference',
+    '',
+    '| Node | Type | Description |',
+    '| --- | --- | --- |',
+    '| KSampler | Sampler | Runs the diffusion sampling loop |',
+    '| CLIPTextEncode | Conditioning | Encodes a text prompt |',
+    '| VAEDecode | Latent | Decodes latent image to pixels |',
     '',
     '_This is a prototype response and does not modify your graph._'
   ].join('\n')
