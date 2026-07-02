@@ -32,11 +32,16 @@ import {
   getSurveyCompletedStatus,
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
+import { useDesktopLoginRedemption } from '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
 
 const router = useRouter()
+
+// Already-signed-in users detoured off '/' land here before GraphView mounts;
+// redeem a pending desktop login code without waiting for that detour to end.
+void useDesktopLoginRedemption().redeemIfPresent()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(

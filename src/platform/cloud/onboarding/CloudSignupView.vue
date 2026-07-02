@@ -134,6 +134,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useDesktopLoginRedemption } from '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { useTelemetry } from '@/platform/telemetry'
@@ -161,6 +162,10 @@ const { onAuthSuccess } = usePostAuthRedirect({
   successSummary: 'Sign up Completed',
   defaultRedirect: () => ({ path: '/', query: route.query })
 })
+
+// Strip a ?desktop_login_code=... from the visible URL immediately; pre-auth
+// the composable stashes the code and exits silently.
+void useDesktopLoginRedemption().redeemIfPresent()
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })

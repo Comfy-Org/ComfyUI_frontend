@@ -2410,6 +2410,14 @@
       "tooltipLearnMore": "Learn more..."
     }
   },
+  "desktopLogin": {
+    "confirmSummary": "Approve desktop sign-in?",
+    "confirmMessage": "The ComfyUI desktop app is waiting to sign in with your account. Only continue if you just started signing in from the ComfyUI desktop app.",
+    "successSummary": "Signed in",
+    "successDetail": "You can return to the ComfyUI desktop app.",
+    "expiredSummary": "Desktop sign-in failed",
+    "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app."
+  },
   "validation": {
     "invalidEmail": "Invalid email address",
     "required": "Required",

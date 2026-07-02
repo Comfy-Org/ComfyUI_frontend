@@ -18,6 +18,7 @@ import {
   getSurveyCompletedStatus,
   submitSurvey
 } from '@/platform/cloud/onboarding/auth'
+import { useDesktopLoginRedemption } from '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -25,6 +26,10 @@ import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './survey/defaultSurveySchema'
 
 const router = useRouter()
+
+// Already-signed-in users detoured off '/' can sit on the survey for a while;
+// redeem a pending desktop login code without waiting for the survey to end.
+void useDesktopLoginRedemption().redeemIfPresent()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 

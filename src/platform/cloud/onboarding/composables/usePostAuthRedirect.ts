@@ -4,6 +4,10 @@ import type { RouteLocationRaw } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
+import {
+  stripDesktopLoginCodeFromPath,
+  useDesktopLoginRedemption
+} from '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -22,8 +26,17 @@ export function usePostAuthRedirect(options: {
   const route = useRoute()
   const toastStore = useToastStore()
   const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
+  const desktopLoginRedemption = useDesktopLoginRedemption()
 
   async function onAuthSuccess() {
+    // Kick off redemption of a pending desktop login code so the polling
+    // desktop app picks up the session promptly; the approval dialog and
+    // request run in the background and must never block the normal
+    // post-login toast/redirect.
+    desktopLoginRedemption.redeemIfPresent().catch((error: unknown) => {
+      console.error('Failed to redeem desktop login code:', error)
+    })
+
     toastStore.add({
       severity: 'success',
       summary: options.successSummary,
@@ -47,7 +60,9 @@ export function usePostAuthRedirect(options: {
 
     const previousFullPath = getSafePreviousFullPath(route.query)
     if (previousFullPath) {
-      await router.replace(previousFullPath)
+      // Never resurrect the one-time desktop login code into the visible URL;
+      // redemption consumes it from the preserved-query stash instead.
+      await router.replace(stripDesktopLoginCodeFromPath(previousFullPath))
       return
     }
 

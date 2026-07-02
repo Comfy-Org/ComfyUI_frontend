@@ -103,6 +103,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
+import { useDesktopLoginRedemption } from '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
 import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
@@ -120,6 +121,10 @@ const { onAuthSuccess } = usePostAuthRedirect({
   successSummary: 'Login Completed',
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
+
+// Strip a ?desktop_login_code=... from the visible URL immediately; pre-auth
+// the composable stashes the code and exits silently.
+void useDesktopLoginRedemption().redeemIfPresent()
 
 function switchToEmailForm() {
   showEmailForm.value = true
