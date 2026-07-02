@@ -7,10 +7,71 @@ import type {
 import {
   consolidateConflictsByPackage,
   createBannedConflict,
-  createPendingConflict
+  createPendingConflict,
+  evaluateCompatibility
 } from '@/workbench/extensions/manager/utils/conflictUtils'
 
 describe('conflictUtils', () => {
+  describe('evaluateCompatibility', () => {
+    const incompatibleEnv = {
+      comfyui_version: '0.3.0',
+      frontend_version: '1.0.0',
+      os: 'darwin',
+      accelerator: 'mps'
+    }
+
+    it('emits conflicts in canonical order when all six checks fail', () => {
+      const conflicts = evaluateCompatibility(
+        {
+          supported_comfyui_version: '>=1.0.0',
+          supported_comfyui_frontend_version: '>=2.0.0',
+          supported_os: ['Linux'],
+          supported_accelerators: ['CUDA'],
+          isBanned: true,
+          isPending: true
+        },
+        incompatibleEnv
+      )
+
+      expect(conflicts.map((conflict) => conflict.type)).toEqual([
+        'comfyui_version',
+        'frontend_version',
+        'os',
+        'accelerator',
+        'banned',
+        'pending'
+      ])
+    })
+
+    it('adds a banned conflict only when isBanned is true', () => {
+      const compatibleInput = {
+        supported_comfyui_version: undefined,
+        supported_comfyui_frontend_version: undefined,
+        supported_os: undefined,
+        supported_accelerators: undefined,
+        isPending: false
+      }
+
+      const withoutBan = evaluateCompatibility(
+        { ...compatibleInput, isBanned: false },
+        incompatibleEnv
+      )
+      expect(withoutBan).toEqual([])
+
+      const withBan = evaluateCompatibility(
+        { ...compatibleInput, isBanned: true },
+        incompatibleEnv
+      )
+      expect(withBan).toEqual([
+        {
+          type: 'banned',
+          current_value: 'installed',
+          required_value: 'not_banned'
+        }
+      ])
+    })
+  })
+
   describe('createBannedConflict', () => {
     it('should return banned conflict when isBanned is true', () => {
       const result = createBannedConflict(true)

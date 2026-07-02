@@ -16,7 +16,6 @@ import type {
   RegistryOS
 } from '@/workbench/extensions/manager/types/compatibility.types'
 import type {
-  ConflictDetail,
   ConflictDetectionResponse,
   ConflictDetectionResult,
   ImportFailureMap,
@@ -26,18 +25,10 @@ import type {
 } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import {
   consolidateConflictsByPackage,
-  createBannedConflict,
-  createPendingConflict
+  evaluateCompatibility
 } from '@/workbench/extensions/manager/utils/conflictUtils'
-import {
-  checkAcceleratorCompatibility,
-  checkOSCompatibility,
-  normalizeOSList
-} from '@/workbench/extensions/manager/utils/systemCompatibility'
-import {
-  checkVersionCompatibility,
-  getFrontendVersion
-} from '@/workbench/extensions/manager/utils/versionUtil'
+import { normalizeOSList } from '@/workbench/extensions/manager/utils/systemCompatibility'
+import { getFrontendVersion } from '@/workbench/extensions/manager/utils/versionUtil'
 
 /**
  * Composable for conflict detection system.
@@ -276,51 +267,21 @@ export function useConflictDetection() {
     packageReq: NodeRequirements,
     systemEnvInfo: SystemEnvironment
   ): ConflictDetectionResult {
-    const conflicts: ConflictDetail[] = []
-
-    // 1. ComfyUI version conflict check
-    const versionConflict = checkVersionCompatibility(
-      'comfyui_version',
-      systemEnvInfo.comfyui_version,
-      packageReq.supported_comfyui_version
+    const conflicts = evaluateCompatibility(
+      {
+        supported_os: packageReq.supported_os as RegistryOS[] | undefined,
+        supported_accelerators: packageReq.supported_accelerators as
+          | RegistryAccelerator[]
+          | undefined,
+        supported_comfyui_version: packageReq.supported_comfyui_version,
+        supported_comfyui_frontend_version:
+          packageReq.supported_comfyui_frontend_version,
+        isBanned: packageReq.is_banned,
+        isPending: packageReq.is_pending
+      },
+      systemEnvInfo
     )
-    if (versionConflict) conflicts.push(versionConflict)
 
-    // 2. Frontend version conflict check
-    const frontendConflict = checkVersionCompatibility(
-      'frontend_version',
-      systemEnvInfo.frontend_version,
-      packageReq.supported_comfyui_frontend_version
-    )
-    if (frontendConflict) conflicts.push(frontendConflict)
-
-    // 3. OS compatibility check
-    const osConflict = checkOSCompatibility(
-      packageReq.supported_os as RegistryOS[] | undefined,
-      systemEnvInfo.os
-    )
-    if (osConflict) conflicts.push(osConflict)
-
-    // 4. Accelerator compatibility check
-    const acceleratorConflict = checkAcceleratorCompatibility(
-      packageReq.supported_accelerators as RegistryAccelerator[] | undefined,
-      systemEnvInfo.accelerator
-    )
-    if (acceleratorConflict) conflicts.push(acceleratorConflict)
-
-    // 5. Banned package check using shared logic
-    const bannedConflict = createBannedConflict(packageReq.is_banned)
-    if (bannedConflict) {
-      conflicts.push(bannedConflict)
-    }
-
-    // 6. Registry data availability check using shared logic
-    const pendingConflict = createPendingConflict(packageReq.is_pending)
-    if (pendingConflict) {
-      conflicts.push(pendingConflict)
-    }
-
-    // Generate result
     const hasConflict = conflicts.length > 0
 
     return {
@@ -615,63 +576,26 @@ export function useConflictDetection() {
   function checkNodeCompatibility(
     node: Node | components['schemas']['NodeVersion']
   ) {
-    const conflicts: ConflictDetail[] = []
-
-    // Check OS compatibility
-    const osConflict = checkOSCompatibility(
-      normalizeOSList(node.supported_os),
-      systemEnvironment.value?.os
+    const conflicts = evaluateCompatibility(
+      {
+        supported_os: normalizeOSList(node.supported_os),
+        supported_accelerators:
+          node.supported_accelerators as RegistryAccelerator[],
+        supported_comfyui_version: node.supported_comfyui_version,
+        supported_comfyui_frontend_version:
+          node.supported_comfyui_frontend_version,
+        isBanned:
+          node.status === 'NodeStatusBanned' ||
+          node.status === 'NodeVersionStatusBanned',
+        isPending: node.status === 'NodeVersionStatusPending'
+      },
+      {
+        comfyui_version: systemEnvironment.value?.comfyui_version,
+        frontend_version: getFrontendVersion(),
+        os: systemEnvironment.value?.os,
+        accelerator: systemEnvironment.value?.accelerator
+      }
     )
-    if (osConflict) {
-      conflicts.push(osConflict)
-    }
-
-    // Check Accelerator compatibility
-    const acceleratorConflict = checkAcceleratorCompatibility(
-      node.supported_accelerators as RegistryAccelerator[],
-      systemEnvironment.value?.accelerator
-    )
-    if (acceleratorConflict) {
-      conflicts.push(acceleratorConflict)
-    }
-
-    // Check ComfyUI version compatibility
-    const comfyUIVersionConflict = checkVersionCompatibility(
-      'comfyui_version',
-      systemEnvironment.value?.comfyui_version,
-      node.supported_comfyui_version
-    )
-    if (comfyUIVersionConflict) {
-      conflicts.push(comfyUIVersionConflict)
-    }
-
-    // Check ComfyUI Frontend version compatibility
-    const currentFrontendVersion = getFrontendVersion()
-    const frontendVersionConflict = checkVersionCompatibility(
-      'frontend_version',
-      currentFrontendVersion,
-      node.supported_comfyui_frontend_version
-    )
-    if (frontendVersionConflict) {
-      conflicts.push(frontendVersionConflict)
-    }
-
-    // Check banned package status using shared logic
-    const bannedConflict = createBannedConflict(
-      node.status === 'NodeStatusBanned' ||
-        node.status === 'NodeVersionStatusBanned'
-    )
-    if (bannedConflict) {
-      conflicts.push(bannedConflict)
-    }
-
-    // Check pending status using shared logic
-    const pendingConflict = createPendingConflict(
-      node.status === 'NodeVersionStatusPending'
-    )
-    if (pendingConflict) {
-      conflicts.push(pendingConflict)
-    }
 
     return {
       hasConflict: conflicts.length > 0,
