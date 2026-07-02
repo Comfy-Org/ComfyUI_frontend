@@ -2,12 +2,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -57,6 +62,62 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 function drawFrame(canvas: LGraphCanvas) {
   canvas.onDrawForeground?.({} as CanvasRenderingContext2D, new Rectangle())
 }
+
+describe('DomWidgets app mode round-trip', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('restores promoted widget visibility after graph → app → graph', async () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+    const { setMode } = useAppMode()
+
+    // Set up an active workflow so linearMode is driven by activeMode
+    const workflowStore = useWorkflowStore()
+    const workflow = new ComfyWorkflow({
+      path: 'workflows/test.json',
+      modified: Date.now(),
+      size: 1
+    })
+    workflow.activeMode = 'graph'
+    workflowStore.activeWorkflow = workflow as unknown as LoadedComfyWorkflow
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [100, 200])
+    const widget = createWidget('round-trip-widget', node, 14)
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    // Initial draw — widget visible
+    drawFrame(canvas)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)!
+    expect(widgetState.visible).toBe(true)
+
+    // Enter app mode — canvas is hidden, no more draw calls
+    setMode('app')
+    await nextTick()
+
+    // Simulate stale visibility from lack of draw calls during app mode
+    // (in production, v-show hides the canvas so updateWidgets doesn't run)
+    widgetState.visible = false
+    vi.mocked(canvas.isNodeVisible).mockClear()
+
+    // Return to graph mode
+    setMode('graph')
+    await nextTick()
+
+    // The whenever watcher should have called updateWidgets automatically
+    expect(canvas.isNodeVisible).toHaveBeenCalled()
+    expect(widgetState.visible).toBe(true)
+  })
+})
 
 describe('DomWidgets positioning', () => {
   beforeEach(() => {
