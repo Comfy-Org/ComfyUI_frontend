@@ -12,6 +12,4 @@ const isExternal = /^https?:\/\//.test(href)
   target={isExternal ? '_blank' : undefined}
   rel={isExternal ? 'noopener noreferrer' : undefined}
   class="text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-80"
->
-  <slot />
-</a>
+><slot /></a>

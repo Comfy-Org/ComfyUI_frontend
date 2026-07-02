@@ -3,7 +3,7 @@ interface Author {
   name?: string
   role?: string
   photo?: string
-  bio: string
+  bio?: string
 }
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 }
 
 const { label, people } = Astro.props
+const hasBioSlot = Astro.slots.has('default')
 ---
 
 <div class="mt-12 border-t border-white/10 pt-8">
@@ -42,9 +43,15 @@ const { label, people } = Astro.props
                 )}
               </p>
             )}
-            <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas italic">
-              {person.bio}
-            </p>
+            {person.bio ? (
+              <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas italic">
+                {person.bio}
+              </p>
+            ) : hasBioSlot ? (
+              <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas italic">
+                <slot />
+              </p>
+            ) : null}
           </div>
         </div>
       ))
