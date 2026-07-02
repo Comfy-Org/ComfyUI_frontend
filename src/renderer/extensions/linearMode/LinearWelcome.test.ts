@@ -19,10 +19,6 @@ vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ setMode: vi.fn() })
 }))
 
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({ show: vi.fn() })
-}))
-
 vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: () => ({
     hasNodes,
@@ -45,7 +41,14 @@ function renderComponent(
   hasNodes.value = opts.hasNodes ?? false
   hasOutputs.value = opts.hasOutputs ?? false
   return render(LinearWelcome, {
-    global: { plugins: [i18n] }
+    global: {
+      plugins: [i18n],
+      stubs: {
+        LinearGetStarted: {
+          template: '<div data-testid="get-started-stub" />'
+        }
+      }
+    }
   })
 }
 
@@ -56,11 +59,10 @@ describe('LinearWelcome', () => {
     vi.clearAllMocks()
   })
 
-  it('shows empty workflow text when there are no nodes', () => {
+  it('shows the get started page when there are no nodes', () => {
     renderComponent({ hasNodes: false })
-    expect(
-      screen.getByTestId('linear-welcome-empty-workflow')
-    ).toBeInTheDocument()
+    expect(screen.getByTestId('get-started-stub')).toBeInTheDocument()
+    expect(screen.queryByTestId('linear-welcome')).not.toBeInTheDocument()
     expect(
       screen.queryByTestId('linear-welcome-build-app')
     ).not.toBeInTheDocument()
@@ -68,9 +70,7 @@ describe('LinearWelcome', () => {
 
   it('shows build app button when there are nodes but no outputs', () => {
     renderComponent({ hasNodes: true, hasOutputs: false })
-    expect(
-      screen.queryByTestId('linear-welcome-empty-workflow')
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('get-started-stub')).not.toBeInTheDocument()
     expect(screen.getByTestId('linear-welcome-build-app')).toBeInTheDocument()
   })
 
