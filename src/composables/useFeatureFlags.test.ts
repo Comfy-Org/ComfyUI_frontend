@@ -6,6 +6,12 @@ import {
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
+import {
+  cachedConsolidatedBillingEnabled,
+  cachedTeamWorkspacesEnabled,
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
 // Mock the API module
@@ -218,6 +224,86 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(true)
+    })
+
+    it('consolidatedBillingEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.setItem('ff:consolidated_billing_enabled', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+    })
+
+    it('consolidatedBillingEnabled is false off-cloud even without an override', () => {
+      vi.mocked(distributionTypes).isCloud = false
+
+      const { flags } = useFeatureFlags()
+      expect(flags.consolidatedBillingEnabled).toBe(false)
+    })
+  })
+
+  describe('auth-gated flags on cloud', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+      cachedTeamWorkspacesEnabled.value = undefined
+      cachedConsolidatedBillingEnabled.value = undefined
+      localStorage.clear()
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+      cachedTeamWorkspacesEnabled.value = undefined
+      cachedConsolidatedBillingEnabled.value = undefined
+      localStorage.clear()
+    })
+
+    it('returns the cached session value during the auth window', () => {
+      cachedTeamWorkspacesEnabled.value = false
+      cachedConsolidatedBillingEnabled.value = true
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(false)
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+    })
+
+    it('defaults to false during the auth window when nothing is cached', () => {
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(false)
+      expect(flags.consolidatedBillingEnabled).toBe(false)
+    })
+
+    it('prefers authenticated remoteConfig over the server feature fallback', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = {
+        team_workspaces_enabled: true,
+        consolidated_billing_enabled: true
+      }
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(true)
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+    })
+
+    it('falls back to api.getServerFeature when authenticated config omits the flag', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = {}
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.TEAM_WORKSPACES_ENABLED) return true
+          if (path === ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED)
+            return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(true)
+      expect(flags.consolidatedBillingEnabled).toBe(true)
     })
   })
 
