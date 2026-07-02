@@ -199,10 +199,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphId: UUID,
     localNodeId: NodeId
   ): WidgetId[] {
-    const widgetStates = getGraphWidgetStates(graphId)
-    return [...widgetStates.entries()]
-      .filter(([, state]) => state.nodeId === localNodeId)
-      .map(([id]) => id)
+    // `order` is maintained incrementally on register/delete, so it already
+    // holds exactly this node's registered widgets — no full-graph scan needed.
+    return [...getNodeWidgetOrder(graphId, localNodeId)]
   }
 
   function getOrderedRegisteredNodeWidgetIds(
@@ -231,17 +230,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
-    const order = getNodeWidgetOrder(graphId, localNodeId)
-    const nextOrder = getRegisteredNodeWidgetOrder(graphId, localNodeId, order)
-
-    if (
-      nextOrder.length !== order.length ||
-      nextOrder.some((id, index) => id !== order[index])
-    ) {
-      order.splice(0, order.length, ...nextOrder)
-    }
-
-    return [...order]
+    // Read-only: `order` is already reconciled by the register/set/replace/
+    // delete paths, so reads never need to mutate it (this runs inside a
+    // Vue computed via computeProcessedWidgets).
+    return [...getNodeWidgetOrder(graphId, localNodeId)]
   }
 
   function setNodeWidgetOrder(
@@ -263,15 +255,15 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     localNodeId: NodeId,
     orderedWidgetIds: readonly WidgetId[]
   ): void {
-    const widgetStates = getGraphWidgetStates(graphId)
     const registeredIds = getRegisteredNodeWidgetIds(graphId, localNodeId)
     const nextOrder = getOrderedRegisteredNodeWidgetIds(
       registeredIds,
       orderedWidgetIds
     )
     const nextOrderSet = new Set(nextOrder)
-    for (const [id, state] of widgetStates.entries()) {
-      if (state.nodeId !== localNodeId || nextOrderSet.has(id)) continue
+    const widgetStates = getGraphWidgetStates(graphId)
+    for (const id of registeredIds) {
+      if (nextOrderSet.has(id)) continue
       widgetStates.delete(id)
       getGraphWidgetRenderStates(graphId).delete(id)
       getGraphWidgetSpecs(graphId).delete(id)
