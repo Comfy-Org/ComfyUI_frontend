@@ -51,7 +51,7 @@ test.describe(
       return menu
     }
 
-    test('last menu item "Remove" is reachable via scroll', async ({
+    test('last menu item "Delete" is reachable via scroll', async ({
       comfyPage
     }) => {
       const menu = await openMoreOptions(comfyPage)
@@ -67,26 +67,26 @@ test.describe(
         )
         .toBe(true)
 
-      // "Remove" is the last item in the More Options menu.
+      // "Delete" is the last item in the More Options menu.
       // It must become reachable by scrolling the bounded menu list.
-      const removeItem = menu.getByText('Remove', { exact: true })
+      const deleteItem = menu.getByText('Delete', { exact: true })
       const didScroll = await rootList.evaluate((el) => {
         const previousScrollTop = el.scrollTop
         el.scrollTo({ top: el.scrollHeight })
         return el.scrollTop > previousScrollTop
       })
       expect(didScroll).toBe(true)
-      await expect(removeItem).toBeVisible()
+      await expect(deleteItem).toBeVisible()
     })
 
-    test('last menu item "Remove" is clickable and removes the node', async ({
+    test('last menu item "Delete" is clickable and removes the node', async ({
       comfyPage
     }) => {
       const menu = await openMoreOptions(comfyPage)
 
-      const removeItem = menu.getByText('Remove', { exact: true })
-      await removeItem.scrollIntoViewIfNeeded()
-      await removeItem.click()
+      const deleteItem = menu.getByText('Delete', { exact: true })
+      await deleteItem.scrollIntoViewIfNeeded()
+      await deleteItem.click()
       await comfyPage.nextFrame()
 
       // The node should be removed from the graph
