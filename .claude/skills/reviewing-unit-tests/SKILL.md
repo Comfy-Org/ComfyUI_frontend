@@ -143,7 +143,7 @@ A regression test that never proves red does not pin the bug.
 | New store test or store mock        | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) setup + [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                   |
 | New component test                  | Top note in [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                                                                                     |
 | `vue-i18n` in a component test      | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) + [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |
-| Cast around a mock                  | [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md) -> "Type Assertion Hierarchy"                                                                                               |
+| Cast around a mock                  | [`src/AGENTS.md`](../../../src/AGENTS.md) -> "TypeScript" (type assertion hierarchy)                                                                                                              |
 
 ## Key Files to Read
 

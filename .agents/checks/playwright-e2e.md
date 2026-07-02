@@ -10,8 +10,7 @@ You are reviewing Playwright E2E test code in `browser_tests/`. Focus on issues 
 Reference docs (read if you need full context):
 
 - `browser_tests/README.md` — setup, patterns, screenshot workflow
-- `browser_tests/AGENTS.md` — directory structure, fixture overview
-- `docs/guidance/playwright.md` — type assertion rules, test tags, forbidden patterns
+- `browser_tests/AGENTS.md` — directory structure, fixture overview, type assertion rules, test tags, forbidden patterns
 - `.claude/skills/writing-playwright-tests/SKILL.md` — anti-patterns, retry patterns, Vue Nodes vs LiteGraph decision guide
 
 ## Checks
@@ -49,7 +48,7 @@ Reference docs (read if you need full context):
 
 11. **Missing test tags** — Every `test.describe` should have `tag` with at least one of: `@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@mobile`, `@2x`. See `.claude/skills/writing-playwright-tests/SKILL.md` for when to use each.
 
-12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `docs/guidance/playwright.md` for acceptable patterns.
+12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `browser_tests/AGENTS.md` for acceptable patterns.
 
 13. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
 

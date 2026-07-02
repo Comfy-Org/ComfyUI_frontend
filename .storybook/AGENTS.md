@@ -1,6 +1,6 @@
 # Storybook Guidelines
 
-See `@docs/guidance/storybook.md` for story patterns (auto-loaded for `*.stories.ts`).
+See the Storybook section of `src/AGENTS.md` for story structure and variant conventions.
 
 ## Available Context
 

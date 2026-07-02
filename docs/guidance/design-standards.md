@@ -1,22 +1,22 @@
----
-globs:
-  - 'src/components/**/*.vue'
-  - 'src/views/**/*.vue'
----
-
 # Comfy Design Standards
 
-Applies when implementing or modifying user-facing components and views.
+Reference for implementing user-facing components and views anywhere in the
+codebase (`src/components/`, `src/views/`, `src/platform/`, `src/workbench/`,
+`apps/`).
 
-## Before Implementing UI Changes
+## When to Consult
 
-Consult the **Comfy Design Standards** Figma file to ensure your changes follow the agreed-upon design principles. Use the Figma MCP tool to fetch the current standards:
+When adding new UI or changing visual design, fetch the relevant section of
+the **Comfy Design Standards** Figma file before implementing. Skip this for
+refactors, bugfixes, and logic-only changes. If the Figma MCP is unavailable,
+say so in the PR description instead of skipping silently.
+
+The Figma file is the single source of truth. Always fetch it live — do not
+rely on cached assumptions:
 
 ```javascript
 get_figma_data({ fileKey: 'QreIv5htUaSICNuO2VBHw0', nodeId: '0:1' })
 ```
-
-The Figma file is the single source of truth. Always fetch it live — do not rely on cached assumptions.
 
 > **Note:** The Figma MCP is read-only. It cannot detect changes or diffs between versions. Always fetch the latest state before implementing.
 

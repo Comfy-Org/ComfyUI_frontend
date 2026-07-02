@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob).
+Directory-specific conventions live in nested `AGENTS.md` files — `src/AGENTS.md` (TypeScript, unit tests, Vue, Storybook, design standards) and `browser_tests/AGENTS.md` (Playwright E2E) — which agents load automatically when working in those directories.
 
 ## Project Structure & Module Organization
 
@@ -185,13 +185,13 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 ## Design Standards
 
-Before implementing any user-facing feature, consult the [Comfy Design Standards](https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards) Figma file. Use the Figma MCP to fetch it live — the file is the single source of truth and may be updated by designers at any time.
+When adding new UI or changing visual design, consult the [Comfy Design Standards](https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards) Figma file. Use the Figma MCP to fetch it live — the file is the single source of truth and may be updated by designers at any time. Skip this for refactors, bugfixes, and logic-only changes; if the Figma MCP is unavailable, say so in the PR description instead of skipping silently.
 
 See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
 
 ## Testing Guidelines
 
-See @docs/testing/\*.md for detailed patterns.
+Read `docs/testing/<topic>.md` (unit-testing, component-testing, store-testing, vitest-patterns) for detailed patterns when writing the corresponding kind of test.
 
 - Frameworks:
   - Vitest (unit/component, happy-dom)
@@ -218,7 +218,7 @@ See @docs/testing/\*.md for detailed patterns.
 3. Keep your module mocks contained  
    Do not use global mutable state within the test file  
    Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
-4. For Component testing, prefer [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) with `@testing-library/user-event` for user-centric, behavioral tests. [Vue Test Utils](https://test-utils.vuejs.org/) is also accepted, especially for tests that need direct access to the component wrapper (e.g., `findComponent`, `emitted()`). Follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
+4. For Component testing, use [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) with `@testing-library/user-event` for user-centric, behavioral tests — an ESLint rule bans `@vue/test-utils` imports in new tests. Follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
 5. Aim for behavioral coverage of critical and new features
 
 ### Playwright / Browser / E2E Tests
@@ -226,7 +226,7 @@ See @docs/testing/\*.md for detailed patterns.
 1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
 2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
 3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
-4. Type all API mock responses in `route.fulfill()` using generated types or schemas from `packages/ingest-types`, `packages/registry-types`, `src/workbench/extensions/manager/types/generatedManagerTypes.ts`, or `src/schemas/` — see `docs/guidance/playwright.md` for the full source-of-truth table
+4. Type all API mock responses in `route.fulfill()` using generated types or schemas from `packages/ingest-types`, `packages/registry-types`, `src/workbench/extensions/manager/types/generatedManagerTypes.ts`, or `src/schemas/` — see `browser_tests/AGENTS.md` for the full source-of-truth table
 
 ## External Resources
 
