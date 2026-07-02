@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -7,7 +6,6 @@ import EditableText from '@/components/common/EditableText.vue'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -72,29 +70,13 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
-const linkRevision = ref(0)
-useEventListener(
-  () => node.graph?.events,
-  'node:slot-links:changed',
-  (event) => {
-    const detail = (
-      event as CustomEvent<{ nodeId: unknown; slotType: NodeSlotType }>
-    ).detail
-    if (
-      String(detail.nodeId) === String(node.id) &&
-      detail.slotType === NodeSlotType.INPUT
-    ) {
-      linkRevision.value++
-    }
-  }
-)
-
-const isLinked = computed(() => {
-  void linkRevision.value
-  return !!node.inputs?.some(
-    (input) => input.widget?.name === widget.name && input.link != null
+const isLinked = computed(() =>
+  Boolean(
+    node.inputs?.some(
+      (input) => input.widget?.name === widget.name && input.link != null
+    )
   )
-})
+)
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
   const graphId = node.graph?.rootGraph?.id

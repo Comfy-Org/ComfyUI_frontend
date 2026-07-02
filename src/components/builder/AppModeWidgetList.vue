@@ -63,16 +63,16 @@ function ensureSelectedWidgetState(
 ): void {
   if (widgetValueStore.getWidget(widgetId)) return
 
-  widgetValueStore.registerWidget(widgetId, {
-    type: widget.type,
-    value: widget.value,
-    options: widget.options,
-    label: widget.label,
-    serialize: widget.serialize,
-    disabled: widget.disabled
-  })
-  widgetValueStore.registerWidgetRenderState(
+  widgetValueStore.registerWidget(
     widgetId,
+    {
+      type: widget.type,
+      value: widget.value,
+      options: widget.options,
+      label: widget.label,
+      serialize: widget.serialize,
+      disabled: widget.disabled
+    },
     deriveWidgetRenderState(widget)
   )
 }

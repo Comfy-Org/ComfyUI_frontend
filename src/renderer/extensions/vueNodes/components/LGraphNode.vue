@@ -153,7 +153,7 @@
         >
           <NodeSlots :node-data />
 
-          <NodeWidgets v-if="hasRenderableWidgets" :node-data :widget-ids />
+          <NodeWidgets v-if="hasRenderableWidgets" :node-data />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
@@ -298,7 +298,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { isVideoOutput, mapLiveWidgetsById } from '@/utils/litegraphUtil'
+import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -725,13 +725,7 @@ const widgetIds = computed(() => {
   const bareNodeId = stripGraphPrefix(nodeData.id)
   if (!graphId || !bareNodeId) return []
 
-  const storedIds = widgetValueStore.getNodeWidgetIds(graphId, bareNodeId) ?? []
-  const node = lgraphNode.value
-  if (!node) return storedIds
-  if (!node.widgets?.length) return []
-
-  const liveIds = mapLiveWidgetsById(node)
-  return storedIds.filter((id) => liveIds.has(id))
+  return widgetValueStore.getNodeWidgetIds(graphId, bareNodeId) ?? []
 })
 
 const hasRenderableWidgets = computed(() => widgetIds.value.length > 0)

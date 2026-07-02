@@ -296,14 +296,18 @@ function seedNestedPromotedInputState(
   hostInput.widget ??= { name: inputName }
   hostInput.widget.name = inputName
   hostInput.widgetId = id
-  store.registerWidget(id, {
-    type: sourceState.type,
-    value: sourceState.value,
-    options: cloneDeep(sourceState.options ?? {}),
-    label: hostInput.label ?? sourceSlot.label ?? inputName,
-    serialize: sourceState.serialize,
-    disabled: sourceState.disabled
-  })
+  store.registerWidget(
+    id,
+    {
+      type: sourceState.type,
+      value: sourceState.value,
+      options: cloneDeep(sourceState.options ?? {}),
+      label: hostInput.label ?? sourceSlot.label ?? inputName,
+      serialize: sourceState.serialize,
+      disabled: sourceState.disabled
+    },
+    store.getWidgetRenderState(sourceSlot.widgetId) ?? {}
+  )
 }
 
 function promotePreviewViaExposure(

@@ -150,12 +150,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     const store = useWidgetValueStore()
     const id = widgetId(graphId, nodeId, this.name)
-    this._state = store.registerWidget(id, {
-      ...this._state,
-      type: this.type,
-      value: this.value
-    })
-    store.registerWidgetRenderState(id, deriveWidgetRenderState(this))
+    this._state = store.registerWidget(
+      id,
+      {
+        ...this._state,
+        type: this.type,
+        value: this.value
+      },
+      deriveWidgetRenderState(this)
+    )
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

@@ -646,18 +646,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
     input.widgetId = id
-    store.registerWidget(id, {
-      type: interiorWidget.type,
-      value: interiorWidget.value,
-      options: cloneDeep(interiorWidget.options ?? {}),
-      label: input.label ?? subgraphInput.name,
-      serialize: interiorWidget.serialize,
-      disabled: interiorWidget.disabled
-    })
+    store.registerWidget(
+      id,
+      {
+        type: interiorWidget.type,
+        value: interiorWidget.value,
+        options: cloneDeep(interiorWidget.options ?? {}),
+        label: input.label ?? subgraphInput.name,
+        serialize: interiorWidget.serialize,
+        disabled: interiorWidget.disabled
+      },
+      deriveWidgetRenderState(interiorWidget)
+    )
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
-    store.registerWidgetRenderState(id, deriveWidgetRenderState(interiorWidget))
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {

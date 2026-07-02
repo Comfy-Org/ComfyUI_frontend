@@ -86,8 +86,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function registerWidget<TValue = unknown>(
     widgetId: WidgetId,
-    init: WidgetStateInit<TValue>
+    init: WidgetStateInit<TValue>,
+    renderState: WidgetRenderState = {}
   ): WidgetState<TValue> {
+    registerWidgetRenderState(widgetId, renderState)
+
     const existing = getWidget(widgetId)
     if (existing) {
       appendNodeWidgetOrder(widgetId)
@@ -201,7 +204,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   return {
     registerWidget,
-    registerWidgetRenderState,
     getWidget,
     getWidgetRenderState,
     setValue,

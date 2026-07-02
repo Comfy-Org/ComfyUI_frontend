@@ -265,7 +265,7 @@ function createWidgetUpdateHandler({
   }
 }
 
-function getWidgetIds(
+function resolveWidgetIds(
   graphId: string | undefined,
   nodeId: NodeId,
   explicitWidgetIds: readonly WidgetId[] | undefined,
@@ -326,7 +326,7 @@ interface WidgetProcessingContext {
   showAdvanced: boolean
   rootGraph: LGraph | null
   hostNode: LGraphNode | null
-  liveWidgetsById: Map<WidgetId, IBaseWidget>
+  liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
   nodeExecId: NodeExecutionId
   nodeErrors: Parameters<typeof hasWidgetError>[2]
@@ -352,7 +352,7 @@ function processWidget(
   const { live, errorTarget, controlWidget } = resolveLiveWidgetContext(
     ctx.rootGraph,
     ctx.hostNode,
-    ctx.liveWidgetsById.get(id)
+    ctx.liveWidgets.get(id)
   )
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
@@ -456,11 +456,21 @@ export function computeProcessedWidgets({
   )
   if (!nodeExecId) return []
 
-  const ids = getWidgetIds(graphId, nodeData.id, widgetIds, widgetValueStore)
   const hostNode = getHostNode(rootGraph, nodeData)
-  const liveWidgetsById = hostNode
+  const liveWidgets = hostNode
     ? mapLiveWidgetsById(hostNode)
     : new Map<WidgetId, IBaseWidget>()
+  const orderedIds = resolveWidgetIds(
+    graphId,
+    nodeData.id,
+    widgetIds,
+    widgetValueStore
+  )
+  // Drop ids whose live widget is gone (e.g. removed directly on node.widgets);
+  // when the host node isn't resolvable yet, fall back to the stored order.
+  const ids = hostNode
+    ? orderedIds.filter((id) => liveWidgets.has(id))
+    : orderedIds
   const slotMetadata = buildSlotMetadata(
     nodeData.inputs ?? hostNode?.inputs,
     hostNode?.graph ?? rootGraph
@@ -470,7 +480,7 @@ export function computeProcessedWidgets({
     showAdvanced,
     rootGraph,
     hostNode,
-    liveWidgetsById,
+    liveWidgets,
     slotMetadata,
     nodeExecId,
     nodeErrors: executionErrorStore.lastNodeErrors?.[nodeExecId],

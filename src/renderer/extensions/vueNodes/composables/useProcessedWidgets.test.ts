@@ -12,6 +12,7 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -93,14 +94,19 @@ function registerWidgetState(
     value?: unknown
     label?: string
     options?: IBaseWidget['options']
-  } = {}
+  } = {},
+  renderState: WidgetRenderState = {}
 ) {
-  return useWidgetValueStore().registerWidget(id, {
-    type: init.type ?? 'combo',
-    value: 'value' in init ? init.value : 'value',
-    label: init.label,
-    options: init.options ?? {}
-  })
+  return useWidgetValueStore().registerWidget(
+    id,
+    {
+      type: init.type ?? 'combo',
+      value: 'value' in init ? init.value : 'value',
+      label: init.label,
+      options: init.options ?? {}
+    },
+    renderState
+  )
 }
 
 function processWidgets({
@@ -334,17 +340,20 @@ describe('computeProcessedWidgets', () => {
 
   it('reads render-only metadata from widgetValueStore render state', () => {
     const id = widgetId(GRAPH_ID, toNodeId('host'), 'display_slot')
-    registerWidgetState(id, {
-      type: 'unknown',
-      value: 'model.safetensors',
-      options: {}
-    })
-    useWidgetValueStore().registerWidgetRenderState(id, {
-      advanced: true,
-      hasLayoutSize: true,
-      isDOMWidget: true,
-      tooltip: 'Choose checkpoint'
-    })
+    registerWidgetState(
+      id,
+      {
+        type: 'unknown',
+        value: 'model.safetensors',
+        options: {}
+      },
+      {
+        advanced: true,
+        hasLayoutSize: true,
+        isDOMWidget: true,
+        tooltip: 'Choose checkpoint'
+      }
+    )
 
     const result = processWidgets({
       widgetIds: [id],
@@ -364,10 +373,7 @@ describe('computeProcessedWidgets', () => {
 
   it('treats explicit isDOMWidget false as authoritative', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'custom')
-    registerWidgetState(id, { type: 'unknown' })
-    useWidgetValueStore().registerWidgetRenderState(id, {
-      isDOMWidget: false
-    })
+    registerWidgetState(id, { type: 'unknown' }, { isDOMWidget: false })
 
     const result = processWidgets({ widgetIds: [id] })
 
