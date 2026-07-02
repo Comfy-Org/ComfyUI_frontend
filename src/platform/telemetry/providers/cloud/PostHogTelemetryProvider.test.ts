@@ -324,6 +324,12 @@ describe('PostHogTelemetryProvider', () => {
         current_tier: 'standard',
         error_message: 'timed out'
       })
+      provider.trackSubscriptionCancellation('confirmed', {
+        current_tier: 'pro'
+      })
+      provider.trackSubscriptionCancellation('abandoned', {
+        current_tier: 'creator'
+      })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED,
@@ -332,6 +338,14 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED,
         { current_tier: 'standard', error_message: 'timed out' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED,
+        { current_tier: 'pro' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED,
+        { current_tier: 'creator' }
       )
     })
 
