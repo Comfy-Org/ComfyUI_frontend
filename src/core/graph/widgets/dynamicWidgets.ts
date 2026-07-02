@@ -11,7 +11,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { commonType } from '@/lib/litegraph/src/utils/type'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
+import {
+  getWidgetIds,
+  resolveNodeRootGraphId
+} from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -47,6 +50,16 @@ type AutogrowNode = LGraphNode &
       >
     }
   }
+
+function syncNodeWidgetOrder(node: LGraphNode) {
+  const graphId = resolveNodeRootGraphId(node)
+  if (!graphId || !node.widgets) return
+  useWidgetValueStore().setNodeWidgetOrder(
+    graphId,
+    node.id,
+    getWidgetIds(node.widgets)
+  )
+}
 
 function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
   node.widgets ??= []
@@ -105,7 +118,10 @@ function dynamicComboWidget(
       if (widget.widgetId) deleteWidget(widget.widgetId)
     }
 
-    if (!newSpec) return
+    if (!newSpec) {
+      syncNodeWidgetOrder(node)
+      return
+    }
 
     const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     const startingLength = node.widgets.length
@@ -140,6 +156,7 @@ function dynamicComboWidget(
       node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
+    syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
       if (
         addedWidgets.length === 0 &&
@@ -541,8 +558,11 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   for (const input of toRemove) {
     const widgetName = input?.widget?.name
     if (!widgetName) continue
-    for (const widget of remove(node.widgets, (w) => w.name === widgetName))
+    for (const widget of remove(node.widgets, (w) => w.name === widgetName)) {
       widget.onRemove?.()
+      if (widget.widgetId) useWidgetValueStore().deleteWidget(widget.widgetId)
+    }
+    syncNodeWidgetOrder(node)
   }
   node.size[1] = node.computeSize([...node.size])[1]
 }

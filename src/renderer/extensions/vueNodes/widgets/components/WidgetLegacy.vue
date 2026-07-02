@@ -78,7 +78,9 @@ watch(() => canvasStore.currentGraph, bindWidget)
 
 function draw() {
   if (!widgetInstance || !node) return
-  const width = canvasEl.value.parentElement.clientWidth
+  const width =
+    canvasEl.value.parentElement.clientWidth ||
+    canvasEl.value.getBoundingClientRect().width
   // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
   let height = 20
   if (widgetInstance.computedHeight) {
@@ -126,7 +128,7 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    class="relative mx-[-12px] min-w-0 basis-0"
+    class="relative mx-[-12px] w-full min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas

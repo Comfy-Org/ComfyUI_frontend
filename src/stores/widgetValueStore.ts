@@ -2,11 +2,23 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
 import type { UUID } from '@/utils/uuid'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+
+export interface WidgetRenderState {
+  advanced?: boolean
+  hasLayoutSize?: boolean
+  isDOMWidget?: boolean
+  tooltip?: string
+}
+
+export interface WidgetSpec {
+  spec: InputSpecV2
+}
 
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
@@ -14,6 +26,11 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
+  const graphWidgetRenderStates = ref(
+    new Map<UUID, Map<WidgetId, WidgetRenderState>>()
+  )
+  const graphWidgetSpecs = ref(new Map<UUID, Map<WidgetId, WidgetSpec>>())
+  const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
@@ -24,12 +41,73 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return nextWidgetStates
   }
 
+  function getGraphWidgetRenderStates(
+    graphId: UUID
+  ): Map<WidgetId, WidgetRenderState> {
+    const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
+    if (widgetRenderStates) return widgetRenderStates
+
+    const nextWidgetRenderStates = reactive(
+      new Map<WidgetId, WidgetRenderState>()
+    )
+    graphWidgetRenderStates.value.set(graphId, nextWidgetRenderStates)
+    return nextWidgetRenderStates
+  }
+
+  function getGraphWidgetSpecs(graphId: UUID): Map<WidgetId, WidgetSpec> {
+    const widgetSpecs = graphWidgetSpecs.value.get(graphId)
+    if (widgetSpecs) return widgetSpecs
+
+    const nextWidgetSpecs = reactive(new Map<WidgetId, WidgetSpec>())
+    graphWidgetSpecs.value.set(graphId, nextWidgetSpecs)
+    return nextWidgetSpecs
+  }
+
+  function getGraphNodeWidgetOrders(graphId: UUID): Map<NodeId, WidgetId[]> {
+    const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (widgetOrders) return widgetOrders
+
+    const nextWidgetOrders = reactive(new Map<NodeId, WidgetId[]>())
+    graphNodeWidgetOrders.value.set(graphId, nextWidgetOrders)
+    return nextWidgetOrders
+  }
+
+  function getNodeWidgetOrder(graphId: UUID, nodeId: NodeId): WidgetId[] {
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(nodeId)
+    if (order) return order
+
+    const nextOrder = reactive<WidgetId[]>([])
+    graphOrders.set(nodeId, nextOrder)
+    return nextOrder
+  }
+
+  function appendNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const order = getNodeWidgetOrder(graphId, nodeId)
+    if (!order.includes(widgetId)) order.push(widgetId)
+  }
+
+  function removeNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(nodeId)
+    if (!order) return
+
+    const index = order.indexOf(widgetId)
+    if (index !== -1) order.splice(index, 1)
+    if (order.length === 0) graphOrders.delete(nodeId)
+  }
+
   function registerWidget<TValue = unknown>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>
   ): WidgetState<TValue> {
     const existing = getWidget(widgetId)
-    if (existing) return existing as WidgetState<TValue>
+    if (existing) {
+      appendNodeWidgetOrder(widgetId)
+      return existing as WidgetState<TValue>
+    }
 
     const { graphId, nodeId, name } = parseWidgetId(widgetId)
     const state: WidgetState<TValue> = {
@@ -40,12 +118,59 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)
+    appendNodeWidgetOrder(widgetId)
     return widgetStates.get(widgetId) as WidgetState<TValue>
+  }
+
+  function registerWidgetRenderState(
+    widgetId: WidgetId,
+    init: WidgetRenderState
+  ): WidgetRenderState {
+    const { graphId } = parseWidgetId(widgetId)
+    const widgetRenderStates = getGraphWidgetRenderStates(graphId)
+    const existing = widgetRenderStates.get(widgetId)
+    if (existing) {
+      Object.assign(existing, init)
+      return existing
+    }
+
+    const state: WidgetRenderState = { ...init }
+    widgetRenderStates.set(widgetId, state)
+    return widgetRenderStates.get(widgetId) as WidgetRenderState
   }
 
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetStates(graphId).get(widgetId)
+  }
+
+  function registerWidgetSpec(
+    widgetId: WidgetId,
+    spec: InputSpecV2
+  ): WidgetSpec {
+    const { graphId } = parseWidgetId(widgetId)
+    const widgetSpecs = getGraphWidgetSpecs(graphId)
+    const existing = widgetSpecs.get(widgetId)
+    if (existing) {
+      existing.spec = spec
+      return existing
+    }
+
+    const component: WidgetSpec = { spec }
+    widgetSpecs.set(widgetId, component)
+    return widgetSpecs.get(widgetId) as WidgetSpec
+  }
+
+  function getWidgetSpec(widgetId: WidgetId): WidgetSpec | undefined {
+    const { graphId } = parseWidgetId(widgetId)
+    return getGraphWidgetSpecs(graphId).get(widgetId)
+  }
+
+  function getWidgetRenderState(
+    widgetId: WidgetId
+  ): WidgetRenderState | undefined {
+    const { graphId } = parseWidgetId(widgetId)
+    return getGraphWidgetRenderStates(graphId).get(widgetId)
   }
 
   function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
@@ -57,25 +182,117 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function deleteWidget(widgetId: WidgetId): boolean {
     const { graphId } = parseWidgetId(widgetId)
+    getGraphWidgetRenderStates(graphId).delete(widgetId)
+    getGraphWidgetSpecs(graphId).delete(widgetId)
+    removeNodeWidgetOrder(widgetId)
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
   function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
-    return [...getGraphWidgetStates(graphId).values()].filter(
-      (state) => state.nodeId === localNodeId
+    return getNodeWidgetIds(graphId, localNodeId).flatMap((id) => {
+      const state = getWidget(id)
+      return state ? [state] : []
+    })
+  }
+
+  function getRegisteredNodeWidgetIds(
+    graphId: UUID,
+    localNodeId: NodeId
+  ): WidgetId[] {
+    // `order` is maintained incrementally on register/delete, so it already
+    // holds exactly this node's registered widgets — no full-graph scan needed.
+    return [...getNodeWidgetOrder(graphId, localNodeId)]
+  }
+
+  function getOrderedRegisteredNodeWidgetIds(
+    registeredIds: readonly WidgetId[],
+    orderedWidgetIds: readonly WidgetId[]
+  ): WidgetId[] {
+    const registeredIdSet = new Set(registeredIds)
+    return orderedWidgetIds.filter((id) => registeredIdSet.has(id))
+  }
+
+  function getRegisteredNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): WidgetId[] {
+    const registeredIds = getRegisteredNodeWidgetIds(graphId, localNodeId)
+    const orderedIds = getOrderedRegisteredNodeWidgetIds(
+      registeredIds,
+      orderedWidgetIds
     )
+    const orderedIdSet = new Set(orderedIds)
+    return [
+      ...orderedIds,
+      ...registeredIds.filter((id) => !orderedIdSet.has(id))
+    ]
+  }
+
+  function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
+    // Read-only: `order` is already reconciled by the register/set/replace/
+    // delete paths, so reads never need to mutate it (this runs inside a
+    // Vue computed via computeProcessedWidgets).
+    return [...getNodeWidgetOrder(graphId, localNodeId)]
+  }
+
+  function setNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const nextOrder = getRegisteredNodeWidgetOrder(
+      graphId,
+      localNodeId,
+      orderedWidgetIds
+    )
+    const order = getNodeWidgetOrder(graphId, localNodeId)
+    order.splice(0, order.length, ...nextOrder)
+  }
+
+  function replaceNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const registeredIds = getRegisteredNodeWidgetIds(graphId, localNodeId)
+    const nextOrder = getOrderedRegisteredNodeWidgetIds(
+      registeredIds,
+      orderedWidgetIds
+    )
+    const nextOrderSet = new Set(nextOrder)
+    const widgetStates = getGraphWidgetStates(graphId)
+    for (const id of registeredIds) {
+      if (nextOrderSet.has(id)) continue
+      widgetStates.delete(id)
+      getGraphWidgetRenderStates(graphId).delete(id)
+      getGraphWidgetSpecs(graphId).delete(id)
+    }
+
+    const order = getNodeWidgetOrder(graphId, localNodeId)
+    order.splice(0, order.length, ...nextOrder)
   }
 
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
+    graphWidgetRenderStates.value.delete(graphId)
+    graphWidgetSpecs.value.delete(graphId)
+    graphNodeWidgetOrders.value.delete(graphId)
   }
 
   return {
     registerWidget,
+    registerWidgetRenderState,
+    registerWidgetSpec,
     getWidget,
+    getWidgetRenderState,
+    getWidgetSpec,
     setValue,
     deleteWidget,
     getNodeWidgets,
+    getNodeWidgetIds,
+    setNodeWidgetOrder,
+    replaceNodeWidgetOrder,
     clearGraph
   }
 })

@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -21,7 +21,11 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { getControlWidget } from '@/types/simplifiedWidget'
+import type {
+  SimplifiedWidget,
+  WidgetValue as SimplifiedWidgetValue
+} from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -68,13 +72,28 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
+const linkRevision = ref(0)
+useEventListener(
+  () => node.graph?.events,
+  'node:slot-links:changed',
+  (event) => {
+    const detail = (
+      event as CustomEvent<{ nodeId: unknown; slotType: NodeSlotType }>
+    ).detail
+    if (
+      String(detail.nodeId) === String(node.id) &&
+      detail.slotType === NodeSlotType.INPUT
+    ) {
+      linkRevision.value++
+    }
+  }
+)
+
 const isLinked = computed(() => {
-  const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(node.id)
-    ?.widgets?.find((w) => w.name === widget.name)
-  return safeWidget?.slotMetadata
-    ? !!safeWidget.slotMetadata.linked
-    : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link
+  void linkRevision.value
+  return !!node.inputs?.some(
+    (input) => input.widget?.name === widget.name && input.link != null
+  )
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
@@ -93,7 +112,9 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   return {
     name: widgetName,
     type: widgetType,
-    value: widgetState?.value ?? widget.value,
+    value: (widgetState
+      ? widgetState.value
+      : widget.value) as SimplifiedWidgetValue,
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),

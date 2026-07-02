@@ -2,14 +2,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
@@ -203,6 +206,61 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(stub.value).toBe('model_a.safetensors')
+    })
+
+    it('passes null from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, value: 'source value' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: null,
+        options: {}
+      })
+
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
+
+      expect(stub.value).toBe('null')
+    })
+
+    it('updates disabled options when the widget input is linked', async () => {
+      const graphEvents = new EventTarget()
+      const node = createMockNode(
+        fromAny<Partial<LGraphNode>, unknown>({
+          graph: {
+            rootGraph: { id: 'test-graph-id' },
+            events: graphEvents
+          },
+          inputs: [
+            {
+              name: 'seed',
+              type: 'INT',
+              widget: { name: 'seed' },
+              link: null,
+              boundingRect: [0, 0, 0, 0]
+            }
+          ]
+        })
+      )
+      const widget = createMockWidget({ name: 'seed', options: {} })
+      const { container } = renderWidgetItem(widget, node)
+
+      expect(getStubWidget(container).options.disabled).toBeUndefined()
+      node.inputs![0].link = toLinkId(1)
+      graphEvents.dispatchEvent(
+        new CustomEvent('node:slot-links:changed', {
+          detail: {
+            nodeId: node.id,
+            slotType: NodeSlotType.INPUT,
+            slotIndex: 0,
+            connected: true,
+            linkId: 1
+          }
+        })
+      )
+      await nextTick()
+
+      expect(getStubWidget(container).options.disabled).toBe(true)
     })
   })
 })

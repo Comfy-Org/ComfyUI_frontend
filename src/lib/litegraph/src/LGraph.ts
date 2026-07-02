@@ -59,6 +59,7 @@ import {
   snapPoint
 } from './measure'
 import { warnDeprecated } from './utils/feedback'
+import { getWidgetIds } from './utils/widget'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -1006,9 +1007,15 @@ export class LGraph
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
     if (node.widgets) {
+      const widgetValueStore = useWidgetValueStore()
       for (const widget of node.widgets) {
         if (isNodeBindable(widget)) widget.setNodeId(node.id)
       }
+      widgetValueStore.setNodeWidgetOrder(
+        this.rootGraph.id,
+        node.id,
+        getWidgetIds(node.widgets)
+      )
     }
 
     this._nodes.push(node)

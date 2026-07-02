@@ -145,6 +145,13 @@ function applySubgraphInputOrder(
   })
 
   reorderSubgraphInputs(subgraphNode, orderedIndices)
+  useWidgetValueStore().setNodeWidgetOrder(
+    subgraphNode.rootGraph.id,
+    subgraphNode.id,
+    subgraphNode.inputs.flatMap((input) =>
+      input.widgetId ? [input.widgetId] : []
+    )
+  )
 
   for (const [newIndex, oldIndex] of orderedIndices.entries()) {
     const value = widgetValues[oldIndex]
@@ -281,21 +288,21 @@ function seedNestedPromotedInputState(
   )
   if (!hostInput || hostInput.widgetId) return
 
-  const sourceState = useWidgetValueStore().getWidget(sourceSlot.widgetId)
+  const store = useWidgetValueStore()
+  const sourceState = store.getWidget(sourceSlot.widgetId)
   if (!sourceState) return
 
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
   hostInput.widget.name = inputName
   hostInput.widgetId = id
-  useWidgetValueStore().registerWidget(id, {
+  store.registerWidget(id, {
     type: sourceState.type,
     value: sourceState.value,
     options: cloneDeep(sourceState.options ?? {}),
     label: hostInput.label ?? sourceSlot.label ?? inputName,
     serialize: sourceState.serialize,
-    disabled: sourceState.disabled,
-    isDOMWidget: sourceState.isDOMWidget
+    disabled: sourceState.disabled
   })
 }
 

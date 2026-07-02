@@ -15,6 +15,7 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -60,7 +61,7 @@ vi.mock(
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { getNodeById: vi.fn() },
+    rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() }
   }
 }))
@@ -161,7 +162,6 @@ const mockNodeData: VueNodeData = {
   flags: {},
   inputs: [],
   outputs: [],
-  widgets: [],
   selected: false,
   executing: false
 }
@@ -178,6 +178,7 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -202,6 +203,18 @@ describe('LGraphNode', () => {
     expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
       'test-node-123'
     )
+  })
+
+  it('does not prune widget store state while rendering', () => {
+    mockData.mockLgraphNode = {
+      widgets: [],
+      isSubgraphNode: () => false
+    }
+    const widgetValueStore = useWidgetValueStore()
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(widgetValueStore.replaceNodeWidgetOrder).not.toHaveBeenCalled()
   })
 
   it('should render node title', () => {
@@ -274,17 +287,16 @@ describe('LGraphNode', () => {
   })
 
   it('should hide advanced footer button while the node is collapsed', () => {
+    mockData.mockLgraphNode = {
+      isSubgraphNode: () => false,
+      widgets: [
+        { name: 'advancedWidget', type: 'number', options: { advanced: true } }
+      ]
+    }
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
-        flags: { collapsed: true },
-        widgets: [
-          {
-            name: 'advancedWidget',
-            type: 'number',
-            options: { advanced: true }
-          }
-        ]
+        flags: { collapsed: true }
       }
     })
 
@@ -294,18 +306,17 @@ describe('LGraphNode', () => {
   })
 
   it('should show error-only footer for collapsed nodes with advanced widgets', () => {
+    mockData.mockLgraphNode = {
+      isSubgraphNode: () => false,
+      widgets: [
+        { name: 'advancedWidget', type: 'number', options: { advanced: true } }
+      ]
+    }
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
         flags: { collapsed: true },
-        hasErrors: true,
-        widgets: [
-          {
-            name: 'advancedWidget',
-            type: 'number',
-            options: { advanced: true }
-          }
-        ]
+        hasErrors: true
       }
     })
 

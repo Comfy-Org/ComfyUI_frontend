@@ -53,6 +53,16 @@ workflowSvg.src =
 
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
+function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
+  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
+    return widget.isDOMWidget
+  }
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
+
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
 
@@ -643,23 +653,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
+    const store = useWidgetValueStore()
     input.widgetId = id
-    useWidgetValueStore().registerWidget(id, {
+    store.registerWidget(id, {
       type: interiorWidget.type,
       value: interiorWidget.value,
       options: cloneDeep(interiorWidget.options ?? {}),
       label: input.label ?? subgraphInput.name,
       serialize: interiorWidget.serialize,
-      disabled: interiorWidget.disabled,
-      isDOMWidget:
-        'isDOMWidget' in interiorWidget &&
-        typeof interiorWidget.isDOMWidget === 'boolean'
-          ? interiorWidget.isDOMWidget
-          : undefined
+      disabled: interiorWidget.disabled
     })
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
+    store.registerWidgetRenderState(id, {
+      advanced: interiorWidget.options?.advanced ?? interiorWidget.advanced,
+      hasLayoutSize: typeof interiorWidget.computeLayoutSize === 'function',
+      isDOMWidget: isDOMBackedWidget(interiorWidget),
+      tooltip: interiorWidget.tooltip
+    })
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {

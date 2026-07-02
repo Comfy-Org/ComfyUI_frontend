@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
@@ -22,6 +23,26 @@ export function evaluateInput(input: string): number | undefined {
   const newValue = Number(input)
   if (!isFinite(newValue)) return undefined
   return newValue
+}
+
+export function getWidgetIds(
+  widgets: readonly { readonly widgetId?: WidgetId }[]
+): WidgetId[] {
+  return widgets
+    .map((widget) => widget.widgetId)
+    .filter((id): id is WidgetId => id !== undefined)
+}
+
+export function getNodeWidgetIds(node: {
+  readonly widgets?: readonly { readonly widgetId?: WidgetId }[]
+  readonly inputs?: readonly { readonly widgetId?: WidgetId }[]
+}): WidgetId[] {
+  return Array.from(
+    new Set([
+      ...getWidgetIds(node.widgets ?? []),
+      ...getWidgetIds(node.inputs ?? [])
+    ])
+  )
 }
 
 export function resolveNodeRootGraphId(
