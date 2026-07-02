@@ -1,3 +1,5 @@
+import { readFileAsArrayBuffer } from './readFile'
+
 export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
 
@@ -33,18 +35,13 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   return vorbisComment
 }
 
-export function getFromFlacFile(file: File): Promise<Record<string, string>> {
-  return new Promise((r) => {
-    const reader = new FileReader()
-    reader.onload = function (event) {
-      // @ts-expect-error fixme ts strict error
-      const arrayBuffer = event.target.result as ArrayBuffer
-      r(getFromFlacBuffer(arrayBuffer))
-    }
-    reader.onerror = () => r({})
-    reader.onabort = () => r({})
-    reader.readAsArrayBuffer(file)
-  })
+export async function getFromFlacFile(
+  file: File
+): Promise<Record<string, string>> {
+  const buffer = await readFileAsArrayBuffer(file)
+  if (!buffer) return {}
+
+  return getFromFlacBuffer(buffer)
 }
 
 // Function to parse the Vorbis Comment block
