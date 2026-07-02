@@ -18,11 +18,13 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
 
+export type AuthMethod = 'email' | 'google' | 'github'
+
 /**
  * Authentication metadata for sign-up tracking
  */
 export interface AuthMetadata {
-  method?: 'email' | 'google' | 'github'
+  method?: AuthMethod
   is_new_user?: boolean
   user_id?: string
   email?: string
