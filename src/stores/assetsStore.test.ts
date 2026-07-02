@@ -774,6 +774,78 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 })
 
+describe('assetsStore - loadedJobIds (all-job dedup)', () => {
+  let store: ReturnType<typeof useAssetsStore>
+
+  const createFailedJobItem = (id: string): JobListItem => ({
+    id,
+    status: 'failed',
+    create_time: 1000,
+    update_time: 1000,
+    last_state_update: 1000,
+    priority: 1
+  })
+
+  const createDisplayableJobItem = (id: string, index = 0): JobListItem => ({
+    id,
+    status: 'completed',
+    create_time: 1000 + index,
+    update_time: 1000 + index,
+    last_state_update: 1000 + index,
+    priority: 1000 + index,
+    preview_output: {
+      filename: `output_${id}.png`,
+      subfolder: '',
+      type: 'output',
+      nodeId: 'node_1',
+      mediaType: 'images'
+    }
+  })
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useAssetsStore()
+    vi.clearAllMocks()
+  })
+
+  it('does not false-negative dedup when the first page is all non-displayable jobs', async () => {
+    const firstBatch = Array.from({ length: 200 }, (_, i) =>
+      createFailedJobItem(`failed_${i}`)
+    )
+    vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+    await store.updateHistory()
+
+    expect(store.historyAssets).toHaveLength(0)
+
+    const secondBatch = [
+      createFailedJobItem('failed_0'),
+      createDisplayableJobItem('new_job', 0)
+    ]
+    vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
+    await store.loadMoreHistory()
+
+    const ids = store.historyAssets.map((a) => a.id)
+    expect(ids).toContain('new_job')
+    expect(ids).not.toContain('failed_0')
+  })
+
+  it('loadedJobIds is cleared on reset (updateHistory)', async () => {
+    const firstBatch = [createFailedJobItem('job_a')]
+    vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+    await store.updateHistory()
+
+    const secondBatch = [createDisplayableJobItem('job_a', 0)]
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(secondBatch)
+      .mockResolvedValueOnce([])
+
+    await store.updateHistory()
+
+    expect(store.historyAssets).toHaveLength(1)
+    expect(store.historyAssets[0].id).toBe('job_a')
+  })
+})
+
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -1799,5 +1871,70 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     await Promise.all([p1, p2])
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
+  })
+
+  describe('in-flight tracking: refresh vs loadMore', () => {
+    it('refresh during an in-flight loadMore runs its reset path and is not dropped', async () => {
+      const firstPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+        makeAsset(`a${i}`, `f${i}.png`)
+      )
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage(firstPage, { hasMore: true })
+      )
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+
+      vi.mocked(assetService.getAssetsPageByTag).mockClear()
+
+      let resolveLoadMore!: (page: AssetResponse) => void
+      const loadMorePromise = new Promise<AssetResponse>((res) => {
+        resolveLoadMore = res
+      })
+      let resolveRefresh!: (page: AssetResponse) => void
+      const refreshPromise = new Promise<AssetResponse>((res) => {
+        resolveRefresh = res
+      })
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(loadMorePromise)
+        .mockReturnValueOnce(refreshPromise)
+
+      const loadMoreResult = store.loadMoreFlatOutputs()
+      const refreshResult = store.updateFlatOutputs()
+
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        2
+      )
+
+      resolveRefresh(makePage([makeAsset('fresh-1', 'fresh.png')]))
+      resolveLoadMore(makePage([makeAsset('extra-1', 'extra.png')]))
+      await Promise.all([loadMoreResult, refreshResult])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toContain('fresh-1')
+      expect(store.flatOutputAssets.map((a) => a.id)).not.toContain('extra-1')
+    })
+
+    it('a second concurrent refresh coalesces into the first refresh promise', async () => {
+      let resolvePage!: (page: AssetResponse) => void
+      const pagePromise = new Promise<AssetResponse>((res) => {
+        resolvePage = res
+      })
+      vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+        pagePromise
+      )
+
+      const store = useAssetsStore()
+      const r1 = store.updateFlatOutputs()
+      const r2 = store.updateFlatOutputs()
+
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        1
+      )
+
+      resolvePage(makePage([makeAsset('only-1', 'only.png')]))
+      await Promise.all([r1, r2])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['only-1'])
+    })
   })
 })
