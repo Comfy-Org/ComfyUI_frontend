@@ -42,7 +42,7 @@ export class AppModeHelper {
   public readonly imagePickerPopover: Locator
   /** The Run button in the app mode footer. */
   public readonly runButton: Locator
-  /** The welcome screen shown when app mode has nodes but no outputs. */
+  /** The welcome card shown when the graph has nodes or outputs (build prompt / ready to run). */
   public readonly welcome: Locator
   /** The "Build app" button shown when nodes exist but no outputs. */
   public readonly buildAppButton: Locator
@@ -50,6 +50,8 @@ export class AppModeHelper {
   public readonly getStarted: Locator
   /** The "Discover all templates" button on the get started page. */
   public readonly getStartedDiscoverButton: Locator
+  /** Featured template cards on the get started page. */
+  public readonly getStartedTemplateCards: Locator
   /** The cancel button for an in-progress run in the output history. */
   public readonly cancelRunButton: Locator
   /** Arrange-step placeholder shown when outputs are configured but no run has happened. */
@@ -113,6 +115,9 @@ export class AppModeHelper {
     this.getStarted = this.page.getByTestId(TestIds.appMode.getStarted)
     this.getStartedDiscoverButton = this.page.getByTestId(
       TestIds.appMode.getStartedDiscover
+    )
+    this.getStartedTemplateCards = this.page.getByTestId(
+      TestIds.appMode.getStartedTemplate
     )
     this.cancelRunButton = this.page.getByTestId(
       TestIds.outputHistory.cancelRun

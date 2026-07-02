@@ -5,41 +5,30 @@ import { createI18n } from 'vue-i18n'
 
 import LinearWelcome from './LinearWelcome.vue'
 
-const { hasNodes, hasOutputs, enterBuilder } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ref } = require('vue')
+const { appModeState, enterBuilder } = vi.hoisted(() => ({
+  appModeState: { hasNodes: false, hasOutputs: false },
+  enterBuilder: vi.fn()
+}))
+
+vi.mock('@/stores/appModeStore', async () => {
+  const { computed, reactive } = await import('vue')
   return {
-    hasNodes: ref(false),
-    hasOutputs: ref(false),
-    enterBuilder: vi.fn()
+    useAppModeStore: () =>
+      reactive({
+        hasNodes: computed(() => appModeState.hasNodes),
+        hasOutputs: computed(() => appModeState.hasOutputs),
+        enterBuilder
+      })
   }
 })
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({ setMode: vi.fn() })
-}))
-
-vi.mock('@/stores/appModeStore', () => ({
-  useAppModeStore: () => ({
-    hasNodes,
-    hasOutputs,
-    enterBuilder
-  })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: null
-  })
-}))
 
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false })
 
 function renderComponent(
   opts: { hasNodes?: boolean; hasOutputs?: boolean } = {}
 ) {
-  hasNodes.value = opts.hasNodes ?? false
-  hasOutputs.value = opts.hasOutputs ?? false
+  appModeState.hasNodes = opts.hasNodes ?? false
+  appModeState.hasOutputs = opts.hasOutputs ?? false
   return render(LinearWelcome, {
     global: {
       plugins: [i18n],
@@ -54,8 +43,8 @@ function renderComponent(
 
 describe('LinearWelcome', () => {
   beforeEach(() => {
-    hasNodes.value = false
-    hasOutputs.value = false
+    appModeState.hasNodes = false
+    appModeState.hasOutputs = false
     vi.clearAllMocks()
   })
 
@@ -72,6 +61,15 @@ describe('LinearWelcome', () => {
     renderComponent({ hasNodes: true, hasOutputs: false })
     expect(screen.queryByTestId('get-started-stub')).not.toBeInTheDocument()
     expect(screen.getByTestId('linear-welcome-build-app')).toBeInTheDocument()
+  })
+
+  it('shows the ready-to-run card without the build button when the app has outputs', () => {
+    renderComponent({ hasNodes: true, hasOutputs: true })
+    expect(screen.getByTestId('linear-welcome')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('linear-welcome-build-app')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('get-started-stub')).not.toBeInTheDocument()
   })
 
   it('clicking build app button calls enterBuilder', async () => {

@@ -430,6 +430,14 @@ import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import {
+  getBaseThumbnailSrc,
+  getEffectiveSourceModule,
+  getOverlayThumbnailSrc,
+  getTemplateDescription,
+  getTemplateTitle,
+  isAppTemplate
+} from '@/platform/workflow/templates/utils/templateUtil'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -468,16 +476,7 @@ provide(OnCloseKey, onClose)
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
-const {
-  loadTemplates,
-  loadWorkflowTemplate,
-  getTemplateTitle,
-  getTemplateDescription,
-  getEffectiveSourceModule,
-  isAppTemplate,
-  getBaseThumbnailSrc,
-  getOverlayThumbnailSrc
-} = useTemplateWorkflows()
+const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
 
 // Open tutorial in new tab
 const openTutorial = (template: TemplateInfo) => {

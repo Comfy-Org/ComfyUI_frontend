@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -11,6 +12,20 @@ const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
 const showGetStarted = computed(() => !hasOutputs.value && !hasNodes.value)
+
+const card = computed(() =>
+  hasOutputs.value
+    ? {
+        icon: 'icon-[lucide--play]',
+        title: t('linearMode.welcome.title'),
+        description: t('linearMode.welcome.description')
+      }
+    : {
+        icon: 'icon-[lucide--panels-top-left]',
+        title: t('linearMode.buildPrompt.title'),
+        description: t('linearMode.buildPrompt.description')
+      }
+)
 </script>
 
 <template>
@@ -23,43 +38,23 @@ const showGetStarted = computed(() => !hasOutputs.value && !hasNodes.value)
   >
     <div class="flex w-full max-w-xl flex-col items-center gap-6">
       <div
-        v-if="hasOutputs"
         class="flex w-full flex-col gap-2.5 rounded-2xl bg-base-background p-8 text-left"
       >
         <div
           class="flex size-12 items-center justify-center rounded-xl bg-secondary-background-hover"
         >
-          <i class="icon-[lucide--play] size-6 text-base-foreground" />
+          <i :class="cn(card.icon, 'size-6 text-base-foreground')" />
         </div>
         <div class="flex flex-col gap-2">
           <h2 class="text-3xl font-semibold text-base-foreground">
-            {{ t('linearMode.welcome.title') }}
+            {{ card.title }}
           </h2>
           <p class="text-sm/relaxed text-base-foreground">
-            {{ t('linearMode.welcome.description') }}
-          </p>
-        </div>
-      </div>
-      <div
-        v-else
-        class="flex w-full flex-col gap-2.5 rounded-2xl bg-base-background p-8 text-left"
-      >
-        <div
-          class="flex size-12 items-center justify-center rounded-xl bg-secondary-background-hover"
-        >
-          <i
-            class="icon-[lucide--panels-top-left] size-6 text-base-foreground"
-          />
-        </div>
-        <div class="flex flex-col gap-2">
-          <h2 class="text-3xl font-semibold text-base-foreground">
-            {{ t('linearMode.buildPrompt.title') }}
-          </h2>
-          <p class="text-sm/relaxed text-base-foreground">
-            {{ t('linearMode.buildPrompt.description') }}
+            {{ card.description }}
           </p>
         </div>
         <Button
+          v-if="!hasOutputs"
           data-testid="linear-welcome-build-app"
           variant="inverted"
           size="lg"

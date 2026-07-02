@@ -5,7 +5,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
-  TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
@@ -53,73 +52,6 @@ export function useTemplateWorkflows() {
   const selectTemplateCategory = (category: WorkflowTemplates | null) => {
     selectedTemplate.value = category
     return category !== null
-  }
-
-  /**
-   * Gets template thumbnail URL
-   */
-  const getTemplateThumbnailUrl = (
-    template: TemplateInfo,
-    sourceModule: string,
-    index = '1'
-  ) => {
-    const basePath =
-      sourceModule === 'default'
-        ? api.fileURL(`/templates/${template.name}`)
-        : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
-
-    const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
-    return `${basePath}${indexSuffix}.${template.mediaSubtype}`
-  }
-
-  /**
-   * Gets formatted template title
-   */
-  const getTemplateTitle = (template: TemplateInfo, sourceModule: string) => {
-    const fallback =
-      template.title ?? template.name ?? `${sourceModule} Template`
-    return sourceModule === 'default'
-      ? (template.localizedTitle ?? fallback)
-      : fallback
-  }
-
-  /**
-   * Source module a template loads from, defaulting to the frontend-provided set.
-   */
-  const getEffectiveSourceModule = (template: TemplateInfo) =>
-    template.sourceModule || 'default'
-
-  /**
-   * Whether a template targets App mode (name suffixed with `.app`).
-   */
-  const isAppTemplate = (template: TemplateInfo) =>
-    template.name.endsWith('.app')
-
-  /**
-   * Primary thumbnail URL for a template.
-   */
-  const getBaseThumbnailSrc = (template: TemplateInfo) => {
-    const sm = getEffectiveSourceModule(template)
-    return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
-  }
-
-  /**
-   * Secondary/hover thumbnail URL for a template.
-   */
-  const getOverlayThumbnailSrc = (template: TemplateInfo) => {
-    const sm = getEffectiveSourceModule(template)
-    return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
-  }
-
-  /**
-   * Gets formatted template description
-   */
-  const getTemplateDescription = (template: TemplateInfo) => {
-    return (
-      (template.localizedDescription || template.description)
-        ?.replace(/[-_]/g, ' ')
-        .trim() ?? ''
-    )
   }
 
   /**
@@ -205,13 +137,6 @@ export function useTemplateWorkflows() {
     loadTemplates,
     selectFirstTemplateCategory,
     selectTemplateCategory,
-    getTemplateThumbnailUrl,
-    getTemplateTitle,
-    getTemplateDescription,
-    getEffectiveSourceModule,
-    isAppTemplate,
-    getBaseThumbnailSrc,
-    getOverlayThumbnailSrc,
     loadWorkflowTemplate
   }
 }

@@ -5,23 +5,28 @@ import { useI18n } from 'vue-i18n'
 import LazyImage from '@/components/common/LazyImage.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
-import { app } from '@/scripts/app'
+import {
+  getBaseThumbnailSrc,
+  getEffectiveSourceModule,
+  getTemplateTitle,
+  isAppTemplate
+} from '@/platform/workflow/templates/utils/templateUtil'
+import { useCommandStore } from '@/stores/commandStore'
 
 const FEATURED_COUNT = 4
 
 const { t } = useI18n()
 const templatesStore = useWorkflowTemplatesStore()
+const toastStore = useToastStore()
+const commandStore = useCommandStore()
 const {
   isTemplatesLoaded,
   loadingTemplateId,
   loadTemplates,
-  getTemplateTitle,
-  getEffectiveSourceModule,
-  isAppTemplate,
-  getBaseThumbnailSrc,
   loadWorkflowTemplate
 } = useTemplateWorkflows()
 const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
@@ -34,20 +39,24 @@ const featuredTemplates = computed(() => {
   return (apps.length ? apps : all).slice(0, FEATURED_COUNT)
 })
 
+const isLoadingTemplate = computed(() => loadingTemplateId.value !== null)
+
 function titleOf(template: TemplateInfo) {
   return getTemplateTitle(template, getEffectiveSourceModule(template))
 }
 
 async function selectTemplate(template: TemplateInfo) {
-  await loadWorkflowTemplate(template.name, getEffectiveSourceModule(template))
-}
-
-function importWorkflow() {
-  app.ui.loadFile()
-}
-
-function discoverAll() {
-  templateSelectorDialog.show('appbuilder')
+  const loaded = await loadWorkflowTemplate(
+    template.name,
+    getEffectiveSourceModule(template)
+  )
+  if (!loaded) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('linearMode.getStarted.loadFailed')
+    })
+  }
 }
 </script>
 
@@ -56,12 +65,12 @@ function discoverAll() {
     data-testid="linear-get-started"
     class="flex size-full min-h-0 flex-col items-center overflow-y-auto px-8 pt-[clamp(96px,18vh,200px)] pb-16"
   >
-    <div class="flex w-full max-w-[860px] flex-col items-center gap-8">
+    <div class="flex w-full max-w-4xl flex-col items-center gap-8">
       <div class="flex flex-col items-center gap-1 text-center">
-        <h1 class="text-[44px] leading-none font-medium text-base-foreground">
+        <h1 class="text-5xl leading-none font-medium text-base-foreground">
           {{ t('linearMode.getStarted.title') }}
         </h1>
-        <p class="max-w-[520px] text-sm/relaxed text-muted-foreground">
+        <p class="max-w-lg text-sm/relaxed text-muted-foreground">
           {{ t('linearMode.getStarted.subtitle') }}
         </p>
       </div>
@@ -82,7 +91,8 @@ function discoverAll() {
           size="md"
           class="rounded-full bg-interface-menu-component-surface-hovered px-3 opacity-70 hover:bg-interface-menu-component-surface-selected hover:opacity-100"
           data-testid="linear-get-started-import"
-          @click="importWorkflow"
+          :disabled="isLoadingTemplate"
+          @click="commandStore.execute('Comfy.OpenWorkflow')"
         >
           <i class="icon-[lucide--upload] size-3.5" />
           {{ t('linearMode.getStarted.importWorkflow') }}
@@ -97,7 +107,8 @@ function discoverAll() {
               :key="template.name"
               type="button"
               data-testid="linear-get-started-template"
-              class="group relative flex size-50 cursor-pointer appearance-none flex-col overflow-hidden rounded-2xl border-none bg-base-background p-0 text-left"
+              class="group relative flex size-50 cursor-pointer appearance-none flex-col overflow-hidden rounded-2xl border-none bg-base-background p-0 text-left disabled:cursor-default"
+              :disabled="isLoadingTemplate"
               @click="selectTemplate(template)"
             >
               <div
@@ -136,7 +147,8 @@ function discoverAll() {
           variant="textonly"
           size="lg"
           data-testid="linear-get-started-discover"
-          @click="discoverAll"
+          :disabled="isLoadingTemplate"
+          @click="templateSelectorDialog.show('appbuilder')"
         >
           {{ t('linearMode.getStarted.discoverAll') }}
           <i class="icon-[lucide--arrow-right] size-4" />

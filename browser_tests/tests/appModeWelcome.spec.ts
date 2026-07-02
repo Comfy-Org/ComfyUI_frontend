@@ -38,6 +38,20 @@ test.describe('App mode welcome states', { tag: '@ui' }, () => {
     await expect(comfyPage.appMode.buildAppButton).toBeHidden()
   })
 
+  test('Clicking a featured template loads it into the graph', async ({
+    comfyPage
+  }) => {
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.appMode.toggleAppMode()
+
+    await comfyPage.appMode.getStartedTemplateCards.first().click()
+
+    await expect(comfyPage.appMode.getStarted).toBeHidden()
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(0)
+  })
+
   test('Discover all templates opens template selector', async ({
     comfyPage
   }) => {

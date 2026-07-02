@@ -3719,7 +3719,8 @@
       "subtitle": "Pick an app template to get started. Each one is built on a workflow.",
       "templates": "Templates",
       "importWorkflow": "Import workflow",
-      "discoverAll": "Discover all templates"
+      "discoverAll": "Discover all templates",
+      "loadFailed": "Couldn't load this template. Please try again."
     },
     "buildPrompt": {
       "title": "Make this workflow an App",

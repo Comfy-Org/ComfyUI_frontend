@@ -221,6 +221,7 @@ export const TestIds = {
     buildApp: 'linear-welcome-build-app',
     getStarted: 'linear-get-started',
     getStartedDiscover: 'linear-get-started-discover',
+    getStartedTemplate: 'linear-get-started-template',
     arrangePreview: 'linear-arrange-preview',
     arrangeNoOutputs: 'linear-arrange-no-outputs',
     arrangeSwitchToOutputs: 'linear-arrange-switch-to-outputs',
