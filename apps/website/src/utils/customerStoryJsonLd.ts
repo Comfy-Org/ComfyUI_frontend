@@ -30,8 +30,7 @@ export interface JsonLdContext {
 }
 
 // Authoritative social profiles, kept in sync with the site footer via
-// externalLinks. LinkedIn is verified from docs.comfy.org/community/links but
-// is not in externalLinks, so it is listed explicitly.
+// externalLinks.
 const SAME_AS = [
   externalLinks.github,
   externalLinks.x,
@@ -39,8 +38,14 @@ const SAME_AS = [
   externalLinks.discord,
   externalLinks.instagram,
   externalLinks.reddit,
-  'https://www.linkedin.com/company/comfyui/'
+  externalLinks.linkedin
 ]
+
+// Normalizes Astro.site (a URL with a trailing slash, or undefined) to a bare
+// origin the @id/URL builders can append paths to.
+export function siteUrlFrom(site: URL | undefined): string {
+  return (site?.href ?? 'https://comfy.org/').replace(/\/$/, '')
+}
 
 function localePrefix(locale: Locale): string {
   return locale === 'en' ? '' : `/${locale}`

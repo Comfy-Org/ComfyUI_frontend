@@ -48,7 +48,22 @@ test.describe('Customers @smoke', () => {
     expect(types.filter((type) => type === 'Organization')).toHaveLength(1)
     expect(types).toContain('CollectionPage')
 
+    // Tie the list length to the story cards actually rendered, so the test
+    // tracks real content rather than a hardcoded count.
+    const cardSlugs = await page
+      .locator('a[href^="/customers/"]')
+      .evaluateAll((links) => [
+        ...new Set(
+          links
+            .map((link) => link.getAttribute('href'))
+            .filter((href): href is string =>
+              /^\/customers\/[a-z0-9-]+$/.test(href ?? '')
+            )
+        )
+      ])
+    expect(cardSlugs.length).toBeGreaterThan(0)
+
     const list = graph.find((node) => node['@type'] === 'ItemList')
-    expect(list?.itemListElement as unknown[]).toHaveLength(10)
+    expect(list?.itemListElement as unknown[]).toHaveLength(cardSlugs.length)
   })
 })

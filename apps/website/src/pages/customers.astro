@@ -8,12 +8,15 @@ import StorySection from '../components/customers/StorySection.vue'
 import VideoSection from '../components/customers/VideoSection.vue'
 import { t } from '../i18n/translations'
 import { toCardProps } from '../utils/customers'
-import { buildCustomersCollectionJsonLd } from '../utils/customerStoryJsonLd'
+import {
+  buildCustomersCollectionJsonLd,
+  siteUrlFrom
+} from '../utils/customerStoryJsonLd'
 import { loadStories } from '../utils/loadStories'
 
 const stories = (await loadStories('en')).map(toCardProps)
 
-const siteUrl = (Astro.site?.href ?? 'https://comfy.org/').replace(/\/$/, '')
+const siteUrl = siteUrlFrom(Astro.site)
 const jsonLd = buildCustomersCollectionJsonLd(stories, {
   siteUrl,
   locale: 'en',

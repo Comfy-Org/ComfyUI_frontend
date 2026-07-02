@@ -6,7 +6,7 @@ import WhatsNextSection from '../../components/customers/WhatsNextSection.vue'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { t } from '../../i18n/translations'
 import { nextStory, storySlug } from '../../utils/customers'
-import { buildStoryJsonLd } from '../../utils/customerStoryJsonLd'
+import { buildStoryJsonLd, siteUrlFrom } from '../../utils/customerStoryJsonLd'
 import { loadStories } from '../../utils/loadStories'
 
 export async function getStaticPaths() {
@@ -19,7 +19,7 @@ export async function getStaticPaths() {
 
 const { entry, next } = Astro.props
 
-const siteUrl = (Astro.site?.href ?? 'https://comfy.org/').replace(/\/$/, '')
+const siteUrl = siteUrlFrom(Astro.site)
 const jsonLd = buildStoryJsonLd(
   {
     slug: storySlug(entry.id),
