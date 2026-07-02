@@ -65,4 +65,36 @@ describe('createSocket WebSocket host', () => {
 
     expect(socketUrls[0]).toContain('://localhost:8188')
   })
+
+  it('falls back to api_host when the override is whitespace only', () => {
+    window.__COMFY_API_WS_HOST__ = '   '
+
+    api.init()
+
+    expect(socketUrls[0]).toContain('://localhost:8188')
+  })
+
+  it('ignores a prototype-pollution gadget and uses api_host', () => {
+    // @ts-expect-error - simulating a prototype-pollution attack
+    Object.prototype.__COMFY_API_WS_HOST__ = 'evil.example.com'
+    try {
+      api.init()
+
+      expect(socketUrls[0]).toContain('://localhost:8188')
+      expect(socketUrls[0]).not.toContain('evil.example.com')
+    } finally {
+      // @ts-expect-error - cleaning up the simulated attack
+      delete Object.prototype.__COMFY_API_WS_HOST__
+    }
+  })
+
+  it('falls back to polling without throwing when the host is unusable', () => {
+    vi.stubGlobal('WebSocket', function () {
+      throw new DOMException('invalid url', 'SyntaxError')
+    })
+    window.__COMFY_API_WS_HOST__ = 'https://not a host'
+
+    expect(() => api.init()).not.toThrow()
+    expect(api.socket).toBeNull()
+  })
 })
