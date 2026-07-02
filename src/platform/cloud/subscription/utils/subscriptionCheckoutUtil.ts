@@ -1,9 +1,7 @@
 import { storeToRefs } from 'pinia'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   createPendingSubscriptionCheckoutAttempt,
@@ -86,14 +84,13 @@ export async function performSubscriptionCheckout(
   }
   const checkoutPayload = { ...checkoutAttribution }
 
-  const response = await fetchWithUnifiedRemint(
+  const response = await authStore.fetchWithCustomerRecovery(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutPayload)
-    },
-    isCloud && useFeatureFlags().flags.unifiedCloudAuthEnabled
+    }
   )
 
   if (!response.ok) {

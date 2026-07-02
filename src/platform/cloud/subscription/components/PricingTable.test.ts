@@ -115,6 +115,8 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: () =>
     reactive({
       getAuthHeader: mockGetAuthHeader,
+      fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
+        fetch(input, init),
       userId: computed(() => mockUserId.value)
     }),
   AuthStoreError: class extends Error {}

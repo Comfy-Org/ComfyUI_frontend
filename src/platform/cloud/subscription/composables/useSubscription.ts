@@ -9,10 +9,8 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -55,8 +53,7 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
-  const { getAuthHeader } = authStore
-  const { flags } = useFeatureFlags()
+  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -320,12 +317,11 @@ function useSubscriptionInternal() {
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
     const headers = await buildAuthHeaders()
 
-    const response = await fetchWithUnifiedRemint(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/cloud-subscription-status'),
       {
         headers
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
+      }
     )
 
     if (!response.ok) {
@@ -411,14 +407,13 @@ function useSubscriptionInternal() {
       const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetchWithUnifiedRemint(
+      const response = await fetchWithCustomerRecovery(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
           headers,
           body: JSON.stringify(checkoutAttribution)
-        },
-        isCloud && flags.unifiedCloudAuthEnabled
+        }
       )
 
       if (!response.ok) {
