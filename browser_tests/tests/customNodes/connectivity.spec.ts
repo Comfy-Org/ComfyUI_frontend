@@ -22,16 +22,6 @@ const CORE_PROOF_NODE_COUNT = 16
 // entries here must name the veto. Green means actual rejections are a
 // subset of this list.
 const CONNECT_REJECTED_ALLOWLIST: string[] = []
-// The drag tier targets pure-socket link types; widget-backed primitive
-// sockets render as widget rows, not slot dots, so they are covered by the
-// model-level breadth sweep instead.
-const WIDGET_PRIMITIVE_TYPES = new Set([
-  'INT',
-  'FLOAT',
-  'STRING',
-  'BOOLEAN',
-  'COMBO'
-])
 
 test.use({
   initialSettings: {
@@ -91,15 +81,49 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
     `T-conn plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard slots (excluded by design)`
   )
 
+  for (const entry of connectivityEntries) {
+    expect(
+      plan.pairs.some(
+        (pair) =>
+          pair.producer.pack === entry.pack || pair.consumer.pack === entry.pack
+      ),
+      `${entry.pack} contributes no pairs - corpus or pack attribution broke`
+    ).toBe(true)
+  }
+
   const consoleErrors = collectConsoleErrors(comfyPage.page)
-  const results = await comfyPage.page.evaluate(async (pairs) => {
+  const results = await runPairsInPage(comfyPage.page, plan.pairs)
+  consoleErrors.stop()
+
+  const failures = results.filter(
+    (result) =>
+      result.outcome !== ('PASS' satisfies ConnectivityOutcome) &&
+      !(
+        result.outcome === ('CONNECT_REJECTED' satisfies ConnectivityOutcome) &&
+        CONNECT_REJECTED_ALLOWLIST.includes(result.key)
+      )
+  )
+  const passed = results.filter((result) => result.outcome === 'PASS').length
+  console.log(`T-conn sweep: ${passed}/${results.length} pairs PASS`)
+  expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
+  expect(passed).toBeGreaterThan(0)
+  await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
+})
+
+// The self-check below runs THIS SAME executor on poisoned pairs; if it stops
+// being able to reject, every green sweep above is meaningless.
+function runPairsInPage(
+  page: Page,
+  pairs: PlannedPair[]
+): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
+  return page.evaluate(async (pairsInPage) => {
     const graph = window.app!.graph
     const report: Array<{
       key: string
       outcome: string
       detail?: string
     }> = []
-    for (const pair of pairs) {
+    for (const pair of pairsInPage) {
       const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
       try {
         graph.clear()
@@ -169,22 +193,32 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
     }
     graph.clear()
     return report
-  }, plan.pairs)
-  consoleErrors.stop()
+  }, pairs)
+}
 
-  const failures = results.filter(
-    (result) =>
-      result.outcome !== ('PASS' satisfies ConnectivityOutcome) &&
-      !(
-        result.outcome === ('CONNECT_REJECTED' satisfies ConnectivityOutcome) &&
-        CONNECT_REJECTED_ALLOWLIST.includes(result.key)
-      )
-  )
-  const passed = results.filter((result) => result.outcome === 'PASS').length
-  console.log(`T-conn sweep: ${passed}/${results.length} pairs PASS`)
-  expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
-  expect(passed).toBeGreaterThan(0)
-  await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
+test('T-conn self-check: the executor rejects broken pairs', async ({
+  comfyPage
+}) => {
+  const slot = (nodeType: string, slotName: string, slotType: string) => ({
+    nodeType,
+    pack: 'core',
+    slotName,
+    slotType
+  })
+  const results = await runPairsInPage(comfyPage.page, [
+    {
+      producer: slot('CheckpointLoaderSimple', 'MODEL', 'MODEL'),
+      consumer: slot('KSampler', 'latent_image', 'LATENT')
+    },
+    {
+      producer: slot('EmptyLatentImage', 'LATENT', 'LATENT'),
+      consumer: slot('KSampler', 'does_not_exist', 'LATENT')
+    }
+  ])
+  expect(results.map((result) => result.outcome)).toEqual([
+    'CONNECT_REJECTED',
+    'SLOT_CONTRACT_MISMATCH'
+  ])
 })
 
 test('T-conn fidelity: curated slot drags connect under both renderers', async ({
@@ -215,18 +249,19 @@ test('T-conn fidelity: curated slot drags connect under both renderers', async (
     }
   ]
   for (const entry of connectivityEntries) {
-    const packPlan = planPairs(nodes, entry.expectedNodes)
-    const inPack = packPlan.pairs.find(
-      (pair) =>
-        pair.producer.pack === entry.pack &&
-        pair.consumer.pack === entry.pack &&
-        !WIDGET_PRIMITIVE_TYPES.has(pair.producer.slotType.toUpperCase())
+    // Restrict the partner pool to the pack itself so the drag proves an
+    // in-pack wiring; widget-backed primitive inputs render real slot dots
+    // in Vue (verified empirically), so no slot type is excluded here.
+    const packPlan = planPairs(
+      nodes.filter((node) => node.pack === entry.pack),
+      entry.expectedNodes
     )
-    if (inPack) dragEdges.push(inPack)
-    else
-      console.log(
-        `T-conn drag: ${entry.pack} has no in-pack link-typed pair; covered by the breadth sweep only`
-      )
+    const inPack = packPlan.pairs[0]
+    expect(
+      inPack,
+      `${entry.pack} has no in-pack draggable pair - drag coverage lost`
+    ).toBeTruthy()
+    dragEdges.push(inPack)
   }
 
   for (const vueNodesEnabled of [false, true]) {
