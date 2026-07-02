@@ -137,7 +137,7 @@ function mountContainerLayout(
 
 function makePointerEvent(
   type: 'pointerdown' | 'pointermove' | 'pointerup',
-  target: HTMLElement,
+  target: EventTarget,
   clientX: number,
   clientY: number
 ) {
@@ -302,6 +302,32 @@ describe('useImageCrop', () => {
     expect(vm.imageUrl).toBeNull()
   })
 
+  it('returns null when a subgraph output link cannot be resolved', async () => {
+    const subgraphInput = createMockSubgraphNode([], {
+      id: 40,
+      resolveSubgraphOutputLink: vi.fn(() => undefined)
+    })
+    const sgCrop = createMockLGraphNode({
+      id: 2,
+      getInputNode: vi.fn(() => subgraphInput),
+      getInputLink: vi.fn(() => ({ origin_slot: 0 })),
+      isSubgraphNode: () => false
+    })
+    mockResolveNode.mockReturnValue(sgCrop)
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('returns null when the source node has no image URLs', async () => {
+    mockGetNodeImageUrls.mockImplementation((n) =>
+      n === sourceNode ? [] : null
+    )
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBeNull()
+  })
+
   it('resolves image through a subgraph input node', async () => {
     const innerSource = createMockLGraphNode({
       id: 50,
@@ -338,6 +364,18 @@ describe('useImageCrop', () => {
 
     await flushTicks()
     expect(vm.imageUrl).toBe('https://example.com/b.png')
+  })
+
+  it('keeps loading unchanged when output updates keep the same URL', async () => {
+    const vm = await mountHarness()
+    ;(vm.handleImageLoad as () => void)()
+    expect(vm.isLoading).toBe(false)
+
+    outputStore.nodeOutputs['touch'] = { updated: true }
+
+    await flushTicks()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+    expect(vm.isLoading).toBe(false)
   })
 
   it('updates imageUrl when nodePreviewImages change', async () => {
@@ -390,6 +428,30 @@ describe('useImageCrop', () => {
     expect(parseFloat(style.height)).toBeCloseTo(80, 1)
   })
 
+  it('ignores resize observer callbacks before an image is rendered', async () => {
+    mockGetNodeImageUrls.mockReturnValue(null)
+    const vm = await mountHarness()
+
+    flushResizeObservers()
+
+    expect(vm.imageUrl).toBeNull()
+    expect(vm.cropBoxStyle).toEqual({
+      left: '38px',
+      top: '38px',
+      width: '160px',
+      height: '120px'
+    })
+  })
+
+  it('uses default crop dimensions when model dimensions are zero', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 0, y: 0, width: 0, height: 0 }
+
+    expect(vm.cropWidth).toBe(512)
+    expect(vm.cropHeight).toBe(512)
+  })
+
   it('exposes eight resize handles when unlocked and four when locked', async () => {
     const vm = await mountHarness()
     setupImageLayout(vm, 400, 400)
@@ -423,6 +485,48 @@ describe('useImageCrop', () => {
     expect(vm.isLoading).toBe(false)
   })
 
+  it('uses fallback scale when dragging before image dimensions are known', async () => {
+    const vm = await mountHarness()
+    vm.modelValue = { x: 10, y: 10, width: 120, height: 90 }
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const dragStart = vm.handleDragStart as (e: PointerEvent) => void
+    const dragMove = vm.handleDragMove as (e: PointerEvent) => void
+    const dragEnd = vm.handleDragEnd as (e: PointerEvent) => void
+
+    dragStart(makePointerEvent('pointerdown', captureEl, 10, 10))
+    dragMove(makePointerEvent('pointermove', captureEl, 30, 30))
+    dragEnd(makePointerEvent('pointerup', captureEl, 30, 30))
+
+    expect(vm.modelValue.x).toBe(0)
+    expect(vm.modelValue.y).toBe(0)
+  })
+
+  it('uses fallback scale when rendered container width is missing', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    mountContainerLayout(vm.$el, 0, 300, 0)
+    vm.modelValue = { x: 10, y: 10, width: 120, height: 90 }
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 130, 80), 'right')
+    resizeMove(makePointerEvent('pointermove', captureEl, 150, 80))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 150, 80))
+
+    expect(vm.modelValue.width).toBe(140)
+  })
+
   it('does not start dragging when there is no image', async () => {
     mockGetNodeImageUrls.mockReturnValue(null)
     const vm = await mountHarness()
@@ -434,6 +538,41 @@ describe('useImageCrop', () => {
       makePointerEvent('pointerdown', el, 10, 10)
     )
     expect(vm.cropX as number).toBe(xBefore)
+  })
+
+  it('ignores drag move and end before dragging starts', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 300)
+    vm.modelValue = { x: 10, y: 10, width: 120, height: 90 }
+    const releaseEl = document.createElement('div')
+    releaseEl.releasePointerCapture = vi.fn()
+
+    ;(vm.handleDragMove as (e: PointerEvent) => void)(
+      makePointerEvent('pointermove', releaseEl, 260, 180)
+    )
+    ;(vm.handleDragEnd as (e: PointerEvent) => void)(
+      makePointerEvent('pointerup', releaseEl, 260, 180)
+    )
+
+    expect(vm.modelValue).toEqual({ x: 10, y: 10, width: 120, height: 90 })
+    expect(releaseEl.releasePointerCapture).not.toHaveBeenCalled()
+  })
+
+  it('drags without pointer capture when the event target is not an element', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 300)
+    vm.modelValue = { x: 10, y: 10, width: 120, height: 90 }
+
+    const dragStart = vm.handleDragStart as (e: PointerEvent) => void
+    const dragMove = vm.handleDragMove as (e: PointerEvent) => void
+    const dragEnd = vm.handleDragEnd as (e: PointerEvent) => void
+
+    dragStart(makePointerEvent('pointerdown', document, 200, 150))
+    dragMove(makePointerEvent('pointermove', document, 260, 180))
+    dragEnd(makePointerEvent('pointerup', document, 260, 180))
+
+    expect(vm.modelValue.x).toBeGreaterThan(10)
+    expect(vm.modelValue.y).toBeGreaterThan(10)
   })
 
   it('drags the crop box in image space and ends on pointerup', async () => {
@@ -506,6 +645,62 @@ describe('useImageCrop', () => {
     expect(vm.modelValue.height).toBeLessThan(200)
   })
 
+  it('resizes from the left edge and clamps to the image origin', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 500, 500)
+    vm.modelValue = { x: 50, y: 50, width: 120, height: 100 }
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 100, 120), 'left')
+    resizeMove(makePointerEvent('pointermove', captureEl, -100, 120))
+    resizeEnd(makePointerEvent('pointerup', captureEl, -100, 120))
+
+    expect(vm.modelValue.x).toBe(0)
+    expect(vm.modelValue.width).toBeGreaterThan(120)
+  })
+
+  it('ignores resize move and end before resizing starts', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 40, y: 40, width: 120, height: 120 }
+    const releaseEl = document.createElement('div')
+    releaseEl.releasePointerCapture = vi.fn()
+
+    ;(vm.handleResizeMove as (e: PointerEvent) => void)(
+      makePointerEvent('pointermove', releaseEl, 360, 360)
+    )
+    ;(vm.handleResizeEnd as (e: PointerEvent) => void)(
+      makePointerEvent('pointerup', releaseEl, 360, 360)
+    )
+
+    expect(vm.modelValue).toEqual({ x: 40, y: 40, width: 120, height: 120 })
+    expect(releaseEl.releasePointerCapture).not.toHaveBeenCalled()
+  })
+
+  it('does not start resizing when there is no image', async () => {
+    mockGetNodeImageUrls.mockReturnValue(null)
+    const vm = await mountHarness()
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+
+    ;(vm.handleResizeStart as (e: PointerEvent, dir: string) => void)(
+      makePointerEvent('pointerdown', captureEl, 20, 20),
+      'right'
+    )
+
+    expect(captureEl.setPointerCapture).not.toHaveBeenCalled()
+  })
+
   it('applies a preset aspect ratio and clamps height to the image', async () => {
     const vm = await mountHarness()
     setupImageLayout(vm, 800, 500)
@@ -522,6 +717,25 @@ describe('useImageCrop', () => {
     expect(vm.isLockEnabled).toBe(true)
     vm.selectedRatio = 'custom'
     expect(vm.isLockEnabled).toBe(false)
+  })
+
+  it('ignores unknown aspect-ratio presets and unlocks explicit lock changes', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 0, y: 0, width: 160, height: 120 }
+
+    vm.selectedRatio = 'missing'
+    expect(vm.selectedRatio).toBe('custom')
+    expect(vm.isLockEnabled).toBe(false)
+
+    vm.isLockEnabled = true
+    expect(vm.selectedRatio).toBe('4:3')
+
+    vm.isLockEnabled = true
+    expect(vm.selectedRatio).toBe('4:3')
+
+    vm.isLockEnabled = false
+    expect(vm.selectedRatio).toBe('custom')
   })
 
   it('shows custom in the ratio label when lock does not match a preset', async () => {
@@ -581,6 +795,58 @@ describe('useImageCrop', () => {
     resizeEnd(makePointerEvent('pointerup', captureEl, 600, 600))
 
     expect(vm.modelValue.y + vm.modelValue.height).toBeLessThanOrEqual(400)
+  })
+
+  it('clamps constrained north-west resize to the image top-left bounds', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 20, y: 20, width: 80, height: 80 }
+    vm.isLockEnabled = true
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 40, 40), 'nw')
+    resizeMove(makePointerEvent('pointermove', captureEl, -200, -200))
+    resizeEnd(makePointerEvent('pointerup', captureEl, -200, -200))
+
+    expect(vm.modelValue.x).toBeGreaterThanOrEqual(0)
+    expect(vm.modelValue.y).toBeGreaterThanOrEqual(0)
+    expect(vm.modelValue.width).toBeGreaterThanOrEqual(16)
+    expect(vm.modelValue.height).toBeGreaterThanOrEqual(16)
+  })
+
+  it('clamps constrained corner resize to minimum dimensions', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 40, y: 40, width: 160, height: 80 }
+    vm.isLockEnabled = true
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 200, 120), 'se')
+    resizeMove(makePointerEvent('pointermove', captureEl, -800, -800))
+    resizeEnd(makePointerEvent('pointerup', captureEl, -800, -800))
+
+    expect(vm.modelValue.width).toBe(32)
+    expect(vm.modelValue.height).toBe(16)
   })
 
   it('ends resize and clears direction on pointerup', async () => {

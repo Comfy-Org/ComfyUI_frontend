@@ -1,0 +1,109 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+
+import { useTreeFolderOperations } from './useTreeFolderOperations'
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}))
+
+function makeFolder(
+  overrides: Partial<RenderedTreeExplorerNode> = {}
+): RenderedTreeExplorerNode {
+  return {
+    key: 'root',
+    label: 'Root',
+    leaf: false,
+    children: [],
+    icon: 'pi pi-folder',
+    type: 'folder',
+    totalLeaves: 0,
+    ...overrides
+  }
+}
+
+describe('useTreeFolderOperations', () => {
+  beforeEach(() => {
+    vi.spyOn(Date, 'now').mockReturnValue(123)
+  })
+
+  it('creates a temporary editable folder under the selected target', () => {
+    const expandNode = vi.fn()
+    const target = makeFolder({ key: 'models', handleAddFolder: vi.fn() })
+    const operations = useTreeFolderOperations(expandNode)
+
+    operations.addFolderCommand(target)
+
+    expect(expandNode).toHaveBeenCalledWith(target)
+    expect(operations.newFolderNode.value).toMatchObject({
+      key: 'models/new_folder_123',
+      label: '',
+      leaf: false,
+      icon: 'pi pi-folder',
+      type: 'folder',
+      isEditingLabel: true
+    })
+  })
+
+  it('passes the confirmed name to the target and clears temporary state', async () => {
+    const handleAddFolder = vi.fn()
+    const target = makeFolder({ handleAddFolder })
+    const operations = useTreeFolderOperations(vi.fn())
+
+    operations.addFolderCommand(target)
+    await operations.handleFolderCreation('New Folder')
+
+    expect(handleAddFolder).toHaveBeenCalledWith('New Folder')
+    expect(operations.newFolderNode.value).toBeNull()
+  })
+
+  it('clears temporary state even when folder creation fails', async () => {
+    const handleAddFolder = vi.fn().mockRejectedValue(new Error('failed'))
+    const target = makeFolder({ handleAddFolder })
+    const operations = useTreeFolderOperations(vi.fn())
+
+    operations.addFolderCommand(target)
+
+    await expect(operations.handleFolderCreation('New Folder')).rejects.toThrow(
+      'failed'
+    )
+    expect(operations.newFolderNode.value).toBeNull()
+  })
+
+  it('ignores folder creation when no target is pending', async () => {
+    const operations = useTreeFolderOperations(vi.fn())
+
+    await operations.handleFolderCreation('Unused')
+
+    expect(operations.newFolderNode.value).toBeNull()
+  })
+
+  it('returns a hidden menu item when the target cannot add folders', () => {
+    const operations = useTreeFolderOperations(vi.fn())
+
+    expect(operations.getAddFolderMenuItem(null)).toMatchObject({
+      label: 'g.newFolder',
+      visible: false,
+      isAsync: false
+    })
+    expect(
+      operations.getAddFolderMenuItem(makeFolder({ leaf: true }))
+    ).toMatchObject({ visible: false })
+  })
+
+  it('runs the add folder command from a visible menu item', () => {
+    const expandNode = vi.fn()
+    const target = makeFolder({ handleAddFolder: vi.fn() })
+    const operations = useTreeFolderOperations(expandNode)
+    const item = operations.getAddFolderMenuItem(target)
+
+    expect(item.visible).toBe(true)
+    item.command?.({ originalEvent: new Event('click'), item })
+
+    expect(expandNode).toHaveBeenCalledWith(target)
+    expect(operations.newFolderNode.value?.key).toBe('root/new_folder_123')
+  })
+})

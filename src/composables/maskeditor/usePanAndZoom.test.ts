@@ -181,6 +181,50 @@ describe('usePanAndZoom', () => {
       expect(rgbCanvas.width).toBe(800)
       expect(rgbCanvas.height).toBe(600)
     })
+
+    it('returns before publishing pan when the canvas container is unavailable', async () => {
+      const pz = usePanAndZoom()
+
+      await pz.initializeCanvasPanZoom(
+        createMockImage(800, 600),
+        createMockElement()
+      )
+
+      expect(mockStore.setPanOffset).not.toHaveBeenCalled()
+      expect(mockStore.setZoomRatio).not.toHaveBeenCalled()
+    })
+
+    it('keeps rgbCanvas dimensions when they already match the image', async () => {
+      const pz = usePanAndZoom()
+      const rgbCanvas = createMockCanvas(800, 600)
+      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+      mockStore.rgbCanvas = rgbCanvas
+
+      await pz.initializeCanvasPanZoom(
+        createMockImage(800, 600),
+        createMockElement()
+      )
+
+      expect(rgbCanvas.width).toBe(800)
+      expect(rgbCanvas.height).toBe(600)
+      expect(rgbCanvas.style.width).not.toBe('')
+    })
+
+    it('can be initialized again without replacing the current image reference', async () => {
+      const pz = usePanAndZoom()
+      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+
+      await pz.initializeCanvasPanZoom(
+        createMockImage(800, 600),
+        createMockElement()
+      )
+      await pz.initializeCanvasPanZoom(
+        createMockImage(400, 300),
+        createMockElement()
+      )
+
+      expect(mockStore.setZoomRatio).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('handlePanStart / handlePanMove', () => {
@@ -345,6 +389,13 @@ describe('usePanAndZoom', () => {
       expect(mockStore.brushVisible).toBe(false)
     })
 
+    it('accepts touch starts without active touches', () => {
+      const pz = usePanAndZoom()
+      pz.handleTouchStart(createTouchEvent(createTouchList()))
+      expect(mockStore.brushVisible).toBe(false)
+      expect(mockStore.canvasHistory.undo).not.toHaveBeenCalled()
+    })
+
     it('ignores touch when pen pointer is active', () => {
       const pz = usePanAndZoom()
       pz.addPenPointerId(1)
@@ -401,6 +452,49 @@ describe('usePanAndZoom', () => {
       expect(mockStore.setZoomRatio).toHaveBeenCalled()
     })
 
+    it('returns from pinch zoom when the mask canvas is unavailable', async () => {
+      const pz = usePanAndZoom()
+      mockStore.maskCanvas = null
+
+      pz.handleTouchStart(
+        createTouchEvent(
+          createTouchList({ x: 200, y: 300 }, { x: 400, y: 300 })
+        )
+      )
+
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 150, y: 300 }, { x: 450, y: 300 })
+        )
+      )
+
+      expect(mockStore.setZoomRatio).not.toHaveBeenCalled()
+    })
+
+    it('uses the cached mask canvas for consecutive pinch moves', async () => {
+      const { pz } = await initComposable()
+
+      pz.handleTouchStart(
+        createTouchEvent(
+          createTouchList({ x: 200, y: 300 }, { x: 400, y: 300 })
+        )
+      )
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 150, y: 300 }, { x: 450, y: 300 })
+        )
+      )
+      vi.clearAllMocks()
+
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 140, y: 300 }, { x: 460, y: 300 })
+        )
+      )
+
+      expect(mockStore.setZoomRatio).toHaveBeenCalled()
+    })
+
     it('touch move is ignored when pen is active', async () => {
       const pz = usePanAndZoom()
       pz.addPenPointerId(1)
@@ -417,6 +511,26 @@ describe('usePanAndZoom', () => {
       const event = createTouchEvent(createTouchList({ x: 200, y: 300 }))
       pz.handleTouchEnd(event)
       expect(event.preventDefault).toHaveBeenCalled()
+    })
+
+    it('stops pinch zooming when all touches end', async () => {
+      const { pz } = await initComposable()
+
+      pz.handleTouchStart(
+        createTouchEvent(
+          createTouchList({ x: 200, y: 300 }, { x: 400, y: 300 })
+        )
+      )
+      pz.handleTouchEnd(createTouchEvent(createTouchList()))
+      vi.clearAllMocks()
+
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 150, y: 300 }, { x: 450, y: 300 })
+        )
+      )
+
+      expect(mockStore.setZoomRatio).not.toHaveBeenCalled()
     })
   })
 

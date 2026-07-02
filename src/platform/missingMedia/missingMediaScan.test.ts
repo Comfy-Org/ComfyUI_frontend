@@ -208,6 +208,41 @@ describe('scanNodeMediaCandidates', () => {
     expect(result).toEqual([])
   })
 
+  it('returns empty when a media node has no execution id', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(
+      1,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', [])],
+      0,
+      ''
+    )
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
+  it('ignores widgets that cannot provide a media filename', () => {
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'LoadImage',
+      widgets: [
+        { type: 'number', name: 'image', value: 'photo.png' },
+        { type: 'combo', name: 'other', value: 'photo.png' },
+        { type: 'combo', name: 'image', value: '' },
+        { type: 'combo', name: 'image', value: 42 }
+      ],
+      mode: 0,
+      _testExecutionId: '1'
+    })
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
   it.for([false, true])(
     'returns empty while a media upload is pending on the node (isCloud: %s)',
     (isCloud) => {
@@ -377,6 +412,35 @@ describe('scanNodeMediaCandidates', () => {
 })
 
 describe('scanAllMediaCandidates', () => {
+  it('returns empty when no root graph is available', () => {
+    expect(
+      scanAllMediaCandidates(fromAny<LGraph, unknown>(null), false)
+    ).toEqual([])
+  })
+
+  it('skips nodes without widgets and subgraph nodes', () => {
+    const withoutWidgets = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'LoadImage',
+      widgets: undefined,
+      mode: 0
+    })
+    const subgraphNode = makeMediaNode(
+      2,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', [])],
+      0
+    )
+    subgraphNode.isSubgraphNode = () => true
+
+    const result = scanAllMediaCandidates(
+      makeGraph([withoutWidgets, subgraphNode]),
+      false
+    )
+
+    expect(result).toEqual([])
+  })
+
   it('skips muted nodes (mode === NEVER)', () => {
     const node = makeMediaNode(
       1,

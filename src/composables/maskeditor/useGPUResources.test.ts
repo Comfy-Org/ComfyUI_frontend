@@ -23,8 +23,8 @@ const mockStore = reactive({
   gpuTexturesNeedRecreation: false,
   gpuTextureWidth: 0,
   gpuTextureHeight: 0,
-  pendingGPUMaskData: null as null,
-  pendingGPURgbData: null as null,
+  pendingGPUMaskData: null as Uint8Array | null,
+  pendingGPURgbData: null as Uint8Array | null,
   brushSettings: {
     size: 20,
     hardness: 0.9,
@@ -42,6 +42,9 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
+import { tgpu } from 'typegpu'
+
+import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { resetDirtyRect } from './brushDrawingUtils'
 import { useGPUResources } from './useGPUResources'
 
@@ -52,8 +55,120 @@ function setup() {
   return scope.run(() => useGPUResources())!
 }
 
+class TestImageData {
+  data: Uint8ClampedArray
+  width: number
+  height: number
+
+  constructor(data: Uint8ClampedArray, width: number, height: number) {
+    this.data = data
+    this.width = width
+    this.height = height
+  }
+}
+
+function createMockTexture() {
+  return {
+    createView: vi.fn(() => ({})),
+    destroy: vi.fn()
+  } as unknown as GPUTexture
+}
+
+function createMockBuffer(byteLength = 16) {
+  return {
+    destroy: vi.fn(),
+    mapAsync: vi.fn().mockResolvedValue(undefined),
+    getMappedRange: vi.fn(() => new Uint8Array(byteLength).buffer),
+    unmap: vi.fn()
+  } as unknown as GPUBuffer
+}
+
+function createMockDevice() {
+  return {
+    limits: {},
+    queue: {
+      writeTexture: vi.fn(),
+      submit: vi.fn()
+    },
+    createTexture: vi.fn(() => createMockTexture()),
+    createBuffer: vi.fn(() => createMockBuffer()),
+    createCommandEncoder: vi.fn(() => ({
+      copyBufferToBuffer: vi.fn(),
+      finish: vi.fn(() => ({}))
+    }))
+  } as unknown as GPUDevice
+}
+
+function createMockRenderer() {
+  return {
+    destroy: vi.fn(),
+    prepareStroke: vi.fn(),
+    clearPreview: vi.fn(),
+    compositeStroke: vi.fn(),
+    prepareReadback: vi.fn(),
+    renderStrokeToAccumulator: vi.fn(),
+    blitToCanvas: vi.fn()
+  }
+}
+
+function mockGpuBrushRenderer(renderer: ReturnType<typeof createMockRenderer>) {
+  vi.mocked(GPUBrushRenderer).mockImplementation(
+    function GPUBrushRendererMock() {
+      return renderer as unknown as GPUBrushRenderer
+    }
+  )
+}
+
+function createCanvasContext(width: number, height: number) {
+  return {
+    globalCompositeOperation: 'source-over',
+    getImageData: vi.fn(
+      () =>
+        new ImageData(new Uint8ClampedArray(width * height * 4), width, height)
+    ),
+    putImageData: vi.fn()
+  } as unknown as CanvasRenderingContext2D
+}
+
+function setReadyCanvases(width = 2, height = 2) {
+  const maskCanvas = document.createElement('canvas')
+  maskCanvas.width = width
+  maskCanvas.height = height
+  const rgbCanvas = document.createElement('canvas')
+  rgbCanvas.width = width
+  rgbCanvas.height = height
+
+  mockStore.maskCanvas = maskCanvas
+  mockStore.rgbCanvas = rgbCanvas
+  mockStore.maskCtx = createCanvasContext(width, height)
+  mockStore.rgbCtx = createCanvasContext(width, height)
+}
+
+function installGpuGlobals() {
+  vi.stubGlobal('GPUTextureUsage', {
+    TEXTURE_BINDING: 1,
+    STORAGE_BINDING: 2,
+    RENDER_ATTACHMENT: 4,
+    COPY_DST: 8,
+    COPY_SRC: 16
+  })
+  vi.stubGlobal('GPUBufferUsage', {
+    STORAGE: 1,
+    COPY_SRC: 2,
+    COPY_DST: 4,
+    MAP_READ: 8
+  })
+  vi.stubGlobal('GPUMapMode', { READ: 1 })
+  vi.stubGlobal('ImageData', TestImageData)
+  Object.defineProperty(navigator, 'gpu', {
+    value: { getPreferredCanvasFormat: vi.fn(() => 'rgba8unorm') },
+    configurable: true
+  })
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+  installGpuGlobals()
   mockStore.tgpuRoot = null
   mockStore.maskCanvas = null
   mockStore.rgbCanvas = null
@@ -62,11 +177,28 @@ beforeEach(() => {
   mockStore.clearTrigger = 0
   mockStore.canvasHistory.currentStateIndex = 0
   mockStore.gpuTexturesNeedRecreation = false
+  mockStore.gpuTextureWidth = 0
+  mockStore.gpuTextureHeight = 0
+  mockStore.pendingGPUMaskData = null
+  mockStore.pendingGPURgbData = null
+  mockStore.activeLayer = 'mask'
+  mockStore.currentTool = 'pen'
+  mockStore.maskColor = { r: 0, g: 0, b: 0 }
+  mockStore.rgbColor = '#FF0000'
+  mockStore.brushSettings = {
+    size: 20,
+    hardness: 0.9,
+    opacity: 1,
+    stepSize: 5,
+    type: 'arc'
+  }
+  vi.mocked(tgpu.init).mockRejectedValue(new Error('WebGPU not supported'))
 })
 
 afterEach(() => {
   scope?.stop()
   scope = null
+  vi.unstubAllGlobals()
 })
 
 describe('initial reactive state', () => {
@@ -131,6 +263,34 @@ describe('initGPUResources', () => {
     await initGPUResources()
     expect(hasRenderer.value).toBe(false)
   })
+
+  it('handles non-error TypeGPU initialisation failures', async () => {
+    vi.mocked(tgpu.init).mockRejectedValueOnce('WebGPU unavailable')
+
+    const { initGPUResources, hasRenderer } = setup()
+    await initGPUResources()
+
+    expect(hasRenderer.value).toBe(false)
+  })
+
+  it('initializes renderer when a root and canvas contexts are ready', async () => {
+    const device = createMockDevice()
+    const renderer = createMockRenderer()
+    mockStore.tgpuRoot = {
+      device,
+      destroy: vi.fn()
+    }
+    setReadyCanvases()
+    mockGpuBrushRenderer(renderer)
+
+    const { initGPUResources, hasRenderer } = setup()
+    await initGPUResources()
+
+    expect(hasRenderer.value).toBe(true)
+    expect(device.createTexture).toHaveBeenCalledTimes(2)
+    expect(device.queue.writeTexture).toHaveBeenCalledTimes(2)
+    expect(GPUBrushRenderer).toHaveBeenCalledWith(device, 'rgba8unorm')
+  })
 })
 
 describe('copyGpuToCanvas', () => {
@@ -174,6 +334,18 @@ describe('initGPUResources with pre-existing tgpuRoot', () => {
     await initGPUResources()
     expect(hasRenderer.value).toBe(false)
   })
+
+  it('texture recreation watcher returns early when mask canvas is missing', async () => {
+    const device = createMockDevice()
+    const { initGPUResources } = setup()
+    mockStore.tgpuRoot = { device, destroy: vi.fn() }
+
+    await initGPUResources()
+    mockStore.gpuTexturesNeedRecreation = true
+    await nextTick()
+
+    expect(device.createTexture).not.toHaveBeenCalled()
+  })
 })
 
 describe('initPreviewCanvas', () => {
@@ -182,11 +354,118 @@ describe('initPreviewCanvas', () => {
     const canvas = document.createElement('canvas')
     expect(() => initPreviewCanvas(canvas)).not.toThrow()
   })
+
+  it('returns early when a WebGPU canvas context is unavailable', async () => {
+    const device = createMockDevice()
+    mockStore.tgpuRoot = { device, destroy: vi.fn() }
+    setReadyCanvases()
+    mockGpuBrushRenderer(createMockRenderer())
+
+    const { initGPUResources, initPreviewCanvas, previewCanvas } = setup()
+    await initGPUResources()
+    const canvas = document.createElement('canvas')
+    Object.defineProperty(canvas, 'getContext', { value: vi.fn(() => null) })
+
+    initPreviewCanvas(canvas)
+
+    expect(previewCanvas.value).toBeNull()
+  })
+
+  it('stores the preview canvas when a WebGPU context is available', async () => {
+    const device = createMockDevice()
+    const renderer = createMockRenderer()
+    const previewContext = { configure: vi.fn() }
+    mockStore.tgpuRoot = { device, destroy: vi.fn() }
+    setReadyCanvases()
+    mockGpuBrushRenderer(renderer)
+
+    const { initGPUResources, initPreviewCanvas, previewCanvas } = setup()
+    await initGPUResources()
+    const canvas = document.createElement('canvas')
+    Object.defineProperty(canvas, 'getContext', {
+      value: vi.fn(() => previewContext)
+    })
+
+    initPreviewCanvas(canvas)
+
+    expect(previewContext.configure).toHaveBeenCalledWith({
+      device,
+      format: 'rgba8unorm',
+      alphaMode: 'premultiplied'
+    })
+    expect(previewCanvas.value).toBe(canvas)
+  })
 })
 
 describe('gpuDrawPoint', () => {
   it('resolves immediately when renderer is not initialised', async () => {
     const { gpuDrawPoint } = setup()
     await expect(gpuDrawPoint({ x: 10, y: 20 })).resolves.toBeUndefined()
+  })
+
+  it('delegates renderer operations when GPU resources are initialized', async () => {
+    const device = createMockDevice()
+    const renderer = createMockRenderer()
+    const previewContext = { configure: vi.fn() }
+    mockStore.tgpuRoot = { device, destroy: vi.fn() }
+    setReadyCanvases()
+    mockGpuBrushRenderer(renderer)
+
+    const resources = setup()
+    await resources.initGPUResources()
+    const canvas = document.createElement('canvas')
+    Object.defineProperty(canvas, 'getContext', {
+      value: vi.fn(() => previewContext)
+    })
+    resources.initPreviewCanvas(canvas)
+
+    resources.prepareStroke()
+    resources.clearPreview()
+    resources.compositeStroke(false, false)
+    resources.gpuRender([{ x: 1, y: 1 }])
+    await resources.gpuDrawPoint({ x: 1, y: 1 })
+
+    expect(renderer.prepareStroke).toHaveBeenCalledWith(2, 2)
+    expect(renderer.clearPreview).toHaveBeenCalledWith(previewContext)
+    expect(renderer.compositeStroke).toHaveBeenCalled()
+    expect(renderer.renderStrokeToAccumulator).toHaveBeenCalled()
+    expect(renderer.blitToCanvas).toHaveBeenCalled()
+  })
+
+  it('copies initialized GPU readback data to canvases', async () => {
+    const device = createMockDevice()
+    const renderer = createMockRenderer()
+    mockStore.tgpuRoot = { device, destroy: vi.fn() }
+    setReadyCanvases()
+    mockGpuBrushRenderer(renderer)
+
+    const resources = setup()
+    await resources.initGPUResources()
+    const result = await resources.copyGpuToCanvas()
+
+    expect(result.maskData.width).toBe(2)
+    expect(result.rgbData.height).toBe(2)
+    expect(renderer.prepareReadback).toHaveBeenCalledTimes(2)
+    expect(mockStore.maskCtx?.putImageData).toHaveBeenCalled()
+    expect(mockStore.rgbCtx?.putImageData).toHaveBeenCalled()
+  })
+
+  it('destroys initialized GPU resources and root state', async () => {
+    const device = createMockDevice()
+    const renderer = createMockRenderer()
+    const root = { device, destroy: vi.fn() }
+    mockStore.tgpuRoot = root
+    setReadyCanvases()
+    mockGpuBrushRenderer(renderer)
+
+    const { initGPUResources, destroy, hasRenderer } = setup()
+    await initGPUResources()
+
+    destroy()
+
+    expect(renderer.destroy).toHaveBeenCalled()
+    expect(root.destroy).toHaveBeenCalled()
+    expect(mockStore.tgpuRoot).toBeNull()
+    expect(hasRenderer.value).toBe(false)
   })
 })

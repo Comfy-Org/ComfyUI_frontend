@@ -20,6 +20,7 @@ import * as missingModelScan from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -130,6 +131,39 @@ describe('Connection error clearing via onConnectionsChange', () => {
     expect(store.lastNodeErrors).not.toBeNull()
   })
 
+  it('does not clear errors when a connected input has no root graph', () => {
+    const { graph, node } = createGraphWithInput()
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    seedRequiredInputMissingNodeError(
+      store,
+      createNodeExecutionId([node.id]),
+      'clip'
+    )
+
+    node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
+
+    expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('does not clear errors when a connected input has no slot name', () => {
+    const { graph, node } = createGraphWithInput()
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedRequiredInputMissingNodeError(
+      store,
+      createNodeExecutionId([node.id]),
+      'clip'
+    )
+
+    node.onConnectionsChange!(NodeSlotType.INPUT, 12, true, null, null)
+
+    expect(store.lastNodeErrors).not.toBeNull()
+  })
+
   it('clears errors for pure input slots without widget property', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -232,6 +266,36 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
       fromAny<LGraph, unknown>(undefined)
     )
+    store.lastNodeErrors = {
+      [String(node.id)]: {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'TestNode'
+      }
+    }
+
+    node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
+
+    expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('does not clear errors when the host execution id is unavailable', () => {
+    const graph = new LGraph()
+    const otherGraph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(otherGraph)
     store.lastNodeErrors = {
       [String(node.id)]: {
         errors: [
@@ -389,6 +453,124 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Install again on the same graph — should be a no-op for existing nodes
     installErrorClearingHooks(graph)
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
+  })
+
+  it('removes unhooked nodes without restoring callbacks', () => {
+    const graph = new LGraph()
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('late')
+    expect(() => graph.onNodeRemoved!(node)).not.toThrow()
+    expect(node.onConnectionsChange).toBeUndefined()
+    expect(node.onWidgetChanged).toBeUndefined()
+  })
+
+  it('restores recursively installed callbacks on subgraph cleanup', () => {
+    const subgraph = createTestSubgraph()
+    const innerNode = new LGraphNode('inner')
+    const originalOnConnectionsChange = vi.fn()
+    const originalOnWidgetChanged = vi.fn()
+    innerNode.onConnectionsChange = originalOnConnectionsChange
+    innerNode.onWidgetChanged = originalOnWidgetChanged
+    subgraph.add(innerNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const graph = subgraph.rootGraph
+    graph.add(subgraphNode)
+
+    const cleanup = installErrorClearingHooks(graph)
+
+    expect(innerNode.onConnectionsChange).not.toBe(originalOnConnectionsChange)
+    expect(innerNode.onWidgetChanged).not.toBe(originalOnWidgetChanged)
+
+    cleanup()
+
+    expect(innerNode.onConnectionsChange).toBe(originalOnConnectionsChange)
+    expect(innerNode.onWidgetChanged).toBe(originalOnWidgetChanged)
+  })
+
+  it('restores undefined graph hooks when cleanup is called', () => {
+    const graph = new LGraph()
+
+    const cleanup = installErrorClearingHooks(graph)
+    cleanup()
+
+    expect(graph.onNodeAdded).toBeUndefined()
+    expect(graph.onNodeRemoved).toBeUndefined()
+    expect(graph.onTrigger).toBeUndefined()
+  })
+
+  it('calls original graph hooks for added, removed, and trigger events', () => {
+    const graph = new LGraph()
+    const onNodeAdded = vi.fn()
+    const onNodeRemoved = vi.fn()
+    const onTrigger = vi.fn()
+    graph.onNodeAdded = onNodeAdded
+    graph.onNodeRemoved = onNodeRemoved
+    graph.onTrigger = onTrigger
+
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('test')
+    graph.onNodeAdded!(node)
+    graph.onNodeRemoved!(node)
+    graph.onTrigger!({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'title',
+      oldValue: 'old',
+      newValue: 'new'
+    })
+
+    expect(onNodeAdded).toHaveBeenCalledWith(node)
+    expect(onNodeRemoved).toHaveBeenCalledWith(node)
+    expect(onTrigger).toHaveBeenCalledWith(
+      expect.objectContaining({ property: 'title' })
+    )
+  })
+
+  it('skips scanning added nodes while graph loading is in progress', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    vi.spyOn(ChangeTracker, 'isLoadingGraph', 'get').mockReturnValue(true)
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(modelScan).not.toHaveBeenCalled()
+  })
+
+  it('skips scanning added nodes when root graph is unavailable', async () => {
+    const graph = new LGraph()
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    const mediaScan = vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates')
+    installErrorClearingHooks(graph)
+
+    graph.add(new LGraphNode('CheckpointLoaderSimple'))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(modelScan).not.toHaveBeenCalled()
+    expect(mediaScan).not.toHaveBeenCalled()
+  })
+
+  it('skips scanning added inactive nodes', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.mode = LGraphEventMode.BYPASS
+    graph.add(node)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(modelScan).not.toHaveBeenCalled()
   })
 
   it('scans added-node missing models after widget values are restored', async () => {
@@ -734,6 +916,84 @@ describe('realtime scan verifies pending cloud candidates', () => {
     await new Promise((r) => setTimeout(r, 0))
     expect(useMissingModelStore().missingModelCandidates).toBeNull()
   })
+
+  it('logs pending model verification failures without surfacing candidates', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: String(node.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: true,
+        name: 'broken.safetensors',
+        isMissing: undefined
+      }
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockRejectedValue(new Error('nope'))
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+
+    installErrorClearingHooks(graph)
+
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledOnce())
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('logs pending media verification failures without surfacing candidates', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
+      {
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'broken.png',
+        isMissing: undefined
+      }
+    ])
+    const verifySpy = vi
+      .spyOn(missingMediaScan, 'verifyMediaCandidates')
+      .mockRejectedValue(new Error('nope'))
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+
+    installErrorClearingHooks(graph)
+
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledOnce())
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
 })
 
 describe('realtime verification staleness guards', () => {
@@ -893,6 +1153,54 @@ describe('realtime verification staleness guards', () => {
     // result must not be added to the store.
     expect(useMissingModelStore().missingModelCandidates).toBeNull()
   })
+
+  it('skips adding verified media when rootGraph switched before verification resolved', async () => {
+    const graphA = new LGraph()
+    const nodeA = new LGraphNode('LoadImage')
+    graphA.add(nodeA)
+    const rootSpy = vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graphA)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
+      {
+        nodeId: String(nodeA.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'stale_from_A.png',
+        isMissing: undefined
+      }
+    ])
+    let resolveVerify: (() => void) | undefined
+    const verifyPromise = new Promise<void>((r) => (resolveVerify = r))
+    const verifySpy = vi
+      .spyOn(missingMediaScan, 'verifyMediaCandidates')
+      .mockImplementation(async (candidates) => {
+        await verifyPromise
+        for (const c of candidates) c.isMissing = true
+      })
+
+    installErrorClearingHooks(graphA)
+
+    nodeA.mode = LGraphEventMode.ALWAYS
+    graphA.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: nodeA.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+
+    const graphB = new LGraph()
+    graphB.add(new LGraphNode('LoadImage'))
+    rootSpy.mockReturnValue(graphB)
+
+    resolveVerify!()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
 })
 
 describe('scan skips interior of bypassed subgraph containers', () => {
@@ -1002,6 +1310,167 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       innerSubgraphNode,
       false
     )
+  })
+
+  it('skips inactive descendants during subgraph replay scans', async () => {
+    const rootGraph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph })
+    const activeNode = new LGraphNode('UNETLoader')
+    const bypassedNode = new LGraphNode('CheckpointLoaderSimple')
+    bypassedNode.mode = LGraphEventMode.BYPASS
+    subgraph.add(activeNode)
+    subgraph.add(bypassedNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, {
+      parentGraph: rootGraph,
+      id: 205
+    })
+    rootGraph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    const modelScanSpy = vi
+      .spyOn(missingModelScan, 'scanNodeModelCandidates')
+      .mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(rootGraph)
+
+    rootGraph.onNodeAdded?.(subgraphNode)
+    await Promise.resolve()
+
+    expect(modelScanSpy).toHaveBeenCalledWith(
+      rootGraph,
+      activeNode,
+      expect.any(Function),
+      expect.any(Function)
+    )
+    expect(modelScanSpy).not.toHaveBeenCalledWith(
+      rootGraph,
+      bypassedNode,
+      expect.any(Function),
+      expect.any(Function)
+    )
+  })
+
+  it('surfaces missing node errors from the Unknown fallback type', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode()
+    node.type = fromAny<LGraphNode['type'], unknown>(undefined)
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    installErrorClearingHooks(graph)
+
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    expect(useMissingNodesErrorStore().missingNodesError?.nodeTypes).toEqual([
+      expect.objectContaining({ type: 'Unknown', nodeId: String(node.id) })
+    ])
+  })
+
+  it('does not show the overlay when un-bypass finds no missing errors', () => {
+    const subgraph = createTestSubgraph()
+    const node = createTestSubgraphNode(subgraph)
+    const graph = subgraph.rootGraph
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    const showOverlay = vi.spyOn(useExecutionErrorStore(), 'showErrorOverlay')
+    installErrorClearingHooks(graph)
+
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    expect(showOverlay).not.toHaveBeenCalled()
+  })
+
+  it('ignores mode changes that do not change active state', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    installErrorClearingHooks(graph)
+
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.ALWAYS,
+      newValue: LGraphEventMode.ON_EVENT
+    })
+
+    expect(modelScan).not.toHaveBeenCalled()
+  })
+
+  it('ignores mode changes for missing local nodes', () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    installErrorClearingHooks(graph)
+
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: 999,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    expect(modelScan).not.toHaveBeenCalled()
+  })
+
+  it('ignores mode changes when root graph is unavailable', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    installErrorClearingHooks(graph)
+
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    expect(modelScan).not.toHaveBeenCalled()
+  })
+
+  it('ignores mode changes when the local node has no root execution id', () => {
+    const graph = new LGraph()
+    const rootGraph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    installErrorClearingHooks(graph)
+
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    expect(modelScan).not.toHaveBeenCalled()
   })
 
   it('removes host-keyed promoted missing models when a source ancestor is bypassed', () => {
