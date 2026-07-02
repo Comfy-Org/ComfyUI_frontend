@@ -384,6 +384,10 @@ jobs:
 
             **Reason:** Merge conflicts detected during cherry-pick of `${MERGE_COMMIT_SHORT}`
 
+            The auto-backport could not be completed automatically. Please backport
+            manually onto branch `${BACKPORT_BRANCH}` (from `origin/${target}`) and
+            open a PR to `${target}`.
+
             <details>
             <summary>📄 Conflicting files</summary>
 
@@ -416,19 +420,31 @@ jobs:
             MERGE_COMMIT=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
           fi
 
+          # Post a comment without letting a single failed `gh pr comment` (e.g.
+          # a locked issue, as happened for PR #13359, or a transient API error)
+          # abort the step under `set -e` and swallow the remaining failures.
+          post_comment() {
+            local body="$1"
+            local context="$2"
+            if ! gh pr comment "${PR_NUMBER}" --body "${body}"; then
+              echo "::warning::Could not comment on PR #${PR_NUMBER} about ${context}. Manual backport required."
+            fi
+          }
+
           for failure in ${{ steps.backport.outputs.failed }}; do
             IFS=':' read -r target reason conflicts <<< "${failure}"
 
+            SAFE_TARGET=$(echo "$target" | tr '/' '-')
+            BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
+
             if [ "${reason}" = "branch-missing" ]; then
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist"
+              post_comment "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist" "missing branch ${target}"
 
             elif [ "${reason}" = "already-exists" ]; then
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
+              post_comment "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed." "already-backported ${target}"
 
             elif [ "${reason}" = "conflicts" ]; then
               CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
-              SAFE_TARGET=$(echo "$target" | tr '/' '-')
-              BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
               PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
               export PR_NUMBER PR_URL MERGE_COMMIT target BACKPORT_BRANCH CONFLICTS_INLINE
@@ -444,10 +460,10 @@ jobs:
               CONFLICTS_BLOCK=$(echo "${conflicts}" | tr ',' '\n')
               MERGE_COMMIT_SHORT="${MERGE_COMMIT:0:7}"
 
-              export target MERGE_COMMIT_SHORT CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR
-              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR}' <<<"$COMMENT_BODY_TEMPLATE")
+              export target MERGE_COMMIT_SHORT BACKPORT_BRANCH CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR
+              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${BACKPORT_BRANCH} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR}' <<<"$COMMENT_BODY_TEMPLATE")
 
-              gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
+              post_comment "${COMMENT_BODY}" "cherry-pick conflict on ${target} (backport manually onto ${BACKPORT_BRANCH})"
             fi
           done
 
