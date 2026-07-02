@@ -240,8 +240,8 @@ describe('useTemplateFiltering', () => {
     ])
   })
 
-  it('supports recommended and popular usage-based sorting', async () => {
-    const templates = ref<TemplateInfo[]>([
+  const usageRankedTemplates = () =>
+    ref<TemplateInfo[]>([
       {
         name: 'low',
         title: 'Low',
@@ -260,21 +260,36 @@ describe('useTemplateFiltering', () => {
       }
     ])
 
-    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
+  it('ranks "recommended" via computeDefaultScore', async () => {
+    const { sortBy, filteredTemplates } = useTemplateFiltering(
+      usageRankedTemplates()
+    )
 
     sortBy.value = 'recommended'
     await nextTick()
+
     expect(filteredTemplates.value.map((template) => template.name)).toEqual([
       'high',
       'low'
     ])
+    expect(defaultRankingStore.computeDefaultScore).toHaveBeenCalled()
+    expect(defaultRankingStore.computePopularScore).not.toHaveBeenCalled()
+  })
+
+  it('ranks "popular" via computePopularScore', async () => {
+    const { sortBy, filteredTemplates } = useTemplateFiltering(
+      usageRankedTemplates()
+    )
 
     sortBy.value = 'popular'
     await nextTick()
+
     expect(filteredTemplates.value.map((template) => template.name)).toEqual([
       'high',
       'low'
     ])
+    expect(defaultRankingStore.computePopularScore).toHaveBeenCalled()
+    expect(defaultRankingStore.computeDefaultScore).not.toHaveBeenCalled()
   })
 
   it('filters to ComfyUI templates via the Runs On filter', async () => {
