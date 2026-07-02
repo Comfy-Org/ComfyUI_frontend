@@ -59,9 +59,10 @@ describe('useBillingRouting', () => {
     mockFlags.consolidatedBillingEnabled = true
     mockActiveWorkspace.value = personal
 
-    const { type } = useBillingRouting()
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
     expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
   it('uses workspace billing for team workspaces regardless of consolidated billing', () => {
@@ -69,9 +70,21 @@ describe('useBillingRouting', () => {
     mockFlags.consolidatedBillingEnabled = false
     mockActiveWorkspace.value = team
 
-    const { type } = useBillingRouting()
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
     expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
+  })
+
+  it('uses workspace billing for team workspaces with consolidated billing enabled', () => {
+    mockFlags.teamWorkspacesEnabled = true
+    mockFlags.consolidatedBillingEnabled = true
+    mockActiveWorkspace.value = team
+
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+
+    expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
   it('defaults to legacy while the workspace has not loaded', () => {
