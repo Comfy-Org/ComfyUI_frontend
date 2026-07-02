@@ -301,6 +301,9 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 function onKeyup(event: KeyboardEvent) {
+  // Escape closed the menu on keydown; without this guard its keyup would
+  // re-run mention detection and instantly reopen the menu.
+  if (event.key === 'Escape') return
   if (menuOpen.value && MENU_NAV_KEYS.has(event.key)) return
   detectMention()
 }
