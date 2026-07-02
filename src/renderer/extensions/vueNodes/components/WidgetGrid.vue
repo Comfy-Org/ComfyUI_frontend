@@ -30,7 +30,7 @@
               type: widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
-            :node-id="nodeId"
+            :node-id
             :has-error="widget.hasError"
             :index="widget.slotMetadata.index"
             :socketless="widget.simplified.spec?.socketless"
@@ -48,8 +48,8 @@
             v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
             :model-value="widget.simplified.value"
             :widget="widget.simplified"
-            :node-id="nodeId"
-            :node-type="nodeType"
+            :node-id
+            :node-type
             :class="
               cn(
                 'col-span-2',

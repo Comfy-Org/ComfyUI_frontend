@@ -4,9 +4,9 @@
   </div>
   <WidgetGrid
     v-else
-    :processed-widgets="processedWidgets"
-    :node-type="nodeType"
-    :can-select-inputs="canSelectInputs"
+    :processed-widgets
+    :node-type
+    :can-select-inputs
     :node-id="nodeData?.id"
     :class="
       shouldHandleNodePointerEvents

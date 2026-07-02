@@ -156,7 +156,7 @@
           <NodeWidgets
             v-if="hasRenderableWidgets"
             :node-data
-            :widget-ids="widgetIds"
+            :widget-ids
           />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">

@@ -255,7 +255,7 @@ defineExpose({ handleDragDrop })
       >
         <NodeWidgets
           :node-data
-          :widget-ids="widgetIds"
+          :widget-ids
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
