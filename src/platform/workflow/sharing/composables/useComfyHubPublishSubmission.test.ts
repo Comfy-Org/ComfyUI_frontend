@@ -150,6 +150,28 @@ describe('useComfyHubPublishSubmission', () => {
     )
   })
 
+  it('uses octet-stream content type when file type is missing', async () => {
+    const thumbnailFile = new File(['thumbnail'], 'thumb.bin')
+
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        thumbnailType: 'image',
+        thumbnailFile
+      })
+    )
+
+    expect(mockRequestAssetUploadUrl).toHaveBeenCalledWith({
+      filename: 'thumb.bin',
+      contentType: 'application/octet-stream'
+    })
+    expect(mockUploadFileToPresignedUrl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: 'application/octet-stream'
+      })
+    )
+  })
+
   it('sends the existing thumbnail URL when no new file is attached', async () => {
     const { submitToComfyHub } = useComfyHubPublishSubmission()
     await submitToComfyHub(
@@ -278,6 +300,27 @@ describe('useComfyHubPublishSubmission', () => {
     )
   })
 
+  it('keeps existing example image URLs without uploading them', async () => {
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        exampleImages: [
+          {
+            id: 'existing',
+            url: 'https://cdn.example.com/existing.png'
+          }
+        ]
+      })
+    )
+
+    expect(mockRequestAssetUploadUrl).not.toHaveBeenCalled()
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sampleImageTokensOrUrls: ['https://cdn.example.com/existing.png']
+      })
+    )
+  })
+
   it('builds publish request with workflow filename + asset ids', async () => {
     const { submitToComfyHub } = useComfyHubPublishSubmission()
     await submitToComfyHub(createFormData())
@@ -294,12 +337,87 @@ describe('useComfyHubPublishSubmission', () => {
     )
   })
 
+  it('omits optional publish fields when form values are empty', async () => {
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        description: '',
+        tags: [],
+        models: [],
+        customNodes: [],
+        tutorialUrl: '',
+        metadata: {}
+      })
+    )
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: undefined,
+        tags: undefined,
+        models: undefined,
+        customNodes: undefined,
+        tutorialUrl: undefined,
+        metadata: undefined
+      })
+    )
+  })
+
+  it('passes optional publish fields when form values are present', async () => {
+    const metadata = { license: 'cc-by' }
+    const models = ['model']
+    const customNodes = ['custom-node']
+
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        models,
+        customNodes,
+        tutorialUrl: 'https://example.com/tutorial',
+        metadata
+      })
+    )
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        models,
+        customNodes,
+        tutorialUrl: 'https://example.com/tutorial',
+        metadata
+      })
+    )
+  })
+
+  it('trims the profile username before publishing', async () => {
+    mockProfile.value = {
+      username: ' builder ',
+      name: 'Builder'
+    }
+
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(createFormData())
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: 'builder'
+      })
+    )
+  })
+
   it('throws when profile username is unavailable', async () => {
     mockProfile.value = null
 
     const { submitToComfyHub } = useComfyHubPublishSubmission()
     await expect(submitToComfyHub(createFormData())).rejects.toThrow(
       'ComfyHub profile is required before publishing'
+    )
+  })
+
+  it('throws when active workflow path is unavailable', async () => {
+    mockWorkflowStore.activeWorkflow.path = '   '
+
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await expect(submitToComfyHub(createFormData())).rejects.toThrow(
+      'No active workflow file available for publishing'
     )
   })
 })
