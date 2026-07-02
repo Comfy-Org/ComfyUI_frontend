@@ -89,6 +89,17 @@ describe('LGraphNodePreview', () => {
     expect(widget?.options?.values).toEqual(['a.safetensors', 'b.safetensors'])
   })
 
+  it('leads with an explicitly empty provided value', () => {
+    const widget = renderedComboWidget({ widgetValues: { ckpt_name: '' } })
+
+    expect(widget?.value).toBe('')
+    expect(widget?.options?.values).toEqual([
+      '',
+      'a.safetensors',
+      'b.safetensors'
+    ])
+  })
+
   it('uses the input default when defined and empty string otherwise', () => {
     const widgets = renderedWidgets(
       fromPartial<ComfyNodeDefV2>({
