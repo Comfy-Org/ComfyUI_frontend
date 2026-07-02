@@ -3,6 +3,9 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Empty from '@/components/ui/empty/Empty.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import EmptyDescription from '@/components/ui/empty/EmptyDescription.vue'
 import EmptyHeader from '@/components/ui/empty/EmptyHeader.vue'
 import EmptyMedia from '@/components/ui/empty/EmptyMedia.vue'
@@ -72,14 +75,22 @@ const groups = computed<Group[]>(() => {
 <template>
   <div class="flex h-full flex-col overflow-hidden">
     <div class="flex shrink-0 items-center px-2 py-1.5">
-      <button
-        type="button"
-        class="flex h-6 cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
-        @click="emit('back')"
-      >
-        <i class="icon-[lucide--arrow-left] size-3" />
-        <span>{{ $t('agent.history.title') }}</span>
-      </button>
+      <Tooltip :delay-duration="300">
+        <TooltipTrigger>
+          <button
+            type="button"
+            class="flex h-6 cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground hover:bg-secondary-background-hover"
+            :aria-label="$t('agent.history.back')"
+            @click="emit('back')"
+          >
+            <i class="icon-[lucide--arrow-left] size-3" />
+            <span>{{ $t('agent.history.title') }}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{{
+          $t('agent.history.back')
+        }}</TooltipContent>
+      </Tooltip>
     </div>
 
     <div class="flex flex-1 flex-col overflow-y-auto p-2">

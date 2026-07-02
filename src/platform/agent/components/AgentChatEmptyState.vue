@@ -23,7 +23,7 @@ const { name } = defineProps<{
         </div>
       </EmptyMedia>
       <EmptyTitle
-        class="text-base/snug font-semibold text-base-foreground"
+        class="text-base/snug font-semibold text-base-foreground @min-[570px]:text-2xl/snug"
       >
         <span class="block">
           {{

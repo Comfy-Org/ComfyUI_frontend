@@ -122,7 +122,9 @@ function onNewChatFromHistory() {
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden bg-base-background">
+  <div
+    class="@container flex h-full flex-col overflow-hidden bg-base-background"
+  >
     <AgentChatHeader @new-chat="startNewChat" @close="close" />
 
     <template v-if="showHistory">
@@ -153,7 +155,7 @@ function onNewChatFromHistory() {
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {{ $t('agent.history.title') }}
+            {{ $t('agent.history.show') }}
           </TooltipContent>
         </Tooltip>
       </div>

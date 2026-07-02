@@ -33,6 +33,8 @@
     },
     "history": {
       "title": "Chat History",
+      "show": "Show chat history",
+      "back": "Back to conversation",
       "current": "Current",
       "today": "Today",
       "yesterday": "Yesterday",
