@@ -2,30 +2,28 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createChipElement,
-  createTemplateFragment,
   parseElementToTemplate,
   renderTemplateToElement
 } from '@/platform/prompts/promptTemplateDom'
-import type { PromptTemplate } from '@/platform/prompts/schemas/promptTypes'
+import type { PromptTemplate } from '@/platform/prompts/promptTypes'
 
 function host(): HTMLElement {
   return document.createElement('div')
 }
 
 describe('promptTemplateDom', () => {
-  it('renders chips with type, id and name attributes', () => {
-    const chip = createChipElement({ type: 'asset', id: 'p1', name: 'style' })
-    expect(chip.getAttribute('data-chip-type')).toBe('asset')
-    expect(chip.getAttribute('data-chip-id')).toBe('p1')
-    expect(chip.getAttribute('data-chip-name')).toBe('style')
-    expect(chip.textContent).toBe('@style')
+  it('renders chips with type and name attributes', () => {
+    const chip = createChipElement('setting')
+    expect(chip.getAttribute('data-chip-type')).toBe('var')
+    expect(chip.getAttribute('data-chip-name')).toBe('setting')
+    expect(chip.textContent).toBe('@setting')
     expect(chip.contentEditable).toBe('false')
   })
 
-  it('round-trips text, asset and variable segments', () => {
+  it('round-trips text and variable segments', () => {
     const template: PromptTemplate = [
-      { type: 'text', value: 'a portrait in ' },
-      { type: 'asset', id: 'p1', name: 'style' },
+      { type: 'text', value: 'a portrait of ' },
+      { type: 'var', name: 'subject' },
       { type: 'text', value: ', set in ' },
       { type: 'var', name: 'setting' }
     ]
@@ -56,17 +54,7 @@ describe('promptTemplateDom', () => {
   it('ignores empty text nodes', () => {
     const el = host()
     el.append(document.createTextNode(''))
-    el.append(createChipElement({ type: 'var', name: 'x' }))
+    el.append(createChipElement('x'))
     expect(parseElementToTemplate(el)).toEqual([{ type: 'var', name: 'x' }])
-  })
-
-  it('builds a fragment of text nodes and chips for expansion', () => {
-    const template: PromptTemplate = [
-      { type: 'text', value: 'hi ' },
-      { type: 'asset', id: 'p1', name: 'style' }
-    ]
-    const el = host()
-    el.append(createTemplateFragment(template))
-    expect(parseElementToTemplate(el)).toEqual(template)
   })
 })

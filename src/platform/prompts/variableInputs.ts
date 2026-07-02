@@ -1,4 +1,4 @@
-import type { PromptTemplate } from '@/platform/prompts/schemas/promptTypes'
+import type { PromptTemplate } from '@/platform/prompts/promptTypes'
 
 /** Rewrites every `@variable` reference named `oldName` to `newName`. */
 export function renameVariableInTemplate(

@@ -6,30 +6,17 @@
       :contenteditable="readonly ? 'false' : 'true'"
       spellcheck="false"
       data-testid="prompt-editor"
-      :class="
-        cn(
-          'size-full overflow-auto wrap-break-word whitespace-pre-wrap outline-none',
-          bordered
-            ? 'rounded-sm border border-border-default bg-component-node-widget-background p-2'
-            : 'pb-10'
-        )
-      "
+      class="size-full overflow-auto rounded-sm border border-border-default bg-component-node-widget-background p-2 wrap-break-word whitespace-pre-wrap outline-none"
       @input="onInput"
       @keydown="onKeydown"
       @keyup="onKeyup"
       @click="detectMention"
-      @dblclick="onExpandChip"
       @paste="onPaste"
       @blur="onBlur"
     />
     <span
       v-if="isEmpty && placeholder"
-      :class="
-        cn(
-          'pointer-events-none absolute text-muted-foreground',
-          bordered ? 'top-2 left-2' : 'top-0 left-0'
-        )
-      "
+      class="pointer-events-none absolute top-2 left-2 text-muted-foreground"
     >
       {{ placeholder }}
     </span>
@@ -42,39 +29,26 @@
         @mousedown.prevent
       >
         <template v-if="menuItems.length">
-          <template
+          <Button
             v-for="(item, index) in menuItems"
-            :key="`${item.kind}:${item.id ?? item.name}`"
+            :key="item.name"
+            variant="textonly"
+            size="sm"
+            :class="
+              cn(
+                'w-full justify-start',
+                index === highlighted && 'bg-secondary-background-hover'
+              )
+            "
+            @mouseenter="highlighted = index"
+            @click="selectItem(item)"
           >
-            <div
-              v-if="index === 0 || menuItems[index - 1].kind !== item.kind"
-              class="px-2 pt-1.5 pb-0.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-            >
-              {{
-                item.kind === 'var'
-                  ? t('promptNode.menuVariables')
-                  : t('promptNode.menuSavedPrompts')
-              }}
-            </div>
-            <Button
-              variant="textonly"
-              size="sm"
-              :class="
-                cn(
-                  'w-full justify-start',
-                  index === highlighted && 'bg-secondary-background-hover'
-                )
-              "
-              @mouseenter="highlighted = index"
-              @click="selectItem(item)"
-            >
-              <span class="truncate">{{
-                item.create
-                  ? t('promptNode.createVariable', { name: item.name })
-                  : item.name
-              }}</span>
-            </Button>
-          </template>
+            <span class="truncate">{{
+              item.create
+                ? t('promptNode.createVariable', { name: item.name })
+                : item.name
+            }}</span>
+          </Button>
         </template>
         <div v-else class="px-2 py-1.5 text-muted-foreground">
           {{ t('promptNode.noMatches') }}
@@ -93,40 +67,28 @@ import Button from '@/components/ui/button/Button.vue'
 import {
   CHIP_SELECTOR,
   createChipElement,
-  createTemplateFragment,
   parseElementToTemplate,
   renderTemplateToElement
 } from '@/platform/prompts/promptTemplateDom'
-import type {
-  PromptSegment,
-  PromptTemplate
-} from '@/platform/prompts/schemas/promptTypes'
-import { usePromptStore } from '@/stores/promptStore'
+import type { PromptTemplate } from '@/platform/prompts/promptTypes'
 
 const {
   variableNames = [],
   connectedNames = [],
-  allowCreateVariable = false,
   placeholder = '',
-  readonly = false,
-  bordered = true
+  readonly = false
 } = defineProps<{
   /** `@` variable references this editor may offer and resolve. */
   variableNames?: string[]
   /** Variables that are wired up, so their chips render as resolved. */
   connectedNames?: string[]
-  /** Whether typing a new `@name` may declare a fresh variable. */
-  allowCreateVariable?: boolean
   placeholder?: string
   readonly?: boolean
-  /** Render with the bordered widget chrome; set false for a flat text area. */
-  bordered?: boolean
 }>()
 
 const modelValue = defineModel<PromptTemplate>({ default: () => [] })
 
 const { t } = useI18n()
-const store = usePromptStore()
 
 const editorEl = ref<HTMLElement>()
 const isEmpty = computed(() => (modelValue.value ?? []).length === 0)
@@ -154,15 +116,11 @@ watch(modelValue, (value) => {
   renderFromModel()
 })
 
-watch(() => store.prompts, refreshChipStates, { deep: true })
 watch(() => connectedNames, refreshChipStates)
 
 onMounted(() => {
   renderFromModel()
   lastSerialized = JSON.stringify(modelValue.value ?? [])
-  void store.loadPrompts().catch((error) => {
-    console.error('[PromptEditor] Failed to load saved prompts', error)
-  })
 })
 
 function refreshChipStates() {
@@ -170,58 +128,14 @@ function refreshChipStates() {
   if (!host) return
   const connected = new Set(connectedNames)
   for (const chip of host.querySelectorAll<HTMLElement>(CHIP_SELECTOR)) {
-    const type = chip.getAttribute('data-chip-type')
-    const resolvable =
-      type === 'asset'
-        ? !!store.getPrompt(chip.getAttribute('data-chip-id') ?? '')
-        : connected.has(chip.getAttribute('data-chip-name') ?? '')
+    const resolvable = connected.has(chip.getAttribute('data-chip-name') ?? '')
     chip.classList.toggle('bg-primary-background', resolvable)
     chip.classList.toggle('bg-destructive-background', !resolvable)
   }
 }
 
-/**
- * Double-clicking a saved-prompt chip expands it in place into its referenced
- * text (and any nested chips), so the full content becomes directly editable.
- */
-function onExpandChip(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  const chip = target?.closest<HTMLElement>(CHIP_SELECTOR)
-  if (!chip || chip.getAttribute('data-chip-type') !== 'asset') return
-  event.preventDefault()
-  void expandChip(chip, chip.getAttribute('data-chip-id') ?? '')
-}
-
-async function expandChip(chip: HTMLElement, id: string) {
-  let template = store.getPrompt(id)?.template
-  if (!template?.length) {
-    try {
-      template = await store.resolveTemplate(id)
-    } catch (error) {
-      console.error('[PromptEditor] Failed to load prompt content', error)
-      return
-    }
-  }
-  if (!template.length || !chip.isConnected) return
-
-  const fragment = createTemplateFragment(template)
-  const lastNode = fragment.lastChild
-  chip.replaceWith(fragment)
-  if (lastNode) {
-    const selection = window.getSelection()
-    const range = document.createRange()
-    range.setStartAfter(lastNode)
-    range.collapse(true)
-    selection?.removeAllRanges()
-    selection?.addRange(range)
-  }
-  syncFromEditor()
-}
-
 // --- @ mention autocomplete ----------------------------------------------
 interface MenuItem {
-  kind: 'asset' | 'var'
-  id?: string
   name: string
   create?: boolean
 }
@@ -248,19 +162,15 @@ function closeMenu() {
 function recomputeMenu() {
   const query = menuQuery.value
   const lower = query.toLowerCase()
-  const matches = (name: string) => name.toLowerCase().includes(lower)
   const vars: MenuItem[] = variableNames
-    .filter(matches)
-    .map((name) => ({ kind: 'var', name }))
-  const prompts: MenuItem[] = store.prompts
-    .filter((prompt) => matches(prompt.name))
-    .map((prompt) => ({ kind: 'asset', id: prompt.id, name: prompt.name }))
+    .filter((name) => name.toLowerCase().includes(lower))
+    .map((name) => ({ name }))
   const trimmed = query.trim()
   const create: MenuItem[] =
-    allowCreateVariable && trimmed && !variableNames.includes(trimmed)
-      ? [{ kind: 'var', name: trimmed, create: true }]
+    trimmed && !variableNames.includes(trimmed)
+      ? [{ name: trimmed, create: true }]
       : []
-  menuItems.value = [...create, ...vars, ...prompts]
+  menuItems.value = [...create, ...vars]
   highlighted.value = 0
 }
 
@@ -318,11 +228,6 @@ function positionMenu() {
 
 function selectItem(item: MenuItem) {
   if (!mentionAnchor) return
-  const segment: PromptSegment =
-    item.kind === 'asset'
-      ? { type: 'asset', id: item.id ?? '', name: item.name }
-      : { type: 'var', name: item.name }
-
   const { node, start, end } = mentionAnchor
   const parent = node.parentNode
   if (!parent) return
@@ -330,9 +235,7 @@ function selectItem(item: MenuItem) {
   const text = node.textContent ?? ''
   node.textContent = text.slice(0, start)
   const after = document.createTextNode(` ${text.slice(end)}`)
-  const chip = createChipElement(
-    segment as Extract<PromptSegment, { type: 'asset' | 'var' }>
-  )
+  const chip = createChipElement(item.name)
   parent.insertBefore(after, node.nextSibling)
   parent.insertBefore(chip, after)
   setCaret(after, 1)

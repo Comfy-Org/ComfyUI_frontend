@@ -9,13 +9,12 @@ import {
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/litegraph'
 import { resolvePromptTemplate } from '@/platform/prompts/promptResolution'
-import type { PromptTemplate } from '@/platform/prompts/schemas/promptTypes'
+import type { PromptTemplate } from '@/platform/prompts/promptTypes'
 import {
   planVariableSockets,
   renameVariableInTemplate
 } from '@/platform/prompts/variableInputs'
 import { app } from '@/scripts/app'
-import { usePromptStore } from '@/stores/promptStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
@@ -81,14 +80,9 @@ class PromptNode extends LGraphNode {
 
   /** Resolves the editor template to its final string at submission time. */
   resolvePromptText(visited: ReadonlySet<string> = new Set()): string {
-    const promptStore = usePromptStore()
     return resolvePromptTemplate(
       this.getTemplate(),
-      {
-        getPromptTemplate: (id) => promptStore.getPrompt(id)?.template,
-        resolveVar: (name, currentVisited) =>
-          this.resolveVar(name, currentVisited)
-      },
+      (name, currentVisited) => this.resolveVar(name, currentVisited),
       visited
     )
   }

@@ -4,8 +4,7 @@
       :class="
         cn(
           searchInputVariants({ size }),
-          disabled && 'pointer-events-none opacity-50',
-          anchorClass
+          disabled && 'pointer-events-none opacity-50'
         )
       "
       @click="focus"
@@ -85,8 +84,7 @@ const {
   loading = false,
   disabled = false,
   size = 'md',
-  class: className,
-  anchorClass
+  class: className
 } = defineProps<{
   placeholder?: string
   icon?: string
@@ -96,8 +94,6 @@ const {
   disabled?: boolean
   size?: SearchInputVariants['size']
   class?: HTMLAttributes['class']
-  /** Class applied to the search bar surface (the anchor), e.g. its background. */
-  anchorClass?: HTMLAttributes['class']
 }>()
 
 const emit = defineEmits<{

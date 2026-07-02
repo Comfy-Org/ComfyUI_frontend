@@ -1,7 +1,7 @@
 import type {
   PromptSegment,
   PromptTemplate
-} from '@/platform/prompts/schemas/promptTypes'
+} from '@/platform/prompts/promptTypes'
 
 export const CHIP_SELECTOR = '[data-chip-type]'
 
@@ -16,40 +16,28 @@ function isChipElement(node: Node): node is HTMLElement {
 }
 
 function chipSegment(el: HTMLElement): PromptSegment | null {
-  const type = el.getAttribute('data-chip-type')
-  const name = el.getAttribute('data-chip-name') ?? ''
-  if (type === 'asset') {
-    return { type: 'asset', id: el.getAttribute('data-chip-id') ?? '', name }
-  }
-  if (type === 'var') {
-    return { type: 'var', name }
-  }
-  return null
+  if (el.getAttribute('data-chip-type') !== 'var') return null
+  return { type: 'var', name: el.getAttribute('data-chip-name') ?? '' }
 }
 
-export function createChipElement(
-  segment: Extract<PromptSegment, { type: 'asset' | 'var' }>
-): HTMLSpanElement {
+export function createChipElement(name: string): HTMLSpanElement {
   const el = document.createElement('span')
   el.className = CHIP_CLASS
   el.contentEditable = 'false'
-  el.setAttribute('data-chip-type', segment.type)
-  el.setAttribute('data-chip-name', segment.name)
-  if (segment.type === 'asset') el.setAttribute('data-chip-id', segment.id)
-  el.textContent = `@${segment.name}`
+  el.setAttribute('data-chip-type', 'var')
+  el.setAttribute('data-chip-name', name)
+  el.textContent = `@${name}`
   return el
 }
 
 /** Builds a flat fragment of text nodes + chips for a template. */
-export function createTemplateFragment(
-  template: PromptTemplate
-): DocumentFragment {
+function createTemplateFragment(template: PromptTemplate): DocumentFragment {
   const fragment = document.createDocumentFragment()
   for (const segment of template) {
     fragment.append(
       segment.type === 'text'
         ? document.createTextNode(segment.value)
-        : createChipElement(segment)
+        : createChipElement(segment.name)
     )
   }
   return fragment

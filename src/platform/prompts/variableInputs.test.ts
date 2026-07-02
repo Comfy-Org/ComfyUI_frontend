@@ -77,18 +77,18 @@ describe('renameVariableInTemplate', () => {
     ])
   })
 
-  it('leaves other variables and asset references untouched', () => {
+  it('leaves other variables and text untouched', () => {
     const template = renameVariableInTemplate(
       [
         { type: 'var', name: 'color' },
-        { type: 'asset', id: 'p1', name: 'animal' }
+        { type: 'text', value: 'animal' }
       ],
       'animal',
       'creature'
     )
     expect(template).toEqual([
       { type: 'var', name: 'color' },
-      { type: 'asset', id: 'p1', name: 'animal' }
+      { type: 'text', value: 'animal' }
     ])
   })
 })

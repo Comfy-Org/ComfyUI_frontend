@@ -1,26 +1,8 @@
 {
   "promptNode": {
-    "searchPlaceholder": "Search prompts…",
-    "saveAsPrompt": "Save as prompt",
-    "namePlaceholder": "Prompt name",
-    "editorPlaceholder": "Write a prompt, or type {'@'} to reference a saved prompt or connected input",
+    "editorPlaceholder": "Write a prompt, or type {'@'} to reference a connected input",
     "noMatches": "No matches",
-    "createVariable": "Create variable: {name}",
-    "menuVariables": "Variables",
-    "menuSavedPrompts": "Saved prompts",
-    "managerButton": "Manage prompts",
-    "managerTitle": "Manage prompts",
-    "managerEmpty": "No saved prompts yet",
-    "managerNoMatches": "No prompts match your search",
-    "managerSelectHint": "Select a prompt, or create a new one",
-    "confirmDelete": "Confirm delete",
-    "newPrompt": "New prompt",
-    "editName": "Edit name",
-    "historyTitle": "History",
-    "historyEmpty": "No versions yet",
-    "currentVersion": "Current",
-    "viewVersion": "View version",
-    "restore": "Restore"
+    "createVariable": "Create variable: {name}"
   },
   "g": {
     "shortcutSuffix": " ({shortcut})",

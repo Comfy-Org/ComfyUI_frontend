@@ -479,22 +479,6 @@ function createAssetService() {
   }
 
   /**
-   * Fetches the raw file content of an asset as text.
-   *
-   * @param id - The asset ID
-   * @returns Promise<string> - The asset's file content
-   */
-  async function getAssetContent(id: AssetId): Promise<string> {
-    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/content`)
-    if (!res.ok) {
-      throw new Error(
-        `Unable to load asset content for ${id}: Server returned ${res.status}`
-      )
-    }
-    return await res.text()
-  }
-
-  /**
    * Gets assets filtered by a specific tag
    *
    * @param tag - The tag to filter by (e.g., 'models', 'input')
@@ -797,12 +781,9 @@ function createAssetService() {
     // Create FormData and append the blob
     const formData = new FormData()
     formData.append('file', blob, params.name)
-    formData.append('name', params.name)
 
-    // Send tags as repeated fields, not a JSON-encoded array, so the backend
-    // parses a real list instead of one literal tag.
-    for (const tag of params.tags ?? []) {
-      formData.append('tags', tag)
+    if (params.tags) {
+      formData.append('tags', JSON.stringify(params.tags))
     }
 
     if (params.user_metadata) {
@@ -997,7 +978,6 @@ function createAssetService() {
     shouldUseAssetBrowser,
     getAssetsForNodeType,
     getAssetDetails,
-    getAssetContent,
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,
