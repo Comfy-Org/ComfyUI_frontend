@@ -93,7 +93,7 @@ describe('drawConnections widget-input slot positioning', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    setActivePinia(createTestingPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800

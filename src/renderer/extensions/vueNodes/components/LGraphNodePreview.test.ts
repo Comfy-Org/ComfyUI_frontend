@@ -1,7 +1,11 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@/types/widgetId'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -10,9 +14,16 @@ vi.mock('@/stores/widgetStore', () => ({
 }))
 
 const NodeWidgetsProbe = {
-  props: ['nodeData', 'node'],
+  props: ['widgetIds'],
+  setup(props: { widgetIds?: readonly WidgetId[] }) {
+    const widgetValueStore = useWidgetValueStore()
+    const widgets = computed(() =>
+      (props.widgetIds ?? []).map((id) => widgetValueStore.getWidget(id))
+    )
+    return { widgets }
+  },
   template:
-    '<div data-testid="node-data">{{ JSON.stringify({ widgets: node.widgets }) }}</div>'
+    '<div data-testid="node-data">{{ JSON.stringify({ widgets }) }}</div>'
 }
 
 interface ProbedWidget {
@@ -37,6 +48,7 @@ function renderedWidgets(
   render(LGraphNodePreview, {
     props: { nodeDef: def, ...props },
     global: {
+      plugins: [createTestingPinia({ stubActions: false })],
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
