@@ -1,5 +1,5 @@
 import { useAsyncState, whenever } from '@vueuse/core'
-import { difference } from 'es-toolkit'
+import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
@@ -412,6 +412,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const pendingRequestByCategory = new Map<string, ModelPaginationState>()
       const pendingPromiseByCategory = new Map<string, Promise<void>>()
+      const abortByCategory = new Map<string, AbortController>()
 
       function createState(
         existingAssets?: Map<string, AssetItem>
@@ -525,6 +526,10 @@ export const useAssetsStore = defineStore('assets', () => {
         const existingState = modelStateByCategory.value.get(category)
         const state = createState(existingState?.assets)
 
+        abortByCategory.get(category)?.abort()
+        const controller = new AbortController()
+        abortByCategory.set(category, controller)
+
         const seenIds = new Set<string>()
 
         const hasExistingData = modelStateByCategory.value.has(category)
@@ -558,8 +563,16 @@ export const useAssetsStore = defineStore('assets', () => {
               const after = state.nextCursor
               const response = await fetcher(
                 after !== undefined
-                  ? { limit: MODEL_BATCH_SIZE, after }
-                  : { limit: MODEL_BATCH_SIZE, offset: state.offset }
+                  ? {
+                      limit: MODEL_BATCH_SIZE,
+                      after,
+                      signal: controller.signal
+                    }
+                  : {
+                      limit: MODEL_BATCH_SIZE,
+                      offset: state.offset,
+                      signal: controller.signal
+                    }
               )
 
               if (isStale(category, state)) return
@@ -618,9 +631,10 @@ export const useAssetsStore = defineStore('assets', () => {
               }
 
               if (state.hasMore) {
-                await new Promise((resolve) => setTimeout(resolve, 50))
+                await delay(50, { signal: controller.signal })
               }
             } catch (err) {
+              if (controller.signal.aborted) return
               if (isStale(category, state)) return
               console.error(`Error loading batch for ${category}:`, err)
 
@@ -650,6 +664,9 @@ export const useAssetsStore = defineStore('assets', () => {
 
         const promise = loadBatches().finally(() => {
           pendingPromiseByCategory.delete(category)
+          if (abortByCategory.get(category) === controller) {
+            abortByCategory.delete(category)
+          }
         })
         pendingPromiseByCategory.set(category, promise)
         await promise
@@ -688,6 +705,8 @@ export const useAssetsStore = defineStore('assets', () => {
        * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
        */
       function invalidateCategory(category: string): void {
+        abortByCategory.get(category)?.abort()
+        abortByCategory.delete(category)
         modelStateByCategory.value.delete(category)
         assetsArrayCache.delete(category)
         pendingRequestByCategory.delete(category)

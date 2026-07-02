@@ -1594,10 +1594,18 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       ).toHaveBeenCalledTimes(2)
       expect(
         vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(1, nodeType, { limit: 500, offset: 0 })
+      ).toHaveBeenNthCalledWith(1, nodeType, {
+        limit: 500,
+        offset: 0,
+        signal: expect.any(AbortSignal)
+      })
       expect(
         vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(2, nodeType, { limit: 500, after: 'cursor-1' })
+      ).toHaveBeenNthCalledWith(2, nodeType, {
+        limit: 500,
+        after: 'cursor-1',
+        signal: expect.any(AbortSignal)
+      })
       expect(store.getAssets(nodeType)).toHaveLength(8)
     })
 
@@ -1683,7 +1691,11 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       ).toHaveBeenCalledTimes(2)
       expect(
         vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(2, nodeType, { limit: 500, offset: 500 })
+      ).toHaveBeenNthCalledWith(2, nodeType, {
+        limit: 500,
+        offset: 500,
+        signal: expect.any(AbortSignal)
+      })
       expect(store.getAssets(nodeType)).toHaveLength(510)
     })
 
@@ -1740,8 +1752,42 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(
         vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(3, nodeType, { limit: 500, offset: 0 })
+      ).toHaveBeenNthCalledWith(3, nodeType, {
+        limit: 500,
+        offset: 0,
+        signal: expect.any(AbortSignal)
+      })
       expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['fresh'])
+    })
+
+    it('aborts an in-flight walk when the category is invalidated', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      // Every page claims more work, so the walk only stops if it is aborted.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([createMockAsset('p1')], {
+          has_more: true,
+          next_cursor: 'c1'
+        })
+      )
+
+      const walk = store.updateModelsForNodeType(nodeType)
+
+      // Wait for the first fetch, then invalidate during the inter-batch delay
+      // so the walk aborts instead of issuing further requests.
+      await vi.waitFor(() =>
+        expect(
+          vi.mocked(assetService.getAssetsPageForNodeType)
+        ).toHaveBeenCalledTimes(1)
+      )
+      store.invalidateCategory('checkpoints')
+
+      await walk
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(1)
     })
 
     it('drives updateModelsForTag through getAssetsPageByTag with cursors', async () => {
@@ -1763,12 +1809,17 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       )
       expect(
         vi.mocked(assetService.getAssetsPageByTag)
-      ).toHaveBeenNthCalledWith(1, 'models', true, { limit: 500, offset: 0 })
+      ).toHaveBeenNthCalledWith(1, 'models', true, {
+        limit: 500,
+        offset: 0,
+        signal: expect.any(AbortSignal)
+      })
       expect(
         vi.mocked(assetService.getAssetsPageByTag)
       ).toHaveBeenNthCalledWith(2, 'models', true, {
         limit: 500,
-        after: 'cursor-tag'
+        after: 'cursor-tag',
+        signal: expect.any(AbortSignal)
       })
       expect(store.getAssets('tag:models')).toHaveLength(2)
     })
