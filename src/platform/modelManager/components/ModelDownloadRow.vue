@@ -95,7 +95,22 @@
     </div>
 
     <p
-      v-if="isAuthError"
+      v-if="isGatedModel"
+      class="relative text-xs wrap-break-word text-amber-400"
+    >
+      {{ $t('modelManager.gatedModelHint') }}
+      <a
+        v-if="modelPageUrl"
+        :href="modelPageUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="underline"
+      >
+        {{ $t('modelManager.openModelPage') }}
+      </a>
+    </p>
+    <p
+      v-else-if="isAuthError"
       class="relative text-xs wrap-break-word text-amber-400"
     >
       {{
@@ -174,12 +189,30 @@ const canCancel = computed(
 )
 const canRaisePriority = computed(() => download.status === 'queued')
 
+const GATED_MODEL_PATTERN = /gated|restricted|request access|must have access/i
 const AUTH_ERROR_PATTERN =
   /api key|credential|token|unauthor|forbidden|\b401\b|\b403\b/i
+
+const isFailed = computed(() => download.status === 'failed')
+const isGatedModel = computed(
+  () => isFailed.value && !!download.error?.match(GATED_MODEL_PATTERN)
+)
 const isAuthError = computed(
   () =>
-    download.status === 'failed' && !!download.error?.match(AUTH_ERROR_PATTERN)
+    isFailed.value &&
+    (isGatedModel.value || !!download.error?.match(AUTH_ERROR_PATTERN))
 )
+
+const HF_MODEL_URL_PATTERN =
+  /https?:\/\/huggingface\.co\/([^/\s?#]+)\/([^/\s?#]+)/i
+const modelPageUrl = computed(() => {
+  const match = `${download.url} ${download.error ?? ''}`.match(
+    HF_MODEL_URL_PATTERN
+  )
+  if (!match) return ''
+  const [, owner, repo] = match
+  return `https://huggingface.co/${owner}/${repo}`
+})
 
 const statusLabel = computed(() => t(`modelManager.status.${download.status}`))
 
