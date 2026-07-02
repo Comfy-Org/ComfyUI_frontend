@@ -287,40 +287,6 @@ test.describe('FE-910 marquee selection and select all', () => {
     await comfyPage.menu.assetsTab.open()
   })
 
-  // FIXME(FE-910): consistently selects 0 in headless CI and cannot be
-  // reproduced without a local backend to diagnose the press-below-the-cards
-  // geometry. Re-enable once reproducible locally. The marquee-from-a-non-card
-  // region is already covered by the 'panel header' and 'modifier-held' marquee
-  // tests below and by the useAssetGridSelection unit suite.
-  test.fixme('marquee-drag from empty space selects the covered cards', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    const { page } = comfyPage
-
-    await expect(tab.assetCards).toHaveCount(2)
-    await expect(tab.selectedCards).toHaveCount(0)
-
-    const alpha = await tab.getAssetCardByName('alpha').boundingBox()
-    const beta = await tab.getAssetCardByName('beta').boundingBox()
-    if (!alpha || !beta) throw new Error('asset cards have no layout box')
-
-    const left = Math.min(alpha.x, beta.x)
-    const top = Math.min(alpha.y, beta.y)
-    const right = Math.max(alpha.x + alpha.width, beta.x + beta.width)
-    const bottom = Math.max(alpha.y + alpha.height, beta.y + beta.height)
-
-    // Press in empty space below the cards, then rubber-band up across both
-    // (the drag must span the full card width, not just to the center).
-    await page.mouse.move(right - 2, bottom + 40)
-    await page.mouse.down()
-    await page.mouse.move(left + 2, top + 4, { steps: 12 })
-    await page.mouse.up()
-
-    await expect(tab.selectedCards).toHaveCount(2)
-    await expect(tab.selectionFooter).toBeVisible()
-  })
-
   test('Ctrl/Cmd+A selects every asset while the panel is hovered', async ({
     comfyPage
   }) => {
