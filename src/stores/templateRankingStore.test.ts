@@ -90,6 +90,12 @@ describe('templateRankingStore', () => {
   })
 
   describe('computePopularScore', () => {
+    it('normalizes usage against itself before a largest score is loaded', () => {
+      const store = useTemplateRankingStore()
+
+      expect(store.computePopularScore('2024-01-01', 10)).toBeGreaterThan(0.8)
+    })
+
     it('does not use searchRank', () => {
       const store = useTemplateRankingStore()
       store.largestUsageScore = 100
