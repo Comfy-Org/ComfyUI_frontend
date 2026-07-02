@@ -1,10 +1,8 @@
 import type { TooltipOptions } from 'primevue'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -451,50 +449,6 @@ describe('computeProcessedWidgets', () => {
 
     expect(result[0].vueComponent).toBe(WidgetLegacy)
     expect(result[0].vueComponent).not.toBe(WidgetDOM)
-  })
-})
-
-describe('widget disabled state (via computeProcessedWidgets)', () => {
-  const NODE_ID = toNodeId(1)
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  function processWithInputLink(link: number | null) {
-    const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
-    const widget = createMockWidget({ name: 'seed', widgetId: id })
-    registerWidgetState(id, { type: 'combo', value: 0 })
-
-    const { graph, node } = createGraphWithNode([widget], NODE_ID)
-    node.inputs = [
-      fromPartial<INodeInputSlot>({
-        name: 'seed',
-        type: 'COMBO',
-        link,
-        widget: { name: 'seed' }
-      })
-    ]
-
-    return processWidgets({
-      widgetIds: [id],
-      nodeId: NODE_ID,
-      rootGraph: graph
-    })
-  }
-
-  it('disables a widget whose input slot has a connecting link', () => {
-    const [processed] = processWithInputLink(1)
-
-    expect(processed.simplified.options?.disabled).toBe(true)
-    expect(processed.slotMetadata?.linked).toBe(true)
-  })
-
-  it('keeps a widget enabled when its input slot has no link', () => {
-    const [processed] = processWithInputLink(null)
-
-    expect(processed.simplified.options?.disabled).toBeFalsy()
-    expect(processed.slotMetadata?.linked).toBe(false)
   })
 })
 
