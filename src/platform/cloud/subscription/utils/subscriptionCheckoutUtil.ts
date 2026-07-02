@@ -2,12 +2,19 @@ import { storeToRefs } from 'pinia'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  createPendingSubscriptionCheckoutAttempt,
+  persistPendingSubscriptionCheckoutAttempt,
+  withPendingCheckoutAttemptId
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type {
+  CheckoutAttributionMetadata,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -29,6 +36,11 @@ const getCheckoutAttributionForCloud =
     return getCheckoutAttribution()
   }
 
+interface PerformSubscriptionCheckoutOptions {
+  openInNewTab?: boolean
+  paymentIntentSource?: PaymentIntentSource
+}
+
 /**
  * Core subscription checkout logic shared between PricingTable and
  * SubscriptionRedirectView. Handles:
@@ -45,9 +57,11 @@ const getCheckoutAttributionForCloud =
 export async function performSubscriptionCheckout(
   tierKey: TierKey,
   currentBillingCycle: BillingCycle,
-  openInNewTab: boolean = true
+  options: PerformSubscriptionCheckoutOptions = {}
 ): Promise<void> {
   if (!isCloud) return
+
+  const { openInNewTab = true, paymentIntentSource } = options
 
   const authStore = useAuthStore()
   const { userId } = storeToRefs(authStore)
@@ -105,14 +119,29 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
+    const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
+      tier: tierKey,
+      cycle: currentBillingCycle,
+      checkout_type: 'new',
+      payment_intent_source: paymentIntentSource
+    })
+
     if (userId.value) {
-      telemetry?.trackBeginCheckout({
-        user_id: userId.value,
-        tier: tierKey,
-        cycle: currentBillingCycle,
-        checkout_type: 'new',
-        ...checkoutAttribution
-      })
+      telemetry?.trackBeginCheckout(
+        withPendingCheckoutAttemptId(
+          {
+            user_id: userId.value,
+            tier: tierKey,
+            cycle: currentBillingCycle,
+            checkout_type: 'new',
+            ...(paymentIntentSource
+              ? { payment_intent_source: paymentIntentSource }
+              : {}),
+            ...checkoutAttribution
+          },
+          pendingAttempt
+        )
+      )
     }
 
     if (openInNewTab) {
@@ -120,18 +149,9 @@ export async function performSubscriptionCheckout(
       if (!checkoutWindow) {
         return
       }
-
-      recordPendingSubscriptionCheckoutAttempt({
-        tier: tierKey,
-        cycle: currentBillingCycle,
-        checkout_type: 'new'
-      })
+      persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
     } else {
-      recordPendingSubscriptionCheckoutAttempt({
-        tier: tierKey,
-        cycle: currentBillingCycle,
-        checkout_type: 'new'
-      })
+      persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
       globalThis.location.href = data.checkout_url
     }
   }

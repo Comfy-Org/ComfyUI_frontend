@@ -263,6 +263,7 @@ describe('PricingTable', () => {
         tier: 'creator',
         cycle: 'yearly',
         checkout_type: 'change',
+        checkout_attempt_id: expect.any(String),
         previous_tier: 'standard'
       })
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
@@ -343,6 +344,7 @@ describe('PricingTable', () => {
       expect(
         window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       ).toBeNull()
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
     })
 
     it('should use the latest userId value when it changes after mount', async () => {
@@ -368,6 +370,7 @@ describe('PricingTable', () => {
         tier: 'creator',
         cycle: 'yearly',
         checkout_type: 'change',
+        checkout_attempt_id: expect.any(String),
         previous_tier: 'standard'
       })
     })
