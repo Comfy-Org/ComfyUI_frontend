@@ -157,29 +157,22 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     })
   }
 
-  function getOrderedRegisteredNodeWidgetIds(
-    registeredIds: readonly WidgetId[],
-    orderedWidgetIds: readonly WidgetId[]
-  ): WidgetId[] {
-    const registeredIdSet = new Set(registeredIds)
-    return orderedWidgetIds.filter((id) => registeredIdSet.has(id))
-  }
-
-  function getRegisteredNodeWidgetOrder(
+  /**
+   * Merges a requested widget order against the ids already tracked for the
+   * node: the request is filtered to tracked ids, then any tracked id the
+   * request omitted is appended. Tracked ids are never dropped here — only
+   * {@link removeNodeWidgetOrder} removes an id from the order.
+   */
+  function reconcileNodeWidgetOrder(
     graphId: UUID,
     localNodeId: NodeId,
     orderedWidgetIds: readonly WidgetId[]
   ): WidgetId[] {
-    const registeredIds = getNodeWidgetIds(graphId, localNodeId)
-    const orderedIds = getOrderedRegisteredNodeWidgetIds(
-      registeredIds,
-      orderedWidgetIds
-    )
-    const orderedIdSet = new Set(orderedIds)
-    return [
-      ...orderedIds,
-      ...registeredIds.filter((id) => !orderedIdSet.has(id))
-    ]
+    const currentOrder = getNodeWidgetIds(graphId, localNodeId)
+    const currentIds = new Set(currentOrder)
+    const nextOrder = orderedWidgetIds.filter((id) => currentIds.has(id))
+    const nextIds = new Set(nextOrder)
+    return [...nextOrder, ...currentOrder.filter((id) => !nextIds.has(id))]
   }
 
   function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
@@ -191,7 +184,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     localNodeId: NodeId,
     orderedWidgetIds: readonly WidgetId[]
   ): void {
-    const nextOrder = getRegisteredNodeWidgetOrder(
+    const nextOrder = reconcileNodeWidgetOrder(
       graphId,
       localNodeId,
       orderedWidgetIds
@@ -216,6 +209,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getNodeWidgets,
     getNodeWidgetIds,
     setNodeWidgetOrder,
+    removeNodeWidgetOrder,
     clearGraph
   }
 })

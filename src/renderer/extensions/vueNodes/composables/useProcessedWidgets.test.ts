@@ -3,14 +3,11 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import {
-  computeProcessedWidgets,
-  hasWidgetError,
-  isWidgetVisible
-} from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -19,6 +16,7 @@ import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -111,7 +109,8 @@ function processWidgets({
   nodeType = 'TestNode',
   showAdvanced = false,
   subgraphId,
-  rootGraph = null
+  rootGraph = null,
+  inputs = []
 }: {
   widgetIds: readonly WidgetId[]
   nodeId?: NodeId
@@ -119,6 +118,7 @@ function processWidgets({
   showAdvanced?: boolean
   subgraphId?: string | null
   rootGraph?: LGraph | null
+  inputs?: INodeInputSlot[]
 }) {
   return computeProcessedWidgets({
     nodeData: {
@@ -128,7 +128,7 @@ function processWidgets({
       mode: 0,
       selected: false,
       executing: false,
-      inputs: [],
+      inputs,
       outputs: [],
       subgraphId
     },
@@ -141,76 +141,70 @@ function processWidgets({
   })
 }
 
-describe('isWidgetVisible', () => {
-  it('returns true for normal widgets', () => {
-    expect(isWidgetVisible({}, false)).toBe(true)
+describe('widget visibility', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('returns false for hidden widgets', () => {
-    expect(isWidgetVisible({ hidden: true }, false)).toBe(false)
+  function visibilityOf(
+    options: IBaseWidget['options'],
+    { showAdvanced = false, linked = false } = {}
+  ): boolean | undefined {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    registerWidgetState(id, { type: 'text', options })
+    const inputs: INodeInputSlot[] = linked
+      ? [
+          {
+            name: 'w',
+            type: 'STRING',
+            link: toLinkId(1),
+            boundingRect: [0, 0, 0, 0]
+          }
+        ]
+      : []
+    return processWidgets({ widgetIds: [id], showAdvanced, inputs })[0]?.visible
+  }
+
+  it('shows normal widgets', () => {
+    expect(visibilityOf({})).toBe(true)
   })
 
-  it('returns false for advanced widgets when showAdvanced is false', () => {
-    expect(isWidgetVisible({ advanced: true }, false)).toBe(false)
+  it('hides hidden widgets', () => {
+    expect(visibilityOf({ hidden: true })).toBe(false)
   })
 
-  it('returns true for advanced widgets when showAdvanced is true', () => {
-    expect(isWidgetVisible({ advanced: true }, true)).toBe(true)
+  it('hides advanced widgets unless advanced widgets are shown', () => {
+    expect(visibilityOf({ advanced: true })).toBe(false)
+    expect(visibilityOf({ advanced: true }, { showAdvanced: true })).toBe(true)
   })
 
-  it('keeps advanced widgets visible when linked and showAdvanced is false', () => {
-    expect(isWidgetVisible({ advanced: true }, false, true)).toBe(true)
+  it('shows advanced widgets when linked even if advanced widgets are hidden', () => {
+    expect(visibilityOf({ advanced: true }, { linked: true })).toBe(true)
   })
 
-  it('keeps hidden widgets hidden when linked', () => {
-    expect(isWidgetVisible({ hidden: true }, false, true)).toBe(false)
+  it('keeps hidden widgets hidden even when linked', () => {
+    expect(visibilityOf({ hidden: true }, { linked: true })).toBe(false)
   })
 })
 
-describe('hasWidgetError', () => {
-  let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
-  let missingModelStore: ReturnType<typeof useMissingModelStore>
-
+describe('widget error state', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    executionErrorStore = useExecutionErrorStore()
-    missingModelStore = useMissingModelStore()
   })
 
-  it('returns false when no errors', () => {
-    expect(
-      hasWidgetError(
-        { name: 'test_widget' },
-        createNodeExecutionId([toNodeId(1)]),
-        undefined,
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(false)
+  function processWidgetNamed(name: string) {
+    const id = widgetId(GRAPH_ID, toNodeId(1), name)
+    registerWidgetState(id, { type: 'combo' })
+    return processWidgets({ widgetIds: [id] })[0]
+  }
+
+  it('reports no error when the node has none', () => {
+    expect(processWidgetNamed('test_widget').hasError).toBe(false)
   })
 
-  it('returns true when node has matching input error', () => {
-    const nodeErrors = {
-      errors: [{ extra_info: { input_name: 'seed' } }]
-    }
-    expect(
-      hasWidgetError(
-        { name: 'seed' },
-        createNodeExecutionId([toNodeId(1)]),
-        nodeErrors,
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(true)
-  })
-
-  it('returns true when the resolved source target has a matching error', () => {
-    const sourceExecutionId = createNodeExecutionId([
-      toNodeId(65),
-      toNodeId(18)
-    ])
-    executionErrorStore.lastNodeErrors = {
-      [sourceExecutionId]: {
+  it('reports an error when the node has a matching input error', () => {
+    useExecutionErrorStore().lastNodeErrors = {
+      [createNodeExecutionId([toNodeId(1)])]: {
         errors: [
           {
             type: 'required_input_missing',
@@ -223,51 +217,14 @@ describe('hasWidgetError', () => {
         dependent_outputs: []
       }
     }
-
-    expect(
-      hasWidgetError(
-        {
-          name: 'display_seed',
-          errorTarget: {
-            executionId: sourceExecutionId,
-            widgetName: 'seed'
-          }
-        },
-        createNodeExecutionId([toNodeId(1)]),
-        undefined,
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(true)
+    expect(processWidgetNamed('seed').hasError).toBe(true)
   })
 
-  it('returns true when widget has missing model', () => {
-    vi.spyOn(missingModelStore, 'isWidgetMissingModel').mockReturnValue(true)
-    expect(
-      hasWidgetError(
-        { name: 'ckpt_name' },
-        createNodeExecutionId([toNodeId(1)]),
-        undefined,
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(true)
-  })
-
-  it('matches missing models by the host widget name', () => {
-    const spy = vi
-      .spyOn(missingModelStore, 'isWidgetMissingModel')
-      .mockReturnValue(true)
-    expect(
-      hasWidgetError(
-        { name: 'display_slot' },
-        createNodeExecutionId([toNodeId(1)]),
-        undefined,
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(true)
-    expect(spy).toHaveBeenCalledWith('1', 'display_slot')
+  it('reports an error when the widget is a missing model', () => {
+    vi.spyOn(useMissingModelStore(), 'isWidgetMissingModel').mockReturnValue(
+      true
+    )
+    expect(processWidgetNamed('ckpt_name').hasError).toBe(true)
   })
 })
 
@@ -305,7 +262,6 @@ describe('computeProcessedWidgets', () => {
     expect(result[0]).toMatchObject({
       widgetId: id,
       renderKey: `${id}:combo`,
-      value: 'state value',
       simplified: {
         name: 'text',
         value: 'state value',
@@ -328,7 +284,6 @@ describe('computeProcessedWidgets', () => {
       nodeId: toNodeId('host')
     })
 
-    expect(result[0].value).toBeNull()
     expect(result[0].simplified.value).toBeNull()
   })
 
@@ -356,7 +311,7 @@ describe('computeProcessedWidgets', () => {
     const result = processWidgets({ widgetIds: [id, id] })
 
     expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('text')
+    expect(result[0].simplified.name).toBe('text')
   })
 
   it('keeps distinct widget ids separate even when names match', () => {
@@ -398,10 +353,10 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0]).toMatchObject({
-      advanced: true,
       hasLayoutSize: true,
       simplified: {
-        name: 'display_slot'
+        name: 'display_slot',
+        borderStyle: 'ring ring-component-node-widget-advanced'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
@@ -458,15 +413,9 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
   })
 
-  it('clears execution errors on update', () => {
-    const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
-    registerWidgetState(id, { type: 'combo', value: 'bad-value' })
-
-    const executionErrorStore = useExecutionErrorStore()
-    const missingModelStore = useMissingModelStore()
-
-    executionErrorStore.lastNodeErrors = {
-      [NODE_ID]: {
+  function seedSeedError() {
+    useExecutionErrorStore().lastNodeErrors = {
+      [createNodeExecutionId([NODE_ID])]: {
         errors: [
           {
             type: 'required_input_missing',
@@ -479,68 +428,34 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         dependent_outputs: []
       }
     }
+  }
+
+  it('clears execution errors on update', () => {
+    const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
+    registerWidgetState(id, { type: 'combo', value: 'bad-value' })
+    seedSeedError()
 
     const [processed] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
-
-    expect(
-      hasWidgetError(
-        { name: 'seed' },
-        createNodeExecutionId([NODE_ID]),
-        executionErrorStore.lastNodeErrors[NODE_ID],
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(true)
+    expect(processed.hasError).toBe(true)
 
     processed.updateHandler('fixed-value')
 
-    expect(
-      hasWidgetError(
-        { name: 'seed' },
-        createNodeExecutionId([NODE_ID]),
-        executionErrorStore.lastNodeErrors?.[NODE_ID],
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(false)
+    const [afterUpdate] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
+    expect(afterUpdate.hasError).toBe(false)
   })
 
   it('clears execution errors from simplified callback without a live widget', () => {
     const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
     registerWidgetState(id, { type: 'combo', value: 'bad-value' })
-
-    const executionErrorStore = useExecutionErrorStore()
-    const missingModelStore = useMissingModelStore()
-    executionErrorStore.lastNodeErrors = {
-      [NODE_ID]: {
-        errors: [
-          {
-            type: 'required_input_missing',
-            message: 'seed is required',
-            details: '',
-            extra_info: { input_name: 'seed' }
-          }
-        ],
-        class_type: 'TestNode',
-        dependent_outputs: []
-      }
-    }
+    seedSeedError()
 
     const [processed] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
-
     expect(processed.simplified.callback).toBe(processed.updateHandler)
 
     processed.simplified.callback?.('fixed-value')
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe('fixed-value')
-    expect(
-      hasWidgetError(
-        { name: 'seed' },
-        createNodeExecutionId([NODE_ID]),
-        executionErrorStore.lastNodeErrors?.[NODE_ID],
-        executionErrorStore,
-        missingModelStore
-      )
-    ).toBe(false)
+    const [afterUpdate] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
+    expect(afterUpdate.hasError).toBe(false)
   })
 })

@@ -45,8 +45,8 @@
         >
           <component
             :is="widget.vueComponent"
-            v-model="widget.simplified.value"
             v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
+            :model-value="widget.simplified.value"
             :widget="widget.simplified"
             :node-id="nodeId"
             :node-type="nodeType"
@@ -68,34 +68,14 @@
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
 import { computed } from 'vue'
-import type { Component } from 'vue'
 
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
+import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@/types/nodeId'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import type { WidgetId } from '@/types/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
-
-/**
- * Required fields cover the static preview path; the optional (interactive)
- * fields arrive only via the store-backed `ProcessedWidget` superset.
- */
-export interface WidgetGridItem {
-  simplified: SimplifiedWidget
-  vueComponent: Component
-  visible: boolean
-  renderKey: string
-  hasLayoutSize?: boolean
-  hasError?: boolean
-  widgetId?: WidgetId
-  slotMetadata?: { index: number; linked: boolean; type: string }
-  tooltipConfig?: TooltipOptions
-  updateHandler?: (value: WidgetValue) => void
-  handleContextMenu?: (e: PointerEvent) => void
-}
 
 const EMPTY_TOOLTIP: TooltipOptions = {}
 

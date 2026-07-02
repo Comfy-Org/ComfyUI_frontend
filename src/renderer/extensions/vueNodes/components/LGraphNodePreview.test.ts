@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
+import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'

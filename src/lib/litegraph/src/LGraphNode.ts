@@ -2061,7 +2061,10 @@ export class LGraphNode
     const graphId = this.graph?.rootGraph.id
     if (graphId) {
       const widgetValueStore = useWidgetValueStore()
-      if (widget.widgetId) widgetValueStore.deleteWidget(widget.widgetId)
+      // Drop the widget from the render order but keep its stored value, so a
+      // remove-then-re-add of the same widget id preserves what the user set.
+      if (widget.widgetId)
+        widgetValueStore.removeNodeWidgetOrder(widget.widgetId)
       widgetValueStore.setNodeWidgetOrder(
         graphId,
         this.id,

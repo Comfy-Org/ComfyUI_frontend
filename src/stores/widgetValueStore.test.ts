@@ -219,6 +219,20 @@ describe('useWidgetValueStore', () => {
       ])
       expect(store.deleteWidget(seedA)).toBe(false)
     })
+
+    it('removeNodeWidgetOrder drops the id from order but keeps its value', () => {
+      const store = useWidgetValueStore()
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(steps, state('number', 20))
+
+      store.removeNodeWidgetOrder(seedA)
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        steps
+      ])
+      expect(store.getWidget(seedA)?.value).toBe(100)
+    })
   })
 
   describe('direct property mutation', () => {
