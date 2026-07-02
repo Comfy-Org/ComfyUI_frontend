@@ -135,7 +135,7 @@ describe('resolveSubgraphInputLink', () => {
       ({ targetInput }) => targetInput.name
     )
 
-    // First connected wins — consistent with SubgraphNode._resolveLinkedPromotionBySubgraphInput
+    // First connected source is the promoted representative
     expect(result).toBe('first_input')
   })
 
