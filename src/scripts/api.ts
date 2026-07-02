@@ -677,7 +677,8 @@ export class ComfyApi extends EventTarget {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const wsHost = window.__COMFY_API_WS_HOST__ || this.api_host
+    const baseUrl = `${protocol}://${wsHost}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 

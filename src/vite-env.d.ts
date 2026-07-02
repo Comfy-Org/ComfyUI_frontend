@@ -15,6 +15,15 @@ declare module '~icons/*' {
 declare global {
   interface Window {
     __COMFYUI_FRONTEND_VERSION__: string
+
+    /**
+     * Overrides the host the API WebSocket dials, falling back to
+     * `location.host` when unset. Injected at deploy time by static hosts
+     * whose rewrites are HTTP-only (e.g. Vercel) and therefore cannot proxy
+     * the `/ws` upgrade, letting the socket target a WebSocket-capable host
+     * while HTTP calls keep flowing through the rewrites.
+     */
+    __COMFY_API_WS_HOST__?: string
   }
 
   interface ImportMetaEnv {
