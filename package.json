@@ -59,7 +59,7 @@
     "test:custom-nodes:impact-run": "pnpm test:custom-nodes:debug -g \"ComfyUI-Impact-Pack.*T1\"",
     "test:custom-nodes:vhs-render": "pnpm test:custom-nodes:debug -g \"VideoHelperSuite.*T0\"",
     "test:custom-nodes:vhs-run": "pnpm test:custom-nodes:debug -g \"VideoHelperSuite.*T1\"",
-    "test:custom-nodes:connectivity": "pnpm test:custom-nodes:debug -g \"T-conn\"",
+    "test:custom-nodes:connectivity": "pnpm test:custom-nodes:debug -g \"connectivity\"",
     "test:custom-nodes:self-check": "pnpm test:custom-nodes:watch -g \"self-check\"",
     "test:coverage": "vitest run --coverage",
     "test:coverage:critical": "cross-env COVERAGE_CRITICAL=true vitest run --coverage",

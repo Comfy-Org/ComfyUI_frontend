@@ -54,7 +54,7 @@ Any `-g` pattern works against the generic scripts, e.g.
 - **T1 run**: the manifest workflow is loaded and queued; the backend's
   `executing` event stream must contain every expected node id, and the run
   must end in `execution_success`.
-- **T-conn connectivity (contract)**: wiring-only, no execution. A
+- **connectivity (contract)**: wiring-only, no execution. A
   type-pairing generator (`fixtures/customNode/typePairing.ts`) indexes
   `/object_info` producers/consumers and plans one representative typed edge
   per slot (wildcard `*` slots excluded - they bypass the real type compare

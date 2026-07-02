@@ -50,7 +50,7 @@ const connectivityEntries = loadManifest().filter((entry) =>
   entry.tiers.includes('connectivity')
 )
 
-test('T-conn breadth: type-paired links survive model, serialize, and prompt round-trips', async ({
+test('connectivity: every type-paired link survives model, serialize, and prompt round-trips', async ({
   comfyPage
 }) => {
   test.setTimeout(120_000)
@@ -68,7 +68,7 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
   )
   for (const entry of connectivityEntries)
     if (!installedEntries.includes(entry))
-      console.log(`T-conn: ${entry.pack} not installed on this backend`)
+      console.log(`connectivity: ${entry.pack} not installed on this backend`)
   const packTypes = installedEntries.flatMap((entry) => entry.expectedNodes)
   const coreProof = nodes
     .filter(
@@ -84,7 +84,7 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
 
   expect(plan.pairs.length, 'pairing produced no edges').toBeGreaterThan(0)
   console.log(
-    `T-conn plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design)`
+    `connectivity plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design)`
   )
 
   for (const entry of installedEntries) {
@@ -113,7 +113,7 @@ test('T-conn breadth: type-paired links survive model, serialize, and prompt rou
       )
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
-  console.log(`T-conn sweep: ${passed}/${results.length} pairs PASS`)
+  console.log(`connectivity sweep: ${passed}/${results.length} pairs PASS`)
   expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
   expect(passed).toBeGreaterThan(0)
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
@@ -205,7 +205,7 @@ function runPairsInPage(
   }, pairs)
 }
 
-test('T-conn self-check: the executor rejects broken pairs', async ({
+test('connectivity self-check: the executor rejects broken pairs', async ({
   comfyPage
 }) => {
   const slot = (nodeType: string, slotName: string, slotType: string) => ({
@@ -230,7 +230,7 @@ test('T-conn self-check: the executor rejects broken pairs', async ({
   ])
 })
 
-test('T-conn fidelity: curated slot drags connect under both renderers', async ({
+test('connectivity drags: curated slot-to-slot wires connect under both renderers', async ({
   comfyPage
 }) => {
   test.setTimeout(120_000)
@@ -260,7 +260,9 @@ test('T-conn fidelity: curated slot drags connect under both renderers', async (
   const nodeTypes = new Set(nodes.map((node) => node.type))
   for (const entry of connectivityEntries) {
     if (!entry.expectedNodes.every((type) => nodeTypes.has(type))) {
-      console.log(`T-conn drag: ${entry.pack} not installed on this backend`)
+      console.log(
+        `connectivity drag: ${entry.pack} not installed on this backend`
+      )
       continue
     }
     // Restrict the partner pool to the pack itself so the drag proves an
