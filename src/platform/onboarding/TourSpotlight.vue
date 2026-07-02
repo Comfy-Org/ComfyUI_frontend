@@ -172,7 +172,12 @@ onScopeDispose(() => clearTimeout(pulseTimer))
 
 async function raiseOverlay() {
   await nextTick()
-  if (overlayRef.value) ZIndex.set(MODAL_Z_KEY, overlayRef.value, MODAL_Z_BASE)
+  const el = overlayRef.value
+  if (!el) return
+  // ZIndex.set pushes a fresh entry into the shared modal sequence on every
+  // call, so clear the previous one or per-step re-raises leak entries.
+  ZIndex.clear(el)
+  ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
 }
 
 // Reclaim the modal stack top (a deferred dialog may have registered above us),

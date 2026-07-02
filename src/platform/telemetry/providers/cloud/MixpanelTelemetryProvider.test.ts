@@ -482,7 +482,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       const metadata: OnboardingTourMetadata = {
         tour: 'appMode',
         step_count: 6,
-        step_index: 2,
+        step_number: 2,
         coach_id: 'app-run-button'
       }
       provider.trackOnboardingTour(stage, metadata)

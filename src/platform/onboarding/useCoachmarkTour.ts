@@ -44,16 +44,19 @@ export function useCoachmarkTour() {
     return s ? countedSteps.value.indexOf(s) : 0
   })
 
+  // Reports the numbering the user sees: `step_number` of `step_count` is the
+  // card's "Step N of M", so landing steps carry neither number nor coach id.
   function trackTour(stage: OnboardingTourStage) {
     if (!activeTour) return
     const coachId = step.value?.coachId
     telemetry?.trackOnboardingTour(stage, {
       tour: activeTour,
-      step_count: steps.value.length,
-      ...(stage !== 'started' && {
-        step_index: stepIdx.value,
-        coach_id: Array.isArray(coachId) ? coachId.join('+') : coachId
-      })
+      step_count: countedSteps.value.length,
+      ...(stage !== 'started' &&
+        countedStepIdx.value >= 0 && {
+          step_number: countedStepIdx.value + 1,
+          coach_id: Array.isArray(coachId) ? coachId.join('+') : coachId
+        })
     })
   }
 

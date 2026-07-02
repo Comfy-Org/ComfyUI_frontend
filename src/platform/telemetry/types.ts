@@ -55,11 +55,15 @@ export type OnboardingTourStage =
   | 'completed'
   | 'skipped'
 
-/** `coach_id` is absent for steps with no spotlight target (e.g. the landing). */
+/**
+ * `step_number` is 1-based and matches the "Step N of M" indicator the user
+ * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
+ * for steps with no numbered spotlight (e.g. the landing).
+ */
 export interface OnboardingTourMetadata {
   tour: string
   step_count: number
-  step_index?: number
+  step_number?: number
   coach_id?: string
 }
 

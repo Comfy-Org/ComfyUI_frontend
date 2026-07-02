@@ -200,7 +200,7 @@ describe('useCoachmarkTour', () => {
       ([stage]) => stage === 'skipped'
     )
     expect(skipped?.[1]).toMatchObject({
-      step_index: 1,
+      step_number: 1,
       coach_id: 'inputs-list'
     })
   })
@@ -321,27 +321,35 @@ describe('useCoachmarkTour', () => {
     expect(api.primaryLabel.value).toBe('onboardingCoachmarks.done')
   })
 
-  it('omits the step index and coach id from the started event, then reports them per step', async () => {
+  it('reports the user-visible step numbering, omitting it for the landing', async () => {
     registerAppModeTargets()
     const { api } = mountTour()
     void requestTour('appMode')
     await flush()
 
+    // The count matches the "of M" the card shows: the landing isn't numbered
+    // (and the assets-button step is dropped — its panel is already mounted).
     const started = telemetry.track.mock.calls.find(
       ([stage]) => stage === 'started'
     )
-    expect(started?.[1]).toEqual({ tour: 'appMode', step_count: 5 })
+    expect(started?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
 
-    // Advancing off the landing shows the first spotlight step, which reports its
-    // index and coach id alongside the tour.
+    // The landing's step_shown carries no step number or coach id.
+    const landingShown = telemetry.track.mock.calls.find(
+      ([stage]) => stage === 'step_shown'
+    )
+    expect(landingShown?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
+
+    // Advancing off the landing shows "Step 1 of 4", and the event agrees.
     api.next()
     await flush()
     const shown = telemetry.track.mock.calls
       .filter(([stage]) => stage === 'step_shown')
       .at(-1)
-    expect(shown?.[1]).toMatchObject({
+    expect(shown?.[1]).toEqual({
       tour: 'appMode',
-      step_index: 1,
+      step_count: 4,
+      step_number: 1,
       coach_id: 'inputs-list'
     })
   })

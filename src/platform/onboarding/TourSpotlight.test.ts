@@ -107,6 +107,26 @@ describe('TourSpotlight', () => {
     expect(ZIndex.clear).toHaveBeenCalled()
   })
 
+  it('re-claims the modal stack per step without leaking entries', async () => {
+    vi.mocked(ZIndex.set).mockClear()
+    vi.mocked(ZIndex.clear).mockClear()
+
+    const { rerender, unmount } = renderSpotlight()
+    await nextTick()
+    await nextTick()
+
+    await rerender({ step: spotlightStep({ placement: 'left' }) })
+    await nextTick()
+    await nextTick()
+
+    unmount()
+    // Each ZIndex.set pushes a fresh entry into the shared modal sequence, so
+    // every set must be preceded by a clear — plus the final unmount clear.
+    expect(vi.mocked(ZIndex.clear).mock.calls.length).toBe(
+      vi.mocked(ZIndex.set).mock.calls.length + 1
+    )
+  })
+
   it('emits advance on the primary button and skip on the secondary', async () => {
     const user = userEvent.setup()
     const { emitted } = renderSpotlight()
