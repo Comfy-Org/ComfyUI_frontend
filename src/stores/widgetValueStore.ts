@@ -195,15 +195,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     })
   }
 
-  function getRegisteredNodeWidgetIds(
-    graphId: UUID,
-    localNodeId: NodeId
-  ): WidgetId[] {
-    // `order` is maintained incrementally on register/delete, so it already
-    // holds exactly this node's registered widgets — no full-graph scan needed.
-    return [...getNodeWidgetOrder(graphId, localNodeId)]
-  }
-
   function getOrderedRegisteredNodeWidgetIds(
     registeredIds: readonly WidgetId[],
     orderedWidgetIds: readonly WidgetId[]
@@ -217,7 +208,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     localNodeId: NodeId,
     orderedWidgetIds: readonly WidgetId[]
   ): WidgetId[] {
-    const registeredIds = getRegisteredNodeWidgetIds(graphId, localNodeId)
+    const registeredIds = getNodeWidgetIds(graphId, localNodeId)
     const orderedIds = getOrderedRegisteredNodeWidgetIds(
       registeredIds,
       orderedWidgetIds
@@ -230,9 +221,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
-    // Read-only: `order` is already reconciled by the register/set/replace/
-    // delete paths, so reads never need to mutate it (this runs inside a
-    // Vue computed via computeProcessedWidgets).
+    // `order` is maintained incrementally on register/set/replace/delete, so it
+    // already holds exactly this node's registered widgets in order. Reads are
+    // a copy with no full-graph scan and no mutation — this runs inside a Vue
+    // computed via computeProcessedWidgets.
     return [...getNodeWidgetOrder(graphId, localNodeId)]
   }
 
@@ -255,7 +247,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     localNodeId: NodeId,
     orderedWidgetIds: readonly WidgetId[]
   ): void {
-    const registeredIds = getRegisteredNodeWidgetIds(graphId, localNodeId)
+    const registeredIds = getNodeWidgetIds(graphId, localNodeId)
     const nextOrder = getOrderedRegisteredNodeWidgetIds(
       registeredIds,
       orderedWidgetIds
