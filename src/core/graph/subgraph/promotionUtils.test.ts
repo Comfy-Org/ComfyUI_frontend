@@ -96,6 +96,11 @@ function widget(
   return fromPartial<IBaseWidget>({ name: 'widget', ...overrides })
 }
 
+/**
+ * Builds a host SubgraphNode whose subgraph contains two source nodes that
+ * share a widget name (`text`), then promotes both — forcing the second
+ * promotion to be disambiguated to `text_1`.
+ */
 function buildDuplicateNamePromotion() {
   const subgraph = createTestSubgraph()
   const host = createTestSubgraphNode(subgraph)

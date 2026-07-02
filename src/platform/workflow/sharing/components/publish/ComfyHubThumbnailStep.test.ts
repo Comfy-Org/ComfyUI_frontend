@@ -163,6 +163,8 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'image'
     })
 
+    // The image must not leak into the video tab as a preview; the upload
+    // prompt stays visible instead.
     expect(screen.queryByRole('img')).toBeNull()
     expect(
       screen.getByText('comfyHubPublish.uploadPromptClickToBrowse')
@@ -190,6 +192,8 @@ describe('ComfyHubThumbnailStep', () => {
     await user.click(screen.getByTestId('type-video'))
 
     expect(onUpdateThumbnailType).toHaveBeenCalledWith('video')
+    // The uploaded file is cleared, but the existing URL is preserved so
+    // toggling back restores the preview.
     expect(onUpdateThumbnailFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
   })
@@ -220,6 +224,8 @@ describe('ComfyHubThumbnailStep', () => {
     await user.click(screen.getByTestId('type-image'))
 
     expect(onUpdateThumbnailType).toHaveBeenCalledWith('image')
+    // Comparison file inputs reset, but the restored before/after URLs stay
+    // inert so switching back restores the previews.
     expect(onUpdateComparisonBeforeFile).toHaveBeenCalledWith(null)
     expect(onUpdateComparisonAfterFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).not.toHaveBeenCalled()
@@ -279,14 +285,17 @@ describe('ComfyHubThumbnailStep', () => {
   })
 
   it('restores both comparison images on the comparison tab', () => {
-    renderStep({
+    const { container } = renderStep({
       thumbnailType: 'imageComparison',
       thumbnailUrl: 'https://cdn.example.com/before.png',
       comparisonAfterUrl: 'https://cdn.example.com/after.png',
       existingThumbnailType: 'imageComparison'
     })
 
-    const srcs = screen.getAllByRole('img').map((el) => el.getAttribute('src'))
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    const srcs = Array.from(container.querySelectorAll('img')).map((el) =>
+      el.getAttribute('src')
+    )
     expect(srcs).toContain('https://cdn.example.com/before.png')
     expect(srcs).toContain('https://cdn.example.com/after.png')
   })
