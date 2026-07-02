@@ -3974,6 +3974,16 @@ const translations = {
     'zh-CN': '漂浮的 3D 实验与测量仪器'
   },
 
+  // EducationHowItWorksSection
+  'education.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '使用方法'
+  },
+  'education.howItWorks.mediaAlt': {
+    en: 'Comfy-generated artwork of a luminous tree',
+    'zh-CN': 'Comfy 生成的发光树木艺术作品'
+  },
+
   // EducationFAQSection
   'education.faq.heading': {
     en: 'Q&A',
