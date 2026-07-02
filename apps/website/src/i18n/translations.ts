@@ -764,6 +764,11 @@ const translations = {
     'zh-CN':
       '最简单的 ComfyUI 入门方式。预加载模型。预安装自定义节点。并发任务。在 Blackwell RTX 6000 Pro 上体验 ComfyUI 的全部能力。打开标签页，开始创作。'
   },
+  'cloud.meta.description': {
+    en: 'ComfyUI Cloud runs on Blackwell RTX 6000 Pro GPUs with pre-loaded models and supports concurrent jobs per account.',
+    'zh-CN':
+      'ComfyUI Cloud 运行在 Blackwell RTX 6000 Pro GPU 上，预加载模型，每个账户支持并发任务。'
+  },
   'cloud.hero.cta': {
     en: 'TRY COMFY CLOUD FOR FREE',
     'zh-CN': '免费试用 COMFY CLOUD'
