@@ -7,7 +7,7 @@ import type {
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
-export type RunButtonTelemetryOptions = {
+type RunButtonTelemetryOptions = {
   subscribe_to_run?: boolean
   trigger_source?: ExecutionTriggerSource
 }

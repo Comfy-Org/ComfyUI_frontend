@@ -17,6 +17,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -31,7 +32,7 @@ interface UsePainterOptions {
   modelValue: Ref<string>
 }
 
-export function usePainter(nodeId: string, options: UsePainterOptions) {
+export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const { canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()

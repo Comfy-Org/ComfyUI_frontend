@@ -945,6 +945,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'dark',
     versionModified: '1.6.7',
+    telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
       // Legacy custom palettes were prefixed with 'custom_'

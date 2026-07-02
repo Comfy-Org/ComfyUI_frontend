@@ -1,16 +1,29 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import { toSlotId } from '@/types/slotId'
+import type { SlotId } from '@/types/slotId'
 
 interface DropResolutionContext {
   adapter: LinkConnectorAdapter | null
   graph: LGraph | null
   session: SlotLinkDragContext
+}
+
+function getCandidateSlotLayout(
+  rawKey: string
+): { key: SlotId; layout: SlotLayout } | null {
+  const key = toSlotId(rawKey)
+  const layout = layoutStore.getSlotLayout(key)
+
+  return layout ? { key, layout } : null
 }
 
 export const resolveSlotTargetCandidate = (
@@ -23,11 +36,12 @@ export const resolveSlotTargetCandidate = (
   const elWithKey = target
     .closest('.lg-slot, .lg-node-widget')
     ?.querySelector<HTMLElement>('[data-slot-key]')
-  const key = elWithKey?.dataset['slotKey']
-  if (!key) return null
+  const rawKey = elWithKey?.dataset['slotKey']
+  if (!rawKey) return null
 
-  const layout = layoutStore.getSlotLayout(key)
-  if (!layout) return null
+  const candidateLayout = getCandidateSlotLayout(rawKey)
+  if (!candidateLayout) return null
+  const { key, layout } = candidateLayout
 
   const candidate: SlotDropCandidate = { layout, compatible: false }
 
@@ -63,7 +77,7 @@ export const resolveNodeSurfaceSlotCandidate = (
 
   if (!adapter || !graph) return null
 
-  const nodeId: NodeId = nodeIdAttr
+  const nodeId: NodeId = toNodeId(nodeIdAttr)
 
   const cachedPreferredSlotForNode = session.preferredSlotForNode.get(nodeId)
   if (cachedPreferredSlotForNode !== undefined) {
@@ -94,7 +108,7 @@ export const resolveNodeSurfaceSlotCandidate = (
     return null
   }
 
-  const key = getSlotKey(String(nodeId), index, isInput)
+  const key = getSlotKey(nodeId, index, isInput)
   const layout = layoutStore.getSlotLayout(key)
   if (!layout) {
     session.preferredSlotForNode.set(nodeId, null)
