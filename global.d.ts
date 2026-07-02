@@ -5,8 +5,7 @@ declare const __SENTRY_DSN__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
-declare const __VERCEL_ENV__: string
-declare const __VERCEL_GIT_COMMIT_REF__: string
+declare const __GIT_BRANCH_PREFIX__: string
 
 interface ImpactQueueFunction {
   (...args: unknown[]): void

@@ -74,6 +74,26 @@ if (!GIT_COMMIT) {
   }
 }
 
+// Resolve the current branch name at build time.
+// Priority: VERCEL_GIT_COMMIT_REF (set by Vercel's own build infrastructure) →
+// git rev-parse --abbrev-ref HEAD (for local builds deployed via vercel deploy) → ''
+let GIT_BRANCH = process.env.VERCEL_GIT_COMMIT_REF || ''
+if (!GIT_BRANCH) {
+  try {
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', {
+      timeout: 5000,
+      windowsHide: true
+    })
+      .toString()
+      .trim()
+    if (branch !== 'HEAD') GIT_BRANCH = branch
+  } catch {
+    GIT_BRANCH = ''
+  }
+}
+const PRODUCTION_BRANCHES = new Set(['main', 'master'])
+const GIT_BRANCH_PREFIX = PRODUCTION_BRANCHES.has(GIT_BRANCH) ? '' : GIT_BRANCH
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
@@ -629,10 +649,7 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __COMFYUI_FRONTEND_COMMIT__: JSON.stringify(GIT_COMMIT),
-    __VERCEL_ENV__: JSON.stringify(process.env.VERCEL_ENV || ''),
-    __VERCEL_GIT_COMMIT_REF__: JSON.stringify(
-      process.env.VERCEL_GIT_COMMIT_REF || ''
-    ),
+    __GIT_BRANCH_PREFIX__: JSON.stringify(GIT_BRANCH_PREFIX),
     __SENTRY_ENABLED__: JSON.stringify(
       !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
     ),
