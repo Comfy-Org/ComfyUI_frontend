@@ -1690,6 +1690,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       const result = await store.updateFlatOutputs()
 
       expect(result).toEqual([])
+      expect(store.flatOutputAssets).toEqual([])
       expect(store.flatOutputError).toBe(err)
       expect(store.flatOutputLoading).toBe(false)
     } finally {
@@ -1754,6 +1755,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
         true,
         { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 0 }
       )
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1', 'a2'])
     } finally {
       consoleSpy.mockRestore()
     }
@@ -1799,5 +1801,110 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     await Promise.all([p1, p2])
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
+  })
+
+  it('keeps scrolling when a loadMore page is all duplicates but more remain', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-2'
+        })
+      )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1'])
+    expect(store.flatOutputHasMore).toBe(true)
+  })
+
+  it('stops scrolling on a truly empty loadMore page', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockResolvedValueOnce(
+        makePage([], { hasMore: true, nextCursor: 'cursor-2' })
+      )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('keeps previously loaded assets when a refresh fails', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockRejectedValueOnce(new Error('network down'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1'])
+
+      await store.updateFlatOutputs()
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1'])
+      expect(store.flatOutputError).toBeInstanceOf(Error)
+    } finally {
+      consoleSpy.mockRestore()
+    }
+  })
+
+  it('does not coalesce a refresh into an in-flight loadMore', async () => {
+    let resolveLoadMore!: (page: AssetResponse) => void
+    const loadMorePage = new Promise<AssetResponse>((res) => {
+      resolveLoadMore = res
+    })
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockReturnValueOnce(loadMorePage)
+      .mockResolvedValueOnce(makePage([makeAsset('fresh', 'fresh.png')]))
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    const loadMoreP = store.loadMoreFlatOutputs()
+    const refreshP = store.updateFlatOutputs()
+
+    resolveLoadMore(
+      makePage([makeAsset('a2', 'f2.png')], {
+        hasMore: true,
+        nextCursor: 'cursor-2'
+      })
+    )
+    await Promise.all([loadMoreP, refreshP])
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenCalledTimes(3)
+    expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+      'output',
+      true,
+      { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 0 }
+    )
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh'])
   })
 })
