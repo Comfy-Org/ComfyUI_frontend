@@ -123,6 +123,15 @@ Browser tests in this project follow a specific organization pattern:
 - **Utilities**: Located in `utils/` - Common utility functions
   - `litegraphUtils.ts` - Utilities for working with LiteGraph nodes
 
+### Custom-node regression suite
+
+`tests/customNodes/` holds the manifest-driven suite that proves community
+custom-node packs load, render in both renderers (LiteGraph canvas and Vue
+Nodes 2.0), and execute real workflows. It has its own prerequisites, pnpm
+scripts (`pnpm test:custom-nodes` and per-pack variants), and a
+one-JSON-row process for adding packs - see
+[tests/customNodes/README.md](tests/customNodes/README.md).
+
 ## Writing Effective Tests
 
 When writing new tests, follow these patterns:
