@@ -3951,6 +3951,29 @@ const translations = {
       '所有学生和教育工作者均可享受 Comfy Cloud 最高 25% 的折扣。使用您的学术邮箱注册，即可以优惠价格使用云端 ComfyUI 工作流。'
   },
 
+  // EducationHeroSection
+  'education.hero.badge': {
+    en: 'EDUCATION',
+    'zh-CN': '教育'
+  },
+  'education.hero.title': {
+    en: 'Up to 25% off*\nfor every student\nand educator',
+    'zh-CN': '所有学生和教育工作者\n均可享受最高 25% 折扣*'
+  },
+  'education.hero.subtitle': {
+    en: 'Bring Comfy into your classroom — sign up with your academic email for discounted access. Scroll down to see how others use it.',
+    'zh-CN':
+      '将 Comfy 带入您的课堂 — 使用您的学术邮箱注册即可享受优惠。向下滚动，了解其他人如何使用它。'
+  },
+  'education.hero.footnote': {
+    en: '*Up to 25% off on annual team plans',
+    'zh-CN': '*年付团队方案最高可享 25% 折扣'
+  },
+  'education.hero.backdropAlt': {
+    en: 'Floating 3D lab and measuring instruments',
+    'zh-CN': '漂浮的 3D 实验与测量仪器'
+  },
+
   // EducationFAQSection
   'education.faq.heading': {
     en: 'Q&A',

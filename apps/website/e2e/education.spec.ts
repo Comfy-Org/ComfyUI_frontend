@@ -9,6 +9,8 @@ const LEARNING_PATH = '/learning'
 const PRICING_PATH = '/cloud/pricing'
 const FAQ_COUNT = educationFaqs.length
 const FIRST_FAQ = educationFaqs[0]
+const HERO_TITLE_TEXT = t('education.hero.title', 'en').replace(/\s+/g, ' ')
+const HERO_BADGE_TEXT = t('education.hero.badge', 'en')
 const FAQ_HEADING_TEXT = t('education.faq.heading', 'en')
 const CTA_HEADING_TEXT = t('education.cta.heading', 'en')
 const CTA_CHOOSE_PLAN_LABEL = t('education.cta.choosePlan', 'en')
@@ -18,6 +20,13 @@ const CTA_TERMS_LABEL = t('education.cta.termsLabel', 'en')
 test.describe('Education landing — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
+  })
+
+  test('renders the hero badge and headline', async ({ page }) => {
+    await expect(page.getByText(HERO_BADGE_TEXT)).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: HERO_TITLE_TEXT })
+    ).toBeVisible()
   })
 
   test('renders the Q&A heading and is indexable', async ({ page }) => {

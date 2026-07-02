@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import CtaSection from '../templates/education/CtaSection.vue'
 import FAQSection from '../templates/education/FAQSection.vue'
+import HeroSection from '../templates/education/HeroSection.vue'
 import { educationFaqs } from '../data/educationFaq'
 import { t } from '../i18n/translations'
 
@@ -33,6 +34,7 @@ const faqJsonLd = {
     />
   </Fragment>
 
+  <HeroSection />
   <FAQSection client:visible />
   <CtaSection />
 </BaseLayout>
