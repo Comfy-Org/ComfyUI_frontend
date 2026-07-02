@@ -30,9 +30,12 @@ export interface MissingModelPipelineResult {
 
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
+  fileSizes: Record<string, number>
+  gatedRepoUrls: Record<string, string>
   createVerificationAbortController: () => AbortController
   setFolderPaths: (paths: Record<string, string[]>) => void
   setFileSize: (url: string, size: number) => void
+  setGatedRepoUrl: (url: string, repoUrl: string) => void
 }
 
 interface RunMissingModelPipelineOptions {
@@ -207,10 +210,20 @@ export async function runMissingModelPipeline({
         import('@/platform/missingModel/missingModelDownload')
       void Promise.allSettled(
         downloadableCandidates.map(async (c) => {
+          if (
+            controller.signal.aborted ||
+            missingModelStore.fileSizes[c.url] !== undefined ||
+            missingModelStore.gatedRepoUrls[c.url] !== undefined
+          ) {
+            return
+          }
+
           const { fetchModelMetadata } = await missingModelDownload
           const metadata = await fetchModelMetadata(c.url)
           if (!controller.signal.aborted && metadata.fileSize !== null) {
             missingModelStore.setFileSize(c.url, metadata.fileSize)
+          } else if (!controller.signal.aborted && metadata.gatedRepoUrl) {
+            missingModelStore.setGatedRepoUrl(c.url, metadata.gatedRepoUrl)
           }
         })
       )

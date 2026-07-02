@@ -47,6 +47,22 @@ async function startDesktop2ModelDownload(
   }
 }
 
+export function openGatedRepoPage(url: string): void {
+  const link = document.createElement('a')
+  link.href = url
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.click()
+}
+
+function isHuggingFaceRepoUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname.toLowerCase() === 'huggingface.co'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Converts a model download URL to a browsable page URL.
  * - HuggingFace: `/resolve/` → `/blob/` (file page with model info)
@@ -56,7 +72,7 @@ export function toBrowsableUrl(url: string): string {
   if (isCivitaiModelUrl(url)) {
     return url.replace('/api/download/', '/').replace('/api/v1/', '/')
   }
-  if (url.includes('huggingface.co')) {
+  if (isHuggingFaceRepoUrl(url)) {
     return url.replace('/resolve/', '/blob/')
   }
   return url
@@ -156,7 +172,7 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
     const response = await fetch(url, { method: 'HEAD' })
     if (!response.ok) {
       if (
-        url.includes('huggingface.co') &&
+        isHuggingFaceRepoUrl(url) &&
         GATED_STATUS_CODES.has(response.status)
       ) {
         return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
@@ -175,8 +191,8 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
   }
 }
 
-function isComplete(metadata: ModelMetadata): boolean {
-  return metadata.fileSize !== null || metadata.gatedRepoUrl !== null
+function isCacheable(metadata: ModelMetadata): boolean {
+  return metadata.fileSize !== null
 }
 
 export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
@@ -191,7 +207,7 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
       ? await fetchCivitaiMetadata(url)
       : await fetchHeadMetadata(url)
 
-    if (isComplete(metadata)) {
+    if (isCacheable(metadata)) {
       metadataCache.set(url, metadata)
     }
     return metadata
