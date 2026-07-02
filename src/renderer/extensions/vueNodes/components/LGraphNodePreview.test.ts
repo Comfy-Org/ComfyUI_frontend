@@ -3,9 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -13,12 +12,15 @@ vi.mock('@/stores/widgetStore', () => ({
   useWidgetStore: () => ({ inputIsWidget: () => true })
 }))
 
-const NodeWidgetsProbe = {
-  props: ['widgetIds'],
-  setup(props: { widgetIds?: readonly WidgetId[] }) {
-    const widgetValueStore = useWidgetValueStore()
+const WidgetGridProbe = {
+  props: ['processedWidgets'],
+  setup(props: { processedWidgets?: ProcessedWidget[] }) {
     const widgets = computed(() =>
-      (props.widgetIds ?? []).map((id) => widgetValueStore.getWidget(id))
+      (props.processedWidgets ?? []).map((widget) => ({
+        name: widget.name,
+        value: widget.simplified.value,
+        options: { values: widget.simplified.options?.values }
+      }))
     )
     return { widgets }
   },
@@ -52,7 +54,7 @@ function renderedWidgets(
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
-        NodeWidgets: NodeWidgetsProbe
+        WidgetGrid: WidgetGridProbe
       }
     }
   })
