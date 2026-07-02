@@ -176,7 +176,7 @@ async function fetchGeneratedHistoryAssets(
     const historyPage = await fetchHistoryPage(
       api.fetchApi.bind(api),
       HISTORY_MEDIA_ASSETS_PAGE_SIZE,
-      requestedOffset
+      { offset: requestedOffset }
     )
 
     signal?.throwIfAborted()

@@ -17,6 +17,14 @@ import {
 } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  JobsApiError,
+  fetchHistoryPage
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type {
+  FetchHistoryPageResult,
+  JobsPageRequest
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
@@ -114,8 +122,9 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  // Pagination state
+  // History pagination state
   const historyOffset = ref(0)
+  const historyNextCursor = ref<string | null>(null)
   const hasMoreHistory = ref(true)
   const isLoadingMore = ref(false)
 
@@ -147,65 +156,129 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
+   * Insert assets in sorted order (newest first), skipping already-loaded ids
+   */
+  const mergeHistoryAssets = (newAssets: AssetItem[]) => {
+    for (const asset of newAssets) {
+      if (loadedIds.has(asset.id)) {
+        continue
+      }
+      loadedIds.add(asset.id)
+
+      const assetTime = new Date(asset.created_at ?? 0).getTime()
+      const insertIndex = allHistoryItems.value.findIndex(
+        (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+      )
+
+      if (insertIndex === -1) {
+        allHistoryItems.value.push(asset)
+      } else {
+        allHistoryItems.value.splice(insertIndex, 0, asset)
+      }
+    }
+  }
+
+  const trimHistoryToLimit = () => {
+    if (allHistoryItems.value.length <= MAX_HISTORY_ITEMS) return
+
+    const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+    allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
+    removed.forEach((item) => loadedIds.delete(item.id))
+  }
+
+  const fetchHistoryJobsPage = (page: JobsPageRequest) =>
+    fetchHistoryPage(api.fetchApi.bind(api), BATCH_SIZE, page)
+
+  // Invalidates in-flight history fetches whenever the list is replaced, so
+  // a stale continuation can't merge into (or move the cursor of) the new walk.
+  let historyFetchEpoch = 0
+
+  // Tracks whether the walk is keyset-paginated, independent of the current
+  // cursor value: once a cursor has been minted the walk stays in cursor mode
+  // even after it exhausts (`historyNextCursor` back to null), so head-refresh
+  // merges keep preserving scroll-loaded items instead of replacing them.
+  let historyCursorMode = false
+
+  const isRejectedCursorError = (err: unknown): boolean =>
+    err instanceof JobsApiError && err.status === 400
+
+  const fetchHistoryPageWithCursorRecovery = async (
+    after: string | null,
+    epoch: number
+  ): Promise<FetchHistoryPageResult> => {
+    if (after == null)
+      return fetchHistoryJobsPage({ offset: historyOffset.value })
+    try {
+      return await fetchHistoryJobsPage({ after })
+    } catch (err) {
+      // Drop only a rejected cursor (e.g. stale across a restart) to the
+      // offset fallback; transient failures and superseded-walk
+      // continuations must propagate so a valid/newer cursor isn't lost.
+      if (!isRejectedCursorError(err) || epoch !== historyFetchEpoch) throw err
+      console.warn('Stale history cursor rejected, resuming via offset:', err)
+      historyNextCursor.value = null
+      historyCursorMode = false
+      historyOffset.value = 0
+      allHistoryItems.value = []
+      loadedIds.clear()
+      return fetchHistoryJobsPage({ offset: 0 })
+    }
+  }
+
+  /**
+   * Fetch one page of history assets and update reactive state.
+   *
+   * Pagination model: the server starts in offset mode and mints a
+   * `next_cursor` on any page that has one; subsequent requests pass that
+   * cursor (keyset mode). The walk upgrades automatically — offset paging is
+   * only used until the first cursor is received.
+   *
+   * An empty page with no cursor is treated as terminal regardless of
+   * `has_more`, because offset paging would refetch the same page forever.
+   * A cursor that hasn't advanced (the server echoed back the value it was
+   * given) is also treated as terminal to prevent an infinite dedup loop.
+   *
+   * @param loadMore - When `true`, appends the next page to the existing list
+   *   (infinite-scroll continuation). When `false` (default), resets all
+   *   pagination state and replaces the list with the first page.
+   * @returns The current accumulated list of history asset items.
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
     if (!loadMore) {
+      historyFetchEpoch += 1
       historyOffset.value = 0
+      historyNextCursor.value = null
+      historyCursorMode = false
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
     }
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
+    const epoch = historyFetchEpoch
+    const requestedAfter = loadMore ? historyNextCursor.value : null
+    const page = await fetchHistoryPageWithCursorRecovery(requestedAfter, epoch)
+    if (epoch !== historyFetchEpoch) return allHistoryItems.value
 
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
+    const newAssets = mapHistoryToAssets(page.jobs)
 
     if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
-        loadedIds.add(asset.id)
-
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
-        )
-
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
-      }
+      mergeHistoryAssets(newAssets)
     } else {
-      // Initial load: replace all
       allHistoryItems.value = newAssets
       newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
 
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
+    const cursorStuck =
+      page.nextCursor != null && page.nextCursor === requestedAfter
+    if (page.nextCursor != null) historyCursorMode = true
+    historyOffset.value += page.jobs.length
+    historyNextCursor.value = cursorStuck ? null : (page.nextCursor ?? null)
+    hasMoreHistory.value =
+      page.hasMore &&
+      !cursorStuck &&
+      (page.jobs.length > 0 || page.nextCursor != null)
 
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
-    }
+    trimHistoryToLimit()
 
     return allHistoryItems.value
   }
@@ -245,18 +318,102 @@ export const useAssetsStore = defineStore('assets', () => {
     isLoadingMore.value = true
     historyError.value = null
 
+    const epoch = historyFetchEpoch
     try {
       await fetchHistoryAssets(true)
       historyAssets.value = allHistoryItems.value
     } catch (err) {
+      if (epoch !== historyFetchEpoch) return
       console.error('Error loading more history:', err)
       historyError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
     } finally {
       isLoadingMore.value = false
+    }
+  }
+
+  /**
+   * A head page with no further rows spans the whole timeline, so replacing
+   * local state with it also prunes jobs deleted server-side (e.g. after the
+   * queue history is cleared from another surface).
+   */
+  const replaceHistoryWithHeadPage = (page: FetchHistoryPageResult) => {
+    historyFetchEpoch += 1
+    const newAssets = mapHistoryToAssets(page.jobs)
+    allHistoryItems.value = newAssets
+    loadedIds.clear()
+    newAssets.forEach((asset) => loadedIds.add(asset.id))
+    historyOffset.value = page.jobs.length
+    historyNextCursor.value = page.nextCursor ?? null
+    historyCursorMode = page.nextCursor != null
+    hasMoreHistory.value = page.hasMore
+  }
+
+  let headRefreshInFlight: Promise<void> | null = null
+  let headRefreshTrailing: Promise<void> | null = null
+
+  /**
+   * Merge newly completed jobs into the top of the list without resetting
+   * pagination state, so items loaded via infinite scroll survive the
+   * refresh. Cursors only walk toward older items, so new completions are
+   * picked up by re-fetching the head page and deduplicating. Bursts of
+   * status events share the in-flight refresh, and a call arriving
+   * mid-flight schedules exactly one trailing refresh — the shared response
+   * was dispatched before that caller's event, so it could miss the very
+   * completion the caller is reacting to.
+   */
+  const refreshHistoryHead = (): Promise<void> => {
+    if (!headRefreshInFlight) {
+      headRefreshInFlight = doRefreshHistoryHead().finally(() => {
+        headRefreshInFlight = null
+      })
+      return headRefreshInFlight
+    }
+    headRefreshTrailing ??= headRefreshInFlight.then(() => {
+      headRefreshTrailing = null
+      return refreshHistoryHead()
+    })
+    return headRefreshTrailing
+  }
+
+  const doRefreshHistoryHead = async () => {
+    if (!allHistoryItems.value.length) {
+      await updateHistory()
+      return
+    }
+
+    historyError.value = null
+    const epoch = historyFetchEpoch
+    try {
+      const page = await fetchHistoryJobsPage({ offset: 0 })
+      if (epoch !== historyFetchEpoch) return
+
+      const reachesLoadedItems = page.jobs.some((job) => loadedIds.has(job.id))
+      if (page.hasMore && !reachesLoadedItems) {
+        await updateHistory()
+        return
+      }
+
+      // Merging only preserves scroll-loaded items safely in cursor mode,
+      // including once the cursor has exhausted (historyNextCursor is null but
+      // the loaded terminal pages must survive). In offset fallback mode,
+      // prepending new head rows without advancing historyOffset would drift
+      // the next offset request (the server timeline shifted down by the new
+      // completions), so rebuild from the head page — which resets
+      // historyOffset to a position consistent with that page.
+      if (page.hasMore && historyCursorMode) {
+        mergeHistoryAssets(mapHistoryToAssets(page.jobs))
+        trimHistoryToLimit()
+      } else {
+        replaceHistoryWithHeadPage(page)
+      }
+      historyAssets.value = allHistoryItems.value
+    } catch (err) {
+      if (epoch !== historyFetchEpoch) return
+      console.error('Error refreshing history:', err)
+      historyError.value = err
     }
   }
 
@@ -884,6 +1041,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory,
     loadMoreHistory,
+    refreshHistoryHead,
     setAssetPreview,
 
     // Flat output assets (cloud-only, tag-based)

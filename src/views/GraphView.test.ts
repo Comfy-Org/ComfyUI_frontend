@@ -100,7 +100,10 @@ vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ isBuilderMode: ref(false) })
 }))
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ updateHistory: vi.fn() })
+  useAssetsStore: () => ({
+    updateHistory: vi.fn(),
+    refreshHistoryHead: vi.fn()
+  })
 }))
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ registerCommands: vi.fn() })
