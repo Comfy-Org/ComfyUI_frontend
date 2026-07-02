@@ -53,6 +53,10 @@ concurrency:
 jobs:
   merge:
     name: Merge eligible backport PRs
+    # Skip review events on non-backport PRs early (most reviews in the repo),
+    # before spending any API call. Schedule sweeps always proceed. The per-PR
+    # eligibility checks in the job still re-verify the label from live state.
+    if: github.event_name != 'pull_request_review' || contains(github.event.pull_request.labels.*.name, 'backport')
     runs-on: ubuntu-latest
     permissions:
       contents: read # read-only PR/commit lookups via the default token
