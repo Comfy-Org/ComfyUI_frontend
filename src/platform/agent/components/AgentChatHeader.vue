@@ -1,13 +1,30 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
+const { isMaximized } = defineProps<{
+  isMaximized: boolean
+}>()
+
 const emit = defineEmits<{
   newChat: []
+  toggleMaximize: []
   close: []
 }>()
+
+const { t } = useI18n()
+
+const sizeToggleIcon = computed(() =>
+  isMaximized ? 'icon-[lucide--minimize-2]' : 'icon-[lucide--maximize-2]'
+)
+const sizeToggleLabel = computed(() =>
+  isMaximized ? t('agent.minimize') : t('agent.maximize')
+)
 </script>
 
 <template>
@@ -31,7 +48,9 @@ const emit = defineEmits<{
             :aria-label="$t('agent.newChat')"
             @click="emit('newChat')"
           >
-            <i class="icon-[lucide--message-circle-plus] size-4" />
+            <i
+              class="icon-[lucide--message-circle-plus] size-4 text-muted-foreground"
+            />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">{{ $t('agent.newChat') }}</TooltipContent>
@@ -41,10 +60,25 @@ const emit = defineEmits<{
           <Button
             variant="textonly"
             size="icon"
+            :aria-label="sizeToggleLabel"
+            @click="emit('toggleMaximize')"
+          >
+            <i :class="`${sizeToggleIcon} size-4 text-muted-foreground`" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" class="whitespace-nowrap">
+          {{ sizeToggleLabel }}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip :delay-duration="300">
+        <TooltipTrigger>
+          <Button
+            variant="textonly"
+            size="icon"
             :aria-label="$t('g.close')"
             @click="emit('close')"
           >
-            <i class="icon-[lucide--x] size-4" />
+            <i class="icon-[lucide--x] size-4 text-muted-foreground" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">{{ $t('g.close') }}</TooltipContent>

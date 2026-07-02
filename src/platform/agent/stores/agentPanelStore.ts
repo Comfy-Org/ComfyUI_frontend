@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -7,6 +7,8 @@ const PANEL_MAX_WIDTH = 960
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const isOpen = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
+
+  const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
   function open() {
     isOpen.value = true
@@ -24,12 +26,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     width.value = Math.min(PANEL_MAX_WIDTH, Math.max(PANEL_MIN_WIDTH, px))
   }
 
+  function toggleMaximize() {
+    setWidth(isMaximized.value ? PANEL_MIN_WIDTH : PANEL_MAX_WIDTH)
+  }
+
   return {
     isOpen,
     width,
+    isMaximized,
     open,
     close,
     toggle,
-    setWidth
+    setWidth,
+    toggleMaximize
   }
 })

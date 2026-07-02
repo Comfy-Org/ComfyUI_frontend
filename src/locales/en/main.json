@@ -5,6 +5,8 @@
     "ask": "Ask Comfy Agent",
     "alpha": "ALPHA",
     "newChat": "New chat",
+    "maximize": "Maximize panel",
+    "minimize": "Minimize panel",
     "togglePanel": "Toggle panel",
     "greeting": "Hello,",
     "greetingNamed": "Hello {name},",

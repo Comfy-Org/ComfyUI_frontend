@@ -125,7 +125,12 @@ function onNewChatFromHistory() {
   <div
     class="@container flex h-full flex-col overflow-hidden bg-base-background"
   >
-    <AgentChatHeader @new-chat="startNewChat" @close="close" />
+    <AgentChatHeader
+      :is-maximized="agentPanelStore.isMaximized"
+      @new-chat="startNewChat"
+      @toggle-maximize="agentPanelStore.toggleMaximize"
+      @close="close"
+    />
 
     <template v-if="showHistory">
       <AgentChatHistory
