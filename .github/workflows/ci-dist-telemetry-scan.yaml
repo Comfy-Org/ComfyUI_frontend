@@ -141,10 +141,8 @@ jobs:
           if rg --no-ignore -n \
             -g '*.html' \
             -g '*.js' \
-            -e 'SyftTelemetryProvider' \
+            -e '(?i)syft' \
             -e '(?i)sy-d\.io' \
-            -e 'syftdata_source_id' \
-            -e '(?i)window\.syft' \
             dist; then
             echo '❌ ERROR: Syft references found in dist assets!'
             echo 'Syft must be properly tree-shaken from OSS builds.'
