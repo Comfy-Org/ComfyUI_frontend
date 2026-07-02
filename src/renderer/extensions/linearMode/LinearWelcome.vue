@@ -52,7 +52,7 @@ const showGetStarted = computed(() => !hasOutputs.value && !hasNodes.value)
       </template>
       <div
         v-else
-        class="flex w-full flex-col gap-2.5 rounded-2xl bg-secondary-background p-8 text-left"
+        class="flex w-full flex-col gap-2.5 rounded-2xl bg-base-background p-8 text-left"
       >
         <div
           class="flex size-12 items-center justify-center rounded-xl bg-secondary-background-hover"
