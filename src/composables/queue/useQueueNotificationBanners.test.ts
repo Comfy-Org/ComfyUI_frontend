@@ -79,12 +79,10 @@ describe(useQueueNotificationBanners, () => {
       isImage?: boolean
     } = {}
   ): MockTask => {
-    const {
-      state = 'Completed',
-      ts = Date.now(),
-      previewUrl,
-      isImage = true
-    } = options
+    const { state = 'Completed', previewUrl, isImage = true } = options
+    // Only default the timestamp when the caller omitted the key, so an
+    // explicit `ts: undefined` really produces a task without a timestamp.
+    const ts = 'ts' in options ? options.ts : Date.now()
 
     const task: MockTask = {
       displayStatus: state,
