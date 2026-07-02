@@ -106,8 +106,8 @@ test.describe('Help Center', () => {
         helpCenter.menuItem('help').click()
       )
 
-      expect(url.hostname).toBe('portal.usepylon.com')
-      expect(url.pathname).toBe('/comfy-org/forms/question')
+      expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
+      expect(url.pathname).toBe('/forms/question')
       expect(url.searchParams.get('comfy_environment')).toBe('oss')
     })
 
@@ -118,8 +118,8 @@ test.describe('Help Center', () => {
         helpCenter.menuItem('feedback').click()
       )
 
-      expect(url.hostname).toBe('portal.usepylon.com')
-      expect(url.pathname).toBe('/comfy-org/forms/question')
+      expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
+      expect(url.pathname).toBe('/forms/question')
       expect(url.searchParams.get('comfy_environment')).toBe('oss')
     })
   })

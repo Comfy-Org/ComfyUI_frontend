@@ -127,7 +127,7 @@ test.describe('Error dialog', () => {
   }) => {
     await comfyPage.page
       .context()
-      .route('https://portal.usepylon.com/**', (route) =>
+      .route('https://comfy-org.portal.usepylon.com/**', (route) =>
         route.fulfill({ body: '<html></html>', contentType: 'text/html' })
       )
 
@@ -139,8 +139,8 @@ test.describe('Error dialog', () => {
     )
 
     const url = new URL(popup.url())
-    expect(url.hostname).toBe('portal.usepylon.com')
-    expect(url.pathname).toBe('/comfy-org/forms/report-a-bug')
+    expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
+    expect(url.pathname).toBe('/forms/report-a-bug')
     expect(url.searchParams.get('product_area')).toBe('Workflow Error')
 
     await popup.close()

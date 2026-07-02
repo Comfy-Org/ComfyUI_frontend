@@ -1,7 +1,7 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
 
 /**
- * Slug of a Pylon form under https://portal.usepylon.com/comfy-org/forms/.
+ * Slug of a Pylon form under https://comfy-org.portal.usepylon.com/forms/.
  * The form slug determines which ticket form opens and which fields are shown.
  */
 export const SupportForm = {
@@ -27,7 +27,7 @@ const PYLON_FIELDS = {
   PRODUCT_AREA: 'product_area'
 } as const
 
-const PYLON_FORMS_BASE_URL = 'https://portal.usepylon.com/comfy-org/forms/'
+const PYLON_FORMS_BASE_URL = 'https://comfy-org.portal.usepylon.com/forms/'
 const FEEDBACK_TYPEFORM_BASE_URL = 'https://form.typeform.com/to/q7azbWPi'
 
 /**

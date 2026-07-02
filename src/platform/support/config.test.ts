@@ -78,14 +78,14 @@ describe('buildSupportUrl', () => {
   it('defaults to the question form when no form is provided', async () => {
     const { buildSupportUrl } = await importModule()
     const url = new URL(buildSupportUrl())
-    expect(url.hostname).toBe('portal.usepylon.com')
-    expect(url.pathname).toBe('/comfy-org/forms/question')
+    expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
+    expect(url.pathname).toBe('/forms/question')
   })
 
   it('routes to the requested form slug', async () => {
     const { buildSupportUrl, SupportForm } = await importModule()
     const url = new URL(buildSupportUrl(SupportForm.Billing))
-    expect(url.pathname).toBe('/comfy-org/forms/billing-refund-issue')
+    expect(url.pathname).toBe('/forms/billing-refund-issue')
   })
 
   it('encodes spaces as %20 (not "+") in the query string', async () => {

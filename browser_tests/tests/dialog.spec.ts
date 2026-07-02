@@ -110,7 +110,7 @@ test.describe('Support', () => {
     // Prevent loading the external page
     await comfyPage.page
       .context()
-      .route('https://portal.usepylon.com/**', (route) =>
+      .route('https://comfy-org.portal.usepylon.com/**', (route) =>
         route.fulfill({ body: '<html></html>', contentType: 'text/html' })
       )
 
@@ -119,8 +119,8 @@ test.describe('Support', () => {
     const popup = await popupPromise
 
     const url = new URL(popup.url())
-    expect(url.hostname).toBe('portal.usepylon.com')
-    expect(url.pathname).toBe('/comfy-org/forms/question')
+    expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
+    expect(url.pathname).toBe('/forms/question')
     expect(url.searchParams.get('comfy_environment')).toBe('oss')
 
     await popup.close()

@@ -86,7 +86,7 @@ class HelpCenterHelper {
    */
   async stubSupportPage(): Promise<void> {
     for (const pattern of [
-      'https://portal.usepylon.com/**',
+      'https://comfy-org.portal.usepylon.com/**',
       'https://support.comfy.org/**'
     ]) {
       await this.page.context().route(pattern, (route: Route) =>
