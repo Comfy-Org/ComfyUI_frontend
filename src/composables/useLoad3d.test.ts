@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { Pinia } from 'pinia'
@@ -14,6 +15,7 @@ import {
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -21,6 +23,7 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import {
   createMockCanvasPointerEvent,
   createMockLGraphNode
@@ -295,6 +298,19 @@ describe('useLoad3d', () => {
       expect(mockLoad3d.renderer!.domElement.hidden).toBe(true)
     })
 
+    it('keeps the renderer visible when collapsed flag is unset', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      delete mockNode.flags.collapsed
+      mockLoad3d.renderer!.domElement.hidden = true
+      mockNode.onDrawBackground?.({} as CanvasRenderingContext2D)
+
+      expect(mockLoad3d.renderer!.domElement.hidden).toBe(false)
+    })
+
     it('should initialize without loading model (model loading is handled by Load3DConfiguration)', async () => {
       mockNode.widgets!.push({
         name: 'model_file',
@@ -329,6 +345,31 @@ describe('useLoad3d', () => {
         position: { x: 1, y: 2, z: 3 },
         target: { x: 0, y: 0, z: 0 }
       })
+    })
+
+    it('uses saved config fallbacks for empty render mode and missing light intensity', async () => {
+      mockNode.properties!['Scene Config'] = {
+        showGrid: true,
+        backgroundColor: '#111111',
+        backgroundImage: '',
+        backgroundRenderMode: ''
+      }
+      mockNode.properties!['Light Config'] = {
+        hdri: {
+          enabled: false,
+          hdriPath: '',
+          showAsBackground: false,
+          intensity: 1
+        }
+      }
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      expect(composable.sceneConfig.value.backgroundRenderMode).toBe('tiled')
+      expect(composable.lightConfig.value.intensity).toBe(5)
+      expect(mockLoad3d.setBackgroundRenderMode).toHaveBeenCalledWith('tiled')
+      expect(mockLoad3d.setLightIntensity).toHaveBeenCalledWith(5)
     })
 
     it('should set preview mode when no width/height widgets', async () => {
@@ -396,6 +437,127 @@ describe('useLoad3d', () => {
         containerRef,
         expect.objectContaining({ getZoomScale: expect.any(Function) })
       )
+    })
+
+    it('passes live dimension, zoom, and context-menu callbacks to Load3d', async () => {
+      const originalCanvas = app.canvas
+      const menuOptions = [{ content: 'Inspect' }]
+      const getNodeMenuOptions = vi.fn(() => menuOptions)
+      app.canvas = {
+        ds: { scale: 2.25 },
+        getNodeMenuOptions
+      } as unknown as typeof app.canvas
+      const contextMenuSpy = vi
+        .spyOn(LiteGraph, 'ContextMenu')
+        .mockImplementation(function () {})
+
+      try {
+        const composable = useLoad3d(mockNode)
+        const containerRef = document.createElement('div')
+        await composable.initializeLoad3d(containerRef)
+
+        const config = vi.mocked(createLoad3d).mock.calls[0][1]!
+        expect(config.getDimensions?.()).toEqual({ width: 512, height: 512 })
+        mockNode.widgets![0].value = 640
+        mockNode.widgets![1].value = 360
+        expect(config.getDimensions?.()).toEqual({ width: 640, height: 360 })
+        expect(config.getZoomScale!()).toBe(2.25)
+
+        const event = new MouseEvent('contextmenu')
+        config.onContextMenu!(event)
+
+        expect(getNodeMenuOptions).toHaveBeenCalledWith(mockNode)
+        expect(contextMenuSpy).toHaveBeenCalledWith(menuOptions, {
+          event,
+          title: mockNode.type,
+          extra: mockNode
+        })
+      } finally {
+        app.canvas = originalCanvas
+        contextMenuSpy.mockRestore()
+      }
+    })
+
+    it('falls back to zoom scale 1 when the app canvas is unavailable', async () => {
+      const originalCanvas = app.canvas
+      app.canvas = undefined as unknown as typeof app.canvas
+
+      try {
+        const composable = useLoad3d(mockNode)
+        const containerRef = document.createElement('div')
+        await composable.initializeLoad3d(containerRef)
+
+        const config = vi.mocked(createLoad3d).mock.calls[0][1]!
+        expect(config.getZoomScale!()).toBe(1)
+      } finally {
+        app.canvas = originalCanvas
+      }
+    })
+
+    it('restores and enables a saved HDRI when it loads successfully', async () => {
+      mockNode.properties!['Light Config'] = {
+        intensity: 7,
+        hdri: {
+          enabled: true,
+          hdriPath: '3d/env.hdr',
+          showAsBackground: true,
+          intensity: 2
+        }
+      }
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/view?filename=env.hdr'
+      )
+      vi.mocked(api.apiURL).mockReturnValue(
+        'http://localhost/view?filename=env.hdr'
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      expect(mockLoad3d.loadHDRI).toHaveBeenCalledWith(
+        'http://localhost/view?filename=env.hdr'
+      )
+      expect(composable.lightConfig.value.hdri!.enabled).toBe(true)
+      expect(mockLoad3d.setHDRIEnabled).toHaveBeenCalledWith(true)
+    })
+
+    it('clears saved HDRI state when restore fails', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockNode.properties!['Light Config'] = {
+        intensity: 7,
+        hdri: {
+          enabled: true,
+          hdriPath: '3d/missing.hdr',
+          showAsBackground: true,
+          intensity: 2
+        }
+      }
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'missing.hdr'
+      ])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/view?filename=missing.hdr'
+      )
+      vi.mocked(api.apiURL).mockReturnValue(
+        'http://localhost/view?filename=missing.hdr'
+      )
+      vi.mocked(mockLoad3d.loadHDRI!).mockRejectedValueOnce(
+        new Error('missing')
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Failed to restore HDRI:',
+        expect.any(Error)
+      )
+      expect(composable.lightConfig.value.hdri!.hdriPath).toBe('')
+      expect(composable.lightConfig.value.hdri!.enabled).toBe(false)
+
+      warnSpy.mockRestore()
     })
   })
 
@@ -526,6 +688,31 @@ describe('useLoad3d', () => {
   })
 
   describe('configuration watchers', () => {
+    it('updates refs before Load3d exists without calling scene methods', async () => {
+      const composable = useLoad3d(mockNode)
+
+      composable.sceneConfig.value.backgroundColor = '#abcdef'
+      composable.sceneConfig.value.backgroundImage = 'pending.png'
+      composable.sceneConfig.value.backgroundRenderMode = 'panorama'
+      composable.modelConfig.value.upDirection = '+z'
+      composable.modelConfig.value.materialMode = 'normal'
+      composable.modelConfig.value.showSkeleton = true
+      composable.cameraConfig.value.fov = 55
+      composable.lightConfig.value.intensity = 9
+      composable.lightConfig.value.hdri!.intensity = 3
+      composable.lightConfig.value.hdri!.showAsBackground = true
+      composable.lightConfig.value.hdri!.enabled = true
+      await nextTick()
+
+      expect(mockLoad3d.setBackgroundColor).not.toHaveBeenCalled()
+      expect(mockLoad3d.setBackgroundImage).not.toHaveBeenCalled()
+      expect(mockLoad3d.setBackgroundRenderMode).not.toHaveBeenCalled()
+      expect(mockLoad3d.setUpDirection).not.toHaveBeenCalled()
+      expect(mockLoad3d.setMaterialMode).not.toHaveBeenCalled()
+      expect(mockLoad3d.setShowSkeleton).not.toHaveBeenCalled()
+      expect(mockLoad3d.setLightIntensity).not.toHaveBeenCalled()
+    })
+
     it('should update scene config when values change', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -567,20 +754,23 @@ describe('useLoad3d', () => {
 
       vi.mocked(mockLoad3d.setUpDirection!).mockClear()
       vi.mocked(mockLoad3d.setMaterialMode!).mockClear()
+      vi.mocked(mockLoad3d.setShowSkeleton!).mockClear()
 
       composable.modelConfig.value.upDirection = '+y'
       composable.modelConfig.value.materialMode = 'wireframe'
+      composable.modelConfig.value.showSkeleton = true
       await nextTick()
 
       expect(mockLoad3d.setUpDirection).toHaveBeenCalledWith('+y')
       expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('wireframe')
+      expect(mockLoad3d.setShowSkeleton).toHaveBeenCalledWith(true)
       const savedModelConfig = mockNode.properties['Model Config'] as Record<
         string,
         unknown
       >
       expect(savedModelConfig.upDirection).toBe('+y')
       expect(savedModelConfig.materialMode).toBe('wireframe')
-      expect(savedModelConfig.showSkeleton).toBe(false)
+      expect(savedModelConfig.showSkeleton).toBe(true)
     })
 
     it('should update camera config when values change', async () => {
@@ -906,6 +1096,68 @@ describe('useLoad3d', () => {
       expect(composable.modelConfig.value.materialMode).toBe('wireframe')
     })
 
+    it('applies scalar Load3d events to config refs', async () => {
+      const handlers: Record<string, (value: unknown) => void> = {}
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          handlers[event] = handler as (value: unknown) => void
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      handlers.backgroundColorChange('#123456')
+      handlers.backgroundRenderModeChange('panorama')
+      handlers.lightIntensityChange(8)
+      handlers.fovChange(60)
+      handlers.cameraTypeChange('orthographic')
+      handlers.showGridChange(false)
+      handlers.upDirectionChange('-z')
+      handlers.backgroundImageChange('scene.jpg')
+
+      expect(composable.sceneConfig.value).toMatchObject({
+        backgroundColor: '#123456',
+        backgroundRenderMode: 'panorama',
+        showGrid: false,
+        backgroundImage: 'scene.jpg'
+      })
+      expect(composable.lightConfig.value.intensity).toBe(8)
+      expect(composable.cameraConfig.value).toMatchObject({
+        fov: 60,
+        cameraType: 'orthographic'
+      })
+      expect(composable.modelConfig.value.upDirection).toBe('-z')
+    })
+
+    it('should handle background image loading events', async () => {
+      let startHandler: (() => void) | undefined
+      let endHandler: (() => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'backgroundImageLoadingStart') {
+            startHandler = handler as () => void
+          } else if (event === 'backgroundImageLoadingEnd') {
+            endHandler = handler as () => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      startHandler?.()
+      expect(composable.loading.value).toBe(true)
+      expect(composable.loadingMessage.value).toBe(
+        'load3d.loadingBackgroundImage'
+      )
+
+      endHandler?.()
+      expect(composable.loading.value).toBe(false)
+      expect(composable.loadingMessage.value).toBe('')
+    })
+
     it('should handle loading events', async () => {
       let modelLoadingStartHandler: (() => void) | undefined
       let modelLoadingEndHandler: (() => void) | undefined
@@ -934,6 +1186,70 @@ describe('useLoad3d', () => {
       expect(composable.loadingMessage.value).toBe('')
     })
 
+    it('handles stale modelLoadingEnd after cleanup with fallback model state', async () => {
+      let modelLoadingEndHandler: (() => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadingEnd') {
+            modelLoadingEndHandler = handler as () => void
+          }
+        }
+      )
+
+      vi.mocked(mockLoad3d.isSplatModel!).mockReturnValue(true)
+      vi.mocked(mockLoad3d.isPlyModel!).mockReturnValue(true)
+      vi.mocked(mockLoad3d.getSourceFormat!).mockReturnValue('splat')
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      composable.cleanup()
+
+      modelLoadingEndHandler?.()
+
+      expect(composable.isSplatModel.value).toBe(false)
+      expect(composable.isPlyModel.value).toBe(false)
+      expect(composable.sourceFormat.value).toBeNull()
+      expect(composable.canFitToViewer.value).toBe(true)
+      expect(composable.canUseGizmo.value).toBe(true)
+      expect(composable.canUseLighting.value).toBe(true)
+      expect(composable.canExport.value).toBe(true)
+    })
+
+    it('uses fallback model capabilities when Load3d returns none', async () => {
+      let modelLoadingEndHandler: (() => void) | undefined
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadingEnd') {
+            modelLoadingEndHandler = handler as () => void
+          }
+        }
+      )
+      vi.mocked(mockLoad3d.isSplatModel!).mockReturnValue(true)
+      vi.mocked(mockLoad3d.getSourceFormat!).mockReturnValue('splat')
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockReturnValue(
+        fromAny(undefined)
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      modelLoadingEndHandler?.()
+
+      expect(composable.isSplatModel.value).toBe(true)
+      expect(composable.sourceFormat.value).toBe('splat')
+      expect(composable.canCenterCameraOnModel.value).toBe(true)
+      expect(composable.canFitToViewer.value).toBe(true)
+      expect(composable.canUseGizmo.value).toBe(true)
+      expect(composable.canUseLighting.value).toBe(true)
+      expect(composable.canExport.value).toBe(true)
+      expect(composable.materialModes.value).toEqual([
+        'original',
+        'normal',
+        'wireframe'
+      ])
+    })
+
     it('should handle recordingStatusChange event', async () => {
       let recordingStatusHandler: ((status: boolean) => void) | undefined
 
@@ -956,6 +1272,70 @@ describe('useLoad3d', () => {
       expect(composable.recordingDuration.value).toBe(10)
       expect(composable.hasRecording.value).toBe(true)
     })
+
+    it('should handle recordingStatusChange true without recording duration update', async () => {
+      let recordingStatusHandler: ((status: boolean) => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'recordingStatusChange') {
+            recordingStatusHandler = handler as (status: boolean) => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      recordingStatusHandler?.(true)
+
+      expect(composable.isRecording.value).toBe(true)
+      expect(mockLoad3d.getRecordingDuration).not.toHaveBeenCalled()
+    })
+
+    it('should use the default export loading message when none is provided', async () => {
+      let exportLoadingStartHandler: ((message: string) => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'exportLoadingStart') {
+            exportLoadingStartHandler = handler as (message: string) => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      exportLoadingStartHandler?.('')
+
+      expect(composable.loading.value).toBe(true)
+      expect(composable.loadingMessage.value).toBe('load3d.exportingModel')
+    })
+
+    it('handles export completion and animation list events', async () => {
+      const handlers: Record<string, (value?: unknown) => void> = {}
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          handlers[event] = handler as (value?: unknown) => void
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      handlers.exportLoadingStart('Exporting GLB')
+      expect(composable.loading.value).toBe(true)
+      expect(composable.loadingMessage.value).toBe('Exporting GLB')
+
+      handlers.exportLoadingEnd()
+      expect(composable.loading.value).toBe(false)
+      expect(composable.loadingMessage.value).toBe('')
+
+      const animations = [{ name: 'Idle', index: 0 }]
+      handlers.animationListChange(animations)
+      expect(composable.animations.value).toEqual(animations)
+    })
   })
 
   describe('cleanup', () => {
@@ -976,6 +1356,19 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(mockNode)
 
       expect(() => composable.cleanup()).not.toThrow()
+    })
+
+    it('stops cleanup early when the node ref is already cleared', async () => {
+      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      nodeRef.value = null
+      composable.cleanup()
+
+      expect(mockLoad3d.removeEventListener).toHaveBeenCalled()
+      expect(mockLoad3d.remove).not.toHaveBeenCalled()
+      expect(nodeToLoad3dMap.has(mockNode)).toBe(true)
     })
   })
 
@@ -1005,6 +1398,62 @@ describe('useLoad3d', () => {
       expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
       expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
         'http://localhost/api/view/uploaded/model.glb'
+      )
+    })
+
+    it('updates model_file widget values after a successful model drop', async () => {
+      const modelWidget = {
+        name: 'model_file',
+        value: '',
+        options: { values: ['existing.glb'] }
+      } as unknown as IWidget
+      mockNode.widgets!.push(modelWidget)
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        'uploaded',
+        'model.glb'
+      ])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/api/view/uploaded/model.glb'
+      )
+      vi.mocked(api.apiURL).mockReturnValue(
+        'http://localhost/api/view/uploaded/model.glb'
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      await composable.handleModelDrop(
+        new File([''], 'model.glb', { type: 'model/gltf-binary' })
+      )
+
+      expect(modelWidget.value).toBe('uploaded/model.glb')
+      expect(modelWidget.options.values).toEqual([
+        'existing.glb',
+        'uploaded/model.glb'
+      ])
+    })
+
+    it('uses output resource URLs when dropping a model into preview mode', async () => {
+      mockNode.widgets = []
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        'uploaded',
+        'model.glb'
+      ])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/api/view/uploaded/model.glb'
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      await composable.handleModelDrop(
+        new File([''], 'model.glb', { type: 'model/gltf-binary' })
+      )
+
+      expect(Load3dUtils.getResourceURL).toHaveBeenCalledWith(
+        'uploaded',
+        'model.glb',
+        'output'
       )
     })
 
@@ -1046,6 +1495,69 @@ describe('useLoad3d', () => {
       expect(mockToastStore.addAlert).toHaveBeenCalledWith(
         'toastMessages.no3dScene'
       )
+    })
+
+    it('returns before upload when the node ref is cleared after initialization', async () => {
+      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+      nodeRef.value = null
+
+      await composable.handleModelDrop(
+        new File([''], 'model.glb', { type: 'model/gltf-binary' })
+      )
+
+      expect(Load3dUtils.uploadFile).not.toHaveBeenCalled()
+    })
+
+    it('shows an upload failure alert when model upload returns no path', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('')
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      await composable.handleModelDrop(
+        new File([''], 'model.glb', { type: 'model/gltf-binary' })
+      )
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.fileUploadFailed'
+      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
+      expect(composable.loading.value).toBe(false)
+      expect(composable.loadingMessage.value).toBe('')
+    })
+
+    it('shows a load failure alert when model loading throws', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        'uploaded',
+        'model.glb'
+      ])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/api/view/uploaded/model.glb'
+      )
+      vi.mocked(mockLoad3d.loadModel!).mockRejectedValueOnce(
+        new Error('bad model')
+      )
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      await composable.handleModelDrop(
+        new File([''], 'model.glb', { type: 'model/gltf-binary' })
+      )
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Model drop failed:',
+        expect.any(Error)
+      )
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.failedToLoadModel'
+      )
+      expect(composable.loading.value).toBe(false)
+      expect(composable.loadingMessage.value).toBe('')
+
+      errorSpy.mockRestore()
     })
   })
 
@@ -1092,6 +1604,40 @@ describe('useLoad3d', () => {
       expect(mockLoad3d.setHDRIIntensity).toHaveBeenCalledWith(2.5)
     })
 
+    it('restores non-HDRI light intensity when HDRI is disabled', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.lightConfig.value.intensity = 8
+      await nextTick()
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: { ...composable.lightConfig.value.hdri!, enabled: true }
+      }
+      await nextTick()
+      composable.lightConfig.value.intensity = 1
+      await nextTick()
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: { ...composable.lightConfig.value.hdri!, enabled: false }
+      }
+      await nextTick()
+
+      expect(composable.lightConfig.value.intensity).toBe(8)
+      expect(mockLoad3d.setHDRIEnabled).toHaveBeenLastCalledWith(false)
+    })
+
+    it('should ignore HDRI updates before Load3d is initialized', async () => {
+      const composable = useLoad3d(mockNode)
+
+      await composable.handleHDRIFileUpdate(
+        new File([''], 'env.hdr', { type: 'image/x-hdr' })
+      )
+
+      expect(Load3dUtils.uploadFile).not.toHaveBeenCalled()
+    })
+
     it('should upload file, load HDRI and update hdriConfig', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('3d/env.hdr')
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
@@ -1115,6 +1661,100 @@ describe('useLoad3d', () => {
       )
       expect(composable.lightConfig.value.hdri!.hdriPath).toBe('3d/env.hdr')
       expect(composable.lightConfig.value.hdri!.enabled).toBe(true)
+    })
+
+    it('skips HDRI loading when the Load3d instance changes after upload', async () => {
+      const composable = useLoad3d(mockNode)
+      vi.mocked(Load3dUtils.uploadFile).mockImplementation(async () => {
+        composable.cleanup()
+        return '3d/env.hdr'
+      })
+
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      await composable.handleHDRIFileUpdate(
+        new File([''], 'env.hdr', { type: 'image/x-hdr' })
+      )
+
+      expect(mockLoad3d.loadHDRI).not.toHaveBeenCalled()
+      expect(composable.lightConfig.value.hdri!.hdriPath).toBe('')
+    })
+
+    it('skips HDRI state updates when the Load3d instance changes after load', async () => {
+      const composable = useLoad3d(mockNode)
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('3d/env.hdr')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/view?filename=env.hdr'
+      )
+      vi.mocked(api.apiURL).mockReturnValue(
+        'http://localhost/view?filename=env.hdr'
+      )
+      vi.mocked(mockLoad3d.loadHDRI!).mockImplementation(async () => {
+        composable.cleanup()
+      })
+
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      await composable.handleHDRIFileUpdate(
+        new File([''], 'env.hdr', { type: 'image/x-hdr' })
+      )
+
+      expect(mockLoad3d.loadHDRI).toHaveBeenCalled()
+      expect(composable.lightConfig.value.hdri!.hdriPath).toBe('')
+      expect(composable.loading.value).toBe(false)
+      expect(composable.loadingMessage.value).toBe('')
+    })
+
+    it('should leave HDRI state unchanged when upload returns no path', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('')
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      await composable.handleHDRIFileUpdate(
+        new File([''], 'env.hdr', { type: 'image/x-hdr' })
+      )
+
+      expect(mockLoad3d.loadHDRI).not.toHaveBeenCalled()
+      expect(composable.lightConfig.value.hdri!.hdriPath).toBe('')
+      expect(composable.loading.value).toBe(false)
+      expect(composable.loadingMessage.value).toBe('')
+    })
+
+    it('should clear HDRI and show an alert when HDRI loading fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('3d/bad.hdr')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'bad.hdr'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/view?filename=bad.hdr'
+      )
+      vi.mocked(api.apiURL).mockReturnValue(
+        'http://localhost/view?filename=bad.hdr'
+      )
+      vi.mocked(mockLoad3d.loadHDRI!).mockRejectedValueOnce(
+        new Error('bad hdri')
+      )
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      await composable.handleHDRIFileUpdate(
+        new File([''], 'bad.hdr', { type: 'image/x-hdr' })
+      )
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to load HDRI:',
+        expect.any(Error)
+      )
+      expect(mockLoad3d.clearHDRI).toHaveBeenCalled()
+      expect(composable.lightConfig.value.hdri!.hdriPath).toBe('')
+      expect(composable.lightConfig.value.hdri!.enabled).toBe(false)
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.failedToLoadHDRI'
+      )
+      expect(composable.loading.value).toBe(false)
+      expect(composable.loadingMessage.value).toBe('')
+
+      errorSpy.mockRestore()
     })
 
     it('should clear HDRI when file is null', async () => {
@@ -1180,6 +1820,23 @@ describe('useLoad3d', () => {
 
       expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith('existing.jpg')
     })
+
+    it('skips background color updates while HDRI is enabled', async () => {
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: { ...composable.lightConfig.value.hdri!, enabled: true }
+      }
+      await nextTick()
+      vi.mocked(mockLoad3d.setBackgroundColor!).mockClear()
+
+      composable.sceneConfig.value.backgroundColor = '#ffffff'
+      await nextTick()
+
+      expect(mockLoad3d.setBackgroundColor).not.toHaveBeenCalled()
+    })
   })
 
   describe('gizmo controls', () => {
@@ -1217,6 +1874,37 @@ describe('useLoad3d', () => {
         rotation: { x: 0.1, y: 0.2, z: 0.3 },
         scale: { x: 2, y: 2, z: 2 }
       })
+    })
+
+    it('applies restored gizmo config after model loading ends', async () => {
+      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+        {
+          enabled: true,
+          mode: 'rotate',
+          position: { x: 1, y: 2, z: 3 },
+          rotation: { x: 0.1, y: 0.2, z: 0.3 },
+          scale: { x: 2, y: 2, z: 2 }
+        }
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      vi.mocked(mockLoad3d.applyGizmoTransform!).mockClear()
+      vi.mocked(mockLoad3d.setGizmoEnabled!).mockClear()
+      vi.mocked(mockLoad3d.setGizmoMode!).mockClear()
+
+      const loadingEndCall = vi
+        .mocked(mockLoad3d.addEventListener!)
+        .mock.calls.find(([event]) => event === 'modelLoadingEnd')
+      const loadingEndHandler = loadingEndCall![1] as () => void
+      loadingEndHandler()
+
+      expect(mockLoad3d.applyGizmoTransform).toHaveBeenCalledWith(
+        { x: 1, y: 2, z: 3 },
+        { x: 0.1, y: 0.2, z: 0.3 },
+        { x: 2, y: 2, z: 2 }
+      )
+      expect(mockLoad3d.setGizmoEnabled).toHaveBeenCalledWith(true)
+      expect(mockLoad3d.setGizmoMode).toHaveBeenCalledWith('rotate')
     })
 
     it('should add default gizmo config when missing from saved config', async () => {
@@ -1581,6 +2269,29 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('captures thumbnail from an image widget when no model_file widget exists', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '',
+        'preview.png'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [
+        { name: 'image', value: 'preview.png' } as unknown as IWidget
+      ]
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'preview.png',
+        expect.any(Blob)
+      )
+    })
+
     it('skips persistence when the model widget has no value', async () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
@@ -1839,6 +2550,29 @@ describe('useLoad3d', () => {
       expect(isLoad3dSceneDirty(mockNode)).toBe(true)
     })
 
+    it('cameraChanged creates camera properties when the node has none', async () => {
+      let cameraChangedHandler: ((state: unknown) => void) | undefined
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'cameraChanged') {
+            cameraChangedHandler = handler as (state: unknown) => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      mockNode.properties = undefined as unknown as LGraphNode['properties']
+
+      cameraChangedHandler!({ position: { x: 1, y: 2, z: 3 } })
+
+      expect(mockNode.properties['Camera Config']).toEqual({
+        cameraType: 'perspective',
+        fov: 75,
+        state: { position: { x: 1, y: 2, z: 3 } }
+      })
+    })
+
     it('handleStopRecording marks dirty when a recording was produced', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1907,6 +2641,27 @@ describe('useLoad3d', () => {
 
       expect(mockLoad3d.centerCameraOnModel).toHaveBeenCalledTimes(1)
       expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('handleCenterCameraOnModel is a no-op before initialization', () => {
+      const composable = useLoad3d(mockNode)
+
+      composable.handleCenterCameraOnModel()
+
+      expect(mockLoad3d.centerCameraOnModel).not.toHaveBeenCalled()
+    })
+
+    it('handleSeek is a no-op before animation duration is known', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      composable.handleSeek(50)
+
+      expect(mockLoad3d.setAnimationTime).not.toHaveBeenCalled()
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
     })
 
     it('handleSeek marks dirty when the animation has a duration', async () => {

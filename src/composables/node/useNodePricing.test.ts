@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import {
@@ -12,6 +15,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -123,6 +127,35 @@ function createMockNode(
   })
 }
 
+async function resolveDisplayPrice(
+  node: LGraphNode,
+  widgetOverrides?: ReadonlyMap<string, unknown>
+): Promise<string> {
+  const { getNodeDisplayPrice } = useNodePricing()
+  getNodeDisplayPrice(node, widgetOverrides)
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  return getNodeDisplayPrice(node, widgetOverrides)
+}
+
+function createStoredNodeDef(
+  name: string,
+  price_badge?: PriceBadge
+): ComfyNodeDef {
+  return {
+    name,
+    display_name: name,
+    description: '',
+    category: 'test',
+    input: { required: {}, optional: {} },
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false,
+    python_module: 'test',
+    price_badge
+  } as ComfyNodeDef
+}
+
 // -----------------------------------------------------------------------------
 // Tests
 // -----------------------------------------------------------------------------
@@ -189,6 +222,32 @@ describe('useNodePricing', () => {
       expect(price).toBe(creditsLabel(0.5))
     })
 
+    it('should parse numeric strings and reject blank or invalid numbers', async () => {
+      const expression =
+        '{"type":"usd","usd": (widgets.count != null) ? widgets.count * 0.01 : 0.20}'
+      const badge = priceBadge(expression, [{ name: 'count', type: 'INT' }])
+
+      const parsedNode = createMockNodeWithPriceBadge(
+        'TestNumericStringNode',
+        badge,
+        [{ name: 'count', value: ' 5 ' }]
+      )
+      const blankNode = createMockNodeWithPriceBadge(
+        'TestBlankNumericStringNode',
+        badge,
+        [{ name: 'count', value: '   ' }]
+      )
+      const invalidNode = createMockNodeWithPriceBadge(
+        'TestInvalidNumericStringNode',
+        badge,
+        [{ name: 'count', value: 'five' }]
+      )
+
+      expect(await resolveDisplayPrice(parsedNode)).toBe(creditsLabel(0.05))
+      expect(await resolveDisplayPrice(blankNode)).toBe(creditsLabel(0.2))
+      expect(await resolveDisplayPrice(invalidNode)).toBe(creditsLabel(0.2))
+    })
+
     it('should handle COMBO widget with numeric value', async () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
@@ -222,6 +281,19 @@ describe('useNodePricing', () => {
       expect(price).toBe(creditsLabel(0.1))
     })
 
+    it('should preserve boolean combo values', async () => {
+      const node = createMockNodeWithPriceBadge(
+        'TestComboBooleanNode',
+        priceBadge(
+          '(widgets.enabled = false) ? {"type":"usd","usd":0.04} : {"type":"usd","usd":0.08}',
+          [{ name: 'enabled', type: 'COMBO' }]
+        ),
+        [{ name: 'enabled', value: false }]
+      )
+
+      expect(await resolveDisplayPrice(node)).toBe(creditsLabel(0.04))
+    })
+
     it('should handle BOOLEAN widget', async () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
@@ -236,6 +308,64 @@ describe('useNodePricing', () => {
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.1))
+    })
+
+    it('should parse BOOLEAN widget string values', async () => {
+      const badge = priceBadge(
+        '{"type":"usd","usd": widgets.premium ? 0.10 : 0.05}',
+        [{ name: 'premium', type: 'BOOLEAN' }]
+      )
+      const enabledNode = createMockNodeWithPriceBadge(
+        'TestBooleanStringTrueNode',
+        badge,
+        [{ name: 'premium', value: ' TRUE ' }]
+      )
+      const disabledNode = createMockNodeWithPriceBadge(
+        'TestBooleanStringFalseNode',
+        badge,
+        [{ name: 'premium', value: 'false' }]
+      )
+
+      expect(await resolveDisplayPrice(enabledNode)).toBe(creditsLabel(0.1))
+      expect(await resolveDisplayPrice(disabledNode)).toBe(creditsLabel(0.05))
+    })
+
+    it('should reject invalid BOOLEAN strings', async () => {
+      const node = createMockNodeWithPriceBadge(
+        'TestInvalidBooleanStringNode',
+        priceBadge(
+          '{"type":"usd","usd": widgets.premium = null ? 0.05 : 0.10}',
+          [{ name: 'premium', type: 'BOOLEAN' }]
+        ),
+        [{ name: 'premium', value: 'sometimes' }]
+      )
+
+      expect(await resolveDisplayPrice(node)).toBe(creditsLabel(0.05))
+    })
+
+    it('should reject non-boolean values for BOOLEAN widgets', async () => {
+      const node = createMockNodeWithPriceBadge(
+        'TestInvalidBooleanNumberNode',
+        priceBadge(
+          '{"type":"usd","usd": widgets.premium = null ? 0.05 : 0.10}',
+          [{ name: 'premium', type: 'BOOLEAN' }]
+        ),
+        [{ name: 'premium', value: 1 }]
+      )
+
+      expect(await resolveDisplayPrice(node)).toBe(creditsLabel(0.05))
+    })
+
+    it('should reject object values for numeric widgets', async () => {
+      const node = createMockNodeWithPriceBadge(
+        'TestObjectNumericNode',
+        priceBadge('{"type":"usd","usd": widgets.count = null ? 0.05 : 0.10}', [
+          { name: 'count', type: 'INT' }
+        ]),
+        [{ name: 'count', value: { count: 5 } }]
+      )
+
+      expect(await resolveDisplayPrice(node)).toBe(creditsLabel(0.05))
     })
 
     it('should handle STRING widget (lowercased)', async () => {
@@ -468,6 +598,42 @@ describe('useNodePricing', () => {
     })
   })
 
+  describe('dependency context', () => {
+    it('should prefer widget overrides over node widget values', async () => {
+      const node = createMockNodeWithPriceBadge(
+        'TestWidgetOverrideNode',
+        priceBadge('{"type":"usd","usd": widgets.count * 0.01}', [
+          { name: 'count', type: 'INT' }
+        ]),
+        [{ name: 'count', value: 2 }]
+      )
+
+      const price = await resolveDisplayPrice(node, new Map([['count', '7']]))
+
+      expect(price).toBe(creditsLabel(0.07))
+    })
+
+    it('should treat missing input group arrays as zero connected inputs', async () => {
+      const node = Object.assign(createMockLGraphNode(), {
+        widgets: [],
+        constructor: {
+          nodeData: {
+            name: 'TestMissingInputGroupArrayNode',
+            api_node: true,
+            price_badge: priceBadge(
+              '{"type":"usd","usd": (inputGroups.images = 0) ? 0.05 : 0.10}',
+              [],
+              [],
+              ['images']
+            )
+          }
+        }
+      })
+
+      expect(await resolveDisplayPrice(node)).toBe(creditsLabel(0.05))
+    })
+  })
+
   describe('edge cases', () => {
     it('should return empty string for non-API nodes', () => {
       const { getNodeDisplayPrice } = useNodePricing()
@@ -541,6 +707,43 @@ describe('useNodePricing', () => {
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
     })
+
+    it('should default missing price badge engine and dependency arrays', async () => {
+      const bareBadge = {
+        expr: '{"type":"usd","usd":0.05}'
+      } as PriceBadge
+      const node = createMockNodeWithPriceBadge('TestBareBadgeNode', bareBadge)
+
+      expect(await resolveDisplayPrice(node)).toBe(creditsLabel(0.05))
+
+      const { getNodePricingConfig } = useNodePricing()
+      expect(getNodePricingConfig(node)).toMatchObject({
+        engine: 'jsonata',
+        depends_on: {
+          widgets: [],
+          inputs: [],
+          input_groups: []
+        }
+      })
+    })
+
+    it('should ignore non-jsonata pricing engines', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestUnsupportedEngineNode',
+        fromAny<PriceBadge, unknown>({
+          engine: 'literal',
+          expr: '{"type":"usd","usd":0.05}',
+          depends_on: {
+            widgets: [],
+            inputs: [],
+            input_groups: []
+          }
+        })
+      )
+
+      expect(getNodeDisplayPrice(node)).toBe('')
+    })
   })
 
   describe('getNodePricingConfig', () => {
@@ -592,6 +795,107 @@ describe('useNodePricing', () => {
       // _compiled is the runtime JSONata instance and must not be exposed to
       // tooling/debug consumers.
       expect(config).not.toHaveProperty('_compiled')
+    })
+  })
+
+  describe('node type pricing dependencies', () => {
+    beforeEach(() => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+    })
+
+    it('returns empty dependency metadata for node types without pricing', () => {
+      const store = useNodeDefStore()
+      store.addNodeDef(createStoredNodeDef('UnpricedNode'))
+      const {
+        getInputGroupPrefixes,
+        getInputNames,
+        getRelevantWidgetNames,
+        hasDynamicPricing
+      } = useNodePricing()
+
+      expect(getRelevantWidgetNames('UnpricedNode')).toEqual([])
+      expect(hasDynamicPricing('UnpricedNode')).toBe(false)
+      expect(getInputGroupPrefixes('UnpricedNode')).toEqual([])
+      expect(getInputNames('UnpricedNode')).toEqual([])
+    })
+
+    it('dedupes dynamic pricing dependencies while preserving order', () => {
+      const store = useNodeDefStore()
+      store.addNodeDef(
+        createStoredNodeDef(
+          'DynamicPricingNode',
+          priceBadge(
+            '{"type":"usd","usd":0.05}',
+            [
+              { name: 'seed', type: 'INT' },
+              { name: 'quality', type: 'COMBO' }
+            ],
+            ['image', 'seed'],
+            ['clips', 'image']
+          )
+        )
+      )
+      const {
+        getInputGroupPrefixes,
+        getInputNames,
+        getRelevantWidgetNames,
+        hasDynamicPricing
+      } = useNodePricing()
+
+      expect(getRelevantWidgetNames('DynamicPricingNode')).toEqual([
+        'seed',
+        'quality',
+        'image',
+        'clips'
+      ])
+      expect(hasDynamicPricing('DynamicPricingNode')).toBe(true)
+      expect(getInputGroupPrefixes('DynamicPricingNode')).toEqual([
+        'clips',
+        'image'
+      ])
+      expect(getInputNames('DynamicPricingNode')).toEqual(['image', 'seed'])
+    })
+
+    it('handles fixed pricing metadata without dependencies', () => {
+      const store = useNodeDefStore()
+      store.addNodeDef(
+        createStoredNodeDef(
+          'FixedPricingNode',
+          priceBadge('{"type":"usd","usd":0.05}')
+        )
+      )
+      const {
+        getInputGroupPrefixes,
+        getInputNames,
+        getRelevantWidgetNames,
+        hasDynamicPricing
+      } = useNodePricing()
+
+      expect(getRelevantWidgetNames('FixedPricingNode')).toEqual([])
+      expect(hasDynamicPricing('FixedPricingNode')).toBe(false)
+      expect(getInputGroupPrefixes('FixedPricingNode')).toEqual([])
+      expect(getInputNames('FixedPricingNode')).toEqual([])
+    })
+
+    it('handles price badges with omitted dependency metadata', () => {
+      const store = useNodeDefStore()
+      store.addNodeDef(
+        createStoredNodeDef('BareDependencyNode', {
+          engine: 'jsonata',
+          expr: '{"type":"usd","usd":0.05}'
+        } as PriceBadge)
+      )
+      const {
+        getInputGroupPrefixes,
+        getInputNames,
+        getRelevantWidgetNames,
+        hasDynamicPricing
+      } = useNodePricing()
+
+      expect(getRelevantWidgetNames('BareDependencyNode')).toEqual([])
+      expect(hasDynamicPricing('BareDependencyNode')).toBe(false)
+      expect(getInputGroupPrefixes('BareDependencyNode')).toEqual([])
+      expect(getInputNames('BareDependencyNode')).toEqual([])
     })
   })
 
@@ -654,6 +958,20 @@ describe('useNodePricing', () => {
 
       expect(second).toBe(first)
       expect(pricingRevision.value).toBe(tickAfterFirst)
+    })
+
+    it('does not schedule duplicate work for the same in-flight signature', async () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestInFlightSignatureNode',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
+
+      expect(getNodeDisplayPrice(node)).toBe('')
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await new Promise((r) => setTimeout(r, 50))
+
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05))
     })
   })
 
@@ -741,6 +1059,16 @@ describe('useNodePricing', () => {
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
+    })
+
+    it('should reuse the cached empty label after runtime failures', async () => {
+      const node = createMockNodeWithPriceBadge(
+        'TestCachedRuntimeErrorNode',
+        priceBadge('$lookup(undefined, "key")')
+      )
+
+      expect(await resolveDisplayPrice(node)).toBe('')
+      expect(await resolveDisplayPrice(node)).toBe('')
     })
 
     it('should return empty string for invalid PricingResult type', async () => {
@@ -968,8 +1296,21 @@ describe('formatPricingResult', () => {
       expect(result).toBe('~10.6')
     })
 
+    it('should parse string usd values with default approximate formatting', () => {
+      const result = formatPricingResult(
+        { type: 'usd', usd: '0.05' },
+        { valueOnly: true, defaults: { approximate: true } }
+      )
+      expect(result).toBe('~10.6')
+    })
+
     it('should return empty for null usd', () => {
-      const result = formatPricingResult({ type: 'usd', usd: null as never })
+      const result = formatPricingResult({ type: 'usd', usd: null })
+      expect(result).toBe('')
+    })
+
+    it('should return empty for blank string usd', () => {
+      const result = formatPricingResult({ type: 'usd', usd: '   ' })
       expect(result).toBe('')
     })
   })
@@ -999,6 +1340,14 @@ describe('formatPricingResult', () => {
       )
       expect(result).toBe('10.6')
     })
+
+    it('should parse string range values with default approximate formatting', () => {
+      const result = formatPricingResult(
+        { type: 'range_usd', min_usd: '0.05', max_usd: '0.1' },
+        { valueOnly: true, defaults: { approximate: true } }
+      )
+      expect(result).toBe('~10.6-21.1')
+    })
   })
 
   describe('type: list_usd', () => {
@@ -1017,12 +1366,33 @@ describe('formatPricingResult', () => {
       )
       expect(result).toBe('10.6/21.1')
     })
+
+    it('should return valueOnly format with approximate prefix', () => {
+      const result = formatPricingResult(
+        { type: 'list_usd', usd: [0.05, 0.1] },
+        { valueOnly: true, defaults: { approximate: true } }
+      )
+      expect(result).toBe('~10.6/21.1')
+    })
+
+    it('should return empty when list value is not an array', () => {
+      const result = formatPricingResult({
+        type: 'list_usd',
+        usd: 'not-a-list'
+      })
+      expect(result).toBe('')
+    })
   })
 
   describe('type: text', () => {
     it('should return text as-is', () => {
       const result = formatPricingResult({ type: 'text', text: 'Free' })
       expect(result).toBe('Free')
+    })
+
+    it('should return empty when text is missing', () => {
+      const result = formatPricingResult({ type: 'text' })
+      expect(result).toBe('')
     })
   })
 
@@ -1168,6 +1538,20 @@ describe('evaluateNodeDefPricing', () => {
     expect(result).toBe('10.6')
   })
 
+  it('should evaluate price badges with omitted dependency metadata', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'BareNodeDefPriceBadge',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd":0.05}'
+      } as PriceBadge
+    })
+
+    const result = await evaluateNodeDefPricing(nodeDef)
+
+    expect(result).toBe('10.6')
+  })
+
   it('should use default value from input spec', async () => {
     const nodeDef = createMockNodeDef({
       name: 'DefaultValueNode',
@@ -1188,6 +1572,29 @@ describe('evaluateNodeDefPricing', () => {
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     expect(result).toBe('21.1') // 10 * 0.01 = 0.1 USD = 21.1 credits
+  })
+
+  it('should use default value from optional input spec', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'OptionalDefaultValueNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd": widgets.count * 0.01}',
+        depends_on: {
+          widgets: [{ name: 'count', type: 'INT' }],
+          inputs: [],
+          input_groups: []
+        }
+      },
+      input: {
+        required: {},
+        optional: {
+          count: ['INT', { default: 4 }]
+        }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    expect(result).toBe('8.4')
   })
 
   it('should use first option for COMBO without default', async () => {
@@ -1262,6 +1669,30 @@ describe('evaluateNodeDefPricing', () => {
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     // First option key is "model_a" = 0.05 USD
+    expect(result).toBe('10.6')
+  })
+
+  it('should handle combo option arrays with primitive values', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'PrimitiveOptionsNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd": widgets.mode = "fast" ? 0.05 : 0.10}',
+        depends_on: {
+          widgets: [{ name: 'mode', type: 'COMBO' }],
+          inputs: [],
+          input_groups: []
+        }
+      },
+      input: {
+        required: {
+          mode: ['COMBO', { options: ['fast', 'slow'] }]
+        }
+      }
+    })
+
+    const result = await evaluateNodeDefPricing(nodeDef)
+
     expect(result).toBe('10.6')
   })
 

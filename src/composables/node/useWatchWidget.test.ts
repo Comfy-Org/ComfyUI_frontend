@@ -151,13 +151,94 @@ describe('useComputedWithWidgetWatch', () => {
   })
 
   it('should handle nodes without widgets gracefully', () => {
-    const mockNode = createMockNode([])
+    const mockNode = Object.assign(createMockLGraphNode(), {
+      widgets: undefined
+    }) as LGraphNode
 
     const computedWithWidgetWatch = useComputedWithWidgetWatch(mockNode)
 
     const computedValue = computedWithWidgetWatch(() => 'no widgets')
 
     expect(computedValue.value).toBe('no widgets')
+  })
+
+  it('observes named input connection changes when requested', async () => {
+    const mockNode = Object.assign(
+      createMockNode([{ name: 'width', value: 1 }]),
+      {
+        inputs: [{ name: 'image' }],
+        onConnectionsChange: undefined as
+          | ((type: unknown, index: number, isConnected: boolean) => void)
+          | undefined
+      }
+    )
+
+    const computedWithWidgetWatch = useComputedWithWidgetWatch(mockNode, {
+      widgetNames: ['width', 'image'],
+      triggerCanvasRedraw: true
+    })
+
+    let runs = 0
+    const computedValue = computedWithWidgetWatch(() => ++runs)
+    expect(computedValue.value).toBe(1)
+
+    mockNode.onConnectionsChange?.('input', 0, true)
+    await nextTick()
+
+    expect(computedValue.value).toBe(2)
+    expect(mockNode.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
+
+  it('observes connection changes for watched inputs at non-zero slots', async () => {
+    const mockNode = Object.assign(
+      createMockNode([{ name: 'width', value: 1 }]),
+      {
+        inputs: [{ name: 'other' }, { name: 'image' }],
+        onConnectionsChange: undefined as
+          | ((type: unknown, index: number, isConnected: boolean) => void)
+          | undefined
+      }
+    )
+
+    const computedWithWidgetWatch = useComputedWithWidgetWatch(mockNode, {
+      widgetNames: ['width', 'image'],
+      triggerCanvasRedraw: true
+    })
+
+    let runs = 0
+    const computedValue = computedWithWidgetWatch(() => ++runs)
+    expect(computedValue.value).toBe(1)
+
+    mockNode.onConnectionsChange?.('input', 1, true)
+    await nextTick()
+
+    expect(computedValue.value).toBe(2)
+    expect(mockNode.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
+
+  it('ignores unobserved input connection changes', async () => {
+    const mockNode = Object.assign(
+      createMockNode([{ name: 'width', value: 1 }]),
+      {
+        inputs: [{ name: 'image' }],
+        onConnectionsChange: undefined as
+          | ((type: unknown, index: number, isConnected: boolean) => void)
+          | undefined
+      }
+    )
+
+    const computedWithWidgetWatch = useComputedWithWidgetWatch(mockNode, {
+      widgetNames: ['width', 'image']
+    })
+
+    let runs = 0
+    const computedValue = computedWithWidgetWatch(() => ++runs)
+    expect(computedValue.value).toBe(1)
+
+    mockNode.onConnectionsChange?.('input', 1, true)
+    await nextTick()
+
+    expect(computedValue.value).toBe(1)
   })
 
   it('should chain with existing widget callbacks', async () => {

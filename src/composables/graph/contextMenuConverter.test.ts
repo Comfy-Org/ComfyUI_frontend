@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 import {
@@ -359,6 +359,204 @@ describe('contextMenuConverter', () => {
         (opt) => opt.label === 'Extensions' && opt.type === 'category'
       )
       expect(hasExtensionsCategory).toBe(true)
+    })
+
+    it('skips items without content and duplicate equivalents', () => {
+      const result = convertContextMenuToOptions(
+        [
+          { content: '', callback: () => {} },
+          { content: 'Duplicate', callback: () => {} },
+          { content: 'Clone', callback: () => {} }
+        ],
+        undefined,
+        false
+      )
+
+      expect(result.map((option) => option.label)).toEqual(['Duplicate'])
+    })
+
+    it('wraps callbacks and reports callback errors', () => {
+      const callback = vi.fn()
+      const error = new Error('callback failed')
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const result = convertContextMenuToOptions(
+        [
+          { content: 'Run', value: 'run-value', callback },
+          {
+            content: 'Broken',
+            callback: () => {
+              throw error
+            }
+          },
+          { content: 'Disabled', disabled: true, callback: () => {} }
+        ],
+        undefined,
+        false
+      )
+
+      result[0].action?.()
+      result[1].action?.()
+
+      expect(callback).toHaveBeenCalledWith(
+        'run-value',
+        {},
+        undefined,
+        undefined,
+        expect.objectContaining({ content: 'Run' })
+      )
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error executing context menu callback:',
+        error
+      )
+      expect(result[2].action).toBeUndefined()
+
+      errorSpy.mockRestore()
+    })
+
+    it('converts static submenus and submenu callbacks', () => {
+      const submenuCallback = vi.fn()
+      const error = new Error('submenu failed')
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const result = convertContextMenuToOptions(
+        [
+          {
+            content: 'Static Submenu',
+            has_submenu: true,
+            submenu: {
+              options: [
+                '<b>ignored string without callback</b>',
+                null,
+                {
+                  content: '<b>Choice</b>',
+                  value: 'choice',
+                  callback: submenuCallback
+                },
+                {
+                  content: '<i>Disabled</i>',
+                  disabled: true
+                },
+                {
+                  content: '<span>Broken</span>',
+                  callback: () => {
+                    throw error
+                  }
+                },
+                { content: '' }
+              ]
+            }
+          }
+        ],
+        undefined,
+        false
+      )
+
+      const submenu = result[0].submenu ?? []
+      expect(result[0].hasSubmenu).toBe(true)
+      expect(submenu.map((option) => option.label)).toEqual([
+        '<b>ignored string without callback</b>',
+        'Choice',
+        'Disabled',
+        'Broken'
+      ])
+      expect(submenu[2].disabled).toBe(true)
+
+      submenu[1].action?.()
+      submenu[3].action?.()
+
+      expect(submenuCallback).toHaveBeenCalledWith(
+        'choice',
+        {},
+        undefined,
+        undefined,
+        expect.objectContaining({ content: '<b>Choice</b>' })
+      )
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error executing submenu callback:',
+        error
+      )
+
+      errorSpy.mockRestore()
+    })
+
+    it('captures dynamic submenus created by callbacks', () => {
+      const stringCallback = vi.fn()
+      const objectCallback = vi.fn()
+      const result = convertContextMenuToOptions(
+        [
+          {
+            content: 'Dynamic Submenu',
+            has_submenu: true,
+            callback: () => {
+              new LiteGraph.ContextMenu(
+                [
+                  'Auto',
+                  {
+                    content: '<b>Object choice</b>',
+                    value: 'object',
+                    callback: objectCallback
+                  }
+                ],
+                { callback: stringCallback, extra: { source: 'test' } }
+              )
+            }
+          }
+        ],
+        undefined,
+        false
+      )
+
+      const submenu = result[0].submenu ?? []
+      expect(result[0].hasSubmenu).toBe(true)
+      expect(submenu.map((option) => option.label)).toEqual([
+        'Auto',
+        'Object choice'
+      ])
+
+      submenu[0].action?.()
+      submenu[1].action?.()
+
+      expect(stringCallback).toHaveBeenCalledWith(
+        'Auto',
+        expect.objectContaining({ extra: { source: 'test' } }),
+        undefined,
+        undefined,
+        { source: 'test' }
+      )
+      expect(objectCallback).toHaveBeenCalledWith(
+        'object',
+        {},
+        undefined,
+        undefined,
+        expect.objectContaining({ content: '<b>Object choice</b>' })
+      )
+    })
+
+    it('warns when dynamic submenu callbacks fail to provide items', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const result = convertContextMenuToOptions(
+        [
+          {
+            content: 'Empty Dynamic Submenu',
+            has_submenu: true,
+            callback: () => {}
+          }
+        ],
+        undefined,
+        false
+      )
+
+      expect(result[0].hasSubmenu).toBe(true)
+      expect(result[0].submenu).toBeUndefined()
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[ContextMenuConverter] No items captured for:',
+        'Empty Dynamic Submenu'
+      )
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[ContextMenuConverter] Failed to capture submenu for:',
+        'Empty Dynamic Submenu'
+      )
+
+      warnSpy.mockRestore()
     })
   })
 })

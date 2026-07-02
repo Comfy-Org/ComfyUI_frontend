@@ -73,4 +73,45 @@ describe('useNodeAnimatedImage', () => {
     expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
     expect(canvasInteractionsMock.forwardEventToCanvas).not.toHaveBeenCalled()
   })
+
+  it('does nothing when a node has no images or widgets', () => {
+    const { showAnimatedPreview, removeAnimatedPreview } =
+      useNodeAnimatedImage()
+    const noImageNode = createMockMediaNode({ imgs: [] })
+    const noWidgetNode = Object.assign(
+      createMockMediaNode({ imgs: [document.createElement('img')] }),
+      { widgets: undefined }
+    )
+
+    showAnimatedPreview(noImageNode)
+    showAnimatedPreview(noWidgetNode)
+    removeAnimatedPreview(noWidgetNode)
+
+    expect(noImageNode.widgets).toHaveLength(0)
+  })
+
+  it('replaces the image in an existing preview widget', () => {
+    const { node, showAnimatedPreview } = setup()
+    const firstWidget = node.widgets[0]
+    const nextImage = document.createElement('img')
+    node.imgs = [nextImage]
+
+    showAnimatedPreview(node)
+
+    expect(node.widgets).toHaveLength(1)
+    expect(node.widgets[0]).toBe(firstWidget)
+    expect(firstWidget.element.firstChild).toBe(nextImage)
+  })
+
+  it('leaves an existing non-DOM preview widget untouched', () => {
+    const node = createMockMediaNode({ imgs: [document.createElement('img')] })
+    node.widgets.push({
+      name: '$$comfy_animation_preview',
+      element: undefined as unknown as HTMLElement
+    })
+
+    useNodeAnimatedImage().showAnimatedPreview(node)
+
+    expect(node.widgets).toHaveLength(1)
+  })
 })
