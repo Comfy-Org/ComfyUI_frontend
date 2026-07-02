@@ -1,6 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-export const DISABLED_COMMANDS_SETTING_ID = 'Comfy.UI.DisabledCommands'
+const DISABLED_COMMANDS_SETTING_ID = 'Comfy.UI.DisabledCommands'
 
 export function getDisabledCommands(): string[] {
   return useSettingStore().get(DISABLED_COMMANDS_SETTING_ID) ?? []
