@@ -115,6 +115,17 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards add-credit clicks with their source', () => {
+    new HostTelemetrySink().trackAddApiCreditButtonClicked({
+      source: 'avatar_menu'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
+      { source: 'avatar_menu' }
+    )
+  })
+
   it('does nothing when the host bridge is absent', () => {
     delete window.__comfyDesktop2
 

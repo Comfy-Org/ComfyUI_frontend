@@ -66,6 +66,6 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'subscribe_to_run' })
 }
 </script>
