@@ -30,9 +30,16 @@ export function usePreservedQueryDeepLink(namespace: string, key: string) {
   }
 
   const strip = () => {
-    const newQuery = { ...route.query }
-    delete newQuery[key]
-    void router.replace({ query: newQuery })
+    if (key in route.query) {
+      const newQuery = { ...route.query }
+      delete newQuery[key]
+      router.replace({ query: newQuery }).catch((error) => {
+        console.warn(
+          `[usePreservedQueryDeepLink] Failed to clean URL param "${key}":`,
+          error
+        )
+      })
+    }
     clearPreservedQuery(namespace)
   }
 

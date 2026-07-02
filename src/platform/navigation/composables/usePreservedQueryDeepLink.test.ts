@@ -84,5 +84,37 @@ describe('usePreservedQueryDeepLink', () => {
         'invite'
       )
     })
+
+    it('clears the preserved namespace without replacing when the key is absent', () => {
+      mockRouteQuery.value = { other: 'keep' }
+
+      const { strip } = usePreservedQueryDeepLink('invite', 'invite')
+      strip()
+
+      expect(mockRouterReplace).not.toHaveBeenCalled()
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'invite'
+      )
+    })
+
+    it('logs a warning when cleaning the URL param fails', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const replaceError = new Error('navigation guard rejected')
+      mockRouterReplace.mockRejectedValueOnce(replaceError)
+      mockRouteQuery.value = { invite: 'from-url' }
+
+      const { strip } = usePreservedQueryDeepLink('invite', 'invite')
+      strip()
+      await vi.waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('invite'),
+          replaceError
+        )
+      )
+
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'invite'
+      )
+    })
   })
 })
