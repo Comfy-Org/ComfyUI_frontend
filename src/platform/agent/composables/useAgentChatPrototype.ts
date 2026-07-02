@@ -8,10 +8,17 @@ export interface ToolCall {
   durationMs: number
 }
 
+export interface MessageAttachment {
+  name: string
+  type: string
+  url: string
+}
+
 interface AgentMessage {
   id: string
   role: 'user' | 'assistant'
   text: string
+  attachments?: readonly MessageAttachment[]
   thinking?: boolean
   toolCalls?: readonly ToolCall[]
 }
@@ -175,11 +182,22 @@ function streamReply(reply: string) {
   }, TOOL_CALLS_DELAY_MS)
 }
 
-function send(text?: string) {
+function send(text?: string, files: File[] = []) {
   const content = (text ?? input.value).trim()
   if (!content || status.value !== 'ready') return
 
-  messages.value.push({ id: nextId(), role: 'user', text: content })
+  const attachments: MessageAttachment[] = files.map((f) => ({
+    name: f.name,
+    type: f.type,
+    url: URL.createObjectURL(f)
+  }))
+
+  messages.value.push({
+    id: nextId(),
+    role: 'user',
+    text: content,
+    attachments: attachments.length ? attachments : undefined
+  })
   input.value = ''
   status.value = 'submitted'
 

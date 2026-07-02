@@ -8,11 +8,13 @@ import ConversationScrollButton from '@/components/ai-elements/conversation/Conv
 import Message from '@/components/ai-elements/message/Message.vue'
 import MessageAction from '@/components/ai-elements/message/MessageAction.vue'
 import MessageActions from '@/components/ai-elements/message/MessageActions.vue'
+import MessageAttachments from '@/components/ai-elements/message/MessageAttachments.vue'
 import MessageContent from '@/components/ai-elements/message/MessageContent.vue'
 import MessageResponse from '@/components/ai-elements/message/MessageResponse.vue'
 import MessageThinking from '@/components/ai-elements/message/MessageThinking.vue'
 import MessageToolCalls from '@/components/ai-elements/message/MessageToolCalls.vue'
 import PromptInput from '@/components/ai-elements/prompt-input/PromptInput.vue'
+import PromptInputAttachments from '@/components/ai-elements/prompt-input/PromptInputAttachments.vue'
 import PromptInputBody from '@/components/ai-elements/prompt-input/PromptInputBody.vue'
 import PromptInputButton from '@/components/ai-elements/prompt-input/PromptInputButton.vue'
 import PromptInputModelSelect from '@/components/ai-elements/prompt-input/PromptInputModelSelect.vue'
@@ -75,7 +77,12 @@ function onSubmit() {
     stop()
     return
   }
-  send()
+  send(undefined, attachments.value)
+  attachments.value = []
+}
+
+function removeAttachment(index: number) {
+  attachments.value = attachments.value.filter((_, i) => i !== index)
 }
 
 function close() {
@@ -148,7 +155,24 @@ function onNewChatFromHistory() {
             :key="message.id"
             :from="message.role"
           >
-            <MessageContent>
+            <!-- User messages: attachments float above the text bubble -->
+            <template v-if="message.role === 'user'">
+              <div class="flex flex-col items-end gap-2">
+                <MessageAttachments
+                  v-if="message.attachments?.length"
+                  :attachments="message.attachments"
+                />
+                <MessageContent v-if="message.text">
+                  <MessageResponse
+                    :content="message.text"
+                    class="agent-markdown"
+                  />
+                </MessageContent>
+              </div>
+            </template>
+
+            <!-- Assistant messages -->
+            <MessageContent v-else>
               <MessageThinking v-if="message.thinking" />
               <MessageToolCalls
                 v-else-if="message.toolCalls?.length"
@@ -165,7 +189,6 @@ function onNewChatFromHistory() {
               />
               <MessageActions
                 v-if="
-                  message.role === 'assistant' &&
                   message.text &&
                   (status === 'ready' ||
                     message !== messages[messages.length - 1])
@@ -206,6 +229,10 @@ function onNewChatFromHistory() {
           <div class="flex flex-col gap-2.5">
             <PromptInput @submit="onSubmit">
               <PromptInputBody>
+                <PromptInputAttachments
+                  :attachments="attachments"
+                  @remove="removeAttachment"
+                />
                 <PromptInputTextarea
                   ref="promptTextarea"
                   v-model="input"
