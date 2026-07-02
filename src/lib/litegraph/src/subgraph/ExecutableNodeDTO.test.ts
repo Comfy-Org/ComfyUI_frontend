@@ -8,8 +8,10 @@ import {
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 import {
   createNestedSubgraphs,
@@ -712,5 +714,375 @@ describe('ExecutableNodeDTO Scale Testing', () => {
       const dto = new ExecutableNodeDTO(node, path, new Map(), undefined)
       expect(dto.id).toBe(testCase.expectedId)
     }
+  })
+})
+
+describe('ExecutableNodeDTO error and edge branches', () => {
+  it('throws NullGraphError when the node has no graph', () => {
+    const orphan = new LGraphNode('Orphan')
+
+    expect(() => new ExecutableNodeDTO(orphan, [], new Map())).toThrow(
+      NullGraphError
+    )
+  })
+
+  it('returns itself from getInnerNodes for regular nodes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Plain')
+    graph.add(node)
+
+    const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+
+    expect(dto.getInnerNodes()).toEqual([dto])
+  })
+
+  it('throws InvalidLinkError for dangling input link ids', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Dangling')
+    node.addInput('in', 'IMAGE')
+    graph.add(node)
+    node.inputs[0].link = toLinkId(999)
+
+    const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+
+    expect(() => dto.resolveInput(0)).toThrow('No link found in parent graph')
+  })
+
+  function createBypassCycle() {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    a.addInput('in', 'IMAGE')
+    a.addOutput('out', 'IMAGE')
+    a.mode = LGraphEventMode.BYPASS
+    const b = new LGraphNode('B')
+    b.addInput('in', 'IMAGE')
+    b.addOutput('out', 'IMAGE')
+    b.mode = LGraphEventMode.BYPASS
+    graph.add(a)
+    graph.add(b)
+    a.connect(0, b, 0)
+    b.connect(0, a, 0)
+
+    const map = new Map()
+    const dtoA = new ExecutableNodeDTO(a, [], map, undefined)
+    const dtoB = new ExecutableNodeDTO(b, [], map, undefined)
+    map.set(dtoA.id, dtoA)
+    map.set(dtoB.id, dtoB)
+    return { dtoA }
+  }
+
+  it('throws a RecursionError when input resolution loops', () => {
+    const { dtoA } = createBypassCycle()
+
+    expect(() => dtoA.resolveInput(0)).toThrow('Circular reference detected')
+  })
+
+  it('throws a RecursionError when output resolution loops', () => {
+    const { dtoA } = createBypassCycle()
+
+    expect(() => dtoA.resolveOutput(0, 'IMAGE', new Set())).toThrow(
+      'Circular reference detected'
+    )
+  })
+
+  it('includes the subgraph path in recursion errors', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    a.addInput('in', 'IMAGE')
+    a.addOutput('out', 'IMAGE')
+    a.mode = LGraphEventMode.BYPASS
+    const b = new LGraphNode('B')
+    b.addInput('in', 'IMAGE')
+    b.addOutput('out', 'IMAGE')
+    b.mode = LGraphEventMode.BYPASS
+    graph.add(a)
+    graph.add(b)
+    a.connect(0, b, 0)
+    b.connect(0, a, 0)
+
+    const map = new Map()
+    const dtoA = new ExecutableNodeDTO(a, ['7'], map, undefined)
+    const dtoB = new ExecutableNodeDTO(b, ['7'], map, undefined)
+    map.set(dtoA.id, dtoA)
+    map.set(dtoB.id, dtoB)
+
+    expect(() => dtoA.resolveInput(0)).toThrow('at path 7')
+  })
+
+  describe('subgraph boundary resolution', () => {
+    function createBoundarySetup(options: { connectOuter?: boolean } = {}) {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'IMAGE' }],
+        outputs: [{ name: 'result', type: 'IMAGE' }]
+      })
+      const inner = new LGraphNode('Inner')
+      inner.addInput('in', 'IMAGE')
+      inner.addOutput('out', 'IMAGE')
+      subgraph.add(inner)
+      subgraph.inputs[0].connect(inner.inputs[0], inner)
+      subgraph.outputs[0].connect(inner.outputs[0], inner)
+
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      subgraph.rootGraph.add(subgraphNode)
+
+      // DTOs snapshot their input links, so wire the outer graph first.
+      let outer: LGraphNode | undefined
+      if (options.connectOuter) {
+        outer = new LGraphNode('Outer')
+        outer.addOutput('out', 'IMAGE')
+        subgraph.rootGraph.add(outer)
+        outer.connect(0, subgraphNode, 0)
+      }
+
+      const map = new Map()
+      if (outer) {
+        const outerDto = new ExecutableNodeDTO(outer, [], map)
+        map.set(outerDto.id, outerDto)
+      }
+      const subgraphNodeDto = new ExecutableNodeDTO(subgraphNode, [], map)
+      map.set(subgraphNodeDto.id, subgraphNodeDto)
+      const innerDto = new ExecutableNodeDTO(
+        inner,
+        [String(subgraphNode.id)],
+        map,
+        subgraphNode
+      )
+      map.set(innerDto.id, innerDto)
+
+      return {
+        subgraph,
+        inner,
+        outer,
+        subgraphNode,
+        map,
+        subgraphNodeDto,
+        innerDto
+      }
+    }
+
+    it('resolves inner node inputs through to the outer graph', () => {
+      const { outer, innerDto } = createBoundarySetup({ connectOuter: true })
+
+      const resolved = innerDto.resolveInput(0)
+
+      expect(resolved?.origin_id).toBe(String(outer!.id))
+      expect(resolved?.origin_slot).toBe(0)
+    })
+
+    it('returns undefined for unconnected subgraph inputs without widgets', () => {
+      const { innerDto } = createBoundarySetup()
+
+      expect(innerDto.resolveInput(0)).toBeUndefined()
+    })
+
+    it('returns the promoted widget value for widget-backed subgraph inputs', () => {
+      const { subgraphNode, innerDto } = createBoundarySetup()
+      subgraphNode.inputs[0].widgetId = widgetId(
+        subgraphNode.graph!.id,
+        subgraphNode.id,
+        'value'
+      )
+
+      const resolved = innerDto.resolveInput(0)
+
+      expect(resolved?.origin_slot).toBe(-1)
+      expect(resolved?.widgetInfo).toBeDefined()
+      expect(resolved?.origin_id).toBe(innerDto.id)
+    })
+
+    it('throws SlotIndexError when the subgraph node lacks the input slot', () => {
+      const { subgraphNode, innerDto } = createBoundarySetup()
+      // Characterises corruption handling: the subgraph node lost its slots.
+      subgraphNode.inputs.length = 0
+
+      expect(() => innerDto.resolveInput(0)).toThrow('No input found for slot')
+    })
+
+    it('resolves subgraph node outputs through the inner node', () => {
+      const { inner, subgraphNode, subgraphNodeDto } = createBoundarySetup()
+
+      const resolved = subgraphNodeDto.resolveOutput(0, 'IMAGE', new Set())
+
+      expect(resolved?.origin_id).toBe(`${subgraphNode.id}:${inner.id}`)
+      expect(resolved?.origin_slot).toBe(0)
+    })
+
+    it('throws SlotIndexError for missing subgraph output slots', () => {
+      const { subgraphNodeDto } = createBoundarySetup()
+
+      expect(() =>
+        subgraphNodeDto.resolveOutput(5, 'IMAGE', new Set())
+      ).toThrow('No output found for flattened id')
+    })
+
+    it('returns undefined when the subgraph output has no internal link', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'result', type: 'IMAGE' }]
+      })
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      subgraph.rootGraph.add(subgraphNode)
+      const map = new Map()
+      const dto = new ExecutableNodeDTO(subgraphNode, [], map)
+      map.set(dto.id, dto)
+
+      expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
+    })
+  })
+
+  describe('bypass slot matching', () => {
+    it('matches by slot index for wildcard target types', () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('Bypass')
+      node.addInput('in', 'IMAGE')
+      node.addOutput('out0', 'IMAGE')
+      node.addOutput('out1', 'IMAGE')
+      node.mode = LGraphEventMode.BYPASS
+      graph.add(node)
+
+      const map = new Map()
+      const dto = new ExecutableNodeDTO(node, [], map)
+      map.set(dto.id, dto)
+
+      // Both resolve through unconnected inputs, so the result is undefined,
+      // but neither is rejected as a failed type match.
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(dto.resolveOutput(0, '*', new Set())).toBeUndefined()
+      expect(dto.resolveOutput(1, '*', new Set())).toBeUndefined()
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
+
+    it('prefers an exact type match over the opposite slot index', () => {
+      const graph = new LGraph()
+      const source = new LGraphNode('Source')
+      source.addOutput('mask', 'MASK')
+      const node = new LGraphNode('Bypass')
+      node.addInput('image', 'IMAGE')
+      node.addInput('mask', 'MASK')
+      node.addOutput('mask', 'MASK')
+      node.mode = LGraphEventMode.BYPASS
+      graph.add(source)
+      graph.add(node)
+      source.connect(0, node, 1)
+
+      const map = new Map()
+      const sourceDto = new ExecutableNodeDTO(source, [], map)
+      map.set(sourceDto.id, sourceDto)
+      const dto = new ExecutableNodeDTO(node, [], map)
+      map.set(dto.id, dto)
+
+      const resolved = dto.resolveOutput(0, 'MASK', new Set())
+
+      expect(resolved?.origin_id).toBe(String(source.id))
+    })
+
+    it('warns and returns undefined when no input type matches', () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('Bypass')
+      node.addInput('in', 'IMAGE')
+      node.addOutput('out', 'IMAGE')
+      node.mode = LGraphEventMode.BYPASS
+      graph.add(node)
+
+      const map = new Map()
+      const dto = new ExecutableNodeDTO(node, [], map)
+      map.set(dto.id, dto)
+
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(dto.resolveOutput(0, 'MASK', new Set())).toBeUndefined()
+      expect(warn).toHaveBeenCalled()
+      warn.mockRestore()
+    })
+  })
+
+  it('resolves virtual nodes through their input link', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'IMAGE')
+    const virtualNode = new LGraphNode('Virtual Passthrough')
+    virtualNode.addInput('in', 'IMAGE')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    graph.add(source)
+    graph.add(virtualNode)
+    source.connect(0, virtualNode, 0)
+
+    const map = new Map()
+    const sourceDto = new ExecutableNodeDTO(source, [], map)
+    map.set(sourceDto.id, sourceDto)
+    const virtualDto = new ExecutableNodeDTO(virtualNode, [], map)
+    map.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+
+    expect(resolved?.origin_id).toBe(String(source.id))
+    expect(resolved?.origin_slot).toBe(0)
+  })
+})
+
+describe('ExecutableNodeDTO missing DTO map entries', () => {
+  it('throws when the upstream node DTO is missing from the map', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'IMAGE')
+    const target = new LGraphNode('Target')
+    target.addInput('in', 'IMAGE')
+    graph.add(source)
+    graph.add(target)
+    source.connect(0, target, 0)
+
+    const map = new Map()
+    const dto = new ExecutableNodeDTO(target, [], map)
+    map.set(dto.id, dto)
+
+    expect(() => dto.resolveInput(0)).toThrow('No output node DTO found')
+  })
+
+  it('throws when the containing subgraph node DTO is missing from the map', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'IMAGE' }]
+    })
+    const inner = new LGraphNode('Inner')
+    inner.addInput('in', 'IMAGE')
+    subgraph.add(inner)
+    subgraph.inputs[0].connect(inner.inputs[0], inner)
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(subgraphNode)
+    const outer = new LGraphNode('Outer')
+    outer.addOutput('out', 'IMAGE')
+    subgraph.rootGraph.add(outer)
+    outer.connect(0, subgraphNode, 0)
+
+    const map = new Map()
+    const innerDto = new ExecutableNodeDTO(
+      inner,
+      [String(subgraphNode.id)],
+      map,
+      subgraphNode
+    )
+    map.set(innerDto.id, innerDto)
+
+    expect(() => innerDto.resolveInput(0)).toThrow('No subgraph node DTO found')
+  })
+
+  it('throws when a virtual node input DTO is missing from the map', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'IMAGE')
+    const virtualNode = new LGraphNode('Virtual')
+    virtualNode.addInput('in', 'IMAGE')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    graph.add(source)
+    graph.add(virtualNode)
+    source.connect(0, virtualNode, 0)
+
+    // The virtual node resolves through its own input, whose DTO is missing.
+    const map = new Map()
+    const virtualDto = new ExecutableNodeDTO(virtualNode, [], map)
+
+    expect(() => virtualDto.resolveOutput(0, 'IMAGE', new Set())).toThrow(
+      'No input node DTO found'
+    )
   })
 })

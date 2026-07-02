@@ -33,4 +33,13 @@ describe('outputAsSerialisable', () => {
     const serialised = outputAsSerialisable(output as OutputSlotParam)
     expect(serialised.links).toBeNull()
   })
+
+  it('serialises only the widget name for outputs with widgets', () => {
+    const node = new LGraphNode('test')
+    const output = node.addOutput('out', 'number') as OutputSlotParam
+    output.widget = { name: 'my-widget', type: 'number' } as IWidget
+
+    const serialised = outputAsSerialisable(output)
+    expect(serialised.widget).toEqual({ name: 'my-widget' })
+  })
 })
