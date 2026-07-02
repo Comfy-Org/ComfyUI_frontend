@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -9,6 +10,10 @@ const typeformState = vi.hoisted(() => ({
   isValidTypeformId: true,
   typeformId: 'jmmzmlKw'
 }))
+
+const canvasState = vi.hoisted(() => ({ linearMode: true }))
+
+const helpCenterSpies = vi.hoisted(() => ({ toggleHelpCenter: vi.fn() }))
 
 vi.mock('@/platform/surveys/useTypeformEmbed', async () => {
   const { computed } = await import('vue')
@@ -26,7 +31,7 @@ vi.mock('@/composables/useHelpCenter', async () => {
   return {
     useHelpCenter: () => ({
       shouldShowRedDot: ref(false),
-      toggleHelpCenter: vi.fn()
+      toggleHelpCenter: helpCenterSpies.toggleHelpCenter
     })
   }
 })
@@ -36,9 +41,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { computed } = await import('vue')
+  const { computed, reactive } = await import('vue')
   return {
-    useCanvasStore: () => ({ linearMode: computed(() => true) })
+    useCanvasStore: () =>
+      reactive({ linearMode: computed(() => canvasState.linearMode) })
   }
 })
 
@@ -61,24 +67,28 @@ const i18n = createI18n({
 })
 
 function renderIcon() {
-  return render(SidebarHelpCenterIcon, {
+  const user = userEvent.setup()
+  const result = render(SidebarHelpCenterIcon, {
     props: { isSmall: false },
     global: {
       plugins: [i18n],
+      directives: { tooltip: {} },
       stubs: {
         Popover: {
           template: '<div><slot name="button" /><slot /></div>'
-        },
-        SidebarIcon: true
+        }
       }
     }
   })
+  return { ...result, user }
 }
 
 describe('SidebarHelpCenterIcon', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     typeformState.typeformError = false
     typeformState.isValidTypeformId = true
+    canvasState.linearMode = true
   })
 
   it('mounts the Typeform embed container when the id is valid and loads', () => {
@@ -105,5 +115,36 @@ describe('SidebarHelpCenterIcon', () => {
     expect(screen.getByText(FEEDBACK_LOAD_ERROR)).toBeInTheDocument()
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- attribute hook: the embed target has no ARIA role
     expect(container.querySelector('[data-tf-widget]')).toBeNull()
+  })
+
+  it('does not open the help center from the feedback button in app mode', async () => {
+    const { user } = renderIcon()
+
+    await user.click(screen.getByRole('button', { name: 'Give feedback' }))
+
+    expect(helpCenterSpies.toggleHelpCenter).not.toHaveBeenCalled()
+  })
+
+  it('shows the help center button instead of the feedback popover in graph mode', () => {
+    canvasState.linearMode = false
+    const { container } = renderIcon()
+
+    expect(
+      screen.getByRole('button', { name: 'Help Center' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Give feedback' })
+    ).not.toBeInTheDocument()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- attribute hook: the embed target has no ARIA role
+    expect(container.querySelector('[data-tf-widget]')).toBeNull()
+  })
+
+  it('toggles the help center on click in graph mode', async () => {
+    canvasState.linearMode = false
+    const { user } = renderIcon()
+
+    await user.click(screen.getByRole('button', { name: 'Help Center' }))
+
+    expect(helpCenterSpies.toggleHelpCenter).toHaveBeenCalled()
   })
 })

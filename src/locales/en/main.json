@@ -3069,6 +3069,7 @@
     "enterBuilderMode": "Build app",
     "editBuilderMode": "Edit app",
     "workflowActions": "Workflow actions",
+    "activeModeWorkflowActions": "{mode} mode, workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",

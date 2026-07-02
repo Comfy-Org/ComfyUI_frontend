@@ -5,21 +5,25 @@ import { createI18n } from 'vue-i18n'
 
 import AppModeToolbar from './AppModeToolbar.vue'
 
-const appModeState = vi.hoisted(() => ({ enableAppBuilder: true }))
+const appModeState = vi.hoisted(() => ({
+  enableAppBuilder: true,
+  hasNodes: true
+}))
 const enterBuilder = vi.hoisted(() => vi.fn())
-const nodes = vi.hoisted(() => ({ set: (_value: boolean) => {} }))
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ enableAppBuilder: appModeState.enableAppBuilder })
 }))
 
 vi.mock('@/stores/appModeStore', async () => {
-  const { ref } = await import('vue')
-  const hasNodes = ref(true)
-  nodes.set = (value: boolean) => {
-    hasNodes.value = value
+  const { computed, reactive } = await import('vue')
+  return {
+    useAppModeStore: () =>
+      reactive({
+        enterBuilder,
+        hasNodes: computed(() => appModeState.hasNodes)
+      })
   }
-  return { useAppModeStore: () => ({ enterBuilder, hasNodes }) }
 })
 
 const BUILD_AN_APP = 'Build an app'
@@ -34,22 +38,13 @@ const i18n = createI18n({
   }
 })
 
-function setHasNodes(hasNodes: boolean) {
-  nodes.set(hasNodes)
-}
-
 function renderToolbar() {
   const user = userEvent.setup()
   const result = render(AppModeToolbar, {
     global: {
       plugins: [i18n],
       stubs: {
-        WorkflowActionsDropdown: true,
-        Button: {
-          inheritAttrs: false,
-          template:
-            '<button v-bind="$attrs" @click="$emit(\'click\', $event)"><slot /></button>'
-        }
+        WorkflowActionsDropdown: true
       }
     }
   })
@@ -60,11 +55,10 @@ describe('AppModeToolbar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     appModeState.enableAppBuilder = true
-    setHasNodes(true)
+    appModeState.hasNodes = true
   })
 
   it('shows an enabled build button and enters the builder on click', async () => {
-    setHasNodes(true)
     const { user } = renderToolbar()
 
     const button = screen.getByRole('button', { name: BUILD_AN_APP })
@@ -76,14 +70,13 @@ describe('AppModeToolbar', () => {
   })
 
   it('disables the build button when there are no nodes', () => {
-    setHasNodes(false)
+    appModeState.hasNodes = false
     renderToolbar()
 
     expect(screen.getByRole('button', { name: BUILD_AN_APP })).toBeDisabled()
   })
 
   it('hides the build button when app building is disabled', () => {
-    setHasNodes(true)
     appModeState.enableAppBuilder = false
     renderToolbar()
 

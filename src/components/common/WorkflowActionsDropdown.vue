@@ -3,10 +3,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
+  DropdownMenuRoot
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -15,10 +15,9 @@ import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
-
-type ViewMode = 'graph' | 'app'
+import type { ViewMode } from '@/utils/appMode'
 
 interface ViewModeSegment {
   mode: ViewMode
@@ -26,7 +25,10 @@ interface ViewModeSegment {
   label: string
   switchLabel: string
   switchTooltip: string
+  /** Truth: drives behavior and aria. Flips as soon as the mode changes. */
   active: boolean
+  /** Frame-lagged mirror of {@link active}: drives the morph styling/order. */
+  displayActive: boolean
 }
 
 const { source, align = 'start' } = defineProps<{
@@ -37,7 +39,7 @@ const { source, align = 'start' } = defineProps<{
 const { t } = useI18n()
 const keybindingStore = useKeybindingStore()
 const dropdownOpen = ref(false)
-const canvasStore = useCanvasStore()
+const appModeStore = useAppModeStore()
 
 const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
@@ -54,39 +56,60 @@ const toggleShortcut = computed(() => {
   return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 })
 
-const segments = computed<ViewModeSegment[]>(() => [
-  {
-    mode: 'graph',
-    icon: 'icon-[comfy--workflow]',
-    label: t('breadcrumbsMenu.graph'),
-    switchLabel: t('breadcrumbsMenu.enterNodeGraph'),
-    switchTooltip: t('breadcrumbsMenu.enterNodeGraph') + toggleShortcut.value,
-    active: !canvasStore.displayLinearMode
-  },
-  {
-    mode: 'app',
-    icon: 'icon-[lucide--panels-top-left]',
-    label: t('breadcrumbsMenu.app'),
-    switchLabel: t('breadcrumbsMenu.enterAppMode'),
-    switchTooltip: t('breadcrumbsMenu.enterAppMode') + toggleShortcut.value,
-    active: canvasStore.displayLinearMode
-  }
-])
-
-// Inactive segment first (left), active last (right). On mode switch the array
-// reorders and TransitionGroup FLIP-animates the keyed nodes to their new spots.
-const orderedSegments = computed(() =>
-  [...segments.value].sort((a, b) => Number(a.active) - Number(b.active))
+const segments = computed<ViewModeSegment[]>(() =>
+  (
+    [
+      {
+        mode: 'graph',
+        icon: 'icon-[comfy--workflow]',
+        label: t('breadcrumbsMenu.graph'),
+        switchLabel: t('breadcrumbsMenu.enterNodeGraph'),
+        switchTooltip:
+          t('breadcrumbsMenu.enterNodeGraph') + toggleShortcut.value
+      },
+      {
+        mode: 'app',
+        icon: 'icon-[lucide--panels-top-left]',
+        label: t('breadcrumbsMenu.app'),
+        switchLabel: t('breadcrumbsMenu.enterAppMode'),
+        switchTooltip: t('breadcrumbsMenu.enterAppMode') + toggleShortcut.value
+      }
+    ] as const
+  ).map((seg) => ({
+    ...seg,
+    active: appModeStore.viewMode === seg.mode,
+    displayActive: appModeStore.displayViewMode === seg.mode
+  }))
 )
 
-function handleOpen(open: boolean) {
-  if (open) {
-    markAsSeen()
-    useTelemetry()?.trackUiButtonClicked({
-      button_id: source,
-      element_group: 'workflow_actions'
-    })
-  }
+// Display-inactive segment first (left), display-active last (right). On mode
+// switch the array reorders and TransitionGroup FLIP-animates the keyed nodes
+// to their new spots.
+const orderedSegments = computed(() => {
+  const [graph, app] = segments.value
+  return graph.displayActive ? [app, graph] : [graph, app]
+})
+
+const toggleContainer = useTemplateRef<HTMLDivElement>('toggleContainer')
+
+// The active segment is the only element carrying popup semantics, which makes
+// this a stable, markup-derived way to find it.
+function activeSegmentElement() {
+  return (
+    toggleContainer.value?.querySelector<HTMLElement>(
+      '[aria-haspopup="menu"]'
+    ) ?? undefined
+  )
+}
+
+function toggleDropdown() {
+  dropdownOpen.value = !dropdownOpen.value
+  if (!dropdownOpen.value) return
+  markAsSeen()
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: source,
+    element_group: 'workflow_actions'
+  })
 }
 
 function switchMode() {
@@ -96,23 +119,36 @@ function switchMode() {
   })
 }
 
-// The container is the dropdown trigger, so an inactive segment must stop its
-// pointer event from bubbling up and opening the menu instead of switching.
-function onSegmentPointerDown(seg: ViewModeSegment, e: PointerEvent) {
-  if (!seg.active) e.stopPropagation()
+function onSegmentClick(seg: ViewModeSegment) {
+  if (seg.active) toggleDropdown()
+  else switchMode()
 }
 
-// Keyboard mirror of the pointer guard: stop Enter/Space on an inactive segment
-// from bubbling to the trigger. The button's native activation still fires
-// onSegmentClick to switch mode, so the menu stays closed.
+// Match the stock dropdown trigger: ArrowDown on the trigger opens the menu.
 function onSegmentKeydown(seg: ViewModeSegment, e: KeyboardEvent) {
-  if (!seg.active && (e.key === 'Enter' || e.key === ' ')) e.stopPropagation()
+  if (!seg.active || e.key !== 'ArrowDown') return
+  e.preventDefault()
+  if (!dropdownOpen.value) toggleDropdown()
 }
 
-function onSegmentClick(seg: ViewModeSegment, e: MouseEvent) {
-  if (seg.active) return
-  e.stopPropagation()
-  switchMode()
+// Reimplements the two trigger-element behaviors of a stock DropdownMenuTrigger
+// (which this component cannot use without breaking the FLIP morph): a click on
+// the open menu's trigger toggles it closed instead of dismiss-then-reopen, and
+// focus returns to the trigger on close unless the user interacted elsewhere.
+let interactedOutside = false
+function onInteractOutside(event: PointerDownOutsideEvent | FocusOutsideEvent) {
+  const target = event.target
+  if (target instanceof Node && activeSegmentElement()?.contains(target)) {
+    event.preventDefault()
+    return
+  }
+  interactedOutside = true
+}
+
+function onCloseAutoFocus(event: Event) {
+  event.preventDefault()
+  if (!interactedOutside) activeSegmentElement()?.focus()
+  interactedOutside = false
 }
 
 const tooltipPt = {
@@ -133,88 +169,91 @@ const tooltipPt = {
 </script>
 
 <template>
-  <DropdownMenuRoot
-    v-model:open="dropdownOpen"
-    :modal="false"
-    @update:open="handleOpen"
-  >
-    <DropdownMenuTrigger as-child>
-      <div
-        data-testid="view-mode-toggle"
-        class="group pointer-events-auto relative inline-block rounded-lg bg-base-background p-1"
+  <DropdownMenuRoot v-model:open="dropdownOpen" :modal="false">
+    <div
+      ref="toggleContainer"
+      data-testid="view-mode-toggle"
+      class="group pointer-events-auto relative inline-block rounded-lg bg-base-background p-1"
+      :data-state="dropdownOpen ? 'open' : 'closed'"
+    >
+      <TransitionGroup
+        tag="div"
+        move-class="transition-[background-color,color,transform] duration-200"
+        class="flex items-center gap-1"
       >
-        <TransitionGroup
-          tag="div"
-          move-class="transition-[background-color,color,transform] duration-200"
-          class="flex items-center gap-1"
+        <Button
+          v-for="seg in orderedSegments"
+          :key="seg.mode"
+          v-tooltip.bottom="{
+            value: seg.active
+              ? t('breadcrumbsMenu.workflowActions')
+              : seg.switchTooltip,
+            showDelay: 300,
+            hideDelay: 300,
+            pt: seg.active ? undefined : tooltipPt
+          }"
+          type="button"
+          variant="textonly"
+          size="unset"
+          :aria-label="
+            seg.active
+              ? t('breadcrumbsMenu.activeModeWorkflowActions', {
+                  mode: seg.label
+                })
+              : seg.switchLabel
+          "
+          :aria-haspopup="seg.active ? 'menu' : undefined"
+          :aria-expanded="seg.active ? dropdownOpen : undefined"
+          :class="
+            cn(
+              'relative flex h-8 items-center gap-0 rounded-md font-normal transition-[background-color,color,transform] duration-200',
+              seg.displayActive
+                ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
+                : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
+            )
+          "
+          @click="onSegmentClick(seg)"
+          @keydown="onSegmentKeydown(seg, $event)"
         >
-          <Button
-            v-for="seg in orderedSegments"
-            :key="seg.mode"
-            v-tooltip.bottom="{
-              value: seg.active
-                ? t('breadcrumbsMenu.workflowActions')
-                : seg.switchTooltip,
-              showDelay: 300,
-              hideDelay: 300,
-              pt: seg.active ? undefined : tooltipPt
-            }"
-            type="button"
-            variant="textonly"
-            size="unset"
-            :aria-label="
-              seg.active
-                ? `${seg.label} ${t('breadcrumbsMenu.workflowActions')}`
-                : seg.switchLabel
-            "
+          <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
+          <span
             :class="
               cn(
-                'relative flex h-8 items-center gap-0 rounded-md font-normal transition-[background-color,color,transform] duration-200',
-                seg.active
-                  ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
-                  : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
+                'grid transition-[grid-template-columns,opacity] duration-200',
+                seg.displayActive
+                  ? 'ml-1.5 grid-cols-[1fr] opacity-100'
+                  : 'grid-cols-[0fr] opacity-0'
               )
             "
-            @pointerdown="onSegmentPointerDown(seg, $event)"
-            @keydown="onSegmentKeydown(seg, $event)"
-            @click="onSegmentClick(seg, $event)"
           >
-            <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
             <span
-              :class="
-                cn(
-                  'grid transition-[grid-template-columns,opacity] duration-200',
-                  seg.active
-                    ? 'ml-1.5 grid-cols-[1fr] opacity-100'
-                    : 'grid-cols-[0fr] opacity-0'
-                )
-              "
+              class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
             >
-              <span
-                class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
-              >
-                {{ seg.label }}
-                <i
-                  class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              </span>
+              {{ seg.label }}
+              <i
+                class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
             </span>
-            <span
-              v-if="seg.active && hasUnseenItems"
-              aria-hidden="true"
-              class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-            />
-          </Button>
-        </TransitionGroup>
-      </div>
-    </DropdownMenuTrigger>
+          </span>
+          <span
+            v-if="seg.active && hasUnseenItems"
+            aria-hidden="true"
+            class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+          />
+        </Button>
+      </TransitionGroup>
+    </div>
     <DropdownMenuPortal>
       <DropdownMenuContent
         :align
+        :aria-label="t('breadcrumbsMenu.workflowActions')"
+        :reference="toggleContainer ?? undefined"
         :side-offset="8"
         :collision-padding="10"
         class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
+        @interact-outside="onInteractOutside"
+        @close-auto-focus="onCloseAutoFocus"
       >
         <WorkflowActionsList :items="menuItems" />
       </DropdownMenuContent>

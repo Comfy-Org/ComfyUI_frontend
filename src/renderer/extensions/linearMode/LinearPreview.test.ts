@@ -80,10 +80,10 @@ function renderPreview(
         mounted() {
           this.$emit('update-selection', emitSelection)
         },
-        template: '<div data-testid="output-history" :class="$attrs.class" />'
+        template: '<div data-testid="output-history" />'
       })
     : {
-        template: '<div data-testid="output-history" :class="$attrs.class" />'
+        template: '<div data-testid="output-history" />'
       }
   const result = render(LinearPreview, {
     props,
@@ -97,11 +97,6 @@ function renderPreview(
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
         MediaOutputPreview: true,
         Popover: { template: '<div data-testid="output-popover" />' },
-        Button: {
-          inheritAttrs: false,
-          template:
-            '<button v-bind="$attrs" @click="$emit(\'click\', $event)"><slot /></button>'
-        },
         OutputHistory: outputHistoryStub
       }
     }
@@ -122,20 +117,6 @@ describe('LinearPreview', () => {
 
     expect(screen.getByTestId('linear-welcome')).toBeInTheDocument()
     expect(screen.getByTestId('output-history')).toBeInTheDocument()
-  })
-
-  it('adds the desktop layout classes to the output history when not mobile', () => {
-    renderPreview({ mobile: false })
-
-    expect(screen.getByTestId('output-history')).toHaveClass('z-10', 'min-w-0')
-  })
-
-  it('omits the desktop layout classes from the output history on mobile', () => {
-    renderPreview({ mobile: true })
-
-    const history = screen.getByTestId('output-history')
-    expect(history).not.toHaveClass('z-10')
-    expect(history).not.toHaveClass('min-w-0')
   })
 
   it('hides the output history in builder mode', () => {

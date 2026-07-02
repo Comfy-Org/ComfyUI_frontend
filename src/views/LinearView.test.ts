@@ -1,5 +1,5 @@
-import type * as VueUseCore from '@vueuse/core'
 import { render, screen } from '@testing-library/vue'
+import type { DetachedWindowAPI } from 'happy-dom'
 import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,7 +8,6 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 import LinearView from './LinearView.vue'
 
 interface ViewState {
-  mobileDisplay: boolean
   sidebarLocation: 'left' | 'right'
   isBuilderMode: boolean
   isArrangeMode: boolean
@@ -17,7 +16,6 @@ interface ViewState {
 }
 
 const state = vi.hoisted<ViewState>(() => ({
-  mobileDisplay: false,
   sidebarLocation: 'left',
   isBuilderMode: false,
   isArrangeMode: false,
@@ -26,17 +24,6 @@ const state = vi.hoisted<ViewState>(() => ({
 }))
 
 const onResizeEnd = vi.hoisted(() => vi.fn())
-
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<typeof VueUseCore>('@vueuse/core')
-  const { computed } = await import('vue')
-  return {
-    ...actual,
-    useBreakpoints: () => ({
-      smaller: () => computed(() => state.mobileDisplay)
-    })
-  }
-})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -77,6 +64,18 @@ vi.mock('@/composables/useStablePrimeVueSplitterSizer', () => ({
   useStablePrimeVueSplitterSizer: () => ({ onResizeEnd })
 }))
 
+function setViewport(width: number) {
+  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
+    .happyDOM
+  if (!happyDOM) {
+    throw new Error('window.happyDOM is unavailable to set viewport')
+  }
+  happyDOM.setViewport({ width, height: 800 })
+}
+
+const DESKTOP_WIDTH = 1280
+const MOBILE_WIDTH = 640
+
 const passthroughStub = { template: '<div><slot /></div>' }
 
 function leafStub(testId: string) {
@@ -106,20 +105,24 @@ function renderView(overrides: Partial<ViewState> = {}) {
   })
 }
 
-const sampleTab = { id: 'assets' } as SidebarTabExtension
+const sampleTab: SidebarTabExtension = {
+  id: 'assets',
+  title: 'Assets',
+  type: 'custom',
+  render: () => {}
+}
 
-function getFlexContainer(container: Element): HTMLElement {
-  // eslint-disable-next-line testing-library/no-node-access -- the layout wrapper that carries the flex-direction class has no ARIA role
-  const el = container.querySelector<HTMLElement>('.flex-1')
-  if (!el) throw new Error('flex container not found')
-  return el
+function expectRenderedBefore(first: HTMLElement, second: HTMLElement) {
+  expect(
+    first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy()
 }
 
 describe('LinearView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setViewport(DESKTOP_WIDTH)
     Object.assign(state, {
-      mobileDisplay: false,
       sidebarLocation: 'left',
       isBuilderMode: false,
       isArrangeMode: false,
@@ -129,7 +132,8 @@ describe('LinearView', () => {
   })
 
   it('renders only the mobile display on small screens', () => {
-    renderView({ mobileDisplay: true })
+    setViewport(MOBILE_WIDTH)
+    renderView()
 
     expect(screen.getByTestId('mobile-display')).toBeInTheDocument()
     expect(screen.queryByTestId('workflow-tabs')).not.toBeInTheDocument()
@@ -145,30 +149,32 @@ describe('LinearView', () => {
     expect(screen.getByTestId('linear-preview')).toBeInTheDocument()
   })
 
-  it('lays out left-to-right and shows the toolbar in app mode', () => {
-    const { container } = renderView({
+  it('shows the toolbar and puts the active tab before the controls for a left sidebar', () => {
+    renderView({
       sidebarLocation: 'left',
       activeTab: sampleTab,
       hasOutputs: true
     })
 
-    expect(getFlexContainer(container)).toHaveClass('flex-row')
     expect(screen.getByTestId('side-toolbar')).toBeInTheDocument()
     expect(screen.getByTestId('app-mode-toolbar')).toBeInTheDocument()
-    expect(screen.getByTestId('extension-slot')).toBeInTheDocument()
-    expect(screen.getByTestId('linear-controls')).toBeInTheDocument()
+    expectRenderedBefore(
+      screen.getByTestId('extension-slot'),
+      screen.getByTestId('linear-controls')
+    )
   })
 
-  it('reverses the layout when the sidebar is on the right', () => {
-    const { container } = renderView({
+  it('puts the controls before the active tab when the sidebar is on the right', () => {
+    renderView({
       sidebarLocation: 'right',
       activeTab: sampleTab,
       hasOutputs: true
     })
 
-    expect(getFlexContainer(container)).toHaveClass('flex-row-reverse')
-    expect(screen.getByTestId('extension-slot')).toBeInTheDocument()
-    expect(screen.getByTestId('linear-controls')).toBeInTheDocument()
+    expectRenderedBefore(
+      screen.getByTestId('linear-controls'),
+      screen.getByTestId('extension-slot')
+    )
   })
 
   it('omits both side panels when there is no active tab or output', () => {

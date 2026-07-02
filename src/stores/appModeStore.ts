@@ -28,6 +28,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import type { ViewMode } from '@/utils/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
@@ -50,10 +51,32 @@ export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
-  const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
+  const { mode, setMode, isAppMode, isBuilderMode, isSelectMode } = useAppMode()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const showVueNodeSwitchPopup = ref(false)
+
+  const viewMode = computed<ViewMode>(() => (isAppMode.value ? 'app' : 'graph'))
+
+  /**
+   * Frame-lagged mirror of {@link viewMode} that drives the view-mode toggle's
+   * segment morph. Lagging by two frames lets a toggle that mounts mid-switch
+   * render the previous mode first, then animate into the new one. It lives in
+   * the store so the value outlives the graph-mode toggle unmounting and the
+   * app-mode toggle mounting in its place during a switch.
+   */
+  const displayViewMode = ref<ViewMode>(viewMode.value)
+  let outerFrame: number | undefined
+  let innerFrame: number | undefined
+  watch(viewMode, (next) => {
+    if (outerFrame !== undefined) cancelAnimationFrame(outerFrame)
+    if (innerFrame !== undefined) cancelAnimationFrame(innerFrame)
+    outerFrame = requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
+        displayViewMode.value = next
+      })
+    })
+  })
 
   const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
@@ -292,6 +315,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     selectedInputs,
     selectedOutputs,
     updateInputConfig,
-    showVueNodeSwitchPopup
+    showVueNodeSwitchPopup,
+    viewMode,
+    displayViewMode
   }
 })

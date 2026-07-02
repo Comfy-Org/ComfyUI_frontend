@@ -22,7 +22,6 @@ const spies = vi.hoisted(() => ({
 }))
 
 const state = vi.hoisted(() => ({
-  linearMode: false,
   isMultiUserServer: false,
   sidebarTabs: [] as TestTab[],
   activeSidebarTab: null as { id: string } | null
@@ -64,7 +63,7 @@ vi.mock('@/stores/commandStore', () => ({
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ linearMode: state.linearMode, canvas: null })
+  useCanvasStore: () => ({ canvas: null })
 }))
 
 vi.mock('@/platform/keybindings/keybindingStore', () => ({
@@ -126,7 +125,6 @@ const workflowsTab: TestTab = {
 describe('SideToolbar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    state.linearMode = false
     state.isMultiUserServer = false
     state.sidebarTabs = [assetsTab, workflowsTab]
     state.activeSidebarTab = null
@@ -153,28 +151,20 @@ describe('SideToolbar', () => {
   it('marks the toolbar as connected when forceConnected is true', () => {
     renderToolbar({ forceConnected: true })
 
+    // connected-sidebar is a behavioral hook: it drives the global
+    // :root:has() sidebar width variables.
     expect(screen.getByTestId('side-toolbar')).toHaveClass('connected-sidebar')
   })
 
-  it('does not mark the toolbar as connected by default', () => {
-    renderToolbar()
-
-    expect(screen.getByTestId('side-toolbar')).not.toHaveClass(
-      'connected-sidebar'
-    )
-  })
-
-  it('shows the shortcuts and bottom panel toggles when not in linear mode', () => {
-    state.linearMode = false
+  it('shows the shortcuts and bottom panel toggles by default', () => {
     renderToolbar()
 
     expect(screen.getByTestId('shortcuts-toggle')).toBeInTheDocument()
     expect(screen.getByTestId('bottom-panel-toggle')).toBeInTheDocument()
   })
 
-  it('hides the shortcuts and bottom panel toggles in linear mode', () => {
-    state.linearMode = true
-    renderToolbar()
+  it('hides the shortcuts and bottom panel toggles when hideWorkspaceToggles is set', () => {
+    renderToolbar({ hideWorkspaceToggles: true })
 
     expect(screen.queryByTestId('shortcuts-toggle')).not.toBeInTheDocument()
     expect(screen.queryByTestId('bottom-panel-toggle')).not.toBeInTheDocument()

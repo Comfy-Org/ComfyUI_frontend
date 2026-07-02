@@ -114,6 +114,7 @@ function dragDrop(e: DragEvent) {
         v-if="!isBuilderMode"
         :visible-tab-ids="['assets', 'apps']"
         force-connected
+        hide-workspace-toggles
       />
       <Splitter
         :key="splitterKey"

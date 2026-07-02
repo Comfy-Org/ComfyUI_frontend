@@ -43,11 +43,11 @@
         />
         <SidebarHelpCenterIcon :is-small="isSmall" />
         <SidebarBottomPanelToggleButton
-          v-if="!isCloud && !canvasStore.linearMode"
+          v-if="!isCloud && !hideWorkspaceToggles"
           :is-small="isSmall"
         />
         <SidebarShortcutsToggleButton
-          v-if="!canvasStore.linearMode"
+          v-if="!hideWorkspaceToggles"
           :is-small="isSmall"
         />
         <SidebarSettingsButton :is-small="isSmall" />
@@ -95,9 +95,14 @@ import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
-const { visibleTabIds, forceConnected = false } = defineProps<{
+const {
+  visibleTabIds,
+  forceConnected = false,
+  hideWorkspaceToggles = false
+} = defineProps<{
   visibleTabIds?: string[]
   forceConnected?: boolean
+  hideWorkspaceToggles?: boolean
 }>()
 
 const NightlySurveyController =

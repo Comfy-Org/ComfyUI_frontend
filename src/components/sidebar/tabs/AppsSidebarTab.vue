@@ -18,7 +18,6 @@
         v-if="hasResults"
         variant="secondary"
         size="md"
-        :aria-label="$t('linearMode.appModeToolbar.create')"
         @click="createApp"
       >
         <i class="icon-[lucide--plus] size-4" aria-hidden="true" />
