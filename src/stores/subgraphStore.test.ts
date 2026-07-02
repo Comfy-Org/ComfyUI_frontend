@@ -807,8 +807,7 @@ describe('useSubgraphStore', () => {
       // Set metadata on the subgraph's extra (as the commands do)
       subgraph.extra = {
         BlueprintDescription: 'Test description',
-        BlueprintSearchAliases: ['alias1', 'alias2'],
-        workflowRendererVersion: 'Vue'
+        BlueprintSearchAliases: ['alias1', 'alias2']
       }
 
       vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
@@ -857,7 +856,59 @@ describe('useSubgraphStore', () => {
       const subgraphExtra = definitions.subgraphs[0]?.extra
       expect(subgraphExtra?.BlueprintDescription).toBeUndefined()
       expect(subgraphExtra?.BlueprintSearchAliases).toBeUndefined()
-      expect(subgraphExtra?.workflowRendererVersion).toBe('Vue')
+    })
+
+    it('keeps workflowRendererVersion in subgraph extra when publishing', async () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      subgraphNode.graph!.add(subgraphNode)
+
+      subgraph.extra = {
+        BlueprintDescription: 'Test description',
+        workflowRendererVersion: 'Vue'
+      }
+
+      vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
+      vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
+        const serializedSubgraph = fromPartial<ExportedSubgraph>({
+          ...subgraph.serialize(),
+          links: [],
+          groups: [],
+          version: 1
+        })
+        return {
+          nodes: [subgraphNode.serialize()],
+          subgraphs: [serializedSubgraph]
+        }
+      })
+
+      let savedWorkflowData: Record<string, unknown> | null = null
+      vi.mocked(api.storeUserData).mockImplementation(async (_path, data) => {
+        savedWorkflowData = JSON.parse(data as string)
+        return {
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              path: 'subgraphs/testname.json',
+              modified: Date.now(),
+              size: 2
+            })
+        } as Response
+      })
+
+      await mockFetch({ 'testname.json': mockGraph })
+      await store.publishSubgraph()
+
+      expect(savedWorkflowData).not.toBeNull()
+      expect(savedWorkflowData!.extra).toEqual({
+        BlueprintDescription: 'Test description'
+      })
+      const definitions = savedWorkflowData!.definitions as {
+        subgraphs: Array<{ extra?: Record<string, unknown> }>
+      }
+      expect(definitions.subgraphs[0]?.extra?.workflowRendererVersion).toBe(
+        'Vue'
+      )
     })
   })
 

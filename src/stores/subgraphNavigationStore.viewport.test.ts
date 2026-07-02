@@ -311,10 +311,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(mockFitView).toHaveBeenCalledOnce()
 
       // User navigated away before the inner RAF fired
-      mockCanvas.subgraph = fromPartial<Subgraph>({
-        id: 'different-graph',
-        isRootGraph: false
-      })
+      mockCanvas.subgraph = { id: 'different-graph' } as never
       rafCallbacks[1](performance.now())
 
       expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
@@ -331,10 +328,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
 
       // Simulate graph switching away before rAF fires
-      mockCanvas.subgraph = fromPartial<Subgraph>({
-        id: 'different-graph',
-        isRootGraph: false
-      })
+      mockCanvas.subgraph = { id: 'different-graph' } as never
 
       rafCallbacks[0](performance.now())
 

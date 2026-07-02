@@ -145,6 +145,26 @@ const buildInfeBox = (
   itemType: string,
   version = 2
 ): Uint8Array => {
+  const bodySize = 4 + 2 + 2 + 4 + 1 + 1
+  const totalSize = 8 + bodySize
+  const buf = new Uint8Array(totalSize)
+  const dv = new DataView(buf.buffer)
+  setU32BE(dv, 0, totalSize)
+  buf.set(new TextEncoder().encode('infe'), 4)
+  buf[8] = version
+  if (version >= 2) {
+    setU16BE(dv, 12, itemId)
+    setU16BE(dv, 14, 0)
+    buf.set(new TextEncoder().encode(itemType.padEnd(4).slice(0, 4)), 16)
+  }
+  return buf
+}
+
+const buildVersionedInfeBox = (
+  itemId: number,
+  itemType: string,
+  version = 2
+): Uint8Array => {
   const itemIdSize = version === 2 ? 2 : version >= 3 ? 4 : 0
   const bodySize = 4 + itemIdSize + (version >= 2 ? 2 + 4 + 1 + 1 : 0)
   const totalSize = 8 + bodySize
@@ -169,7 +189,26 @@ const buildInfeBox = (
   return buf
 }
 
-const buildIinfBox = (infeBoxes: Uint8Array[], version = 0): Uint8Array => {
+const buildIinfBox = (infeBoxes: Uint8Array[]): Uint8Array => {
+  const bodySize = 4 + 2 + infeBoxes.reduce((s, b) => s + b.length, 0)
+  const totalSize = 8 + bodySize
+  const buf = new Uint8Array(totalSize)
+  const dv = new DataView(buf.buffer)
+  setU32BE(dv, 0, totalSize)
+  buf.set(new TextEncoder().encode('iinf'), 4)
+  setU16BE(dv, 12, infeBoxes.length)
+  let off = 14
+  for (const ib of infeBoxes) {
+    buf.set(ib, off)
+    off += ib.length
+  }
+  return buf
+}
+
+const buildVersionedIinfBox = (
+  infeBoxes: Uint8Array[],
+  version = 0
+): Uint8Array => {
   const countSize = version === 0 ? 2 : 4
   const bodySize = 4 + countSize + infeBoxes.reduce((s, b) => s + b.length, 0)
   const totalSize = 8 + bodySize
@@ -191,6 +230,35 @@ const buildIinfBox = (infeBoxes: Uint8Array[], version = 0): Uint8Array => {
   return buf
 }
 
+const buildIlocBox = (
+  items: { itemId: number; extentOffset: number; extentLength: number }[]
+): Uint8Array => {
+  const perItemSize = 2 + 2 + 0 + 2 + (4 + 4)
+  const bodySize = 4 + 1 + 1 + 2 + items.length * perItemSize
+  const totalSize = 8 + bodySize
+  const buf = new Uint8Array(totalSize)
+  const dv = new DataView(buf.buffer)
+  setU32BE(dv, 0, totalSize)
+  buf.set(new TextEncoder().encode('iloc'), 4)
+  buf[12] = 0x44
+  buf[13] = 0x00
+  setU16BE(dv, 14, items.length)
+  let p = 16
+  for (const it of items) {
+    setU16BE(dv, p, it.itemId)
+    p += 2
+    setU16BE(dv, p, 0)
+    p += 2
+    setU16BE(dv, p, 1)
+    p += 2
+    setU32BE(dv, p, it.extentOffset)
+    p += 4
+    setU32BE(dv, p, it.extentLength)
+    p += 4
+  }
+  return buf
+}
+
 interface IlocItem {
   itemId: number
   extentOffset: number
@@ -198,7 +266,7 @@ interface IlocItem {
   extents?: Array<{ extentOffset: number; extentLength: number }>
 }
 
-const buildIlocBox = (
+const buildIlocBoxWithOptions = (
   items: IlocItem[],
   {
     version = 0,
@@ -329,6 +397,49 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
     ftypBrand = 'avif',
     omitMeta = false,
     omitIloc = false,
+    infeVersion = 2
+  } = opts
+
+  const ftyp = buildFtypBox(ftypBrand)
+  if (omitMeta) {
+    return ftyp.slice().buffer as ArrayBuffer
+  }
+
+  const exifData = buildExifBlob(exifEntries, endian)
+  const infe = buildInfeBox(1, itemType, infeVersion)
+  const iinf = buildIinfBox([infe])
+
+  const realIloc = buildIlocBox([
+    { itemId: 1, extentOffset: 0, extentLength: exifData.length }
+  ])
+  const metaSize = 8 + 4 + iinf.length + (omitIloc ? 0 : realIloc.length)
+  const exifOffset = ftyp.length + metaSize
+
+  const finalIloc = buildIlocBox([
+    { itemId: 1, extentOffset: exifOffset, extentLength: exifData.length }
+  ])
+  const finalInner = omitIloc ? [iinf] : [iinf, finalIloc]
+  const meta = buildMetaBox(finalInner)
+
+  const total = ftyp.length + meta.length + exifData.length
+  const buf = new Uint8Array(total)
+  let p = 0
+  buf.set(ftyp, p)
+  p += ftyp.length
+  buf.set(meta, p)
+  p += meta.length
+  buf.set(exifData, p)
+  return buf.slice().buffer as ArrayBuffer
+}
+
+const buildAvifFileWithOptions = (opts: BuildAvifOpts = {}): ArrayBuffer => {
+  const {
+    exifEntries = [],
+    endian = 'II',
+    itemType = 'Exif',
+    ftypBrand = 'avif',
+    omitMeta = false,
+    omitIloc = false,
     iinfVersion = 0,
     infeVersion = 2,
     ilocVersion = 0,
@@ -344,10 +455,10 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
   }
 
   const exifData = rawExifData ?? buildExifBlob(exifEntries, endian)
-  const infe = buildInfeBox(1, itemType, infeVersion)
-  const iinf = buildIinfBox([infe], iinfVersion)
+  const infe = buildVersionedInfeBox(1, itemType, infeVersion)
+  const iinf = buildVersionedIinfBox([infe], iinfVersion)
 
-  const realIloc = buildIlocBox(
+  const realIloc = buildIlocBoxWithOptions(
     [
       {
         itemId: 1,
@@ -365,7 +476,7 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
   const metaSize = 8 + 4 + iinf.length + (omitIloc ? 0 : realIloc.length)
   const exifOffset = ftyp.length + metaSize
 
-  const finalIloc = buildIlocBox(
+  const finalIloc = buildIlocBoxWithOptions(
     [
       {
         itemId: 1,
@@ -439,7 +550,7 @@ describe('getFromAvifFile', () => {
   it('extracts EXIF metadata from versioned item info and location boxes', async () => {
     const workflow = '{"versioned":true}'
     const file = fileFromBuffer(
-      buildAvifFile({
+      buildAvifFileWithOptions({
         exifEntries: [`workflow:${workflow}`],
         iinfVersion: 1,
         infeVersion: 3,
@@ -456,7 +567,7 @@ describe('getFromAvifFile', () => {
 
   it('returns {} when the Exif item has no extents', async () => {
     const file = fileFromBuffer(
-      buildAvifFile({
+      buildAvifFileWithOptions({
         exifEntries: ['workflow:{}'],
         ilocExtents: []
       })
@@ -469,7 +580,7 @@ describe('getFromAvifFile', () => {
 
   it('returns {} when the Exif payload has no TIFF header', async () => {
     const file = fileFromBuffer(
-      buildAvifFile({
+      buildAvifFileWithOptions({
         rawExifData: new TextEncoder().encode('not tiff data')
       })
     )

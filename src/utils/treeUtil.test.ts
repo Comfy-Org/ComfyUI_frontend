@@ -10,7 +10,7 @@ import {
   unwrapTreeRoot
 } from '@/utils/treeUtil'
 
-const createNode = (label: string, leaf = false): TreeNode => ({
+const createTreeNode = (label: string, leaf = false): TreeNode => ({
   key: label,
   label,
   leaf,
@@ -89,7 +89,7 @@ describe('unwrapTreeRoot', () => {
           key: 'root/a',
           label: 'a',
           leaf: false,
-          children: [createNode('child', true)]
+          children: [createTreeNode('child', true)]
         }
       ]
     }
@@ -103,17 +103,17 @@ describe('unwrapTreeRoot', () => {
     const leafRoot: TreeNode = {
       key: 'root',
       label: 'root',
-      children: [createNode('leaf', true)]
+      children: [createTreeNode('leaf', true)]
     }
     const emptyFolderRoot: TreeNode = {
       key: 'root',
       label: 'root',
-      children: [createNode('folder')]
+      children: [createTreeNode('folder')]
     }
     const multiRoot: TreeNode = {
       key: 'root',
       label: 'root',
-      children: [createNode('a'), createNode('b')]
+      children: [createTreeNode('a'), createTreeNode('b')]
     }
     const childWithoutChildren: TreeNode = {
       key: 'root',
@@ -174,6 +174,13 @@ describe('flattenTree', () => {
 })
 
 describe('sortedTree', () => {
+  const createNode = (label: string, leaf = false): TreeNode => ({
+    key: label,
+    label,
+    leaf,
+    children: []
+  })
+
   it('should return a new node instance', () => {
     const node = createNode('root')
     const result = sortedTree(node)
@@ -297,7 +304,7 @@ describe('sortedTree', () => {
 
 describe('findNodeByKey', () => {
   it('returns the matching nested node or null', () => {
-    const child = createNode('root/child')
+    const child = createTreeNode('root/child')
     const tree: TreeNode = {
       key: 'root',
       label: 'root',
@@ -307,7 +314,7 @@ describe('findNodeByKey', () => {
     expect(findNodeByKey(tree, 'root')).toBe(tree)
     expect(findNodeByKey(tree, 'root/child')).toBe(child)
     expect(findNodeByKey(tree, 'missing')).toBeNull()
-    expect(findNodeByKey(createNode('root'), 'missing')).toBeNull()
+    expect(findNodeByKey(createTreeNode('root'), 'missing')).toBeNull()
   })
 })
 

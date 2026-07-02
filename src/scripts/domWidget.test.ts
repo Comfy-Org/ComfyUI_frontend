@@ -2,13 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  addWidget,
-  ComponentWidgetImpl,
-  DOMWidgetImpl,
-  isComponentWidget,
-  isDOMWidget
-} from '@/scripts/domWidget'
+import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
+import { addWidget, isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 
 const { registerWidget, unregisterWidget } = vi.hoisted(() => ({
   registerWidget: vi.fn(),
@@ -37,11 +32,13 @@ describe('DOMWidget Y Position Preservation', () => {
       options: {}
     })
 
+    // Set a specific Y position
     originalWidget.y = 66
 
     const newNode = new LGraphNode('new-node')
     const clonedWidget = originalWidget.createCopyForNode(newNode)
 
+    // Verify Y position is preserved
     expect(clonedWidget.y).toBe(66)
     expect(clonedWidget.node).toBe(newNode)
     expect(clonedWidget.name).toBe('test-widget')
@@ -59,11 +56,13 @@ describe('DOMWidget Y Position Preservation', () => {
       options: {}
     })
 
+    // Set a specific Y position
     originalWidget.y = 42
 
     const newNode = new LGraphNode('new-node')
     const clonedWidget = originalWidget.createCopyForNode(newNode)
 
+    // Verify Y position is preserved
     expect(clonedWidget.y).toBe(42)
     expect(clonedWidget.node).toBe(newNode)
     expect(clonedWidget.element).toBe(mockElement)
@@ -80,9 +79,11 @@ describe('DOMWidget Y Position Preservation', () => {
       options: {}
     })
 
+    // Don't explicitly set Y (should be 0 by default)
     const newNode = new LGraphNode('new-node')
     const clonedWidget = originalWidget.createCopyForNode(newNode)
 
+    // Verify Y position is preserved (should be 0)
     expect(clonedWidget.y).toBe(0)
   })
 })
