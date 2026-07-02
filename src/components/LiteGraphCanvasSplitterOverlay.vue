@@ -134,6 +134,7 @@
         class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
         :data-resizing="isResizing"
         @pointerdown="onResizePointerDown"
+        @lostpointercapture="isResizing = false"
       />
       <slot name="agent-panel" />
     </div>
@@ -180,16 +181,13 @@ function onResizePointerDown(e: PointerEvent) {
   isResizing.value = true
   resizeStartX = e.clientX
   resizeStartWidth = agentPanelStore.width
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   e.preventDefault()
 }
 
 useEventListener(document, 'pointermove', (e: PointerEvent) => {
   if (!isResizing.value) return
   agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
-})
-
-useEventListener(document, 'pointerup', () => {
-  isResizing.value = false
 })
 const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
