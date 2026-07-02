@@ -594,11 +594,23 @@ describe('litegraphService', () => {
       expect(addWidgetPromotionOptions).toHaveBeenCalled()
     })
 
-    it('does not add promotion options on root graph', async () => {
+    it('does not add promotion options when node has no graph', async () => {
       const { addWidgetPromotionOptions } = vi.mocked(
         await import('@/core/graph/subgraph/promotionUtils')
       )
       const node = createMockNode({ graph: null })
+      const widget = createMockWidget()
+
+      getExtraOptionsForWidget(node, widget)
+
+      expect(addWidgetPromotionOptions).not.toHaveBeenCalled()
+    })
+
+    it('does not add promotion options on root graph', async () => {
+      const { addWidgetPromotionOptions } = vi.mocked(
+        await import('@/core/graph/subgraph/promotionUtils')
+      )
+      const node = createMockNode({ graph: { isRootGraph: true } })
       const widget = createMockWidget()
 
       getExtraOptionsForWidget(node, widget)
