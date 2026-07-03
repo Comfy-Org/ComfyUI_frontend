@@ -1,11 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import ColorPaletteMessage from './ColorPaletteMessage.vue'
 
 import type * as Pinia from 'pinia'
+
+const testI18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 
 const mockSettingStore = vi.hoisted(() => ({
   set: vi.fn()
@@ -36,12 +42,6 @@ vi.mock('pinia', async (importOriginal: () => Promise<typeof Pinia>) => {
     storeToRefs: (store: object) => store
   }
 })
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettingStore
@@ -119,11 +119,7 @@ vi.mock('primevue/select', () => ({
 function renderMessage() {
   return render(ColorPaletteMessage, {
     global: {
-      config: {
-        globalProperties: fromAny({
-          $t: (key: string) => key
-        })
-      }
+      plugins: [testI18n]
     }
   })
 }

@@ -1,11 +1,17 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import ServerConfigPanel from './ServerConfigPanel.vue'
 import type * as Pinia from 'pinia'
+
+const testI18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 
 const mockSettingStore = vi.hoisted(() => ({
   set: vi.fn()
@@ -57,12 +63,6 @@ vi.mock('pinia', async (importOriginal) => {
     storeToRefs: (store: object) => store
   }
 })
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, fallback?: string) => fallback ?? key
-  })
-}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettingStore
@@ -176,11 +176,7 @@ vi.mock('primevue/message', () => ({
 function renderPanel() {
   return render(ServerConfigPanel, {
     global: {
-      config: {
-        globalProperties: fromAny({
-          $t: (key: string, fallback?: string) => fallback ?? key
-        })
-      }
+      plugins: [testI18n]
     }
   })
 }

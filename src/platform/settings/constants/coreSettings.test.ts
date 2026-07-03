@@ -187,7 +187,7 @@ describe('CORE_SETTINGS', () => {
         commandId: 'other.command',
         targetSelector: '#other'
       }
-    ] as unknown as Keybinding[]
+    ]
 
     const migrated =
       setting<Keybinding[]>(

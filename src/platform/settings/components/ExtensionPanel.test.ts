@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import ExtensionPanel from './ExtensionPanel.vue'
+
+const testI18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 
 interface MockExtension {
   name: string
@@ -35,13 +41,6 @@ const mockExtensionState = vi.hoisted(() => ({
       return this.readOnly.has(name)
     }
   }
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string>) =>
-      params ? `${key}:${params.subject}` : key
-  })
 }))
 
 vi.mock('@primevue/core/api', () => ({
@@ -187,12 +186,7 @@ vi.mock('primevue/toggleswitch', () => ({
 function renderPanel() {
   return render(ExtensionPanel, {
     global: {
-      config: {
-        globalProperties: fromAny({
-          $t: (key: string, params?: Record<string, string>) =>
-            params ? `${key}:${params.subject}` : key
-        })
-      }
+      plugins: [testI18n]
     }
   })
 }

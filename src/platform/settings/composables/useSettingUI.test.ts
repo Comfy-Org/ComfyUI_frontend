@@ -1,6 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import {
   getSettingInfo,
@@ -9,6 +12,27 @@ import {
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 
 import { useSettingUI } from './useSettingUI'
+
+const testI18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
+function runSettingUI(...args: Parameters<typeof useSettingUI>) {
+  let result!: ReturnType<typeof useSettingUI>
+  render(
+    defineComponent({
+      setup() {
+        result = useSettingUI(...args)
+        return {}
+      },
+      template: '<div />'
+    }),
+    { global: { plugins: [testI18n] } }
+  )
+  return result
+}
 
 const { auth, billing, dist, featureFlags, vueFlags } = vi.hoisted(() => ({
   auth: { isLoggedIn: { value: false } },
@@ -19,10 +43,6 @@ const { auth, billing, dist, featureFlags, vueFlags } = vi.hoisted(() => ({
   dist: { isCloud: false, isDesktop: false },
   featureFlags: { teamWorkspacesEnabled: false, userSecretsEnabled: false },
   vueFlags: { shouldRenderVueNodes: { value: false } }
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (_: string, fallback: string) => fallback })
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -129,12 +149,12 @@ describe('useSettingUI', () => {
   }
 
   it('defaults to first category when no params are given', () => {
-    const { defaultCategory, settingCategories } = useSettingUI()
+    const { defaultCategory, settingCategories } = runSettingUI()
     expect(defaultCategory.value).toBe(settingCategories.value[0])
   })
 
   it('resolves category from scrollToSettingId', () => {
-    const { defaultCategory, settingCategories } = useSettingUI(
+    const { defaultCategory, settingCategories } = runSettingUI(
       undefined,
       'Comfy.Locale'
     )
@@ -144,7 +164,7 @@ describe('useSettingUI', () => {
   })
 
   it('resolves different category from scrollToSettingId', () => {
-    const { defaultCategory, settingCategories } = useSettingUI(
+    const { defaultCategory, settingCategories } = runSettingUI(
       undefined,
       'Appearance.Theme'
     )
@@ -156,7 +176,7 @@ describe('useSettingUI', () => {
   })
 
   it('falls back to first category for unknown scrollToSettingId', () => {
-    const { defaultCategory, settingCategories } = useSettingUI(
+    const { defaultCategory, settingCategories } = runSettingUI(
       undefined,
       'NonExistent.Setting'
     )
@@ -164,15 +184,12 @@ describe('useSettingUI', () => {
   })
 
   it('gives defaultPanel precedence over scrollToSettingId', () => {
-    const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
+    const { defaultCategory } = runSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
   })
 
   it('falls back when defaultPanel is not in the menu', () => {
-    const missingPanel = 'missing' as unknown as Parameters<
-      typeof useSettingUI
-    >[0]
-    const { defaultCategory, settingCategories } = useSettingUI(missingPanel)
+    const { defaultCategory, settingCategories } = runSettingUI('subscription')
     expect(defaultCategory.value).toBe(settingCategories.value[0])
   })
 
@@ -203,7 +220,7 @@ describe('useSettingUI', () => {
     } as ReturnType<typeof useSettingStore>)
     vueFlags.shouldRenderVueNodes.value = true
 
-    const { settingCategories } = useSettingUI()
+    const { settingCategories } = runSettingUI()
 
     expect(settingCategories.value.map((category) => category.label)).toEqual([
       'Other'
@@ -223,7 +240,7 @@ describe('useSettingUI', () => {
     Object.assign(window, { __CONFIG__: { subscription_required: true } })
 
     const { findCategoryByKey, findPanelByKey, navGroups, panels } =
-      useSettingUI()
+      runSettingUI()
 
     expect(panels.value.map((panel) => panel.node.key)).toEqual([
       'about',
@@ -253,7 +270,7 @@ describe('useSettingUI', () => {
     featureFlags.userSecretsEnabled = true
     Object.assign(window, { __CONFIG__: { subscription_required: true } })
 
-    const { navGroups, panels } = useSettingUI()
+    const { navGroups, panels } = runSettingUI()
 
     expect(panels.value.map((panel) => panel.node.key)).toEqual([
       'about',
@@ -290,7 +307,7 @@ describe('useSettingUI', () => {
     auth.isLoggedIn.value = true
     dist.isCloud = true
 
-    const { navGroups } = useSettingUI()
+    const { navGroups } = runSettingUI()
 
     expect(navGroups.value[0].items.map((item) => item.id)).toEqual([
       'user',
@@ -302,7 +319,7 @@ describe('useSettingUI', () => {
     dist.isCloud = true
     featureFlags.teamWorkspacesEnabled = true
 
-    const { navGroups, panels } = useSettingUI()
+    const { navGroups, panels } = runSettingUI()
 
     expect(panels.value.map((panel) => panel.node.key)).toEqual([
       'about',
@@ -339,7 +356,7 @@ describe('useSettingUI', () => {
       settingsById
     } as ReturnType<typeof useSettingStore>)
 
-    const { navGroups } = useSettingUI()
+    const { navGroups } = runSettingUI()
     const settingsItems = navGroups.value[1].items
 
     expect(settingsItems).toEqual([
@@ -370,7 +387,7 @@ describe('useSettingUI', () => {
 
     it('exposes the legacy plan panel when billing is legacy', () => {
       billing.type.value = 'legacy'
-      const { defaultCategory, navGroups } = useSettingUI('subscription')
+      const { defaultCategory, navGroups } = runSettingUI('subscription')
 
       expect(defaultCategory.value.key).toBe('subscription')
       expect(navKeys(navGroups.value)).toContain('subscription')
@@ -379,7 +396,7 @@ describe('useSettingUI', () => {
 
     it('hides the legacy plan panel when billing is workspace', () => {
       billing.type.value = 'workspace'
-      const { navGroups } = useSettingUI()
+      const { navGroups } = runSettingUI()
 
       expect(navKeys(navGroups.value)).not.toContain('subscription')
       expect(navKeys(navGroups.value)).toContain('workspace')
@@ -387,7 +404,7 @@ describe('useSettingUI', () => {
 
     it('never renders the plan panel in more than one tab', () => {
       const countSubscription = () => {
-        const { navGroups } = useSettingUI()
+        const { navGroups } = runSettingUI()
         return navKeys(navGroups.value).filter((id) => id === 'subscription')
           .length
       }

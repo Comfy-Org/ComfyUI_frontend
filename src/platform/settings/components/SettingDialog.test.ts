@@ -1,10 +1,16 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import SettingDialog from './SettingDialog.vue'
+
+const testI18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 
 interface MockSettingTreeNode {
   key: string
@@ -52,12 +58,6 @@ const mockSettingSearch = vi.hoisted(() => ({
     }
   },
   handleSearch: vi.fn()
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -318,12 +318,7 @@ function renderDialog(
       ...props
     },
     global: {
-      config: {
-        globalProperties: fromAny({
-          $t: (key: string, params?: Record<string, string>) =>
-            params ? `${key}:${params.panel}` : key
-        })
-      }
+      plugins: [testI18n]
     }
   })
 }
