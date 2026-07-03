@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 import {
+  autoSocketName,
   planVariableSockets,
   renameVariableInTemplate,
   resolvePromptTemplate
@@ -78,6 +79,58 @@ describe('planVariableSockets', () => {
       namesToAdd: ['animal'],
       indicesToRemove: []
     })
+  })
+
+  it('drops a stale placeholder when a connected socket claims its name', () => {
+    expect(
+      planVariableSockets(
+        [
+          { name: 'subject', connected: false },
+          { name: 'subject', connected: true }
+        ],
+        ['subject']
+      )
+    ).toEqual({ namesToAdd: [], indicesToRemove: [0] })
+  })
+})
+
+describe('autoSocketName', () => {
+  it('adopts a declared variable matching the title case-insensitively', () => {
+    const name = autoSocketName(
+      'Subject',
+      ['subject'],
+      [
+        { name: 'subject', connected: false },
+        { name: '', connected: true }
+      ]
+    )
+    expect(name).toBe('subject')
+  })
+
+  it('does not adopt a variable another connected socket claims', () => {
+    const name = autoSocketName(
+      'Subject',
+      ['subject'],
+      [
+        { name: 'subject', connected: true },
+        { name: '', connected: true }
+      ]
+    )
+    expect(name).toBe('Subject')
+  })
+
+  it('falls back to the source title when nothing matches', () => {
+    expect(autoSocketName('Camera', ['subject'], [])).toBe('Camera')
+  })
+
+  it('suffixes a title already taken by another socket', () => {
+    expect(
+      autoSocketName('Camera', [], [{ name: 'Camera', connected: true }])
+    ).toBe('Camera 2')
+  })
+
+  it('defaults to var for a blank title', () => {
+    expect(autoSocketName('  ', [], [])).toBe('var')
   })
 })
 

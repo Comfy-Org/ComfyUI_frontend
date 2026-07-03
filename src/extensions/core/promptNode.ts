@@ -11,6 +11,7 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 import {
+  autoSocketName,
   planVariableSockets,
   renameVariableInTemplate,
   resolvePromptTemplate
@@ -205,16 +206,14 @@ class PromptNode extends LGraphNode {
   private uniqueVarName(input: INodeInputSlot): string {
     const link = input.link != null ? this.graph?.links[input.link] : null
     const source = link ? this.graph?.getNodeById(link.origin_id) : null
-    const base = source?.title?.trim() || 'var'
-
-    const taken = new Set(
-      (this.inputs ?? []).map((slot) => slot.name).filter(Boolean)
+    return autoSocketName(
+      source?.title ?? '',
+      this.declaredVarNames(),
+      (this.inputs ?? []).map((slot) => ({
+        name: slot.name ?? '',
+        connected: slot.link != null
+      }))
     )
-    if (!taken.has(base)) return base
-
-    let suffix = 2
-    while (taken.has(`${base} ${suffix}`)) suffix++
-    return `${base} ${suffix}`
   }
 }
 
