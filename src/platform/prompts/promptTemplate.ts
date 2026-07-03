@@ -1,4 +1,24 @@
-import type { PromptTemplate } from '@/platform/prompts/promptTypes'
+export type PromptSegment =
+  | { type: 'text'; value: string }
+  | { type: 'var'; name: string }
+
+export type PromptTemplate = PromptSegment[]
+
+/**
+ * Resolves a prompt template to its final string, delegating variable
+ * references to the caller. Missing references resolve to an empty string so
+ * resolution never throws and never blocks submission.
+ */
+export function resolvePromptTemplate(
+  template: PromptTemplate,
+  resolveVar: (name: string) => string
+): string {
+  let result = ''
+  for (const segment of template) {
+    result += segment.type === 'text' ? segment.value : resolveVar(segment.name)
+  }
+  return result
+}
 
 /** Rewrites every `@variable` reference named `oldName` to `newName`. */
 export function renameVariableInTemplate(

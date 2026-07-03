@@ -7,12 +7,10 @@
       spellcheck="false"
       data-testid="prompt-editor"
       class="size-full overflow-auto rounded-sm border border-border-default bg-component-node-widget-background p-2 wrap-break-word whitespace-pre-wrap outline-none"
-      @input="onInput"
+      @input="syncFromEditor"
       @keydown="onKeydown"
-      @keyup="onKeyup"
-      @click="detectMention"
       @paste="onPaste"
-      @blur="onBlur"
+      @blur="closeMenu"
     />
     <span
       v-if="isEmpty && placeholder"
@@ -60,17 +58,18 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import {
   CHIP_SELECTOR,
   createChipElement,
   parseElementToTemplate,
   renderTemplateToElement
-} from '@/platform/prompts/promptTemplateDom'
-import type { PromptTemplate } from '@/platform/prompts/promptTypes'
+} from '@/components/graph/widgets/promptTemplateDom'
+import Button from '@/components/ui/button/Button.vue'
+import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 
 const {
   variableNames = [],
@@ -142,7 +141,6 @@ interface MenuItem {
 
 const menuOpen = ref(false)
 const menuItems = ref<MenuItem[]>([])
-const menuQuery = ref('')
 const highlighted = ref(0)
 const menuTop = ref(0)
 const menuLeft = ref(0)
@@ -159,20 +157,23 @@ function closeMenu() {
   mentionAnchor = null
 }
 
-function recomputeMenu() {
-  const query = menuQuery.value
+function recomputeMenu(query: string) {
   const lower = query.toLowerCase()
   const vars: MenuItem[] = variableNames
     .filter((name) => name.toLowerCase().includes(lower))
     .map((name) => ({ name }))
-  const trimmed = query.trim()
   const create: MenuItem[] =
-    trimmed && !variableNames.includes(trimmed)
-      ? [{ name: trimmed, create: true }]
+    query && !variableNames.includes(query)
+      ? [{ name: query, create: true }]
       : []
   menuItems.value = [...vars, ...create]
   highlighted.value = 0
 }
+
+// A single caret-position listener drives mention detection: typing, clicking,
+// and arrow keys all land here, while Escape (no caret move) does not — so a
+// dismissed menu stays closed.
+useEventListener(document, 'selectionchange', detectMention)
 
 function detectMention() {
   const host = editorEl.value
@@ -197,13 +198,12 @@ function detectMention() {
   const match = /(?:^|\s)@([^\s@]*)$/.exec(before)
   if (!match) return closeMenu()
 
-  menuQuery.value = match[1]
   mentionAnchor = {
     node: textNode,
     start: offset - match[1].length - 1,
     end: offset
   }
-  recomputeMenu()
+  recomputeMenu(match[1])
   positionMenu()
   menuOpen.value = true
 }
@@ -213,15 +213,7 @@ function positionMenu() {
   if (!selection || selection.rangeCount === 0) return
   const range = selection.getRangeAt(0).cloneRange()
   range.collapse(true)
-  let rect = range.getBoundingClientRect()
-  if (!rect.height && !rect.width) {
-    const marker = document.createElement('span')
-    marker.textContent = '​'
-    range.insertNode(marker)
-    rect = marker.getBoundingClientRect()
-    marker.remove()
-    editorEl.value?.normalize()
-  }
+  const rect = range.getBoundingClientRect()
   menuTop.value = rect.bottom + 4
   menuLeft.value = rect.left
 }
@@ -264,14 +256,6 @@ function insertTextAtCaret(value: string) {
   setCaret(node, value.length)
 }
 
-const MENU_NAV_KEYS = new Set([
-  'ArrowUp',
-  'ArrowDown',
-  'Enter',
-  'Tab',
-  'Escape'
-])
-
 function onKeydown(event: KeyboardEvent) {
   event.stopPropagation()
 
@@ -300,19 +284,6 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
-function onKeyup(event: KeyboardEvent) {
-  // Escape closed the menu on keydown; without this guard its keyup would
-  // re-run mention detection and instantly reopen the menu.
-  if (event.key === 'Escape') return
-  if (menuOpen.value && MENU_NAV_KEYS.has(event.key)) return
-  detectMention()
-}
-
-function onInput() {
-  syncFromEditor()
-  detectMention()
-}
-
 function onPaste(event: ClipboardEvent) {
   event.preventDefault()
   const text = event.clipboardData?.getData('text/plain') ?? ''
@@ -320,9 +291,5 @@ function onPaste(event: ClipboardEvent) {
     insertTextAtCaret(text)
     syncFromEditor()
   }
-}
-
-function onBlur() {
-  window.setTimeout(closeMenu, 150)
 }
 </script>

@@ -25,7 +25,6 @@ export function useEditableSlotTitle(
 ) {
   const canvasStore = useCanvasStore()
   const editing = ref(false)
-  const draft = ref('')
 
   function renamableNode(): RenamableNode | undefined {
     const node = canvasStore.canvas?.graph?.getNodeById(nodeId())
@@ -35,15 +34,13 @@ export function useEditableSlotTitle(
   const isEditable = computed(() => !!renamableNode())
 
   function startEdit() {
-    if (!renamableNode()) return
-    draft.value = currentName()
-    editing.value = true
+    if (renamableNode()) editing.value = true
   }
 
-  function commit() {
+  function commit(newName: string) {
     if (!editing.value) return
     editing.value = false
-    const name = draft.value.trim()
+    const name = newName.trim()
     if (name && name !== currentName()) {
       renamableNode()?.renameVariableInput(currentName(), name)
     }
@@ -53,5 +50,5 @@ export function useEditableSlotTitle(
     editing.value = false
   }
 
-  return { editing, draft, isEditable, startEdit, commit, cancel }
+  return { editing, isEditable, startEdit, commit, cancel }
 }

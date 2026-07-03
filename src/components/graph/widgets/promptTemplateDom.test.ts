@@ -4,17 +4,16 @@ import {
   createChipElement,
   parseElementToTemplate,
   renderTemplateToElement
-} from '@/platform/prompts/promptTemplateDom'
-import type { PromptTemplate } from '@/platform/prompts/promptTypes'
+} from '@/components/graph/widgets/promptTemplateDom'
+import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 
 function host(): HTMLElement {
   return document.createElement('div')
 }
 
 describe('promptTemplateDom', () => {
-  it('renders chips with type and name attributes', () => {
+  it('renders chips with their variable name', () => {
     const chip = createChipElement('setting')
-    expect(chip.getAttribute('data-chip-type')).toBe('var')
     expect(chip.getAttribute('data-chip-name')).toBe('setting')
     expect(chip.textContent).toBe('@setting')
     expect(chip.contentEditable).toBe('false')

@@ -35,16 +35,12 @@
 
     <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
-      <input
+      <EditableText
         v-if="editing"
-        ref="titleInputEl"
-        v-model="draft"
-        class="min-w-0 rounded-sm border border-border-default bg-base-background px-1 text-node-component-slot-text outline-none"
-        @keydown="onTitleKeydown"
-        @blur="commit"
-        @pointerdown.stop
-        @click.stop
-        @dblclick.stop
+        :model-value="slotData.name ?? ''"
+        is-editing
+        @edit="commit"
+        @cancel="cancel"
       />
       <span
         v-else-if="!props.dotOnly && !hasNoLabel"
@@ -68,16 +64,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onErrorCaptured,
-  ref,
-  watch,
-  watchEffect
-} from 'vue'
+import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
+import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -104,30 +94,10 @@ interface InputSlotProps {
 
 const props = defineProps<InputSlotProps>()
 
-const { editing, draft, isEditable, startEdit, commit, cancel } =
-  useEditableSlotTitle(
-    () => props.nodeId ?? '',
-    () => props.slotData.name ?? ''
-  )
-
-const titleInputEl = ref<HTMLInputElement | null>(null)
-watch(editing, async (active) => {
-  if (!active) return
-  await nextTick()
-  titleInputEl.value?.focus()
-  titleInputEl.value?.select()
-})
-
-function onTitleKeydown(event: KeyboardEvent) {
-  event.stopPropagation()
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    commit()
-  } else if (event.key === 'Escape') {
-    event.preventDefault()
-    cancel()
-  }
-}
+const { editing, isEditable, startEdit, commit, cancel } = useEditableSlotTitle(
+  () => props.nodeId ?? '',
+  () => props.slotData.name ?? ''
+)
 
 const hasNoLabel = computed(
   () =>

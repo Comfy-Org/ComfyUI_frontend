@@ -1,9 +1,33 @@
 import { describe, expect, it } from 'vitest'
 
+import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 import {
   planVariableSockets,
-  renameVariableInTemplate
-} from '@/platform/prompts/variableInputs'
+  renameVariableInTemplate,
+  resolvePromptTemplate
+} from '@/platform/prompts/promptTemplate'
+
+describe('resolvePromptTemplate', () => {
+  it('concatenates text segments', () => {
+    const template: PromptTemplate = [
+      { type: 'text', value: 'hello ' },
+      { type: 'text', value: 'world' }
+    ]
+    expect(resolvePromptTemplate(template, () => '')).toBe('hello world')
+  })
+
+  it('delegates variable segments to resolveVar', () => {
+    const template: PromptTemplate = [
+      { type: 'text', value: 'style: ' },
+      { type: 'var', name: 'art_style' }
+    ]
+    expect(
+      resolvePromptTemplate(template, (name) =>
+        name === 'art_style' ? 'anime' : ''
+      )
+    ).toBe('style: anime')
+  })
+})
 
 describe('planVariableSockets', () => {
   it('adds a socket for a newly declared variable', () => {

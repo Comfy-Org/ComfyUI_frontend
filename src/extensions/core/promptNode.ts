@@ -8,12 +8,13 @@ import {
   LiteGraph,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/litegraph'
-import { resolvePromptTemplate } from '@/platform/prompts/promptResolution'
-import type { PromptTemplate } from '@/platform/prompts/promptTypes'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 import {
   planVariableSockets,
-  renameVariableInTemplate
-} from '@/platform/prompts/variableInputs'
+  renameVariableInTemplate,
+  resolvePromptTemplate
+} from '@/platform/prompts/promptTemplate'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
@@ -54,7 +55,7 @@ class PromptNode extends LGraphNode {
       )
     }
 
-    this.addDOMWidget<HTMLElement, PromptTemplate>(
+    const widget = this.addDOMWidget<HTMLElement, PromptTemplate>(
       PROMPT_WIDGET_NAME,
       'prompteditor',
       document.createElement('div'),
@@ -68,6 +69,17 @@ class PromptNode extends LGraphNode {
         getMinHeight: () => 100
       }
     )
+    // Guarded so per-keystroke edits skip socket churn; only a change to the
+    // declared variable set triggers reconciliation.
+    let lastDeclaredKey: string | null = null
+    widget.callback = () => {
+      if (app.configuringGraph) return
+      const declared = this.declaredVarNames()
+      const key = JSON.stringify(declared)
+      if (key === lastDeclaredKey) return
+      lastDeclaredKey = key
+      this.reconcileVariableInputs(declared)
+    }
 
     this.setSize([340, 200])
   }
@@ -80,10 +92,8 @@ class PromptNode extends LGraphNode {
 
   /** Resolves the editor template to its final string at submission time. */
   resolvePromptText(visited: ReadonlySet<string> = new Set()): string {
-    return resolvePromptTemplate(
-      this.getTemplate(),
-      (name, currentVisited) => this.resolveVar(name, currentVisited),
-      visited
+    return resolvePromptTemplate(this.getTemplate(), (name) =>
+      this.resolveVar(name, visited)
     )
   }
 
@@ -127,11 +137,6 @@ class PromptNode extends LGraphNode {
     this.reconcileVariableInputs(this.declaredVarNames())
   }
 
-  /** Reconciles input sockets to the variables declared in the editor text. */
-  syncVariableInputs(declared: readonly string[]) {
-    this.reconcileVariableInputs(declared)
-  }
-
   /**
    * Renames a variable input socket in place (preserving its link) and updates
    * every matching `@reference` in the editor text. No-ops on an empty name or a
@@ -150,6 +155,10 @@ class PromptNode extends LGraphNode {
     if (widget) {
       widget.value = renameVariableInTemplate(this.getTemplate(), oldName, name)
     }
+    this.graph?.trigger('node:slot-label:changed', {
+      nodeId: this.id,
+      slotType: NodeSlotType.INPUT
+    })
   }
 
   private declaredVarNames(): string[] {
@@ -183,6 +192,10 @@ class PromptNode extends LGraphNode {
       declared
     )
 
+    // The placeholder remove/re-add below always mutates the inputs array
+    // length. That doubles as the change signal for the widget: in-place
+    // `link`/`name` writes are invisible to the node manager's shallowReactive
+    // wrapper, so callers rely on this churn to refresh connection state.
     for (const index of [...indicesToRemove].reverse()) this.removeInput(index)
     for (const name of namesToAdd) this.addInput(name, 'STRING')
     this.addInput('', 'STRING')

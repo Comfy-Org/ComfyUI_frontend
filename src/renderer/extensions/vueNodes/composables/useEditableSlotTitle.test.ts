@@ -36,42 +36,40 @@ describe('useEditableSlotTitle', () => {
 
   it('renames the slot on commit when the value changed', () => {
     h.node = renamableNode()
-    const { startEdit, commit, draft, editing } = useEditableSlotTitle(
+    const { startEdit, commit, editing } = useEditableSlotTitle(
       () => '1',
       () => 'color'
     )
     startEdit()
     expect(editing.value).toBe(true)
-    expect(draft.value).toBe('color')
-    draft.value = 'shade'
-    commit()
+    commit('shade')
     expect(editing.value).toBe(false)
     expect(h.node.renameVariableInput).toHaveBeenCalledWith('color', 'shade')
   })
 
   it('does not rename when the name is unchanged or blank', () => {
     h.node = renamableNode()
-    const { startEdit, commit, draft } = useEditableSlotTitle(
+    const { startEdit, commit } = useEditableSlotTitle(
       () => '1',
       () => 'color'
     )
     startEdit()
-    draft.value = '  '
-    commit()
+    commit('  ')
+    startEdit()
+    commit('color')
     expect(h.node.renameVariableInput).not.toHaveBeenCalled()
   })
 
   it('discards the edit on cancel', () => {
     h.node = renamableNode()
-    const { startEdit, cancel, draft, commit, editing } = useEditableSlotTitle(
+    const { startEdit, cancel, commit, editing } = useEditableSlotTitle(
       () => '1',
       () => 'color'
     )
     startEdit()
-    draft.value = 'shade'
     cancel()
     expect(editing.value).toBe(false)
-    commit()
+    commit('shade')
     expect(h.node.renameVariableInput).not.toHaveBeenCalled()
   })
 })

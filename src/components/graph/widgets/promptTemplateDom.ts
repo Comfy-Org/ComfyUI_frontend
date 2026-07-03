@@ -1,9 +1,9 @@
 import type {
   PromptSegment,
   PromptTemplate
-} from '@/platform/prompts/promptTypes'
+} from '@/platform/prompts/promptTemplate'
 
-export const CHIP_SELECTOR = '[data-chip-type]'
+export const CHIP_SELECTOR = '[data-chip-name]'
 
 const CHIP_CLASS =
   'prompt-chip mx-0.5 inline-flex items-center rounded-sm px-1 align-baseline select-none cursor-default bg-primary-background/50 text-base-foreground'
@@ -11,20 +11,14 @@ const CHIP_CLASS =
 function isChipElement(node: Node): node is HTMLElement {
   return (
     node.nodeType === Node.ELEMENT_NODE &&
-    (node as HTMLElement).hasAttribute('data-chip-type')
+    (node as HTMLElement).hasAttribute('data-chip-name')
   )
-}
-
-function chipSegment(el: HTMLElement): PromptSegment | null {
-  if (el.getAttribute('data-chip-type') !== 'var') return null
-  return { type: 'var', name: el.getAttribute('data-chip-name') ?? '' }
 }
 
 export function createChipElement(name: string): HTMLSpanElement {
   const el = document.createElement('span')
   el.className = CHIP_CLASS
   el.contentEditable = 'false'
-  el.setAttribute('data-chip-type', 'var')
   el.setAttribute('data-chip-name', name)
   el.textContent = `@${name}`
   return el
@@ -64,8 +58,10 @@ function appendNode(node: Node, segments: PromptSegment[]): void {
       const value = child.textContent ?? ''
       if (value) segments.push({ type: 'text', value })
     } else if (isChipElement(child)) {
-      const segment = chipSegment(child)
-      if (segment) segments.push(segment)
+      segments.push({
+        type: 'var',
+        name: child.getAttribute('data-chip-name') ?? ''
+      })
     } else if (child.nodeName === 'BR') {
       segments.push({ type: 'text', value: '\n' })
     } else {

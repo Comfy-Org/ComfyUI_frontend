@@ -4,13 +4,12 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import PromptNodeWidget from '@/components/graph/widgets/PromptNodeWidget.vue'
-import type { PromptTemplate } from '@/platform/prompts/promptTypes'
+import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 
 const g = vi.hoisted(() => {
   const promptNode = {
     id: '1',
-    inputs: [] as { name?: string; link: number | null }[],
-    syncVariableInputs: vi.fn()
+    inputs: [] as { name?: string; link: number | null }[]
   }
   const graph = {
     getNodeById: (id: string) => (id === '1' ? promptNode : undefined)
@@ -19,7 +18,7 @@ const g = vi.hoisted(() => {
 })
 
 // Mirror the real node manager, which exposes node.inputs as a reactive array,
-// so the widget's connection watcher fires when sockets change.
+// so the widget's connection computeds update when sockets change.
 g.promptNode.inputs = shallowReactive(g.promptNode.inputs)
 
 /** Sets the node's connected variable input sockets by name (mutates in place). */
@@ -96,20 +95,6 @@ describe('PromptNodeWidget', () => {
 
     await waitFor(() => expect(chip).toHaveClass('bg-primary-background/50'))
     expect(chip).not.toHaveClass('bg-destructive-background')
-  })
-
-  it('mirrors the declared variables onto the node as input sockets', () => {
-    renderWidget({
-      template: [
-        { type: 'text', value: 'a ' },
-        { type: 'var', name: 'animal' },
-        { type: 'var', name: 'setting' }
-      ]
-    })
-    expect(g.promptNode.syncVariableInputs).toHaveBeenCalledWith([
-      'animal',
-      'setting'
-    ])
   })
 
   it('shows a placeholder with a literal @ when empty', () => {
