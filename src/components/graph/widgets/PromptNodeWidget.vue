@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex size-full min-h-[180px] flex-col text-xs"
+    class="flex size-full min-h-[100px] flex-col text-xs"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
