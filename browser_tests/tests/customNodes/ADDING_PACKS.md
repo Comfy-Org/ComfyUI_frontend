@@ -141,8 +141,8 @@ Append one object to `browser_tests/fixtures/data/customNodeManifest.json`:
 | `vueNodesCompatible` | Optional, default `true`. See the policy below. Only ever set `false`, and only with evidence.                                                                                                     |
 
 `loadManifest()` (`browser_tests/fixtures/customNode/manifest.ts`) validates
-every row and fails loudly on a missing field, an empty `repo`, or a
-misspelled tier.
+every row and fails loudly on a missing field, an empty `repo`, a misspelled
+tier, or a `run` tier with an empty `workflow`.
 
 ## Step 6 - prove it green locally
 

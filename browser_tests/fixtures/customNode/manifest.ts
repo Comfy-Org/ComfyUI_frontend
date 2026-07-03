@@ -42,6 +42,14 @@ function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
     missing.push('repo')
   // workflow may be an empty string until the pack gains a run-tier fixture.
   if (typeof entry.workflow !== 'string') missing.push('workflow')
+  // A run-tier row with no workflow would otherwise skip locally, leaving
+  // only CI's skip gate to notice the lost coverage. Fail at load instead.
+  else if (
+    entry.workflow === '' &&
+    Array.isArray(entry.tiers) &&
+    entry.tiers.includes('run')
+  )
+    missing.push('workflow (required when tiers includes "run")')
   if (!Array.isArray(entry.expectedNodes) || entry.expectedNodes.length === 0)
     missing.push('expectedNodes')
   if (!Array.isArray(entry.tiers) || entry.tiers.length === 0)
