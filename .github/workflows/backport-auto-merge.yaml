@@ -173,8 +173,11 @@ jobs:
               # Avoid spamming a persistently-stuck PR: only re-warn if the last
               # warning (identified by its marker) is more than an hour old.
               marker='<!-- backport-auto-merge:merge-failed -->'
-              last_warned=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/issues/${pr}/comments" --paginate \
-                --jq "[.[] | select(.body | contains(\"${marker}\"))] | sort_by(.created_at) | last | .created_at // empty" 2>/dev/null || echo '')
+              # `gh api --paginate` emits one JSON array per page; `--jq` would run
+              # per page (missing the true latest across pages), so slurp all pages
+              # into one array first and filter with a separate jq pass.
+              last_warned=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/issues/${pr}/comments" --paginate 2>/dev/null \
+                | jq -s "[.[][] | select(.body | contains(\"${marker}\"))] | sort_by(.created_at) | last | .created_at // empty") || last_warned=''
               stale=true
               if [ -n "$last_warned" ]; then
                 last_epoch=$(date -d "$last_warned" +%s 2>/dev/null || echo 0)
