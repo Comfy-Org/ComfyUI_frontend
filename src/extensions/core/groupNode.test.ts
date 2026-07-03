@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -87,7 +88,7 @@ function addCustomNodeDefs(defs: Record<string, ComfyNodeDef>) {
   if (!groupExtension.addCustomNodeDefs) {
     throw new Error('GroupNode extension does not implement addCustomNodeDefs')
   }
-  groupExtension.addCustomNodeDefs(defs, appMock as unknown as ComfyApp)
+  groupExtension.addCustomNodeDefs(defs, fromPartial<ComfyApp>(appMock))
 }
 
 beforeEach(() => {
@@ -121,7 +122,7 @@ describe('replaceLegacySeparators', () => {
 describe('GroupNodeConfig.getLinks', () => {
   function configFrom(
     links: SerialisedLLinkArray[],
-    external: (number | string)[][] = []
+    external: (number | string | null)[][] = []
   ) {
     const nodeData: GroupNodeWorkflowData = {
       nodes: [
@@ -181,7 +182,7 @@ describe('GroupNodeConfig.getLinks', () => {
     const config = configFrom(
       [],
       [
-        [0, 1, null as unknown as string],
+        [0, 1, null],
         [0, 2, 'LATENT'],
         [0, 3, 'IMAGE']
       ]

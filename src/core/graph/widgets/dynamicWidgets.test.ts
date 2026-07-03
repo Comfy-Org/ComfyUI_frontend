@@ -22,10 +22,13 @@ type TestAutogrowNode = LGraphNode & {
 const { addNodeInput } = useLitegraphService()
 
 beforeEach(() => {
+  vi.restoreAllMocks()
   vi.clearAllMocks()
-  ;(app as unknown as { configuringGraphLevel: number }).configuringGraphLevel =
-    0
 })
+
+function mockConfiguringGraph() {
+  vi.spyOn(app, 'configuringGraph', 'get').mockReturnValue(true)
+}
 
 function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
@@ -219,10 +222,10 @@ describe('Dynamic Combos', () => {
   })
 
   test('throws if the backing widgets array disappears during update', () => {
-    const node = testNode()
+    const node: LGraphNode = testNode()
     addDynamicCombo(node, [['INT'], ['STRING']])
-    const controller = node.widgets[0]
-    node.widgets = undefined as unknown as typeof node.widgets
+    const controller = node.widgets![0]
+    node.widgets = undefined
 
     expect(() => {
       controller.value = '1'
@@ -506,15 +509,7 @@ describe('Autogrow', () => {
     const unknownInput = node.addInput('outside.0', 'IMAGE')
 
     node.onConnectionsChange?.(LiteGraph.OUTPUT, 0, true, null, node.inputs[0])
-    node.onConnectionsChange?.(
-      LiteGraph.INPUT,
-      99,
-      true,
-      null,
-      undefined as unknown as Parameters<
-        NonNullable<typeof node.onConnectionsChange>
-      >[4]
-    )
+    node.onConnectionsChange?.(LiteGraph.INPUT, 99, true, null, node.inputs[0])
     node.onConnectionsChange?.(LiteGraph.INPUT, 2, true, null, unknownInput)
 
     expect(node.inputs).toHaveLength(inputCount + 1)
@@ -549,9 +544,7 @@ describe('Autogrow', () => {
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
     node.inputs[1].widget = { name: node.inputs[1].name }
-    ;(
-      app as unknown as { configuringGraphLevel: number }
-    ).configuringGraphLevel = 1
+    mockConfiguringGraph()
 
     connectInput(node, 1, graph)
 
@@ -564,9 +557,7 @@ describe('Autogrow', () => {
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
     node.inputs[1].widget = { name: node.inputs[1].name }
-    ;(
-      app as unknown as { configuringGraphLevel: number }
-    ).configuringGraphLevel = 1
+    mockConfiguringGraph()
 
     connectInput(node, 1, graph)
     const shim = node.widgets.find((widget) => widget.name === '0.test1')
@@ -597,9 +588,7 @@ describe('Autogrow', () => {
       serialize: false,
       draw: vi.fn()
     })
-    ;(
-      app as unknown as { configuringGraphLevel: number }
-    ).configuringGraphLevel = 1
+    mockConfiguringGraph()
 
     connectInput(node, 1, graph)
 

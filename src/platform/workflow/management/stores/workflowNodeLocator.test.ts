@@ -2,10 +2,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Subgraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/scripts/app', () => ({ app: {} }))
 
@@ -56,7 +57,7 @@ describe('workflowStore node locator translation', () => {
   it('derives a locator from a node based on whether its graph is a subgraph', () => {
     const store = useWorkflowStore()
 
-    const rootNode = { id: toNodeId(7), graph: {} } as unknown as LGraphNode
+    const rootNode = createMockLGraphNode({ id: toNodeId(7), graph: {} })
     expect(store.nodeToNodeLocatorId(rootNode)).toBe('7')
   })
 

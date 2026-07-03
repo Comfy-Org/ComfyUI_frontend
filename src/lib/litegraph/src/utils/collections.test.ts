@@ -21,9 +21,7 @@ vi.mock('@/lib/litegraph/src/LGraphNode', () => graphNodeMock)
 
 describe('getAllNestedItems', () => {
   it('returns empty for an undefined input set', () => {
-    expect(
-      getAllNestedItems(undefined as unknown as ReadonlySet<Positionable>)
-    ).toEqual(new Set())
+    expect(getAllNestedItems(undefined)).toEqual(new Set())
   })
 
   it('flattens nested children while skipping pinned and repeated items', () => {

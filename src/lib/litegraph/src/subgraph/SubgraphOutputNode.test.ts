@@ -8,6 +8,7 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -20,6 +21,9 @@ import { createTestSubgraph } from './__fixtures__/subgraphHelpers'
 function eventAt(x: number, y: number, button = 0): CanvasPointerEvent {
   return { canvasX: x, canvasY: y, button } as CanvasPointerEvent
 }
+
+type MenuConfig = { title?: string; event?: CanvasPointerEvent }
+const originalContextMenu = LiteGraph.ContextMenu
 
 function createCanvasContext() {
   return fromPartial<CanvasRenderingContext2D>({
@@ -46,6 +50,7 @@ function createCanvasContext() {
 describe('SubgraphOutputNode', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    Object.assign(LiteGraph, { ContextMenu: originalContextMenu })
   })
 
   it('exposes output slots plus the empty slot and computes its anchor', () => {
@@ -103,12 +108,14 @@ describe('SubgraphOutputNode', () => {
     })
     const slot = subgraph.outputs[0]
     slot.boundingRect.updateTo([10, 20, 100, 30])
-    const menuSpy = vi.spyOn(
-      subgraph.outputNode as unknown as {
-        showSlotContextMenu(slot: unknown, event: unknown): void
-      },
-      'showSlotContextMenu'
-    )
+    const contextMenus: MenuConfig[] = []
+    Object.assign(LiteGraph, {
+      ContextMenu: class {
+        constructor(_options: unknown[], config: MenuConfig) {
+          contextMenus.push(config)
+        }
+      }
+    })
 
     subgraph.outputNode.onPointerDown(
       eventAt(20, 25, 2),
@@ -121,10 +128,12 @@ describe('SubgraphOutputNode', () => {
       {} as LinkConnector
     )
 
-    expect(menuSpy).toHaveBeenCalledOnce()
-    expect(menuSpy).toHaveBeenCalledWith(
-      slot,
-      expect.objectContaining({ button: 2 })
+    expect(contextMenus).toHaveLength(1)
+    expect(contextMenus[0]).toEqual(
+      expect.objectContaining({
+        title: slot.name,
+        event: expect.objectContaining({ button: 2 })
+      })
     )
   })
 
@@ -206,17 +215,7 @@ describe('SubgraphOutputNode', () => {
       pinned: false
     })
     const ctx = createCanvasContext()
-    const drawSlotsSpy = vi.spyOn(
-      subgraph.outputNode as unknown as {
-        drawSlots(
-          ctx: unknown,
-          colorContext: unknown,
-          fromSlot: unknown,
-          editorAlpha: unknown
-        ): void
-      },
-      'drawSlots'
-    )
+    const slotDrawSpy = vi.spyOn(subgraph.outputs[0], 'draw')
 
     subgraph.outputNode.drawProtected(
       ctx,
@@ -232,14 +231,16 @@ describe('SubgraphOutputNode', () => {
     expect(ctx.beginPath).toHaveBeenCalled()
     expect(ctx.stroke).toHaveBeenCalled()
     expect(ctx.setTransform).toHaveBeenCalled()
-    expect(drawSlotsSpy).toHaveBeenCalledWith(
-      ctx,
+    expect(slotDrawSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        getConnectedColor: expect.any(Function),
-        getDisconnectedColor: expect.any(Function)
-      }),
-      subgraph.outputs[0],
-      0.5
+        ctx,
+        fromSlot: subgraph.outputs[0],
+        editorAlpha: 0.5,
+        colorContext: expect.objectContaining({
+          getConnectedColor: expect.any(Function),
+          getDisconnectedColor: expect.any(Function)
+        })
+      })
     )
   })
 })

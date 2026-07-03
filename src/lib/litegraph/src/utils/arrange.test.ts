@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
 import type { LGraphNode } from '../LGraphNode'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './arrange'
-
-type ArrangeNode = LGraphNode & { title: string }
 
 function nodeFixture(
   title: string,
   pos: [number, number],
   size: [number, number]
-): ArrangeNode {
+): LGraphNode {
   const graphNode = {
     title,
     pos,
@@ -19,13 +19,13 @@ function nodeFixture(
     })
   }
 
-  return graphNode as unknown as ArrangeNode
+  return createMockLGraphNode(graphNode)
 }
 
 describe('arrange utilities', () => {
   it('returns null when no boundary node is available', () => {
     expect(getBoundaryNodes([])).toBeNull()
-    expect(getBoundaryNodes(undefined as unknown as LGraphNode[])).toBeNull()
+    expect(getBoundaryNodes(undefined)).toBeNull()
   })
 
   it('finds the furthest node in each direction', () => {
@@ -112,6 +112,6 @@ describe('arrange utilities', () => {
 
   it('returns no positions when alignment has no usable nodes', () => {
     expect(alignNodes([], 'left')).toEqual([])
-    expect(alignNodes(undefined as unknown as LGraphNode[], 'left')).toEqual([])
+    expect(alignNodes(undefined, 'left')).toEqual([])
   })
 })

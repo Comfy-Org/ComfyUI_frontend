@@ -4,6 +4,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
   inputForWidget,
@@ -41,12 +42,12 @@ function input(overrides: Partial<INodeInputSlot> = {}): INodeInputSlot {
 }
 
 function node(overrides: Record<string, unknown> = {}): LGraphNode {
-  return {
+  return createMockLGraphNode({
     inputs: [],
     isSubgraphNode: () => true,
     getSlotFromWidget: vi.fn(),
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 describe('promotedInputWidget helpers', () => {

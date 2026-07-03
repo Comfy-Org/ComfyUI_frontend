@@ -53,6 +53,7 @@ function createSourceNode(graph: LGraph, type: string) {
 
 describe('MatchType during configure', () => {
   beforeEach(() => {
+    vi.restoreAllMocks()
     vi.clearAllMocks()
   })
 
@@ -72,30 +73,22 @@ describe('MatchType during configure', () => {
     const link2Id = switchNode.inputs[1].link!
 
     const outputTypeBefore = switchNode.outputs[0].type
-    ;(
-      app as unknown as { configuringGraphLevel: number }
-    ).configuringGraphLevel = 1
+    vi.spyOn(app, 'configuringGraph', 'get').mockReturnValue(true)
 
-    try {
-      const link1 = graph.links[link1Id]
-      switchNode.onConnectionsChange?.(
-        LiteGraph.INPUT,
-        0,
-        true,
-        link1,
-        switchNode.inputs[0]
-      )
+    const link1 = graph.links[link1Id]
+    switchNode.onConnectionsChange?.(
+      LiteGraph.INPUT,
+      0,
+      true,
+      link1,
+      switchNode.inputs[0]
+    )
 
-      expect(switchNode.inputs[0].link).toBe(link1Id)
-      expect(switchNode.inputs[1].link).toBe(link2Id)
-      expect(graph.links[link1Id]).toBeDefined()
-      expect(graph.links[link2Id]).toBeDefined()
-      expect(switchNode.outputs[0].type).toBe(outputTypeBefore)
-    } finally {
-      ;(
-        app as unknown as { configuringGraphLevel: number }
-      ).configuringGraphLevel = 0
-    }
+    expect(switchNode.inputs[0].link).toBe(link1Id)
+    expect(switchNode.inputs[1].link).toBe(link2Id)
+    expect(graph.links[link1Id]).toBeDefined()
+    expect(graph.links[link2Id]).toBeDefined()
+    expect(switchNode.outputs[0].type).toBe(outputTypeBefore)
   })
 
   test('performs type recalculation during normal operation', () => {
