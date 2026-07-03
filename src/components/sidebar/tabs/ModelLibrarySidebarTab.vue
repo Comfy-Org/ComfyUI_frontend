@@ -87,22 +87,21 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const filteredModels = ref<ComfyModelDef[]>([])
+// Computed (not a snapshot) so results stay live when a reload — e.g. a
+// completed scan — adds or removes models while a search is active.
+const filteredModels = computed<ComfyModelDef[]>(() => {
+  const search = searchQuery.value.toLocaleLowerCase()
+  if (!search) return []
+  return modelStore.models.filter((model) => model.searchable.includes(search))
+})
+
 const handleSearch = async (query: string) => {
   if (!query) {
-    filteredModels.value = []
     expandedKeys.value = {}
     return
   }
-  // Load all models to ensure we have the latest data
+  // Load all models to ensure results cover folders not yet opened
   await modelStore.loadModels()
-  const search = query.toLocaleLowerCase()
-  filteredModels.value = modelStore.models.filter((model: ComfyModelDef) => {
-    return model.searchable.includes(search)
-  })
-
-  await nextTick()
-  expandNode(root.value)
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
@@ -114,6 +113,12 @@ const root = computed<TreeNode>(() => {
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )
+})
+
+watch(root, async (newRoot) => {
+  if (!searchQuery.value) return
+  await nextTick()
+  expandNode(newRoot)
 })
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {

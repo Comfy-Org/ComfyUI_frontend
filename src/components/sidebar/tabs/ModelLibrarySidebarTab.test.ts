@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -20,7 +21,8 @@ const {
   mockRefreshModelFolder,
   mockLoadModels,
   downloadStoreState,
-  settingState
+  settingState,
+  modelsState
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode<unknown> | null = null
   return {
@@ -37,7 +39,11 @@ const {
     mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
     mockLoadModels: vi.fn().mockResolvedValue([]),
     downloadStoreState: { setLastCompleted: (_: unknown) => {} },
-    settingState: { useAssetAPI: false, autoLoadAll: false }
+    settingState: { useAssetAPI: false, autoLoadAll: false },
+    modelsState: {
+      push: (_: unknown) => {},
+      reset: () => {}
+    }
   }
 })
 
@@ -58,20 +64,30 @@ const mockModel = fromPartial<ComfyModelDef>({
   searchable: 'checkpoints/model.safetensors'
 })
 
-vi.mock('@/stores/modelStore', () => ({
-  ResourceState: {
-    Loading: 'loading',
-    Loaded: 'loaded'
-  },
-  useModelStore: () => ({
-    modelFolders: [],
-    models: [mockModel],
-    loadModels: mockLoadModels,
-    loadModelFolders: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue(undefined),
-    refreshModelFolder: mockRefreshModelFolder
-  })
-}))
+vi.mock('@/stores/modelStore', async () => {
+  const { reactive } = await import('vue')
+  const models = reactive<ComfyModelDef[]>([])
+  modelsState.push = (model: unknown) => {
+    models.push(model as ComfyModelDef)
+  }
+  modelsState.reset = () => {
+    models.splice(0, models.length, mockModel)
+  }
+  return {
+    ResourceState: {
+      Loading: 'loading',
+      Loaded: 'loaded'
+    },
+    useModelStore: () => ({
+      modelFolders: [],
+      models,
+      loadModels: mockLoadModels,
+      loadModelFolders: vi.fn().mockResolvedValue([]),
+      refresh: vi.fn().mockResolvedValue(undefined),
+      refreshModelFolder: mockRefreshModelFolder
+    })
+  }
+})
 
 vi.mock('@/stores/assetDownloadStore', async () => {
   const { ref } = await import('vue')
@@ -112,26 +128,45 @@ vi.mock('@/composables/useTreeExpansion', () => ({
   })
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', () => ({
-  default: {
-    name: 'TreeExplorer',
-    template: '<div data-testid="tree-explorer" />',
-    props: ['root', 'expandedKeys'],
-    setup(props: { root: TreeExplorerNode<unknown> }) {
-      captureRoot(props.root)
+vi.mock('@/components/common/TreeExplorer.vue', async () => {
+  const { watchEffect } = await import('vue')
+  return {
+    default: {
+      name: 'TreeExplorer',
+      template: '<div data-testid="tree-explorer" />',
+      props: ['root', 'expandedKeys'],
+      setup(props: { root: TreeExplorerNode<unknown> }) {
+        watchEffect(() => captureRoot(props.root))
+      }
     }
   }
-}))
+})
 
 vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchInput',
-    template: '<input data-testid="search-input" />',
+    template: '<input data-testid="search-input" @input="onInput" />',
     props: ['modelValue', 'placeholder'],
-    setup() {
-      return { focus: vi.fn() }
-    },
-    expose: ['focus']
+    emits: ['update:modelValue', 'search'],
+    setup(
+      _props: unknown,
+      {
+        emit,
+        expose
+      }: {
+        emit: (event: 'update:modelValue' | 'search', value: string) => void
+        expose: (exposed: Record<string, unknown>) => void
+      }
+    ) {
+      expose({ focus: vi.fn() })
+      return {
+        onInput: (event: Event) => {
+          const value = (event.target as HTMLInputElement).value
+          emit('update:modelValue', value)
+          emit('search', value)
+        }
+      }
+    }
   }
 }))
 
@@ -168,6 +203,7 @@ describe('ModelLibrarySidebarTab', () => {
     downloadStoreState.setLastCompleted(null)
     settingState.useAssetAPI = false
     settingState.autoLoadAll = false
+    modelsState.reset()
   })
 
   function renderComponent() {
@@ -247,6 +283,41 @@ describe('ModelLibrarySidebarTab', () => {
     await nextTick()
 
     expect(mockRefreshModelFolder).not.toHaveBeenCalled()
+  })
+
+  describe('search', () => {
+    it('updates active search results when a reload adds a matching model', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      await user.type(screen.getByTestId('search-input'), 'model')
+      await nextTick()
+
+      expect(mockLoadModels).toHaveBeenCalled()
+      const leafLabels = () => {
+        const { children: folders = [] } = getRoot()
+        return folders.flatMap(({ children: leaves = [] }) =>
+          leaves.map((leaf) => leaf.label)
+        )
+      }
+      expect(leafLabels()).toEqual(['model'])
+
+      // A completed scan reloads the store while the search is still active.
+      modelsState.push(
+        fromPartial<ComfyModelDef>({
+          key: 'checkpoints/model-new.safetensors',
+          file_name: 'model-new.safetensors',
+          simplified_file_name: 'model-new',
+          title: 'Model New',
+          directory: 'checkpoints',
+          searchable: 'checkpoints/model-new.safetensors'
+        })
+      )
+      await nextTick()
+
+      expect(leafLabels()).toEqual(['model', 'model-new'])
+    })
   })
 
   describe('asset mode', () => {
