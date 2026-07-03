@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -79,12 +79,16 @@ function createMockImageClass(handler: 'onload' | 'onerror') {
 const MockImage = createMockImageClass('onload')
 
 function makeNode(overrides: object = {}): LGraphNode {
-  return fromAny({
+  const imgObj: unknown = {
+    src: 'http://images.test/render.png?filename=render.png'
+  }
+  const node: unknown = {
     id: 42,
-    imgs: [{ src: 'http://images.test/render.png?filename=render.png' }],
+    imgs: [imgObj as HTMLImageElement],
     imageIndex: 0,
     ...overrides
-  })
+  }
+  return node as LGraphNode
 }
 
 function getInputData(): MockInputData {
@@ -221,14 +225,16 @@ describe('useMaskEditorLoader', () => {
 
   it('uses cloud mask layer metadata when available', async () => {
     mockCloudState.isCloud = true
-    vi.mocked(api.fetchApi).mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        painted_masked: 'painted-masked.png',
-        painted: 'painted.png',
-        paint: 'paint.png'
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      fromPartial<Response>({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          painted_masked: 'painted-masked.png',
+          painted: 'painted.png',
+          paint: 'paint.png'
+        })
       })
-    } as unknown as Response)
+    )
 
     await useMaskEditorLoader().loadFromNode(
       makeNode({
@@ -268,12 +274,12 @@ describe('useMaskEditorLoader', () => {
 
   it('uses painted cloud metadata when painted-masked metadata is absent', async () => {
     mockCloudState.isCloud = true
-    vi.mocked(api.fetchApi).mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        painted: 'painted-only.png'
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      fromPartial<Response>({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ painted: 'painted-only.png' })
       })
-    } as unknown as Response)
+    )
 
     await useMaskEditorLoader().loadFromNode(
       makeNode({
@@ -347,8 +353,9 @@ describe('useMaskEditorLoader', () => {
   })
 
   it('surfaces null node validation failures', async () => {
+    const nullNode: unknown = null
     await expect(
-      useMaskEditorLoader().loadFromNode(null as unknown as LGraphNode)
+      useMaskEditorLoader().loadFromNode(nullNode as LGraphNode)
     ).rejects.toThrow('Node is null or undefined')
   })
 

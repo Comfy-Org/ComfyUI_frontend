@@ -188,7 +188,8 @@ async function mountHarness(nodeId: NodeId = toNodeId(2)) {
   const el = document.createElement('div')
   document.body.appendChild(el)
   const app = createApp(ImageCropHarness, { nodeId: Number(nodeId) })
-  const vm = app.mount(el) as unknown as CropVm
+  const mounted: unknown = app.mount(el)
+  const vm = mounted as CropVm
   await nextTick()
   await Promise.resolve()
   harnessCleanups.push(() => {

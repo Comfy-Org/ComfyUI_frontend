@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
@@ -934,7 +934,8 @@ describe('Graph node manager property triggers', () => {
     })
     expect(widgetData?.slotMetadata?.linked).toBe(false)
 
-    input.link = fromAny(123)
+    const linkId: unknown = 123
+    input.link = linkId as typeof input.link
     graph.trigger('node:slot-errors:changed', {
       nodeId: node.id
     })
@@ -955,7 +956,7 @@ describe('extractVueNodeData widget mapping', () => {
     const siblingTriggerDraw = vi.fn()
     node.addWidget('string', 'prompt', 'hello', callback)
     node.addCustomWidget(
-      fromAny<IBaseWidget, unknown>({
+      fromPartial<IBaseWidget>({
         name: 'sibling',
         type: 'text',
         value: '',
@@ -1013,22 +1014,21 @@ describe('extractVueNodeData widget mapping', () => {
       type: 'text',
       value: 'a'
     } as IBaseWidget)
-    node.addCustomWidget(
-      fromAny<IBaseWidget, unknown>({
-        name: 'plain',
-        type: 'text',
-        value: 'b',
-        advanced: true,
-        element: document.createElement('input'),
-        computeLayoutSize: () => ({ minWidth: 1, minHeight: 1 }),
-        options: {
-          canvasOnly: true,
-          hidden: true,
-          read_only: true
-        },
-        tooltip: 'Details'
-      })
-    )
+    const domWidget: unknown = {
+      name: 'plain',
+      type: 'text',
+      value: 'b',
+      advanced: true,
+      element: document.createElement('input'),
+      computeLayoutSize: () => ({ minWidth: 1, minHeight: 1 }),
+      options: {
+        canvasOnly: true,
+        hidden: true,
+        read_only: true
+      },
+      tooltip: 'Details'
+    }
+    node.addCustomWidget(domWidget as IBaseWidget)
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
@@ -1055,15 +1055,15 @@ describe('extractVueNodeData widget mapping', () => {
   it('falls back to safe widget data when a widget mapper throws', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = new LGraphNode('test')
-    const badWidget = fromAny<IBaseWidget, unknown>({
+    const badWidgetObj: unknown = {
       name: 'broken',
       type: 'custom',
       value: 'x',
       get options() {
         throw new Error('bad options')
       }
-    })
-    node.widgets = [badWidget]
+    }
+    node.widgets = [badWidgetObj as IBaseWidget]
 
     const data = extractVueNodeData(node)
 
@@ -1079,13 +1079,13 @@ describe('extractVueNodeData widget mapping', () => {
   it('falls back to unknown widget data when a broken widget has no name or type', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = new LGraphNode('test')
-    const badWidget = fromAny<IBaseWidget, unknown>({
+    const badWidgetObj2: unknown = {
       value: 'x',
       get options() {
         throw new Error('bad options')
       }
-    })
-    node.widgets = [badWidget]
+    }
+    node.widgets = [badWidgetObj2 as IBaseWidget]
 
     const data = extractVueNodeData(node)
 
@@ -1302,9 +1302,8 @@ describe('getControlWidget', () => {
       [IS_CONTROL_WIDGET]: true,
       value: 'fixed'
     }
-    const widget = {
-      linkedWidgets: [linkedControl]
-    } as unknown as IBaseWidget
+    const widgetObj: unknown = { linkedWidgets: [linkedControl] }
+    const widget = widgetObj as IBaseWidget
 
     const control = getControlWidget(widget)
 

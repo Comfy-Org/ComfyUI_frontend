@@ -413,7 +413,8 @@ describe('useNodeBadge', () => {
   })
 
   it('handles empty graph nodes during registered extension hooks', async () => {
-    appState.graph.nodes = undefined as unknown as LGraphNode[]
+    const noNodes: unknown = undefined
+    appState.graph.nodes = noNodes as LGraphNode[]
 
     mountedApp = mountBadge()
     await nextTick()

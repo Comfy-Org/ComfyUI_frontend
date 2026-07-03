@@ -1,5 +1,6 @@
-import type * as VueI18n from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -9,11 +10,6 @@ const { selection, refreshCanvas, palette } = vi.hoisted(() => ({
   selection: { items: [] as unknown[] },
   refreshCanvas: vi.fn(),
   palette: { light_theme: false }
-}))
-
-vi.mock('vue-i18n', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueI18n>()),
-  useI18n: () => ({ t: (key: string) => key })
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -36,6 +32,23 @@ vi.mock('@/composables/graph/useCanvasRefresh', () => ({
   useCanvasRefresh: () => ({ refreshCanvas })
 }))
 
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
+function withI18n<T>(fn: () => T): T {
+  let result!: T
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = fn()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  return result
+}
+
 function colorable(bgcolor?: string) {
   return {
     setColorOption: vi.fn(),
@@ -51,20 +64,22 @@ beforeEach(() => {
 
 describe('useNodeCustomization', () => {
   it('exposes color and shape option lists', () => {
-    const { colorOptions, shapeOptions } = useNodeCustomization()
+    const { colorOptions, shapeOptions } = withI18n(() =>
+      useNodeCustomization()
+    )
     expect(colorOptions.length).toBeGreaterThan(1)
     expect(shapeOptions.length).toBeGreaterThan(0)
   })
 
   it('reflects the active palette light-theme flag', () => {
     palette.light_theme = true
-    expect(useNodeCustomization().isLightTheme.value).toBe(true)
+    expect(withI18n(() => useNodeCustomization()).isLightTheme.value).toBe(true)
   })
 
   it('clears color on all colorable items for the no-color option', () => {
     const item = colorable()
     selection.items = [item]
-    useNodeCustomization().applyColor(null)
+    withI18n(() => useNodeCustomization()).applyColor(null)
 
     expect(item.setColorOption).toHaveBeenCalledWith(null)
     expect(refreshCanvas).toHaveBeenCalled()
@@ -73,7 +88,7 @@ describe('useNodeCustomization', () => {
   it('applies a named color option to colorable items', () => {
     const item = colorable()
     selection.items = [item]
-    const { colorOptions, applyColor } = useNodeCustomization()
+    const { colorOptions, applyColor } = withI18n(() => useNodeCustomization())
     const named = colorOptions.at(-1)!
 
     applyColor(named)
@@ -86,23 +101,25 @@ describe('useNodeCustomization', () => {
     const item = colorable()
     selection.items = [{}, item]
 
-    useNodeCustomization().applyColor(null)
+    withI18n(() => useNodeCustomization()).applyColor(null)
 
     expect(item.setColorOption).toHaveBeenCalledWith(null)
     expect(refreshCanvas).toHaveBeenCalled()
   })
 
   it('returns null current color for an empty selection', () => {
-    expect(useNodeCustomization().getCurrentColor()).toBeNull()
+    expect(withI18n(() => useNodeCustomization()).getCurrentColor()).toBeNull()
   })
 
   it('returns null current color when no selected item is colorable', () => {
     selection.items = [{}]
-    expect(useNodeCustomization().getCurrentColor()).toBeNull()
+    expect(withI18n(() => useNodeCustomization()).getCurrentColor()).toBeNull()
   })
 
   it('reports a recognized current color', () => {
-    const { colorOptions, getCurrentColor } = useNodeCustomization()
+    const { colorOptions, getCurrentColor } = withI18n(() =>
+      useNodeCustomization()
+    )
     const named = colorOptions.at(-1)!
     selection.items = [colorable(named.value.dark)]
 
@@ -111,25 +128,25 @@ describe('useNodeCustomization', () => {
 
   it('falls back to the no-color option for an unrecognized current color', () => {
     selection.items = [colorable('#not-a-known-color')]
-    const result = useNodeCustomization().getCurrentColor()
+    const result = withI18n(() => useNodeCustomization()).getCurrentColor()
     expect(result?.name).toBe('noColor')
   })
 
   it('no-ops shape changes when no graph nodes are selected', () => {
     selection.items = [colorable()]
-    const { applyShape, shapeOptions } = useNodeCustomization()
+    const { applyShape, shapeOptions } = withI18n(() => useNodeCustomization())
     applyShape(shapeOptions[0])
     expect(refreshCanvas).not.toHaveBeenCalled()
   })
 
   it('returns null current shape with no nodes selected', () => {
-    expect(useNodeCustomization().getCurrentShape()).toBeNull()
+    expect(withI18n(() => useNodeCustomization()).getCurrentShape()).toBeNull()
   })
 
   it('applies a shape to selected graph nodes and refreshes', () => {
     const node = new LGraphNode('Test')
     selection.items = [node]
-    const { applyShape, shapeOptions } = useNodeCustomization()
+    const { applyShape, shapeOptions } = withI18n(() => useNodeCustomization())
     const target = shapeOptions[0]
 
     applyShape(target)
@@ -140,7 +157,9 @@ describe('useNodeCustomization', () => {
 
   it('reports the current shape of a selected node', () => {
     const node = new LGraphNode('Test')
-    const { shapeOptions, getCurrentShape } = useNodeCustomization()
+    const { shapeOptions, getCurrentShape } = withI18n(() =>
+      useNodeCustomization()
+    )
     node.shape = shapeOptions[0].value
     selection.items = [node]
 
@@ -154,7 +173,9 @@ describe('useNodeCustomization', () => {
       writable: true,
       configurable: true
     })
-    const { shapeOptions, getCurrentShape } = useNodeCustomization()
+    const { shapeOptions, getCurrentShape } = withI18n(() =>
+      useNodeCustomization()
+    )
     selection.items = [node]
 
     expect(getCurrentShape()?.value).toBe(shapeOptions[0].value)
@@ -167,7 +188,9 @@ describe('useNodeCustomization', () => {
       writable: true,
       configurable: true
     })
-    const { shapeOptions, getCurrentShape } = useNodeCustomization()
+    const { shapeOptions, getCurrentShape } = withI18n(() =>
+      useNodeCustomization()
+    )
     selection.items = [node]
 
     expect(getCurrentShape()?.value).toBe(shapeOptions[0].value)

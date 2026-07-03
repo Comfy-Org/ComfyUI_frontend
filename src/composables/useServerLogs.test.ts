@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useEventListener } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -87,8 +87,7 @@ describe('useServerLogs', () => {
 
     // Simulate receiving a log event
     const mockEvent = new CustomEvent('logs', {
-      detail: fromAny<LogsWsMessage, unknown>({
-        type: 'logs',
+      detail: fromPartial<LogsWsMessage>({
         entries: [{ m: 'Log message 1' }, { m: 'Log message 2' }]
       })
     }) as CustomEvent<LogsWsMessage>
@@ -111,8 +110,7 @@ describe('useServerLogs', () => {
     ) => void
 
     const mockEvent = new CustomEvent('logs', {
-      detail: fromAny<LogsWsMessage, unknown>({
-        type: 'logs',
+      detail: fromPartial<LogsWsMessage>({
         entries: [
           { m: 'Log message 1 dont remove me' },
           { m: 'remove me' },
@@ -149,8 +147,7 @@ describe('useServerLogs', () => {
 
     onLogs?.(
       new CustomEvent('logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: [{ m: 'before start' }]
         })
       })
@@ -160,8 +157,7 @@ describe('useServerLogs', () => {
     )
     onLogs?.(
       new CustomEvent('logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: [{ m: 'wrong task' }]
         })
       })
@@ -171,8 +167,7 @@ describe('useServerLogs', () => {
     )
     onLogs?.(
       new CustomEvent('logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: [{ m: 'captured' }]
         })
       })
@@ -182,8 +177,7 @@ describe('useServerLogs', () => {
     )
     onLogs?.(
       new CustomEvent('logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: [{ m: 'still active' }]
         })
       })
@@ -193,8 +187,7 @@ describe('useServerLogs', () => {
     )
     onLogs?.(
       new CustomEvent('logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: [{ m: 'after done' }]
         })
       })
@@ -212,24 +205,21 @@ describe('useServerLogs', () => {
 
     onLogs?.(
       new CustomEvent('not-logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: [{ m: 'wrong event' }]
         })
       })
     )
     onLogs?.(
       new CustomEvent('logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: []
         })
       })
     )
     onLogs?.(
       new CustomEvent('logs', {
-        detail: fromAny<LogsWsMessage, unknown>({
-          type: 'logs',
+        detail: fromPartial<LogsWsMessage>({
           entries: [{ m: ' ' }]
         })
       })

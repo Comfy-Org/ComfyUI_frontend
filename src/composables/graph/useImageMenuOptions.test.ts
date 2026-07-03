@@ -1,20 +1,45 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import enMessages from '@/locales/en/main.json'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    useI18n: () => ({
-      t: (key: string) => key.split('.').pop() ?? key
-    })
-  }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
 })
+
+function withI18n<T>(fn: () => T): T {
+  let result!: T
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = fn()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  return result
+}
+
+function setup() {
+  return withI18n(() => useImageMenuOptions())
+}
+
+function mockGetContext(
+  ctx: Partial<CanvasRenderingContext2D>
+): HTMLCanvasElement['getContext'] {
+  const fn: unknown = () => fromPartial<CanvasRenderingContext2D>(ctx)
+  return fn as HTMLCanvasElement['getContext']
+}
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ execute: vi.fn() })
@@ -72,7 +97,7 @@ describe('useImageMenuOptions', () => {
   describe('getImageMenuOptions', () => {
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -81,7 +106,7 @@ describe('useImageMenuOptions', () => {
 
     it('excludes Paste Image option when node does not support paste', () => {
       const node = createImageNode({ pasteFiles: undefined })
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -90,13 +115,13 @@ describe('useImageMenuOptions', () => {
 
     it('returns empty array when node has no images and no pasteFiles', () => {
       const node = createMockLGraphNode({ imgs: [] })
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
 
       expect(getImageMenuOptions(node)).toEqual([])
     })
 
     it('returns empty array when node image capabilities are absent', () => {
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
 
       expect(getImageMenuOptions(fromPartial<LGraphNode>({}))).toEqual([])
     })
@@ -107,7 +132,7 @@ describe('useImageMenuOptions', () => {
         pasteFile: vi.fn(),
         pasteFiles: vi.fn()
       })
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -116,7 +141,7 @@ describe('useImageMenuOptions', () => {
 
     it('places Paste Image between Copy Image and Save Image', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -130,7 +155,7 @@ describe('useImageMenuOptions', () => {
 
     it('gives the Open in Mask Editor option the mask icon', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const maskOption = options.find((o) => o.label === 'Open in Mask Editor')
 
@@ -139,7 +164,7 @@ describe('useImageMenuOptions', () => {
 
     it('gives every image action option an icon so labels stay aligned', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
 
       expect(options.every((o) => !!o.icon)).toBe(true)
@@ -161,7 +186,7 @@ describe('useImageMenuOptions', () => {
         })
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -178,7 +203,7 @@ describe('useImageMenuOptions', () => {
       const node = createImageNode()
       mockClipboard(fromPartial<Clipboard>({ read: undefined }))
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -199,7 +224,7 @@ describe('useImageMenuOptions', () => {
         })
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -214,7 +239,7 @@ describe('useImageMenuOptions', () => {
       const node = createImageNode()
       node.imgs![0].src = 'http://localhost/test.png?preview=1&foo=bar'
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const openOption = getImageMenuOptions(node).find(
         (o) => o.label === 'Open Image'
       )
@@ -229,7 +254,7 @@ describe('useImageMenuOptions', () => {
       const node = createImageNode()
       node.imgs![0].src = 'http://localhost/test.png?preview=1&foo=bar'
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const saveOption = getImageMenuOptions(node).find(
         (o) => o.label === 'Save Image'
       )
@@ -243,7 +268,7 @@ describe('useImageMenuOptions', () => {
     it('does not open or save when the active image is missing', () => {
       const node = createImageNode({ imageIndex: 1 })
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       options.find((o) => o.label === 'Open Image')?.action?.()
       options.find((o) => o.label === 'Save Image')?.action?.()
@@ -255,7 +280,7 @@ describe('useImageMenuOptions', () => {
     it('does not run image actions when images are cleared after menu creation', async () => {
       const node = createImageNode()
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       const options = getImageMenuOptions(node)
       node.imgs = []
 
@@ -272,7 +297,7 @@ describe('useImageMenuOptions', () => {
       const write = vi.fn()
       mockClipboard(fromPartial<Clipboard>({ write }))
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       await getImageMenuOptions(node)
         .find((o) => o.label === 'Copy Image')
         ?.action?.()
@@ -288,7 +313,7 @@ describe('useImageMenuOptions', () => {
         configurable: true
       })
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       getImageMenuOptions(node)
         .find((o) => o.label === 'Save Image')
         ?.action?.()
@@ -307,10 +332,7 @@ describe('useImageMenuOptions', () => {
       stubClipboardItem()
       mockClipboard(fromPartial<Clipboard>({ write }))
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-        (() =>
-          fromPartial<CanvasRenderingContext2D>({
-            drawImage
-          })) as unknown as HTMLCanvasElement['getContext']
+        mockGetContext({ drawImage })
       )
       vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
         (callback: BlobCallback) => {
@@ -318,7 +340,7 @@ describe('useImageMenuOptions', () => {
         }
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       await getImageMenuOptions(node)
         .find((o) => o.label === 'Copy Image')
         ?.action?.()
@@ -339,7 +361,7 @@ describe('useImageMenuOptions', () => {
         (() => null) as HTMLCanvasElement['getContext']
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       await getImageMenuOptions(node)
         .find((o) => o.label === 'Copy Image')
         ?.action?.()
@@ -353,10 +375,7 @@ describe('useImageMenuOptions', () => {
       const write = vi.fn()
       mockClipboard(fromPartial<Clipboard>({ write }))
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-        (() =>
-          fromPartial<CanvasRenderingContext2D>({
-            drawImage: vi.fn()
-          })) as unknown as HTMLCanvasElement['getContext']
+        mockGetContext({ drawImage: vi.fn() })
       )
       vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
         (callback: BlobCallback) => {
@@ -364,7 +383,7 @@ describe('useImageMenuOptions', () => {
         }
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       await getImageMenuOptions(node)
         .find((o) => o.label === 'Copy Image')
         ?.action?.()
@@ -378,10 +397,7 @@ describe('useImageMenuOptions', () => {
       const node = createImageNode()
       mockClipboard(fromPartial<Clipboard>({ write: undefined }))
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-        (() =>
-          fromPartial<CanvasRenderingContext2D>({
-            drawImage: vi.fn()
-          })) as unknown as HTMLCanvasElement['getContext']
+        mockGetContext({ drawImage: vi.fn() })
       )
       vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
         (callback: BlobCallback) => {
@@ -389,7 +405,7 @@ describe('useImageMenuOptions', () => {
         }
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       await getImageMenuOptions(node)
         .find((o) => o.label === 'Copy Image')
         ?.action?.()
@@ -407,10 +423,7 @@ describe('useImageMenuOptions', () => {
         })
       )
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-        (() =>
-          fromPartial<CanvasRenderingContext2D>({
-            drawImage: vi.fn()
-          })) as unknown as HTMLCanvasElement['getContext']
+        mockGetContext({ drawImage: vi.fn() })
       )
       vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
         (callback: BlobCallback) => {
@@ -418,7 +431,7 @@ describe('useImageMenuOptions', () => {
         }
       )
 
-      const { getImageMenuOptions } = useImageMenuOptions()
+      const { getImageMenuOptions } = setup()
       await getImageMenuOptions(node)
         .find((o) => o.label === 'Copy Image')
         ?.action?.()

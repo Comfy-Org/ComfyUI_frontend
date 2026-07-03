@@ -471,6 +471,7 @@ describe('useHdrViewer', () => {
   })
 
   it('leaves sample-derived state empty when texture data is missing', async () => {
+    const noData: unknown = undefined
     mocks.exrLoad.mockImplementation(
       (
         _url: string,
@@ -481,7 +482,7 @@ describe('useHdrViewer', () => {
           image: {
             width: 2,
             height: 1,
-            data: undefined as unknown as ArrayLike<number>
+            data: noData as ArrayLike<number>
           }
         })
     )

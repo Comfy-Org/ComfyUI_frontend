@@ -39,7 +39,8 @@ describe('useNodeVideo', () => {
       src = ''
 
       constructor() {
-        images.push(this as unknown as HTMLImageElement)
+        const self: unknown = this
+        images.push(self as HTMLImageElement)
       }
     }
     vi.stubGlobal('Image', MockImage)

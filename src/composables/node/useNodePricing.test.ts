@@ -1,5 +1,4 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -729,17 +728,18 @@ describe('useNodePricing', () => {
 
     it('should ignore non-jsonata pricing engines', () => {
       const { getNodeDisplayPrice } = useNodePricing()
+      const literalEngineBadge: unknown = {
+        engine: 'literal',
+        expr: '{"type":"usd","usd":0.05}',
+        depends_on: {
+          widgets: [],
+          inputs: [],
+          input_groups: []
+        }
+      }
       const node = createMockNodeWithPriceBadge(
         'TestUnsupportedEngineNode',
-        fromAny<PriceBadge, unknown>({
-          engine: 'literal',
-          expr: '{"type":"usd","usd":0.05}',
-          depends_on: {
-            widgets: [],
-            inputs: [],
-            input_groups: []
-          }
-        })
+        literalEngineBadge as PriceBadge
       )
 
       expect(getNodeDisplayPrice(node)).toBe('')

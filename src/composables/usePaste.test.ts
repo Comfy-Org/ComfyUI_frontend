@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   LGraphCanvas,
@@ -60,16 +61,16 @@ function createDataTransfer(files: File[] = []): DataTransfer {
   return dataTransfer
 }
 
-const mockCanvas = {
+const mockCanvas = fromPartial<LGraphCanvas>({
   current_node: null as LGraphNode | null,
-  graph: {
+  graph: fromPartial<LGraph>({
     add: vi.fn(),
     change: vi.fn()
-  } as Partial<LGraph> as LGraph,
+  }),
   graph_mouse: [100, 200],
   pasteFromClipboard: vi.fn(),
   _deserializeItems: vi.fn()
-} as Partial<LGraphCanvas> as LGraphCanvas
+})
 
 const mockCanvasStore = {
   canvas: mockCanvas as LGraphCanvas | null,

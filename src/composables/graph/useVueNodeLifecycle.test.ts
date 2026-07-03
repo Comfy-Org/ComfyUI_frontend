@@ -1,7 +1,7 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as VueUse from '@vueuse/core'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
@@ -112,7 +112,7 @@ vi.mock('@/scripts/app', () => ({
 const mockManagerCleanup = vi.hoisted(() => vi.fn())
 
 function createNode(id: number, overrides: object = {}): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  return createMockLGraphNode({
     id: toNodeId(id),
     pos: [id * 10, id * 20],
     size: [100 + id, 200 + id],

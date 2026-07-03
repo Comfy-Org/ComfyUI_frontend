@@ -67,24 +67,26 @@ class TestImageData {
   }
 }
 
-function createMockTexture() {
-  return {
+function createMockTexture(): GPUTexture {
+  const obj: unknown = {
     createView: vi.fn(() => ({})),
     destroy: vi.fn()
-  } as unknown as GPUTexture
+  }
+  return obj as GPUTexture
 }
 
-function createMockBuffer(byteLength = 16) {
-  return {
+function createMockBuffer(byteLength = 16): GPUBuffer {
+  const obj: unknown = {
     destroy: vi.fn(),
     mapAsync: vi.fn().mockResolvedValue(undefined),
     getMappedRange: vi.fn(() => new Uint8Array(byteLength).buffer),
     unmap: vi.fn()
-  } as unknown as GPUBuffer
+  }
+  return obj as GPUBuffer
 }
 
-function createMockDevice() {
-  return {
+function createMockDevice(): GPUDevice {
+  const obj: unknown = {
     limits: {},
     queue: {
       writeTexture: vi.fn(),
@@ -96,7 +98,8 @@ function createMockDevice() {
       copyBufferToBuffer: vi.fn(),
       finish: vi.fn(() => ({}))
     }))
-  } as unknown as GPUDevice
+  }
+  return obj as GPUDevice
 }
 
 function createMockRenderer() {
@@ -114,20 +117,25 @@ function createMockRenderer() {
 function mockGpuBrushRenderer(renderer: ReturnType<typeof createMockRenderer>) {
   vi.mocked(GPUBrushRenderer).mockImplementation(
     function GPUBrushRendererMock() {
-      return renderer as unknown as GPUBrushRenderer
+      const r: unknown = renderer
+      return r as GPUBrushRenderer
     }
   )
 }
 
-function createCanvasContext(width: number, height: number) {
-  return {
+function createCanvasContext(
+  width: number,
+  height: number
+): CanvasRenderingContext2D {
+  const obj: unknown = {
     globalCompositeOperation: 'source-over',
     getImageData: vi.fn(
       () =>
         new ImageData(new Uint8ClampedArray(width * height * 4), width, height)
     ),
     putImageData: vi.fn()
-  } as unknown as CanvasRenderingContext2D
+  }
+  return obj as CanvasRenderingContext2D
 }
 
 function setReadyCanvases(width = 2, height = 2) {

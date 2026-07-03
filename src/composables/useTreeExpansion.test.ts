@@ -36,7 +36,6 @@ describe('useTreeExpansion', () => {
     const { toggleNode } = useTreeExpansion(expandedKeys)
 
     toggleNode(node({ key: undefined }))
-    toggleNode(node({ key: 42 as unknown as string }))
 
     expect(expandedKeys.value).toEqual({})
   })

@@ -1,6 +1,7 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -16,10 +17,7 @@ vi.mock(
 import { useNodeProgressText } from './useNodeProgressText'
 
 function node(widgets?: IBaseWidget[]): LGraphNode {
-  return fromAny({
-    widgets,
-    setDirtyCanvas: vi.fn()
-  })
+  return createMockLGraphNode({ widgets, setDirtyCanvas: vi.fn() })
 }
 
 describe('useNodeProgressText', () => {
@@ -62,7 +60,7 @@ describe('useNodeProgressText', () => {
   it('removes an existing preview widget and calls its cleanup', () => {
     const onRemove = vi.fn()
     const keep = { name: 'other' } as IBaseWidget
-    const preview = fromAny<IBaseWidget, unknown>({
+    const preview = fromPartial<IBaseWidget & { onRemove?: () => void }>({
       name: '$$node-text-preview',
       onRemove
     })

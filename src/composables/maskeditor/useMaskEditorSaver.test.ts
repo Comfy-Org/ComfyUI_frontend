@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -97,7 +98,7 @@ describe('useMaskEditorSaver', () => {
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
 
-    mockNode = fromAny<LGraphNode, unknown>({
+    const nodeObj: unknown = {
       id: 42,
       type: 'LoadImage',
       images: [],
@@ -108,7 +109,8 @@ describe('useMaskEditorSaver', () => {
       widgets_values: ['original.png [input]'],
       properties: { image: 'original.png [input]' },
       graph: { setDirtyCanvas: vi.fn() }
-    })
+    }
+    mockNode = nodeObj as LGraphNode
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -135,8 +137,7 @@ describe('useMaskEditorSaver', () => {
 
     vi.spyOn(document, 'createElement').mockImplementation(
       (tagName: string, options?: ElementCreationOptions) => {
-        if (tagName === 'canvas')
-          return fromAny<HTMLCanvasElement, unknown>(createMockCanvas())
+        if (tagName === 'canvas') return createMockCanvas()
         return originalCreateElement(tagName, options)
       }
     )
@@ -288,10 +289,14 @@ describe('useMaskEditorSaver', () => {
   })
 
   it('defaults missing upload ref fields and skips missing image widget state', async () => {
-    mockNode.widgets = [fromAny({ name: 'other', value: 'unchanged' })]
+    mockNode.widgets = [
+      fromPartial<IBaseWidget>({ name: 'other', value: 'unchanged' })
+    ]
     mockNode.widgets_values = ['unchanged']
-    mockNode.properties = fromAny(undefined)
-    mockNode.graph = fromAny(undefined)
+    const noProperties: unknown = undefined
+    const noGraph: unknown = undefined
+    mockNode.properties = noProperties as LGraphNode['properties']
+    mockNode.graph = noGraph as LGraphNode['graph']
     vi.mocked(api.fetchApi).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ name: 'uploaded.png' })

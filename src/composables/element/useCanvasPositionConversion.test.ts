@@ -3,13 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 const mocks = vi.hoisted(() => {
-  const canvas = {
+  const canvasObj: unknown = {
     canvas: {},
     ds: {
       offset: [10, 20],
       scale: 2
     }
-  } as unknown as LGraphCanvas
+  }
+  const canvas = canvasObj as LGraphCanvas
 
   return {
     bounds: {

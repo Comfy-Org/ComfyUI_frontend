@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope, ref, shallowRef } from 'vue'
@@ -26,7 +27,12 @@ function setup(initial: string[]) {
   return { modelValue, container, picker, ...api }
 }
 
-const mouseEvent = () => ({ stopPropagation: vi.fn() }) as unknown as MouseEvent
+const mouseEvent = () => fromPartial<MouseEvent>({ stopPropagation: vi.fn() })
+
+function makeInputEvent(value: string): Event {
+  const event: unknown = { target: { value } }
+  return event as Event
+}
 
 describe('usePaletteSwatchRow', () => {
   it('appends a default color', () => {
@@ -63,7 +69,7 @@ describe('usePaletteSwatchRow', () => {
     picker.value = null
 
     openPicker(1, mouseEvent())
-    onPickerInput({ target: { value: '#222222' } } as unknown as Event)
+    onPickerInput(makeInputEvent('#222222'))
 
     expect(modelValue.value).toEqual(['#000000', '#222222'])
   })
@@ -71,13 +77,13 @@ describe('usePaletteSwatchRow', () => {
   it('writes the picked color back to the open slot', () => {
     const { modelValue, openPicker, onPickerInput } = setup(['#a', '#b'])
     openPicker(1, mouseEvent())
-    onPickerInput({ target: { value: '#123456' } } as unknown as Event)
+    onPickerInput(makeInputEvent('#123456'))
     expect(modelValue.value).toEqual(['#a', '#123456'])
   })
 
   it('ignores picker input when no slot is open', () => {
     const { modelValue, onPickerInput } = setup(['#a'])
-    onPickerInput({ target: { value: '#123456' } } as unknown as Event)
+    onPickerInput(makeInputEvent('#123456'))
     expect(modelValue.value).toEqual(['#a'])
   })
 

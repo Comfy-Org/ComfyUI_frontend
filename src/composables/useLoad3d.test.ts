@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { Pinia } from 'pinia'
@@ -97,7 +97,8 @@ describe('useLoad3d', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     nodeToLoad3dMap.clear()
-    vi.mocked(getActivePinia).mockReturnValue(null as unknown as Pinia)
+    const nullPinia: unknown = null
+    vi.mocked(getActivePinia).mockReturnValue(nullPinia as Pinia)
 
     mockNode = createMockLGraphNode({
       properties: {
@@ -132,9 +133,9 @@ describe('useLoad3d', () => {
         { name: 'width', value: 512, type: 'number' } as IWidget,
         { name: 'height', value: 512, type: 'number' } as IWidget
       ],
-      graph: {
+      graph: fromPartial<LGraph>({
         setDirtyCanvas: vi.fn()
-      } as Partial<LGraph> as LGraph,
+      }),
       flags: {},
       onMouseEnter: undefined,
       onMouseLeave: undefined,
@@ -206,9 +207,9 @@ describe('useLoad3d', () => {
       getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
-      renderer: {
+      renderer: fromPartial<Load3d['renderer']>({
         domElement: mockCanvas
-      } as Partial<Load3d['renderer']> as Load3d['renderer']
+      })
     }
 
     vi.mocked(Load3d).mockImplementation(function (this: Load3d) {
@@ -217,11 +218,9 @@ describe('useLoad3d', () => {
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
-    mockToastStore = {
+    mockToastStore = fromPartial<ReturnType<typeof useToastStore>>({
       addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
+    })
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
   })
 
@@ -443,10 +442,8 @@ describe('useLoad3d', () => {
       const originalCanvas = app.canvas
       const menuOptions = [{ content: 'Inspect' }]
       const getNodeMenuOptions = vi.fn(() => menuOptions)
-      app.canvas = {
-        ds: { scale: 2.25 },
-        getNodeMenuOptions
-      } as unknown as typeof app.canvas
+      const canvasObj: unknown = { ds: { scale: 2.25 }, getNodeMenuOptions }
+      app.canvas = canvasObj as typeof app.canvas
       const contextMenuSpy = vi
         .spyOn(LiteGraph, 'ContextMenu')
         .mockImplementation(function () {})
@@ -480,7 +477,8 @@ describe('useLoad3d', () => {
 
     it('falls back to zoom scale 1 when the app canvas is unavailable', async () => {
       const originalCanvas = app.canvas
-      app.canvas = undefined as unknown as typeof app.canvas
+      const noCanvas: unknown = undefined
+      app.canvas = noCanvas as typeof app.canvas
 
       try {
         const composable = useLoad3d(mockNode)
@@ -566,9 +564,11 @@ describe('useLoad3d', () => {
       vi.useFakeTimers()
 
       const canvasStore = reactive({ appScalePercentage: 100 })
-      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      const emptyPinia1: unknown = {}
+      vi.mocked(getActivePinia).mockReturnValue(emptyPinia1 as Pinia)
+      const storeAsCanvasStore1: unknown = canvasStore
       vi.mocked(useCanvasStore).mockReturnValue(
-        canvasStore as unknown as ReturnType<typeof useCanvasStore>
+        storeAsCanvasStore1 as ReturnType<typeof useCanvasStore>
       )
 
       const composable = useLoad3d(mockNode)
@@ -591,9 +591,11 @@ describe('useLoad3d', () => {
       vi.useFakeTimers()
 
       const canvasStore = reactive({ appScalePercentage: 100 })
-      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      const emptyPinia2: unknown = {}
+      vi.mocked(getActivePinia).mockReturnValue(emptyPinia2 as Pinia)
+      const storeAsCanvasStore2: unknown = canvasStore
       vi.mocked(useCanvasStore).mockReturnValue(
-        canvasStore as unknown as ReturnType<typeof useCanvasStore>
+        storeAsCanvasStore2 as ReturnType<typeof useCanvasStore>
       )
 
       const composable = useLoad3d(mockNode)
@@ -1227,8 +1229,11 @@ describe('useLoad3d', () => {
       )
       vi.mocked(mockLoad3d.isSplatModel!).mockReturnValue(true)
       vi.mocked(mockLoad3d.getSourceFormat!).mockReturnValue('splat')
+      const noCapabilities: unknown = undefined
       vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockReturnValue(
-        fromAny(undefined)
+        noCapabilities as ReturnType<
+          NonNullable<typeof mockLoad3d.getCurrentModelCapabilities>
+        >
       )
 
       const composable = useLoad3d(mockNode)
@@ -1402,11 +1407,11 @@ describe('useLoad3d', () => {
     })
 
     it('updates model_file widget values after a successful model drop', async () => {
-      const modelWidget = {
+      const modelWidget = fromPartial<IWidget>({
         name: 'model_file',
         value: '',
         options: { values: ['existing.glb'] }
-      } as unknown as IWidget
+      })
       mockNode.widgets!.push(modelWidget)
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
@@ -2196,9 +2201,11 @@ describe('useLoad3d', () => {
 
     beforeEach(() => {
       originalFetch = globalThis.fetch
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        blob: () => Promise.resolve(new Blob(['x'], { type: 'image/png' }))
-      } as unknown as Response)
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        fromPartial<Response>({
+          blob: () => Promise.resolve(new Blob(['x'], { type: 'image/png' }))
+        })
+      )
     })
 
     afterEach(() => {
@@ -2246,15 +2253,15 @@ describe('useLoad3d', () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        '',
-        'cube.glb'
-      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      const cubeGlbSplit: unknown = ['', 'cube.glb']
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
+        cubeGlbSplit as ReturnType<typeof Load3dUtils.splitFilePath>
+      )
 
-      const modelWidget = {
+      const modelWidget = fromPartial<IWidget>({
         name: 'model_file',
         value: 'cube.glb [output]'
-      } as unknown as IWidget
+      })
       mockNode.widgets = [modelWidget]
 
       const { handler } = await getModelReadyHandler()
@@ -2273,12 +2280,12 @@ describe('useLoad3d', () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        '',
-        'preview.png'
-      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      const previewPngSplit: unknown = ['', 'preview.png']
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
+        previewPngSplit as ReturnType<typeof Load3dUtils.splitFilePath>
+      )
       mockNode.widgets = [
-        { name: 'image', value: 'preview.png' } as unknown as IWidget
+        fromPartial<IWidget>({ name: 'image', value: 'preview.png' })
       ]
 
       const { handler } = await getModelReadyHandler()
@@ -2297,7 +2304,7 @@ describe('useLoad3d', () => {
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       mockNode.widgets = [
-        { name: 'model_file', value: '' } as unknown as IWidget
+        fromPartial<IWidget>({ name: 'model_file', value: '' })
       ]
 
       const { handler } = await getModelReadyHandler()
@@ -2312,15 +2319,15 @@ describe('useLoad3d', () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        '',
-        'broken.glb'
-      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      const brokenGlbSplit: unknown = ['', 'broken.glb']
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
+        brokenGlbSplit as ReturnType<typeof Load3dUtils.splitFilePath>
+      )
       vi.mocked(mockLoad3d.captureThumbnail!).mockRejectedValue(
         new Error('webgl context lost')
       )
       mockNode.widgets = [
-        { name: 'model_file', value: 'broken.glb' } as unknown as IWidget
+        fromPartial<IWidget>({ name: 'model_file', value: 'broken.glb' })
       ]
 
       const { handler } = await getModelReadyHandler()
@@ -2562,7 +2569,8 @@ describe('useLoad3d', () => {
 
       const composable = useLoad3d(mockNode)
       await composable.initializeLoad3d(document.createElement('div'))
-      mockNode.properties = undefined as unknown as LGraphNode['properties']
+      const noProps: unknown = undefined
+      mockNode.properties = noProps as LGraphNode['properties']
 
       cameraChangedHandler!({ position: { x: 1, y: 2, z: 3 } })
 

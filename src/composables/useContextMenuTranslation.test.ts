@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IContextMenuOptions } from '@/lib/litegraph/src/interfaces'
@@ -193,7 +193,7 @@ describe('useContextMenuTranslation', () => {
 
     new LiteGraph.ContextMenu(
       values,
-      fromAny<IContextMenuOptions<unknown, unknown>, unknown>(options)
+      fromPartial<IContextMenuOptions<unknown, unknown>>(options)
     )
 
     expect(values[0].content).toBe(

@@ -1,9 +1,10 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
+import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -98,9 +99,9 @@ describe('useLoad3dViewer', () => {
         },
         'Resource Folder': ''
       },
-      graph: {
+      graph: fromPartial<LGraph>({
         setDirtyCanvas: vi.fn()
-      } as Partial<LGraph> as LGraph,
+      }),
       widgets: []
     })
 
@@ -154,9 +155,9 @@ describe('useLoad3dViewer', () => {
       }),
       setAnimationTime: vi.fn(),
       getAnimationDuration: vi.fn().mockReturnValue(12),
-      animationManager: {
+      animationManager: fromPartial<Load3d['animationManager']>({
         animationClips: []
-      } as Partial<Load3d['animationManager']> as Load3d['animationManager']
+      })
     }
 
     mockSourceLoad3d = {
@@ -200,20 +201,16 @@ describe('useLoad3dViewer', () => {
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
-    mockLoad3dService = {
+    mockLoad3dService = fromPartial<ReturnType<typeof useLoad3dService>>({
       copyLoad3dState: vi.fn().mockResolvedValue(undefined),
       handleViewportRefresh: vi.fn(),
       getLoad3d: vi.fn().mockReturnValue(mockSourceLoad3d)
-    } as Partial<ReturnType<typeof useLoad3dService>> as ReturnType<
-      typeof useLoad3dService
-    >
+    })
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
 
-    mockToastStore = {
+    mockToastStore = fromPartial<ReturnType<typeof useToastStore>>({
       addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
+    })
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
   })
 
@@ -337,9 +334,9 @@ describe('useLoad3dViewer', () => {
 
     it('initializes animation state from existing clips', async () => {
       vi.mocked(mockLoad3d.hasAnimations!).mockReturnValue(true)
-      mockLoad3d.animationManager = {
+      mockLoad3d.animationManager = fromPartial<Load3d['animationManager']>({
         animationClips: [{ name: 'Walk' }, { name: '' }]
-      } as Partial<Load3d['animationManager']> as Load3d['animationManager']
+      })
 
       const viewer = useLoad3dViewer(mockNode)
       await viewer.initializeViewer(
@@ -607,7 +604,8 @@ describe('useLoad3dViewer', () => {
       })
       viewer.playing.value = true
       viewer.selectedSpeed.value = 0
-      viewer.selectedAnimation.value = undefined as unknown as number
+      const undefNum: unknown = undefined
+      viewer.selectedAnimation.value = undefNum as number
       await nextTick()
       viewer.selectedSpeed.value = 2
       viewer.selectedAnimation.value = 0
@@ -743,8 +741,10 @@ describe('useLoad3dViewer', () => {
         document.createElement('div'),
         mockSourceLoad3d as Load3d
       )
-      mockNode.properties = undefined as unknown as LGraphNode['properties']
-      mockNode.graph = undefined as unknown as LGraphNode['graph']
+      const undefProps: unknown = undefined
+      mockNode.properties = undefProps as LGraphNode['properties']
+      const undefGraph: unknown = undefined
+      mockNode.graph = undefGraph as LGraphNode['graph']
 
       const result = await viewer.applyChanges()
 
@@ -1082,9 +1082,11 @@ describe('useLoad3dViewer', () => {
       vi.mocked(mockSourceLoad3d.getCurrentCameraType!).mockReturnValue(
         'orthographic'
       )
-      mockSourceLoad3d.cameraManager = {
-        perspectiveCamera: { fov: 75 }
-      } as Partial<Load3d['cameraManager']> as Load3d['cameraManager']
+      mockSourceLoad3d.cameraManager = fromPartial<Load3d['cameraManager']>({
+        perspectiveCamera: fromPartial<
+          Load3d['cameraManager']['perspectiveCamera']
+        >({ fov: 75 })
+      })
       delete (mockNode.properties!['Camera Config'] as Record<string, unknown>)
         .cameraType
 
@@ -1180,8 +1182,9 @@ describe('useLoad3dViewer', () => {
         zoom: 2,
         cameraType: 'perspective'
       }
+      const cameraReturn: unknown = cameraState
       vi.mocked(mockLoad3d.getCameraState!).mockReturnValue(
-        fromAny(cameraState)
+        cameraReturn as CameraState
       )
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')

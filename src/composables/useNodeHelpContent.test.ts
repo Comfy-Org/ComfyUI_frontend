@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { createApp, defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -33,12 +34,6 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    locale: ref('en')
-  })
-}))
-
 vi.mock('@/types/nodeSource', () => ({
   NodeSourceType: {
     Core: 'core',
@@ -51,6 +46,23 @@ vi.mock('@/types/nodeSource', () => ({
     return { type: 'core' }
   })
 }))
+
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
+function withI18n<T>(fn: () => T): T {
+  let result!: T
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = fn()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  return result
+}
 
 describe('useNodeHelpContent', () => {
   const mockCoreNode = createMockNode({
@@ -85,7 +97,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '# Test'
     })
 
-    const { baseUrl } = useNodeHelpContent(nodeRef)
+    const { baseUrl } = withI18n(() => useNodeHelpContent(nodeRef))
     await nextTick()
 
     expect(baseUrl.value).toBe(`/docs/${mockCoreNode.name}/`)
@@ -98,7 +110,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '# Test'
     })
 
-    const { baseUrl } = useNodeHelpContent(nodeRef)
+    const { baseUrl } = withI18n(() => useNodeHelpContent(nodeRef))
     await nextTick()
 
     expect(baseUrl.value).toBe('/extensions/test_module/docs/')
@@ -111,7 +123,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '# Test Help\nThis is test help content'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain('This is test help content')
@@ -124,7 +136,9 @@ describe('useNodeHelpContent', () => {
       statusText: 'Not Found'
     })
 
-    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { error, renderedHelpHtml } = withI18n(() =>
+      useNodeHelpContent(nodeRef)
+    )
     await flushPromises()
 
     expect(error.value).toBe('Not Found')
@@ -138,7 +152,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '![image](test.jpg)'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain('alt="image"')
@@ -151,7 +165,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '<video src="video.mp4"></video>'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
@@ -166,7 +180,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '<video src="video.mp4"></video>'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
@@ -178,7 +192,7 @@ describe('useNodeHelpContent', () => {
     const nodeRef = ref(mockCoreNode)
     mockFetch.mockImplementationOnce(() => new Promise(() => {})) // Never resolves
 
-    const { isLoading } = useNodeHelpContent(nodeRef)
+    const { isLoading } = withI18n(() => useNodeHelpContent(nodeRef))
     await nextTick()
 
     expect(isLoading.value).toBe(true)
@@ -196,7 +210,7 @@ describe('useNodeHelpContent', () => {
         text: async () => '# Fallback content'
       })
 
-    useNodeHelpContent(nodeRef)
+    withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(mockFetch).toHaveBeenCalledTimes(2)
@@ -216,7 +230,7 @@ describe('useNodeHelpContent', () => {
         '<video><source src="video.mp4" type="video/mp4" /></video>'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
@@ -232,7 +246,7 @@ describe('useNodeHelpContent', () => {
         '<video><source src="video.webm" type="video/webm" /></video>'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
@@ -247,7 +261,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '# Test\n<img src="image.png" alt="Test image">'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
@@ -263,7 +277,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '# Test\n<img src="image.png" alt="Test image">'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
@@ -279,7 +293,7 @@ describe('useNodeHelpContent', () => {
       text: async () => '<img src="/absolute/image.png" alt="Absolute">'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain('src="/absolute/image.png"')
@@ -294,7 +308,7 @@ describe('useNodeHelpContent', () => {
         '<img src="https://example.com/image.png" alt="External">'
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
@@ -324,7 +338,7 @@ Testing quote styles in properly formed HTML:
 The MEDIA_SRC_REGEX handles both single and double quotes in img, video and source tags.`
     })
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     // All media src attributes should be prefixed correctly
@@ -363,7 +377,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
         text: async () => '# Second node content'
       })
 
-    const { helpContent } = useNodeHelpContent(nodeRef)
+    const { helpContent } = withI18n(() => useNodeHelpContent(nodeRef))
     await nextTick()
 
     // Change node before first request completes
@@ -385,8 +399,9 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
   it('returns empty state when no node is selected', async () => {
     const nodeRef = ref<ComfyNodeDefImpl | null>(null)
 
-    const { baseUrl, helpContent, isLoading, error } =
+    const { baseUrl, helpContent, isLoading, error } = withI18n(() =>
       useNodeHelpContent(nodeRef)
+    )
     await nextTick()
 
     expect(baseUrl.value).toBe('')
@@ -400,7 +415,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     const nodeRef = ref(mockCoreNode)
     mockFetch.mockRejectedValueOnce('offline')
 
-    const { error, helpContent } = useNodeHelpContent(nodeRef)
+    const { error, helpContent } = withI18n(() => useNodeHelpContent(nodeRef))
     await flushPromises()
 
     expect(error.value).toBe('offline')
@@ -421,7 +436,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
         text: async () => '# Current node content'
       })
 
-    const { error, helpContent } = useNodeHelpContent(nodeRef)
+    const { error, helpContent } = withI18n(() => useNodeHelpContent(nodeRef))
     await nextTick()
 
     nodeRef.value = mockCustomNode

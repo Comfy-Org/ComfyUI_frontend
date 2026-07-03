@@ -1,8 +1,7 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 type Graph = {
   isRootGraph: boolean
@@ -108,7 +107,7 @@ describe('useFocusNode', () => {
 
     await useFocusNode().focusNode(
       'node-1',
-      new Map([['node-1', fromAny<LGraphNode, unknown>(node)]])
+      new Map([['node-1', createMockLGraphNode(node)]])
     )
 
     expect(getNodeByExecutionId).not.toHaveBeenCalled()

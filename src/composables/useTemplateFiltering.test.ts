@@ -262,10 +262,9 @@ describe('useTemplateFiltering', () => {
       plain.filteredTemplates.value.map((template) => template.name)
     ).toEqual(['plain-template'])
 
+    const notAnArrayRef: unknown = ref('not-an-array')
     const invalid = useTemplateFiltering(
-      ref('not-an-array') as unknown as Parameters<
-        typeof useTemplateFiltering
-      >[0]
+      notAnArrayRef as Parameters<typeof useTemplateFiltering>[0]
     )
 
     expect(invalid.filteredTemplates.value).toEqual([])
@@ -273,6 +272,8 @@ describe('useTemplateFiltering', () => {
   })
 
   it('ignores malformed models and tags while applying active filters', () => {
+    const fluxString: unknown = 'Flux'
+    const videoString: unknown = 'Video'
     const templates = ref<TemplateInfo[]>([
       {
         name: 'model-template',
@@ -287,8 +288,8 @@ describe('useTemplateFiltering', () => {
         description: 'Missing models',
         mediaType: 'image',
         mediaSubtype: 'png',
-        models: 'Flux' as unknown as string[],
-        tags: 'Video' as unknown as string[]
+        models: fluxString as string[],
+        tags: videoString as string[]
       }
     ])
 

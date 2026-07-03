@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,7 +18,7 @@ vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: { getNodeById: () => appState.node } } }
 }))
 
-const ctx = {
+const ctxObj: unknown = {
   measureText: (s: string) => ({ width: s.length * 7 }),
   setTransform: () => {},
   clearRect: () => {},
@@ -34,7 +35,8 @@ const ctx = {
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 0
-} as unknown as CanvasRenderingContext2D
+}
+const ctx = ctxObj as CanvasRenderingContext2D
 
 function makeCanvas(
   options: {
@@ -52,10 +54,9 @@ function makeCanvas(
     value: options.clientHeight ?? 100,
     configurable: true
   })
-  el.getContext = (() =>
-    options.context === undefined
-      ? ctx
-      : options.context) as unknown as HTMLCanvasElement['getContext']
+  const getCtx: unknown = () =>
+    options.context === undefined ? ctx : options.context
+  el.getContext = getCtx as HTMLCanvasElement['getContext']
   el.getBoundingClientRect = () =>
     ({
       left: 0,
@@ -90,7 +91,7 @@ const pe = (
   clientY: number,
   over: Partial<PointerEvent> = {}
 ) =>
-  ({
+  fromPartial<PointerEvent>({
     button: 0,
     clientX,
     clientY,
@@ -99,7 +100,7 @@ const pe = (
     preventDefault: () => {},
     stopPropagation: () => {},
     ...over
-  }) as unknown as PointerEvent
+  })
 
 const flush = async () => {
   await Promise.resolve()
@@ -345,11 +346,13 @@ describe('useBoundingBoxes region editing', () => {
 
   it('deletes the active region on Delete', async () => {
     const c = setup([box()])
-    c.onCanvasKeyDown({
-      key: 'Delete',
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(
+      fromPartial<KeyboardEvent>({
+        key: 'Delete',
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      })
+    )
     await flush()
     expect(c.modelValue.value).toHaveLength(0)
   })
@@ -370,32 +373,38 @@ describe('useBoundingBoxes region editing', () => {
 
   it('deletes the active region on Backspace', async () => {
     const c = setup([box()])
-    c.onCanvasKeyDown({
-      key: 'Backspace',
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(
+      fromPartial<KeyboardEvent>({
+        key: 'Backspace',
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      })
+    )
     await flush()
     expect(c.modelValue.value).toHaveLength(0)
   })
 
   it('ignores unrelated keys and key events while drawing', async () => {
     const c = setup([box()])
-    c.onCanvasKeyDown({
-      key: 'Enter',
-      preventDefault: () => {
-        throw new Error('should not prevent')
-      },
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(
+      fromPartial<KeyboardEvent>({
+        key: 'Enter',
+        preventDefault: () => {
+          throw new Error('should not prevent')
+        },
+        stopPropagation: () => {}
+      })
+    )
     c.onPointerDown(pe(80, 80))
-    c.onCanvasKeyDown({
-      key: 'Delete',
-      preventDefault: () => {
-        throw new Error('should not prevent while drawing')
-      },
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(
+      fromPartial<KeyboardEvent>({
+        key: 'Delete',
+        preventDefault: () => {
+          throw new Error('should not prevent while drawing')
+        },
+        stopPropagation: () => {}
+      })
+    )
     c.onDocPointerUp(pe(80, 80))
     await flush()
     expect(c.modelValue.value).toHaveLength(1)
@@ -404,11 +413,13 @@ describe('useBoundingBoxes region editing', () => {
   it('keeps a remaining region selected after deleting from a multi-region list', async () => {
     const c = setup([box(), box({ x: 10 })])
 
-    c.onCanvasKeyDown({
-      key: 'Delete',
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(
+      fromPartial<KeyboardEvent>({
+        key: 'Delete',
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      })
+    )
     await flush()
 
     expect(c.modelValue.value).toHaveLength(1)
@@ -419,7 +430,7 @@ describe('useBoundingBoxes region editing', () => {
 describe('useBoundingBoxes inline editor', () => {
   it('opens on double click and commits the description', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30) as MouseEvent)
     await flush()
     expect(c.inlineEditor.value).not.toBeNull()
 
@@ -432,7 +443,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('closes the inline editor on Escape', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30) as MouseEvent)
     await flush()
     c.onInlineKeyDown({ key: 'Escape' } as KeyboardEvent)
     expect(c.inlineEditor.value).toBeNull()
@@ -440,7 +451,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('commits the inline editor on Ctrl+Enter', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30) as MouseEvent)
     await flush()
     c.inlineEditor.value!.value = 'committed'
     c.onInlineKeyDown({
@@ -454,7 +465,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('commits the inline editor on Meta+Enter', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30) as MouseEvent)
     await flush()
     c.inlineEditor.value!.value = 'meta committed'
     c.onInlineKeyDown({
@@ -468,7 +479,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('ignores Enter without a modifier in the inline editor', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30) as MouseEvent)
     await flush()
     c.inlineEditor.value!.value = 'not committed'
     c.onInlineKeyDown({
@@ -489,7 +500,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('closes a stale inline editor after its region was removed', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30) as MouseEvent)
     await flush()
     c.inlineEditor.value!.value = 'stale'
 
@@ -503,7 +514,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('does not open the inline editor when double-clicking empty space', async () => {
     const c = setup([box({ x: 0, y: 0, width: 50, height: 50 })])
-    c.onDoubleClick(pe(95, 95) as unknown as MouseEvent)
+    c.onDoubleClick(pe(95, 95) as MouseEvent)
     await flush()
     expect(c.inlineEditor.value).toBeNull()
   })
@@ -512,7 +523,7 @@ describe('useBoundingBoxes inline editor', () => {
     const c = setup([box({ x: 0, y: 0, width: 512, height: 512 })])
     c.canvasEl.value = null
 
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30) as MouseEvent)
     await flush()
 
     expect(c.inlineEditor.value).not.toBeNull()

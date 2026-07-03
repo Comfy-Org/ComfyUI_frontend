@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createApp, h, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -71,7 +72,7 @@ describe('useIntersectionObserver', () => {
         { isIntersecting: false },
         { isIntersecting: true }
       ] as IntersectionObserverEntry[],
-      observers[0] as unknown as IntersectionObserver
+      fromPartial<IntersectionObserver>(observers[0])
     )
 
     expect(result.isIntersecting.value).toBe(true)

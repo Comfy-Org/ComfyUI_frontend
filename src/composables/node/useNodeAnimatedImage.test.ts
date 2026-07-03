@@ -105,9 +105,10 @@ describe('useNodeAnimatedImage', () => {
 
   it('leaves an existing non-DOM preview widget untouched', () => {
     const node = createMockMediaNode({ imgs: [document.createElement('img')] })
+    const noElement: unknown = undefined
     node.widgets.push({
       name: '$$comfy_animation_preview',
-      element: undefined as unknown as HTMLElement
+      element: noElement as HTMLElement
     })
 
     useNodeAnimatedImage().showAnimatedPreview(node)

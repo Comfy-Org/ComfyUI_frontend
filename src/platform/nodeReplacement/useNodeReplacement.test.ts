@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -80,13 +79,14 @@ function createMockGraph(
   links: ReturnType<typeof createMockLink>[] = []
 ): LGraph {
   const linksMap = new Map(links.map((l) => [l.id, l]))
-  return fromAny<LGraph, unknown>({
+  const graph: unknown = {
     _nodes: nodes,
     _nodes_by_id: Object.fromEntries(nodes.map((n) => [n.id, n])),
     links: linksMap,
     updateExecutionOrder: vi.fn(),
     setDirtyCanvas: vi.fn()
-  })
+  }
+  return graph as LGraph
 }
 
 function createPlaceholderNode(
@@ -96,7 +96,7 @@ function createPlaceholderNode(
   outputs: { name: string; links: number[] | null }[] = [],
   graph?: LGraph
 ): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  const node: unknown = {
     id,
     type,
     pos: [100, 200],
@@ -132,7 +132,8 @@ function createPlaceholderNode(
       outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
       widgets_values: []
     }))
-  })
+  }
+  return node as LGraphNode
 }
 
 function createNewNode(
@@ -140,7 +141,7 @@ function createNewNode(
   outputs: { name: string; links: number[] | null }[] = [],
   widgets: { name: string; value: unknown }[] = []
 ): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  const newNode: unknown = {
     id: 0,
     type: '',
     pos: [0, 0],
@@ -154,7 +155,8 @@ function createNewNode(
     widgets: widgets.map((w) => ({ ...w, type: 'combo', options: {} })),
     configure: vi.fn(),
     serialize: vi.fn()
-  })
+  }
+  return newNode as LGraphNode
 }
 
 function makeMissingNodeType(
@@ -522,7 +524,8 @@ describe('useNodeReplacement', () => {
 
     it('copies serialized title and search-replace properties', () => {
       const placeholder = createPlaceholderNode(7, 'OldType')
-      placeholder.flags = fromAny(undefined)
+      const noFlags: unknown = undefined
+      placeholder.flags = noFlags as LGraphNode['flags']
       placeholder.last_serialization!.title = 'Kept title'
       placeholder.last_serialization!.properties = {
         'Node name for S&R': 'OldType',
@@ -562,10 +565,9 @@ describe('useNodeReplacement', () => {
         [{ name: 'input', link: null }],
         [{ name: 'IMAGE', links: null }]
       )
-      placeholder.last_serialization = fromAny<
-        LGraphNode['last_serialization'],
-        unknown
-      >(undefined)
+      const noSerialization: unknown = undefined
+      placeholder.last_serialization =
+        noSerialization as LGraphNode['last_serialization']
       const graph = createMockGraph([placeholder])
       placeholder.graph = graph
       Object.assign(app, { rootGraph: graph })
@@ -903,10 +905,9 @@ describe('useNodeReplacement', () => {
 
     it('should exclude nodes without last_serialization', () => {
       const freshNode = createPlaceholderNode(1, 'OldNode')
-      freshNode.last_serialization = fromAny<
-        LGraphNode['last_serialization'],
-        unknown
-      >(undefined)
+      const noSerialization: unknown = undefined
+      freshNode.last_serialization =
+        noSerialization as LGraphNode['last_serialization']
       const graph = createMockGraph([freshNode])
       Object.assign(app, { rootGraph: graph })
 
@@ -929,7 +930,8 @@ describe('useNodeReplacement', () => {
 
     it('should fall back to node.type when last_serialization.type is undefined', () => {
       const node = createPlaceholderNode(1, 'FallbackType')
-      node.last_serialization!.type = fromAny<string, unknown>(undefined)
+      const noSerializationType: unknown = undefined
+      node.last_serialization!.type = noSerializationType as string
       node.type = 'FallbackType'
       const graph = createMockGraph([node])
       Object.assign(app, { rootGraph: graph })
@@ -958,7 +960,8 @@ describe('useNodeReplacement', () => {
       // targetTypes still holds the original unsanitized name "OldNode&Special",
       // so the predicate must fall back to checking sanitizeNodeName(originalType).
       const node = createPlaceholderNode(1, 'OldNodeSpecial')
-      node.last_serialization!.type = fromAny<string, unknown>(undefined)
+      const noSerializationType: unknown = undefined
+      node.last_serialization!.type = noSerializationType as string
       // Simulate what sanitizeNodeName does to '&' in the live type
       node.type = 'OldNodeSpecial' // '&' already stripped by sanitizeNodeName
       const graph = createMockGraph([node])

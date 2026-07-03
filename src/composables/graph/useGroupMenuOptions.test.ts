@@ -1,5 +1,7 @@
-import type * as VueI18n from 'vue-i18n'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
@@ -17,10 +19,6 @@ const { canvas, captureCanvasState, isLightTheme, refreshCanvas, settings } =
     >
   }))
 
-vi.mock('vue-i18n', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueI18n>()),
-  useI18n: () => ({ t: (key: string) => key })
-}))
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: (k: string) => settings[k] })
 }))
@@ -45,15 +43,36 @@ vi.mock('@/composables/graph/useNodeCustomization', () => ({
   })
 }))
 
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
+function withI18n<T>(fn: () => T): T {
+  let result!: T
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = fn()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  return result
+}
+
+function setup() {
+  return withI18n(() => useGroupMenuOptions())
+}
+
 function group(over: Record<string, unknown> = {}): LGraphGroup {
-  return {
+  return fromPartial<LGraphGroup>({
     recomputeInsideNodes: vi.fn(),
     resizeTo: vi.fn(),
     children: [],
     graph: { change: vi.fn() },
     nodes: [],
     ...over
-  } as unknown as LGraphGroup
+  })
 }
 
 beforeEach(() => {
@@ -66,7 +85,7 @@ beforeEach(() => {
 describe('useGroupMenuOptions', () => {
   it('fits a group to its nodes, resizing with the configured padding', () => {
     const g = group()
-    useGroupMenuOptions().getFitGroupToNodesOption(g).action?.()
+    setup().getFitGroupToNodesOption(g).action?.()
 
     expect(g.recomputeInsideNodes).toHaveBeenCalled()
     expect(g.resizeTo).toHaveBeenCalledWith(g.children, 10)
@@ -80,7 +99,7 @@ describe('useGroupMenuOptions', () => {
         throw new Error('boom')
       })
     })
-    useGroupMenuOptions().getFitGroupToNodesOption(g).action?.()
+    setup().getFitGroupToNodesOption(g).action?.()
 
     expect(g.resizeTo).not.toHaveBeenCalled()
   })
@@ -88,10 +107,7 @@ describe('useGroupMenuOptions', () => {
   it('applies a shape to all group nodes via the shape submenu', () => {
     const node = { shape: 0, mode: LGraphEventMode.ALWAYS }
     const bump = vi.fn()
-    const option = useGroupMenuOptions().getGroupShapeOptions(
-      group({ nodes: [node] }),
-      bump
-    )
+    const option = setup().getGroupShapeOptions(group({ nodes: [node] }), bump)
     option.submenu?.[0].action?.()
 
     expect(node.shape).toBe(1)
@@ -101,7 +117,7 @@ describe('useGroupMenuOptions', () => {
 
   it('handles shape actions when a group has no nodes array', () => {
     const bump = vi.fn()
-    useGroupMenuOptions()
+    setup()
       .getGroupShapeOptions(group({ nodes: undefined }), bump)
       .submenu?.[0].action?.()
 
@@ -112,9 +128,9 @@ describe('useGroupMenuOptions', () => {
   it('applies a color to the group via the color submenu (dark theme)', () => {
     const g = group()
     const bump = vi.fn()
-    useGroupMenuOptions().getGroupColorOptions(g, bump).submenu?.[0].action?.()
+    setup().getGroupColorOptions(g, bump).submenu?.[0].action?.()
 
-    expect((g as unknown as { color: string }).color).toBe('#111')
+    expect(g.color).toBe('#111')
     expect(bump).toHaveBeenCalled()
   })
 
@@ -122,30 +138,25 @@ describe('useGroupMenuOptions', () => {
     const g = group()
     const bump = vi.fn()
     isLightTheme.value = true
-    useGroupMenuOptions().getGroupColorOptions(g, bump).submenu?.[0].action?.()
+    setup().getGroupColorOptions(g, bump).submenu?.[0].action?.()
 
-    expect((g as unknown as { color: string }).color).toBe('#eee')
+    expect(g.color).toBe('#eee')
     expect(bump).toHaveBeenCalled()
   })
 
   it('returns no mode options for an empty group', () => {
-    expect(useGroupMenuOptions().getGroupModeOptions(group(), vi.fn())).toEqual(
-      []
-    )
+    expect(setup().getGroupModeOptions(group(), vi.fn())).toEqual([])
   })
 
   it('returns no mode options when a group has no nodes array', () => {
     expect(
-      useGroupMenuOptions().getGroupModeOptions(
-        group({ nodes: undefined }),
-        vi.fn()
-      )
+      setup().getGroupModeOptions(group({ nodes: undefined }), vi.fn())
     ).toEqual([])
   })
 
   it('returns no mode options when recomputing group nodes fails', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const options = useGroupMenuOptions().getGroupModeOptions(
+    const options = setup().getGroupModeOptions(
       group({
         recomputeInsideNodes: vi.fn(() => {
           throw new Error('boom')
@@ -164,10 +175,7 @@ describe('useGroupMenuOptions', () => {
   it('builds mode options for uniform nodes and applies the new mode', () => {
     const node = { shape: 0, mode: LGraphEventMode.ALWAYS }
     const bump = vi.fn()
-    const options = useGroupMenuOptions().getGroupModeOptions(
-      group({ nodes: [node] }),
-      bump
-    )
+    const options = setup().getGroupModeOptions(group({ nodes: [node] }), bump)
 
     expect(options.length).toBeGreaterThan(0)
     options[0].action?.()
@@ -177,7 +185,7 @@ describe('useGroupMenuOptions', () => {
   })
 
   it('offers two alternate modes when all nodes are NEVER', () => {
-    const options = useGroupMenuOptions().getGroupModeOptions(
+    const options = setup().getGroupModeOptions(
       group({ nodes: [{ mode: LGraphEventMode.NEVER }] }),
       vi.fn()
     )
@@ -185,7 +193,7 @@ describe('useGroupMenuOptions', () => {
   })
 
   it('offers two alternate modes when all nodes are BYPASS', () => {
-    const options = useGroupMenuOptions().getGroupModeOptions(
+    const options = setup().getGroupModeOptions(
       group({ nodes: [{ mode: LGraphEventMode.BYPASS }] }),
       vi.fn()
     )
@@ -193,7 +201,7 @@ describe('useGroupMenuOptions', () => {
   })
 
   it('offers all three modes when nodes have mixed modes', () => {
-    const options = useGroupMenuOptions().getGroupModeOptions(
+    const options = setup().getGroupModeOptions(
       group({
         nodes: [
           { mode: LGraphEventMode.ALWAYS },
@@ -206,7 +214,7 @@ describe('useGroupMenuOptions', () => {
   })
 
   it('offers all three modes when the uniform mode is unknown', () => {
-    const options = useGroupMenuOptions().getGroupModeOptions(
+    const options = setup().getGroupModeOptions(
       group({ nodes: [{ mode: 999 }] }),
       vi.fn()
     )

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -43,10 +43,11 @@ vi.mock(
 )
 
 function makeCombo(label: string): KeyComboImpl {
-  return fromAny({
+  const combo: unknown = {
     label,
     equals: vi.fn((other: { label: string }) => other.label === label)
-  })
+  }
+  return combo as KeyComboImpl
 }
 
 describe('useEditKeybindingDialog', () => {
@@ -81,7 +82,7 @@ describe('useEditKeybindingDialog', () => {
   it('updates combo state and reports a conflicting binding', () => {
     const currentCombo = makeCombo('Ctrl+A')
     const newCombo = makeCombo('Ctrl+B')
-    const binding = fromAny<KeybindingImpl, unknown>({
+    const binding = fromPartial<KeybindingImpl>({
       commandId: 'other.command'
     })
     mockGetKeybinding.mockReturnValue(binding)

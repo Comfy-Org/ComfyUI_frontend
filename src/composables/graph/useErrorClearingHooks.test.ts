@@ -1,11 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -159,7 +160,14 @@ describe('Connection error clearing via onConnectionsChange', () => {
       'clip'
     )
 
-    node.onConnectionsChange!(NodeSlotType.INPUT, 12, true, null, fromAny(null))
+    const nullSlot: unknown = null
+    node.onConnectionsChange!(
+      NodeSlotType.INPUT,
+      12,
+      true,
+      null,
+      nullSlot as INodeInputSlot
+    )
 
     expect(store.lastNodeErrors).not.toBeNull()
   })
@@ -263,9 +271,8 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
-      fromAny<LGraph, unknown>(undefined)
-    )
+    const noGraph: unknown = undefined
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(noGraph as LGraph)
     store.lastNodeErrors = {
       [String(node.id)]: {
         errors: [
@@ -674,10 +681,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      fromPartial<MissingModelCandidate>({
         nodeId: String(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
@@ -714,10 +718,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      fromPartial<MissingModelCandidate>({
         nodeId: interiorExecId,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
@@ -748,10 +749,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      fromAny<
-        Parameters<typeof mediaStore.setMissingMedia>[0][number],
-        unknown
-      >({
+      fromPartial<MissingMediaCandidate>({
         nodeId: interiorExecId,
         nodeType: 'LoadImage',
         widgetName: 'image',
@@ -1355,7 +1353,8 @@ describe('scan skips interior of bypassed subgraph containers', () => {
   it('surfaces missing node errors from the Unknown fallback type', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
-    node.type = fromAny<LGraphNode['type'], unknown>(undefined)
+    const noType: unknown = undefined
+    node.type = noType as LGraphNode['type']
     graph.add(node)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
@@ -1481,7 +1480,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<MissingModelCandidate, unknown>({
+      fromPartial<MissingModelCandidate>({
         nodeId: '65',
         sourceExecutionId: createNodeExecutionId([65, 77, 1]),
         nodeType: 'CheckpointLoaderSimple',
@@ -1508,7 +1507,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     const { rootGraph, outerSubgraph, innerSubgraphNode, outerSubgraphNode } =
       createNestedSubgraphRuntime()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-    const hostCandidate = fromAny<MissingModelCandidate, unknown>({
+    const hostCandidate = fromPartial<MissingModelCandidate>({
       nodeId: '65',
       sourceExecutionId: createNodeExecutionId([65, 77, 1]),
       nodeType: 'CheckpointLoaderSimple',
