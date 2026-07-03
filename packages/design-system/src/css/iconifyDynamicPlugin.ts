@@ -13,24 +13,25 @@ const options = {
   scale: SCALE
 }
 
-function getModeCSSRules(icon, mode) {
+function getModeCSSRules(icon: string, mode: 'mask' | 'background') {
   const nameParts = icon.split(/--|:/)
   if (nameParts.length !== 2) return {}
+
   const [prefix, name] = nameParts
   if (!(prefix.match(matchIconName) && name.match(matchIconName))) return {}
+
   const iconSet =
     prefix === COMFY_ICON_PREFIX ? loadComfyIconSet() : loadIconSet(prefix)
   if (!iconSet) return {}
+
   const generated = getIconsCSSData(iconSet, [name], {
     iconSelector: '.icon',
     mode
   })
   if (generated.css.length !== 1) return {}
-  if (generated.common?.rules) {
-    generated.common.rules.height = SCALE + 'em'
-    generated.common.rules.width = SCALE + 'em'
-  }
-  return { ...generated.common?.rules, ...generated.css[0].rules }
+
+  const size = { width: `${SCALE}em`, height: `${SCALE}em` }
+  return { ...generated.common?.rules, ...size, ...generated.css[0].rules }
 }
 
 export default plugin(({ matchComponents }) => {

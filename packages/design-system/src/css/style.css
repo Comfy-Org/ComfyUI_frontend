@@ -8,7 +8,7 @@
 
 @plugin 'tailwindcss-primeui';
 
-@plugin "./iconifyDynamicPlugin.js";
+@plugin "./iconifyDynamicPlugin.ts";
 
 @plugin "./lucideStrokePlugin.js";
 
