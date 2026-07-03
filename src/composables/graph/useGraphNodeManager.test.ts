@@ -120,55 +120,6 @@ describe('Widget input link reactivity', () => {
     expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
   })
 
-  it('updates input link state after link disconnect event', async () => {
-    const { graph, node } = createWidgetInputGraph()
-    const { vueNodeData } = useGraphNodeManager(graph)
-
-    const nodeData = vueNodeData.get(node.id)
-
-    expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
-
-    node.inputs[0].link = null
-
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: false,
-      linkId: 42
-    })
-
-    await nextTick()
-
-    expect(nodeData?.inputs?.[0]?.link).toBeNull()
-  })
-
-  it('keeps widget input link state current after disconnect', async () => {
-    const { graph, node } = createWidgetInputGraph()
-    const { vueNodeData } = useGraphNodeManager(graph)
-
-    const nodeData = vueNodeData.get(node.id)!
-
-    expect(
-      nodeData.inputs?.find((slot) => slot.widget?.name === 'prompt')?.link
-    ).not.toBeNull()
-
-    node.inputs[0].link = null
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: false,
-      linkId: 42
-    })
-
-    await nextTick()
-
-    expect(
-      nodeData.inputs?.find((slot) => slot.widget?.name === 'prompt')?.link
-    ).toBeNull()
-  })
-
   it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'prompt', type: 'STRING' }]

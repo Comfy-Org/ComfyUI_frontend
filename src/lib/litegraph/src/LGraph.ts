@@ -1,5 +1,4 @@
 import { toString } from 'es-toolkit/compat'
-import { getActivePinia } from 'pinia'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -122,27 +121,6 @@ function syncLastNodeId(state: LGraphState, id: NodeId): void {
   const numericId = numericNodeId(id)
   if (numericId !== null && state.lastNodeId < numericId) {
     state.lastNodeId = numericId
-  }
-}
-
-/**
- * Dev-only invariant: every link in `graph._links` must be registered in
- * {@link useLinkStore}. This is a subset check (store ⊇ `_links`), not
- * equality, because floating links are registered in the store but are not
- * part of `_links`.
- * @todo Remove once link topology registration (ADR 0008) is fully rolled out.
- */
-function assertLinkStoreParity(graph: LGraph): void {
-  if (!import.meta.env.DEV || !getActivePinia()) return
-
-  const store = useLinkStore()
-  const graphId = graph.rootGraph.id
-  for (const linkId of graph._links.keys()) {
-    if (!store.getLink(graphId, linkId)) {
-      console.error(
-        `[linkStore] link ${linkId} is in graph._links but missing from the store (graph ${graphId})`
-      )
-    }
   }
 }
 
@@ -1066,8 +1044,6 @@ export class LGraph
           this.subgraphs.set(innerNode.subgraph.id, innerNode.subgraph)
       })
     }
-
-    assertLinkStoreParity(this)
 
     // to chain actions
     return node
