@@ -51,10 +51,8 @@ describe('secretsApi', () => {
     expect(fetchApi).toHaveBeenCalledWith('/secrets')
   })
 
-  it('creates and updates secrets with JSON payloads', async () => {
-    fetchApi
-      .mockResolvedValueOnce(jsonResponse(secret))
-      .mockResolvedValueOnce(jsonResponse(secret))
+  it('creates secrets with a JSON payload', async () => {
+    fetchApi.mockResolvedValue(jsonResponse(secret))
 
     await expect(
       createSecret({
@@ -63,7 +61,7 @@ describe('secretsApi', () => {
         provider: 'huggingface'
       })
     ).resolves.toEqual(secret)
-    expect(fetchApi).toHaveBeenLastCalledWith('/secrets', {
+    expect(fetchApi).toHaveBeenCalledWith('/secrets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -72,11 +70,15 @@ describe('secretsApi', () => {
         provider: 'huggingface'
       })
     })
+  })
+
+  it('updates secrets with a JSON payload', async () => {
+    fetchApi.mockResolvedValue(jsonResponse(secret))
 
     await expect(
       updateSecret('secret-1', { name: 'New name' })
     ).resolves.toEqual(secret)
-    expect(fetchApi).toHaveBeenLastCalledWith('/secrets/secret-1', {
+    expect(fetchApi).toHaveBeenCalledWith('/secrets/secret-1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'New name' })
