@@ -1,11 +1,13 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
@@ -46,14 +48,10 @@ vi.mock('primevue/usetoast', () => {
   }
 })
 
-vi.mock('vue-i18n', () => {
-  const t = vi.fn((key: string) => key)
-  return {
-    useI18n: () => ({ t }),
-    createI18n: () => ({
-      global: { t }
-    })
-  }
+const testI18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
 })
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
@@ -277,15 +275,8 @@ function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   }
 }
 
-function createLoadImageNode(): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
-    widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-    graph: { setDirtyCanvas: vi.fn() }
-  })
-}
-
 function getAddedImageWidgetValues() {
-  return litegraphServiceMock.addNodeOnGraph.mock.results.map(
+  return mockAddNodeOnGraph.mock.results.map(
     ({ value }) =>
       value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
   )
@@ -315,6 +306,7 @@ function mountMediaActions(asset?: AssetMeta) {
 
   const host = document.createElement('div')
   const app = createApp(HostComponent)
+  app.use(testI18n)
   app.mount(host)
 
   if (!actions) throw new Error('media asset actions not initialized')
@@ -336,12 +328,11 @@ describe('useMediaAssetActions', () => {
     mockCopyToClipboard.mockReset()
     mockShowDialog.mockReset()
     mockAddNodeOnGraph.mockReset()
-    mockAddNodeOnGraph.mockReturnValue(
-      fromAny<LGraphNode, unknown>({
-        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-        graph: { setDirtyCanvas: vi.fn() }
-      })
-    )
+    const defaultMockNode: unknown = {
+      widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+      graph: { setDirtyCanvas: vi.fn() }
+    }
+    mockAddNodeOnGraph.mockReturnValue(defaultMockNode as LGraphNode)
     mockGetCanvasCenter.mockReset()
     mockGetCanvasCenter.mockReturnValue([100, 100])
     mockNodeDefsByName.value = {
@@ -386,7 +377,7 @@ describe('useMediaAssetActions', () => {
 
     it('warns when the asset has no job id', async () => {
       mockGetAssetType.mockReturnValue('input')
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.copyJobId(createMockAsset())
 
@@ -398,7 +389,7 @@ describe('useMediaAssetActions', () => {
 
     it('copies the metadata job id when present', async () => {
       mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-from-meta' })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.copyJobId(createMockAsset())
 
@@ -407,7 +398,7 @@ describe('useMediaAssetActions', () => {
 
     it('copies the output asset id when metadata omits the job id', async () => {
       mockGetAssetType.mockReturnValue('output')
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.copyJobId(createMockAsset({ id: 'history-id' }))
 
@@ -443,7 +434,7 @@ describe('useMediaAssetActions', () => {
         nodeType: undefined,
         widgetName: undefined
       })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addWorkflow(createMockAsset({ name: 'notes.txt' }))
 
@@ -455,7 +446,7 @@ describe('useMediaAssetActions', () => {
 
     it('reports missing node definitions', async () => {
       mockNodeDefsByName.value = {}
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addWorkflow(createMockAsset())
 
@@ -467,7 +458,7 @@ describe('useMediaAssetActions', () => {
 
     it('reports loader-node creation failure', async () => {
       mockAddNodeOnGraph.mockReturnValue(undefined)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addWorkflow(createMockAsset())
 
@@ -478,16 +469,15 @@ describe('useMediaAssetActions', () => {
 
     it('still adds the node when the expected widget is absent', async () => {
       const setDirtyCanvas = vi.fn()
-      mockAddNodeOnGraph.mockReturnValue(
-        fromAny<LGraphNode, unknown>({
-          widgets: [{ name: 'other', value: '' }],
-          graph: { setDirtyCanvas }
-        })
-      )
+      const mockNode: unknown = {
+        widgets: [{ name: 'other', value: '' }],
+        graph: { setDirtyCanvas }
+      }
+      mockAddNodeOnGraph.mockReturnValue(mockNode as LGraphNode)
       mockGetOutputAssetMetadata.mockReturnValue({ subfolder: 'nested' })
       mockGetAssetType.mockReturnValue('custom')
       mockIsResultItemType.mockReturnValue(false)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addWorkflow(createMockAsset({ name: 'asset.png' }))
 
@@ -511,7 +501,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use asset.name as filename', async () => {
-        const actions = useMediaAssetActions()
+        const { actions } = mountMediaActions()
 
         const asset = createMockAsset({
           name: 'my-image.jpeg',
@@ -530,7 +520,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use hash as filename when available', async () => {
-        const actions = useMediaAssetActions()
+        const { actions } = mountMediaActions()
 
         const asset = createMockAsset({
           name: 'original.jpeg',
@@ -561,7 +551,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should fall back to asset.name when hash is not available', async () => {
-        const actions = useMediaAssetActions()
+        const { actions } = mountMediaActions()
 
         const asset = createMockAsset({
           name: 'fallback-name.jpeg',
@@ -572,12 +562,25 @@ describe('useMediaAssetActions', () => {
 
         expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
       })
+
+      it('should fall back to asset.name when hash is null', async () => {
+        const { actions } = mountMediaActions()
+
+        const asset = createMockAsset({
+          name: 'fallback-null.jpeg',
+          hash: null
+        })
+
+        await actions.addWorkflow(asset)
+
+        expect(getAddedImageWidgetValues()).toEqual(['fallback-null.jpeg'])
+      })
     })
   })
 
   describe('addMultipleToWorkflow', () => {
     it('does nothing for an empty selection', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addMultipleToWorkflow([])
 
@@ -589,7 +592,7 @@ describe('useMediaAssetActions', () => {
       mockDetectNodeTypeFromFilename
         .mockReturnValueOnce({ nodeType: undefined, widgetName: undefined })
         .mockReturnValueOnce({ nodeType: 'MissingNode', widgetName: 'image' })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addMultipleToWorkflow([
         createMockAsset({ id: 'a', name: 'unsupported.txt' }),
@@ -603,15 +606,14 @@ describe('useMediaAssetActions', () => {
     })
 
     it('shows a partial warning when only some nodes are added', async () => {
+      const firstMockNode: unknown = {
+        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+        graph: { setDirtyCanvas: vi.fn() }
+      }
       mockAddNodeOnGraph
-        .mockReturnValueOnce(
-          fromAny<LGraphNode, unknown>({
-            widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-            graph: { setDirtyCanvas: vi.fn() }
-          })
-        )
+        .mockReturnValueOnce(firstMockNode as LGraphNode)
         .mockReturnValueOnce(undefined)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addMultipleToWorkflow([
         createMockAsset({ id: 'a', name: 'a.png' }),
@@ -625,15 +627,14 @@ describe('useMediaAssetActions', () => {
 
     it('adds assets without a matching widget using untyped paths', async () => {
       const setDirtyCanvas = vi.fn()
-      mockAddNodeOnGraph.mockReturnValue(
-        fromAny<LGraphNode, unknown>({
-          widgets: [{ name: 'other', value: '' }],
-          graph: { setDirtyCanvas }
-        })
-      )
+      const mockNode2: unknown = {
+        widgets: [{ name: 'other', value: '' }],
+        graph: { setDirtyCanvas }
+      }
+      mockAddNodeOnGraph.mockReturnValue(mockNode2 as LGraphNode)
       mockGetAssetType.mockReturnValue('custom')
       mockIsResultItemType.mockReturnValue(false)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.addMultipleToWorkflow([
         createMockAsset({ id: 'asset-1', name: 'asset-1.png' })
@@ -721,7 +722,7 @@ describe('useMediaAssetActions', () => {
 
     it('shows a success toast after opening the workflow', async () => {
       mockOpenWorkflowAction.mockResolvedValue({ success: true })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.openWorkflow(createMockAsset())
 
@@ -732,14 +733,14 @@ describe('useMediaAssetActions', () => {
 
     it('uses the fallback warning when opening returns no error message', async () => {
       mockOpenWorkflowAction.mockResolvedValue({ success: false })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.openWorkflow(createMockAsset())
 
       expect(useToast().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'warn',
-          detail: 'mediaAsset.noWorkflowDataFound'
+          detail: 'No workflow data found in this asset'
         })
       )
     })
@@ -764,7 +765,7 @@ describe('useMediaAssetActions', () => {
 
     it('does not show a toast when the user cancels the filename prompt', async () => {
       mockExportWorkflowAction.mockResolvedValue(cancelledResult)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportWorkflow(createMockAsset())
 
@@ -773,7 +774,7 @@ describe('useMediaAssetActions', () => {
 
     it('shows a success toast on successful export', async () => {
       mockExportWorkflowAction.mockResolvedValue(successResult)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportWorkflow(createMockAsset())
 
@@ -784,7 +785,7 @@ describe('useMediaAssetActions', () => {
 
     it('shows an error toast on actual failure', async () => {
       mockExportWorkflowAction.mockResolvedValue(failureResult)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportWorkflow(createMockAsset())
 
@@ -795,7 +796,7 @@ describe('useMediaAssetActions', () => {
 
     it('shows a warning toast when the workflow is missing', async () => {
       mockExportWorkflowAction.mockResolvedValue(noWorkflowResult)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportWorkflow(createMockAsset())
 
@@ -817,21 +818,21 @@ describe('useMediaAssetActions', () => {
 
     it('uses the fallback error when export fails without a message', async () => {
       mockExportWorkflowAction.mockResolvedValue(failureWithoutError)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportWorkflow(createMockAsset())
 
       expect(useToast().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          detail: 'mediaAsset.failedToExportWorkflow'
+          detail: 'Failed to export workflow'
         })
       )
     })
 
     it('shows no toast when every asset in a bulk export is cancelled', async () => {
       mockExportWorkflowAction.mockResolvedValue(cancelledResult)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportMultipleWorkflows([
         createMockAsset({ id: 'a' }),
@@ -845,7 +846,7 @@ describe('useMediaAssetActions', () => {
       mockExportWorkflowAction
         .mockResolvedValueOnce(successResult)
         .mockResolvedValueOnce(cancelledResult)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportMultipleWorkflows([
         createMockAsset({ id: 'a' }),
@@ -861,7 +862,7 @@ describe('useMediaAssetActions', () => {
       mockExportWorkflowAction
         .mockResolvedValueOnce(successResult)
         .mockResolvedValueOnce(failureResult)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportMultipleWorkflows([
         createMockAsset({ id: 'a' }),
@@ -883,7 +884,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('does nothing for an empty selection', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.openMultipleWorkflows([])
 
@@ -893,7 +894,7 @@ describe('useMediaAssetActions', () => {
 
     it('shows success when every workflow opens', async () => {
       mockOpenWorkflowAction.mockResolvedValue({ success: true })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.openMultipleWorkflows([
         createMockAsset({ id: 'a' }),
@@ -907,7 +908,7 @@ describe('useMediaAssetActions', () => {
 
     it('shows a missing-workflow warning when none open', async () => {
       mockOpenWorkflowAction.mockResolvedValue({ success: false })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.openMultipleWorkflows([
         createMockAsset({ id: 'a' }),
@@ -927,7 +928,7 @@ describe('useMediaAssetActions', () => {
         })
         .mockRejectedValueOnce(new Error('missing workflow'))
       mockOpenWorkflowAction.mockResolvedValue({ success: true })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.openMultipleWorkflows([
         createMockAsset({ id: 'a' }),
@@ -949,7 +950,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('does nothing for an empty selection', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportMultipleWorkflows([])
 
@@ -962,7 +963,7 @@ describe('useMediaAssetActions', () => {
         success: false,
         error: 'boom'
       })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportMultipleWorkflows([
         createMockAsset({ id: 'a' }),
@@ -976,7 +977,7 @@ describe('useMediaAssetActions', () => {
 
     it('counts extraction failures as failed exports', async () => {
       mockExtractWorkflowFromAsset.mockRejectedValue(new Error('missing'))
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.exportMultipleWorkflows([createMockAsset()])
 
@@ -1027,7 +1028,7 @@ describe('useMediaAssetActions', () => {
         preview_url: undefined,
         user_metadata: { subfolder: 'uploads' }
       })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       actions.downloadAssets([asset])
 
@@ -1041,7 +1042,7 @@ describe('useMediaAssetActions', () => {
       mockDownloadFile.mockImplementation(() => {
         throw new Error('download failed')
       })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       actions.downloadAssets([createMockAsset()])
 
@@ -1065,7 +1066,7 @@ describe('useMediaAssetActions', () => {
         user_metadata: { jobId: 'job1', outputCount: 1 }
       })
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([asset])
 
       expect(mockDownloadFile).toHaveBeenCalledOnce()
@@ -1152,7 +1153,7 @@ describe('useMediaAssetActions', () => {
         createOutputAsset('g1-out3', 'out3.png', 'job1')
       ])
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([grouped])
 
       await vi.waitFor(() => {
@@ -1191,7 +1192,7 @@ describe('useMediaAssetActions', () => {
         createOutputAsset('g1-b', 'b.png', 'job1')
       ])
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([grouped, single])
 
       await vi.waitFor(() => {
@@ -1213,7 +1214,7 @@ describe('useMediaAssetActions', () => {
       )
       mockResolveOutputAssetItems.mockResolvedValueOnce([])
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([grouped])
 
       await vi.waitFor(() => {
@@ -1241,7 +1242,7 @@ describe('useMediaAssetActions', () => {
         'https://example.com/b.png'
       )
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([single1, single2])
 
       expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
@@ -1275,7 +1276,7 @@ describe('useMediaAssetActions', () => {
         })
       ])
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([grouped, child])
 
       await vi.waitFor(() => {
@@ -1296,7 +1297,7 @@ describe('useMediaAssetActions', () => {
       )
       mockResolveOutputAssetItems.mockRejectedValueOnce(new Error('boom'))
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([grouped])
 
       await vi.waitFor(() => {
@@ -1330,7 +1331,7 @@ describe('useMediaAssetActions', () => {
         }
       )
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([failingGrouped, okGrouped])
 
       await vi.waitFor(() => {
@@ -1369,7 +1370,7 @@ describe('useMediaAssetActions', () => {
     it('should use preserve strategy when selection spans a single job', async () => {
       const assets = [createOutputAsset('a1', 'img1.png', 'job1', 3)]
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets(assets)
 
       await vi.waitFor(() => {
@@ -1387,7 +1388,7 @@ describe('useMediaAssetActions', () => {
       const j1b = createOutputAsset('a2', 'out1b.png', 'job1', 2)
       const j2 = createOutputAsset('a3', 'out2.png', 'job2', 1)
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([j1a, j1b, j2])
 
       await vi.waitFor(() => {
@@ -1462,7 +1463,7 @@ describe('useMediaAssetActions', () => {
       const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
       const asset2 = createOutputAsset('a2', 'img2.png', 'job2')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([asset1, asset2])
 
       await vi.waitFor(() => {
@@ -1482,7 +1483,7 @@ describe('useMediaAssetActions', () => {
       const j1b = createOutputAsset('a2', 'img1b.png', 'job1', 2)
       const j2 = createOutputAsset('a3', 'img2.png', 'job2')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([j1a, j1b, j2])
 
       await vi.waitFor(() => {
@@ -1519,7 +1520,7 @@ describe('useMediaAssetActions', () => {
       const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
       const asset2 = createOutputAsset('a2', 'img2.png', 'job1')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([asset1, asset2])
 
       await vi.waitFor(() => {
@@ -1541,7 +1542,7 @@ describe('useMediaAssetActions', () => {
       const asset1 = createMockAsset({ id: 'input-1', tags: ['input'] })
       const asset2 = createMockAsset({ id: 'input-2', tags: ['input'] })
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([asset1, asset2])
 
       await vi.waitFor(() => {
@@ -1565,7 +1566,7 @@ describe('useMediaAssetActions', () => {
       })
       const imported = createMockAsset({ id: 'input-id', tags: ['input'] })
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([output, imported])
 
       await vi.waitFor(() => {
@@ -1581,7 +1582,7 @@ describe('useMediaAssetActions', () => {
       const asset1 = createOutputAsset('a1', 'same.png', 'job1')
       const asset2 = createOutputAsset('a2', 'same.png', 'job1')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([asset1, asset2])
 
       await vi.waitFor(() => {
@@ -1599,7 +1600,7 @@ describe('useMediaAssetActions', () => {
       const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
       const asset2 = createOutputAsset('a2', 'img2.png', 'job2')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([asset1, asset2])
 
       await vi.waitFor(() => {
@@ -1644,24 +1645,17 @@ describe('useMediaAssetActions', () => {
       await vi.waitFor(() => {
         expect(add).toHaveBeenCalledWith(
           expect.objectContaining({
-            detail: 'mediaAsset.selection.exportStarted'
+            detail: expect.stringContaining(String(count))
           })
         )
       })
-
-      const { t } = useI18n()
-      expect(t).toHaveBeenCalledWith(
-        'mediaAsset.selection.exportStarted',
-        { count },
-        count
-      )
     }
 
     it('should report total file count, not job count, for multi-output jobs', async () => {
       const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
       const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([j1, j2])
 
       await expectExportToastFileCount(6)
@@ -1671,7 +1665,7 @@ describe('useMediaAssetActions', () => {
       const a1 = createOutputAsset('a1', 'img1.png', 'job1')
       const a2 = createOutputAsset('a2', 'img2.png', 'job2')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([a1, a2])
 
       await expectExportToastFileCount(2)
@@ -1681,7 +1675,7 @@ describe('useMediaAssetActions', () => {
       const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
       const a2 = createOutputAsset('a2', 'img2.png', 'job2')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([j1, a2])
 
       await expectExportToastFileCount(4)
@@ -1691,7 +1685,7 @@ describe('useMediaAssetActions', () => {
       const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
       const j1Duplicate = createOutputAsset('a2', 'img2.png', 'job1', 3)
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([j1, j1Duplicate])
 
       await expectExportToastFileCount(3)
@@ -1710,7 +1704,7 @@ describe('useMediaAssetActions', () => {
 
   describe('deleteAssets', () => {
     it('returns false for an empty selection', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       const result = await actions.deleteAssets([])
 
@@ -1724,7 +1718,7 @@ describe('useMediaAssetActions', () => {
           props.onCancel()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       const result = await actions.deleteAssets(createMockAsset())
 
@@ -1740,7 +1734,7 @@ describe('useMediaAssetActions', () => {
           void props.onConfirm()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.deleteAssets(createMockAsset({ tags: ['input'] }))
 
@@ -1760,7 +1754,7 @@ describe('useMediaAssetActions', () => {
           void props.onConfirm()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.deleteAssets(
         createMockAsset({ id: '', name: 'orphan.png', tags: ['output'] })
@@ -1784,7 +1778,7 @@ describe('useMediaAssetActions', () => {
           void props.onConfirm()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.deleteAssets([
         createMockAsset({ id: 'history-1', tags: ['output'] }),
@@ -1808,7 +1802,7 @@ describe('useMediaAssetActions', () => {
           void props.onConfirm()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.deleteAssets(createMockAsset({ tags: ['input'] }))
 
@@ -1828,7 +1822,7 @@ describe('useMediaAssetActions', () => {
           void props.onConfirm()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.deleteAssets(
         createMockAsset({
@@ -1856,7 +1850,7 @@ describe('useMediaAssetActions', () => {
           void props.onConfirm()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.deleteAssets(
         createMockAsset({
@@ -1885,7 +1879,7 @@ describe('useMediaAssetActions', () => {
           void props.onConfirm()
         }
       )
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       await actions.deleteAssets([
         createMockAsset({ id: 'ok', name: 'ok.png', tags: ['input'] }),
@@ -1914,7 +1908,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should invalidate model cache when deleting a model asset', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       const modelAsset = createMockAsset({
         id: 'checkpoint-1',
@@ -1938,7 +1932,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should invalidate multiple categories for multiple assets', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       const assets = [
         createMockAsset({ id: '1', tags: ['models', 'checkpoints'] }),
@@ -1960,7 +1954,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should not invalidate model cache for non-model assets', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       const inputAsset = createMockAsset({
         id: 'input-1',
@@ -1981,7 +1975,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should only invalidate categories that exist in cache', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       // hasCategory returns false for 'unknown-category'
       mockHasCategory.mockImplementation((tag: string) => tag === 'checkpoints')
@@ -2014,7 +2008,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should show user_metadata display names instead of hash filenames', () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       const assets = [
         createMockAsset({
@@ -2042,7 +2036,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should fall back to asset.name when no display name is available', () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
 
       const asset = createMockAsset({
         id: 'asset-3',
@@ -2110,7 +2104,7 @@ describe('useMediaAssetActions', () => {
 
     it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
       mockDeleteAsset.mockResolvedValue(undefined)
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       const asset = createMockAsset({
         id: 'asset-match',
         name: 'foo.png',
@@ -2168,7 +2162,7 @@ describe('useMediaAssetActions', () => {
       mockGetOutputAssetMetadata.mockReturnValue({
         subfolder: 'outputs/2025'
       })
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       const asset = createMockAsset({
         id: 'asset-output',
         name: 'gen.png',
@@ -2188,7 +2182,7 @@ describe('useMediaAssetActions', () => {
 
     it('omits filenames of failed deletions and skips the helper when nothing was deleted', async () => {
       mockDeleteAsset.mockRejectedValue(new Error('boom'))
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       const asset = createMockAsset({
         id: 'asset-failed',
         name: 'failed.png',

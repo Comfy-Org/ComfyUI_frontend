@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import axios from 'axios'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -94,7 +94,7 @@ describe('useNodeDefStore', () => {
 
     it('defaults missing legacy input and output fields', () => {
       const nodeDef = new ComfyNodeDefImpl(
-        fromAny<ComfyNodeDef, unknown>({
+        fromPartial<ComfyNodeDef>({
           name: 'FallbackNode',
           display_name: 'Fallback Node',
           category: 'test',
@@ -143,10 +143,13 @@ describe('useNodeDefStore', () => {
   describe('filter registry', () => {
     it('updates LiteGraph skip state for registered dev-only nodes', () => {
       const registeredNodeTypes = LiteGraph.registered_node_types
-      LiteGraph.registered_node_types = fromAny({
-        DevNode: { nodeData: { dev_only: true }, skip_list: false },
-        NormalNode: { nodeData: {}, skip_list: false }
-      })
+      LiteGraph.registered_node_types = {
+        DevNode: {
+          nodeData: { dev_only: true },
+          skip_list: false
+        } as typeof LGraphNode,
+        NormalNode: { nodeData: {}, skip_list: false } as typeof LGraphNode
+      }
 
       setActivePinia(createTestingPinia({ stubActions: false }))
       useNodeDefStore()
@@ -593,9 +596,10 @@ describe('useNodeDefStore', () => {
     it('returns undefined when concrete promoted widget resolution fails', async () => {
       const resolver =
         await import('@/core/graph/subgraph/resolveConcretePromotedWidget')
-      vi.spyOn(resolver, 'resolveConcretePromotedWidget').mockReturnValue(
-        fromAny({ status: 'failure', failure: 'missing-widget' })
-      )
+      vi.spyOn(resolver, 'resolveConcretePromotedWidget').mockReturnValue({
+        status: 'failure',
+        failure: 'missing-widget'
+      } as const)
       const host = setupPromotedPrompt(
         createMockNodeDef({
           name: 'PromptNode',

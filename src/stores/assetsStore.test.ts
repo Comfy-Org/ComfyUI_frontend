@@ -1,7 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
@@ -2426,9 +2425,8 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
   describe('updateInputs cloud routing', () => {
     it('reads input files from the internal API when isCloud is false', async () => {
       const fetchMock = vi.fn().mockResolvedValue(
-        fromAny<Response, unknown>({
-          ok: true,
-          json: async () => ['input-a.png', 'input-b.png']
+        new Response(JSON.stringify(['input-a.png', 'input-b.png']), {
+          status: 200
         })
       )
       vi.stubGlobal('fetch', fetchMock)
@@ -2451,11 +2449,9 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
     })
 
     it('records internal input API failures', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        fromAny<Response, unknown>({
-          ok: false
-        })
-      )
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(new Response(null, { status: 500 }))
       vi.stubGlobal('fetch', fetchMock)
       try {
         const consoleSpy = vi

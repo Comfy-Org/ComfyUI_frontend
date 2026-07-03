@@ -130,12 +130,7 @@ describe('useModelToNodeStore', () => {
     it('omits providers whose node definition is unavailable from reverse lookup', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.modelToNodeMap = {
-        missing: [
-          new ModelNodeProvider(
-            undefined as unknown as ComfyNodeDefImpl,
-            'model'
-          )
-        ]
+        missing: [new ModelNodeProvider(undefined, 'model')]
       }
 
       expect(modelToNodeStore.getRegisteredNodeTypes()).not.toHaveProperty(
@@ -582,12 +577,7 @@ describe('useModelToNodeStore', () => {
     it('skips providers without node definitions during category lookup', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.modelToNodeMap = {
-        missing: [
-          new ModelNodeProvider(
-            undefined as unknown as ComfyNodeDefImpl,
-            'model'
-          )
-        ]
+        missing: [new ModelNodeProvider(undefined, 'model')]
       }
 
       expect(
