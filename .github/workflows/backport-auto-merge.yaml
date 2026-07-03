@@ -53,10 +53,12 @@ concurrency:
 jobs:
   merge:
     name: Merge eligible backport PRs
-    # Skip review events on non-backport PRs early (most reviews in the repo),
-    # before spending any API call. Schedule sweeps always proceed. The per-PR
-    # eligibility checks in the job still re-verify the label from live state.
-    if: github.event_name != 'pull_request_review' || contains(github.event.pull_request.labels.*.name, 'backport')
+    # Skip review events that can't possibly make a PR mergeable — non-approval
+    # reviews, or reviews on non-backport PRs (most reviews in the repo) — before
+    # spending any API call. Schedule sweeps always proceed. The per-PR
+    # eligibility checks in the job still re-verify the label and decision from
+    # live state.
+    if: github.event_name != 'pull_request_review' || (github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'backport'))
     runs-on: ubuntu-latest
     permissions:
       contents: read # read-only PR/commit lookups via the default token
@@ -168,8 +170,25 @@ jobs:
               echo "PR #${pr} merged."
             else
               echo "::warning::PR #${pr} looked ready but did not merge after ${max} attempts."
-              GH_TOKEN="$MERGE_TOKEN" gh pr comment "$pr" --repo "$GH_REPO" --body \
-                "This backport PR is approved and its required checks are green, but automatic merge failed after ${max} attempts. Please merge manually or investigate (possible branch-protection mismatch)." || true
+              # Avoid spamming a persistently-stuck PR: only re-warn if the last
+              # warning (identified by its marker) is more than an hour old.
+              marker='<!-- backport-auto-merge:merge-failed -->'
+              last_warned=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/issues/${pr}/comments" --paginate \
+                --jq "[.[] | select(.body | contains(\"${marker}\"))] | sort_by(.created_at) | last | .created_at // empty" 2>/dev/null || echo '')
+              stale=true
+              if [ -n "$last_warned" ]; then
+                last_epoch=$(date -d "$last_warned" +%s 2>/dev/null || echo 0)
+                now_epoch=$(date -u +%s)
+                [ $((now_epoch - last_epoch)) -lt 3600 ] && stale=false
+              fi
+              if [ "$stale" = "true" ]; then
+                body=$(printf '%s\n\n%s' \
+                  "This backport PR is approved and its required checks are green, but automatic merge failed after ${max} attempts. Please merge manually or investigate (possible branch-protection mismatch)." \
+                  "$marker")
+                GH_TOKEN="$MERGE_TOKEN" gh pr comment "$pr" --repo "$GH_REPO" --body "$body" || true
+              else
+                echo "Already warned within the last hour — skipping duplicate comment."
+              fi
             fi
             echo "::endgroup::"
           done
