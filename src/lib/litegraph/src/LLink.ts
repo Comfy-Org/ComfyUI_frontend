@@ -11,6 +11,7 @@ import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 import type { LinkId } from '@/types/linkId'
+import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -97,18 +98,67 @@ type BasicReadonlyNetwork = Pick<
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
 
-  /** Link ID */
-  id: LinkId
-  parentId?: RerouteId
-  type: ISlotType
+  readonly _state: LinkTopology
+
+  get id() {
+    return this._state.id
+  }
+
+  set id(value: LinkId) {
+    this._state.id = value
+  }
+
+  get type() {
+    return this._state.type
+  }
+
+  set type(value: ISlotType) {
+    this._state.type = value
+  }
+
   /** Output node ID */
-  origin_id: NodeId
+  get origin_id() {
+    return this._state.originNodeId
+  }
+
+  set origin_id(value: NodeId) {
+    this._state.originNodeId = value
+  }
+
   /** Output slot index */
-  origin_slot: number
+  get origin_slot() {
+    return this._state.originSlot
+  }
+
+  set origin_slot(value: number) {
+    this._state.originSlot = value
+  }
+
   /** Input node ID */
-  target_id: NodeId
+  get target_id() {
+    return this._state.targetNodeId
+  }
+
+  set target_id(value: NodeId) {
+    this._state.targetNodeId = value
+  }
+
   /** Input slot index */
-  target_slot: number
+  get target_slot() {
+    return this._state.targetSlot
+  }
+
+  set target_slot(value: number) {
+    this._state.targetSlot = value
+  }
+
+  get parentId() {
+    return this._state.parentId
+  }
+
+  set parentId(value: RerouteId | undefined) {
+    this._state.parentId = value
+  }
 
   data?: number | string | boolean | { toToolTip?(): string }
   _data?: unknown
@@ -165,13 +215,15 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     target_slot: number,
     parentId?: RerouteId
   ) {
-    this.id = id
-    this.type = type
-    this.origin_id = toNodeId(origin_id)
-    this.origin_slot = origin_slot
-    this.target_id = toNodeId(target_id)
-    this.target_slot = target_slot
-    this.parentId = parentId
+    this._state = {
+      id,
+      type,
+      originNodeId: toNodeId(origin_id),
+      originSlot: origin_slot,
+      targetNodeId: toNodeId(target_id),
+      targetSlot: target_slot,
+      parentId
+    }
 
     this._data = null
     // center
