@@ -350,7 +350,7 @@ export function useTemplateFiltering(
       selected_models: selectedModels.value,
       selected_use_cases: selectedUseCases.value,
       selected_runs_on: selectedRunsOn.value,
-      sort_by: sortBy.value,
+      sort_by: activeSort.value,
       filtered_count: filteredCount.value,
       total_count: totalCount.value
     })
@@ -358,7 +358,7 @@ export function useTemplateFiltering(
 
   // Watch for filter changes and track them
   watch(
-    [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, sortBy],
+    [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, activeSort],
     () => {
       // Only track if at least one filter is active (to avoid tracking initial state)
       const hasActiveFilters =
@@ -366,7 +366,7 @@ export function useTemplateFiltering(
         selectedModels.value.length > 0 ||
         selectedUseCases.value.length > 0 ||
         selectedRunsOn.value.length > 0 ||
-        sortBy.value !== 'default'
+        activeSort.value !== 'default'
 
       if (hasActiveFilters) {
         debouncedTrackFilterChange()

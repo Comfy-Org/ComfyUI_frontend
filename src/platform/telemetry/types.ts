@@ -354,6 +354,7 @@ export interface TemplateFilterMetadata {
   selected_use_cases: string[]
   selected_runs_on: string[]
   sort_by:
+    | 'relevance'
     | 'default'
     | 'recommended'
     | 'popular'

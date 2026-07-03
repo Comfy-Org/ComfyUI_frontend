@@ -51,9 +51,10 @@ vi.mock('@/stores/systemStatsStore', () => ({
   useSystemStatsStore: vi.fn(() => mockSystemStatsStore)
 }))
 
+const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackTemplateFilterChanged: vi.fn(),
+    trackTemplateFilterChanged,
     trackSearchQuery: vi.fn()
   }))
 }))
@@ -581,6 +582,23 @@ describe('useTemplateFiltering', () => {
       const { filteredTemplates } = await searchFor(templates, 'aquarela')
 
       expect(names(filteredTemplates.value)).toEqual(['localized_only'])
+    })
+
+    it('reports the visible sort to telemetry, not the persisted browse sort', async () => {
+      vi.useFakeTimers()
+      const composable = useTemplateFiltering(
+        ref([buildTemplate({ name: 'only', title: 'Only' })])
+      )
+      composable.sortBy.value = 'popular'
+      composable.searchQuery.value = 'only'
+      await nextTick()
+      await vi.runOnlyPendingTimersAsync()
+
+      // Searching shows relevance, so telemetry must report relevance, not popular.
+      expect(trackTemplateFilterChanged).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sort_by: 'relevance' })
+      )
+      vi.useRealTimers()
     })
 
     it('preserves relevance order after a model filter narrows the results', async () => {
