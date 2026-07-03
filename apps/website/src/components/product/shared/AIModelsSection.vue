@@ -162,6 +162,7 @@ const cardClass =
 
               <div
                 class="hover:bg-primary-comfy-yellow absolute right-5 bottom-5 flex size-10 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm transition-colors hover:text-primary-comfy-ink lg:right-6 lg:bottom-6"
+                aria-hidden="true"
               >
                 <ChevronRight class="size-5" :stroke-width="2" />
               </div>

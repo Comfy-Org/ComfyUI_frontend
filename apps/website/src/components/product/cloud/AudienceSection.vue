@@ -64,6 +64,7 @@ const cards = [
 
             <div
               class="hover:bg-primary-comfy-yellow flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm transition-colors hover:text-primary-comfy-ink"
+              aria-hidden="true"
             >
               <ChevronRight class="size-5" :stroke-width="2" />
             </div>
