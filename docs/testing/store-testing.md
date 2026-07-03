@@ -38,10 +38,9 @@ describe('useWorkflowStore', () => {
     vi.clearAllMocks()
   })
 
-  it('should initialize with default state', () => {
-    expect(store.workflows).toEqual([])
-    expect(store.activeWorkflow).toBeUndefined()
-    expect(store.openWorkflows).toEqual([])
+  it('should track a newly created temporary workflow', () => {
+    const workflow = store.createTemporary('test.json')
+    expect(store.workflows).toContain(workflow)
   })
 })
 ```
@@ -72,6 +71,8 @@ it('should create a temporary workflow not clashing with persisted workflows', a
 Testing store actions:
 
 ```typescript
+import { fromPartial } from '@total-typescript/shoehorn'
+
 // Example from a colocated store unit test
 describe('openWorkflow', () => {
   it('should load and open a temporary workflow', async () => {
@@ -81,7 +82,7 @@ describe('openWorkflow', () => {
 
     // Mock the load response
     vi.spyOn(workflow, 'load').mockImplementation(async () => {
-      workflow.changeTracker = { activeState: mockWorkflowData } as any
+      workflow.changeTracker = fromPartial<ChangeTracker>({ activeState: mockWorkflowData })
       return workflow as LoadedComfyWorkflow
     })
 
@@ -206,17 +207,18 @@ Testing store watchers and reactive behavior:
 
 ```typescript
 // Example from a colocated store unit test
+import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 
 describe('Subgraphs', () => {
   it('should update automatically when activeWorkflow changes', async () => {
     // Arrange: Set initial canvas state
-    const initialSubgraph = {
+    const initialSubgraph = fromPartial<Subgraph>({
       name: 'Initial Subgraph',
       pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
       isRootGraph: false
-    }
-    vi.mocked(comfyApp.canvas).subgraph = initialSubgraph as any
+    })
+    vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
 
     // Trigger initial update
     store.updateActiveGraph()
@@ -229,7 +231,7 @@ describe('Subgraphs', () => {
     // Act: Change the active workflow and canvas state
     const workflow2 = store.createTemporary('workflow2.json')
     vi.spyOn(workflow2, 'load').mockImplementation(async () => {
-      workflow2.changeTracker = { activeState: {} } as any
+      workflow2.changeTracker = fromPartial<ChangeTracker>({ activeState: {} })
       workflow2.originalContent = '{}'
       workflow2.content = '{}'
       return workflow2 as LoadedComfyWorkflow
@@ -266,10 +268,10 @@ describe('renameWorkflow', () => {
 
     // Mock super.rename
     vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
-      async function (this: any, newPath: string) {
-        this.path = newPath
-        return this
-      } as any
+      async function (this: unknown, ...args: unknown[]) {
+        ;(this as typeof workflow).path = args[0] as string
+        return this as typeof workflow
+      }
     )
 
     // Perform rename

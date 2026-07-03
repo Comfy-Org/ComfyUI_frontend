@@ -56,6 +56,22 @@
 - Mocking: use `vi.mock`/`vi.spyOn`; keep module mocks contained (no global
   mutable state — use `vi.hoisted()` for per-test arrangement); don't mock
   what you don't own
+- Typed fixtures: build partial mocks with `fromPartial<T>()` from
+  `@total-typescript/shoehorn` — never `as unknown as X` double assertions,
+  never `fromAny` (it erases the type checking that `fromPartial` preserves)
+- Before writing a mock builder, search for existing factories:
+  `src/utils/__tests__/litegraphTestUtils.ts` (`createMockLGraphNode`,
+  `createMockLGraph`, `createMockCanvas`, ...) and colocated `__tests__/`
+  helpers next to the type you are mocking
+- Mock only at seams — Pinia stores, settings, third-party libraries. Never
+  mock type guards, litegraph classes, or sibling composables of the unit
+  under test
+- Use a real `createI18n` instance (see
+  `src/components/searchbox/v2/__test__/testUtils.ts`) instead of
+  `vi.mock('vue-i18n')`
+- Assertions: no bare `expect(fn).not.toThrow()` as a test's only assertion;
+  don't assert values a stub was configured to return; don't assert on
+  `.mock.results` — assert observable behavior instead
 - Wait for reactivity with `await nextTick()` after state changes
 - Read `docs/testing/<topic>.md` (unit-testing, component-testing,
   store-testing, vitest-patterns) when writing the corresponding kind of test

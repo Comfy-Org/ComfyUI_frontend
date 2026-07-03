@@ -90,6 +90,9 @@ If the wrapper only renames or relays a mocked value, fail it. Inline the lookup
 
 - Flag casts whenever `vi.mocked()` would narrow correctly.
 - Do not add `vi.mocked()` around assertion-only references just for style.
+- `.mock.calls` / `.mock.results` assertions are themselves a smell — flag
+  them and suggest asserting observable behavior; the table row only documents
+  when `vi.mocked()` is required if they must exist.
 
 ### Reset Hygiene
 
