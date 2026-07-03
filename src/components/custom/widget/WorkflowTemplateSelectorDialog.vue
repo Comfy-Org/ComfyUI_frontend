@@ -642,10 +642,13 @@ const selectedUseCaseObjects = computed({
   }
 })
 
+const runsOnDisplayName = (runsOn: string) =>
+  runsOn === 'External or Remote API' ? 'Partner Nodes' : runsOn
+
 const selectedRunsOnObjects = computed({
   get() {
     return selectedRunsOn.value.map((runsOn) => ({
-      name: runsOn,
+      name: runsOnDisplayName(runsOn),
       value: runsOn
     }))
   },
@@ -684,7 +687,7 @@ const useCaseOptions = computed(() =>
 
 const runsOnOptions = computed(() =>
   availableRunsOn.value.map((runsOn) => ({
-    name: runsOn,
+    name: runsOnDisplayName(runsOn),
     value: runsOn
   }))
 )

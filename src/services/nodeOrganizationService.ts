@@ -78,7 +78,7 @@ class NodeOrganizationService {
       description: 'sideToolbar.nodeLibraryTab.groupStrategies.sourceDesc',
       getNodePath: (nodeDef: ComfyNodeDefImpl) => {
         if (nodeDef.api_node) {
-          return ['API nodes', nodeDef.name]
+          return ['Partner Nodes', nodeDef.name]
         } else if (nodeDef.nodeSource.type === NodeSourceType.Core) {
           return ['Core', nodeDef.name]
         } else if (nodeDef.nodeSource.type === NodeSourceType.CustomNodes) {

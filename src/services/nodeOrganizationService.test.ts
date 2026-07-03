@@ -256,7 +256,7 @@ describe('nodeOrganizationService', () => {
     describe('source grouping edge cases', () => {
       const strategy = nodeOrganizationService.getGroupingStrategy('source')
 
-      it('should handle API nodes', () => {
+      it('should handle partner nodes', () => {
         const nodeDef = createMockNodeDef({
           api_node: true,
           nodeSource: {
@@ -267,7 +267,7 @@ describe('nodeOrganizationService', () => {
           }
         })
         const path = strategy?.getNodePath(nodeDef)
-        expect(path).toEqual(['API nodes', 'TestNode'])
+        expect(path).toEqual(['Partner Nodes', 'TestNode'])
       })
 
       it('should handle unknown source type', () => {
