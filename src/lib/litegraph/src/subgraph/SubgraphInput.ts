@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, registerLinkTopology } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -115,6 +115,7 @@ export class SubgraphInput extends SubgraphSlot {
 
     // Add to graph links list
     subgraph._links.set(link.id, link)
+    registerLinkTopology(subgraph, link)
 
     // Set link ID in each slot
     this.linkIds.push(link.id)

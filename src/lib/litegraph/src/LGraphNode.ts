@@ -31,7 +31,7 @@ import { BadgePosition, LGraphBadge } from './LGraphBadge'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
-import { LLink } from './LLink'
+import { LLink, registerLinkTopology } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
@@ -2907,8 +2907,6 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const layoutMutations = useLayoutMutations()
-
     const outputIndex = this.outputs.indexOf(output)
     if (outputIndex === -1) {
       console.warn('connectSlots: output not found')
@@ -2972,16 +2970,7 @@ export class LGraphNode
 
     // add to graph links list
     graph._links.set(link.id, link)
-
-    // Register link in Layout Store for spatial tracking
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createLink(
-      link.id,
-      this.id,
-      outputIndex,
-      inputNode.id,
-      inputIndex
-    )
+    registerLinkTopology(graph, link)
 
     // connect in output
     output.links ??= []

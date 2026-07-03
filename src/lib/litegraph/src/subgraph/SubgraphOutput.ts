@@ -1,7 +1,7 @@
 import { pull } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, registerLinkTopology } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
@@ -79,6 +79,7 @@ export class SubgraphOutput extends SubgraphSlot {
 
     // Add to graph links list
     subgraph._links.set(link.id, link)
+    registerLinkTopology(subgraph, link)
 
     // Set link ID in each slot
     this.linkIds[0] = link.id

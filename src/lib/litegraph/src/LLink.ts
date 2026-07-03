@@ -6,6 +6,7 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -13,6 +14,8 @@ import { toRerouteId } from '@/types/rerouteId'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
+import type { UUID } from '@/utils/uuid'
+import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { Reroute } from './Reroute'
@@ -100,6 +103,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   readonly _state: LinkTopology
 
+  /** The graph this link is registered with in {@link useLinkStore}, if any. */
+  _graphId?: UUID
+
+  /** Link ID */
   get id() {
     return this._state.id
   }
@@ -122,7 +129,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_id(value: NodeId) {
-    this._state.originNodeId = value
+    if (this._graphId) {
+      useLinkStore().updateEndpoint(this._graphId, this.id, {
+        originNodeId: value
+      })
+    } else {
+      this._state.originNodeId = value
+    }
   }
 
   /** Output slot index */
@@ -131,7 +144,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_slot(value: number) {
-    this._state.originSlot = value
+    if (this._graphId) {
+      useLinkStore().updateEndpoint(this._graphId, this.id, {
+        originSlot: value
+      })
+    } else {
+      this._state.originSlot = value
+    }
   }
 
   /** Input node ID */
@@ -140,7 +159,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_id(value: NodeId) {
-    this._state.targetNodeId = value
+    if (this._graphId) {
+      useLinkStore().updateEndpoint(this._graphId, this.id, {
+        targetNodeId: value
+      })
+    } else {
+      this._state.targetNodeId = value
+    }
   }
 
   /** Input slot index */
@@ -149,7 +174,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_slot(value: number) {
-    this._state.targetSlot = value
+    if (this._graphId) {
+      useLinkStore().updateEndpoint(this._graphId, this.id, {
+        targetSlot: value
+      })
+    } else {
+      this._state.targetSlot = value
+    }
   }
 
   get parentId() {
@@ -524,6 +555,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       }
     }
     network.links.delete(this.id)
+    if (this._graphId) useLinkStore().deleteLink(this._graphId, this.id)
     // Delete link from Layout Store
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.deleteLink(this.id)
@@ -556,4 +588,21 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     if (this.parentId !== undefined) copy.parentId = this.parentId
     return copy
   }
+}
+
+/**
+ * Registers a link's topology into {@link useLinkStore} by reference, so the
+ * store and {@link LLink._state} always agree.  Call this at every site that
+ * adds a link to a graph's link map (or floating link map).
+ * @param graph The graph (or subgraph) the link belongs to
+ * @param link The link to register
+ */
+export function registerLinkTopology(
+  graph: Pick<LGraph, 'rootGraph'>,
+  link: LLink
+): void {
+  if (link.id === toLinkId(-1)) return // transient toFloating clone
+  const graphId = graph.rootGraph.id
+  link._graphId = graphId
+  useLinkStore().registerLink(graphId, link._state)
 }

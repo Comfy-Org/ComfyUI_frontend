@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import { getActivePinia } from 'pinia'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -11,6 +12,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -29,7 +31,7 @@ import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import { LLink } from './LLink'
+import { LLink, registerLinkTopology } from './LLink'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
@@ -120,6 +122,27 @@ function syncLastNodeId(state: LGraphState, id: NodeId): void {
   const numericId = numericNodeId(id)
   if (numericId !== null && state.lastNodeId < numericId) {
     state.lastNodeId = numericId
+  }
+}
+
+/**
+ * Dev-only invariant: every link in `graph._links` must be registered in
+ * {@link useLinkStore}. This is a subset check (store ⊇ `_links`), not
+ * equality, because floating links are registered in the store but are not
+ * part of `_links`.
+ * @todo Remove once link topology registration (ADR 0008) is fully rolled out.
+ */
+function assertLinkStoreParity(graph: LGraph): void {
+  if (!import.meta.env.DEV || !getActivePinia()) return
+
+  const store = useLinkStore()
+  const graphId = graph.rootGraph.id
+  for (const linkId of graph._links.keys()) {
+    if (!store.getLink(graphId, linkId)) {
+      console.error(
+        `[linkStore] link ${linkId} is in graph._links but missing from the store (graph ${graphId})`
+      )
+    }
   }
 }
 
@@ -396,6 +419,7 @@ export class LGraph
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
+      useLinkStore().clearGraph(graphId)
     }
 
     this.id = zeroUuid
@@ -1043,6 +1067,8 @@ export class LGraph
       })
     }
 
+    assertLinkStoreParity(this)
+
     // to chain actions
     return node
   }
@@ -1429,6 +1455,7 @@ export class LGraph
       link.id = toLinkId(++this._lastFloatingLinkId)
     }
     this.floatingLinksInternal.set(link.id, link)
+    registerLinkTopology(this, link)
 
     const slot =
       link.target_id !== UNASSIGNED_NODE_ID
@@ -1452,6 +1479,7 @@ export class LGraph
 
   removeFloatingLink(link: LLink): void {
     this.floatingLinksInternal.delete(link.id)
+    useLinkStore().deleteLink(this.rootGraph.id, link.id)
 
     const slot =
       link.target_id !== UNASSIGNED_NODE_ID
@@ -2503,6 +2531,7 @@ export class LGraph
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
             this._links.set(link.id, link)
+            registerLinkTopology(this, link)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2544,6 +2573,7 @@ export class LGraph
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
             this._links.set(link.id, link)
+            registerLinkTopology(this, link)
           }
         }
 
