@@ -7,8 +7,9 @@ is one JSON row, no new test code.
 
 ## Prerequisites
 
-1. A ComfyUI backend on `127.0.0.1:8288` with the manifest packs
-   (ComfyUI-Impact-Pack, ComfyUI-VideoHelperSuite) and ComfyUI_devtools
+1. A ComfyUI backend on `127.0.0.1:8288` with every manifest pack (the
+   `pack` entries in `browser_tests/fixtures/data/customNodeManifest.json`)
+   and ComfyUI_devtools
    installed. Launch it with `--multi-user` (the repo-wide browser-test
    prerequisite; the fixture writes per-worker user settings and the suite
    depends on them landing), `--cache-none` (repeat runs must re-execute
@@ -50,7 +51,10 @@ Any `-g` pattern works against the generic scripts, e.g.
 
 - **T0 load**: pack nodes are registered in `/object_info`, added to a
   cleared graph, counted exactly, and each added node's own `[data-node-id]`
-  element mounts under Vue Nodes 2.0. Both renderer passes.
+  element mounts under Vue Nodes 2.0. Both renderer passes - unless the pack
+  declares `vueNodesCompatible: false` in the manifest (evidence required;
+  see [ADDING_PACKS.md](ADDING_PACKS.md)), in which case its tests run their
+  LiteGraph-canvas assertions only. Never a skip.
 - **T1 run**: the manifest workflow is loaded and queued; the backend's
   `executing` event stream must contain every expected node id, and the run
   must end in `execution_success`.
@@ -73,15 +77,11 @@ Any `-g` pattern works against the generic scripts, e.g.
 
 ## Adding a pack
 
-Add one row to `browser_tests/fixtures/data/customNodeManifest.json` with
-every field of the schema: `pack`, `repo`, `pin`, `tiers`, `workflow` (empty
-string until the run tier), `expectedNodes` (the pack's `object_info`
-class_type keys, not Python class names), `requiresGpu`, `requiresModels`,
-and `timeoutMs` - `loadManifest()` fails loudly on missing fields. The
-`connectivity` tier needs no extra assets - the pairing generator derives
-everything from `/object_info`. For the run tier, add a model-free
-frontend-format workflow under `browser_tests/assets/customNodes/` and set
-the tier. Reuse existing repo media assets - do not commit new binaries.
+One manifest row plus one small workflow JSON - no new test code. The
+authoritative step-by-step process (verifying the pack's real node keys,
+authoring the run workflow, the `vueNodesCompatible` evidence rule, what CI
+does with the row) lives in [ADDING_PACKS.md](ADDING_PACKS.md). Follow it
+exactly; the traps it lists all shipped in real packs.
 
 ## Gotchas
 

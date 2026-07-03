@@ -20,5 +20,60 @@
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 90000
+  },
+  {
+    "pack": "rgthree-comfy",
+    "repo": "https://github.com/rgthree/rgthree-comfy",
+    "pin": "",
+    "tiers": ["load", "connectivity", "run"],
+    "workflow": "assets/customNodes/rgthree_seed_display_run.json",
+    "expectedNodes": ["Seed (rgthree)", "Display Any (rgthree)"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
+  },
+  {
+    "pack": "ComfyUI_essentials",
+    "repo": "https://github.com/cubiq/ComfyUI_essentials",
+    "pin": "",
+    "tiers": ["load", "connectivity", "run"],
+    "workflow": "assets/customNodes/essentials_math_display_run.json",
+    "expectedNodes": ["SimpleMathInt+", "DisplayAny"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
+  },
+  {
+    "pack": "ComfyUI-KJNodes",
+    "repo": "https://github.com/kijai/ComfyUI-KJNodes",
+    "pin": "",
+    "tiers": ["load", "connectivity", "run"],
+    "workflow": "assets/customNodes/kjnodes_constants_run.json",
+    "expectedNodes": ["INTConstant", "FloatConstant"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
+  },
+  {
+    "pack": "ComfyUI-Custom-Scripts",
+    "repo": "https://github.com/pythongosssss/ComfyUI-Custom-Scripts",
+    "pin": "",
+    "tiers": ["load", "connectivity", "run"],
+    "workflow": "assets/customNodes/customscripts_string_show_run.json",
+    "expectedNodes": ["StringFunction|pysssss", "ShowText|pysssss"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
+  },
+  {
+    "pack": "was-node-suite-comfyui",
+    "repo": "https://github.com/WASasquatch/was-node-suite-comfyui",
+    "pin": "",
+    "tiers": ["load", "connectivity", "run"],
+    "workflow": "assets/customNodes/was_number_text_run.json",
+    "expectedNodes": ["Constant Number", "Number to Text", "Text to Console"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
   }
 ]

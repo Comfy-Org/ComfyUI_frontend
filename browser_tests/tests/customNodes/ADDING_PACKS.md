@@ -1,0 +1,213 @@
+# Adding a custom-node pack to the regression suite
+
+The authoritative, step-by-step process for onboarding a new pack. Written to
+be followable by a human or an agent with no prior context. The suite itself
+(what it asserts, how to run it) is documented in [README.md](README.md);
+this file is only about adding coverage for a new pack.
+
+The short version: install the pack on a local test backend, read the pack's
+real node keys out of `/object_info`, author one small model-free workflow,
+add one row to the manifest, prove it green locally, push. No new test code
+is ever needed - the specs iterate the manifest.
+
+## Step 0 - prerequisites
+
+- A local test backend and dev server set up exactly per the
+  [README prerequisites](README.md#prerequisites). Do not skip `--multi-user`
+  or `--cache-none`.
+- The pack's GitHub URL. The CI job clones and pip-installs it, so the repo
+  must be public and its `requirements.txt` must install on a CPU-only
+  runner. Packs that hard-require CUDA at import time cannot be onboarded
+  until they guard that import.
+
+## Step 1 - install the pack on the test backend
+
+```bash
+cd <test-backend>/custom_nodes
+git clone https://github.com/<owner>/<pack>
+pip install -r <pack>/requirements.txt   # if the pack has one
+```
+
+If you run a CPU-only backend, constrain pip so the pack cannot swap in a
+different torch (CI does the same):
+
+```bash
+pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' > /tmp/torch-constraints.txt
+pip install -r <pack>/requirements.txt -c /tmp/torch-constraints.txt
+```
+
+Restart the backend and check its log: the `Import times for custom nodes`
+block must list the pack with no `IMPORT FAILED` marker. An import failure is
+a pack bug or a missing dependency - fix that first; nothing downstream can
+work without a clean import.
+
+## Step 2 - read the pack's real node keys
+
+The manifest's `expectedNodes` are the pack's `object_info` keys (the same
+strings the API uses as `class_type`). They are NOT Python class names and
+NOT display names. Get them from the running backend:
+
+```bash
+curl -s http://127.0.0.1:8288/object_info | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+for key, node in sorted(d.items()):
+    if node.get("python_module") == "custom_nodes.<pack-dir-name>":
+        print(key)
+'
+```
+
+Real traps this step catches (each one shipped in a real pack):
+
+| Pack                   | Correct key         | Wrong guesses that look right                                                   |
+| ---------------------- | ------------------- | ------------------------------------------------------------------------------- |
+| ComfyUI_essentials     | `SimpleMathInt+`    | `SimpleMathInt` (keys carry a trailing `+`, except `DisplayAny` which has none) |
+| ComfyUI-KJNodes        | `INTConstant`       | `INT Constant` (that is the display name)                                       |
+| ComfyUI-Custom-Scripts | `ShowText\|pysssss` | `ShowText` (keys carry a `\|pysssss` suffix)                                    |
+| rgthree-comfy          | `Seed (rgthree)`    | `RgthreeSeed` (the Python class name)                                           |
+
+## Step 3 - pick the expected nodes
+
+Choose 2-3 nodes that are:
+
+- **Model-free**: no checkpoint / VAE / CLIP inputs, no file downloads. The
+  gate runs on CPU with no models installed. Constants, math, text, and
+  display nodes are ideal.
+- **Wireable into a chain**: at least one producer (has a typed output) and
+  one terminal node. A terminal node either has `output_node: true` in
+  `/object_info` (it terminates a workflow by itself) or you end the chain in
+  the core `PreviewAny` node, which accepts any type.
+
+Check a candidate's inputs, outputs, and `output_node` flag:
+
+```bash
+curl -s http://127.0.0.1:8288/object_info | python3 -c '
+import json, sys
+node = json.load(sys.stdin)["<exact key>"]
+print(json.dumps({k: node[k] for k in ("input", "output", "output_name", "output_node")}, indent=1))
+'
+```
+
+Every node you list in `expectedNodes` must appear in the run workflow: the
+run tier asserts each one actually executes on the backend.
+
+## Step 4 - author the run-tier workflow
+
+Add one JSON file under `browser_tests/assets/customNodes/`, named
+`<pack>_<what it does>_run.json`. Copy an existing asset as the template
+(`rgthree_seed_display_run.json` is the simplest two-node example;
+`was_number_text_run.json` shows a 3-node chain). It is the frontend
+workflow format, hand-authorable:
+
+- `nodes[].type` is the exact `object_info` key from Step 2.
+- `widgets_values` is an array in the node's widget order: the `input`
+  entries from `/object_info` in declaration order (`required` first, then
+  `optional`), keeping only widget-type inputs (INT, FLOAT, STRING, BOOLEAN,
+  and combo lists) and skipping any input whose options say
+  `"forceInput": true` (those are sockets, never widgets). A required input
+  that is neither a widget type nor `forceInput` (a custom type like
+  `NUMBER`) is also a socket: wire a link into it or the run fails on a
+  missing required input.
+- A link is one row in `links`: `[link_id, from_node_id, from_slot,
+to_node_id, to_slot, "TYPE"]`, plus the matching `link`/`links` ids on the
+  two nodes' `inputs`/`outputs` entries.
+- To wire INTO an input that would normally be a widget (no `forceInput`),
+  the input entry also needs a `"widget": { "name": "<input name>" }` key -
+  see `browser_tests/assets/vueNodes/linked-int-widget.json`.
+- Keep it tiny. Two to four nodes proving "this pack executes" is the whole
+  job; feature-depth testing belongs to the pack's own repo.
+- If the workflow needs a media file, reuse something already under
+  `browser_tests/assets/` (e.g. `plain_video.mp4`) - never commit new binary
+  assets. CI stages `plain_video.mp4` into the backend's `input/` dir; if
+  your workflow needs a different existing asset staged, extend the
+  `Stage run-tier assets` step in
+  `.github/workflows/ci-tests-custom-nodes.yaml`.
+
+## Step 5 - add the manifest row
+
+Append one object to `browser_tests/fixtures/data/customNodeManifest.json`:
+
+| Field                | Meaning                                                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pack`               | The pack's directory name under `custom_nodes/` (what `git clone` creates).                                                                                                                        |
+| `repo`               | The GitHub URL CI clones. Required non-empty.                                                                                                                                                      |
+| `pin`                | Commit SHA or tag CI checks out after cloning; `""` = default branch head. Pin when a pack breaks often; `""` also means new upstream regressions surface here first.                              |
+| `tiers`              | Which tiers run: `load` (registers + renders in both renderers), `connectivity` (typed links + slot drags), `run` (executes the workflow). Use all three unless a tier is impossible for the pack. |
+| `workflow`           | Path relative to `browser_tests/` of the Step 4 file. `""` only while the pack has no `run` tier.                                                                                                  |
+| `expectedNodes`      | The Step 2/3 keys. The load tier mounts each in both renderers; the run tier asserts each executes.                                                                                                |
+| `requiresGpu`        | `true` only if execution genuinely needs CUDA. Such packs cannot use the `run` tier on the CPU gate.                                                                                               |
+| `requiresModels`     | Model files the workflow needs (`[]` for the packs onboarded so far - keep it that way whenever possible).                                                                                         |
+| `timeoutMs`          | Per-test budget. `30000` unless the workflow does real work (video decode uses `90000`).                                                                                                           |
+| `vueNodesCompatible` | Optional, default `true`. See the policy below. Only ever set `false`, and only with evidence.                                                                                                     |
+
+`loadManifest()` (`browser_tests/fixtures/customNode/manifest.ts`) validates
+every row and fails loudly on a missing field, an empty `repo`, or a
+misspelled tier.
+
+## Step 6 - prove it green locally
+
+```bash
+pnpm test:custom-nodes
+```
+
+Green means: every tier for every pack passes, zero skips, and the suite's
+zero-visible-errors invariant held (no error overlay, dialog, node error, or
+error toast at any point). Failure classes and what they mean:
+
+- **T0 fails only in the Vue Nodes pass** (the LiteGraph pass is green):
+  suspected Vue Nodes 2.0 incompatibility. Follow the policy below - do not
+  delete the pack, do not skip the test.
+- **Run tier fails with `PARTIAL`** (some expected nodes never executed):
+  either the backend is missing `--cache-none` (cached nodes emit no
+  `executing` event) or an expected node is not actually in the workflow.
+- **Run tier fails with an execution error**: the workflow JSON is wrong
+  (bad key, wrong `widgets_values` order, type-mismatched link) or the pack
+  cannot execute model-free. Fix the workflow or drop the node for a
+  simpler one.
+- **Connectivity reports zero planned pairs**: the pack's slots are all
+  wildcard or combo typed (both are excluded from pairing by design because
+  they bypass the real type compare). The pack still gets load/run coverage.
+
+## Step 7 - push and watch CI
+
+The `CI: Tests Custom Nodes` job (gating) re-does Steps 1-6 from scratch on
+every PR: clones every manifest `repo` at its `pin`, pip-installs under CPU
+torch constraints, boots the backend, runs the suite, and fails on any
+install error, any test failure, or any skipped test. A new pack row is
+automatically picked up; no workflow edit is needed unless you must stage an
+extra asset (Step 4).
+
+## Vue Nodes 2.0 compatibility policy
+
+Some packs only work under the LiteGraph canvas renderer and fail to mount
+under Vue Nodes 2.0. The suite must state that fact without producing false
+failures and without skipping tests:
+
+1. **Default**: every pack is assumed compatible. New rows omit
+   `vueNodesCompatible`.
+2. **Evidence rule**: set `"vueNodesCompatible": false` ONLY after the T0
+   Vue pass fails for the pack locally while the LiteGraph pass is green,
+   and the failure reproduces on a retry. A README grumble, a hunch, or an
+   old forum thread is not evidence. Record the evidence (the failing
+   assertion and the pack version) in the PR description of the change that
+   sets the flag.
+3. **Effect of `false`**: the load tier runs its LiteGraph pass only, and
+   the connectivity drag test does not drag that pack's edges under Vue
+   Nodes. The tests still run and pass their canvas assertions - nothing is
+   `test.skip`ped, so the CI skip gate stays honest. The run tier and the
+   connectivity contract sweep are renderer-independent (they never toggle
+   the Vue Nodes setting) and run for the pack regardless of the flag - a
+   flagged pack must still execute and wire cleanly there.
+4. **Un-flagging**: if a pack ships Vue Nodes support later, delete the flag
+   and prove T0 green in both passes locally.
+
+## Checklist
+
+- [ ] Pack installs clean on the test backend (no `IMPORT FAILED`)
+- [ ] `expectedNodes` copied exactly from `/object_info` (Step 2 traps checked)
+- [ ] All expected nodes are model-free and present in the run workflow
+- [ ] Workflow JSON under `browser_tests/assets/customNodes/`, no new binaries
+- [ ] Manifest row appended with every field (Step 5 table)
+- [ ] `vueNodesCompatible` omitted, or set `false` with recorded evidence
+- [ ] `pnpm test:custom-nodes` fully green locally, zero skips
+- [ ] Pushed; `CI: Tests Custom Nodes` green on the PR

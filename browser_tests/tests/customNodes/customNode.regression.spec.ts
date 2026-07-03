@@ -14,7 +14,10 @@ import {
   dismissTemplatesDialog
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+import {
+  loadManifest,
+  rendererPassesFor
+} from '@e2e/fixtures/customNode/manifest'
 import { expectedNodesPresent } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
@@ -78,7 +81,16 @@ for (const entry of loadManifest()) {
       )
       await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
-      for (const vueNodesEnabled of [false, true]) {
+      // A pack that declares vueNodesCompatible: false is exercised under the
+      // LiteGraph canvas only - rendering its nodes under Vue Nodes 2.0 would
+      // fail for a known pack limitation, not a frontend regression. This is
+      // conditional coverage, not a test skip: the test still runs and gates.
+      const rendererPasses = rendererPassesFor(entry)
+      if (entry.vueNodesCompatible === false)
+        console.log(
+          `${entry.pack} declares vueNodesCompatible=false; Vue Nodes pass not applicable`
+        )
+      for (const vueNodesEnabled of rendererPasses) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',

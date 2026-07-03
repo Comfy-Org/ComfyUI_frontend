@@ -287,6 +287,11 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     dragEdges.push(inPack)
   }
 
+  const vueIncompatiblePacks = new Set(
+    connectivityEntries
+      .filter((entry) => entry.vueNodesCompatible === false)
+      .map((entry) => entry.pack)
+  )
   for (const vueNodesEnabled of [false, true]) {
     const consoleErrors = collectConsoleErrors(comfyPage.page)
     await comfyPage.settings.setSetting(
@@ -295,6 +300,12 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     )
 
     for (const edge of dragEdges) {
+      if (vueNodesEnabled && vueIncompatiblePacks.has(edge.producer.pack)) {
+        console.log(
+          `connectivity drag: ${edge.producer.pack} declares vueNodesCompatible=false; Vue drag not applicable`
+        )
+        continue
+      }
       await comfyPage.nodeOps.clearGraph()
       const producer = await comfyPage.nodeOps.addNode(
         edge.producer.nodeType,
