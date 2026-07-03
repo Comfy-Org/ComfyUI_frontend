@@ -9,8 +9,8 @@ import type { UUID } from '@/utils/uuid'
 
 import { useLinkStore } from './linkStore'
 
-const graphA = 'graph-a' as UUID
-const graphB = 'graph-b' as UUID
+const graphA: UUID = 'graph-a'
+const graphB: UUID = 'graph-b'
 
 function link(
   id: number,

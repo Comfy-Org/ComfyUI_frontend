@@ -15,12 +15,14 @@ export type EndpointPatch = Partial<
   >
 >
 
+type GraphLinkIndex = Map<UUID, Map<LinkId, LinkTopology>>
+type TargetSlotIndex = Map<UUID, Map<NodeId, Map<number, LinkId>>>
+type OriginSlotIndex = Map<UUID, Map<NodeId, Map<number, Set<LinkId>>>>
+
 export const useLinkStore = defineStore('link', () => {
-  const graphLinks = ref(new Map<UUID, Map<LinkId, LinkTopology>>())
-  const targetSlotIndex = ref(new Map<UUID, Map<NodeId, Map<number, LinkId>>>())
-  const originSlotIndex = ref(
-    new Map<UUID, Map<NodeId, Map<number, Set<LinkId>>>>()
-  )
+  const graphLinks = ref<GraphLinkIndex>(new Map())
+  const targetSlotIndex = ref<TargetSlotIndex>(new Map())
+  const originSlotIndex = ref<OriginSlotIndex>(new Map())
 
   function getGraphLinks(graphId: UUID): Map<LinkId, LinkTopology> {
     const existing = graphLinks.value.get(graphId)
@@ -107,7 +109,7 @@ export const useLinkStore = defineStore('link', () => {
     if (existing) return existing
     links.set(topology.id, topology)
     indexLink(graphId, topology)
-    return links.get(topology.id) as LinkTopology
+    return topology
   }
 
   function getLink(graphId: UUID, linkId: LinkId): LinkTopology | undefined {

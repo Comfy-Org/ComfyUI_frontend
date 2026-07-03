@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLinkStore } from '@/stores/linkStore'
@@ -858,7 +859,7 @@ describe('layoutStore link layout updates', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
-  const stubPath = () => ({}) as unknown as Path2D
+  const stubPath = () => fromPartial<Path2D>({})
   const baseLink = (path = stubPath()) => ({
     id: toLinkId(1),
     path,
@@ -917,7 +918,7 @@ describe('layoutStore deleteNode link cascade', () => {
   const targetNode = toNodeId('cascade-target')
   const linkId = toLinkId(42)
 
-  const stubPath = () => ({}) as unknown as Path2D
+  const stubPath = () => fromPartial<Path2D>({})
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

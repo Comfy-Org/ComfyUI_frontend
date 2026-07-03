@@ -73,14 +73,14 @@ const widgetComponent = computed(() => {
 })
 
 const isLinked = computed(() => {
-  const graphId = node.graph?.rootGraph?.id
+  const graphId = node.graph?.rootGraph.id
   const slot = node.inputs?.findIndex((i) => i.widget?.name === widget.name)
   if (!graphId || slot === undefined || slot < 0) return false
   return linkStore.isInputSlotConnected(graphId, node.id, slot)
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
-  const graphId = node.graph?.rootGraph?.id
+  const graphId = node.graph?.rootGraph.id
   const bareNodeId = stripGraphPrefix(node.id)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
