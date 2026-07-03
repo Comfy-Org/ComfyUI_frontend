@@ -18,8 +18,6 @@ type ModelCard = {
   imageSrc: string
   badgeIcon: string
   badgeClass: string
-  layoutClass: string
-  objectPosition?: string
 }
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -33,55 +31,45 @@ const modelCards: ModelCard[] = [
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/seedance-20.webm',
     badgeIcon: '/icons/ai-models/bytedance.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-square'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.nanoBananaPro',
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
     badgeIcon: '/icons/ai-models/gemini.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-square'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.grokImagine',
     imageSrc: 'https://media.comfy.org/website/cloud/ai-models/grok-video.webm',
     badgeIcon: '/icons/ai-models/grok.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-square'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.qwenImageEdit',
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/qwen-image-edit.webp',
     badgeIcon: '/icons/ai-models/qwen.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-square'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',
     imageSrc: 'https://media.comfy.org/website/cloud/ai-models/wan-22.webm',
     badgeIcon: '/icons/ai-models/wan.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-square'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.gptImage2',
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/gpt-image-2.webm',
     badgeIcon: '/icons/ai-models/openai.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-square'
+    badgeClass: `${badgeBase} rounded-2xl`
   }
 ]
 
-function getCardClass(layoutClass: string): string {
-  return cn(
-    layoutClass,
-    'group relative h-72 cursor-pointer overflow-hidden rounded-4xl bg-black/40 lg:h-auto'
-  )
-}
+const cardClass =
+  'group relative h-72 cursor-pointer overflow-hidden rounded-4xl bg-black/40 lg:col-span-4 lg:aspect-square lg:h-auto'
 </script>
 
 <template>
@@ -114,17 +102,12 @@ function getCardClass(layoutClass: string): string {
               v-for="card in modelCards"
               :key="card.titleKey"
               :href="externalLinks.workflows"
-              :class="getCardClass(card.layoutClass)"
+              :class="cardClass"
             >
               <video
                 v-if="card.imageSrc.endsWith('.webm')"
                 :src="card.imageSrc"
                 :aria-label="t(card.titleKey, locale)"
-                :style="
-                  card.objectPosition
-                    ? { objectPosition: card.objectPosition }
-                    : undefined
-                "
                 class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 autoplay
                 loop
@@ -142,11 +125,6 @@ function getCardClass(layoutClass: string): string {
                 v-else
                 :src="card.imageSrc"
                 :alt="t(card.titleKey, locale)"
-                :style="
-                  card.objectPosition
-                    ? { objectPosition: card.objectPosition }
-                    : undefined
-                "
                 class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
