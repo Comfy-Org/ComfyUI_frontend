@@ -14,6 +14,7 @@ type ModelCard = {
     | 'cloud.aiModels.card.seedance20'
     | 'cloud.aiModels.card.qwenImageEdit'
     | 'cloud.aiModels.card.wan22TextToVideo'
+    | 'cloud.aiModels.card.gptImage2'
   imageSrc: string
   badgeIcon: string
   badgeClass: string
@@ -33,7 +34,7 @@ const modelCards: ModelCard[] = [
       'https://media.comfy.org/website/cloud/ai-models/seedance-20.webm',
     badgeIcon: '/icons/ai-models/bytedance.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
+    layoutClass: 'lg:col-span-4 lg:aspect-square'
   },
   {
     titleKey: 'cloud.aiModels.card.nanoBananaPro',
@@ -41,15 +42,14 @@ const modelCards: ModelCard[] = [
       'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
     badgeIcon: '/icons/ai-models/gemini.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-6 lg:aspect-[16/7]',
-    objectPosition: 'center 20%'
+    layoutClass: 'lg:col-span-4 lg:aspect-square'
   },
   {
     titleKey: 'cloud.aiModels.card.grokImagine',
     imageSrc: 'https://media.comfy.org/website/cloud/ai-models/grok-video.webm',
     badgeIcon: '/icons/ai-models/grok.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
+    layoutClass: 'lg:col-span-4 lg:aspect-square'
   },
   {
     titleKey: 'cloud.aiModels.card.qwenImageEdit',
@@ -57,14 +57,22 @@ const modelCards: ModelCard[] = [
       'https://media.comfy.org/website/cloud/ai-models/qwen-image-edit.webp',
     badgeIcon: '/icons/ai-models/qwen.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
+    layoutClass: 'lg:col-span-4 lg:aspect-square'
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',
     imageSrc: 'https://media.comfy.org/website/cloud/ai-models/wan-22.webm',
     badgeIcon: '/icons/ai-models/wan.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
+    layoutClass: 'lg:col-span-4 lg:aspect-square'
+  },
+  {
+    titleKey: 'cloud.aiModels.card.gptImage2',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/gpt-image-2.webm',
+    badgeIcon: '/icons/ai-models/openai.svg',
+    badgeClass: `${badgeBase} rounded-2xl`,
+    layoutClass: 'lg:col-span-4 lg:aspect-square'
   }
 ]
 
