@@ -1,10 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { TaskOutput } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus, TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import {
@@ -77,7 +77,7 @@ vi.mock('@/scripts/api', () => ({
 describe('TaskItemImpl', () => {
   it('should default missing result URL fields', () => {
     const output = new ResultItemImpl(
-      fromAny<ConstructorParameters<typeof ResultItemImpl>[0], unknown>({
+      fromPartial<ConstructorParameters<typeof ResultItemImpl>[0]>({
         nodeId: 'node-1',
         mediaType: 'images'
       })
@@ -355,10 +355,7 @@ describe('TaskItemImpl', () => {
   })
 
   it('should return empty flat outputs when outputs are missing', () => {
-    const task = new TaskItemImpl(
-      createHistoryJob(0, 'job-id'),
-      fromAny<TaskOutput, unknown>(null)
-    )
+    const task = new TaskItemImpl(createHistoryJob(0, 'job-id'), undefined)
 
     expect(task.calculateFlatOutputs()).toEqual([])
   })
@@ -1265,7 +1262,7 @@ describe('useQueuePendingTaskCountStore', () => {
     const store = useQueuePendingTaskCountStore()
 
     store.update(
-      fromAny<CustomEvent, unknown>({
+      new CustomEvent<StatusWsMessageStatus>('status', {
         detail: { exec_info: { queue_remaining: 3 } }
       })
     )
@@ -1277,7 +1274,7 @@ describe('useQueuePendingTaskCountStore', () => {
     const store = useQueuePendingTaskCountStore()
     store.count = 3
 
-    store.update(fromAny<CustomEvent, unknown>({}))
+    store.update(new CustomEvent<StatusWsMessageStatus>('status'))
 
     expect(store.count).toBe(0)
   })

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -78,7 +79,7 @@ vi.mock('@/utils/executionErrorUtil', () => ({
 }))
 
 function workflow(path: string): ComfyWorkflow {
-  return { path } as unknown as ComfyWorkflow
+  return fromPartial<ComfyWorkflow>({ path })
 }
 
 function promptOutput(): ComfyApiWorkflow {

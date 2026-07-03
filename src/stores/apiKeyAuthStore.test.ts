@@ -83,16 +83,13 @@ describe('apiKeyAuthStore', () => {
 
   it('clears the API key when user initialization cannot create a customer', async () => {
     authStoreMock.createCustomer.mockResolvedValue(undefined)
-    const rejection = new Promise<unknown>((resolve) => {
-      process.once('unhandledRejection', resolve)
-    })
     const store = useApiKeyAuthStore()
 
     await expect(store.storeApiKey('secret')).resolves.toBe(true)
 
     await vi.waitFor(() => expect(store.getApiKey()).toBeNull())
     expect(store.currentUser).toBeNull()
-    await expect(rejection).resolves.toEqual(
+    expect(errorHandlingMock.toastErrorHandler).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'auth.login.noAssociatedUser' })
     )
   })

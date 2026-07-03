@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -198,7 +198,7 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
 
   it('should skip workflow output loading when no outputs exist', async () => {
     const job = createHistoryJob('test-job-id')
-    const task = new TaskItemImpl(job, fromAny<TaskOutput, unknown>(null))
+    const task = new TaskItemImpl(job, undefined)
     const nodeOutputStore = useNodeOutputStore()
     const setOutputsSpy = vi.spyOn(
       nodeOutputStore,
@@ -216,7 +216,7 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
 
   it('should skip invalid node execution ids while loading outputs', async () => {
     const job = createHistoryJob('test-job-id')
-    const outputs = fromAny<TaskOutput, unknown>({
+    const outputs = fromPartial<TaskOutput>({
       '': { images: [{ filename: 'skip.png', subfolder: '', type: 'output' }] },
       '1': { images: [{ filename: 'keep.png', subfolder: '', type: 'output' }] }
     })

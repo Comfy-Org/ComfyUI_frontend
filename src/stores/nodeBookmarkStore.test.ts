@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -37,29 +38,22 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
-type BookmarkNodeFixture = Pick<
-  ComfyNodeDefImpl,
-  'isDummyFolder' | 'nodePath' | 'category' | 'name'
->
-
-function folderNode(nodePath: string) {
-  const node = {
+function folderNode(nodePath: string): ComfyNodeDefImpl {
+  return fromPartial<ComfyNodeDefImpl>({
     isDummyFolder: true,
     nodePath,
     category: nodePath.replace(/\/$/, ''),
     name: nodePath
-  } satisfies BookmarkNodeFixture
-  return node as ComfyNodeDefImpl
+  })
 }
 
-function leafNode(name: string, nodePath = name) {
-  const node = {
+function leafNode(name: string, nodePath = name): ComfyNodeDefImpl {
+  return fromPartial<ComfyNodeDefImpl>({
     isDummyFolder: false,
     name,
     nodePath,
     category: ''
-  } satisfies BookmarkNodeFixture
-  return node as ComfyNodeDefImpl
+  })
 }
 
 beforeEach(() => {
