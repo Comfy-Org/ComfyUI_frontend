@@ -44,13 +44,16 @@ work without a clean import.
 While you are here, note whether the pack ships frontend JS:
 
 ```bash
-curl -s http://127.0.0.1:8288/extensions | grep -c "<pack-dir-name>"
+curl -s http://127.0.0.1:8288/extensions | python3 -c '
+import json, sys
+print(sum(1 for p in json.load(sys.stdin) if p.startswith("/extensions/<pack-dir-name>/")))
+'
 ```
 
 Non-zero means the pack patches the frontend at runtime (restyled nodes,
 rebuilt widgets, injected page chrome). Write that down - it decides whether
-Step 6 needs the CI-parity run, and it is the single biggest source of
-"green locally, red on CI" surprises.
+Step 6 needs the CI-parity run. Both "green locally, red on CI" failures in
+the first 5-pack onboarding came from exactly this.
 
 ## Step 2 - read the pack's real node keys
 
@@ -222,11 +225,14 @@ install error, any test failure, or any skipped test. A new pack row is
 automatically picked up; no workflow edit is needed unless you must stage an
 extra asset (Step 4).
 
-If CI goes red on a pack you did not touch: `pin: ""` tracks the pack's
-default branch head, so upstream pushed something new. Reproduce under the
-Step 6b environment first, then either adjust the suite's expectation
-honestly (the way widget-only instance slots became a recorded exclusion)
-or pin the pack to its last good commit. Never paper over it with a skip.
+If CI goes red where local was green, reproduce under the Step 6b
+environment before changing anything - the first such failure looked like
+upstream drift but was actually pack frontend JS that never loads under
+the dev server. Only after 6b reproduces it, decide: adjust the suite's
+expectation honestly (the way widget-only instance slots became a recorded
+exclusion) or, for genuine upstream drift (`pin: ""` tracks the pack's
+default branch head), pin the pack to its last good commit. Never paper
+over it with a skip.
 
 ## Vue Nodes 2.0 compatibility policy
 
@@ -255,7 +261,7 @@ failures and without skipping tests:
 ## Checklist
 
 - [ ] Pack installs clean on the test backend (no `IMPORT FAILED`)
-- [ ] Checked whether the pack ships frontend JS (Step 1 `/extensions` count)
+- [ ] Checked whether the pack ships frontend JS (Step 1 `/extensions` probe)
 - [ ] `expectedNodes` copied exactly from `/object_info` (Step 2 traps checked)
 - [ ] All expected nodes are model-free and present in the run workflow
 - [ ] Workflow JSON under `browser_tests/assets/customNodes/`, no new binaries
