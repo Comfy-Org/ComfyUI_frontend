@@ -29,6 +29,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
@@ -120,29 +121,28 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
 
 function buildSlotMetadata(
   inputs: INodeInputSlot[] | undefined,
-  graphRef: LGraph | null | undefined
+  graphRef: LGraph | null | undefined,
+  graphId: string | undefined,
+  nodeId: NodeId
 ): Map<string, WidgetSlotMetadata> {
+  const linkStore = useLinkStore()
   const metadata = new Map<string, WidgetSlotMetadata>()
   inputs?.forEach((input, index) => {
-    let originNodeId: NodeId | undefined
-    let originOutputName: string | undefined
-
-    let linked = input.link != null
-    if (input.link != null && graphRef) {
-      const link = graphRef.getLink(input.link)
-      linked = Boolean(link)
-      const originNode = link ? graphRef.getNodeById(link.origin_id) : null
-      if (link && originNode) {
-        originNodeId = link.origin_id
-        originOutputName = originNode.outputs?.[link.origin_slot]?.name
-      }
-    }
+    const linked = graphId
+      ? linkStore.isInputSlotConnected(graphId, nodeId, index)
+      : input.link != null
+    const link = graphId
+      ? linkStore.getInputSlotLink(graphId, nodeId, index)
+      : undefined
+    const originNode = link ? graphRef?.getNodeById(link.originNodeId) : null
 
     const slotInfo: WidgetSlotMetadata = {
       index,
       linked,
-      originNodeId,
-      originOutputName,
+      originNodeId: link?.originNodeId,
+      originOutputName: link
+        ? originNode?.outputs?.[link.originSlot]?.name
+        : undefined,
       type: String(input.type)
     }
     if (input.name) metadata.set(input.name, slotInfo)
@@ -476,7 +476,9 @@ export function computeProcessedWidgets({
     : orderedIds
   const slotMetadata = buildSlotMetadata(
     nodeData.inputs ?? hostNode?.inputs,
-    hostNode?.graph ?? rootGraph
+    hostNode?.graph ?? rootGraph,
+    graphId,
+    nodeData.id
   )
   const ctx: WidgetProcessingContext = {
     nodeData,

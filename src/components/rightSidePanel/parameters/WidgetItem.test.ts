@@ -6,8 +6,10 @@ import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
@@ -46,19 +48,6 @@ vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
 vi.mock('@/composables/graph/useGraphNodeManager', () => ({
   getControlWidget: vi.fn(() => undefined)
 }))
-
-const managerMock = vi.hoisted(() => ({
-  vueNodeData: undefined as Map<unknown, { inputs?: unknown[] }> | undefined
-}))
-
-vi.mock('@/composables/graph/useVueNodeLifecycle', async () => {
-  const { reactive, shallowRef } = await import('vue')
-  const vueNodeData = reactive(new Map<unknown, { inputs?: unknown[] }>())
-  managerMock.vueNodeData = vueNodeData
-  return {
-    useVueNodeLifecycle: () => ({ nodeManager: shallowRef({ vueNodeData }) })
-  }
-})
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
@@ -142,7 +131,6 @@ describe('WidgetItem', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
-    managerMock.vueNodeData?.clear()
   })
 
   describe('widget state rendering', () => {
@@ -237,19 +225,30 @@ describe('WidgetItem', () => {
     })
 
     it('updates disabled options when the widget input is linked', async () => {
-      // Mirrors production: link changes reach the panel through the manager
-      // re-setting vueNodeData (refreshNodeInputs), not through in-place mutation
-      // of node.inputs.
-      const node = createMockNode()
+      const inputs: INodeInputSlot[] = [
+        {
+          name: 'seed',
+          type: 'INT',
+          link: null,
+          boundingRect: [0, 0, 0, 0],
+          widget: { name: 'seed' }
+        }
+      ]
+      const node = createMockNode(
+        fromAny<Partial<LGraphNode>, unknown>({ inputs })
+      )
       const widget = createMockWidget({ name: 'seed', options: {} })
-      const seedInput = { name: 'seed', widget: { name: 'seed' }, link: null }
-      managerMock.vueNodeData!.set(node.id, { inputs: [seedInput] })
 
       const { container } = renderWidgetItem(widget, node)
       expect(getStubWidget(container).options.disabled).toBeUndefined()
 
-      managerMock.vueNodeData!.set(node.id, {
-        inputs: [{ ...seedInput, link: toLinkId(1) }]
+      useLinkStore().registerLink('test-graph-id', {
+        id: toLinkId(1),
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: node.id,
+        targetSlot: 0,
+        type: 'INT'
       })
       await nextTick()
 
