@@ -259,6 +259,34 @@ function insertTextAtCaret(value: string) {
   setCaret(node, value.length)
 }
 
+function insertLineBreak() {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+  const range = selection.getRangeAt(0)
+  range.deleteContents()
+  const br = document.createElement('br')
+  range.insertNode(br)
+  // A break at the end of the content has no line box for the caret to land
+  // in; pad it with a second break (stripped as padding when parsing).
+  if (!hasContentAfter(br)) br.after(document.createElement('br'))
+
+  // Anchor the caret in a text node — Chrome renders element-anchored caret
+  // positions (between two <br>s) unreliably.
+  let anchor = br.nextSibling
+  if (!anchor || anchor.nodeType !== Node.TEXT_NODE) {
+    anchor = document.createTextNode('')
+    br.after(anchor)
+  }
+  setCaret(anchor, 0)
+}
+
+function hasContentAfter(node: Node): boolean {
+  for (let next = node.nextSibling; next; next = next.nextSibling) {
+    if (next.nodeType !== Node.TEXT_NODE || next.textContent) return true
+  }
+  return false
+}
+
 function onKeydown(event: KeyboardEvent) {
   event.stopPropagation()
 
@@ -282,7 +310,7 @@ function onKeydown(event: KeyboardEvent) {
 
   if (event.key === 'Enter') {
     event.preventDefault()
-    insertTextAtCaret('\n')
+    insertLineBreak()
     syncFromEditor()
   }
 }

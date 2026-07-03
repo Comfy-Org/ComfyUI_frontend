@@ -24,15 +24,27 @@ export function createChipElement(name: string): HTMLSpanElement {
   return el
 }
 
-/** Builds a flat fragment of text nodes + chips for a template. */
+/**
+ * Builds a flat fragment of text nodes, `<br>` breaks, and chips. Newlines
+ * render as `<br>` elements because a trailing `"\n"` text node produces no
+ * line box, leaving the caret without a valid position. A break at the very
+ * end gets a padding `<br>` so the empty last line renders.
+ */
 function createTemplateFragment(template: PromptTemplate): DocumentFragment {
   const fragment = document.createDocumentFragment()
   for (const segment of template) {
-    fragment.append(
-      segment.type === 'text'
-        ? document.createTextNode(segment.value)
-        : createChipElement(segment.name)
-    )
+    if (segment.type === 'var') {
+      fragment.append(createChipElement(segment.name))
+      continue
+    }
+    const lines = segment.value.split('\n')
+    lines.forEach((line, index) => {
+      if (index > 0) fragment.append(document.createElement('br'))
+      if (line) fragment.append(document.createTextNode(line))
+    })
+  }
+  if (fragment.lastChild?.nodeName === 'BR') {
+    fragment.append(document.createElement('br'))
   }
   return fragment
 }
@@ -49,7 +61,27 @@ export function renderTemplateToElement(
 export function parseElementToTemplate(host: HTMLElement): PromptTemplate {
   const segments: PromptSegment[] = []
   appendNode(host, segments)
+  if (endsWithPaddingBreak(host)) stripTrailingNewline(segments)
   return mergeText(segments)
+}
+
+/**
+ * A `<br>` as the final rendered node is presentational padding (ours, or the
+ * one browsers leave in an emptied contenteditable) — not a content newline.
+ */
+function endsWithPaddingBreak(host: HTMLElement): boolean {
+  for (let node = host.lastChild; node; node = node.previousSibling) {
+    if (node.nodeType === Node.TEXT_NODE && !node.textContent) continue
+    return node.nodeName === 'BR'
+  }
+  return false
+}
+
+function stripTrailingNewline(segments: PromptSegment[]): void {
+  const last = segments.at(-1)
+  if (last?.type !== 'text' || !last.value.endsWith('\n')) return
+  last.value = last.value.slice(0, -1)
+  if (!last.value) segments.pop()
 }
 
 function appendNode(node: Node, segments: PromptSegment[]): void {

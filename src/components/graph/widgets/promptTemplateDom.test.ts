@@ -50,6 +50,34 @@ describe('promptTemplateDom', () => {
     ])
   })
 
+  it('renders newlines as <br> elements', () => {
+    const el = host()
+    renderTemplateToElement(el, [{ type: 'text', value: 'line1\nline2' }])
+    expect(Array.from(el.childNodes).map((node) => node.nodeName)).toEqual([
+      '#text',
+      'BR',
+      '#text'
+    ])
+  })
+
+  it('round-trips a trailing newline through a padded break', () => {
+    const template: PromptTemplate = [{ type: 'text', value: 'line1\n' }]
+    const el = host()
+    renderTemplateToElement(el, template)
+    expect(Array.from(el.childNodes).map((node) => node.nodeName)).toEqual([
+      '#text',
+      'BR',
+      'BR'
+    ])
+    expect(parseElementToTemplate(el)).toEqual(template)
+  })
+
+  it('parses a lone <br> as an empty template', () => {
+    const el = host()
+    el.append(document.createElement('br'))
+    expect(parseElementToTemplate(el)).toEqual([])
+  })
+
   it('ignores empty text nodes', () => {
     const el = host()
     el.append(document.createTextNode(''))
