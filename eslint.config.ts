@@ -338,6 +338,9 @@ export default defineConfig([
   },
   {
     files: ['**/*.test.ts'],
+    // browser_tests is excluded so this warn-level entry does not override the
+    // error-level no-restricted-syntax guards defined above for those paths
+    ignores: ['browser_tests/**'],
     rules: {
       'no-restricted-syntax': [
         'warn',
