@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import ComfyHubPublishIntroPanel from './ComfyHubPublishIntroPanel.vue'
 
@@ -17,7 +18,7 @@ vi.mock('@/components/ui/button/Button.vue', () => ({
 }))
 
 function renderPanel(
-  props: Partial<InstanceType<typeof ComfyHubPublishIntroPanel>['$props']> = {}
+  props: Partial<ComponentProps<typeof ComfyHubPublishIntroPanel>> = {}
 ) {
   return render(ComfyHubPublishIntroPanel, {
     props: {

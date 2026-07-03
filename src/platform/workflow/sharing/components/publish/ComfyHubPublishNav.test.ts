@@ -46,13 +46,9 @@ describe('ComfyHubPublishNav', () => {
     expect(
       within(nav).getByText('comfyHubPublish.stepExamples')
     ).toBeInTheDocument()
-    expect(screen.getByRole('listitem', { current: 'step' })).toHaveTextContent(
-      'comfyHubPublish.stepExamples'
-    )
-    expect(screen.getByRole('listitem', { current: 'step' })).toHaveAttribute(
-      'aria-current',
-      'step'
-    )
+    const currentStepItem = screen.getByRole('listitem', { current: 'step' })
+    expect(currentStepItem).toHaveTextContent('comfyHubPublish.stepExamples')
+    expect(currentStepItem).toHaveAttribute('aria-current', 'step')
     expect(screen.getAllByTestId('step-badge')[0]).toHaveClass(
       'border-base-foreground'
     )

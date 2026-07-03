@@ -16,7 +16,10 @@ import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { UUID } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -322,7 +325,7 @@ describe('subgraphUtils', () => {
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({ type: 'missing/type' })
       expect(result[0].properties).toEqual({ nested: { value: 1 } })
-      expect(result[0].properties).not.toBe(node.serialize().properties)
+      expect(result[0].properties).not.toBe(node.properties)
       expect(warn).toHaveBeenCalledWith('Failed to create node', 'missing/type')
     })
   })
@@ -385,7 +388,7 @@ describe('subgraphUtils', () => {
         linkIds: [toLinkId(1)]
       })
       expect(links[0]).toMatchObject({
-        origin_id: '-10',
+        origin_id: SUBGRAPH_INPUT_ID,
         origin_slot: 0,
         target_id: 20,
         target_slot: 0
@@ -490,7 +493,7 @@ describe('subgraphUtils', () => {
       expect(links[0]).toMatchObject({
         origin_id: 10,
         origin_slot: 0,
-        target_id: '-20',
+        target_id: SUBGRAPH_OUTPUT_ID,
         target_slot: 0
       })
     })
