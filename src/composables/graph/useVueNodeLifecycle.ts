@@ -10,7 +10,6 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -42,22 +41,6 @@ function useVueNodeLifecycleIndividual() {
       const parent = reroute.parentId ?? undefined
       const linkIds = Array.from(reroute.linkIds)
       layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
-    }
-
-    // Seed existing links into the Layout Store (topology only)
-    for (const link of activeGraph._links.values()) {
-      if (
-        link.origin_id === UNASSIGNED_NODE_ID ||
-        link.target_id === UNASSIGNED_NODE_ID
-      )
-        continue
-      layoutMutations.createLink(
-        link.id,
-        link.origin_id,
-        link.origin_slot,
-        link.target_id,
-        link.target_slot
-      )
     }
 
     // Start sync AFTER seeding so bootstrap operations don't trigger

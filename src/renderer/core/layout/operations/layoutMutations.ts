@@ -7,6 +7,7 @@
 import log from 'loglevel'
 
 import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutSource,
@@ -25,15 +26,7 @@ interface LayoutMutations {
   resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
-  deleteNode(nodeId: NodeId): void
-  createLink(
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void
-  deleteLink(linkId: LinkId): void
+  deleteNode(nodeId: NodeId, graphId?: UUID): void
 
   // Reroute operations
   createReroute(
@@ -187,7 +180,7 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a node
    */
-  const deleteNode = (nodeId: NodeId): void => {
+  const deleteNode = (nodeId: NodeId, graphId?: UUID): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -196,6 +189,7 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       nodeId,
       previousLayout: existing,
+      graphId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -215,50 +209,6 @@ export function useLayoutMutations(): LayoutMutations {
       }
     }
     setNodeZIndex(nodeId, maxZIndex + 1)
-  }
-
-  /**
-   * Create a new link
-   */
-  const createLink = (
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void => {
-    logger.debug('Creating link:', {
-      linkId,
-      from: `${sourceNodeId}[${sourceSlot}]`,
-      to: `${targetNodeId}[${targetSlot}]`
-    })
-    layoutStore.applyOperation({
-      type: 'createLink',
-      entity: 'link',
-      linkId,
-      sourceNodeId,
-      sourceSlot,
-      targetNodeId,
-      targetSlot,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Delete a link
-   */
-  const deleteLink = (linkId: LinkId): void => {
-    logger.debug('Deleting link:', linkId)
-    layoutStore.applyOperation({
-      type: 'deleteLink',
-      entity: 'link',
-      linkId,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
   }
 
   /**
@@ -339,8 +289,6 @@ export function useLayoutMutations(): LayoutMutations {
     createNode,
     deleteNode,
     bringNodeToFront,
-    createLink,
-    deleteLink,
     createReroute,
     deleteReroute,
     moveReroute

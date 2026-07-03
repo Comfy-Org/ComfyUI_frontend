@@ -5,6 +5,7 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
@@ -556,9 +557,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     }
     network.links.delete(this.id)
     if (this._graphId) useLinkStore().deleteLink(this._graphId, this.id)
-    // Delete link from Layout Store
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteLink(this.id)
+    layoutStore.deleteLinkLayout(this.id)
   }
 
   /**

@@ -10,6 +10,7 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -113,7 +114,6 @@ interface OperationMeta {
  * Entity-specific base types for proper type discrimination
  */
 type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
-type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
   rerouteId: RerouteId
@@ -130,8 +130,6 @@ type OperationType =
   | 'deleteNode'
   | 'setNodeVisibility'
   | 'batchUpdateBounds'
-  | 'createLink'
-  | 'deleteLink'
   | 'createReroute'
   | 'deleteReroute'
   | 'moveReroute'
@@ -177,6 +175,8 @@ export interface CreateNodeOperation extends NodeOpBase {
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
   previousLayout: NodeLayout
+  /** Root graph the node belonged to, used to look up its connected links. */
+  graphId?: UUID
 }
 
 /**
@@ -196,24 +196,6 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
   bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
-}
-
-/**
- * Create link operation
- */
-export interface CreateLinkOperation extends LinkOpBase {
-  type: 'createLink'
-  sourceNodeId: NodeId
-  sourceSlot: number
-  targetNodeId: NodeId
-  targetSlot: number
-}
-
-/**
- * Delete link operation
- */
-export interface DeleteLinkOperation extends LinkOpBase {
-  type: 'deleteLink'
 }
 
 /**
@@ -253,8 +235,6 @@ export type LayoutOperation =
   | DeleteNodeOperation
   | SetNodeVisibilityOperation
   | BatchUpdateBoundsOperation
-  | CreateLinkOperation
-  | DeleteLinkOperation
   | CreateRerouteOperation
   | DeleteRerouteOperation
   | MoveRerouteOperation

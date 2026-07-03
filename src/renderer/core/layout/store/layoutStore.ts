@@ -10,7 +10,7 @@ import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { toLinkId } from '@/types/linkId'
+import { useLinkStore } from '@/stores/linkStore'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -19,10 +19,8 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   BatchUpdateBoundsOperation,
   Bounds,
-  CreateLinkOperation,
   CreateNodeOperation,
   CreateRerouteOperation,
-  DeleteLinkOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
   LayoutChange,
@@ -73,18 +71,6 @@ function asRerouteId(id: string | number): RerouteId {
   return toRerouteId(Number(id))
 }
 
-function asLinkId(id: string | number): LinkId {
-  return toLinkId(Number(id))
-}
-
-interface LinkData {
-  id: LinkId
-  sourceNodeId: NodeId
-  targetNodeId: NodeId
-  sourceSlot: number
-  targetSlot: number
-}
-
 interface RerouteData {
   id: RerouteId
   position: Point
@@ -109,7 +95,6 @@ class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<NodeLayoutMap> // Maps nodeId -> NodeLayoutMap containing NodeLayout data
-  private ylinks: Y.Map<Y.Map<unknown>> // Maps linkId -> Y.Map containing link data
   private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
   private yoperations: Y.Array<LayoutOperation> // Operation log
 
@@ -172,7 +157,6 @@ class LayoutStoreImpl implements LayoutStore {
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
-    this.ylinks = this.ydoc.getMap('links')
     this.yreroutes = this.ydoc.getMap('reroutes')
     this.yoperations = this.ydoc.getArray('operations')
 
@@ -195,14 +179,6 @@ class LayoutStoreImpl implements LayoutStore {
       })
     })
 
-    // Listen for link changes and update spatial indexes
-    this.ylinks.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
-      this.version++
-      event.changes.keys.forEach((change, linkIdStr) => {
-        this.handleLinkChange(change, linkIdStr)
-      })
-    })
-
     // Listen for reroute changes and update spatial indexes
     this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
@@ -210,14 +186,6 @@ class LayoutStoreImpl implements LayoutStore {
         this.handleRerouteChange(change, rerouteIdStr)
       })
     })
-  }
-
-  private getLinkField<K extends keyof LinkData>(
-    ylink: Y.Map<unknown>,
-    field: K
-  ): LinkData[K] | undefined {
-    const typedLink = ylink as TypedYMap<LinkData>
-    return typedLink.get(field)
   }
 
   private getRerouteField<K extends keyof RerouteData>(
@@ -862,12 +830,6 @@ class LayoutStoreImpl implements LayoutStore {
       case 'batchUpdateBounds':
         this.handleBatchUpdateBounds(operation, change)
         break
-      case 'createLink':
-        this.handleCreateLink(operation, change)
-        break
-      case 'deleteLink':
-        this.handleDeleteLink(operation, change)
-        break
       case 'createReroute':
         this.handleCreateReroute(operation, change)
         break
@@ -1123,17 +1085,12 @@ class LayoutStoreImpl implements LayoutStore {
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
     // Remove from spatial index
     this.spatialIndex.remove(nodeId)
-    // Clean up associated links
-    const linksToDelete = this.findLinksConnectedToNode(nodeId)
-
-    // Delete the associated links
-    for (const linkId of linksToDelete) {
-      const linkKey = String(linkId)
-      this.ylinks.delete(linkKey)
-      this.linkLayouts.delete(linkId)
-
-      // Clean up link segment layouts
-      this.cleanupLinkSegments(linkId)
+    // Clean up geometry for links still connected to this node in the topology store
+    const connectedLinks = operation.graphId
+      ? useLinkStore().getNodeLinks(operation.graphId, nodeId)
+      : []
+    for (const { id: linkId } of connectedLinks) {
+      this.deleteLinkLayout(linkId)
     }
 
     change.type = 'delete'
@@ -1170,40 +1127,6 @@ class LayoutStoreImpl implements LayoutStore {
     if (change.nodeIds.length) {
       change.type = 'update'
     }
-  }
-
-  private handleCreateLink(
-    operation: CreateLinkOperation,
-    change: LayoutChange
-  ): void {
-    const linkData = new Y.Map<unknown>()
-    linkData.set('id', operation.linkId)
-    linkData.set('sourceNodeId', operation.sourceNodeId)
-    linkData.set('sourceSlot', operation.sourceSlot)
-    linkData.set('targetNodeId', operation.targetNodeId)
-    linkData.set('targetSlot', operation.targetSlot)
-
-    const linkKey = String(operation.linkId)
-    this.ylinks.set(linkKey, linkData)
-
-    // Link geometry will be computed separately when nodes move
-    // This just tracks that the link exists
-    change.type = 'create'
-  }
-
-  private handleDeleteLink(
-    operation: DeleteLinkOperation,
-    change: LayoutChange
-  ): void {
-    const linkKey = String(operation.linkId)
-    if (!this.ylinks.has(linkKey)) return
-
-    this.ylinks.delete(linkKey)
-    this.linkLayouts.delete(operation.linkId)
-    // Clean up any segment layouts for this link
-    this.cleanupLinkSegments(operation.linkId)
-
-    change.type = 'delete'
   }
 
   private handleCreateReroute(
@@ -1279,43 +1202,6 @@ class LayoutStoreImpl implements LayoutStore {
       width: size.width,
       height: size.height
     })
-  }
-
-  /**
-   * Find all links connected to a specific node
-   */
-  private findLinksConnectedToNode(nodeId: NodeId): LinkId[] {
-    const connectedLinks: LinkId[] = []
-    this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
-      const linkId = asLinkId(linkIdStr)
-      const sourceNodeId = this.getLinkField(linkData, 'sourceNodeId')
-      const targetNodeId = this.getLinkField(linkData, 'targetNodeId')
-
-      if (sourceNodeId === nodeId || targetNodeId === nodeId) {
-        connectedLinks.push(linkId)
-      }
-    })
-    return connectedLinks
-  }
-
-  /**
-   * Handle link change events
-   */
-  private handleLinkChange(change: YEventChange, linkIdStr: string): void {
-    if (change.action === 'delete') {
-      const linkId = asLinkId(linkIdStr)
-      this.cleanupLinkData(linkId)
-    }
-    // Link was added or updated - geometry will be computed separately
-    // This just tracks that the link exists in CRDT
-  }
-
-  /**
-   * Clean up all data associated with a link
-   */
-  private cleanupLinkData(linkId: LinkId): void {
-    this.linkLayouts.delete(linkId)
-    this.cleanupLinkSegments(linkId)
   }
 
   /**

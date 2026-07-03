@@ -1,8 +1,12 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -902,5 +906,60 @@ describe('layoutStore link layout updates', () => {
 
     expect(layoutStore.getLinkLayout(toLinkId(1))).toBeNull()
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
+  })
+})
+
+describe('layoutStore deleteNode link cascade', () => {
+  const graphId = createUuidv4()
+  const sourceNode = toNodeId('cascade-source')
+  const targetNode = toNodeId('cascade-target')
+  const linkId = toLinkId(42)
+
+  const stubPath = () => ({}) as unknown as Path2D
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.initializeFromLiteGraph([
+      { id: sourceNode, pos: [0, 0], size: [100, 50] },
+      { id: targetNode, pos: [200, 0], size: [100, 50] }
+    ])
+
+    useLinkStore().registerLink(graphId, {
+      id: linkId,
+      originNodeId: sourceNode,
+      originSlot: 0,
+      targetNodeId: targetNode,
+      targetSlot: 0,
+      type: 'number'
+    })
+
+    layoutStore.updateLinkLayout(linkId, {
+      id: linkId,
+      path: stubPath(),
+      bounds: { x: 0, y: 0, width: 200, height: 50 },
+      centerPos: { x: 100, y: 25 },
+      sourceNodeId: sourceNode,
+      targetNodeId: targetNode,
+      sourceSlot: 0,
+      targetSlot: 0
+    })
+  })
+
+  it('deletes geometry for links still connected to the removed node', () => {
+    const previousLayout = layoutStore.getNodeLayoutRef(targetNode).value
+    if (!previousLayout) throw new Error('expected target node layout')
+
+    layoutStore.applyOperation({
+      type: 'deleteNode',
+      entity: 'node',
+      nodeId: targetNode,
+      previousLayout,
+      graphId,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    expect(layoutStore.getLinkLayout(linkId)).toBeNull()
   })
 })
