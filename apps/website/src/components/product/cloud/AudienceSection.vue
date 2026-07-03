@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { ChevronRight } from '@lucide/vue'
+
 import type { Locale } from '../../../i18n/translations'
 
+import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import GlassCard from '../../common/GlassCard.vue'
 
@@ -27,7 +30,7 @@ const cards = [
 <template>
   <section class="max-w-9xl mx-auto px-4 pt-24 lg:px-20 lg:pt-40">
     <h2
-      class="text-primary-comfy-canvas text-3.5xl/tight mx-auto max-w-3xl text-center font-light lg:text-5xl/tight"
+      class="text-3.5xl/tight mx-auto max-w-3xl text-center font-light text-primary-comfy-canvas lg:text-5xl/tight"
     >
       {{ headingParts[0]
       }}<span class="text-white">{{
@@ -37,10 +40,11 @@ const cards = [
     </h2>
 
     <GlassCard class="mt-12 grid grid-cols-1 gap-6 lg:mt-20 lg:grid-cols-2">
-      <div
+      <a
         v-for="card in cards"
         :key="card.labelKey"
-        class="bg-primary-comfy-ink rounded-4.5xl overflow-hidden"
+        :href="externalLinks.cloud"
+        class="rounded-4.5xl block overflow-hidden bg-primary-comfy-ink"
       >
         <img
           :src="card.image"
@@ -58,16 +62,24 @@ const cards = [
           </p>
 
           <h3
-            class="text-primary-comfy-canvas mt-8 text-3xl/tight font-light whitespace-pre-line"
+            class="mt-8 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
           >
             {{ t(card.titleKey, locale) }}
           </h3>
 
-          <p class="text-primary-comfy-canvas mt-8 text-base/normal">
-            {{ t(card.descriptionKey, locale) }}
-          </p>
+          <div class="mt-8 flex items-end justify-between gap-6">
+            <p class="text-base/normal text-primary-comfy-canvas">
+              {{ t(card.descriptionKey, locale) }}
+            </p>
+
+            <div
+              class="hover:bg-primary-comfy-yellow flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm transition-colors hover:text-primary-comfy-ink"
+            >
+              <ChevronRight class="size-5" :stroke-width="2" />
+            </div>
+          </div>
         </div>
-      </div>
+      </a>
     </GlassCard>
   </section>
 </template>
