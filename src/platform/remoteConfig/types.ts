@@ -82,6 +82,7 @@ export type RemoteConfig = {
   posthog_project_token?: string
   posthog_api_host?: string
   posthog_config?: Partial<PostHogConfig>
+  syftdata_source_id?: string
   customer_io?: {
     write_key?: string
     site_id?: string
