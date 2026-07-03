@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -259,21 +259,21 @@ describe('useWaveAudioPlayer', () => {
     const src = ref('')
     const player = useWaveAudioPlayer({ src })
 
-    player.handleWaveformClick(fromAny<MouseEvent, unknown>({ clientX: 50 }))
+    player.handleWaveformClick(fromPartial<MouseEvent>({ clientX: 50 }))
     expect(controls.currentTime.value).toBe(0)
 
-    player.waveformRef.value = fromAny<HTMLElement, unknown>({
+    player.waveformRef.value = fromPartial<HTMLElement>({
       getBoundingClientRect: () => ({ left: 10, width: 100 })
     })
 
-    player.handleWaveformClick(fromAny<MouseEvent, unknown>({ clientX: 60 }))
+    player.handleWaveformClick(fromPartial<MouseEvent>({ clientX: 60 }))
     expect(controls.currentTime.value).toBe(50)
     expect(player.isPlaying.value).toBe(true)
 
-    player.handleWaveformClick(fromAny<MouseEvent, unknown>({ clientX: -100 }))
+    player.handleWaveformClick(fromPartial<MouseEvent>({ clientX: -100 }))
     expect(controls.currentTime.value).toBe(0)
 
-    player.handleWaveformClick(fromAny<MouseEvent, unknown>({ clientX: 999 }))
+    player.handleWaveformClick(fromPartial<MouseEvent>({ clientX: 999 }))
     expect(controls.currentTime.value).toBe(100)
   })
 
@@ -281,11 +281,11 @@ describe('useWaveAudioPlayer', () => {
     const controls = queueMediaControls()
     const src = ref('')
     const player = useWaveAudioPlayer({ src })
-    player.waveformRef.value = fromAny<HTMLElement, unknown>({
+    player.waveformRef.value = fromPartial<HTMLElement>({
       getBoundingClientRect: () => ({ left: 0, width: 100 })
     })
 
-    player.handleWaveformClick(fromAny<MouseEvent, unknown>({ clientX: 50 }))
+    player.handleWaveformClick(fromPartial<MouseEvent>({ clientX: 50 }))
 
     expect(controls.currentTime.value).toBe(0)
     expect(player.isPlaying.value).toBe(false)

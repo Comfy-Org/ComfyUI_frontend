@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
@@ -8,33 +8,37 @@ import {
   Tools
 } from '@/extensions/core/maskeditor/types'
 import type { Brush } from '@/extensions/core/maskeditor/types'
+import type { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 // Patch document.createElement to return a canvas with a working 2d context
 const originalCreateElement = document.createElement.bind(document)
-vi.spyOn(document, 'createElement').mockImplementation(
-  (tag: string, options?: ElementCreationOptions) => {
-    const el = originalCreateElement(tag, options)
-    if (tag === 'canvas') {
-      const canvas = el as HTMLCanvasElement
-      const mockImageData = {
-        data: new Uint8ClampedArray(1024 * 4),
-        width: 32,
-        height: 32
+
+function patchCanvasCreateElement() {
+  vi.spyOn(document, 'createElement').mockImplementation(
+    (tag: string, options?: ElementCreationOptions) => {
+      const el = originalCreateElement(tag, options)
+      if (tag === 'canvas') {
+        const canvas = el as HTMLCanvasElement
+        const mockImageData = {
+          data: new Uint8ClampedArray(1024 * 4),
+          width: 32,
+          height: 32
+        }
+        const ctx2d = {
+          createImageData: vi.fn(() => mockImageData),
+          putImageData: vi.fn(),
+          getImageData: vi.fn(() => mockImageData)
+        }
+        const origGetContext = canvas.getContext.bind(canvas)
+        canvas.getContext = ((id: string, ...rest: unknown[]) => {
+          if (id === '2d') return ctx2d as unknown as CanvasRenderingContext2D
+          return origGetContext(id as '2d', ...rest)
+        }) as typeof canvas.getContext
       }
-      const ctx2d = {
-        createImageData: vi.fn(() => mockImageData),
-        putImageData: vi.fn(),
-        getImageData: vi.fn(() => mockImageData)
-      }
-      const origGetContext = canvas.getContext.bind(canvas)
-      canvas.getContext = ((id: string, ...rest: unknown[]) => {
-        if (id === '2d') return ctx2d as unknown as CanvasRenderingContext2D
-        return origGetContext(id as '2d', ...rest)
-      }) as typeof canvas.getContext
+      return el
     }
-    return el
-  }
-)
+  )
+}
 
 // Mock dependencies that are NOT the code under test
 vi.mock('@/scripts/utils', () => ({
@@ -95,28 +99,32 @@ function createMockCtx(): CanvasRenderingContext2D {
   } as unknown as CanvasRenderingContext2D
 }
 
-interface MockStore {
-  brushSettings: Brush
-  maskBlendMode: MaskBlendMode
-  activeLayer: string
-  rgbColor: string
-  currentTool: Tools
-  maskColor: { r: number; g: number; b: number }
-  maskCanvas: HTMLCanvasElement | null
-  maskCtx: CanvasRenderingContext2D | null
-  rgbCanvas: HTMLCanvasElement | null
-  rgbCtx: CanvasRenderingContext2D | null
-  maskOpacity: number
+type MaskEditorStore = ReturnType<typeof useMaskEditorStore>
+
+type MockStore = Pick<
+  MaskEditorStore,
+  | 'brushSettings'
+  | 'maskBlendMode'
+  | 'activeLayer'
+  | 'rgbColor'
+  | 'currentTool'
+  | 'maskColor'
+  | 'maskCanvas'
+  | 'maskCtx'
+  | 'rgbCanvas'
+  | 'rgbCtx'
+  | 'maskOpacity'
+  | 'brushVisible'
+  | 'brushPreviewGradientVisible'
+  | 'clearTrigger'
+  | 'tgpuRoot'
+  | 'gpuTexturesNeedRecreation'
+  | 'gpuTextureWidth'
+  | 'gpuTextureHeight'
+  | 'pendingGPUMaskData'
+  | 'pendingGPURgbData'
+> & {
   canvasHistory: typeof mockCanvasHistory
-  brushVisible: boolean
-  brushPreviewGradientVisible: boolean
-  clearTrigger: number
-  tgpuRoot: { destroy: () => void } | null
-  gpuTexturesNeedRecreation: boolean
-  gpuTextureWidth: number
-  gpuTextureHeight: number
-  pendingGPUMaskData: null
-  pendingGPURgbData: null
   setBrushSize: ReturnType<typeof vi.fn>
   setBrushOpacity: ReturnType<typeof vi.fn>
   setBrushHardness: ReturnType<typeof vi.fn>
@@ -200,8 +208,13 @@ function createPointerEvent(
 describe('useBrushDrawing', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    patchCanvasCreateElement()
     mockStore = createMockStore()
     vi.mocked(getStorageValue).mockReturnValue(null)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   describe('initialization', () => {
@@ -462,6 +475,7 @@ describe('useBrushDrawing', () => {
     })
 
     it('should suppress one axis when useDominantAxis is enabled', async () => {
+      mockStore.brushSettings.hardness = 0.5
       const { startBrushAdjustment, handleBrushAdjustment } = useBrushDrawing({
         useDominantAxis: true
       })
@@ -469,19 +483,19 @@ describe('useBrushDrawing', () => {
       await startBrushAdjustment(
         createPointerEvent({ offsetX: 50, offsetY: 50 })
       )
-      // Move strongly horizontal
+      // Move strongly horizontal, with a vertical delta beyond the dead zone
       await handleBrushAdjustment(
-        createPointerEvent({ offsetX: 100, offsetY: 52 })
+        createPointerEvent({ offsetX: 150, offsetY: 70 })
       )
 
-      // Size should change, hardness should stay roughly the same
+      // Size should change, hardness would drop below 0.5 if not suppressed
       expect(mockStore.setBrushSize).toHaveBeenCalled()
       expect(mockStore.setBrushHardness).toHaveBeenCalled()
       const hardnessCall = mockStore.setBrushHardness.mock.calls[0]![0]
-      expect(hardnessCall).toBeCloseTo(1, 1)
+      expect(hardnessCall).toBe(0.5)
     })
 
-    it('should cap delta values at ±100', async () => {
+    it('should clamp the adjusted size at 500', async () => {
       const { startBrushAdjustment, handleBrushAdjustment } = useBrushDrawing()
 
       await startBrushAdjustment(
@@ -489,13 +503,12 @@ describe('useBrushDrawing', () => {
       )
       // Move extremely far
       await handleBrushAdjustment(
-        createPointerEvent({ offsetX: 500, offsetY: 500 })
+        createPointerEvent({ offsetX: 50000, offsetY: 50 })
       )
 
-      // Should be capped, not exceed 500 size
       expect(mockStore.setBrushSize).toHaveBeenCalled()
       const sizeCall = mockStore.setBrushSize.mock.calls[0]![0]
-      expect(sizeCall).toBeLessThanOrEqual(500)
+      expect(sizeCall).toBe(500)
     })
 
     it('should respect brushAdjustmentSpeed', async () => {
@@ -596,8 +609,6 @@ describe('useBrushDrawing', () => {
         expect.any(Error)
       )
       expect(mockCanvasHistory.saveState).not.toHaveBeenCalled()
-
-      consoleSpy.mockRestore()
     })
 
     it('should use gradient for soft circle brushes on stroke end', async () => {
@@ -670,16 +681,12 @@ describe('useBrushDrawing', () => {
     })
 
     it('should ignore hover drawing when no stroke is active', async () => {
-      const performanceSpy = vi
-        .spyOn(performance, 'now')
-        .mockReturnValue(Date.now() + 100)
+      vi.spyOn(performance, 'now').mockReturnValue(Date.now() + 100)
       const { handleDrawing } = useBrushDrawing()
 
       await handleDrawing(createPointerEvent())
 
       expect(mockStore.maskCtx!.beginPath).not.toHaveBeenCalled()
-
-      performanceSpy.mockRestore()
     })
 
     it('should ignore low-latency hover drawing when no stroke is active', async () => {
@@ -700,9 +707,7 @@ describe('useBrushDrawing', () => {
           return 1
         }
       )
-      const performanceSpy = vi
-        .spyOn(performance, 'now')
-        .mockReturnValue(Date.now() + 100)
+      vi.spyOn(performance, 'now').mockReturnValue(Date.now() + 100)
       const drawing = useBrushDrawing()
 
       await drawing.handleDrawing(
@@ -718,7 +723,6 @@ describe('useBrushDrawing', () => {
       expect(mockStore.maskCtx!.beginPath).toHaveBeenCalled()
 
       await drawing.drawEnd(createPointerEvent({ offsetX: 20, offsetY: 20 }))
-      performanceSpy.mockRestore()
     })
 
     it('should continue a source-over stroke while drawing', async () => {
@@ -781,8 +785,6 @@ describe('useBrushDrawing', () => {
         '[useBrushDrawing] Drawing error:',
         expect.any(Error)
       )
-
-      consoleSpy.mockRestore()
     })
   })
 

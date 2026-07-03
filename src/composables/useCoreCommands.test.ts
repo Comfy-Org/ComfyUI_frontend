@@ -1598,21 +1598,33 @@ describe('useCoreCommands', () => {
       )
     })
 
-    it('does not rename missing, unpersisted, canceled, or unchanged workflows', async () => {
+    it('does not rename when there is no active workflow', async () => {
       mockWorkflowStore.activeWorkflow = null
+
       await findCommand('Comfy.RenameWorkflow').function()
-      mockWorkflowStore.activeWorkflow = {
-        changeTracker: mockChangeTracker,
-        directory: '/workflows',
-        filename: 'old.json',
-        isPersisted: false,
-        suffix: 'json'
-      }
+
+      expect(mockWorkflowService.renameWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not rename unpersisted workflows', async () => {
+      mockWorkflowStore.activeWorkflow!.isPersisted = false
+
       await findCommand('Comfy.RenameWorkflow').function()
-      mockWorkflowStore.activeWorkflow!.isPersisted = true
+
+      expect(mockWorkflowService.renameWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not rename when the prompt is canceled', async () => {
       mockDialogService.prompt.mockResolvedValueOnce(null)
+
       await findCommand('Comfy.RenameWorkflow').function()
+
+      expect(mockWorkflowService.renameWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not rename when the name is unchanged', async () => {
       mockDialogService.prompt.mockResolvedValueOnce('old.json')
+
       await findCommand('Comfy.RenameWorkflow').function()
 
       expect(mockWorkflowService.renameWorkflow).not.toHaveBeenCalled()

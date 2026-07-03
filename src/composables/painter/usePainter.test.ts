@@ -173,6 +173,51 @@ function createCanvasElement(
   return canvas
 }
 
+async function mountPainterWithMaskCanvas({
+  modelValue = '',
+  toBlob = (cb: BlobCallback) => cb(new Blob(['x']))
+}: {
+  modelValue?: string
+  toBlob?: (cb: BlobCallback) => void
+} = {}) {
+  const maskWidget = makeWidget('mask', '')
+  mockWidgets.push(maskWidget)
+
+  const fakeCanvas = {
+    width: 4,
+    height: 4,
+    getContext: vi.fn(() => ({ clearRect: vi.fn() })),
+    toBlob
+  } as unknown as HTMLCanvasElement
+
+  const mounted = mountPainter(toNodeId('test-node'), modelValue)
+  mounted.canvasEl.value = fakeCanvas
+  await nextTick()
+
+  return { maskWidget, ...mounted }
+}
+
+function stubFakeImage() {
+  const images: Array<{
+    onload: (() => void) | null
+    onerror: (() => void) | null
+  }> = []
+  class FakeImage {
+    crossOrigin = ''
+    naturalWidth = 64
+    naturalHeight = 32
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    src = ''
+
+    constructor() {
+      images.push(this)
+    }
+  }
+  vi.stubGlobal('Image', FakeImage)
+  return images
+}
+
 function createPointerEvent(
   type: string,
   values: {
@@ -546,24 +591,13 @@ describe('usePainter', () => {
     })
 
     it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       const fetchApiMock = vi.mocked(api.fetchApi)
       fetchApiMock.mockResolvedValueOnce({
         status: 200,
         json: async () => ({ name: 'uploaded.png' })
       } as Response)
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       expect(fetchApiMock).toHaveBeenCalledWith(
@@ -580,23 +614,12 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload response is missing a name', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
         json: async () => ({})
       } as Response)
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -604,20 +627,9 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload request fails', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('offline'))
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -625,20 +637,9 @@ describe('usePainter', () => {
     })
 
     it('reports non-error upload rejections', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockRejectedValueOnce('offline')
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -646,24 +647,13 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload response is not successful', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 500,
         statusText: 'Internal Server Error',
         text: async () => 'upload failed'
       } as Response)
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -671,24 +661,13 @@ describe('usePainter', () => {
     })
 
     it('uses statusText when an unsuccessful upload response has no body', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 502,
         statusText: 'Bad Gateway',
         text: async () => ''
       } as Response)
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -696,24 +675,13 @@ describe('usePainter', () => {
     })
 
     it('uses unknown error when an unsuccessful upload response has no detail', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 500,
         statusText: '',
         text: async () => ''
       } as Response)
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -721,9 +689,6 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload response body is not valid JSON', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
         json: async () => {
@@ -731,15 +696,7 @@ describe('usePainter', () => {
         }
       } as unknown as Response)
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -747,9 +704,6 @@ describe('usePainter', () => {
     })
 
     it('reports non-error JSON parse failures', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
       vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
         json: async () => {
@@ -757,15 +711,7 @@ describe('usePainter', () => {
         }
       } as unknown as Response)
 
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
@@ -773,20 +719,9 @@ describe('usePainter', () => {
     })
 
     it('returns modelValue when dirty canvas serialization produces no blob', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        getContext: vi.fn(() => ({
-          clearRect: vi.fn()
-        })),
-        toBlob: (cb: BlobCallback) => cb(null)
-      } as unknown as HTMLCanvasElement
-
-      const { painter, canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
+      const { painter, maskWidget } = await mountPainterWithMaskCanvas({
+        toBlob: (cb) => cb(null)
+      })
 
       painter.handleClear()
       await nextTick()
@@ -798,21 +733,10 @@ describe('usePainter', () => {
     })
 
     it('returns existing modelValue when canvas serialization produces no blob', async () => {
-      const maskWidget = makeWidget('mask', '')
-      mockWidgets.push(maskWidget)
-
-      const fakeCanvas = {
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(null)
-      } as unknown as HTMLCanvasElement
-
-      const { canvasEl } = mountPainter(
-        toNodeId('test-node'),
-        'painter/cached.png [temp]'
-      )
-      canvasEl.value = fakeCanvas
-      await nextTick()
+      const { maskWidget } = await mountPainterWithMaskCanvas({
+        modelValue: 'painter/cached.png [temp]',
+        toBlob: (cb) => cb(null)
+      })
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
 
@@ -896,20 +820,7 @@ describe('usePainter', () => {
     })
 
     it('draws a restored mask after the image loads', () => {
-      const images: Array<{ onload: (() => void) | null }> = []
-      class FakeImage {
-        crossOrigin = ''
-        naturalWidth = 64
-        naturalHeight = 32
-        onload: (() => void) | null = null
-        onerror: (() => void) | null = null
-        src = ''
-
-        constructor() {
-          images.push(this)
-        }
-      }
-      vi.stubGlobal('Image', FakeImage)
+      const images = stubFakeImage()
       const ctx = createCanvasContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
         fromAny(ctx)
@@ -928,46 +839,29 @@ describe('usePainter', () => {
     })
 
     it('ignores restored image loads after the canvas unmounts', () => {
-      const images: Array<{ onload: (() => void) | null }> = []
-      class FakeImage {
-        crossOrigin = ''
-        naturalWidth = 64
-        naturalHeight = 32
-        onload: (() => void) | null = null
-        onerror: (() => void) | null = null
-        src = ''
+      const images = stubFakeImage()
+      const ctx = createCanvasContext()
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+        fromAny(ctx)
+      )
 
-        constructor() {
-          images.push(this)
-        }
-      }
-      vi.stubGlobal('Image', FakeImage)
-
-      const { painter } = mountPainter(
+      const { painter, canvasEl, unmount } = mountPainter(
         toNodeId('test-node'),
         'painter/mask.png [temp]'
       )
+      canvasEl.value = createCanvasElement(ctx)
+      unmount()
+      // Vue clears template refs on unmount
+      canvasEl.value = null
       images[0].onload?.()
 
       expect(painter.canvasWidth.value).toBe(512)
       expect(painter.canvasHeight.value).toBe(512)
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('clears stale modelValue when restored image loading fails', () => {
-      const images: Array<{ onerror: (() => void) | null }> = []
-      class FakeImage {
-        crossOrigin = ''
-        naturalWidth = 64
-        naturalHeight = 32
-        onload: (() => void) | null = null
-        onerror: (() => void) | null = null
-        src = ''
-
-        constructor() {
-          images.push(this)
-        }
-      }
-      vi.stubGlobal('Image', FakeImage)
+      const images = stubFakeImage()
 
       const { modelValue } = mountPainter(
         toNodeId('test-node'),
