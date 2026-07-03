@@ -167,7 +167,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function setOutputsByLocatorId(
     nodeLocatorId: NodeLocatorId,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null,
     options: SetOutputOptions = {}
   ) {
     if (outputs == null) return
@@ -208,7 +208,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function setNodeOutputs(
-    node: LGraphNode,
+    node: LGraphNode | null,
     filenames: string | string[] | ResultItem,
     {
       folder = 'input',
@@ -235,7 +235,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function setNodeOutputsByExecutionId(
     executionId: NodeExecutionId,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null,
     options: SetOutputOptions = {}
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
