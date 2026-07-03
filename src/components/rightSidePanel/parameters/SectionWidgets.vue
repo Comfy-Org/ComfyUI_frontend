@@ -43,12 +43,12 @@ const {
   isDraggable = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
-  parents = [],
+  host,
   enableEmptyState = false,
   tooltip
 } = defineProps<{
   label?: string
-  parents?: SubgraphNode[]
+  host?: SubgraphNode
   node?: LGraphNode
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
@@ -377,7 +377,7 @@ defineExpose({
             :is-draggable="isDraggable"
             :hidden-favorite-indicator="hiddenFavoriteIndicator"
             :show-node-name="showNodeName"
-            :parents="parents"
+            :host="host"
             @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
             @reset-to-default="handleWidgetReset(node, widget, $event)"
           />

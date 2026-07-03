@@ -16,14 +16,10 @@ import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsSto
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-const {
-  widget,
-  node,
-  parents = []
-} = defineProps<{
+const { widget, node, host } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
-  parents?: SubgraphNode[]
+  host?: SubgraphNode
 }>()
 
 const emit = defineEmits<{
@@ -36,12 +32,11 @@ const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
-const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
   if (!node.isSubgraphNode()) return false
   return inputForWidget(node, widget)?.widgetId != null
 })
-const canShowInput = computed(() => hasParents.value && !isLinked.value)
+const canShowInput = computed(() => host != null && !isLinked.value)
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(node, widget.name)
 )
@@ -72,8 +67,8 @@ async function handleRename() {
 }
 
 function handleShowInput() {
-  if (!parents?.length) return
-  promoteWidget(node, widget, parents)
+  if (!host) return
+  promoteWidget(node, widget, [host])
 }
 
 function handleToggleFavorite() {

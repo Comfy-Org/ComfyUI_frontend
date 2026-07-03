@@ -88,8 +88,6 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   )
 })
 
-const parents = computed<SubgraphNode[]>(() => [node])
-
 const searchedWidgetsList = shallowRef<NodeWidgetsList>(widgetsList.value)
 const isSearching = ref(false)
 
@@ -140,7 +138,7 @@ const label = computed(() => {
     :collapse="firstSectionCollapsed && !isSearching"
     :node
     :label
-    :parents
+    :host="node"
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
     :enable-empty-state="isSearching"
@@ -164,7 +162,7 @@ const label = computed(() => {
     ref="advancedInputsSectionRef"
     v-model:collapse="advancedInputsCollapsed"
     :label="t('rightSidePanel.advancedInputs')"
-    :parents="parents"
+    :host="node"
     :widgets="advancedInputsWidgets"
     show-node-name
     class="border-b border-interface-stroke"

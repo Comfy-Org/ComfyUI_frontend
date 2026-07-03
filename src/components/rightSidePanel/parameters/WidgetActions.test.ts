@@ -209,19 +209,19 @@ describe('WidgetActions', () => {
     expect(onResetToDefault).toHaveBeenCalledWith('option1')
   })
 
-  it('promotes the widget when "Show input" is clicked on a node with parents', async () => {
+  it('promotes the widget into the host when "Show input" is clicked', async () => {
     const widget = createMockWidget()
     const node = createMockNode()
-    const parents = [fromAny<SubgraphNode, unknown>({ id: 2 })]
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
 
-    const { user } = renderWidgetActions(widget, node, { parents })
+    const { user } = renderWidgetActions(widget, node, { host })
 
     await user.click(screen.getByRole('button', { name: /Show input/ }))
 
-    expect(promoteWidget).toHaveBeenCalledWith(node, widget, parents)
+    expect(promoteWidget).toHaveBeenCalledWith(node, widget, [host])
   })
 
-  it('does not offer "Show input" without parents', () => {
+  it('does not offer "Show input" without a host', () => {
     renderWidgetActions(createMockWidget(), createMockNode())
 
     expect(
@@ -238,9 +238,9 @@ describe('WidgetActions', () => {
       isSubgraphNode: () => true,
       getSlotFromWidget: () => ({ widgetId: 'graph-test:1:test_widget' })
     })
-    const parents = [fromAny<SubgraphNode, unknown>({ id: 2 })]
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
 
-    renderWidgetActions(widget, node, { parents })
+    renderWidgetActions(widget, node, { host })
 
     expect(
       screen.queryByRole('button', { name: /Show input/ })

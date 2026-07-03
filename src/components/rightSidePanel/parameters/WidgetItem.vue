@@ -40,7 +40,7 @@ const {
   hiddenFavoriteIndicator = false,
   hiddenWidgetActions = false,
   showNodeName = false,
-  parents = []
+  host
 } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
@@ -48,7 +48,7 @@ const {
   hiddenFavoriteIndicator?: boolean
   hiddenWidgetActions?: boolean
   showNodeName?: boolean
-  parents?: SubgraphNode[]
+  host?: SubgraphNode
 }>()
 
 const emit = defineEmits<{
@@ -113,7 +113,7 @@ const displayNodeName = computed((): string | null => {
   })
 })
 
-const hasParents = computed(() => parents?.length > 0)
+const hasHost = computed(() => host != null)
 
 const widgetValue = computed({
   get: () => widget.value,
@@ -175,7 +175,7 @@ const displayLabel = customRef((track, trigger) => {
       />
 
       <span
-        v-if="(showNodeName || hasParents) && displayNodeName"
+        v-if="(showNodeName || hasHost) && displayNodeName"
         class="mx-1 my-0 min-w-10 flex-1 truncate p-0 text-right text-xs text-muted-foreground"
       >
         {{ displayNodeName }}
@@ -188,7 +188,7 @@ const displayLabel = customRef((track, trigger) => {
           v-model:label="displayLabel"
           :widget="widget"
           :node="node"
-          :parents="parents"
+          :host="host"
           @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
