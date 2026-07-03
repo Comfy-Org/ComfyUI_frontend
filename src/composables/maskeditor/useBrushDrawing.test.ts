@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -31,7 +32,7 @@ function patchCanvasCreateElement() {
         }
         const origGetContext = canvas.getContext.bind(canvas)
         canvas.getContext = ((id: string, ...rest: unknown[]) => {
-          if (id === '2d') return ctx2d as unknown as CanvasRenderingContext2D
+          if (id === '2d') return fromPartial<CanvasRenderingContext2D>(ctx2d)
           return origGetContext(id as '2d', ...rest)
         }) as typeof canvas.getContext
       }
@@ -80,7 +81,7 @@ function createMockCtx(): CanvasRenderingContext2D {
   const gradient = {
     addColorStop: vi.fn()
   }
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     beginPath: vi.fn(),
     fill: vi.fn(),
     arc: vi.fn(),
@@ -96,7 +97,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     putImageData: vi.fn(),
     clearRect: vi.fn(),
     createRadialGradient: vi.fn(() => gradient)
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 type MaskEditorStore = ReturnType<typeof useMaskEditorStore>
@@ -195,14 +196,14 @@ import { useBrushDrawing } from './useBrushDrawing'
 function createPointerEvent(
   overrides: Partial<PointerEvent> = {}
 ): PointerEvent {
-  return {
+  return fromPartial<PointerEvent>({
     offsetX: 50,
     offsetY: 50,
     buttons: 1,
     shiftKey: false,
     preventDefault: vi.fn(),
     ...overrides
-  } as unknown as PointerEvent
+  })
 }
 
 describe('useBrushDrawing', () => {
@@ -818,7 +819,8 @@ describe('useBrushDrawing', () => {
   describe('destroy', () => {
     it('should clean up tgpuRoot', () => {
       const mockTgpuRoot = { destroy: vi.fn() }
-      mockStore.tgpuRoot = mockTgpuRoot as unknown as MockStore['tgpuRoot']
+      mockStore.tgpuRoot =
+        fromPartial<NonNullable<MockStore['tgpuRoot']>>(mockTgpuRoot)
 
       const { destroy } = useBrushDrawing()
       destroy()
@@ -854,7 +856,7 @@ describe('useBrushDrawing', () => {
       const { tgpu } = await import('typegpu')
       const mockRoot = { device: {}, destroy: vi.fn() }
       vi.mocked(tgpu.init).mockResolvedValue(
-        mockRoot as unknown as Awaited<ReturnType<typeof tgpu.init>>
+        fromPartial<Awaited<ReturnType<typeof tgpu.init>>>(mockRoot)
       )
 
       mockStore.maskCanvas = null

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -12,18 +13,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-
-// Mock vue-i18n for useExternalLink
-const mockLocale = ref('en')
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: vi.fn(() => ({
-      locale: mockLocale
-    }))
-  }
-})
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
@@ -362,15 +351,16 @@ vi.mock('@/stores/queueStore', () => ({
   useQueueUIStore: vi.fn(() => ({}))
 }))
 
-const mockLGraphGroupInstance = vi.hoisted(() => ({
+const mockGroupFns = vi.hoisted(() => ({
   resizeTo: vi.fn(),
   recomputeInsideNodes: vi.fn()
 }))
-const MockLGraphGroup = vi.hoisted(
-  () =>
-    function (this: typeof mockLGraphGroupInstance) {
-      Object.assign(this, mockLGraphGroupInstance)
-    }
+
+const MockLGraphGroup = vi.hoisted(() =>
+  vi.fn(function (this: Record<string, unknown>) {
+    this['resizeTo'] = mockGroupFns.resizeTo
+    this['recomputeInsideNodes'] = mockGroupFns.recomputeInsideNodes
+  })
 )
 vi.mock('@/lib/litegraph/src/litegraph', async () => {
   const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
@@ -399,7 +389,7 @@ describe('useCoreCommands', () => {
       createMockNode(4, 'AnotherUserNode')
     ]
 
-    return {
+    return fromPartial<typeof app.canvas.subgraph>({
       nodes: mockNodes,
       remove: vi.fn(),
       events: {
@@ -421,12 +411,11 @@ describe('useCoreCommands', () => {
       findNodeByTitle: vi.fn(),
       findNodesByTitle: vi.fn(),
       findNodesByType: vi.fn(),
-      findNodeById: vi.fn(),
       getNodeById: vi.fn(),
       setDirtyCanvas: vi.fn(),
       sendActionToCanvas: vi.fn(),
       extra: {} as Record<string, unknown>
-    } as Partial<typeof app.canvas.subgraph> as typeof app.canvas.subgraph
+    })
   }
 
   const mockSubgraph = createMockSubgraph()!
@@ -1229,7 +1218,7 @@ describe('useCoreCommands', () => {
 
       await findCommand('Comfy.Graph.GroupSelectedNodes').function()
 
-      expect(mockLGraphGroupInstance.resizeTo).toHaveBeenCalled()
+      expect(mockGroupFns.resizeTo).toHaveBeenCalled()
       expect(app.canvas.graph!.add).toHaveBeenCalled()
     })
   })
@@ -1247,8 +1236,8 @@ describe('useCoreCommands', () => {
 
       await findCommand('Comfy.Graph.FitGroupToContents').function()
 
-      expect(mockLGraphGroupInstance.recomputeInsideNodes).toHaveBeenCalled()
-      expect(mockLGraphGroupInstance.resizeTo).toHaveBeenCalled()
+      expect(mockGroupFns.recomputeInsideNodes).toHaveBeenCalled()
+      expect(mockGroupFns.resizeTo).toHaveBeenCalled()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
     })
   })

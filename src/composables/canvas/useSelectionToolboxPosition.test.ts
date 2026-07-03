@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
@@ -60,19 +61,21 @@ describe('useSelectionToolboxPosition', () => {
     state: Partial<LGraphCanvas['state']> = {},
     ds: Partial<LGraphCanvas['ds']> = {}
   ) {
-    canvasStore.canvas = markRaw({
-      canvas: document.createElement('canvas'),
-      ds: {
-        offset: ds.offset ?? [0, 0],
-        scale: ds.scale ?? 1
-      },
-      selectedItems: new Set(items),
-      state: {
-        draggingItems: false,
-        selectionChanged: true,
-        ...state
-      }
-    } as Partial<LGraphCanvas> as LGraphCanvas)
+    canvasStore.canvas = markRaw(
+      fromPartial<LGraphCanvas>({
+        canvas: document.createElement('canvas'),
+        ds: {
+          offset: ds.offset ?? [0, 0],
+          scale: ds.scale ?? 1
+        },
+        selectedItems: new Set(items),
+        state: {
+          draggingItems: false,
+          selectionChanged: true,
+          ...state
+        }
+      })
+    )
 
     let toolbox: HTMLElement | undefined
     let visible!: ReturnType<typeof useSelectionToolboxPosition>['visible']
@@ -97,19 +100,21 @@ describe('useSelectionToolboxPosition', () => {
     items: Iterable<Positionable>,
     state: Partial<LGraphCanvas['state']> = {}
   ) {
-    canvasStore.canvas = markRaw({
-      canvas: document.createElement('canvas'),
-      ds: {
-        offset: [0, 0],
-        scale: 1
-      },
-      selectedItems: new Set(items),
-      state: {
-        draggingItems: false,
-        selectionChanged: true,
-        ...state
-      }
-    } as Partial<LGraphCanvas> as LGraphCanvas)
+    canvasStore.canvas = markRaw(
+      fromPartial<LGraphCanvas>({
+        canvas: document.createElement('canvas'),
+        ds: {
+          offset: [0, 0],
+          scale: 1
+        },
+        selectedItems: new Set(items),
+        state: {
+          draggingItems: false,
+          selectionChanged: true,
+          ...state
+        }
+      })
+    )
   }
 
   it('positions groups from their unchanged bounds', () => {
@@ -285,12 +290,12 @@ describe('useSelectionToolboxPosition', () => {
   })
 
   it('ignores selected items without valid ids', () => {
-    const item = {
+    const item = Object.assign({} as Positionable, {
       id: null,
       pos: [100, 200],
       size: [160, 80],
       boundingRect: [100, 200, 160, 80]
-    } as unknown as Positionable
+    })
 
     const { toolbox, visible, unmount } = renderToolboxForSelection([item])
 

@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -15,12 +16,17 @@ import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    t: (key: string, params?: Record<string, unknown>) =>
-      params ? `${key}:${JSON.stringify(params)}` : key
-  }))
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      painter: {
+        uploadError: 'Failed to upload painter image: {status} - {statusText}'
+      }
+    }
+  }
+})
 
 vi.mock('@vueuse/core', () => ({
   useElementSize: vi.fn(() => ({
@@ -90,13 +96,16 @@ vi.mock('@/scripts/app', () => ({
 
 type PainterResult = ReturnType<typeof usePainter>
 
-function makeWidget(name: string, value: unknown = null): IBaseWidget {
-  return {
+function makeWidget(
+  name: string,
+  value: boolean | number | string | object | undefined = undefined
+): IBaseWidget {
+  return fromPartial<IBaseWidget>({
     name,
     value,
     callback: vi.fn(),
     serializeValue: undefined
-  } as unknown as IBaseWidget
+  })
 }
 
 function mountPainter(
@@ -122,13 +131,13 @@ function mountPainter(
     }
   })
 
-  const rendered = render(Wrapper)
+  const rendered = render(Wrapper, { global: { plugins: [i18n] } })
   return { painter, canvasEl, cursorEl, modelValue, unmount: rendered.unmount }
 }
 
 function createCanvasContext() {
   const gradient = { addColorStop: vi.fn() }
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     beginPath: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
@@ -142,12 +151,12 @@ function createCanvasContext() {
     stroke: vi.fn(),
     fillStyle: '',
     strokeStyle: '',
-    globalCompositeOperation: '',
+    globalCompositeOperation: '' as GlobalCompositeOperation,
     globalAlpha: 1,
     lineWidth: 1,
     lineCap: 'butt',
     lineJoin: 'miter'
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 function createCanvasElement(
@@ -158,7 +167,7 @@ function createCanvasElement(
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  vi.spyOn(canvas, 'getContext').mockReturnValue(fromAny(ctx))
+  vi.spyOn(canvas, 'getContext').mockReturnValue(fromPartial(ctx))
   vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
     left: 0,
     top: 0,
@@ -184,12 +193,12 @@ async function mountPainterWithMaskCanvas({
   const maskWidget = makeWidget('mask', '')
   mockWidgets.push(maskWidget)
 
-  const fakeCanvas = {
+  const fakeCanvas = fromPartial<HTMLCanvasElement>({
     width: 4,
     height: 4,
     getContext: vi.fn(() => ({ clearRect: vi.fn() })),
     toBlob
-  } as unknown as HTMLCanvasElement
+  })
 
   const mounted = mountPainter(toNodeId('test-node'), modelValue)
   mounted.canvasEl.value = fakeCanvas
@@ -470,12 +479,9 @@ describe('usePainter', () => {
 
       const { painter } = mountPainter()
 
-      const fakeEvent = {
-        target: {
-          naturalWidth: 1920,
-          naturalHeight: 1080
-        }
-      } as unknown as Event
+      const fakeEvent = fromPartial<Event>({
+        target: { naturalWidth: 1920, naturalHeight: 1080 } as HTMLImageElement
+      })
 
       painter.handleInputImageLoad(fakeEvent)
 
@@ -488,12 +494,11 @@ describe('usePainter', () => {
     it('updates canvas size when dimension widgets are absent', () => {
       const { painter } = mountPainter()
 
-      painter.handleInputImageLoad({
-        target: {
-          naturalWidth: 320,
-          naturalHeight: 240
-        }
-      } as unknown as Event)
+      painter.handleInputImageLoad(
+        fromPartial<Event>({
+          target: { naturalWidth: 320, naturalHeight: 240 } as HTMLImageElement
+        })
+      )
 
       expect(painter.canvasWidth.value).toBe(320)
       expect(painter.canvasHeight.value).toBe(240)
@@ -634,7 +639,7 @@ describe('usePainter', () => {
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
-      ).rejects.toThrow(/painter\.uploadError/)
+      ).rejects.toThrow(/Failed to upload painter image/)
     })
 
     it('reports non-error upload rejections', async () => {
@@ -690,27 +695,31 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload response body is not valid JSON', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 200,
-        json: async () => {
-          throw new SyntaxError('Unexpected token')
-        }
-      } as unknown as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        fromPartial<Response>({
+          status: 200,
+          json: async () => {
+            throw new SyntaxError('Unexpected token')
+          }
+        })
+      )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
-      ).rejects.toThrow(/painter\.uploadError/)
+      ).rejects.toThrow(/Failed to upload painter image/)
     })
 
     it('reports non-error JSON parse failures', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 200,
-        json: async () => {
-          throw 'bad json'
-        }
-      } as unknown as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        fromPartial<Response>({
+          status: 200,
+          json: async () => {
+            throw 'bad json'
+          }
+        })
+      )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
 
@@ -767,13 +776,13 @@ describe('usePainter', () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      const fakeCanvas = {
+      const fakeCanvas = fromPartial<HTMLCanvasElement>({
         width: 4,
         height: 4,
         getContext: vi.fn(() => ({
           clearRect: vi.fn()
         }))
-      } as unknown as HTMLCanvasElement
+      })
 
       const { painter, canvasEl, modelValue } = mountPainter(
         toNodeId('test-node'),
@@ -832,7 +841,7 @@ describe('usePainter', () => {
       const images = stubFakeImage()
       const ctx = createCanvasContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
 
       const { painter, canvasEl } = mountPainter(
@@ -851,7 +860,7 @@ describe('usePainter', () => {
       const images = stubFakeImage()
       const ctx = createCanvasContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
 
       const { painter, canvasEl, unmount } = mountPainter(
@@ -894,7 +903,7 @@ describe('usePainter', () => {
       const ctx = createCanvasContext()
       mockWidgets.push(maskWidget)
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
 
       const { painter, canvasEl, modelValue } = mountPainter(
@@ -963,7 +972,7 @@ describe('usePainter', () => {
     it('draws a hard brush stroke across pointer events', () => {
       const ctx = createCanvasContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = createCanvasElement(ctx)
@@ -991,7 +1000,7 @@ describe('usePainter', () => {
     it('draws a soft brush stroke with radial dabs', () => {
       const ctx = createCanvasContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = createCanvasElement(ctx)
@@ -1013,7 +1022,7 @@ describe('usePainter', () => {
     it('uses destination-out composition for eraser strokes', () => {
       const ctx = createCanvasContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = createCanvasElement(ctx)
@@ -1073,7 +1082,7 @@ describe('usePainter', () => {
       )
       vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = createCanvasElement(ctx)
@@ -1100,7 +1109,7 @@ describe('usePainter', () => {
       vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(7)
       vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = createCanvasElement(ctx)
@@ -1122,7 +1131,7 @@ describe('usePainter', () => {
       vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(7)
       vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
       const { painter, canvasEl, unmount } = mountPainter()
       canvasEl.value = createCanvasElement(ctx)
@@ -1144,12 +1153,13 @@ describe('usePainter', () => {
       const { painter } = mountPainter()
 
       const mockReleasePointerCapture = vi.fn()
-      const event = {
+      const event = createPointerEvent('pointerup', {
         button: 2,
         target: {
+          setPointerCapture: vi.fn(),
           releasePointerCapture: mockReleasePointerCapture
         }
-      } as unknown as PointerEvent
+      })
 
       painter.handlePointerUp(event)
 
@@ -1159,15 +1169,16 @@ describe('usePainter', () => {
     it('tolerates releasePointerCapture throwing for synthetic events', () => {
       const { painter } = mountPainter()
 
-      const event = {
+      const event = createPointerEvent('pointerup', {
         button: 0,
         pointerId: 1,
         target: {
+          setPointerCapture: vi.fn(),
           releasePointerCapture: vi.fn(() => {
             throw new DOMException('NotFoundError')
           })
         }
-      } as unknown as PointerEvent
+      })
 
       expect(() => painter.handlePointerUp(event)).not.toThrow()
     })
@@ -1175,16 +1186,19 @@ describe('usePainter', () => {
     it('draws final stroke processor points on release', () => {
       const ctx = createCanvasContext()
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        fromAny(ctx)
+        fromPartial(ctx)
       )
       vi.mocked(StrokeProcessor).mockImplementationOnce(
-        class MockStrokeProcessor {
-          addPoint = vi.fn(() => [])
-          endStroke = vi.fn(() => [
+        class extends StrokeProcessor {
+          constructor() {
+            super(1)
+          }
+          override addPoint = vi.fn(() => [])
+          override endStroke = vi.fn(() => [
             { x: 40, y: 10 },
             { x: 80, y: 10 }
           ])
-        } as unknown as typeof StrokeProcessor
+        }
       )
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = createCanvasElement(ctx)

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -65,7 +65,7 @@ vi.mock('@/stores/assetsStore', () => ({
 }))
 
 function createMockNode(): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  return Object.assign({} as LGraphNode, {
     isUploading: false,
     imgs: [new Image()],
     graph: { setDirtyCanvas: vi.fn() },
@@ -215,7 +215,7 @@ describe('useNodeImageUpload', () => {
   })
 
   it('passes dropped result items through without uploading', () => {
-    const resultItem = fromAny<ResultItem, unknown>({
+    const resultItem = fromPartial<ResultItem>({
       filename: 'existing.png',
       subfolder: '',
       type: 'input'

@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -33,7 +33,6 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 })
 
 const mockFetchApi = vi.fn()
-const originalAudioContext = globalThis.AudioContext
 
 function queueMediaControls(overrides: Partial<MediaControls> = {}) {
   const controls: MediaControls = {
@@ -53,7 +52,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  globalThis.AudioContext = originalAudioContext
+  vi.unstubAllGlobals()
   mockFetchApi.mockReset()
 })
 
@@ -179,7 +178,8 @@ describe('useWaveAudioPlayer', () => {
 
     const mockDecodeAudioData = vi.fn(() => Promise.resolve(mockAudioBuffer))
     const mockClose = vi.fn().mockResolvedValue(undefined)
-    globalThis.AudioContext = fromAny<typeof AudioContext, unknown>(
+    vi.stubGlobal(
+      'AudioContext',
       class {
         decodeAudioData = mockDecodeAudioData
         close = mockClose
@@ -212,7 +212,8 @@ describe('useWaveAudioPlayer', () => {
     }
     const mockDecodeAudioData = vi.fn(() => Promise.resolve(mockAudioBuffer))
     const mockClose = vi.fn().mockResolvedValue(undefined)
-    globalThis.AudioContext = fromAny<typeof AudioContext, unknown>(
+    vi.stubGlobal(
+      'AudioContext',
       class {
         decodeAudioData = mockDecodeAudioData
         close = mockClose
