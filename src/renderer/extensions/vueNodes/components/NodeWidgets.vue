@@ -8,6 +8,7 @@
     :class="
       cn(
         'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3',
+        hasExpandingRows && 'min-h-0',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -15,7 +16,7 @@
     "
     :style="{
       'grid-template-rows': gridTemplateRows,
-      flex: gridTemplateRows.includes('auto') ? 1 : undefined
+      flex: hasExpandingRows ? 1 : undefined
     }"
     @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
@@ -27,6 +28,9 @@
         v-if="widget.visible"
         data-testid="node-widget"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        :class="
+          widget.type === 'videotrim' && loadVideoTrimFillsSpace && 'min-h-0'
+        "
       >
         <!-- Widget Input Slot Dot -->
         <div
@@ -68,6 +72,9 @@
             :class="
               cn(
                 'col-span-2',
+                widget.type === 'videotrim' &&
+                  loadVideoTrimFillsSpace &&
+                  'h-full min-h-0',
                 widget.hasError && 'font-bold text-node-stroke-error'
               )
             "
@@ -128,8 +135,14 @@ onErrorCaptured((error) => {
   return false
 })
 
-const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
-  useProcessedWidgets(() => nodeData)
+const {
+  canSelectInputs,
+  gridTemplateRows,
+  hasExpandingRows,
+  loadVideoTrimFillsSpace,
+  nodeType,
+  processedWidgets
+} = useProcessedWidgets(() => nodeData)
 
 // Tracks widget-row growth that the node-level RO can't see
 if (nodeData?.id != null) {

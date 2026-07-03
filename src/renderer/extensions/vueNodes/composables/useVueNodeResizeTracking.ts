@@ -87,6 +87,12 @@ function markElementForFreshMeasurement(element: HTMLElement) {
   cachedNodeMeasurements.delete(element)
 }
 
+export function requestVueElementFreshMeasurement(element: HTMLElement) {
+  if (!element.isConnected) return
+  markElementForFreshMeasurement(element)
+  resizeObserver.observe(element)
+}
+
 watch(visibility, (state) => {
   if (state !== 'visible' || deferredElements.size === 0) return
 
