@@ -61,11 +61,9 @@ function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
 ): Response {
-  return {
-    ok: init.ok ?? true,
-    status: init.status ?? 200,
-    json: vi.fn().mockResolvedValue(body)
-  } as unknown as Response
+  return new Response(body == null ? null : JSON.stringify(body), {
+    status: init.status ?? 200
+  })
 }
 
 function buildAssetListResponse(
@@ -184,11 +182,9 @@ describe(assetService.getAssetMetadata, () => {
   })
 
   it('falls back to unknown when error JSON cannot be parsed', async () => {
-    fetchApiMock.mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      json: vi.fn().mockRejectedValue(new Error('bad json'))
-    } as unknown as Response)
+    fetchApiMock.mockResolvedValueOnce(
+      new Response('not valid json', { status: 400 })
+    )
 
     await expect(
       assetService.getAssetMetadata('https://example.com/model.safetensors')
