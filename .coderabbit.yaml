@@ -73,6 +73,10 @@ reviews:
         Use a real createI18n instance rather than vi.mock('vue-i18n').
         Flag bare expect(fn).not.toThrow() as a sole assertion, assertions that echo stub return values, and .mock.results assertions.
         Use @testing-library/vue for component tests, not @vue/test-utils.
+        For platform-owned types (Response, CustomEvent, DOM events), require real instances (new Response(), Response.json(), new CustomEvent()) instead of fromPartial or casts.
+        When a fixture cast hides a too-wide production signature, suggest narrowing the production type instead of casting the fixture.
+        Flag process-level listeners (process.on('unhandledRejection')) in tests; assert the rejected promise directly.
+        Tests should import the module under test from its public entrypoint, not deep internal paths.
     - path: 'browser_tests/**/*.spec.ts'
       instructions: |
         Every route.fulfill() body must be typed with generated types or schemas from packages/ingest-types, packages/registry-types, src/workbench/extensions/manager/types/generatedManagerTypes.ts, or src/schemas/; flag untyped inline JSON objects.
