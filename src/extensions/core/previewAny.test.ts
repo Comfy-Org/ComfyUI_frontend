@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
 
+const { getNodeByLocatorIdMock } = vi.hoisted(() => ({
+  getNodeByLocatorIdMock: vi.fn()
+}))
+
 const capturedExtensions: ComfyExtension[] = []
 
 vi.mock('@/services/extensionService', () => ({
@@ -12,7 +16,11 @@ vi.mock('@/services/extensionService', () => ({
   })
 }))
 
-vi.mock('@/scripts/app', () => ({ app: {} }))
+vi.mock('@/scripts/app', () => ({ app: { rootGraph: {} } }))
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByLocatorId: getNodeByLocatorIdMock
+}))
 
 interface MockWidget {
   name: string
@@ -25,17 +33,23 @@ interface MockWidget {
   serialize?: boolean
 }
 
+interface MockNode {
+  widgets?: MockWidget[]
+  comfyClass?: string
+}
+
+type PreviewAnyExtension = ComfyExtension & {
+  onNodeOutputsUpdated: (
+    nodeOutputs: Record<string, { text?: string | string[] }>
+  ) => void
+}
+
 const createdWidgets: MockWidget[] = []
 
 vi.mock('@/scripts/widgets', () => {
   const create =
     (kind: string) =>
-    (
-      node: { widgets?: MockWidget[] },
-      name: string,
-      _info: unknown,
-      _app: unknown
-    ) => {
+    (node: MockNode, name: string, _info: unknown, _app: unknown) => {
       const widget: MockWidget = {
         name,
         options: {},
@@ -62,6 +76,7 @@ describe('PreviewAny extension', () => {
   beforeEach(async () => {
     capturedExtensions.length = 0
     createdWidgets.length = 0
+    getNodeByLocatorIdMock.mockReset()
     vi.resetModules()
     await import('./previewAny')
   })
@@ -83,10 +98,10 @@ describe('PreviewAny extension', () => {
       {} as Parameters<NonNullable<ComfyExtension['beforeRegisterNodeDef']>>[2]
     )
 
-    const node: { widgets?: MockWidget[] } = {}
+    const node: MockNode = { comfyClass: 'PreviewAny' }
     const proto = nodeType.prototype as { onNodeCreated?: () => void }
     proto.onNodeCreated!.call(node)
-    return node
+    return { ext: ext! as PreviewAnyExtension, node }
   }
 
   it('excludes preview widgets from the API prompt to prevent re-execution', async () => {
@@ -102,6 +117,7 @@ describe('PreviewAny extension', () => {
     expect(previewText).toBeDefined()
     expect(previewMode).toBeDefined()
 
+    expect(previewMode!.label).toBe('Preview Mode')
     // widget.options.serialize === false is what executionUtil.graphToPrompt
     // checks to exclude a widget from the API prompt sent to the backend.
     // Without this, post-execution widget value updates (the rendered preview
@@ -110,5 +126,21 @@ describe('PreviewAny extension', () => {
     expect(previewMarkdown!.options.serialize).toBe(false)
     expect(previewText!.options.serialize).toBe(false)
     expect(previewMode!.options.serialize).toBe(false)
+  })
+
+  it('restores preview widgets from node output updates', async () => {
+    const { ext, node } = await setupNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    ext.onNodeOutputsUpdated({
+      '1': { text: 'restored preview text' }
+    })
+
+    expect(
+      createdWidgets.find((w) => w.name === 'preview_markdown')?.value
+    ).toBe('restored preview text')
+    expect(createdWidgets.find((w) => w.name === 'preview_text')?.value).toBe(
+      'restored preview text'
+    )
   })
 })

@@ -4,14 +4,35 @@ https://github.com/rgthree/rgthree-comfy/blob/main/py/display_any.py
 upstream requested in https://github.com/Kosinkadink/rfcs/blob/main/rfcs/0000-corenodes.md#preview-nodes
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { type DOMWidget } from '@/scripts/domWidget'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useExtensionService } from '@/services/extensionService'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+
+function updatePreviewWidgets(node: LGraphNode, output: NodeExecutionOutput) {
+  const widgets =
+    node.widgets?.filter((w) => w.name.startsWith('preview_')) ?? []
+
+  for (const widget of widgets) {
+    widget.value = Array.isArray(output.text)
+      ? output.text.join('\n\n')
+      : (output.text ?? '')
+  }
+}
 
 useExtensionService().registerExtension({
   name: 'Comfy.PreviewAny',
+  onNodeOutputsUpdated(outputs: Record<NodeLocatorId, NodeExecutionOutput>) {
+    for (const [locatorId, output] of Object.entries(outputs)) {
+      const node = getNodeByLocatorId(app.rootGraph, locatorId)
+      if (node?.comfyClass !== 'PreviewAny') continue
+      updatePreviewWidgets(node, output)
+    }
+  },
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
@@ -69,6 +90,7 @@ useExtensionService().registerExtension({
         showValueWidgetPlain.element.readOnly = true
         showValueWidgetPlain.serialize = false
 
+        showAsPlaintextWidget.widget.label = 'Preview Mode'
         // The previewMode toggle is a frontend-only display preference and
         // is not declared in the backend INPUT_TYPES, so it must not be
         // serialized into the API prompt (would alter the cache signature).
@@ -82,15 +104,7 @@ useExtensionService().registerExtension({
           ? void 0
           : onExecuted.apply(this, [message])
 
-        const previewWidgets =
-          this.widgets?.filter((w) => w.name.startsWith('preview_')) ?? []
-
-        for (const previewWidget of previewWidgets) {
-          const text = message.text ?? ''
-          previewWidget.value = Array.isArray(text)
-            ? (text?.join('\n\n') ?? '')
-            : text
-        }
+        updatePreviewWidgets(this, message)
       }
     }
   }
