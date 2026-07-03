@@ -216,12 +216,11 @@ describe('searchTemplates', () => {
     ])
   })
 
-  it('ranks an exact match above a typo match', () => {
+  it('ranks an exact title above a title with extra words', () => {
     const index = buildIndex([
-      buildTemplate({ name: 'typo_only', title: 'Controlnet Guidance' }),
+      buildTemplate({ name: 'with_extra', title: 'ControlNet Guidance' }),
       buildTemplate({ name: 'exact', title: 'ControlNet' })
     ])
-    // A clean "controlnet" query keeps the exact title first.
     expect(searchTemplates(index, 'controlnet')[0]).toBe('exact')
   })
 })
