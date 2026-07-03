@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -87,7 +86,7 @@ function renderToolbar(props: SideToolbarProps = {}) {
     props,
     global: {
       plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip },
+      directives: { tooltip: {} },
       stubs: {
         ComfyMenuButton: { template: '<div />' },
         SidebarTemplatesButton: { template: '<div />' },
