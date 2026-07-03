@@ -100,8 +100,11 @@ interface ComputeProcessedWidgetsOptions {
 }
 
 function normalizeWidgetValue(value: unknown): WidgetValue {
-  if (value === null || value === undefined) {
+  if (value === undefined) {
     return undefined
+  }
+  if (value === null) {
+    return null
   }
   if (
     typeof value === 'string' ||
