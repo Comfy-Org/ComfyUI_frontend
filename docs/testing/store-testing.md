@@ -270,9 +270,9 @@ describe('renameWorkflow', () => {
 
     // Mock super.rename
     vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
-      async function (this: unknown, ...args: unknown[]) {
-        ;(this as typeof workflow).path = args[0] as string
-        return this as typeof workflow
+      async function (this: { path: string }, newPath: string) {
+        this.path = newPath
+        return this
       }
     )
 
