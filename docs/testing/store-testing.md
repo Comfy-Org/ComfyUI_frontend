@@ -82,7 +82,9 @@ describe('openWorkflow', () => {
 
     // Mock the load response
     vi.spyOn(workflow, 'load').mockImplementation(async () => {
-      workflow.changeTracker = fromPartial<ChangeTracker>({ activeState: mockWorkflowData })
+      workflow.changeTracker = fromPartial<ChangeTracker>({
+        activeState: mockWorkflowData
+      })
       return workflow as LoadedComfyWorkflow
     })
 
