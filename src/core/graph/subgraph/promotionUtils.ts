@@ -377,7 +377,7 @@ export function promoteWidget(
  * Removes the host input projecting a linked promotion identified by source.
  * Returns true when an input was found and demoted.
  */
-export function demotePromotedInput(
+function demotePromotedInput(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
 ): boolean {

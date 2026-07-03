@@ -7,10 +7,8 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
-  demotePromotedInput,
   demoteWidget,
   getPromotableWidgets,
-  isLinkedPromotion,
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected,
@@ -23,7 +21,10 @@ import {
 import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  ISubgraphInput
+} from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -32,7 +33,6 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -40,7 +40,7 @@ import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 type PromotedRow = {
   kind: 'promoted'
   node: LGraphNode
-  input: INodeInputSlot
+  input: INodeInputSlot & Partial<ISubgraphInput>
   widget: IBaseWidget
 }
 type PreviewRow = {
@@ -248,14 +248,7 @@ function rowDisplayName(row: ActiveRow): string {
 }
 
 function isRowLinked(row: ActiveRow): boolean {
-  if (row.kind !== 'promoted') return false
-  if (row.node.id === UNASSIGNED_NODE_ID) return true
-  const source = promotedRowSource(row)
-  return (
-    !!activeNode.value &&
-    !!source &&
-    isLinkedPromotion(activeNode.value, String(row.node.id), source.widgetName)
-  )
+  return row.kind === 'promoted' && row.input.widgetId != null
 }
 
 function promotedRowKey(row: PromotedRow): string {
@@ -276,12 +269,10 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    const source = promotedRowSource(row)
-    if (source) {
-      demotePromotedInput(subgraphNode, {
-        sourceNodeId: source.nodeId,
-        sourceWidgetName: source.widgetName
-      })
+    const linkedInput = row.input._subgraphSlot
+    if (linkedInput) {
+      if (row.input.link != null) linkedInput.disconnect()
+      else subgraphNode.subgraph.removeInput(linkedInput)
     }
     refreshPromotedWidgetRendering()
     return
