@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -11,6 +11,7 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
+import { toLinkId } from '@/types/linkId'
 
 import {
   createTestSubgraph,
@@ -131,7 +132,7 @@ describe('SubgraphIONodeBase', () => {
 
     beforeEach(() => {
       captured = undefined
-      LiteGraph.ContextMenu = fromAny(
+      LiteGraph.ContextMenu = fromPartial<typeof LiteGraph.ContextMenu>(
         class {
           constructor(
             options: (IContextMenuValue | null)[],
@@ -150,7 +151,7 @@ describe('SubgraphIONodeBase', () => {
     it('offers disconnect, rename, and remove for connected slots', () => {
       const { subgraph, inputNode } = createArrangedInputNode()
       const slot = inputNode.slots[0]
-      slot.linkIds.push(fromAny(1))
+      slot.linkIds.push(toLinkId(1))
       const [slotX, slotY] = slotCentre(slot)
 
       inputNode.onPointerDown(
@@ -168,21 +169,11 @@ describe('SubgraphIONodeBase', () => {
       ])
 
       // Disconnect action clears the slot's links.
-      void captured?.opts.callback?.(
-        fromPartial({ value: 'disconnect' }),
-        fromAny({}),
-        fromAny({}),
-        fromAny({})
-      )
+      void captured?.opts.callback?.(fromPartial({ value: 'disconnect' }))
       expect(slot.linkIds).toHaveLength(0)
 
       // Remove action deletes the slot from the subgraph.
-      void captured?.opts.callback?.(
-        fromPartial({ value: 'remove' }),
-        fromAny({}),
-        fromAny({}),
-        fromAny({})
-      )
+      void captured?.opts.callback?.(fromPartial({ value: 'remove' }))
       expect(subgraph.inputs).toHaveLength(0)
     })
 
@@ -208,12 +199,7 @@ describe('SubgraphIONodeBase', () => {
         fromPartial<CanvasPointer>({}),
         fromPartial<LinkConnector>({})
       )
-      void captured?.opts.callback?.(
-        fromPartial({ value: 'rename' }),
-        fromAny({}),
-        fromAny({}),
-        fromAny({})
-      )
+      void captured?.opts.callback?.(fromPartial({ value: 'rename' }))
 
       expect(prompt).toHaveBeenCalledWith(
         'Slot name',
@@ -269,14 +255,14 @@ describe('SubgraphIONodeBase', () => {
         linkConnector
       )
 
-      pointer.onDragStart?.(fromAny({}))
+      pointer.onDragStart?.(pointer)
       expect(linkConnector.dragNewFromSubgraphInput).toHaveBeenCalledWith(
         subgraph,
         inputNode,
         slot
       )
 
-      pointer.onDragEnd?.(fromAny({}))
+      pointer.onDragEnd?.(fromPartial<CanvasPointerEvent>({}))
       expect(linkConnector.dropLinks).toHaveBeenCalled()
 
       pointer.finally?.()
@@ -296,7 +282,7 @@ describe('SubgraphIONodeBase', () => {
         pointer,
         fromPartial<LinkConnector>({})
       )
-      pointer.onDoubleClick?.(fromAny({}))
+      pointer.onDoubleClick?.(fromPartial<CanvasPointerEvent>({}))
 
       expect(prompt).toHaveBeenCalled()
     })
@@ -313,7 +299,7 @@ describe('SubgraphIONodeBase', () => {
         pointer,
         fromPartial<LinkConnector>({})
       )
-      pointer.onDoubleClick?.(fromAny({}))
+      pointer.onDoubleClick?.(fromPartial<CanvasPointerEvent>({}))
 
       expect(prompt).not.toHaveBeenCalled()
     })
@@ -363,7 +349,7 @@ describe('SubgraphIONodeBase', () => {
       const { inputNode } = createArrangedInputNode()
       const strokeStyles: unknown[] = []
       const ctx = fromPartial<CanvasRenderingContext2D>({
-        getTransform: vi.fn(() => fromAny({})),
+        getTransform: vi.fn(() => new DOMMatrix()),
         setTransform: vi.fn(),
         translate: vi.fn(),
         beginPath: vi.fn(),

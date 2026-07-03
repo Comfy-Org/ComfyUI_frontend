@@ -1,9 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
   LGraphGroup,
@@ -18,7 +22,10 @@ import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@/types/linkId'
 import { createMockPositionable } from '@/utils/__tests__/litegraphTestUtils'
+
+import type { SubgraphInput } from './SubgraphInput'
 
 import {
   getBoundaryLinks,
@@ -346,7 +353,7 @@ describe('subgraphUtils', () => {
       const first = fromPartial<ResolvedConnection>({ output })
       const second = fromPartial<ResolvedConnection>({ output })
       const bySubgraphInput = fromPartial<ResolvedConnection>({
-        subgraphInput: fromAny({ name: 'sub' })
+        subgraphInput: fromPartial<SubgraphInput>({ name: 'sub' })
       })
       const unresolvable = fromPartial<ResolvedConnection>({})
 
@@ -358,7 +365,7 @@ describe('subgraphUtils', () => {
       ])
 
       expect(grouped.size).toBe(3)
-      expect(grouped.get(fromAny(output))).toEqual([first, second])
+      expect(grouped.get(output!)).toEqual([first, second])
     })
   })
 
@@ -367,18 +374,15 @@ describe('subgraphUtils', () => {
       linkId: number,
       inputOverrides: Record<string, unknown> = {}
     ): { resolved: ResolvedConnection; link: LLink } {
-      const link = new LLink(
-        fromAny(linkId),
-        'number',
-        fromAny(1),
-        0,
-        fromAny(2),
-        0
-      )
+      const link = new LLink(toLinkId(linkId), 'number', 1, 0, 2, 0)
       const resolved = fromPartial<ResolvedConnection>({
         link,
-        input: fromAny({ name: 'in', type: 'number', ...inputOverrides }),
-        output: fromAny({ name: 'out', type: 'number' })
+        input: fromPartial<INodeInputSlot>({
+          name: 'in',
+          type: 'number',
+          ...inputOverrides
+        }),
+        output: fromPartial<INodeOutputSlot>({ name: 'out', type: 'number' })
       })
       return { resolved, link }
     }
@@ -412,10 +416,10 @@ describe('subgraphUtils', () => {
     })
 
     it('skips connections without a resolved input', () => {
-      const link = new LLink(fromAny(1), 'number', fromAny(1), 0, fromAny(2), 0)
+      const link = new LLink(toLinkId(1), 'number', 1, 0, 2, 0)
       const resolved = fromPartial<ResolvedConnection>({
         link,
-        output: fromAny({ name: 'out', type: 'number' })
+        output: fromPartial<INodeOutputSlot>({ name: 'out', type: 'number' })
       })
 
       const inputs = mapSubgraphInputsAndLinks([resolved], [], new Map())
@@ -444,18 +448,15 @@ describe('subgraphUtils', () => {
       linkId: number,
       outputOverrides: Record<string, unknown> = {}
     ): { resolved: ResolvedConnection; link: LLink } {
-      const link = new LLink(
-        fromAny(linkId),
-        'number',
-        fromAny(1),
-        0,
-        fromAny(2),
-        0
-      )
+      const link = new LLink(toLinkId(linkId), 'number', 1, 0, 2, 0)
       const resolved = fromPartial<ResolvedConnection>({
         link,
-        input: fromAny({ name: 'in', type: 'number' }),
-        output: fromAny({ name: 'out', type: 'number', ...outputOverrides })
+        input: fromPartial<INodeInputSlot>({ name: 'in', type: 'number' }),
+        output: fromPartial<INodeOutputSlot>({
+          name: 'out',
+          type: 'number',
+          ...outputOverrides
+        })
       })
       return { resolved, link }
     }
@@ -488,10 +489,10 @@ describe('subgraphUtils', () => {
     })
 
     it('skips connections without a resolved output', () => {
-      const link = new LLink(fromAny(1), 'number', fromAny(1), 0, fromAny(2), 0)
+      const link = new LLink(toLinkId(1), 'number', 1, 0, 2, 0)
       const resolved = fromPartial<ResolvedConnection>({
         link,
-        input: fromAny({ name: 'in', type: 'number' })
+        input: fromPartial<INodeInputSlot>({ name: 'in', type: 'number' })
       })
 
       const outputs = mapSubgraphOutputsAndLinks([resolved], [], new Map())
@@ -502,9 +503,12 @@ describe('subgraphUtils', () => {
 
   describe('reorderSubgraphInputs', () => {
     it('returns silently when the node has no subgraph', () => {
-      expect(() =>
-        reorderSubgraphInputs(fromAny({ subgraph: undefined }), [])
-      ).not.toThrow()
+      const subgraphNode = createTestSubgraphNode(createTestSubgraph())
+      Object.defineProperty(subgraphNode, 'subgraph', {
+        value: undefined,
+        configurable: true
+      })
+      expect(() => reorderSubgraphInputs(subgraphNode, [])).not.toThrow()
     })
 
     it('rejects indices that are not a permutation', () => {

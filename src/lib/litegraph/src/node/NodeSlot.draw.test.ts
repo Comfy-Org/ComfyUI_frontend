@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { DefaultConnectionColors } from '@/lib/litegraph/src/interfaces'
+import type {
+  DefaultConnectionColors,
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SlotType } from '@/lib/litegraph/src/draw'
 import {
@@ -29,33 +33,33 @@ function createNode(): LGraphNode {
 }
 
 function createInputSlot(
-  overrides: Partial<NodeInputSlot> = {},
+  overrides: Partial<INodeInputSlot> = {},
   node = createNode()
 ): NodeInputSlot {
   return new NodeInputSlot(
-    fromAny({
+    {
       name: 'in',
       type: 'STRING',
       link: null,
-      boundingRect: [10, 20, 20, 20],
+      boundingRect: [10, 20, 20, 20] as const,
       ...overrides
-    }),
+    },
     node
   )
 }
 
 function createOutputSlot(
-  overrides: Partial<NodeOutputSlot> = {},
+  overrides: Partial<INodeOutputSlot> = {},
   node = createNode()
 ): NodeOutputSlot {
   return new NodeOutputSlot(
-    fromAny({
+    {
       name: 'out',
       type: 'STRING',
       links: null,
-      boundingRect: [10, 20, 20, 20],
+      boundingRect: [10, 20, 20, 20] as const,
       ...overrides
-    }),
+    },
     node
   )
 }
@@ -310,12 +314,12 @@ describe('NodeSlot rendering', () => {
     })
 
     it('falls back to the selected title colour, then text colour', () => {
-      LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR = fromAny(undefined)
+      LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR = undefined
       expect(createInputSlot().highlightColor).toBe(
         LiteGraph.NODE_SELECTED_TITLE_COLOR
       )
 
-      LiteGraph.NODE_SELECTED_TITLE_COLOR = fromAny(undefined)
+      LiteGraph.NODE_SELECTED_TITLE_COLOR = undefined
       expect(createInputSlot().highlightColor).toBe(LiteGraph.NODE_TEXT_COLOR)
     })
   })

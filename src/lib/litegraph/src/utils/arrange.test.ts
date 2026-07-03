@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { fromAny } from '@total-typescript/shoehorn'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Direction } from '@/lib/litegraph/src/interfaces'
@@ -16,11 +15,11 @@ function createNode(x: number, y: number, width: number, height: number) {
 describe('getBoundaryNodes', () => {
   it('returns null when no nodes are supplied', () => {
     expect(getBoundaryNodes([])).toBeNull()
-    expect(getBoundaryNodes(fromAny(undefined))).toBeNull()
+    expect(getBoundaryNodes(undefined)).toBeNull()
   })
 
   it('returns null when all nodes are falsy', () => {
-    expect(getBoundaryNodes(fromAny([undefined, null]))).toBeNull()
+    expect(getBoundaryNodes([undefined, null])).toBeNull()
   })
 
   it('returns the same node for all edges with a single node', () => {
@@ -51,7 +50,7 @@ describe('getBoundaryNodes', () => {
     const node = createNode(5, 5, 10, 10)
     const other = createNode(50, 50, 10, 10)
 
-    const boundary = getBoundaryNodes(fromAny([node, undefined, other]))
+    const boundary = getBoundaryNodes([node, undefined, other])
 
     expect(boundary?.left).toBe(node)
     expect(boundary?.right).toBe(other)
@@ -62,7 +61,7 @@ describe('distributeNodes', () => {
   it('returns an empty array when fewer than two nodes are supplied', () => {
     expect(distributeNodes([])).toEqual([])
     expect(distributeNodes([createNode(0, 0, 10, 10)])).toEqual([])
-    expect(distributeNodes(fromAny(undefined))).toEqual([])
+    expect(distributeNodes(undefined)).toEqual([])
   })
 
   it('distributes nodes evenly along the horizontal plane', () => {
@@ -97,7 +96,7 @@ describe('distributeNodes', () => {
 
 describe('alignNodes', () => {
   it('returns an empty array when nodes are not supplied', () => {
-    expect(alignNodes(fromAny(undefined), 'left')).toEqual([])
+    expect(alignNodes(undefined, 'left')).toEqual([])
   })
 
   it('returns an empty array when boundary nodes cannot be determined', () => {

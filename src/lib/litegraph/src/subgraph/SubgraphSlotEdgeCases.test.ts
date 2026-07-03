@@ -1,17 +1,19 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { toLinkId } from '@/types/linkId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
@@ -260,7 +262,7 @@ describe('SubgraphInput.getConnectedWidgets', () => {
     expect(subgraph.inputs[0].getConnectedWidgets()).toEqual([])
     expect(warn).toHaveBeenCalledWith('Widget not found', { name: 'missing' })
 
-    input.widget = fromAny({ name: '' })
+    input.widget = { name: '' }
     expect(subgraph.inputs[0].getConnectedWidgets()).toEqual([])
     expect(warn).toHaveBeenCalledWith('Invalid widget name', { name: '' })
   })
@@ -292,7 +294,7 @@ describe('SubgraphSlot base behaviour', () => {
     const slot = subgraph.inputs[0]
     slot.pos = [3, 4]
 
-    slot.pos = fromAny([5])
+    slot.pos = fromPartial<Point>([5])
 
     expect([slot.pos[0], slot.pos[1]]).toEqual([3, 4])
   })
@@ -300,7 +302,7 @@ describe('SubgraphSlot base behaviour', () => {
   it('generates an id when the serialised slot has none', () => {
     const subgraph = createIoSubgraph()
     const slot = new SubgraphInput(
-      fromAny({ name: 'anon', type: 'STRING', linkIds: [] }),
+      fromPartial<SubgraphIO>({ name: 'anon', type: 'STRING', linkIds: [] }),
       subgraph.inputNode
     )
 
@@ -392,7 +394,7 @@ describe('SubgraphSlot base behaviour', () => {
     it('falls back to the default label colour when unset', () => {
       const originalColor = LiteGraph.NODE_TEXT_COLOR
       try {
-        LiteGraph.NODE_TEXT_COLOR = fromAny('')
+        LiteGraph.NODE_TEXT_COLOR = ''
         const subgraph = createIoSubgraph()
         const fillStyles: unknown[] = []
         const ctx = createMockCanvasRenderingContext2D({
@@ -442,13 +444,13 @@ describe('SubgraphOutputNode interaction', () => {
       linkConnector
     )
 
-    pointer.onDragStart?.(fromAny({}))
+    pointer.onDragStart?.(pointer)
     expect(linkConnector.dragNewFromSubgraphOutput).toHaveBeenCalledWith(
       subgraph,
       outputNode,
       slot
     )
-    pointer.onDragEnd?.(fromAny({}))
+    pointer.onDragEnd?.(fromPartial<CanvasPointerEvent>({}))
     expect(linkConnector.dropLinks).toHaveBeenCalled()
     pointer.finally?.()
     expect(linkConnector.reset).toHaveBeenCalledWith(true)
@@ -458,7 +460,7 @@ describe('SubgraphOutputNode interaction', () => {
     const { outputNode } = createArrangedOutputNode()
     const OriginalContextMenu = LiteGraph.ContextMenu
     let constructed = false
-    LiteGraph.ContextMenu = fromAny(
+    LiteGraph.ContextMenu = fromPartial<typeof LiteGraph.ContextMenu>(
       class {
         constructor() {
           constructed = true
@@ -515,7 +517,7 @@ describe('SubgraphInputNode connections', () => {
 
     expect(() =>
       subgraph.inputNode.connectSlots(
-        fromAny({}),
+        fromPartial<SubgraphInput>({}),
         node,
         node.inputs[0],
         undefined
@@ -541,7 +543,7 @@ describe('SubgraphInputNode connections', () => {
   it('falls back to the subgraph slot type for untyped inputs', () => {
     const subgraph = createIoSubgraph()
     const node = new LGraphNode('Untyped')
-    node.addInput('in', fromAny(''))
+    node.addInput('in', '')
     subgraph.add(node)
 
     const link = subgraph.inputNode.connectSlots(

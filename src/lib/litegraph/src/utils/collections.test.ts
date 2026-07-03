@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { fromAny } from '@total-typescript/shoehorn'
 
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -13,7 +12,7 @@ import {
 
 describe('getAllNestedItems', () => {
   it('returns an empty set when items are not supplied', () => {
-    expect(getAllNestedItems(fromAny(undefined)).size).toBe(0)
+    expect(getAllNestedItems(undefined).size).toBe(0)
   })
 
   it('excludes pinned items', () => {
@@ -77,13 +76,7 @@ describe('findFreeSlotOfType', () => {
 
   it('returns undefined when no slots are supplied', () => {
     expect(findFreeSlotOfType([], 'A', hasNoLinks)).toBeUndefined()
-    expect(
-      findFreeSlotOfType(
-        fromAny<TestSlot[], undefined>(undefined),
-        'A',
-        hasNoLinks
-      )
-    ).toBeUndefined()
+    expect(findFreeSlotOfType(undefined, 'A', hasNoLinks)).toBeUndefined()
   })
 
   it('returns the first free slot with an exact type match', () => {

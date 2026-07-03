@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { toLinkId } from '@/types/linkId'
 
 import { outputAsSerialisable } from './slotUtils'
@@ -37,7 +38,12 @@ describe('outputAsSerialisable', () => {
   it('serialises only the widget name for outputs with widgets', () => {
     const node = new LGraphNode('test')
     const output = node.addOutput('out', 'number') as OutputSlotParam
-    output.widget = { name: 'my-widget', type: 'number' } as IWidget
+    output.widget = node.addWidget(
+      'number',
+      'my-widget',
+      0,
+      null
+    ) as INumericWidget
 
     const serialised = outputAsSerialisable(output)
     expect(serialised.widget).toEqual({ name: 'my-widget' })
