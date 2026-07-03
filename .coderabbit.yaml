@@ -63,3 +63,25 @@ reviews:
           Pass if none of these patterns are found in the diff.
 
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
+
+  path_instructions:
+    - path: 'src/**/*.test.ts'
+      instructions: |
+        Build partial mocks with fromPartial<T>() from @total-typescript/shoehorn; flag `as unknown as` double assertions and fromAny().
+        Reuse shared factories in src/utils/__tests__/litegraphTestUtils.ts instead of hand-rolling mock builders.
+        Mock only at seams (Pinia stores, settings, third-party libs); flag mocked type guards, litegraph classes, or sibling composables.
+        Use a real createI18n instance rather than vi.mock('vue-i18n').
+        Flag bare expect(fn).not.toThrow() as a sole assertion, assertions that echo stub return values, and .mock.results assertions.
+        Use @testing-library/vue for component tests, not @vue/test-utils.
+    - path: 'browser_tests/**/*.spec.ts'
+      instructions: |
+        Every route.fulfill() body must be typed with generated types or schemas from packages/ingest-types, packages/registry-types, src/workbench/extensions/manager/types/generatedManagerTypes.ts, or src/schemas/; flag untyped inline JSON objects.
+        Never use waitForTimeout; use Locator actions and auto-retrying assertions instead.
+        Restrict page.evaluate() to reading internal state or fixture setup; flag any page.evaluate() that drives UI actions when a Playwright action method exists.
+        New shared test helpers must be Playwright fixtures via base.extend(), not properties added to ComfyPage.
+    - path: 'src/**/*.vue'
+      instructions: |
+        Do not introduce new PrimeVue component usage; use existing design-system components or Reka UI/shadcn-vue primitives.
+        Apply Tailwind semantic tokens from the design system; flag hardcoded hex colors and the dark: variant.
+        Merge classes via cn() from @comfyorg/tailwind-utils; flag :class="[]" array bindings.
+        Avoid <style> blocks except for documented third-party :deep() exceptions.
