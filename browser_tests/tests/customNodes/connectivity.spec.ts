@@ -111,9 +111,20 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     []
   )
 
+  const widgetOnly = results.filter(
+    (result) =>
+      result.outcome ===
+      ('WIDGET_ONLY_ON_INSTANCE' satisfies ConnectivityOutcome)
+  )
+  if (widgetOnly.length > 0)
+    console.log(
+      `connectivity sweep: ${widgetOnly.length} pair(s) excluded - pack JS made the declared input widget-only: ${widgetOnly.map((result) => result.key).join('; ')}`
+    )
   const failures = results.filter(
     (result) =>
       result.outcome !== ('PASS' satisfies ConnectivityOutcome) &&
+      result.outcome !==
+        ('WIDGET_ONLY_ON_INSTANCE' satisfies ConnectivityOutcome) &&
       !(
         result.outcome === ('CONNECT_REJECTED' satisfies ConnectivityOutcome) &&
         CONNECT_REJECTED_ALLOWLIST.includes(result.key)
@@ -125,6 +136,29 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   expect(passed).toBeGreaterThan(0)
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
+
+// Instance-level probe for the drag test: the first planned pair whose
+// producer output AND consumer input both exist on freshly created node
+// instances (pack JS can rebuild declared inputs as widget-only controls).
+function firstMaterializedPair(
+  page: Page,
+  pairs: PlannedPair[]
+): Promise<PlannedPair | null> {
+  return page.evaluate((pairsInPage) => {
+    for (const pair of pairsInPage) {
+      const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
+      const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
+      const outFound = producer?.outputs.some(
+        (slot) => slot.name === pair.producer.slotName
+      )
+      const inFound = consumer?.inputs.some(
+        (slot) => slot.name === pair.consumer.slotName
+      )
+      if (outFound && inFound) return pair
+    }
+    return null
+  }, pairs)
+}
 
 // The self-check below runs THIS SAME executor on poisoned pairs; if it stops
 // being able to reject, every green sweep above is meaningless.
@@ -162,9 +196,20 @@ function runPairsInPage(
           (slot) => slot.name === pair.consumer.slotName
         )
         if (outIndex < 0 || inIndex < 0) {
+          // A pack's own frontend JS may rebuild a declared input as a
+          // widget-only control (rgthree's Seed does this to `seed`). That is
+          // pack design, not a wiring regression - excluded like wildcards.
+          // A name that exists NEITHER as slot nor widget stays a hard fail.
+          const widgetOnly =
+            outIndex >= 0 &&
+            (consumer.widgets ?? []).some(
+              (widget) => widget.name === pair.consumer.slotName
+            )
           report.push({
             key,
-            outcome: 'SLOT_CONTRACT_MISMATCH',
+            outcome: widgetOnly
+              ? 'WIDGET_ONLY_ON_INSTANCE'
+              : 'SLOT_CONTRACT_MISMATCH',
             detail: `declared slot missing on instance (out=${outIndex}, in=${inIndex})`
           })
           continue
@@ -274,16 +319,26 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     }
     // Restrict the partner pool to the pack itself so the drag proves an
     // in-pack wiring; widget-backed primitive inputs render real slot dots
-    // in Vue (verified empirically), so no slot type is excluded here.
+    // in Vue (verified empirically), so no slot type is excluded at plan time.
     const packPlan = planPairs(
       nodes.filter((node) => node.pack === entry.pack),
       entry.expectedNodes
     )
-    const inPack = packPlan.pairs[0]
     expect(
-      inPack,
+      packPlan.pairs.length,
       `${entry.pack} has no in-pack draggable pair - drag coverage lost`
-    ).toBeTruthy()
+    ).toBeGreaterThan(0)
+    // The plan comes from object_info, but a pack's own JS can rebuild a
+    // declared input as widget-only on the instance (rgthree's Seed does).
+    // Drag the first pair whose slots actually materialize; a pack whose
+    // every planned pair is customized away has no socket contract to drag.
+    const inPack = await firstMaterializedPair(comfyPage.page, packPlan.pairs)
+    if (!inPack) {
+      console.log(
+        `connectivity drag: ${entry.pack} planned pairs are widget-only on instances; drag not applicable`
+      )
+      continue
+    }
     dragEdges.push(inPack)
   }
 

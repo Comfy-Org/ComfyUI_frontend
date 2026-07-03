@@ -167,6 +167,16 @@ error toast at any point). Failure classes and what they mean:
 - **Connectivity reports zero planned pairs**: the pack's slots are all
   wildcard or combo typed (both are excluded from pairing by design because
   they bypass the real type compare). The pack still gets load/run coverage.
+- **Connectivity logs `widget-only on instance` exclusions**: the pack's own
+  frontend JS rebuilt a declared input as a widget-only control (rgthree's
+  Seed does this to `seed`), so there is no socket to wire. Recorded and
+  excluded, like wildcards - pack design, not a regression.
+
+A local green is necessary but not sufficient: pack frontend JS does not
+load under the Vite dev server (see the README gotcha), so behavior that
+depends on it only shows on CI or against a locally built `dist`. If your
+pack ships frontend JS, do the CI-parity run from the README gotcha before
+pushing.
 
 ## Step 7 - push and watch CI
 

@@ -85,6 +85,14 @@ exactly; the traps it lists all shipped in real packs.
 
 ## Gotchas
 
+- **Pack frontend JS does not load under the Vite dev server.** The dev
+  server's `/extensions` endpoint lists core extensions only, so nodes render
+  vanilla locally even when the backend has the packs installed. CI serves
+  the built frontend from the backend, where every pack's JS loads and can
+  restyle nodes, rebuild widgets, or inject page chrome. Before pushing
+  changes that could interact with pack JS, reproduce CI locally:
+  `pnpm build`, relaunch the backend with `--front-end-root <repo>/dist`,
+  and run the suite with `PLAYWRIGHT_TEST_URL` pointed at the backend.
 - Do not run with `--trace on` against system Chrome
   (`playwright.chrome.config.ts` pins trace off): the trace recorder crashes
   pages under the branded Chrome channel and every test reports a bogus 15s

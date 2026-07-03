@@ -119,6 +119,14 @@ class NodeSlotReference {
         const rawPos = node.getConnectionPos(type === 'input', index)
         const convertedPos =
           window.app!.canvas.ds!.convertOffsetToCanvas(rawPos)
+        // convertOffsetToCanvas is canvas-relative; page.mouse needs page
+        // coordinates. Identical when the canvas sits at (0,0), but custom-node
+        // JS can inject page chrome above it (e.g. rgthree's progress bar
+        // shifts the canvas 16px down), which silently turned every slot drag
+        // into a title-bar node drag.
+        const rect = window.app!.canvas.canvas.getBoundingClientRect()
+        convertedPos[0] += rect.left
+        convertedPos[1] += rect.top
 
         // Debug logging - convert Float64Arrays to regular arrays for visibility
         console.warn(

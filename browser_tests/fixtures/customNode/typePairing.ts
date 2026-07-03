@@ -52,11 +52,15 @@ export interface PairingPlan {
 
 // Extends the shared outcome taxonomy (runResult.ts); ORPHAN_TYPE is a
 // plan-time skip so it never reaches the executor.
+// WIDGET_ONLY_ON_INSTANCE: the pack's own frontend JS rebuilt a declared
+// input as a widget-only control, so there is no socket to wire - excluded
+// like wildcards, never a failure and never a silent pass.
 export type ConnectivityOutcome =
   | 'PASS'
   | 'CONNECT_REJECTED'
   | 'ROUNDTRIP_LOST'
   | 'SLOT_CONTRACT_MISMATCH'
+  | 'WIDGET_ONLY_ON_INSTANCE'
 
 export function packOf(pythonModule: string | undefined): string {
   if (pythonModule?.startsWith('custom_nodes.'))
