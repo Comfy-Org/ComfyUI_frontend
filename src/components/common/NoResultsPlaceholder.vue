@@ -12,14 +12,16 @@
           <p :class="textClass" class="text-center whitespace-pre-line">
             {{ message }}
           </p>
-          <Button
-            v-if="buttonLabel"
-            :variant="buttonVariant ?? 'textonly'"
-            @click="$emit('action')"
-          >
-            <i v-if="buttonIcon" :class="buttonIcon" />
-            {{ buttonLabel }}
-          </Button>
+          <slot name="actions">
+            <Button
+              v-if="buttonLabel"
+              :variant="buttonVariant ?? 'textonly'"
+              @click="$emit('action')"
+            >
+              <i v-if="buttonIcon" :class="buttonIcon" />
+              {{ buttonLabel }}
+            </Button>
+          </slot>
         </div>
       </template>
     </Card>

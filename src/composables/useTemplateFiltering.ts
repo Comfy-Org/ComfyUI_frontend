@@ -9,10 +9,13 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { isAppTemplate } from '@/platform/workflow/templates/utils/templateUtil'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
 import { api } from '@/scripts/api'
+
+export type TemplateTypeFilter = 'all' | 'apps' | 'workflows'
 
 /**
  * Checks whether a template is visible for the given set of distributions.
@@ -57,6 +60,7 @@ export function useTemplateFiltering(
   const selectedRunsOn = ref<string[]>(
     settingStore.get('Comfy.Templates.SelectedRunsOn')
   )
+  const selectedTemplateType = ref<TemplateTypeFilter>('all')
   const sortBy = ref<
     | 'default'
     | 'recommended'
@@ -221,8 +225,19 @@ export function useTemplateFiltering(
     })
   })
 
+  const filteredByTemplateType = computed(() => {
+    if (selectedTemplateType.value === 'all') {
+      return filteredByRunsOn.value
+    }
+
+    const wantApps = selectedTemplateType.value === 'apps'
+    return filteredByRunsOn.value.filter(
+      (template) => isAppTemplate(template) === wantApps
+    )
+  })
+
   watch(
-    filteredByRunsOn,
+    filteredByTemplateType,
     (templates) => {
       rankingStore.largestUsageScore = Math.max(
         ...templates.map((t) => t.usage || 0)
@@ -232,7 +247,7 @@ export function useTemplateFiltering(
   )
 
   const sortedTemplates = computed(() => {
-    const templates = [...filteredByRunsOn.value]
+    const templates = [...filteredByTemplateType.value]
 
     switch (sortBy.value) {
       case 'recommended':
@@ -291,6 +306,7 @@ export function useTemplateFiltering(
     selectedModels.value = []
     selectedUseCases.value = []
     selectedRunsOn.value = []
+    selectedTemplateType.value = 'all'
     sortBy.value = 'default'
   }
 
@@ -388,6 +404,7 @@ export function useTemplateFiltering(
     selectedModels,
     selectedUseCases,
     selectedRunsOn,
+    selectedTemplateType,
     sortBy,
 
     // Computed - Active filters (actually applied)

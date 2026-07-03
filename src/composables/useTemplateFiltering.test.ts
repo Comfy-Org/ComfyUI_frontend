@@ -186,6 +186,39 @@ describe('useTemplateFiltering', () => {
     ])
   })
 
+  it('filters templates by type and resets to all types with resetFilters', () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'portrait-flow.app',
+        description: 'App template',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      },
+      {
+        name: 'portrait-flow',
+        description: 'Node graph template',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      }
+    ])
+
+    const { selectedTemplateType, filteredTemplates, resetFilters } =
+      useTemplateFiltering(templates)
+
+    selectedTemplateType.value = 'apps'
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'portrait-flow.app'
+    ])
+
+    selectedTemplateType.value = 'workflows'
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'portrait-flow'
+    ])
+
+    resetFilters()
+    expect(filteredTemplates.value).toHaveLength(2)
+  })
+
   it('supports alphabetical, newest, and size-based sorting options', async () => {
     const templates = ref<TemplateInfo[]>([
       {

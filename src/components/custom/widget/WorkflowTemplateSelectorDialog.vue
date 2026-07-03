@@ -92,6 +92,19 @@
               <i class="icon-[lucide--server]" />
             </template>
           </MultiSelect>
+
+          <!-- Template Type Filter -->
+          <SingleSelect
+            v-model="selectedTemplateType"
+            :label="$t('templateWorkflows.typeFilter', 'Type')"
+            :options="templateTypeOptions"
+            :content-style="selectContentStyle"
+            class="w-40"
+          >
+            <template #icon>
+              <i class="icon-[lucide--panels-top-left]" />
+            </template>
+          </SingleSelect>
         </div>
 
         <!-- Sort Options -->
@@ -427,19 +440,26 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import type { TemplateTypeFilter } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { isAppTemplate } from '@/platform/workflow/templates/utils/templateUtil'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
+const {
+  onClose: originalOnClose,
+  initialCategory = 'all',
+  initialTemplateType
+} = defineProps<{
   onClose: () => void
   initialCategory?: string
+  initialTemplateType?: TemplateTypeFilter
 }>()
 
 // Track session time for telemetry
@@ -478,8 +498,6 @@ const {
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
-
-const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
@@ -556,6 +574,7 @@ const {
   selectedModels,
   selectedUseCases,
   selectedRunsOn,
+  selectedTemplateType,
   sortBy,
   activeModels,
   activeUseCases,
@@ -568,6 +587,10 @@ const {
   resetFilters,
   loadFuseOptions
 } = useTemplateFiltering(navigationFilteredTemplates)
+
+if (initialTemplateType) {
+  selectedTemplateType.value = initialTemplateType
+}
 
 /**
  * Raw search input bound to the search box. The actual `searchQuery` consumed
@@ -726,6 +749,15 @@ const runsOnFilterLabel = computed(() => {
   }
 })
 
+const templateTypeOptions = computed(() => [
+  { name: t('templateWorkflows.types.all', 'All'), value: 'all' },
+  { name: t('templateWorkflows.types.apps', 'App'), value: 'apps' },
+  {
+    name: t('templateWorkflows.types.nodeGraphs', 'Node graph'),
+    value: 'workflows'
+  }
+])
+
 // Sort options
 const sortOptions = computed(() => [
   {
@@ -792,7 +824,8 @@ watch(
     sortBy,
     selectedModels,
     selectedUseCases,
-    selectedRunsOn
+    selectedRunsOn,
+    selectedTemplateType
   ],
   () => {
     resetPagination()
