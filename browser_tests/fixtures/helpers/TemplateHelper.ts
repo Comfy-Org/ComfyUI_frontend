@@ -20,8 +20,6 @@ function emptyConfig(): TemplateConfig {
 }
 
 type TemplateOperator = (config: TemplateConfig) => TemplateConfig
-type RoutePattern = Parameters<Page['route']>[0]
-type RouteHandler = (route: Route) => Promise<void>
 
 function cloneTemplates(templates: readonly TemplateInfo[]): TemplateInfo[] {
   return templates.map((t) => structuredClone(t))
@@ -47,10 +45,6 @@ export function withTemplates(templates: TemplateInfo[]): TemplateOperator {
 export class TemplateHelper {
   private templates: TemplateInfo[]
   private index: WorkflowTemplates[] | null
-  private routeHandlers: Array<{
-    pattern: RoutePattern
-    handler: RouteHandler
-  }> = []
 
   constructor(
     private readonly page: Page,
@@ -87,7 +81,7 @@ export class TemplateHelper {
       })
     }
 
-    await this.registerRoute(
+    await this.page.route(
       ROUTE_PATTERN_WORKFLOW_TEMPLATES,
       customTemplatesHandler
     )
@@ -106,7 +100,7 @@ export class TemplateHelper {
       })
     }
 
-    await this.registerRoute(ROUTE_PATTERN_TEMPLATE_INDEX, indexHandler)
+    await this.page.route(ROUTE_PATTERN_TEMPLATE_INDEX, indexHandler)
   }
 
   async mockThumbnails(): Promise<void> {
@@ -121,10 +115,7 @@ export class TemplateHelper {
       })
     }
 
-    await this.registerRoute(
-      ROUTE_PATTERN_TEMPLATE_THUMBNAILS,
-      thumbnailHandler
-    )
+    await this.page.route(ROUTE_PATTERN_TEMPLATE_THUMBNAILS, thumbnailHandler)
   }
 
   getTemplates(): TemplateInfo[] {
@@ -133,23 +124,6 @@ export class TemplateHelper {
 
   get templateCount(): number {
     return this.templates.length
-  }
-
-  async clearMocks(): Promise<void> {
-    for (const { pattern, handler } of this.routeHandlers) {
-      await this.page.unroute(pattern, handler)
-    }
-    this.routeHandlers = []
-    this.templates = []
-    this.index = null
-  }
-
-  private async registerRoute(
-    pattern: RoutePattern,
-    handler: RouteHandler
-  ): Promise<void> {
-    this.routeHandlers.push({ pattern, handler })
-    await this.page.route(pattern, handler)
   }
 }
 
