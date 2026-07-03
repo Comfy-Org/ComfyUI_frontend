@@ -72,6 +72,16 @@
 - Assertions: no bare `expect(fn).not.toThrow()` as a test's only assertion;
   don't assert values a stub was configured to return; don't assert on
   `.mock.results` — assert observable behavior instead
+- Platform-owned types (`Response`, `CustomEvent`, DOM events): construct real
+  instances (`new Response(...)`, `Response.json(...)`, `new CustomEvent(...)`)
+  instead of `fromPartial` or casts
+- When a fixture cast papers over a too-wide production signature, prefer
+  narrowing the production type (e.g. `string | undefined`) over casting the
+  fixture
+- No process-level listeners in tests (e.g. `process.on('unhandledRejection')`)
+  — assert the rejected promise or the observable failure path directly
+- Import the module under test from its public entrypoint, not deep internal
+  paths
 - Wait for reactivity with `await nextTick()` after state changes
 - Read `docs/testing/<topic>.md` (unit-testing, component-testing,
   store-testing, vitest-patterns) when writing the corresponding kind of test
