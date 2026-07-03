@@ -1,7 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -11,12 +11,12 @@ const createMockDOMWidget = (id: string) => {
   return {
     id,
     element,
-    node: {
+    node: createMockLGraphNode({
       id: 'node-1',
       title: 'Test Node',
       pos: [0, 0],
       size: [200, 100]
-    } as Partial<LGraphNode> as LGraphNode,
+    }),
     name: 'test_widget',
     type: 'text',
     value: 'test',

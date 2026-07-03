@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { nextTick, reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,11 +23,15 @@ import type {
   LinearInput,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockChangeTracker,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -108,7 +112,7 @@ function createBuilderWorkflow(
 function createBuilderWorkflowWithOutputs(
   activeMode: string
 ): LoadedComfyWorkflow {
-  mockResolveNode.mockReturnValue(fromAny({ id: 1 }))
+  mockResolveNode.mockReturnValue(createMockLGraphNode({ id: 1 }))
   const workflow = createBuilderWorkflow(activeMode)
   workflow.changeTracker!.activeState!.extra ??= {}
   workflow.changeTracker.activeState.extra.linearData = {
@@ -124,20 +128,12 @@ function createWorkflowWithLinearData(
   outputs: SerializedNodeId[]
 ): LoadedComfyWorkflow {
   const workflow = createBuilderWorkflow(activeMode)
-  workflow.changeTracker = createMockChangeTracker(
-    fromPartial<Partial<ChangeTracker>>({
-      activeState: {
-        last_node_id: 0,
-        last_link_id: 0,
-        nodes: [],
-        links: [],
-        groups: [],
-        config: {},
-        version: 0.4,
-        extra: { linearData: fromAny({ inputs, outputs }) }
-      }
-    })
-  )
+  const ct = createMockChangeTracker()
+  ct.activeState = {
+    ...ct.activeState,
+    extra: { linearData: { inputs, outputs } }
+  } as ComfyWorkflowJSON
+  workflow.changeTracker = ct
   return workflow
 }
 
@@ -147,7 +143,7 @@ const entitySeed = `${rootGraphId}:1:seed` as WidgetId
 const entitySteps = `${rootGraphId}:1:steps` as WidgetId
 
 function nodeWithWidgets(id: number, widgetNames: string[]) {
-  return fromAny<LGraphNode, unknown>({
+  return createMockLGraphNode({
     id,
     widgets: widgetNames.map((name) => ({
       name,
@@ -397,7 +393,7 @@ describe('appModeStore', () => {
 
     it('drops locator inputs when the widget does not resolve', () => {
       const hostLocator = `${rootGraphId}:5`
-      const hostNode = fromAny<LGraphNode, unknown>({
+      const hostNode = createMockLGraphNode({
         id: 5,
         isSubgraphNode: () => false,
         widgets: [{ name: 'other' }]
@@ -419,7 +415,12 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).nodes = []
 
       store.loadSelections({
-        inputs: [[fromAny<SerializedNodeId, unknown>(null), 'prompt']]
+        inputs: [
+          [
+            fromPartial<SerializedNodeId | null>(null) as SerializedNodeId,
+            'prompt'
+          ]
+        ]
       })
 
       expect(store.selectedInputs).toEqual([])
@@ -473,7 +474,7 @@ describe('appModeStore', () => {
     it('removes outputs referencing deleted nodes on load', () => {
       const node1 = { id: 1 }
       mockResolveNode.mockImplementation((id) =>
-        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+        id == 1 ? createMockLGraphNode(node1) : undefined
       )
 
       store.loadSelections({ outputs: [toNodeId(1), toNodeId(99)] })
@@ -483,7 +484,7 @@ describe('appModeStore', () => {
 
     it('drops malformed output ids on load', () => {
       store.loadSelections({
-        outputs: [fromAny<SerializedNodeId, unknown>('')]
+        outputs: ['']
       })
 
       expect(store.selectedOutputs).toEqual([])
@@ -589,7 +590,7 @@ describe('appModeStore', () => {
         expect(
           store.pruneLinearData({
             inputs: [[1, 'seed']],
-            outputs: [toNodeId(1), fromAny<SerializedNodeId, unknown>('')]
+            outputs: [toNodeId(1), '']
           })
         ).toEqual({
           inputs: [[1, 'seed']],
@@ -667,7 +668,7 @@ describe('appModeStore', () => {
       setupNodeWithSeedAndSteps()
       const workflow = createBuilderWorkflow('app')
       workflow.changeTracker.activeState.extra = {}
-      workflow.changeTracker.initialState = fromAny({
+      workflow.changeTracker.initialState = fromPartial<ComfyWorkflowJSON>({
         ...workflow.changeTracker.activeState,
         extra: {
           linearData: { inputs: [[1, 'seed']], outputs: [toNodeId(1)] }
@@ -687,7 +688,7 @@ describe('appModeStore', () => {
       workflow.changeTracker.activeState.extra = {
         linearData: { inputs: [[1, 'steps']], outputs: [toNodeId(1)] }
       }
-      workflow.changeTracker.initialState = fromAny({
+      workflow.changeTracker.initialState = fromPartial<ComfyWorkflowJSON>({
         ...workflow.changeTracker.activeState,
         extra: {
           linearData: { inputs: [[1, 'seed']], outputs: [toNodeId(1)] }
@@ -802,8 +803,8 @@ describe('appModeStore', () => {
   describe('updateInputConfig', () => {
     const entity = 'g:1:prompt' as WidgetId
     const otherEntity = 'g:99:prompt' as WidgetId
-    const widget = fromAny<IBaseWidget, unknown>({ widgetId: entity })
-    const otherWidget = fromAny<IBaseWidget, unknown>({ widgetId: otherEntity })
+    const widget = fromPartial<IBaseWidget>({ widgetId: entity })
+    const otherWidget = fromPartial<IBaseWidget>({ widgetId: otherEntity })
 
     it('sets config on an existing input', () => {
       store.selectedInputs.push([entity, 'prompt'])
@@ -825,7 +826,7 @@ describe('appModeStore', () => {
       store.selectedInputs.push([entity, 'prompt'])
 
       store.updateInputConfig(
-        fromAny<IBaseWidget, unknown>({ widgetId: undefined }),
+        fromPartial<IBaseWidget>({ widgetId: undefined }),
         { height: 200 }
       )
 
@@ -863,7 +864,7 @@ describe('appModeStore', () => {
     it('removes the matching input entry only', () => {
       const promptEntity = 'g:1:prompt' as WidgetId
       const stepsEntity = 'g:2:steps' as WidgetId
-      const stepsWidget = fromAny<IBaseWidget, unknown>({
+      const stepsWidget = fromPartial<IBaseWidget>({
         widgetId: stepsEntity,
         name: 'steps'
       })
@@ -878,7 +879,7 @@ describe('appModeStore', () => {
     it('ignores widgets without ids', () => {
       store.selectedInputs.push(['g:1:prompt' as WidgetId, 'prompt'])
 
-      store.removeSelectedInput(fromAny<IBaseWidget, unknown>({}))
+      store.removeSelectedInput(fromPartial<IBaseWidget>({}))
 
       expect(store.selectedInputs).toEqual([['g:1:prompt', 'prompt']])
     })
@@ -887,7 +888,7 @@ describe('appModeStore', () => {
       store.selectedInputs.push(['g:1:prompt' as WidgetId, 'prompt'])
 
       store.removeSelectedInput(
-        fromAny<IBaseWidget, unknown>({ widgetId: 'g:2:prompt' })
+        fromPartial<IBaseWidget>({ widgetId: 'g:2:prompt' })
       )
 
       expect(store.selectedInputs).toEqual([['g:1:prompt', 'prompt']])
@@ -1051,7 +1052,7 @@ describe('appModeStore', () => {
       const sourceWidgetName = 'text'
       const rootEntityId =
         `${rootGraphId}:${sourceNodeId}:${sourceWidgetName}` as WidgetId
-      const rootNode = fromAny<LGraphNode, unknown>({
+      const rootNode = createMockLGraphNode({
         id: sourceNodeId,
         widgets: [{ name: sourceWidgetName, widgetId: rootEntityId }]
       })
@@ -1089,7 +1090,7 @@ describe('appModeStore', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const sourceNodeId = 42
       const sourceWidgetName = 'text'
-      const rootNode = fromAny<LGraphNode, unknown>({
+      const rootNode = createMockLGraphNode({
         id: sourceNodeId,
         widgets: [{ name: sourceWidgetName }]
       })
@@ -1229,7 +1230,7 @@ describe('appModeStore', () => {
       const hostLocator = `${rootGraphId}:${hostId}`
       const promotedEntityId =
         `${rootGraphId}:${hostId}:subgraph_input_name` as WidgetId
-      const hostNode = fromAny<LGraphNode, unknown>({
+      const hostNode = createMockLGraphNode({
         id: hostId,
         isSubgraphNode: () => true,
         widgets: [{ name: 'subgraph_input_name', widgetId: promotedEntityId }]

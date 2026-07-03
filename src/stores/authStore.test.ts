@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
@@ -42,7 +43,7 @@ type MockAuth = Record<string, unknown>
  * so individual tests only deal with the mock user.
  */
 function asUserCredential(user: Partial<MockUser>): UserCredential {
-  return { user } as Partial<UserCredential> as UserCredential
+  return fromPartial<UserCredential>({ user })
 }
 
 // Mock fetch
@@ -73,19 +74,12 @@ const mockAccessBillingPortalResponse = {
     Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
 }
 
-vi.mock('vuefire', () => ({
-  useFirebaseAuth: vi.fn()
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key
-    }
-  })
+vi.mock('vuefire', () => ({
+  useFirebaseAuth: vi.fn()
 }))
 
 vi.mock('firebase/auth', async (importOriginal) => {
@@ -171,12 +165,12 @@ describe('useAuthStore', () => {
     /* mock Auth object */
   }
 
-  const mockUser: MockUser = {
+  const mockUser: MockUser = fromPartial<MockUser>({
     uid: 'test-user-id',
     email: 'test@example.com',
     getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
     delete: vi.fn().mockResolvedValue(undefined)
-  } as Partial<User> as MockUser
+  })
 
   beforeEach(() => {
     vi.resetAllMocks()
@@ -196,9 +190,7 @@ describe('useAuthStore', () => {
 
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      mockAuth as Partial<
-        ReturnType<typeof vuefire.useFirebaseAuth>
-      > as ReturnType<typeof vuefire.useFirebaseAuth>
+      fromPartial<ReturnType<typeof vuefire.useFirebaseAuth>>(mockAuth)
     )
 
     // Mock onAuthStateChanged to capture the callback and simulate initial auth state
@@ -253,9 +245,7 @@ describe('useAuthStore', () => {
       )
 
       vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-        mockAuth as Partial<
-          ReturnType<typeof vuefire.useFirebaseAuth>
-        > as ReturnType<typeof vuefire.useFirebaseAuth>
+        fromPartial<ReturnType<typeof vuefire.useFirebaseAuth>>(mockAuth)
       )
 
       setActivePinia(createTestingPinia({ stubActions: false }))
@@ -275,14 +265,14 @@ describe('useAuthStore', () => {
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
-      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
+      const otherUser = fromPartial<User>({ uid: 'other-user-id' })
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
-      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
+      const otherUser = fromPartial<User>({ uid: 'other-user-id' })
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       idTokenCallback?.(otherUser)
