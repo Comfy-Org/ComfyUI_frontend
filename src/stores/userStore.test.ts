@@ -167,12 +167,24 @@ describe('userStore', () => {
       expect(localStorage['Comfy.userName']).toBeUndefined()
     })
 
-    it('does not set api.user when login happens before user config loads', async () => {
+    it('does not set api.user until user config finishes loading', async () => {
+      let resolveConfig: (value: unknown) => void = () => {}
+      apiMock.getUserConfig.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveConfig = resolve
+          })
+      )
       const store = useUserStore()
+      const pendingInitialize = store.initialize()
 
       await store.login({ userId: 'user-1', username: 'Ada' })
 
       expect(apiMock.user).toBeUndefined()
+
+      resolveConfig({ users: { 'user-1': 'Ada' } })
+      await pendingInitialize
+      await vi.waitFor(() => expect(apiMock.user).toBe('user-1'))
     })
   })
 })
