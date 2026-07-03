@@ -471,3 +471,36 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(afterUpdate.hasError).toBe(false)
   })
 })
+
+describe('live widget update handler', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('forwards null (not undefined) to the live widget callback', () => {
+    const callback = vi.fn()
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'test_widget')
+    const liveWidget = createMockWidget({
+      widgetId: id,
+      name: 'test_widget',
+      callback
+    })
+    const { graph } = createGraphWithNode([liveWidget], toNodeId(1))
+    registerWidgetState(id, {
+      type: 'combo',
+      value: 'x',
+      options: { values: ['x'] }
+    })
+
+    const [processed] = processWidgets({
+      widgetIds: [id],
+      nodeId: toNodeId(1),
+      rootGraph: graph
+    })
+
+    processed.updateHandler(null)
+
+    expect(callback).toHaveBeenCalledTimes(1)
+    expect(callback.mock.calls[0][0]).toBeNull()
+  })
+})
