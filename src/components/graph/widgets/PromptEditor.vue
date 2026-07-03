@@ -3,6 +3,8 @@
     <div
       ref="editorEl"
       role="textbox"
+      aria-multiline="true"
+      :aria-label="$t('promptNode.editorLabel')"
       :contenteditable="readonly ? 'false' : 'true'"
       spellcheck="false"
       data-testid="prompt-editor"
@@ -22,6 +24,7 @@
     <Teleport to="body">
       <div
         v-if="menuOpen"
+        role="listbox"
         class="fixed z-3000 max-h-60 w-56 overflow-y-auto rounded-lg border border-border-default bg-base-background p-1 text-xs shadow-lg"
         :style="{ top: `${menuTop}px`, left: `${menuLeft}px` }"
         @mousedown.prevent
@@ -30,6 +33,8 @@
           <Button
             v-for="(item, index) in menuItems"
             :key="item.name"
+            role="option"
+            :aria-selected="index === highlighted"
             variant="textonly"
             size="sm"
             :class="
@@ -43,13 +48,13 @@
           >
             <span class="truncate">{{
               item.create
-                ? t('promptNode.createVariable', { name: item.name })
+                ? $t('promptNode.createVariable', { name: item.name })
                 : item.name
             }}</span>
           </Button>
         </template>
         <div v-else class="px-2 py-1.5 text-muted-foreground">
-          {{ t('promptNode.noMatches') }}
+          {{ $t('promptNode.noMatches') }}
         </div>
       </div>
     </Teleport>
@@ -60,7 +65,6 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import {
   CHIP_SELECTOR,
@@ -86,8 +90,6 @@ const {
 }>()
 
 const modelValue = defineModel<PromptTemplate>({ default: () => [] })
-
-const { t } = useI18n()
 
 const editorEl = ref<HTMLElement>()
 const isEmpty = computed(() => (modelValue.value ?? []).length === 0)
@@ -163,7 +165,7 @@ function recomputeMenu(query: string) {
     .filter((name) => name.toLowerCase().includes(lower))
     .map((name) => ({ name }))
   const create: MenuItem[] =
-    query && !variableNames.includes(query)
+    query && !variableNames.some((name) => name.toLowerCase() === lower)
       ? [{ name: query, create: true }]
       : []
   menuItems.value = [...vars, ...create]
@@ -214,8 +216,9 @@ function positionMenu() {
   const range = selection.getRangeAt(0).cloneRange()
   range.collapse(true)
   const rect = range.getBoundingClientRect()
-  menuTop.value = rect.bottom + 4
-  menuLeft.value = rect.left
+  // Keep the menu (w-56 / max-h-60) inside the viewport near window edges.
+  menuTop.value = Math.max(0, Math.min(rect.bottom + 4, innerHeight - 240))
+  menuLeft.value = Math.max(0, Math.min(rect.left, innerWidth - 224))
 }
 
 function selectItem(item: MenuItem) {

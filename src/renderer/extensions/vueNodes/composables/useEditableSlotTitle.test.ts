@@ -5,7 +5,8 @@ import { useEditableSlotTitle } from '@/renderer/extensions/vueNodes/composables
 const h = vi.hoisted(() => ({
   node: undefined as
     | { renameVariableInput: ReturnType<typeof vi.fn> }
-    | undefined
+    | undefined,
+  toastAdd: vi.fn()
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -14,11 +15,20 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: h.toastAdd })
+}))
+
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key
+}))
+
 function renamableNode() {
-  return { renameVariableInput: vi.fn() }
+  return { renameVariableInput: vi.fn(() => true) }
 }
 
 beforeEach(() => {
+  vi.clearAllMocks()
   h.node = undefined
 })
 
@@ -45,6 +55,7 @@ describe('useEditableSlotTitle', () => {
     commit('shade')
     expect(editing.value).toBe(false)
     expect(h.node.renameVariableInput).toHaveBeenCalledWith('color', 'shade')
+    expect(h.toastAdd).not.toHaveBeenCalled()
   })
 
   it('does not rename when the name is unchanged or blank', () => {
@@ -58,6 +69,19 @@ describe('useEditableSlotTitle', () => {
     startEdit()
     commit('color')
     expect(h.node.renameVariableInput).not.toHaveBeenCalled()
+  })
+
+  it('warns when the rename is rejected', () => {
+    h.node = { renameVariableInput: vi.fn(() => false) }
+    const { startEdit, commit } = useEditableSlotTitle(
+      () => '1',
+      () => 'color'
+    )
+    startEdit()
+    commit('taken')
+    expect(h.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'warn' })
+    )
   })
 
   it('discards the edit on cancel', () => {

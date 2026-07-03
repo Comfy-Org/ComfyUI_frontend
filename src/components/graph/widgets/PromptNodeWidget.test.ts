@@ -42,6 +42,7 @@ const i18n = createI18n({
       promptNode: {
         editorPlaceholder:
           "Write a prompt, or type {'@'} to reference a connected input",
+        editorLabel: 'Prompt editor',
         noMatches: 'No matches',
         createVariable: 'Create variable: {name}'
       }

@@ -1,10 +1,12 @@
 import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 
 interface RenamableNode {
-  renameVariableInput: (oldName: string, newName: string) => void
+  renameVariableInput: (oldName: string, newName: string) => boolean
 }
 
 function isRenamable(node: unknown): node is RenamableNode {
@@ -42,8 +44,14 @@ export function useEditableSlotTitle(
     if (!editing.value) return
     editing.value = false
     const name = newName.trim()
-    if (name && name !== currentName()) {
-      renamableNode()?.renameVariableInput(currentName(), name)
+    if (!name || name === currentName()) return
+    const renamed = renamableNode()?.renameVariableInput(currentName(), name)
+    if (renamed === false) {
+      useToastStore().add({
+        severity: 'warn',
+        summary: t('promptNode.renameConflict', { name }),
+        life: 3000
+      })
     }
   }
 

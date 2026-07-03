@@ -139,16 +139,16 @@ class PromptNode extends LGraphNode {
 
   /**
    * Renames a variable input socket in place (preserving its link) and updates
-   * every matching `@reference` in the editor text. No-ops on an empty name or a
-   * collision with an existing socket.
+   * every matching `@reference` in the editor text. Returns false when the
+   * rename cannot apply (name collision or missing socket).
    */
-  renameVariableInput(oldName: string, newName: string) {
+  renameVariableInput(oldName: string, newName: string): boolean {
     const name = newName.trim()
-    if (!name || name === oldName) return
-    if ((this.inputs ?? []).some((slot) => slot.name === name)) return
+    if (!name || name === oldName) return true
+    if ((this.inputs ?? []).some((slot) => slot.name === name)) return false
 
     const input = (this.inputs ?? []).find((slot) => slot.name === oldName)
-    if (!input) return
+    if (!input) return false
     input.name = name
 
     const widget = this.widgets?.find((w) => w.name === PROMPT_WIDGET_NAME)
@@ -159,6 +159,7 @@ class PromptNode extends LGraphNode {
       nodeId: this.id,
       slotType: NodeSlotType.INPUT
     })
+    return true
   }
 
   private declaredVarNames(): string[] {

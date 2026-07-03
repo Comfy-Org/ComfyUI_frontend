@@ -11,7 +11,7 @@
         v-model="modelValue"
         :variable-names
         :connected-names
-        :placeholder="t('promptNode.editorPlaceholder')"
+        :placeholder="$t('promptNode.editorPlaceholder')"
         :readonly="isReadOnly"
       />
     </div>
@@ -20,7 +20,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import PromptEditor from '@/components/graph/widgets/PromptEditor.vue'
 import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
@@ -35,7 +34,6 @@ const { widget, nodeId } = defineProps<{
 
 const modelValue = defineModel<PromptTemplate>({ default: () => [] })
 
-const { t } = useI18n()
 const canvasStore = useCanvasStore()
 
 const isReadOnly = computed(() =>
