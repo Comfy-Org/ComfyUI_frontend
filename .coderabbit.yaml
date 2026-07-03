@@ -65,7 +65,7 @@ reviews:
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
 
   path_instructions:
-    - path: 'src/**/*.test.ts'
+    - path: '{src,packages,apps}/**/*.test.ts'
       instructions: |
         Build partial mocks with fromPartial<T>() from @total-typescript/shoehorn; flag `as unknown as` double assertions and fromAny().
         Reuse shared factories in src/utils/__tests__/litegraphTestUtils.ts instead of hand-rolling mock builders.
