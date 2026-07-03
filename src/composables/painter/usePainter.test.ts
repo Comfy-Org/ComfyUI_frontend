@@ -170,6 +170,7 @@ function createCanvasElement(
     y: 0,
     toJSON: vi.fn()
   })
+  vi.spyOn(canvas, 'toBlob').mockImplementation((cb) => cb(new Blob(['x'])))
   return canvas
 }
 
@@ -733,13 +734,21 @@ describe('usePainter', () => {
     })
 
     it('returns existing modelValue when canvas serialization produces no blob', async () => {
-      const { maskWidget } = await mountPainterWithMaskCanvas({
-        modelValue: 'painter/cached.png [temp]',
-        toBlob: (cb) => cb(null)
-      })
+      const toBlob = vi.fn((cb: BlobCallback) => cb(null))
+      const { painter, maskWidget, modelValue } =
+        await mountPainterWithMaskCanvas({
+          modelValue: 'painter/cached.png [temp]',
+          toBlob
+        })
+
+      // handleClear marks the canvas dirty; restore the cached value it wipes
+      painter.handleClear()
+      modelValue.value = 'painter/cached.png [temp]'
+      await nextTick()
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
 
+      expect(toBlob).toHaveBeenCalled()
       expect(result).toBe('painter/cached.png [temp]')
       expect(api.fetchApi).not.toHaveBeenCalled()
     })

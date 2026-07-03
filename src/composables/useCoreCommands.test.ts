@@ -1516,21 +1516,26 @@ describe('useCoreCommands', () => {
 
     it('Zoom commands handle a missing backing canvas element', async () => {
       const ds = app.canvas.ds as { element?: HTMLCanvasElement }
+      const originalElement = ds.element
       ds.element = undefined
 
-      await findCommand('Comfy.Canvas.ZoomIn').function()
-      await findCommand('Comfy.Canvas.ZoomOut').function()
+      try {
+        await findCommand('Comfy.Canvas.ZoomIn').function()
+        await findCommand('Comfy.Canvas.ZoomOut').function()
 
-      expect(app.canvas.ds.changeScale).toHaveBeenNthCalledWith(
-        1,
-        1.1,
-        undefined
-      )
-      expect(app.canvas.ds.changeScale).toHaveBeenNthCalledWith(
-        2,
-        1 / 1.1,
-        undefined
-      )
+        expect(app.canvas.ds.changeScale).toHaveBeenNthCalledWith(
+          1,
+          1.1,
+          undefined
+        )
+        expect(app.canvas.ds.changeScale).toHaveBeenNthCalledWith(
+          2,
+          1 / 1.1,
+          undefined
+        )
+      } finally {
+        ds.element = originalElement
+      }
     })
   })
 

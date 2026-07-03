@@ -138,8 +138,9 @@ describe('useSelectionToolboxPosition', () => {
   })
 
   it('does not set coordinates when selection is empty', () => {
-    const { toolbox, unmount } = renderToolboxForSelection([])
+    const { toolbox, visible, unmount } = renderToolboxForSelection([])
 
+    expect(visible.value).toBe(false)
     expect(toolbox.style.getPropertyValue('--tb-x')).toBe('')
     expect(toolbox.style.getPropertyValue('--tb-y')).toBe('')
     unmount()
@@ -165,10 +166,11 @@ describe('useSelectionToolboxPosition', () => {
     group.pos = [100, 200]
     group.size = [160, 80]
 
-    const { toolbox, unmount } = renderToolboxForSelection([group], {
+    const { toolbox, visible, unmount } = renderToolboxForSelection([group], {
       draggingItems: true
     })
 
+    expect(visible.value).toBe(false)
     expect(toolbox.style.getPropertyValue('--tb-x')).toBe('')
     expect(toolbox.style.getPropertyValue('--tb-y')).toBe('')
     unmount()

@@ -471,7 +471,7 @@ describe('useBrushDrawing', () => {
       // Size should be set but with delta=0 (dead zone), so stays the same
       expect(mockStore.setBrushSize).toHaveBeenCalled()
       const sizeCall = mockStore.setBrushSize.mock.calls[0]![0]
-      expect(sizeCall).toBeCloseTo(mockStore.brushSettings.size, 0)
+      expect(sizeCall).toBeCloseTo(20, 0)
     })
 
     it('should suppress one axis when useDominantAxis is enabled', async () => {
