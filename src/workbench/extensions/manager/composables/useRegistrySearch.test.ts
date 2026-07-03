@@ -133,12 +133,20 @@ describe('useRegistrySearch', () => {
         querySuggestions: []
       })
       .mockResolvedValueOnce({
+        nodePacks: [pack('second')],
+        querySuggestions: []
+      })
+      .mockResolvedValueOnce({
         nodePacks: [pack('resorted')],
         querySuggestions: []
       })
 
-    const search = useRegistrySearch({ initialPageNumber: 2 })
+    const search = useRegistrySearch()
     await flushSearch()
+
+    search.pageNumber.value = 1
+    await flushSearch()
+    expect(search.pageNumber.value).toBe(1)
 
     search.sortField.value = 'name'
     await flushSearch()

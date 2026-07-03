@@ -15,15 +15,13 @@ type ManagerDatabaseSource =
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 type TaskHistoryItem = ManagerComponents['schemas']['TaskHistoryItem']
 
-const { mockAppApi, mockClientId } = vi.hoisted(() => ({
-  mockAppApi: new EventTarget(),
+const { mockApp, mockClientId } = vi.hoisted(() => ({
+  mockApp: { api: new EventTarget() },
   mockClientId: { value: 'client-id' }
 }))
 
 vi.mock('@/scripts/app', () => ({
-  app: {
-    api: mockAppApi
-  }
+  app: mockApp
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -88,6 +86,7 @@ describe('useComfyManagerStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    mockApp.api = new EventTarget()
     mockClientId.value = 'client-id'
     mockManagerService = {
       isLoading: ref(false),
@@ -526,17 +525,17 @@ describe('useComfyManagerStore', () => {
       })
       const taskId = vi.mocked(mockManagerService.installPack).mock.calls[0][1]
 
-      mockAppApi.dispatchEvent(
+      mockApp.api.dispatchEvent(
         new CustomEvent('cm-task-completed', { detail: {} })
       )
-      mockAppApi.dispatchEvent(
+      mockApp.api.dispatchEvent(
         new CustomEvent('cm-task-completed', {
           detail: { ui_id: 'unknown-task' }
         })
       )
       expect(store.isPackInstalling('event-pack')).toBe(true)
 
-      mockAppApi.dispatchEvent(
+      mockApp.api.dispatchEvent(
         new CustomEvent('cm-task-completed', { detail: { ui_id: taskId } })
       )
 
