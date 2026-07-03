@@ -221,6 +221,12 @@ export class ChangeTracker {
     }
   }
   squashState = useDebounceFn(() => {
+    if (
+      this !== useWorkflowStore().activeWorkflow?.changeTracker ||
+      ChangeTracker.isLoadingGraph
+    )
+      return
+
     this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
   }, 50)
 
