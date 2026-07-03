@@ -23,9 +23,7 @@ export class WorkflowActionsDropdown {
     this.viewModeToggle = page.getByTestId(
       TestIds.workflowActions.viewModeToggle
     )
-    this.trigger = this.viewModeToggle.getByRole('button', {
-      name: 'Workflow actions'
-    })
+    this.trigger = this.triggerIn(this.viewModeToggle)
     this.enterAppModeSegment = this.viewModeToggle.getByRole('button', {
       name: 'Enter app mode'
     })
