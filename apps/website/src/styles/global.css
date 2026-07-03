@@ -162,6 +162,45 @@
   animation: ripple-effect 4s linear infinite;
 }
 
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@utility animate-cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+.card-slide-enter-active {
+  transition:
+    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.4s ease;
+}
+
+.card-slide-enter-from {
+  transform: translateX(56px);
+  opacity: 0;
+}
+
+/* Existing cards slide down smoothly when a new card is prepended. */
+.card-slide-move {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card-slide-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.card-slide-leave-to {
+  opacity: 0;
+}
+
 @utility animate-delay-* {
   animation-delay: --value([*]);
 }

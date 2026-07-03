@@ -6,12 +6,13 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 // Button widgets don't have a v-model value, they trigger actions
 const props = defineProps<{
   widget: SimplifiedWidget<void>
-  nodeId: string
+  nodeId: NodeId
 }>()
 
 const domEl = ref<HTMLElement>()

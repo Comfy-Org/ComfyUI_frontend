@@ -55,6 +55,7 @@ describe('resolveConcretePromotedWidget', () => {
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
     expect(result.resolved.node.id).toBe(concreteNode.id)
+    expect(result.resolved.nodePath).toEqual([String(concreteNode.id)])
     expect(result.resolved.widget.name).toBe('seed')
   })
 
@@ -91,6 +92,10 @@ describe('resolveConcretePromotedWidget', () => {
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
     expect(result.resolved.node.id).toBe(leaf.id)
+    expect(result.resolved.nodePath).toEqual([
+      String(innerNode.id),
+      String(leaf.id)
+    ])
     expect(result.resolved.widget.name).toBe('seed')
     expect(result.resolved.widget.type).toBe('combo')
   })

@@ -12,11 +12,28 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
+
+export type PaymentIntentSource =
+  | 'subscription_required'
+  | 'out_of_credits'
+  | 'top_up_blocked'
+  | 'deep_link'
+  | 'subscribe_to_run'
+  | 'subscribe_now_button'
+  | 'upgrade_to_add_credits'
+  | 'settings_billing_panel'
+  | 'avatar_menu_plans'
+  | 'team_members_panel'
+  | 'invite_member_upsell'
+  | 'upload_model_upgrade'
+  | 'team_upgrade_resume'
+
+export type SubscriptionCheckoutType = 'new' | 'change'
+export type SubscriptionCheckoutTier = TierKey | 'team'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -426,16 +443,44 @@ export interface CheckoutAttributionMetadata {
 
 export interface SubscriptionMetadata {
   current_tier?: string
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
+}
+
+export interface AddCreditsClickMetadata {
+  source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
+}
+
+export interface SubscriptionCancellationMetadata {
+  current_tier?: string
+  cycle?: BillingCycle
+  /**
+   * `manage_subscription_button` opens the external billing portal, where
+   * cancellation is one of the few possible actions but not the only one —
+   * treat it as probable, not certain, cancel intent.
+   */
+  source?: 'cancel_plan_menu' | 'manage_subscription_button'
+  /** ISO date the subscription runs until if the cancel goes through. */
+  end_date?: string
+  /** Present only on the `failed` stage. */
+  error_message?: string
+}
+
+export interface ResubscribeClickMetadata {
+  source: 'pricing_dialog' | 'settings_billing_panel'
+  /** Why the pricing dialog was opened, when the click came from one. */
+  payment_intent_source?: PaymentIntentSource
 }
 
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
-  tier: TierKey
+  tier: SubscriptionCheckoutTier
   cycle: BillingCycle
-  checkout_type: 'new' | 'change'
+  checkout_type: SubscriptionCheckoutType
+  checkout_attempt_id?: string
+  billing_op_id?: string
   previous_tier?: TierKey
+  payment_intent_source?: PaymentIntentSource
 }
 
 interface EcommerceItemMetadata {
@@ -457,8 +502,9 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   checkout_attempt_id: string
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: 'new' | 'change'
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
+  payment_intent_source?: PaymentIntentSource
   value: number
   currency: string
   ecommerce: EcommerceMetadata
@@ -489,7 +535,12 @@ export interface TelemetryProvider {
     metadata?: SubscriptionSuccessMetadata
   ): void
   trackMonthlySubscriptionCancelled?(): void
-  trackAddApiCreditButtonClicked?(): void
+  trackSubscriptionCancellation?(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void
+  trackResubscribeClicked?(metadata: ResubscribeClickMetadata): void
+  trackAddApiCreditButtonClicked?(metadata?: AddCreditsClickMetadata): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
   trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
@@ -592,6 +643,11 @@ export const TelemetryEvents = {
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
+  SUBSCRIPTION_CANCEL_FLOW_OPENED: 'app:subscription_cancel_flow_opened',
+  SUBSCRIPTION_CANCEL_CONFIRMED: 'app:subscription_cancel_confirmed',
+  SUBSCRIPTION_CANCEL_ABANDONED: 'app:subscription_cancel_abandoned',
+  SUBSCRIPTION_CANCEL_FAILED: 'app:subscription_cancel_failed',
+  RESUBSCRIBE_BUTTON_CLICKED: 'app:resubscribe_button_clicked',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
@@ -665,6 +721,13 @@ export const TelemetryEvents = {
 
 export type TelemetryEventName =
   (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+
+export const CANCELLATION_STAGE_EVENTS = {
+  flow_opened: TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED,
+  confirmed: TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED,
+  abandoned: TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED,
+  failed: TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED
+} as const
 
 export type ExecutionTriggerSource =
   | 'button'

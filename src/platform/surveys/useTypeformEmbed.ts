@@ -2,9 +2,10 @@ import { whenever } from '@vueuse/core'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { computed, ref, toValue } from 'vue'
 
+import { createScriptLoader } from '@/utils/loadExternalScript'
+
 const TYPEFORM_SRC = 'https://embed.typeform.com/next/embed.js'
 const VALID_ID_PATTERN = /^[A-Za-z0-9]+$/
-const SCRIPT_LOAD_TIMEOUT_MS = 10_000
 
 interface TypeformGlobal {
   load?: () => void
@@ -22,60 +23,12 @@ export function isTypeformIdValid(id: string | undefined | null): boolean {
   return !!id && VALID_ID_PATTERN.test(id)
 }
 
-/**
- * Module-level singleton so every consumer shares one script load.
- * Resets to `null` on failure so a later consumer can retry.
- */
-let scriptPromise: Promise<void> | null = null
+const loadTypeformScript = createScriptLoader(TYPEFORM_SRC, () =>
+  typeof window.tf?.load === 'function' ? (window.tf as TypeformGlobal) : null
+)
 
-function ensureScriptLoaded(): Promise<void> {
-  if (scriptPromise) return scriptPromise
-
-  scriptPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${TYPEFORM_SRC}"]`
-    )
-
-    if (existing && typeof window.tf?.load === 'function') {
-      resolve()
-      return
-    }
-
-    const scriptEl = existing ?? document.createElement('script')
-
-    const timeoutId = window.setTimeout(() => {
-      scriptEl.remove()
-      scriptPromise = null
-      reject(new Error('Typeform embed script load timed out'))
-    }, SCRIPT_LOAD_TIMEOUT_MS)
-
-    scriptEl.addEventListener(
-      'load',
-      () => {
-        window.clearTimeout(timeoutId)
-        resolve()
-      },
-      { once: true }
-    )
-    scriptEl.addEventListener(
-      'error',
-      () => {
-        window.clearTimeout(timeoutId)
-        scriptEl.remove()
-        scriptPromise = null
-        reject(new Error('Typeform embed script failed to load'))
-      },
-      { once: true }
-    )
-
-    if (!existing) {
-      scriptEl.src = TYPEFORM_SRC
-      scriptEl.async = true
-      document.head.appendChild(scriptEl)
-    }
-  })
-
-  return scriptPromise
+function ensureScriptLoaded(): Promise<TypeformGlobal> {
+  return loadTypeformScript()
 }
 
 /**

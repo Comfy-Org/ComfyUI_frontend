@@ -179,6 +179,9 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 23. Favor pure functions (especially testable ones)
 24. Do not use function expressions if it's possible to use function declarations instead
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+26. Do not add alias helpers whose implementation is just a single-line call to another function
+    - Bad: `function id(value) { return nodeId(value) }`
+    - Use the real function directly, or introduce a named helper only when it adds validation, branching, domain meaning, or shared behavior beyond renaming
 
 ## Design Standards
 
@@ -246,7 +249,7 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
 
 1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
-2. **Centralized registries and ECS-style access**: Entity data lives in the World (centralized registry), queried via `world.getComponent(entityId, ComponentType)`. Do not add new instance properties/methods to entity classes. Do not use OOP inheritance for entity modeling.
+2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by string IDs — widget values in `widgetValueStore` keyed by `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`), plus `domWidgetStore`, `layoutStore`, `nodeOutputStore`, `subgraphNavigationStore`, and `previewExposureStore`. Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
 5. **Extension ecosystem impact**: Changes to entity callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConnectInput/Output`, `onConfigure`, `onWidgetChanged`), `node.widgets` access, `node.serialize`, or `graph._version++` affect 40+ custom node repos and require migration guidance.
