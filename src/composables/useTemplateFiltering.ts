@@ -26,6 +26,15 @@ function isTemplateVisibleForDistributions(
   return distributions.some((d) => template.includeOnDistributions!.includes(d))
 }
 
+export const RUNS_ON_COMFYUI = 'ComfyUI'
+export const RUNS_ON_PARTNER_NODES = 'External or Remote API'
+
+export function runsOnDisplayNameKey(runsOn: string): string {
+  return runsOn === RUNS_ON_PARTNER_NODES
+    ? 'templateWorkflows.runsOnPartnerNodes'
+    : runsOn
+}
+
 // Fuse.js configuration for fuzzy search
 const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
   keys: [
@@ -126,7 +135,7 @@ export function useTemplateFiltering(
   })
 
   const availableRunsOn = computed(() => {
-    return ['ComfyUI', 'External or Remote API']
+    return [RUNS_ON_COMFYUI, RUNS_ON_PARTNER_NODES]
   })
 
   // Compute which selected filters are actually applicable to the current scope
@@ -211,9 +220,9 @@ export function useTemplateFiltering(
       const isComfyUI = template.openSource !== false
 
       return selectedRunsOn.value.some((runsOn) => {
-        if (runsOn === 'External or Remote API') {
+        if (runsOn === RUNS_ON_PARTNER_NODES) {
           return isExternalAPI
-        } else if (runsOn === 'ComfyUI') {
+        } else if (runsOn === RUNS_ON_COMFYUI) {
           return isComfyUI
         }
         return false

@@ -426,7 +426,10 @@ import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
-import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import {
+  runsOnDisplayNameKey,
+  useTemplateFiltering
+} from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -643,9 +646,7 @@ const selectedUseCaseObjects = computed({
 })
 
 const runsOnDisplayName = (runsOn: string) =>
-  runsOn === 'External or Remote API'
-    ? t('templateWorkflows.runsOnPartnerNodes', 'Partner Nodes')
-    : runsOn
+  t(runsOnDisplayNameKey(runsOn), runsOn)
 
 const selectedRunsOnObjects = computed({
   get() {
