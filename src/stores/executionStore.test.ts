@@ -1,6 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
@@ -12,6 +13,8 @@ import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
+import { createTestWorkflow } from '@/stores/__tests__/workflowFixture'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 const {
   mockNodeIdToNodeLocatorId,
@@ -159,13 +162,11 @@ beforeEach(() => {
 })
 
 function createQueuedWorkflow(path: string = 'workflows/test.json') {
-  return {
+  return createTestWorkflow({
     activeState: { id: 'workflow-id' },
     initialState: { id: 'workflow-id' },
     path
-  } as Parameters<
-    ReturnType<typeof useExecutionStore>['storeJob']
-  >[0]['workflow']
+  })
 }
 
 function createPromptNode(title: string, classType: string) {
@@ -702,14 +703,8 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
 
 describe('useExecutionStore - workflowStatus', () => {
   let store: ReturnType<typeof useExecutionStore>
-  type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
-  const makeWorkflow = (path: string): Workflow => {
-    const workflow: Partial<Workflow> = {
-      path,
-      filename: path.split('/').pop()
-    }
-    return workflow as Workflow
-  }
+  const makeWorkflow = (path: string): ComfyWorkflow =>
+    fromPartial<ComfyWorkflow>({ path, filename: path.split('/').pop() })
   const workflowA = makeWorkflow('/workflows/a.json')
   const workflowB = makeWorkflow('/workflows/b.json')
 
@@ -756,7 +751,7 @@ describe('useExecutionStore - workflowStatus', () => {
     )
   }
 
-  function callStoreJob(jobId: string, workflow: Workflow) {
+  function callStoreJob(jobId: string, workflow: ComfyWorkflow) {
     store.storeJob({
       nodes: ['1'],
       id: jobId,
@@ -1057,9 +1052,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
     const mockNode = createMockLGraphNode({ id: 1 })
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn(() => mockNode) }
-    } as unknown as LGraphCanvas
+    })
 
     fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
 
@@ -1070,9 +1065,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
     const mockNode = createMockLGraphNode({ id: 1 })
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn(() => mockNode) }
-    } as unknown as LGraphCanvas
+    })
     store.activeJobId = 'job-1'
 
     fireProgressText({
@@ -1097,9 +1092,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
   it('should ignore nested progress_text when the execution ID cannot be mapped', async () => {
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn() }
-    } as unknown as LGraphCanvas
+    })
     mockExecutionIdToCurrentId.mockReturnValue(undefined)
 
     expect(() =>
@@ -1113,9 +1108,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
   it('should ignore progress_text when the current node id cannot be parsed', async () => {
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn() }
-    } as unknown as LGraphCanvas
+    })
     mockExecutionIdToCurrentId.mockReturnValue({})
 
     fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
@@ -1573,10 +1568,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
 
     it('clears initializing state for the starting job', () => {
-      store.initializingJobIds = new Set([
-        'job-1',
-        'job-2'
-      ]) as unknown as Set<string>
+      store.initializingJobIds = new Set(['job-1', 'job-2'])
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.initializingJobIds.has('job-1')).toBe(false)
@@ -2117,11 +2109,11 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   })
 
   it('storeJob populates queuedJobs and tracks the workflow path', () => {
-    const workflow = {
+    const workflow = createTestWorkflow({
       activeState: { id: 'wf-1' },
       initialState: { id: 'wf-1' },
       path: '/workflows/foo.json'
-    } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
+    })
 
     store.storeJob({
       nodes: ['a', 'b'],
@@ -2147,10 +2139,8 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   })
 
   it('storeJob works without workflow metadata', () => {
-    const workflow = {} as Parameters<typeof store.storeJob>[0]['workflow']
-    const missingWorkflow = undefined as unknown as Parameters<
-      typeof store.storeJob
-    >[0]['workflow']
+    const workflow: ComfyWorkflow | undefined = fromPartial<ComfyWorkflow>({})
+    const missingWorkflow: ComfyWorkflow | undefined = undefined
 
     store.storeJob({
       nodes: ['a'],

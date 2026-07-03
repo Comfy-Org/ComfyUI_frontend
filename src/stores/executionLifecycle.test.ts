@@ -2,9 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
+import { createTestWorkflow } from '@/stores/__tests__/workflowFixture'
 
 const { handlers } = vi.hoisted(() => ({
   handlers: {} as Record<string, (e: { detail: unknown }) => void>
@@ -70,7 +70,7 @@ function startJob(
     nodes,
     id,
     promptOutput: promptOutput(),
-    workflow: { path: `${id}.json` } as unknown as ComfyWorkflow
+    workflow: createTestWorkflow({ path: `${id}.json` })
   })
   handlers['execution_start']?.({ detail: { prompt_id: id } })
 }

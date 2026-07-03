@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
+import { createTestWorkflow } from '@/stores/__tests__/workflowFixture'
 import type { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 
 type CloudValidationResult = ReturnType<typeof classifyCloudValidationError>
@@ -76,7 +77,7 @@ function setup() {
 }
 
 function workflow(path: string): ComfyWorkflow {
-  return { path } as unknown as ComfyWorkflow
+  return createTestWorkflow({ path })
 }
 
 function promptOutput(): ComfyApiWorkflow {

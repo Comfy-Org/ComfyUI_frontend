@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
+import { createTestWorkflow } from '@/stores/__tests__/workflowFixture'
 
 const { handlers, openSet } = vi.hoisted(() => ({
   handlers: {} as Record<string, (e: { detail: unknown }) => void>,
@@ -53,7 +54,7 @@ vi.mock('@/utils/appMode', () => ({
 }))
 
 function workflow(path: string): ComfyWorkflow {
-  return { path } as unknown as ComfyWorkflow
+  return createTestWorkflow({ path })
 }
 
 function setup() {
