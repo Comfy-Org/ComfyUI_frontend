@@ -6,10 +6,7 @@ import { useI18n } from 'vue-i18n'
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import {
-  demoteWidget,
-  promoteWidget
-} from '@/core/graph/subgraph/promotionUtils'
+import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -22,13 +19,11 @@ import type { WidgetValue } from '@/utils/widgetUtil'
 const {
   widget,
   node,
-  parents = [],
-  isShownOnParents = false
+  parents = []
 } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
   parents?: SubgraphNode[]
-  isShownOnParents?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,12 +41,9 @@ const isLinked = computed(() => {
   if (!node.isSubgraphNode()) return false
   return inputForWidget(node, widget)?.widgetId != null
 })
-const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
-const favoriteNode = computed(() =>
-  isShownOnParents && hasParents.value ? parents[0] : node
-)
+const canShowInput = computed(() => hasParents.value && !isLinked.value)
 const isFavorited = computed(() =>
-  favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
+  favoritedWidgetsStore.isFavorited(node, widget.name)
 )
 
 const inputSpec = computed(() =>
@@ -79,18 +71,13 @@ async function handleRename() {
   if (newLabel !== null) label.value = newLabel
 }
 
-function handleHideInput() {
-  if (!parents?.length) return
-  demoteWidget(node, widget, parents)
-}
-
 function handleShowInput() {
   if (!parents?.length) return
   promoteWidget(node, widget, parents)
 }
 
 function handleToggleFavorite() {
-  favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
+  favoritedWidgetsStore.toggleFavorite(node, widget.name)
 }
 
 function handleResetToDefault() {
@@ -122,26 +109,19 @@ function handleResetToDefault() {
       </Button>
 
       <Button
-        v-if="canToggleVisibility"
+        v-if="canShowInput"
         variant="textonly"
         size="unset"
         class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
-            if (isShownOnParents) handleHideInput()
-            else handleShowInput()
+            handleShowInput()
             close()
           }
         "
       >
-        <template v-if="isShownOnParents">
-          <i class="icon-[lucide--eye-off] size-4" />
-          <span>{{ t('rightSidePanel.hideInput') }}</span>
-        </template>
-        <template v-else>
-          <i class="icon-[lucide--eye] size-4" />
-          <span>{{ t('rightSidePanel.showInput') }}</span>
-        </template>
+        <i class="icon-[lucide--eye] size-4" />
+        <span>{{ t('rightSidePanel.showInput') }}</span>
       </Button>
 
       <Button

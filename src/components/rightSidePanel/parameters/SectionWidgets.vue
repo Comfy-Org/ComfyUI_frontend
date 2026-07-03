@@ -143,14 +143,6 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
-function isWidgetShownOnParents(widget: IBaseWidget): boolean {
-  const id = widget.widgetId
-  if (!id) return false
-  return parents.some((parent) =>
-    parent.inputs.some((input) => input.widgetId === id)
-  )
-}
-
 const isEmpty = computed(() => widgets.value.length === 0)
 
 const displayLabel = computed(
@@ -386,7 +378,6 @@ defineExpose({
             :hidden-favorite-indicator="hiddenFavoriteIndicator"
             :show-node-name="showNodeName"
             :parents="parents"
-            :is-shown-on-parents="isWidgetShownOnParents(widget)"
             @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
             @reset-to-default="handleWidgetReset(node, widget, $event)"
           />

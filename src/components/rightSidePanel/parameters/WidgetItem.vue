@@ -40,8 +40,7 @@ const {
   hiddenFavoriteIndicator = false,
   hiddenWidgetActions = false,
   showNodeName = false,
-  parents = [],
-  isShownOnParents = false
+  parents = []
 } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
@@ -50,7 +49,6 @@ const {
   hiddenWidgetActions?: boolean
   showNodeName?: boolean
   parents?: SubgraphNode[]
-  isShownOnParents?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -116,9 +114,6 @@ const displayNodeName = computed((): string | null => {
 })
 
 const hasParents = computed(() => parents?.length > 0)
-const favoriteNode = computed(() =>
-  isShownOnParents && hasParents.value ? parents[0] : node
-)
 
 const widgetValue = computed({
   get: () => widget.value,
@@ -194,7 +189,6 @@ const displayLabel = customRef((track, trigger) => {
           :widget="widget"
           :node="node"
           :parents="parents"
-          :is-shown-on-parents="isShownOnParents"
           @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
@@ -203,7 +197,7 @@ const displayLabel = customRef((track, trigger) => {
     <div
       v-if="
         !hiddenFavoriteIndicator &&
-        favoritedWidgetsStore.isFavorited(favoriteNode, widget.name)
+        favoritedWidgetsStore.isFavorited(node, widget.name)
       "
       class="pointer-events-none relative z-2"
     >

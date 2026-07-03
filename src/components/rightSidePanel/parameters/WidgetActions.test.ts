@@ -17,7 +17,6 @@ const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  demoteWidget: vi.fn(),
   promoteWidget: vi.fn()
 }))
 
@@ -61,7 +60,6 @@ const i18n = createI18n({
         enterNewName: 'Enter new name'
       },
       rightSidePanel: {
-        hideInput: 'Hide input',
         showInput: 'Show input',
         addFavorite: 'Favorite',
         removeFavorite: 'Unfavorite',
