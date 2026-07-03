@@ -5,7 +5,7 @@
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
     <div
-      v-show="!linearMode"
+      v-show="!linearMode && !isApiMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
@@ -13,6 +13,7 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
+    <ApiView v-else-if="isApiMode" />
     <template v-if="isBuilderMode">
       <BuilderToolbar />
       <BuilderMenu />
@@ -97,6 +98,7 @@ import { electronAPI } from '@/utils/envUtil'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
+import ApiView from '@/views/ApiView.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
@@ -111,7 +113,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const { isBuilderMode, mode, isAppMode } = useAppMode()
+const { isBuilderMode, mode, isAppMode, isApiMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 watch(linearMode, (isLinear) => {

@@ -20,7 +20,7 @@
       />
     </div>
 
-    <div class="flex flex-col gap-2">
+    <div v-if="showDefaultViewChoice" class="flex flex-col gap-2">
       <label :id="radioGroupLabelId" class="text-sm text-muted-foreground">
         {{ $t('builderToolbar.defaultViewLabel') }}
       </label>
@@ -54,9 +54,14 @@ import Button from '@/components/ui/button/Button.vue'
 import BuilderDialog from './BuilderDialog.vue'
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'
 
-const { defaultFilename, defaultOpenAsApp = true } = defineProps<{
+const {
+  defaultFilename,
+  defaultOpenAsApp = true,
+  showDefaultViewChoice = true
+} = defineProps<{
   defaultFilename: string
   defaultOpenAsApp?: boolean
+  showDefaultViewChoice?: boolean
 }>()
 
 const emit = defineEmits<{

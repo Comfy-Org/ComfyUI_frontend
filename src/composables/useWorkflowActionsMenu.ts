@@ -250,6 +250,18 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'enter-api-builder-mode',
+      label: t('breadcrumbsMenu.enterApiBuilderMode'),
+      icon: 'icon-[lucide--braces]',
+      command: async () => {
+        await ensureWorkflowActive(targetWorkflow.value)
+        enterBuilder('api')
+      },
+      visible: showAppModeItems,
+      isNew: true
+    })
+
+    addItem({
       id: 'clear-workflow',
       label: t('breadcrumbsMenu.clearWorkflow'),
       icon: 'pi pi-trash',

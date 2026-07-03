@@ -26,6 +26,7 @@ import {
 } from '@/utils/litegraphUtil'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { BuilderTarget } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
@@ -54,6 +55,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const showVueNodeSwitchPopup = ref(false)
+  const builderTarget = ref<BuilderTarget>('app')
 
   const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
@@ -235,10 +237,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     autoEnableVueNodes(inSelect)
   })
 
-  function enterBuilder() {
+  function enterBuilder(target: BuilderTarget = 'app') {
+    builderTarget.value = target
+
     if (!hasNodes.value) {
       emptyWorkflowDialog.show({
-        onEnterBuilder: () => enterBuilder(),
+        onEnterBuilder: () => enterBuilder(target),
         onDismiss: () => setMode('graph')
       })
       return
@@ -249,7 +253,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     useSidebarTabStore().activeSidebarTabId = null
 
     setMode(
-      mode.value === 'app' && hasOutputs.value
+      target === 'app' && mode.value === 'app' && hasOutputs.value
         ? 'builder:arrange'
         : 'builder:inputs'
     )
@@ -281,6 +285,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   return {
+    builderTarget,
     enterBuilder,
     exitBuilder,
     hasNodes,

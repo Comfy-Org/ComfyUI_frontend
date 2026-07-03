@@ -1,9 +1,12 @@
 export type AppMode =
   | 'graph'
   | 'app'
+  | 'api'
   | 'builder:inputs'
   | 'builder:outputs'
   | 'builder:arrange'
+
+export type BuilderTarget = 'app' | 'api'
 
 type WorkflowModeSource = {
   activeMode: AppMode | null

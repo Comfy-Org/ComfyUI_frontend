@@ -21,7 +21,7 @@ import { storeToRefs } from 'pinia'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
-const { enableAppBuilder } = useAppMode()
+const { enableAppBuilder, setMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { enterBuilder } = appModeStore
 const { toastErrorHandler } = useErrorHandling()
@@ -113,6 +113,21 @@ function showApps() {
           <i class="icon-[lucide--panels-top-left] size-4" />
         </Button>
       </div>
+      <Button
+        v-if="enableAppBuilder"
+        v-tooltip.right="{
+          value: t('builderToolbar.viewApi'),
+          ...tooltipOptions
+        }"
+        variant="secondary"
+        size="unset"
+        :disabled="!hasNodes"
+        :aria-label="t('builderToolbar.viewApi')"
+        class="size-10 rounded-lg"
+        @click="setMode('api')"
+      >
+        <i class="icon-[lucide--braces] size-4" />
+      </Button>
     </div>
     <WorkflowActionsDropdown source="app_mode_toolbar" />
   </div>
