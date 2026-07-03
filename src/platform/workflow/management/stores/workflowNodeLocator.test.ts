@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -45,7 +46,7 @@ describe('workflowStore node locator translation', () => {
 
   it('prefixes the locator with an explicit subgraph uuid', () => {
     const store = useWorkflowStore()
-    const subgraph = { id: SUBGRAPH_UUID } as unknown as Subgraph
+    const subgraph = fromPartial<Subgraph>({ id: SUBGRAPH_UUID })
 
     expect(store.nodeIdToNodeLocatorId(toNodeId(5), subgraph)).toBe(
       `${SUBGRAPH_UUID}:5`
@@ -54,6 +55,7 @@ describe('workflowStore node locator translation', () => {
 
   it('derives a locator from a node based on whether its graph is a subgraph', () => {
     const store = useWorkflowStore()
+    // eslint-disable-next-line no-restricted-syntax
     const rootNode = { id: toNodeId(7), graph: {} } as unknown as LGraphNode
     expect(store.nodeToNodeLocatorId(rootNode)).toBe('7')
   })

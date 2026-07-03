@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type * as VueUse from '@vueuse/core'
 
@@ -14,13 +15,7 @@ const vueUseMocks = vi.hoisted(() => ({
   dropZoneOptions: [] as TestDropZoneOptions[]
 }))
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({ t: (key: string) => key })
-  }
-})
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal<typeof VueUse>()
@@ -87,7 +82,7 @@ function renderStep(
   return render(ComfyHubThumbnailStep, {
     props: { thumbnailType: 'image' as ThumbnailType, ...props, ...callbacks },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [i18n],
       stubs: {
         ToggleGroup: {
           template:

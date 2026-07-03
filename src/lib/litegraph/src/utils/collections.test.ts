@@ -22,6 +22,7 @@ vi.mock('@/lib/litegraph/src/LGraphNode', () => graphNodeMock)
 describe('getAllNestedItems', () => {
   it('returns empty for an undefined input set', () => {
     expect(
+      // eslint-disable-next-line no-restricted-syntax
       getAllNestedItems(undefined as unknown as ReadonlySet<Positionable>)
     ).toEqual(new Set())
   })

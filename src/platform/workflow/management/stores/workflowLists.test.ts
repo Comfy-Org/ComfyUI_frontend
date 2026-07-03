@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -36,7 +37,7 @@ interface WorkflowFlags {
 }
 
 function wf(flags: WorkflowFlags): ComfyWorkflow {
-  return flags as unknown as ComfyWorkflow
+  return fromPartial<ComfyWorkflow>(flags)
 }
 
 function paths(workflows: ComfyWorkflow[]) {

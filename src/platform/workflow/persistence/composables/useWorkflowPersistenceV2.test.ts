@@ -153,8 +153,8 @@ const mocks = vi.hoisted(() => {
   const serializeMock = vi.fn(() => state.currentGraph)
   const loadGraphDataMock = vi.fn()
   const apiMock = {
-    clientId: 'test-client',
-    initialClientId: 'test-client',
+    clientId: 'test-client' as string | undefined,
+    initialClientId: 'test-client' as string | null,
     addEventListener: vi.fn((event: string, handler: () => void) => {
       if (event === 'graphChanged') {
         state.graphChangedHandler = handler
@@ -300,7 +300,7 @@ describe('useWorkflowPersistenceV2', () => {
 
   describe('migration', () => {
     it('falls back to initialClientId when clientId is unavailable', () => {
-      mocks.apiMock.clientId = undefined as unknown as string
+      mocks.apiMock.clientId = undefined
       mocks.apiMock.initialClientId = 'initial-client'
 
       mountWorkflowPersistence()
@@ -309,8 +309,8 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('passes undefined when no API client id is available', () => {
-      mocks.apiMock.clientId = undefined as unknown as string
-      mocks.apiMock.initialClientId = undefined as unknown as string
+      mocks.apiMock.clientId = undefined
+      mocks.apiMock.initialClientId = null
 
       mountWorkflowPersistence()
 

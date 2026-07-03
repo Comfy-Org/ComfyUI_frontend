@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import ComfyHubCreateProfileForm from './ComfyHubCreateProfileForm.vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -12,11 +13,7 @@ const mockToast = vi.hoisted(() => ({
 }))
 const mockIsFileTooLarge = vi.hoisted(() => vi.fn())
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 vi.mock('primevue/usetoast', () => ({
   useToast: () => mockToast
@@ -103,7 +100,7 @@ function renderForm(
       ...props
     },
     global: {
-      mocks: { $t: (key: string) => key }
+      plugins: [i18n]
     }
   })
 }

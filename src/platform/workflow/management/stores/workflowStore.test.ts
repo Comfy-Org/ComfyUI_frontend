@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -787,11 +787,9 @@ describe('useWorkflowStore', () => {
   describe('Subgraphs', () => {
     beforeEach(async () => {
       // Ensure canvas exists for these tests
-      vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, unknown>(
-        createMockCanvas({
-          subgraph: undefined
-        })
-      )
+      vi.mocked(comfyApp).canvas = createMockCanvas({
+        subgraph: undefined
+      })
 
       // Setup an active workflow as updateActiveGraph depends on it
       const workflow = store.createTemporary('test-subgraph-workflow.json')
@@ -812,7 +810,7 @@ describe('useWorkflowStore', () => {
 
     it('should handle when comfyApp.canvas is not available', async () => {
       // Arrange
-      vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, null>(null)
+      Object.assign(vi.mocked(comfyApp), { canvas: null })
 
       // Act
       console.debug(store.isSubgraphActive)
@@ -840,14 +838,9 @@ describe('useWorkflowStore', () => {
 
     it('should correctly update state when a subgraph is active', async () => {
       // Arrange: Setup mock subgraph structure
-      const mockSubgraph = fromAny<Subgraph, unknown>({
+      const mockSubgraph = fromPartial<Subgraph>({
         name: 'Level 2 Subgraph',
-        isRootGraph: false,
-        pathToRootGraph: [
-          { name: 'Root' }, // Root Graph (index 0, ignored)
-          { name: 'Level 1 Subgraph' },
-          { name: 'Level 2 Subgraph' }
-        ]
+        isRootGraph: false
       })
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
 
@@ -867,9 +860,8 @@ describe('useWorkflowStore', () => {
 
     it('should update automatically when activeWorkflow changes', async () => {
       // Arrange: Set initial canvas state (e.g., a subgraph)
-      const initialSubgraph = fromAny<Subgraph, unknown>({
+      const initialSubgraph = fromPartial<Subgraph>({
         name: 'Initial Subgraph',
-        pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
         isRootGraph: false
       })
       vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
@@ -922,7 +914,7 @@ describe('useWorkflowStore', () => {
       // Setup mock graph structure with subgraphs
       const mockNodes: LGraph['nodes'] = []
       const mockSubgraphs = new Map<string, Subgraph>()
-      const mockRootGraph = fromAny<LGraph, unknown>({
+      const mockRootGraph = fromPartial<LGraph>({
         _nodes: mockNodes,
         nodes: mockNodes,
         subgraphs: mockSubgraphs,
@@ -932,7 +924,7 @@ describe('useWorkflowStore', () => {
         }
       })
 
-      const mockSubgraph = fromAny<Subgraph, unknown>({
+      const mockSubgraph = fromPartial<Subgraph>({
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         rootGraph: mockRootGraph,
         _nodes: [],
@@ -972,7 +964,7 @@ describe('useWorkflowStore', () => {
         const customSubgraphId = '11111111-2222-4333-8444-555555555555'
         const customSubgraph = fromPartial<Subgraph>({
           id: customSubgraphId,
-          rootGraph: fromAny<LGraph, undefined>(undefined),
+          rootGraph: undefined,
           _nodes: [],
           nodes: [],
           clear: vi.fn()
@@ -1075,7 +1067,7 @@ describe('useWorkflowStore', () => {
     describe('nodeLocatorIdToNodeExecutionId', () => {
       it('should return null for invalid locator IDs', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          fromAny<NodeLocatorId, string>('bad:123')
+          fromPartial<NodeLocatorId>('bad:123')
         )
 
         expect(result).toBeNull()

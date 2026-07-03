@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
@@ -19,7 +19,7 @@ import {
 } from './storageIO'
 
 function createStorageStub(overrides: Partial<Storage> = {}): Storage {
-  return fromAny<Storage, unknown>({
+  return fromPartial<Storage>({
     length: 0,
     clear: vi.fn(),
     getItem: vi.fn(() => null),

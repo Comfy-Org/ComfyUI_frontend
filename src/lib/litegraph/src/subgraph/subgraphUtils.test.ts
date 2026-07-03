@@ -531,9 +531,7 @@ describe('subgraphUtils', () => {
     it('returns when the host has no subgraph', () => {
       expect(() =>
         reorderSubgraphInputs(
-          { subgraph: null } as unknown as Parameters<
-            typeof reorderSubgraphInputs
-          >[0],
+          fromPartial<Parameters<typeof reorderSubgraphInputs>[0]>({}),
           []
         )
       ).not.toThrow()

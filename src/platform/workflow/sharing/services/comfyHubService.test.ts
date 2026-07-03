@@ -11,30 +11,20 @@ vi.mock('@/scripts/api', () => ({
 
 const { useComfyHubService } = await import('./comfyHubService')
 
-function mockJsonResponse(payload: unknown, ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => payload
-  } as Response
+function mockJsonResponse(
+  payload: unknown,
+  _ok = true,
+  status = 200
+): Response {
+  return new Response(JSON.stringify(payload), { status })
 }
 
-function mockUploadResponse(ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => ({})
-  } as Response
+function mockUploadResponse(_ok = true, status = 200): Response {
+  return new Response(JSON.stringify({}), { status })
 }
 
-function mockJsonFailure(ok = false, status = 500): Response {
-  return {
-    ok,
-    status,
-    json: async () => {
-      throw new Error('invalid json')
-    }
-  } as unknown as Response
+function mockJsonFailure(_ok = false, status = 500): Response {
+  return new Response('not valid json', { status })
 }
 
 describe('useComfyHubService', () => {

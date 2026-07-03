@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,7 +18,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
-import type { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
@@ -531,7 +531,7 @@ describe('useWorkflowService', () => {
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
       })
-      activeWorkflow.changeTracker = undefined as unknown as ChangeTracker
+      ;(activeWorkflow as ComfyWorkflowClass).changeTracker = null
       workflowStore.activeWorkflow = activeWorkflow
 
       useWorkflowService().beforeLoadNewGraph()
@@ -1691,9 +1691,9 @@ describe('useWorkflowService', () => {
       const pasteFromClipboard = vi.fn()
       Object.assign(app.canvas, { pasteFromClipboard })
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-        createMockCanvasRenderingContext2D() as unknown as ReturnType<
-          HTMLCanvasElement['getContext']
-        >
+        fromPartial<ReturnType<HTMLCanvasElement['getContext']>>(
+          createMockCanvasRenderingContext2D()
+        )
       )
       localStorage.setItem('litegrapheditor_clipboard', 'previous')
 

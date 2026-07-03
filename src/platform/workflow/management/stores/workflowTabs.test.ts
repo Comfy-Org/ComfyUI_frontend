@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -30,7 +31,7 @@ vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
 }))
 
 function wf(path: string): ComfyWorkflow {
-  return { path } as unknown as ComfyWorkflow
+  return fromPartial<ComfyWorkflow>({ path })
 }
 
 beforeEach(() => {

@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -23,9 +23,8 @@ const { addNodeInput } = useLitegraphService()
 
 beforeEach(() => {
   vi.clearAllMocks()
-  fromAny<{ configuringGraphLevel: number }, unknown>(
-    app
-  ).configuringGraphLevel = 0
+  ;(app as unknown as { configuringGraphLevel: number }).configuringGraphLevel =
+    0
 })
 
 function nextTick() {
@@ -149,9 +148,9 @@ describe('Dynamic Combos', () => {
 
   test('throws for malformed dynamic combo specs before creating a widget', () => {
     const node = testNode()
-    const comboApp = { widgets: { COMBO: vi.fn() } } as unknown as Parameters<
-      typeof dynamicWidgets.COMFY_DYNAMICCOMBO_V3
-    >[3]
+    const comboApp = fromPartial<
+      Parameters<typeof dynamicWidgets.COMFY_DYNAMICCOMBO_V3>[3]
+    >({ widgets: { COMBO: vi.fn() } })
 
     expect(() =>
       dynamicWidgets.COMFY_DYNAMICCOMBO_V3(
@@ -512,10 +511,9 @@ describe('Autogrow', () => {
       99,
       true,
       null,
-      fromAny<
-        Parameters<NonNullable<typeof node.onConnectionsChange>>[4],
-        unknown
-      >(undefined)
+      undefined as unknown as Parameters<
+        NonNullable<typeof node.onConnectionsChange>
+      >[4]
     )
     node.onConnectionsChange?.(LiteGraph.INPUT, 2, true, null, unknownInput)
 
@@ -551,8 +549,8 @@ describe('Autogrow', () => {
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
     node.inputs[1].widget = { name: node.inputs[1].name }
-    fromAny<{ configuringGraphLevel: number }, unknown>(
-      app
+    ;(
+      app as unknown as { configuringGraphLevel: number }
     ).configuringGraphLevel = 1
 
     connectInput(node, 1, graph)
@@ -566,15 +564,15 @@ describe('Autogrow', () => {
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
     node.inputs[1].widget = { name: node.inputs[1].name }
-    fromAny<{ configuringGraphLevel: number }, unknown>(
-      app
+    ;(
+      app as unknown as { configuringGraphLevel: number }
     ).configuringGraphLevel = 1
 
     connectInput(node, 1, graph)
     const shim = node.widgets.find((widget) => widget.name === '0.test1')
     if (!shim?.draw) throw new Error('Missing shim widget')
     node.inputs[1].label = undefined
-    const ctx = fromAny<CanvasRenderingContext2D, unknown>({
+    const ctx = fromPartial<CanvasRenderingContext2D>({
       save: vi.fn(),
       fillText: vi.fn(),
       restore: vi.fn()
@@ -599,8 +597,8 @@ describe('Autogrow', () => {
       serialize: false,
       draw: vi.fn()
     })
-    fromAny<{ configuringGraphLevel: number }, unknown>(
-      app
+    ;(
+      app as unknown as { configuringGraphLevel: number }
     ).configuringGraphLevel = 1
 
     connectInput(node, 1, graph)

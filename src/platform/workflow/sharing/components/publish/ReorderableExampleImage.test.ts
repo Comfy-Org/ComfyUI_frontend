@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -71,9 +72,11 @@ vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
 }))
 
 function createFileList(files: File[]): FileList {
-  return Object.assign(files, {
-    item: (index: number) => files[index] ?? null
-  }) as unknown as FileList
+  return fromPartial<FileList>(
+    Object.assign(files, {
+      item: (index: number) => files[index] ?? null
+    })
+  )
 }
 
 function renderImage(overrides: Partial<ExampleImage> = {}) {

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -40,7 +41,7 @@ type MockCanvasContext = CanvasRenderingContext2D & {
 }
 
 function createContext(): MockCanvasContext {
-  return {
+  return fromPartial<MockCanvasContext>({
     fillStyle: '#initial-fill',
     strokeStyle: '#initial-stroke',
     lineWidth: 7,
@@ -57,7 +58,7 @@ function createContext(): MockCanvasContext {
     restore: vi.fn(),
     save: vi.fn(),
     stroke: vi.fn()
-  } as unknown as MockCanvasContext
+  })
 }
 
 function createColors(): DefaultConnectionColors {

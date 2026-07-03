@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -112,7 +113,7 @@ function createSlot(
     disconnect: vi.fn(),
     draw: vi.fn()
   }
-  return slot as unknown as TestSlot
+  return fromPartial<TestSlot>(slot)
 }
 
 function createSubgraph() {
@@ -122,13 +123,13 @@ function createSubgraph() {
   )
   return {
     prompt,
-    subgraph: {
+    subgraph: fromPartial<Subgraph>({
       setDirtyCanvas: vi.fn(),
       canvasAction: vi.fn(
         (callback: (canvas: { prompt: typeof prompt }) => void) =>
           callback({ prompt })
       )
-    } as unknown as Subgraph
+    })
   }
 }
 

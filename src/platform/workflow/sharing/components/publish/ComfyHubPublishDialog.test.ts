@@ -2,14 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({ t: (key: string) => key })
-  }
-})
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
@@ -193,9 +188,7 @@ describe('ComfyHubPublishDialog', () => {
     return render(ComfyHubPublishDialog, {
       props: { onClose },
       global: {
-        mocks: {
-          $t: (key: string) => key
-        },
+        plugins: [i18n],
         stubs: {
           BaseModalLayout: {
             template:

@@ -22,7 +22,7 @@ function eventAt(x: number, y: number, button = 0): CanvasPointerEvent {
 }
 
 function createCanvasContext() {
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     getTransform: vi.fn(() => new DOMMatrix()),
     translate: vi.fn(),
     beginPath: vi.fn(),
@@ -38,9 +38,9 @@ function createCanvasContext() {
     lineWidth: 1,
     font: '',
     fillStyle: '',
-    textBaseline: '',
+    textBaseline: 'alphabetic',
     globalAlpha: 1
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 describe('SubgraphOutputNode', () => {
@@ -73,11 +73,11 @@ describe('SubgraphOutputNode', () => {
     const slot = subgraph.outputs[0]
     slot.boundingRect.updateTo([10, 20, 100, 30])
     const pointer = {} as CanvasPointer
-    const linkConnector = {
+    const linkConnector = fromPartial<LinkConnector>({
       dragNewFromSubgraphOutput: vi.fn(),
       dropLinks: vi.fn(),
       reset: vi.fn()
-    } as unknown as LinkConnector
+    })
 
     subgraph.outputNode.onPointerDown(eventAt(20, 25), pointer, linkConnector)
 
@@ -148,10 +148,10 @@ describe('SubgraphOutputNode', () => {
       outputs: [{ name: 'image', type: 'IMAGE' }]
     })
     const slot = subgraph.outputs[0]
-    const outputSlot = {
+    const outputSlot = fromPartial<{ index: number; slot: INodeOutputSlot }>({
       index: 0,
       slot: { name: 'out', type: 'IMAGE' }
-    } as unknown as { index: number; slot: INodeOutputSlot }
+    })
     const targetNode = new LGraphNode('Target')
     targetNode.id = toNodeId(99)
     vi.spyOn(targetNode, 'findOutputByType').mockReturnValue(outputSlot)
@@ -220,10 +220,10 @@ describe('SubgraphOutputNode', () => {
 
     subgraph.outputNode.drawProtected(
       ctx,
-      {
+      fromPartial<DefaultConnectionColors>({
         getConnectedColor: vi.fn(() => '#fff'),
         getDisconnectedColor: vi.fn(() => '#000')
-      } as unknown as DefaultConnectionColors,
+      }),
       subgraph.outputs[0],
       0.5
     )

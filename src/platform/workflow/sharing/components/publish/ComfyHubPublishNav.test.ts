@@ -1,14 +1,11 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import ComfyHubPublishNav from './ComfyHubPublishNav.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 vi.mock('@formkit/auto-animate/vue', () => ({
   vAutoAnimate: {}
@@ -41,7 +38,7 @@ describe('ComfyHubPublishNav', () => {
         currentStep: 'examples'
       },
       global: {
-        mocks: { $t: (key: string) => key }
+        plugins: [i18n]
       }
     })
 
@@ -74,7 +71,7 @@ describe('ComfyHubPublishNav', () => {
         currentStep: 'profileCreation'
       },
       global: {
-        mocks: { $t: (key: string) => key }
+        plugins: [i18n]
       }
     })
 

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -735,10 +736,12 @@ describe('Virtual node resolveVirtualOutput', () => {
     virtualNode.isVirtualNode = true
     virtualNode.resolveVirtualOutput = () => undefined
     graph.add(virtualNode)
-    vi.spyOn(virtualNode, 'getInputLink').mockReturnValue({
-      target_slot: 0,
-      resolve: () => ({ inputNode: passthroughNode })
-    } as unknown as LLink)
+    vi.spyOn(virtualNode, 'getInputLink').mockReturnValue(
+      fromPartial<LLink>({
+        target_slot: 0,
+        resolve: () => ({ inputNode: passthroughNode })
+      })
+    )
 
     const nodeDtoMap = new Map()
     const sourceDto = new ExecutableNodeDTO(
@@ -773,10 +776,12 @@ describe('Virtual node resolveVirtualOutput', () => {
     virtualNode.isVirtualNode = true
     virtualNode.resolveVirtualOutput = () => undefined
     graph.add(virtualNode)
-    vi.spyOn(virtualNode, 'getInputLink').mockReturnValue({
-      target_slot: 0,
-      resolve: () => ({ inputNode: undefined })
-    } as unknown as LLink)
+    vi.spyOn(virtualNode, 'getInputLink').mockReturnValue(
+      fromPartial<LLink>({
+        target_slot: 0,
+        resolve: () => ({ inputNode: undefined })
+      })
+    )
 
     const dto = new ExecutableNodeDTO(virtualNode, [], new Map(), undefined)
 
@@ -794,10 +799,12 @@ describe('Virtual node resolveVirtualOutput', () => {
     virtualNode.isVirtualNode = true
     virtualNode.resolveVirtualOutput = () => undefined
     graph.add(virtualNode)
-    vi.spyOn(virtualNode, 'getInputLink').mockReturnValue({
-      target_slot: 0,
-      resolve: () => ({ inputNode: sourceNode })
-    } as unknown as LLink)
+    vi.spyOn(virtualNode, 'getInputLink').mockReturnValue(
+      fromPartial<LLink>({
+        target_slot: 0,
+        resolve: () => ({ inputNode: sourceNode })
+      })
+    )
 
     const dto = new ExecutableNodeDTO(virtualNode, [], new Map(), undefined)
 
