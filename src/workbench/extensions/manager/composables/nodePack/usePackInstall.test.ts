@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { components } from '@/types/comfyRegistryTypes'
@@ -22,8 +23,6 @@ const { managerStore, showDialog, checkNodeCompatibility } = vi.hoisted(() => ({
   )
 }))
 
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
-
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: () => managerStore
 }))
@@ -43,7 +42,7 @@ vi.mock(
 )
 
 function pack(over: Partial<NodePack> = {}): NodePack {
-  return { id: 'pack-a', name: 'Pack A', ...over } as NodePack
+  return fromPartial<NodePack>({ id: 'pack-a', name: 'Pack A', ...over })
 }
 
 function conflict(overrides: Partial<ConflictDetail> = {}): ConflictDetail {
@@ -81,10 +80,6 @@ describe('usePackInstall', () => {
 
   it('reports not installing for an empty or idle pack list', () => {
     expect(usePackInstall(() => []).isInstalling.value).toBe(false)
-    expect(
-      usePackInstall(() => undefined as unknown as NodePack[]).isInstalling
-        .value
-    ).toBe(false)
     expect(usePackInstall(() => [pack()]).isInstalling.value).toBe(false)
   })
 
@@ -249,7 +244,7 @@ describe('usePackInstall', () => {
 
     await expect(
       performInstallation([pack({ id: undefined })])
-    ).rejects.toThrow('manager.packInstall.nodeIdRequired')
+    ).rejects.toThrow('Node ID is required for installation')
 
     expect(managerStore.installPack.call).not.toHaveBeenCalled()
     expect(managerStore.installPack.clear).toHaveBeenCalledTimes(1)

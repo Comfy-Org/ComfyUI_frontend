@@ -1,5 +1,4 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -7,16 +6,6 @@ import { ref } from 'vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: vi.fn((key) => key)
-    })
-  }
-})
 
 type NodePack = components['schemas']['Node']
 
@@ -45,13 +34,11 @@ describe('usePacksSelection', () => {
 
     managerStore = useComfyManagerStore()
 
-    // Mock the isPackInstalled method
     mockIsPackInstalled = vi.fn()
     mockGetInstalledPackVersion = vi.fn()
     mockIsPackEnabled = vi.fn()
     managerStore.isPackInstalled = mockIsPackInstalled
-    // Real store types this as returning string, but it can be undefined at runtime
-    managerStore.getInstalledPackVersion = fromAny(mockGetInstalledPackVersion)
+    managerStore.getInstalledPackVersion = mockGetInstalledPackVersion
     managerStore.isPackEnabled = mockIsPackEnabled
   })
 

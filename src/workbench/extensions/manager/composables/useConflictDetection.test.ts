@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -123,28 +124,28 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
 describe('useConflictDetection', () => {
   let pinia: ReturnType<typeof createTestingPinia>
 
-  const mockComfyManagerService = {
+  const mockComfyManagerService = fromPartial<
+    ReturnType<typeof useComfyManagerService>
+  >({
     getImportFailInfoBulk: vi.fn(),
     isLoading: ref(false),
     error: ref<string | null>(null)
-  } as Partial<ReturnType<typeof useComfyManagerService>> as ReturnType<
-    typeof useComfyManagerService
-  >
+  })
 
-  const mockRegistryService = {
+  const mockRegistryService = fromPartial<
+    ReturnType<typeof useComfyRegistryService>
+  >({
     getBulkNodeVersions: vi.fn(),
     isLoading: ref(false),
     error: ref<string | null>(null)
-  } as Partial<ReturnType<typeof useComfyRegistryService>> as ReturnType<
-    typeof useComfyRegistryService
-  >
+  })
 
   // Create a ref that can be modified in tests
   const mockInstalledPacksWithVersions = ref<{ id: string; version: string }[]>(
     []
   )
 
-  const mockInstalledPacks = {
+  const mockInstalledPacks = fromPartial<ReturnType<typeof useInstalledPacks>>({
     startFetchInstalled: vi.fn(),
     installedPacks: ref<components['schemas']['Node'][]>([]),
     installedPacksWithVersions: computed(
@@ -153,20 +154,20 @@ describe('useConflictDetection', () => {
     isReady: ref(false),
     isLoading: ref(false),
     error: ref<unknown>(null)
-  } as Partial<ReturnType<typeof useInstalledPacks>> as ReturnType<
-    typeof useInstalledPacks
-  >
+  })
 
-  const mockManagerStore = {
-    isPackEnabled: vi.fn()
-  } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
-    typeof useComfyManagerStore
-  >
+  const mockManagerStore = fromPartial<ReturnType<typeof useComfyManagerStore>>(
+    {
+      isPackEnabled: vi.fn()
+    }
+  )
 
   // Create refs that can be used to control computed properties
   let mockConflictedPackages: ConflictDetectionResult[] = []
 
-  const mockConflictStore = {
+  const mockConflictStore = fromPartial<
+    ReturnType<typeof useConflictDetectionStore>
+  >({
     get hasConflicts() {
       return mockConflictedPackages.some((p) => p.has_conflict)
     },
@@ -185,15 +186,15 @@ describe('useConflictDetection', () => {
     },
     setConflictedPackages: vi.fn(),
     clearConflicts: vi.fn()
-  } as Partial<ReturnType<typeof useConflictDetectionStore>> as ReturnType<
-    typeof useConflictDetectionStore
-  >
+  })
 
   const mockIsInitialized = true
-  const mockSystemStatsStore = {
+  const mockSystemStatsStore = fromPartial<
+    ReturnType<typeof useSystemStatsStore>
+  >({
     systemStats: {
       system: {
-        os: 'darwin', // sys.platform returns 'darwin' for macOS
+        os: 'darwin',
         ram_total: 17179869184,
         ram_free: 8589934592,
         comfyui_version: '0.3.41',
@@ -217,16 +218,14 @@ describe('useConflictDetection', () => {
       ]
     },
     isInitialized: mockIsInitialized,
-
     _customProperties: new Set<string>()
-  } as Partial<ReturnType<typeof useSystemStatsStore>> as ReturnType<
-    typeof useSystemStatsStore
-  >
+  })
 
   const mockShouldShowConflictModal = ref(false)
 
-  const mockAcknowledgment = {
-    checkComfyUIVersionChange: vi.fn(),
+  const mockAcknowledgment = fromPartial<
+    ReturnType<typeof useConflictAcknowledgment>
+  >({
     acknowledgmentState: computed(
       () => ({}) as Partial<ConflictAcknowledgmentState>
     ),
@@ -236,9 +235,7 @@ describe('useConflictDetection', () => {
     dismissRedDotNotification: vi.fn(),
     dismissWarningBanner: vi.fn(),
     markConflictsAsSeen: vi.fn()
-  } as Partial<ReturnType<typeof useConflictAcknowledgment>> as ReturnType<
-    typeof useConflictAcknowledgment
-  >
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()
