@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -146,7 +148,7 @@ describe('useSystemStatsStore', () => {
 
     it('should return "other" when os is not available', () => {
       store.systemStats = {
-        system: {
+        system: fromPartial<SystemStats['system']>({
           python_version: '3.10.0',
           embedded_python: false,
           comfyui_version: '1.0.0',
@@ -154,7 +156,7 @@ describe('useSystemStatsStore', () => {
           argv: [],
           ram_total: 16000000000,
           ram_free: 8000000000
-        } as Partial<SystemStats['system']> as SystemStats['system'],
+        }),
         devices: []
       }
 

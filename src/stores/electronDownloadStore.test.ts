@@ -44,8 +44,6 @@ describe('electronDownloadStore', () => {
     downloadManagerMock.onDownloadProgress.mockImplementation((callback) => {
       progressCallback = callback
     })
-    // The store runs initialize() automatically during setup; wait for it to
-    // finish instead of calling it again (which would double-load downloads).
     const store = useElectronDownloadStore()
     await vi.waitFor(() => expect(progressCallback).toBeDefined())
 
