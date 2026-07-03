@@ -170,7 +170,7 @@ function recomputeMenu() {
     trimmed && !variableNames.includes(trimmed)
       ? [{ name: trimmed, create: true }]
       : []
-  menuItems.value = [...create, ...vars]
+  menuItems.value = [...vars, ...create]
   highlighted.value = 0
 }
 
