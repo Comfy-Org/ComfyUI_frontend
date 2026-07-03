@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { SelectOption } from '@/components/ui/select/types'
 import enMain from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { RUNS_ON_PARTNER_NODES } from '@/composables/useTemplateFiltering'
 import { api } from '@/scripts/api'
 
 import WorkflowTemplateSelectorDialog from './WorkflowTemplateSelectorDialog.vue'
@@ -16,8 +18,6 @@ const SETTING_DEFAULTS: Record<string, unknown> = {
   'Comfy.Templates.SelectedRunsOn': [],
   'Comfy.Templates.SortBy': 'newest'
 }
-
-type SelectOption = { name: string; value: string }
 
 const { capturedOptionsByLabel } = vi.hoisted(() => ({
   capturedOptionsByLabel: new Map<string, SelectOption[]>()
@@ -99,5 +99,8 @@ describe('WorkflowTemplateSelectorDialog runs-on filter', () => {
 
     expect(optionNames).toContain('Partner Nodes')
     expect(optionNames).toContain('ComfyUI')
+
+    const partnerOption = runsOnOptions?.find((o) => o.name === 'Partner Nodes')
+    expect(partnerOption?.value).toBe(RUNS_ON_PARTNER_NODES)
   })
 })
