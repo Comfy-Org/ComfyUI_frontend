@@ -15,7 +15,10 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { createMockCanvas as createMockCanvasBase } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvas as createMockCanvasBase,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -304,15 +307,13 @@ vi.mock('@/stores/subgraphNavigationStore', () => ({
 function createMockNode(
   options: Partial<LGraphNode> | Record<string, unknown> = {}
 ) {
-  return {
-    id: 1,
-    pos: [0, 0],
+  return createMockLGraphNode({
     size: [200, 100],
     type: 'LoadImage',
     connect: vi.fn(),
     getBounding: vi.fn(() => new Float64Array([0, 0, 200, 100])),
-    ...(options as Partial<LGraphNode>)
-  } as LGraphNode
+    ...options
+  })
 }
 
 function createMockCanvas(
