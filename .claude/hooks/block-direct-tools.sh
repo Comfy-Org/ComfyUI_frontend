@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # backticks in block messages are literal markdown
 # PreToolUse hook: redirect direct tool invocations to their pnpm scripts.
 #
 # Reads the Bash tool call as JSON on stdin and inspects the actual command
@@ -12,12 +13,13 @@ set -euo pipefail
 cmd=$(jq -r '.tool_input.command // empty')
 
 # Matches <tool> at a command position (start of line or after ; & | ( `),
-# optionally prefixed by a package runner. Word-anchored, so `vue-tsc` does
-# not trip the `tsc` rule and substrings inside quoted text at non-command
-# positions are ignored.
+# optionally prefixed by env assignments (CI=1) and/or a package runner, and
+# followed by a non-word character or end of line. Word-anchored, so `vue-tsc`
+# does not trip the `tsc` rule, `tsc=1` is an assignment not an invocation,
+# and substrings inside quoted text at non-command positions are ignored.
 runs_tool() {
   printf '%s' "$cmd" | grep -qE \
-    "(^|[;&|(\`])[[:space:]]*((npx|pnpx|pnpm exec|pnpm dlx)[[:space:]]+)?$1([[:space:]]|\$)"
+    "(^|[;&|(\`])[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*((npx|pnpx|pnpm exec|pnpm dlx)[[:space:]]+)?$1([^A-Za-z0-9_.=/-]|\$)"
 }
 
 block() {
