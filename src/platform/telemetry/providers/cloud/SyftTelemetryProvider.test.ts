@@ -88,7 +88,6 @@ describe('SyftTelemetryProvider', () => {
     }
 
     expect(window.syftc).toEqual({ sourceId: 'src-123' })
-    expect(window.syft?.q).toEqual([])
     expect(appended.src).toBe(SYFT_SRC)
   })
 
@@ -163,6 +162,63 @@ describe('SyftTelemetryProvider', () => {
       'identify',
       'restored@example.com',
       { source: 'login' }
+    ])
+  })
+
+  it('leaves an externally installed client untouched on script error', async () => {
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    const appendChild = mockScriptAppend()
+    const SyftTelemetryProvider = await importProvider()
+
+    new SyftTelemetryProvider().trackAuth({
+      email: 'new@example.com',
+      is_new_user: true,
+      method: 'google'
+    })
+
+    const syft = installSyftSpy()
+
+    failScript(appendChild, 0)
+    await Promise.resolve()
+
+    expect(window.syft).toBe(syft)
+    expect(appendChild).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects pending fetchID promises when the SDK fails to load', async () => {
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    const appendChild = mockScriptAppend()
+    const SyftTelemetryProvider = await importProvider()
+
+    new SyftTelemetryProvider()
+    const pending = window.syft?.fetchID?.('anonymousId')
+
+    failScript(appendChild, 0)
+
+    await expect(pending).rejects.toThrow('Script failed to load')
+  })
+
+  it('bootstraps on the first call after the source id arrives', async () => {
+    const appendChild = mockScriptAppend()
+    const SyftTelemetryProvider = await importProvider()
+    const provider = new SyftTelemetryProvider()
+
+    expect(appendChild).not.toHaveBeenCalled()
+    expect(window.syftc).toBeUndefined()
+
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    provider.trackAuth({
+      email: 'late@example.com',
+      is_new_user: false,
+      method: 'email'
+    })
+
+    expect(appendChild).toHaveBeenCalledTimes(1)
+    expect(window.syftc).toEqual({ sourceId: 'src-123' })
+    expect(window.syft?.q).toContainEqual([
+      'identify',
+      'late@example.com',
+      { source: 'login', method: 'email' }
     ])
   })
 

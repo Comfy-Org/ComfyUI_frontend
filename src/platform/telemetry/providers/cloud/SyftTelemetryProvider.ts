@@ -50,7 +50,7 @@ function createSyftStub(): SyftDataClient {
   }
 }
 
-function bootstrapSyftClient(): SyftDataClient | null {
+function ensureSyftClient(): SyftDataClient | null {
   const sourceId = remoteConfig.value.syftdata_source_id
   if (!sourceId) return window.syft ?? null
 
@@ -70,6 +70,7 @@ function bootstrapSyftClient(): SyftDataClient | null {
       if (stubOwnsGlobal) {
         delete window.syft
         lastIdentifiedEmail = null
+        stub.fi?.forEach((pending) => pending.reject(error))
       }
       if (currentStub === stub) {
         currentStub = null
@@ -90,7 +91,7 @@ function replayPendingIdentify(): void {
 }
 
 function identifyUser(email: string, traits: SyftDataTraits): void {
-  const syft = bootstrapSyftClient()
+  const syft = ensureSyftClient()
   if (!syft) return
 
   syft.identify(email, traits)
@@ -100,7 +101,7 @@ function identifyUser(email: string, traits: SyftDataTraits): void {
 
 export class SyftTelemetryProvider implements TelemetryProvider {
   constructor() {
-    bootstrapSyftClient()
+    ensureSyftClient()
   }
 
   trackAuth({ email, is_new_user, method }: AuthMetadata): void {
