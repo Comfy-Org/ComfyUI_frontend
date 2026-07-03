@@ -1043,15 +1043,23 @@ describe('usePainter', () => {
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = canvas
 
-      painter.handlePointerDown(
-        createPointerEvent('pointerdown', { clientX: 10, clientY: 10 })
-      )
-      painter.handlePointerMove(
-        createPointerEvent('pointermove', { clientX: 20, clientY: 20 })
-      )
-      painter.handlePointerUp(createPointerEvent('pointerup'))
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        expect(() => {
+          painter.handlePointerDown(
+            createPointerEvent('pointerdown', { clientX: 10, clientY: 10 })
+          )
+          painter.handlePointerMove(
+            createPointerEvent('pointermove', { clientX: 20, clientY: 20 })
+          )
+          painter.handlePointerUp(createPointerEvent('pointerup'))
+        }).not.toThrow()
 
-      expect(canvas.getContext).toHaveBeenCalled()
+        expect(canvas.getContext).toHaveBeenCalledWith('2d')
+        expect(errorSpy).not.toHaveBeenCalled()
+      } finally {
+        errorSpy.mockRestore()
+      }
     })
 
     it('uses one animation frame for pending pointer movement', () => {

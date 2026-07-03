@@ -476,6 +476,7 @@ describe('useCoreCommands', () => {
     setActivePinia(createPinia())
 
     app.canvas.subgraph = undefined
+    app.rootGraph._nodes = []
     app.canvas.selectedItems = new Set()
     app.canvas.state.readOnly = false
     app.canvas.state.selectionChanged = false
