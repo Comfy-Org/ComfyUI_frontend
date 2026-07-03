@@ -140,13 +140,12 @@ describe('useModelToNodeStore', () => {
 
     it('omits providers whose node definition is unavailable from reverse lookup', () => {
       const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
       modelToNodeStore.modelToNodeMap = {
         missing: [new ModelNodeProvider(undefined, 'model')]
       }
 
-      expect(modelToNodeStore.getRegisteredNodeTypes()).not.toHaveProperty(
-        'undefined'
-      )
+      expect(modelToNodeStore.getRegisteredNodeTypes()).toEqual({})
     })
 
     it('should return undefined for unregistered model type', () => {

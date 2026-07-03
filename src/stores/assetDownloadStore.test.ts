@@ -156,6 +156,9 @@ describe('useAssetDownloadStore', () => {
   })
 
   describe('stale download polling', () => {
+    // Mirrors POLL_INTERVAL_MS in assetDownloadStore.ts
+    const POLL_INTERVAL_MS = 10_000
+
     function createTaskResponse(
       overrides: Partial<TaskResponse> = {}
     ): TaskResponse {
@@ -196,7 +199,7 @@ describe('useAssetDownloadStore', () => {
       const store = useAssetDownloadStore()
 
       dispatch(createDownloadMessage({ status: 'running' }))
-      await vi.advanceTimersByTimeAsync(9_999)
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS - 1)
       dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
       await vi.advanceTimersByTimeAsync(1)
 
