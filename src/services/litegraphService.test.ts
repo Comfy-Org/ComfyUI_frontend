@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -57,7 +57,7 @@ const mockCanvas = vi.hoisted(() => ({
     fitToBounds: vi.fn()
   },
   graph: {
-    nodes: [] as unknown[],
+    nodes: [] as unknown[] | undefined,
     getNodeById: vi.fn(),
     add: vi.fn(),
     setDirtyCanvas: vi.fn(),
@@ -354,14 +354,14 @@ function createNodeWithInitialSize(): LGraphNode & HasInitialMinSize {
 function createMockWidget(
   overrides: Record<string, unknown> = {}
 ): IBaseWidget {
-  return {
+  return fromPartial<IBaseWidget>({
     name: 'test_widget',
     label: undefined,
     value: 42,
     callback: vi.fn(),
     options: {},
     ...overrides
-  } as unknown as IBaseWidget
+  })
 }
 
 function installClipboard(write: Clipboard['write']) {
@@ -412,7 +412,7 @@ async function registerTestNode() {
   const service = useLitegraphService()
 
   await service.registerNodeDef('TestNode', createNodeDef())
-  const NodeCtor = registerSpy.mock.calls[0][1] as unknown as typeof LGraphNode
+  const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode
   registerSpy.mockRestore()
   return new NodeCtor('Test Node')
 }
@@ -802,8 +802,7 @@ describe('litegraphService', () => {
           expect.objectContaining({ name: 'TestNode' })
         )
 
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as typeof LGraphNode
+        const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode
         const node = new NodeCtor('Test Node')
 
         expect(node.inputs.map((input) => input.name)).toEqual(['prompt'])
@@ -875,8 +874,7 @@ describe('litegraphService', () => {
           })
         )
 
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as typeof LGraphNode
+        const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode
         const node = new NodeCtor('Output Node')
         expect(node.outputs[0]).toMatchObject({
           name: 'FLOAT',
@@ -898,8 +896,9 @@ describe('litegraphService', () => {
           createNodeDef({ name: 'DevNode', dev_only: true })
         )
 
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as typeof LGraphNode & { skip_list: boolean }
+        const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode & {
+          skip_list: boolean
+        }
         expect(NodeCtor.skip_list).toBe(true)
         registerSpy.mockRestore()
       })
@@ -919,8 +918,9 @@ describe('litegraphService', () => {
           createNodeDef({ name: 'DevNode', dev_only: true })
         )
 
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as typeof LGraphNode & { skip_list: boolean }
+        const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode & {
+          skip_list: boolean
+        }
         expect(NodeCtor.skip_list).toBe(false)
         registerSpy.mockRestore()
       })
@@ -940,8 +940,7 @@ describe('litegraphService', () => {
           })
         )
 
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as typeof LGraphNode
+        const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode
         expect(NodeCtor.title).toBe('FallbackTitleNode')
         registerSpy.mockRestore()
       })
@@ -974,8 +973,7 @@ describe('litegraphService', () => {
           })
         )
 
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as typeof LGraphNode
+        const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode
         const node = new NodeCtor('Configurable Node')
         const data = {
           inputs: [
@@ -1052,8 +1050,7 @@ describe('litegraphService', () => {
           })
         )
 
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as typeof LGraphNode
+        const NodeCtor = registerSpy.mock.calls[0][1] as typeof LGraphNode
         const node = new NodeCtor('Sparse Config Node')
         const data = {} as ISerialisedNode
 
@@ -1091,7 +1088,10 @@ describe('litegraphService', () => {
         ComfyApp.clipspace_return_node = null
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
 
         expect(options.map((option) => option.content)).toEqual(
           expect.arrayContaining([
@@ -1133,9 +1133,12 @@ describe('litegraphService', () => {
           .mockRejectedValueOnce(new Error('png only'))
           .mockResolvedValueOnce(undefined)
         const drawImage = vi.fn()
-        const bitmap = { close: vi.fn() } as unknown as ImageBitmap
+        const bitmap = fromPartial<ImageBitmap>({ close: vi.fn() })
         const canvas = document.createElement('canvas')
-        vi.spyOn(canvas, 'getContext').mockReturnValue(fromAny({ drawImage }))
+        vi.spyOn(
+          canvas as { getContext(id: string): CanvasRenderingContext2D | null },
+          'getContext'
+        ).mockReturnValue(fromPartial<CanvasRenderingContext2D>({ drawImage }))
         vi.spyOn(canvas, 'toBlob').mockImplementation((callback, type) => {
           expect(type).toBe('image/png')
           callback(pngBlob)
@@ -1164,7 +1167,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1205,7 +1211,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1242,7 +1251,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1284,7 +1296,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1302,8 +1317,11 @@ describe('litegraphService', () => {
           .fn<Clipboard['write']>()
           .mockRejectedValue(new Error('png only'))
         const canvas = document.createElement('canvas')
-        vi.spyOn(canvas, 'getContext').mockReturnValue(
-          fromAny({ drawImage: vi.fn() })
+        vi.spyOn(
+          canvas as { getContext(id: string): CanvasRenderingContext2D | null },
+          'getContext'
+        ).mockReturnValue(
+          fromPartial<CanvasRenderingContext2D>({ drawImage: vi.fn() })
         )
         vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => {
           callback(null)
@@ -1332,7 +1350,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
         await invokeMenuCallback(
           options.find((option) => option.content === 'Copy Image')!
         )
@@ -1358,11 +1379,13 @@ describe('litegraphService', () => {
           overIndex: 0,
           getWidgetOnPos: vi.fn().mockReturnValue(undefined)
         })
-        // ComfyApp.clipspace_return_node is inferred as `null` in app.ts; widen for the test.
-        ComfyApp.clipspace_return_node = fromAny(node)
+        ComfyApp.clipspace_return_node = node
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
 
         expect(options.map((option) => option.content)).not.toContain(
           'Copy Image'
@@ -1390,7 +1413,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
 
         expect(options.map((option) => option.content)).not.toContain(
           'Open Image'
@@ -1413,7 +1439,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
 
         expect(options.map((option) => option.content)).toContain(
           'Open in MaskEditor | Image Canvas'
@@ -1435,7 +1464,10 @@ describe('litegraphService', () => {
         })
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
         await invokeMenuCallback(
           options.find((option) => option.content === 'Save Image')!
         )
@@ -1462,9 +1494,12 @@ describe('litegraphService', () => {
           name: 'Subgraph Test'
         })
         mockApp.rootGraph = subgraph.rootGraph
+        const capturedCtors: unknown[] = []
         const registerSpy = vi
           .spyOn(LiteGraph, 'registerNodeType')
-          .mockImplementation(function () {})
+          .mockImplementation((_name, ctor) => {
+            capturedCtors.push(ctor)
+          })
         service.registerSubgraphNodeDef(
           createNodeDef({
             name: subgraph.id,
@@ -1484,12 +1519,14 @@ describe('litegraphService', () => {
             order: 0
           }
         )
-        const NodeCtor = registerSpy.mock
-          .calls[0][1] as unknown as new () => SubgraphNode
+        const NodeCtor = capturedCtors[0] as new () => SubgraphNode
         const node = new NodeCtor()
         const options: IContextMenuValue[] = []
 
-        node.getExtraMenuOptions?.(fromAny(mockCanvas), options)
+        node.getExtraMenuOptions?.(
+          Object.assign(fromPartial<LGraphCanvas>({}), mockCanvas),
+          options
+        )
 
         await invokeMenuCallback(
           options.find((option) => option.content === 'Edit Subgraph Widgets')!
@@ -1526,26 +1563,32 @@ describe('litegraphService', () => {
         const stopImmediatePropagation = vi.fn()
 
         expect(
-          node.onKeyDown?.({
-            key: 'ArrowLeft',
-            preventDefault,
-            stopImmediatePropagation
-          } as unknown as KeyboardEvent)
+          node.onKeyDown?.(
+            fromPartial<KeyboardEvent>({
+              key: 'ArrowLeft',
+              preventDefault,
+              stopImmediatePropagation
+            })
+          )
         ).toBe(false)
         expect(node.imageIndex).toBe(2)
 
-        node.onKeyDown?.({
-          key: 'ArrowRight',
-          preventDefault,
-          stopImmediatePropagation
-        } as unknown as KeyboardEvent)
+        node.onKeyDown?.(
+          fromPartial<KeyboardEvent>({
+            key: 'ArrowRight',
+            preventDefault,
+            stopImmediatePropagation
+          })
+        )
         expect(node.imageIndex).toBe(0)
 
-        node.onKeyDown?.({
-          key: 'Escape',
-          preventDefault,
-          stopImmediatePropagation
-        } as unknown as KeyboardEvent)
+        node.onKeyDown?.(
+          fromPartial<KeyboardEvent>({
+            key: 'Escape',
+            preventDefault,
+            stopImmediatePropagation
+          })
+        )
         expect(node.imageIndex).toBeNull()
         expect(preventDefault).toHaveBeenCalledTimes(3)
         expect(stopImmediatePropagation).toHaveBeenCalledTimes(3)
@@ -1558,11 +1601,11 @@ describe('litegraphService', () => {
           imgs: [{}, {}],
           imageIndex: 0
         })
-        const event = {
+        const event = fromPartial<KeyboardEvent>({
           key: 'ArrowLeft',
           preventDefault: vi.fn(),
           stopImmediatePropagation: vi.fn()
-        } as unknown as KeyboardEvent
+        })
 
         expect(node.onKeyDown?.(event)).toBeUndefined()
         expect(event.preventDefault).not.toHaveBeenCalled()
@@ -1892,7 +1935,7 @@ describe('litegraphService', () => {
 
       it('does nothing when the canvas graph has no nodes collection', async () => {
         const savedNodes = mockCanvas.graph.nodes
-        mockCanvas.graph.nodes = undefined as unknown as typeof savedNodes
+        mockCanvas.graph.nodes = undefined
 
         const service = await getService()
         service.fitView()
