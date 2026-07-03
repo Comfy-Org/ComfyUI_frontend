@@ -18,8 +18,7 @@ const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
   demoteWidget: vi.fn(),
-  promoteWidget: vi.fn(),
-  isLinkedPromotion: vi.fn(() => false)
+  promoteWidget: vi.fn()
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({

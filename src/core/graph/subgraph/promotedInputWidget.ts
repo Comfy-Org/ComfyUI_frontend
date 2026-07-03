@@ -39,22 +39,6 @@ export function inputForWidget(
 }
 
 /**
- * The interior source of a widget when it is a promoted subgraph input.
- * Replaces ad-hoc "is this promoted?" duck-typing: a widget is promoted iff its
- * host node is a subgraph node and its backing input slot has an interior
- * source.
- */
-export function widgetPromotedSource(
-  node: LGraphNode,
-  widget: IBaseWidget
-): PromotedSource | undefined {
-  if (!node.isSubgraphNode()) return undefined
-  const input = inputForWidget(node, widget)
-  if (!input) return undefined
-  return promotedInputSource(node, input)
-}
-
-/**
  * Projects a promoted subgraph input into an ordinary widget descriptor. The
  * descriptor is store-backed: type/value/options read live from
  * {@link useWidgetValueStore} by widgetId (mirroring BaseWidget), so the row

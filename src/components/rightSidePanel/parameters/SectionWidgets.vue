@@ -12,9 +12,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -145,29 +143,12 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
-function isWidgetShownOnParents(
-  widgetNode: LGraphNode,
-  widget: IBaseWidget
-): boolean {
-  const source = widgetPromotedSource(widgetNode, widget)
-  return parents.some((parent) => {
-    if (source) {
-      const widgetNodeId = widgetNode.id
-      const interiorNodeId =
-        String(widgetNode.id) === String(parent.id)
-          ? source.nodeId
-          : widgetNodeId
-
-      return isWidgetPromotedOnSubgraphNode(parent, {
-        sourceNodeId: interiorNodeId,
-        sourceWidgetName: source.widgetName
-      })
-    }
-    return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: widgetNode.id,
-      sourceWidgetName: widget.name
-    })
-  })
+function isWidgetShownOnParents(widget: IBaseWidget): boolean {
+  const id = widget.widgetId
+  if (!id) return false
+  return parents.some((parent) =>
+    parent.inputs.some((input) => input.widgetId === id)
+  )
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)
@@ -405,7 +386,7 @@ defineExpose({
             :hidden-favorite-indicator="hiddenFavoriteIndicator"
             :show-node-name="showNodeName"
             :parents="parents"
-            :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+            :is-shown-on-parents="isWidgetShownOnParents(widget)"
             @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
             @reset-to-default="handleWidgetReset(node, widget, $event)"
           />

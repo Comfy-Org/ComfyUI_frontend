@@ -5,17 +5,14 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  demotePromotedInput,
   demoteWidget,
-  isLinkedPromotion,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
@@ -40,7 +37,6 @@ const emit = defineEmits<{
 
 const label = defineModel<string>('label', { required: true })
 
-const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
@@ -48,9 +44,7 @@ const { t } = useI18n()
 const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
   if (!node.isSubgraphNode()) return false
-  const source = widgetPromotedSource(node, widget)
-  if (!source) return false
-  return isLinkedPromotion(node, source.nodeId, source.widgetName)
+  return inputForWidget(node, widget)?.widgetId != null
 })
 const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>
@@ -87,22 +81,7 @@ async function handleRename() {
 
 function handleHideInput() {
   if (!parents?.length) return
-
-  const source = widgetPromotedSource(node, widget)
-  if (source) {
-    const currentNodeId = node.id
-    for (const parent of parents) {
-      const sourceNodeId =
-        String(node.id) === String(parent.id) ? source.nodeId : currentNodeId
-      demotePromotedInput(parent, {
-        sourceNodeId,
-        sourceWidgetName: source.widgetName
-      })
-    }
-    canvasStore.canvas?.setDirty(true, true)
-  } else {
-    demoteWidget(node, widget, parents)
-  }
+  demoteWidget(node, widget, parents)
 }
 
 function handleShowInput() {
