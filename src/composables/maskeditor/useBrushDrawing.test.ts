@@ -586,14 +586,17 @@ describe('useBrushDrawing', () => {
       mockStore.maskCtx = null
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      const { startDrawing } = useBrushDrawing()
+      const { startDrawing, drawEnd } = useBrushDrawing()
       await startDrawing(createPointerEvent())
 
-      // startDrawing catches the error and resets isDrawing
       expect(consoleSpy).toHaveBeenCalledWith(
         '[useBrushDrawing] Failed to start drawing:',
         expect.any(Error)
       )
+
+      await drawEnd(createPointerEvent())
+
+      expect(mockCanvasHistory.saveState).not.toHaveBeenCalled()
     })
 
     it('should catch error when the RGB context is missing', async () => {
