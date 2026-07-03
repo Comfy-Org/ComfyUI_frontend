@@ -59,6 +59,11 @@ interface SyftDataClient {
   fetchID?: (...args: unknown[]) => Promise<unknown>
 }
 
+/** Installed by the Syft UMD instead of SyftDataClient when telemetry is opted out */
+interface SyftDisabledClient {
+  enable: () => void
+}
+
 interface Window {
   __CONFIG__: {
     gtm_container_id?: string
@@ -96,8 +101,8 @@ interface Window {
   }
   dataLayer?: Array<Record<string, unknown>>
   gtag?: GtagFunction
-  syft?: SyftDataClient
-  syftc?: { sourceId: string }
+  syft?: SyftDataClient | SyftDisabledClient
+  syftc?: { sourceId?: string; enabled?: boolean }
   ire_o?: string
   ire?: ImpactQueueFunction
   rewardful?: RewardfulQueueFunction

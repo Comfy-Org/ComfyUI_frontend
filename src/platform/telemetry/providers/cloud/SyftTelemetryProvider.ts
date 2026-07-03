@@ -12,8 +12,9 @@ let lastIdentifiedEmail: string | null = null
 let pendingIdentify: { email: string; traits: SyftDataTraits } | null = null
 let hasReplayedIdentify = false
 
-const loadSyftSdk = createScriptLoader<SyftDataClient>(SYFT_SRC, () =>
-  window.syft && window.syft !== currentStub ? window.syft : null
+const loadSyftSdk = createScriptLoader<SyftDataClient | SyftDisabledClient>(
+  SYFT_SRC,
+  () => (window.syft && window.syft !== currentStub ? window.syft : null)
 )
 
 function createTraits(
@@ -50,11 +51,11 @@ function createSyftStub(): SyftDataClient {
   }
 }
 
-function ensureSyftClient(): SyftDataClient | null {
+function ensureSyftClient(): SyftDataClient | SyftDisabledClient | null {
   const sourceId = remoteConfig.value.syftdata_source_id
   if (!sourceId) return window.syft ?? null
 
-  window.syftc = { sourceId }
+  window.syftc = { ...window.syftc, sourceId }
   if (window.syft) return window.syft
 
   const stub = createSyftStub()
@@ -92,7 +93,7 @@ function replayPendingIdentify(): void {
 
 function identifyUser(email: string, traits: SyftDataTraits): void {
   const syft = ensureSyftClient()
-  if (!syft) return
+  if (!syft || !('identify' in syft)) return
 
   syft.identify(email, traits)
   lastIdentifiedEmail = email

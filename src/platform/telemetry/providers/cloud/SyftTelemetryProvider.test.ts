@@ -43,6 +43,14 @@ function mockScriptAppend() {
     .mockImplementation(<T extends Node>(node: T) => node)
 }
 
+function syftStub(): SyftDataClient {
+  const syft = window.syft
+  if (!syft || !('identify' in syft)) {
+    throw new Error('Expected a full Syft client on window')
+  }
+  return syft
+}
+
 function failScript(
   appendChild: ReturnType<typeof mockScriptAppend>,
   index: number
@@ -109,7 +117,7 @@ describe('SyftTelemetryProvider', () => {
     })
 
     expect(appendChild).toHaveBeenCalledTimes(2)
-    expect(window.syft?.q).toContainEqual([
+    expect(syftStub().q).toContainEqual([
       'identify',
       'retry@example.com',
       { source: 'login', method: 'email' }
@@ -131,7 +139,7 @@ describe('SyftTelemetryProvider', () => {
     await Promise.resolve()
 
     expect(appendChild).toHaveBeenCalledTimes(2)
-    expect(window.syft?.q).toContainEqual([
+    expect(syftStub().q).toContainEqual([
       'identify',
       'new@example.com',
       { source: 'signup', method: 'google' }
@@ -158,7 +166,7 @@ describe('SyftTelemetryProvider', () => {
     provider.trackUserLoggedIn()
 
     expect(appendChild).toHaveBeenCalledTimes(3)
-    expect(window.syft?.q).toContainEqual([
+    expect(syftStub().q).toContainEqual([
       'identify',
       'restored@example.com',
       { source: 'login' }
@@ -191,7 +199,7 @@ describe('SyftTelemetryProvider', () => {
     const SyftTelemetryProvider = await importProvider()
 
     new SyftTelemetryProvider()
-    const pending = window.syft?.fetchID?.('anonymousId')
+    const pending = syftStub().fetchID?.('anonymousId')
 
     failScript(appendChild, 0)
 
@@ -215,11 +223,41 @@ describe('SyftTelemetryProvider', () => {
 
     expect(appendChild).toHaveBeenCalledTimes(1)
     expect(window.syftc).toEqual({ sourceId: 'src-123' })
-    expect(window.syft?.q).toContainEqual([
+    expect(syftStub().q).toContainEqual([
       'identify',
       'late@example.com',
       { source: 'login', method: 'email' }
     ])
+  })
+
+  it('preserves an existing opt-out flag when writing the source id', async () => {
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    window.syftc = { enabled: false }
+    mockScriptAppend()
+    const SyftTelemetryProvider = await importProvider()
+
+    new SyftTelemetryProvider()
+
+    expect(window.syftc).toEqual({ enabled: false, sourceId: 'src-123' })
+  })
+
+  it('skips identify when Syft installed its disabled-mode client', async () => {
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    const appendChild = mockScriptAppend()
+    const disabledClient = { enable: vi.fn() }
+    window.syft = disabledClient
+    const SyftTelemetryProvider = await importProvider()
+    const provider = new SyftTelemetryProvider()
+
+    expect(() =>
+      provider.trackAuth({
+        email: 'optedout@example.com',
+        is_new_user: false,
+        method: 'email'
+      })
+    ).not.toThrow()
+    expect(window.syft).toBe(disabledClient)
+    expect(appendChild).not.toHaveBeenCalled()
   })
 
   it('does not touch the current user store during construction', async () => {
@@ -255,7 +293,7 @@ describe('SyftTelemetryProvider', () => {
       method: 'google'
     })
 
-    expect(window.syft?.q).toContainEqual([
+    expect(syftStub().q).toContainEqual([
       'identify',
       'new@example.com',
       { source: 'signup', method: 'google' }
@@ -316,7 +354,7 @@ describe('SyftTelemetryProvider', () => {
     new SyftTelemetryProvider().trackUserLoggedIn()
 
     expect(mockCurrentUser.useCurrentUser).toHaveBeenCalled()
-    expect(window.syft?.q).toContainEqual([
+    expect(syftStub().q).toContainEqual([
       'identify',
       'restored@example.com',
       { source: 'login' }
