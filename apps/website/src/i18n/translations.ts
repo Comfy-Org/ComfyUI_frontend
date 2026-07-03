@@ -26,6 +26,10 @@ const translations = {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
   },
+  'cta.getStarted': {
+    en: 'GET STARTED',
+    'zh-CN': '快速开始'
+  },
   'cta.watchNow': {
     en: 'Watch Now',
     'zh-CN': '立即观看'
@@ -2196,16 +2200,16 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'New Release: Seedance 2.0',
-    'zh-CN': '全新发布：Seedance 2.0'
+    en: 'NEW: COMFY MCP',
+    'zh-CN': '全新发布：Comfy MCP'
   },
   'nav.featuredProductsAlt': {
-    en: 'Seedance 2.0 release feature image',
-    'zh-CN': 'Seedance 2.0 发布精选图片'
+    en: 'Comfy MCP feature image',
+    'zh-CN': 'Comfy MCP 精选图片'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Try the Seedance 2.0 workflow',
-    'zh-CN': '试用 Seedance 2.0 工作流'
+    en: 'Get started with Comfy MCP',
+    'zh-CN': '开始使用 Comfy MCP'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
