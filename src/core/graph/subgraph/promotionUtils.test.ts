@@ -57,7 +57,6 @@ import {
   demoteWidget,
   getPromotableWidgets,
   hasUnpromotedWidgets,
-  isLinkedPromotion,
   isPreviewPseudoWidget,
   promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
@@ -541,53 +540,6 @@ describe('hasUnpromotedWidgets', () => {
   })
 })
 
-describe('isLinkedPromotion', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  function promoteSource(host: SubgraphNode, widgetName: string): LGraphNode {
-    const node = new LGraphNode('Source')
-    const input = node.addInput(widgetName, 'STRING')
-    const widget = node.addWidget('text', widgetName, '', () => {})
-    input.widget = { name: widget.name }
-    host.subgraph.add(node)
-    promoteValueWidgetViaSubgraphInput(host, node, widget)
-    return node
-  }
-
-  it('returns true for a linked promotion', () => {
-    const host = createTestSubgraphNode(createTestSubgraph())
-    const node = promoteSource(host, 'text')
-
-    expect(isLinkedPromotion(host, String(node.id), 'text')).toBe(true)
-  })
-
-  it('returns false when no promotion exists', () => {
-    const host = createTestSubgraphNode(createTestSubgraph())
-
-    expect(isLinkedPromotion(host, '999', 'nonexistent')).toBe(false)
-  })
-
-  it('returns false when sourceWidgetName does not match', () => {
-    const host = createTestSubgraphNode(createTestSubgraph())
-    const node = promoteSource(host, 'text')
-
-    expect(isLinkedPromotion(host, String(node.id), 'wrong_name')).toBe(false)
-  })
-
-  it('identifies linked widgets across different inputs', () => {
-    const host = createTestSubgraphNode(createTestSubgraph())
-    const nodeA = promoteSource(host, 'string_a')
-    const nodeB = promoteSource(host, 'value')
-
-    expect(isLinkedPromotion(host, String(nodeA.id), 'string_a')).toBe(true)
-    expect(isLinkedPromotion(host, String(nodeB.id), 'value')).toBe(true)
-    expect(isLinkedPromotion(host, String(nodeA.id), 'value')).toBe(false)
-    expect(isLinkedPromotion(host, '5', 'string_a')).toBe(false)
-  })
-})
-
 describe('reorderSubgraphInputsByName', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -812,9 +764,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(host.subgraph.inputs).toHaveLength(1)
     expect(host.inputs[0]?.link).toBe(9999)
     expect(host.inputs[0]?._widget).toBeUndefined()
-    expect(
-      isLinkedPromotion(host, String(interiorNode.id), interiorWidget.name)
-    ).toBe(false)
+    expect(interiorNode.inputs[0]?.link).toBeNull()
     expect(host.widgets).toHaveLength(0)
     if (!promotedInputId) throw new Error('Missing promoted input widgetId')
     expect(useWidgetValueStore().getWidget(promotedInputId)).toBeUndefined()
@@ -832,14 +782,13 @@ describe('demoteWidget — axiomatic projection retraction', () => {
   })
 
   it('demotes the second of two promoted widgets sharing a source widget name', () => {
-    const { host, nodeA, widgetA, nodeB, widgetB } =
-      buildDuplicateNamePromotion()
+    const { host, nodeA, nodeB, widgetB } = buildDuplicateNamePromotion()
 
     demoteWidget(nodeB, widgetB, [host])
 
     expect(host.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
-    expect(isLinkedPromotion(host, String(nodeB.id), widgetB.name)).toBe(false)
-    expect(isLinkedPromotion(host, String(nodeA.id), widgetA.name)).toBe(true)
+    expect(nodeB.inputs[0]?.link).toBeNull()
+    expect(nodeA.inputs[0]?.link).not.toBeNull()
   })
 
   it('demotes the correct slot when widget lives on a nested SubgraphNode with same-named deep sources', () => {
@@ -866,12 +815,8 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     demoteWidget(innerHost, promotedWidgetRef(innerHost, 'text_1'), [outerHost])
 
     expect(outerHost.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
-    expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text_1')).toBe(
-      false
-    )
-    expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text')).toBe(
-      true
-    )
+    expect(innerHost.inputs.find((i) => i.name === 'text_1')?.link).toBeNull()
+    expect(innerHost.inputs.find((i) => i.name === 'text')?.link).not.toBeNull()
   })
 })
 

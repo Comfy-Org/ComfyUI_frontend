@@ -34,7 +34,7 @@ export function getWidgetName(w: IBaseWidget): string {
   return w.name
 }
 
-export function isLinkedPromotion(
+function isLinkedPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: SerializedNodeId,
   sourceWidgetName: string
