@@ -643,7 +643,9 @@ const selectedUseCaseObjects = computed({
 })
 
 const runsOnDisplayName = (runsOn: string) =>
-  runsOn === 'External or Remote API' ? 'Partner Nodes' : runsOn
+  runsOn === 'External or Remote API'
+    ? t('templateWorkflows.runsOnPartnerNodes', 'Partner Nodes')
+    : runsOn
 
 const selectedRunsOnObjects = computed({
   get() {
