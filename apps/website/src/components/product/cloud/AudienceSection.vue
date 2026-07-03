@@ -55,21 +55,11 @@ const cards = [
         />
 
         <div class="mt-8 p-6">
-          <p
-            class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
-          >
-            {{ t(card.labelKey, locale) }}
-          </p>
-
-          <h3
-            class="mt-8 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
-          >
-            {{ t(card.titleKey, locale) }}
-          </h3>
-
-          <div class="mt-8 flex items-end justify-between gap-6">
-            <p class="text-base/normal text-primary-comfy-canvas">
-              {{ t(card.descriptionKey, locale) }}
+          <div class="flex items-center justify-between gap-4">
+            <p
+              class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+            >
+              {{ t(card.labelKey, locale) }}
             </p>
 
             <div
@@ -78,6 +68,16 @@ const cards = [
               <ChevronRight class="size-5" :stroke-width="2" />
             </div>
           </div>
+
+          <h3
+            class="mt-8 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
+          >
+            {{ t(card.titleKey, locale) }}
+          </h3>
+
+          <p class="mt-8 text-base/normal text-primary-comfy-canvas">
+            {{ t(card.descriptionKey, locale) }}
+          </p>
         </div>
       </a>
     </GlassCard>
