@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -10,10 +10,12 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { createMockCanvas as createMockCanvasBase } from '@/utils/__tests__/litegraphTestUtils'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -313,17 +315,30 @@ function createMockNode(
   } as LGraphNode
 }
 
-function createMockCanvas(): Partial<LGraphCanvas> {
-  const mockGraph: Partial<LGraph> = {
-    change: vi.fn()
-  }
-
-  return {
-    graph: mockGraph as LGraph,
+function createMockCanvas(
+  overrides: Partial<LGraphCanvas> | Record<string, unknown> = {}
+): LGraphCanvas {
+  return createMockCanvasBase({
+    graph: { change: vi.fn() },
     draw: vi.fn(),
     selectItems: vi.fn(),
-    setDirty: vi.fn()
-  }
+    setDirty: vi.fn(),
+    ...overrides
+  })
+}
+
+type ComfyAppPrivate = Pick<ComfyApp, 'vueAppReady'> & {
+  addApiUpdateHandlers(): void
+  addDropHandler(): void
+  addProcessKeyHandler(): void
+  runMissingMediaPipeline(silent?: boolean): Promise<void>
+  showMissingNodesError(types: string[]): void
+  updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>): void
+}
+
+function privateApi(instance: ComfyApp): ComfyAppPrivate {
+  const appObject: object = instance
+  return fromPartial<ComfyAppPrivate>(appObject)
 }
 
 function attachLoadGraphCanvas(
@@ -335,8 +350,7 @@ function attachLoadGraphCanvas(
   canvasEl.height = options.height ?? 100
   app.canvasElRef.value = canvasEl
 
-  const canvas = {
-    ...createMockCanvas(),
+  const canvas = createMockCanvas({
     setGraph: vi.fn(),
     resize: vi.fn(),
     graph_mouse: [0, 0],
@@ -347,7 +361,7 @@ function attachLoadGraphCanvas(
       scale: 1,
       computeVisibleArea: vi.fn()
     }
-  } as unknown as LGraphCanvas
+  })
   app.canvas = canvas
   return canvas
 }
@@ -383,8 +397,8 @@ describe('ComfyApp', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     app = new ComfyApp()
-    mockCanvas = createMockCanvas() as LGraphCanvas
-    app.canvas = mockCanvas as LGraphCanvas
+    mockCanvas = createMockCanvas()
+    app.canvas = mockCanvas
     mockWorkspaceWorkflow.activeWorkflow = null
     mockWorkspaceStore.workflow = mockWorkspaceWorkflow
     mockWorkspaceStore.spinner = false
@@ -627,13 +641,11 @@ describe('ComfyApp', () => {
     })
 
     it('uses middleware messages for access restricted prompt failures', async () => {
-      const error = new PromptExecutionError(
-        {
-          message: 'Workspace allowlist required',
-          error: ''
-        } as unknown as PromptResponse,
-        403
-      )
+      const middlewareResponse: PromptResponse & { message: string } = {
+        message: 'Workspace allowlist required',
+        error: ''
+      }
+      const error = new PromptExecutionError(middlewareResponse, 403)
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
@@ -871,12 +883,7 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
       vi.spyOn(app, 'registerNodesFromDefs').mockResolvedValue(undefined)
       const updateVueAppNodeDefs = vi
-        .spyOn(
-          app as unknown as {
-            updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>): void
-          },
-          'updateVueAppNodeDefs'
-        )
+        .spyOn(privateApi(app), 'updateVueAppNodeDefs')
         .mockImplementation(() => undefined)
 
       app.vueAppReady = false
@@ -899,11 +906,7 @@ describe('ComfyApp', () => {
       LiteGraph.registerNodeType('frontend/Only', FrontendOnlyNode)
       LiteGraph.registerNodeType('backend/Known', BackendKnownNode)
       LiteGraph.registerNodeType('frontend/Skipped', SkippedNode)
-      ;(
-        LiteGraph.registered_node_types['frontend/Skipped'] as unknown as {
-          skip_list: boolean
-        }
-      ).skip_list = true
+      SkippedNode.skip_list = true
 
       try {
         const defs = {
@@ -914,11 +917,7 @@ describe('ComfyApp', () => {
           })
         }
 
-        ;(
-          app as unknown as {
-            updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>): void
-          }
-        ).updateVueAppNodeDefs(defs)
+        privateApi(app).updateVueAppNodeDefs(defs)
 
         const store = useNodeDefStore()
         expect(store.nodeDefsByName['frontend/Only']).toMatchObject({
@@ -1162,7 +1161,7 @@ describe('ComfyApp', () => {
     it('pastes back into the return node when the editor saves', () => {
       const node = createMockNode()
       const paste = vi.spyOn(ComfyApp, 'pasteFromClipspace')
-      ComfyApp.clipspace_return_node = fromAny(node)
+      ComfyApp.clipspace_return_node = node
 
       ComfyApp.onClipspaceEditorSave()
       ComfyApp.onClipspaceEditorClosed()
@@ -1336,12 +1335,12 @@ describe('ComfyApp', () => {
         second: { pos: [20, 80], size: [100, 40] }
       }
       const pasteFromClipboard = vi.fn()
-      singletonApp.canvas = {
+      singletonApp.canvas = createMockCanvas({
         ...mockCanvas,
         graph_mouse: graphMouse,
         selected_nodes,
         pasteFromClipboard
-      } as unknown as LGraphCanvas
+      })
 
       app.loadTemplateData({
         templates: [{}, { data: '{"nodes":[]}' }, { data: '{"reroutes":[1]}' }]
@@ -1617,12 +1616,7 @@ describe('ComfyApp', () => {
       vi.spyOn(rootGraph, 'configure').mockImplementation(() => undefined)
       vi.spyOn(app, 'clean').mockImplementation(() => undefined)
       const runMissingMediaPipeline = vi
-        .spyOn(
-          app as unknown as {
-            runMissingMediaPipeline(silent?: boolean): Promise<void>
-          },
-          'runMissingMediaPipeline'
-        )
+        .spyOn(privateApi(app), 'runMissingMediaPipeline')
         .mockResolvedValue(undefined)
       const requestAnimationFrame = vi
         .spyOn(window, 'requestAnimationFrame')
@@ -1665,24 +1659,26 @@ describe('ComfyApp', () => {
       sampler.addWidget('combo', 'sampler_name', 'sample_euler', () => {}, {
         values: ['euler']
       })
-      sampler.addWidget(
+      const controlWidget = sampler.addWidget(
         'combo',
         'control_after_generate',
-        fromAny<string, boolean>(true),
+        'fixed',
         () => {},
         {
           values: ['fixed', 'randomize']
         }
       )
-      sampler.addWidget(
+      Reflect.set(controlWidget, 'value', true)
+      const ckptWidget = sampler.addWidget(
         'combo',
         'ckpt_name',
-        fromAny<string, null>(null),
+        'model.safetensors',
         () => {},
         {
           values: ['model.safetensors']
         }
       )
+      Reflect.set(ckptWidget, 'value', null)
       rootGraph.add(sampler)
       vi.spyOn(rootGraph, 'configure').mockImplementation(() => undefined)
       mockSettingStore.get.mockImplementation((key: string) => {
@@ -1700,12 +1696,7 @@ describe('ComfyApp', () => {
       })
       mockEnsureCorrectLayoutScale.mockReturnValue(true)
       const runMissingMediaPipeline = vi
-        .spyOn(
-          app as unknown as {
-            runMissingMediaPipeline(silent?: boolean): Promise<void>
-          },
-          'runMissingMediaPipeline'
-        )
+        .spyOn(privateApi(app), 'runMissingMediaPipeline')
         .mockResolvedValue(undefined)
       vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
         (callback: FrameRequestCallback) => {
@@ -1719,7 +1710,7 @@ describe('ComfyApp', () => {
         size: 0
       })
       workflow.shareId = 'workflow-share'
-      const graphData = {
+      const graphData = fromPartial<ComfyWorkflowJSON>({
         ...createWorkflowGraphData(),
         nodes: [
           {
@@ -1740,7 +1731,7 @@ describe('ComfyApp', () => {
             scale: 0.5
           }
         }
-      } as unknown as ComfyWorkflowJSON
+      })
 
       await app.loadGraphData(graphData, false, true, workflow, {
         checkForRerouteMigration: true,
@@ -1886,7 +1877,9 @@ describe('ComfyApp', () => {
         }
       )
 
-      await app.loadGraphData(fromAny([]), true, true)
+      const malformedGraphData: ComfyWorkflowJSON = JSON.parse('[]')
+
+      await app.loadGraphData(malformedGraphData, true, true)
 
       expect(node.widgets?.[0].value).toBe('fixed')
       expect(mockLitegraphService.fitView).toHaveBeenCalled()
@@ -1961,7 +1954,7 @@ describe('ComfyApp', () => {
       const first = createMockNode({ id: 1 })
       const second = createMockNode({ id: 2 })
       vi.mocked(pasteImageNodes).mockResolvedValue([first, second])
-      vi.mocked(createNode).mockResolvedValue(null as unknown as LGraphNode)
+      vi.mocked(createNode).mockResolvedValue(null)
 
       await app.handleFileList([
         createTestFile('first.png', 'image/png'),
@@ -2187,12 +2180,7 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
       const showMissingNodesError = vi
-        .spyOn(
-          singletonApp as unknown as {
-            showMissingNodesError(types: string[]): void
-          },
-          'showMissingNodesError'
-        )
+        .spyOn(privateApi(singletonApp), 'showMissingNodesError')
         .mockImplementation(() => undefined)
 
       singletonApp.loadApiJson(
@@ -2242,7 +2230,7 @@ describe('ComfyApp', () => {
 
       try {
         singletonApp.loadApiJson(
-          {
+          fromPartial<ComfyApiWorkflow>({
             1: {
               class_type: 'WidgetInputNode',
               inputs: {
@@ -2253,7 +2241,6 @@ describe('ComfyApp', () => {
             },
             2: {
               class_type: 'NoInputNode',
-              inputs: fromAny(undefined),
               _meta: { title: 'NoInputNode' }
             },
             3: {
@@ -2261,7 +2248,7 @@ describe('ComfyApp', () => {
               inputs: {},
               _meta: { title: 'SourceNode' }
             }
-          },
+          }),
           'converted'
         )
 
@@ -2435,7 +2422,12 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(graph, 'serialize').mockReturnValue(
-        fromAny(createWorkflowGraphData())
+        fromPartial<ISerialisedGraph>({
+          nodes: [],
+          links: [],
+          groups: [],
+          version: 0.4
+        })
       )
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         workflow: '[]',
@@ -2522,7 +2514,12 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(graph, 'serialize').mockReturnValue(
-        fromAny(createWorkflowGraphData())
+        fromPartial<ISerialisedGraph>({
+          nodes: [],
+          links: [],
+          groups: [],
+          version: 0.4
+        })
       )
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         prompt: '{',
@@ -2573,11 +2570,11 @@ describe('ComfyApp', () => {
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
       })
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph_mouse: graphMouse,
         adjustMouseEvent
-      } as unknown as LGraphCanvas
+      })
       const image = createTestFile('image.png', 'image/png')
       const audio = createTestFile('audio.wav', 'audio/wav')
       const video = createTestFile('video.mp4', 'video/mp4')
@@ -2593,7 +2590,7 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'handleVideoFileList').mockResolvedValue(undefined)
       vi.spyOn(app, 'handleFile').mockResolvedValue(undefined)
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
 
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
@@ -2611,7 +2608,7 @@ describe('ComfyApp', () => {
     })
 
     it('routes multi-image drops without requiring every media type', async () => {
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph_mouse: [0, 0],
         adjustMouseEvent: vi.fn((event: DragEvent) => {
@@ -2619,7 +2616,7 @@ describe('ComfyApp', () => {
             3
           ;(event as DragEvent & { canvasY: number }).canvasY = 4
         })
-      } as unknown as LGraphCanvas
+      })
       const first = createTestFile('first.png', 'image/png')
       const second = createTestFile('second.png', 'image/png')
       const workflow = createTestFile('workflow.json', 'application/json')
@@ -2629,7 +2626,7 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'handleVideoFileList').mockResolvedValue(undefined)
       vi.spyOn(app, 'handleFile').mockResolvedValue(undefined)
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2643,7 +2640,7 @@ describe('ComfyApp', () => {
 
     it('routes a single dropped file through handleFile', async () => {
       const workflow = createTestFile('workflow.json', 'application/json')
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph_mouse: [0, 0],
         adjustMouseEvent: vi.fn((event: DragEvent) => {
@@ -2651,11 +2648,11 @@ describe('ComfyApp', () => {
             1
           ;(event as DragEvent & { canvasY: number }).canvasY = 2
         })
-      } as unknown as LGraphCanvas
+      })
       mockExtractFilesFromDragEvent.mockResolvedValue([workflow])
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2666,15 +2663,15 @@ describe('ComfyApp', () => {
     })
 
     it('does not start loading when the drop contains no files', async () => {
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph_mouse: [0, 0],
         adjustMouseEvent: vi.fn()
-      } as unknown as LGraphCanvas
+      })
       mockExtractFilesFromDragEvent.mockResolvedValue([])
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2683,14 +2680,14 @@ describe('ComfyApp', () => {
     })
 
     it('surfaces drop routing failures', async () => {
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph_mouse: [0, 0],
         adjustMouseEvent: vi.fn()
-      } as unknown as LGraphCanvas
+      })
       mockExtractFilesFromDragEvent.mockRejectedValue(new Error('drop failed'))
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2701,7 +2698,7 @@ describe('ComfyApp', () => {
 
     it('ignores drops that were already handled by nested targets', async () => {
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
 
       const event = new DragEvent('drop', { cancelable: true })
       event.preventDefault()
@@ -2717,7 +2714,7 @@ describe('ComfyApp', () => {
         onDragDrop: vi.fn().mockResolvedValue(true)
       }
       app.dragOverNode = dragOverNode
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph_mouse: [0, 0],
         adjustMouseEvent: vi.fn((event: DragEvent) => {
@@ -2725,10 +2722,10 @@ describe('ComfyApp', () => {
             12
           ;(event as DragEvent & { canvasY: number }).canvasY = 34
         })
-      } as unknown as LGraphCanvas
+      })
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2748,7 +2745,7 @@ describe('ComfyApp', () => {
         getNodeOnPos: vi.fn(() => hoveredNode)
       }
       const setDirty = vi.fn()
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph,
         setDirty,
@@ -2757,7 +2754,7 @@ describe('ComfyApp', () => {
             7
           ;(event as DragEvent & { canvasY: number }).canvasY = 8
         })
-      } as unknown as LGraphCanvas
+      })
       const requestAnimationFrame = vi
         .spyOn(window, 'requestAnimationFrame')
         .mockImplementation((callback: FrameRequestCallback) => {
@@ -2765,7 +2762,7 @@ describe('ComfyApp', () => {
           return 1
         })
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       canvasEl.dispatchEvent(new DragEvent('dragover'))
       canvasEl.dispatchEvent(new DragEvent('dragleave'))
 
@@ -2781,7 +2778,7 @@ describe('ComfyApp', () => {
       app.dragOverNode = {
         id: toNodeId(4)
       }
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         graph: {
           getNodeOnPos: vi.fn(() => ({
@@ -2794,9 +2791,9 @@ describe('ComfyApp', () => {
             1
           ;(event as DragEvent & { canvasY: number }).canvasY = 2
         })
-      } as unknown as LGraphCanvas
+      })
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       canvasEl.dispatchEvent(new DragEvent('dragover'))
 
       expect(app.dragOverNode).toBeNull()
@@ -2807,7 +2804,7 @@ describe('ComfyApp', () => {
       app.canvasElRef.value = canvasEl
       app.dragOverNode = null
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      privateApi(app).addDropHandler()
       canvasEl.dispatchEvent(new DragEvent('dragleave'))
 
       expect(mockCanvas.setDirty).not.toHaveBeenCalled()
@@ -2819,12 +2816,10 @@ describe('ComfyApp', () => {
       const originalProcessKey = LGraphCanvas.prototype.processKey
       const fallback = vi.fn()
       LGraphCanvas.prototype.processKey = fallback
-      ;(
-        app as unknown as { addProcessKeyHandler(): void }
-      ).addProcessKeyHandler()
+      privateApi(app).addProcessKeyHandler()
       const processKey = LGraphCanvas.prototype.processKey
       const graph = { change: vi.fn() }
-      const canvas = { graph } as unknown as LGraphCanvas
+      const canvas = createMockCanvas({ graph })
       const inputEvent = new KeyboardEvent('keydown', { key: 'a' })
       Object.defineProperty(inputEvent, 'target', {
         configurable: true,
@@ -2833,10 +2828,7 @@ describe('ComfyApp', () => {
       const unboundEvent = new KeyboardEvent('keyup', { key: 'a' })
 
       try {
-        processKey.call(
-          { graph: null } as unknown as LGraphCanvas,
-          unboundEvent
-        )
+        processKey.call(createMockCanvas({ graph: null }), unboundEvent)
         processKey.call(canvas, inputEvent)
         processKey.call(canvas, unboundEvent)
 
@@ -2858,9 +2850,7 @@ describe('ComfyApp', () => {
         commandId: 'test.command',
         targetElementId: 'graph-canvas-container'
       } as ReturnType<ReturnType<typeof useKeybindingStore>['getKeybinding']>)
-      ;(
-        app as unknown as { addProcessKeyHandler(): void }
-      ).addProcessKeyHandler()
+      privateApi(app).addProcessKeyHandler()
       const event = new KeyboardEvent('keydown', { key: 'a' })
       const preventDefault = vi.spyOn(event, 'preventDefault')
       const stopImmediatePropagation = vi.spyOn(
@@ -2871,7 +2861,7 @@ describe('ComfyApp', () => {
 
       try {
         LGraphCanvas.prototype.processKey.call(
-          { graph } as unknown as LGraphCanvas,
+          createMockCanvas({ graph }),
           event
         )
 
@@ -2891,10 +2881,10 @@ describe('ComfyApp', () => {
       const rootGraph = new LGraph()
       const clear = vi.spyOn(rootGraph, 'clear')
       Reflect.set(app, 'rootGraphInternal', rootGraph)
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         subgraph: null
-      } as unknown as LGraphCanvas
+      })
 
       app.clean()
 
@@ -2907,10 +2897,10 @@ describe('ComfyApp', () => {
       const rootGraph = new LGraph()
       const clear = vi.spyOn(rootGraph, 'clear')
       Reflect.set(app, 'rootGraphInternal', rootGraph)
-      app.canvas = {
+      app.canvas = createMockCanvas({
         ...mockCanvas,
         subgraph: new LGraph()
-      } as unknown as LGraphCanvas
+      })
 
       app.clean()
 
@@ -2949,9 +2939,7 @@ describe('ComfyApp', () => {
       Reflect.set(app, 'rootGraphInternal', graph)
       const setStatus = vi.spyOn(app.ui, 'setStatus')
 
-      ;(
-        app as unknown as { addApiUpdateHandlers(): void }
-      ).addApiUpdateHandlers()
+      privateApi(app).addApiUpdateHandlers()
 
       ;(api as EventTarget).dispatchEvent(
         new CustomEvent('status', {
