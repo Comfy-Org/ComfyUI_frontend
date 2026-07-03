@@ -54,7 +54,8 @@ const filters = [
   { type: 'image', label: 'sideToolbar.mediaAssets.filterImage' },
   { type: 'video', label: 'sideToolbar.mediaAssets.filterVideo' },
   { type: 'audio', label: 'sideToolbar.mediaAssets.filterAudio' },
-  { type: '3d', label: 'sideToolbar.mediaAssets.filter3D' }
+  { type: '3d', label: 'sideToolbar.mediaAssets.filter3D' },
+  { type: 'text', label: 'sideToolbar.mediaAssets.filterText' }
 ]
 
 const toggleMediaType = (type: string) => {
