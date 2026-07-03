@@ -12,7 +12,10 @@ import {
   Reroute,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  SerialisableGraph,
+  SerialisableLLink
+} from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -256,6 +259,64 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.links.size).toBe(0)
     expect(graph.floatingLinks.size).toBe(0)
     expect(graph.reroutes.size).toBe(0)
+  })
+})
+
+describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
+  const LINK_KEYS = [
+    'id',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'type'
+  ]
+
+  function expectContractKeyOrder(link: SerialisableLLink) {
+    const expectedKeys =
+      link.parentId === undefined ? LINK_KEYS : [...LINK_KEYS, 'parentId']
+    expect(Object.keys(link)).toEqual(expectedKeys)
+  }
+
+  test('plain links keep contract key order and round-trip byte-identically', ({
+    expect,
+    linkedNodesGraph
+  }) => {
+    const first = new LGraph(linkedNodesGraph).asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    expect(first.links?.length).toBeGreaterThan(0)
+    for (const link of first.links ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  test('reroute-chain links keep contract key order and round-trip byte-identically', ({
+    expect,
+    reroutesComplexGraph
+  }) => {
+    const first = reroutesComplexGraph.asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    const chainedLinks = (first.links ?? []).filter(
+      (link) => link.parentId !== undefined
+    )
+    expect(chainedLinks.length).toBeGreaterThan(0)
+    for (const link of first.links ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  test('floating links keep contract key order and round-trip byte-identically', ({
+    expect,
+    floatingLinkGraph
+  }) => {
+    const first = new LGraph(floatingLinkGraph).asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    expect(first.floatingLinks?.length).toBeGreaterThan(0)
+    for (const link of first.floatingLinks ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.floatingLinks)).toBe(
+      JSON.stringify(first.floatingLinks)
+    )
   })
 })
 
