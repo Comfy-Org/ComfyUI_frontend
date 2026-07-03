@@ -128,12 +128,10 @@ function buildSlotMetadata(
   const linkStore = useLinkStore()
   const metadata = new Map<string, WidgetSlotMetadata>()
   inputs?.forEach((input, index) => {
-    const linked = graphId
-      ? linkStore.isInputSlotConnected(graphId, nodeId, index)
-      : input.link != null
     const link = graphId
       ? linkStore.getInputSlotLink(graphId, nodeId, index)
       : undefined
+    const linked = link !== undefined
     const originNode = link ? graphRef?.getNodeById(link.originNodeId) : null
 
     const slotInfo: WidgetSlotMetadata = {
