@@ -21,7 +21,8 @@ module.exports = defineConfig({
     'ar',
     'tr',
     'pt-BR',
-    'fa'
+    'fa',
+    'he'
   ],
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
   'latent' is the short form of 'latent space'.
@@ -37,5 +38,11 @@ module.exports = defineConfig({
   - Keep commonly used technical terms in English when they are standard in Persian software (e.g., node, workflow).
   - Use Arabic-Indic numerals (۰-۹) for numbers where appropriate.
   - Maintain consistency with terminology used in Persian software and design applications.
+
+  IMPORTANT Hebrew Translation Guidelines:
+  - For 'he' locale: Use modern, formal Hebrew (עברית תקנית) for a professional tone throughout the UI.
+  - Hebrew is a right-to-left (RTL) language. Keep all interpolation placeholders ({name}, {count}), pipe-separated plural forms, and English technical terms intact and in their original positions.
+  - Preferred glossary: node = צומת (plural צמתים), workflow = תהליך עבודה, queue = תור, canvas = קנבס, widget = פקד, subgraph = תת-גרף, prompt = פרומפט/הנחיה (per context), bypass = עקיפה, mute = השתקה.
+  - Keep widely-recognized technical terms in English (Latin script): API, GPU, CUDA, VAE, CLIP, LoRA, ControlNet, Civitai, Hugging Face, Nodes 2.0, etc.
   `
 })

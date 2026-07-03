@@ -69,6 +69,12 @@ const WidgetPainter = defineAsyncComponent(
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
 )
+const WidgetBoundingBoxes = defineAsyncComponent(
+  () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
+)
+const WidgetColors = defineAsyncComponent(
+  () => import('@/components/palette/WidgetColors.vue')
+)
 const WidgetPromptEditor = defineAsyncComponent(
   () => import('@/components/graph/widgets/PromptNodeWidget.vue')
 )
@@ -224,6 +230,22 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'boundingboxes',
+    {
+      component: WidgetBoundingBoxes,
+      aliases: ['BOUNDING_BOXES'],
+      essential: false
+    }
+  ],
+  [
+    'colors',
+    {
+      component: WidgetColors,
+      aliases: ['COLORS'],
+      essential: false
+    }
+  ],
+  [
     'prompteditor',
     {
       component: WidgetPromptEditor,
@@ -270,6 +292,7 @@ const EXPANDING_TYPES = [
   'painter',
   'imagecompare',
   'range',
+  'boundingboxes',
   'prompteditor'
 ] as const
 

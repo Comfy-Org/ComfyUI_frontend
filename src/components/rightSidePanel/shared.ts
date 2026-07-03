@@ -5,8 +5,9 @@ import type { IFuseOptions } from 'fuse.js'
 
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -107,18 +108,14 @@ export function searchWidgetsAndNodes(
     nodeMatches.map((result) => result.item.nodeId)
   )
 
-  return list
-    .map((item) => {
-      if (matchedNodeIds.has(item.node.id)) {
-        return { ...item, keep: true }
-      }
-      return {
-        ...item,
-        keep: false,
-        widgets: searchWidgets(item.widgets, query)
-      }
-    })
-    .filter((item) => item.keep || item.widgets.length > 0)
+  return list.flatMap((item) => {
+    if (matchedNodeIds.has(item.node.id)) {
+      return [item]
+    }
+
+    const widgets = searchWidgets(item.widgets, query)
+    return widgets.length > 0 ? [{ ...item, widgets }] : []
+  })
 }
 
 type MixedSelectionItem = LGraphGroup | LGraphNode
@@ -266,6 +263,7 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
             !(
               w.options?.canvasOnly ||
               w.options?.hidden ||
+              w.options?.hideInPanel ||
               (w.options?.advanced && !includesAdvanced.value)
             )
         )

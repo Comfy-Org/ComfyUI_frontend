@@ -17,6 +17,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   isBoundsEqual,
@@ -33,8 +34,7 @@ import {
  * Generic update item for element bounds tracking
  */
 interface ElementBoundsUpdate {
-  /** Element identifier (could be nodeId, widgetId, slotId, etc.) */
-  id: string
+  id: NodeId
   /** Updated bounds */
   bounds: Bounds
 }
@@ -64,7 +64,7 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
         const nodeUpdates = updates.map(({ id, bounds }) => ({
-          nodeId: id as NodeId,
+          nodeId: id,
           bounds
         }))
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
@@ -131,7 +131,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // slot-layout pipeline and skip bounds processing entirely.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
     if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
+      scheduleSlotLayoutSync(toNodeId(widgetsGridParentNodeId))
       continue
     }
 
@@ -150,7 +150,7 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
     const nodeId: NodeId | undefined =
-      elementType === 'node' ? elementId : undefined
+      elementType === 'node' ? toNodeId(elementId) : undefined
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
@@ -236,12 +236,11 @@ const resizeObserver = new ResizeObserver((entries) => {
       updates = []
       updatesByType.set(elementType, updates)
     }
-    updates.push({ id: elementId, bounds })
+    if (!nodeId) continue
+    updates.push({ id: nodeId, bounds })
 
     // If this entry is a node, mark it for slot layout resync
-    if (nodeId) {
-      nodesNeedingSlotResync.add(nodeId)
-    }
+    nodesNeedingSlotResync.add(nodeId)
   }
 
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return

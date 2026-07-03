@@ -32,13 +32,12 @@ import { i18n } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
-const requiresRemoteConfigBootstrap = isCloud || hasHostTelemetryBridge
 
-if (requiresRemoteConfigBootstrap) {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
-}
+// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
+// against the server's runtime values instead of the build-time defaults.
+const { refreshRemoteConfig } =
+  await import('@/platform/remoteConfig/refreshRemoteConfig')
+await refreshRemoteConfig({ useAuth: false })
 
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
@@ -116,7 +115,9 @@ app
       modal: 1800,
       overlay: 1800,
       menu: 1800,
-      tooltip: 1800
+      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
+      // behind a body-portaled dropdown that lifts itself to modal + 1.
+      tooltip: 2000
     },
     theme: {
       preset: ComfyUIPreset,

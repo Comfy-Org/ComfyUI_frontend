@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toNodeId } from '@/types/nodeId'
 
 interface RenamableNode {
   renameVariableInput: (oldName: string, newName: string) => void
@@ -27,7 +28,7 @@ export function useEditableSlotTitle(
   const editing = ref(false)
 
   function renamableNode(): RenamableNode | undefined {
-    const node = canvasStore.canvas?.graph?.getNodeById(nodeId())
+    const node = canvasStore.canvas?.graph?.getNodeById(toNodeId(nodeId()))
     return isRenamable(node) ? node : undefined
   }
 

@@ -1,15 +1,18 @@
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
+import type { WatchStopHandle } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
+  AddCreditsClickMetadata,
   AuthMetadata,
+  BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -23,10 +26,12 @@ import type {
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  ResubscribeClickMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -41,9 +46,10 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
-import { TelemetryEvents } from '../../types'
+import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -98,6 +104,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isInitialized = false
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
+  private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
     this.configureDisabledEvents(
@@ -123,7 +130,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
               autocapture: false,
-              capture_pageview: false,
+              capture_pageview: 'history_change',
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
@@ -307,12 +314,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private setSubscriptionProperties(): void {
-    const { subscriptionTier } = useSubscription()
-    watch(
-      subscriptionTier,
-      (tier) => {
-        if (tier && this.posthog) {
-          this.posthog.people.set({ subscription_tier: tier })
+    if (this.stopSubscriptionTierWatch) return
+    const { tier } = useBillingContext()
+    this.stopSubscriptionTierWatch = watch(
+      tier,
+      (value) => {
+        if (value && this.posthog) {
+          this.posthog.people.set({ subscription_tier: value })
         }
       },
       { immediate: true }
@@ -346,8 +354,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName, metadata)
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
+  }
+
+  trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
+    this.trackEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackMonthlySubscriptionSucceeded(
@@ -360,6 +372,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
   }
 
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.trackEvent(CANCELLATION_STAGE_EVENTS[event], metadata)
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.trackEvent(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
+  }
+
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED, {
       credit_amount: amount
@@ -368,6 +391,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackApiCreditTopupSucceeded(): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

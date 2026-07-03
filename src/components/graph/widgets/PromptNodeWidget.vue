@@ -25,6 +25,7 @@ import { useI18n } from 'vue-i18n'
 import PromptEditor from '@/components/graph/widgets/PromptEditor.vue'
 import type { PromptTemplate } from '@/platform/prompts/promptTemplate'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { widget, nodeId } = defineProps<{
@@ -42,7 +43,7 @@ const isReadOnly = computed(() =>
 )
 
 const inputSockets = computed(
-  () => canvasStore.canvas?.graph?.getNodeById(nodeId)?.inputs ?? []
+  () => canvasStore.canvas?.graph?.getNodeById(toNodeId(nodeId))?.inputs ?? []
 )
 const variableNames = computed(() =>
   inputSockets.value.flatMap((input) => (input.name ? [input.name] : []))

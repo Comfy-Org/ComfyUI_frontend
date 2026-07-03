@@ -27,7 +27,7 @@ const borderStyle = computed(() =>
   <div
     :class="
       cn(
-        'grid min-w-0 grid-cols-subgrid justify-between gap-1 text-node-component-slot-text',
+        'grid min-w-0 grid-cols-subgrid justify-between gap-2 text-node-component-slot-text',
         rootClass
       )
     "
@@ -46,7 +46,7 @@ const borderStyle = computed(() =>
       <div
         :class="
           cn(
-            'min-w-0 cursor-default rounded-lg transition-all',
+            'min-w-0 cursor-default rounded-md transition-all',
             !noBorder && borderStyle
           )
         "

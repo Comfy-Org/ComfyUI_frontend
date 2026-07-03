@@ -11,6 +11,8 @@ import {
 import { useI18n } from 'vue-i18n'
 import { toValue } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 const { t } = useI18n()
 
 defineOptions({
@@ -50,11 +52,25 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
   </DropdownMenuSub>
   <DropdownMenuItem
     v-else
-    :class="itemClass"
+    v-tooltip="
+      item.tooltip ? { value: String(item.tooltip), showDelay: 0 } : undefined
+    "
+    :class="
+      cn(
+        itemClass,
+        String(item.class ?? ''),
+        Boolean(item.tooltip) && toValue(item.disabled) && 'pointer-events-auto'
+      )
+    "
+    v-bind="
+      'checked' in item
+        ? { role: 'menuitemradio', 'aria-checked': Boolean(item.checked) }
+        : {}
+    "
     :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >
-    <i class="size-5 shrink-0" :class="item.icon" />
+    <i v-if="'icon' in item" class="size-5 shrink-0" :class="item.icon" />
     <div class="mr-auto truncate" v-text="item.label" />
     <i v-if="item.checked" class="icon-[lucide--check] shrink-0" />
     <div

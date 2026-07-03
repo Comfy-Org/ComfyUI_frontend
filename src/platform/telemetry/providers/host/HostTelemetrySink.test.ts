@@ -115,6 +115,47 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards subscription cancellation telemetry to the host bridge', () => {
+    new HostTelemetrySink().trackSubscriptionCancellation('confirmed', {
+      source: 'cancel_plan_menu',
+      current_tier: 'standard',
+      cycle: 'yearly',
+      end_date: '2026-08-01T00:00:00.000Z'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED,
+      {
+        source: 'cancel_plan_menu',
+        current_tier: 'standard',
+        cycle: 'yearly',
+        end_date: '2026-08-01T00:00:00.000Z'
+      }
+    )
+  })
+
+  it('forwards resubscribe click telemetry to the host bridge', () => {
+    new HostTelemetrySink().trackResubscribeClicked({
+      source: 'pricing_dialog'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED,
+      { source: 'pricing_dialog' }
+    )
+  })
+
+  it('forwards add-credit clicks with their source', () => {
+    new HostTelemetrySink().trackAddApiCreditButtonClicked({
+      source: 'avatar_menu'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
+      { source: 'avatar_menu' }
+    )
+  })
+
   it('does nothing when the host bridge is absent', () => {
     delete window.__comfyDesktop2
 

@@ -8,6 +8,7 @@ import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toNodeId } from '@/types/nodeId'
 
 // canvasStore transitively imports the app singleton; stub it so the real
 // ComfyApp module never loads during these unit tests.
@@ -45,7 +46,7 @@ const i18n = createI18n({
 
 const nodeWithMode = (mode: LGraphEventMode, id = 1): LGraphNode => {
   const node = new LGraphNode('Test')
-  node.id = id
+  node.id = toNodeId(id)
   node.mode = mode
   return node
 }

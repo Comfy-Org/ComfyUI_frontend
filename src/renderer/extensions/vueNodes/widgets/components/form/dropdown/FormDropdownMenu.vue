@@ -19,6 +19,7 @@ import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 interface Props {
   items: FormDropdownItem[]
   isSelected: (item: FormDropdownItem, index: number) => boolean
+  uploadable: boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
   showOwnershipFilter?: boolean
@@ -27,11 +28,13 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
+  loadingMore?: boolean
 }
 
 const {
   items,
   isSelected,
+  uploadable,
   filterOptions,
   sortOptions,
   showOwnershipFilter,
@@ -39,11 +42,14 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel
+  candidateLabel,
+  loadingMore = false
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
   (e: 'search-enter'): void
+  (e: 'show-picker'): void
+  (e: 'approach-end'): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
@@ -123,6 +129,8 @@ const onWheel = (event: WheelEvent) => {
       v-if="filterOptions.length > 0"
       v-model:filter-selected="filterSelected"
       :filter-options
+      :uploadable
+      @show-picker="emit('show-picker')"
     />
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"
@@ -158,6 +166,7 @@ const onWheel = (event: WheelEvent) => {
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
+      @approach-end="emit('approach-end')"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
@@ -172,5 +181,15 @@ const onWheel = (event: WheelEvent) => {
         />
       </template>
     </VirtualGrid>
+    <div
+      v-if="loadingMore"
+      class="flex items-center justify-center py-2"
+      data-testid="form-dropdown-loading-more"
+    >
+      <i
+        :aria-label="$t('g.loading')"
+        class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
+      />
+    </div>
   </div>
 </template>

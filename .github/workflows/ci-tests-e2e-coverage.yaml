@@ -85,6 +85,16 @@ jobs:
             fi
           done
 
+      - name: Strip non-source entries from coverage
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        run: |
+          lcov --remove coverage/playwright/coverage.lcov \
+            '*localhost-8188*' \
+            'assets/images/*' \
+            -o coverage/playwright/coverage.lcov \
+            --ignore-errors unused
+          wc -l coverage/playwright/coverage.lcov
+
       - name: Upload merged coverage data
         if: steps.coverage-shards.outputs.has-coverage == 'true'
         uses: actions/upload-artifact@v6
@@ -111,7 +121,8 @@ jobs:
             --title "ComfyUI E2E Coverage" \
             --no-function-coverage \
             --precision 1 \
-            --ignore-errors source,unmapped
+            --ignore-errors source,unmapped \
+            --synthesize-missing
 
       - name: Upload HTML report artifact
         if: steps.coverage-shards.outputs.has-coverage == 'true'
