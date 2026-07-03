@@ -82,6 +82,7 @@ export type RemoteConfig = {
   posthog_project_token?: string
   posthog_api_host?: string
   posthog_config?: Partial<PostHogConfig>
+  syftdata_source_id?: string
   customer_io?: {
     write_key?: string
     site_id?: string
@@ -111,6 +112,7 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
+  consolidated_billing_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).

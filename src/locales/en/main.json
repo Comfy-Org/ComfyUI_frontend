@@ -101,7 +101,7 @@
     "color": "Color",
     "error": "Error",
     "enter": "Enter",
-    "enterSubgraph": "Enter Subgraph",
+    "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
@@ -2485,6 +2485,8 @@
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized",
+    "loadEventsError": "Failed to load activity. Please try again.",
+    "loadEventsUnknownError": "Something went wrong while loading activity. Please refresh and try again.",
     "eventTypes": {
       "creditAdded": "Credits Added",
       "accountCreated": "Account Created",
