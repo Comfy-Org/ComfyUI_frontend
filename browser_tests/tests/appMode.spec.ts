@@ -1,8 +1,13 @@
+import { mergeTests } from '@playwright/test'
+
 import {
-  comfyPageFixture as test,
-  comfyExpect as expect
+  comfyExpect as expect,
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
 test.describe('App mode usage', () => {
   test('Drag and Drop @vue-nodes', async ({ comfyPage, comfyFiles }) => {
@@ -159,24 +164,25 @@ test.describe('App mode usage', () => {
   })
 
   test('Workflow actions menu keeps the same position across graph/app mode', async ({
-    comfyPage
+    comfyPage,
+    subgraphBreadcrumb
   }) => {
+    const { workflowActions, centerPanel } = comfyPage.appMode
+
     // Toggling graph<->app mode happens from this control, so it must not move
     // out from under the cursor as the mode flips.
-    const graphActions = comfyPage.page
-      .getByTestId(TestIds.breadcrumb.subgraph)
-      .getByRole('button', { name: 'Workflow actions' })
+    const graphActions = workflowActions.triggerIn(
+      subgraphBreadcrumb.panel.root
+    )
     await expect(graphActions).toBeVisible()
     const graphBox = await graphActions.boundingBox()
 
     expect(graphBox).not.toBeNull()
 
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
-    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    await expect(centerPanel).toBeVisible()
 
-    const appActions = comfyPage.page
-      .getByTestId(TestIds.linear.centerPanel)
-      .getByRole('button', { name: 'Workflow actions' })
+    const appActions = workflowActions.triggerIn(centerPanel)
     await expect(appActions).toBeVisible()
 
     // The toggle segments reorder (morph) as the mode flips, so poll until the
@@ -192,40 +198,34 @@ test.describe('App mode usage', () => {
   test('Toggle segment flips mode without opening the menu', async ({
     comfyPage
   }) => {
-    const toggle = comfyPage.page.getByTestId(
-      TestIds.workflowActions.viewModeToggle
-    )
-    await expect(toggle).toBeVisible()
+    const { workflowActions } = comfyPage.appMode
+    await expect(workflowActions.viewModeToggle).toBeVisible()
 
-    await comfyPage.page.getByRole('button', { name: 'Enter app mode' }).click()
+    await workflowActions.enterAppModeSegment.click()
 
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     // The inactive segment switches mode; it must not also open the actions menu.
-    await expect(comfyPage.page.getByRole('menu')).toBeHidden()
-    await expect(toggle).toBeVisible()
+    await expect(workflowActions.menu).toBeHidden()
+    await expect(workflowActions.viewModeToggle).toBeVisible()
   })
 
   test('Toggle segment flips mode via keyboard without opening the menu', async ({
     comfyPage
   }) => {
-    const appSegment = comfyPage.page.getByRole('button', {
-      name: 'Enter app mode'
-    })
-    await appSegment.focus()
-    await appSegment.press('Enter')
+    const { workflowActions } = comfyPage.appMode
+    await workflowActions.enterAppModeSegment.focus()
+    await workflowActions.enterAppModeSegment.press('Enter')
 
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     // Keyboard activation of the inactive segment must switch mode without the
     // keydown bubbling to the trigger and opening the actions menu.
-    await expect(comfyPage.page.getByRole('menu')).toBeHidden()
+    await expect(workflowActions.menu).toBeHidden()
   })
 
   test('Mode toggle re-appears after exiting the builder to graph mode', async ({
     comfyPage
   }) => {
-    const toggle = comfyPage.page.getByTestId(
-      TestIds.workflowActions.viewModeToggle
-    )
+    const toggle = comfyPage.appMode.workflowActions.viewModeToggle
     await comfyPage.appMode.enableLinearMode()
     await expect(toggle).toBeVisible()
 
@@ -244,9 +244,7 @@ test.describe('App mode usage', () => {
   test('Mode toggle survives a sidebar tab remounting the app panel', async ({
     comfyPage
   }) => {
-    const toggle = comfyPage.page.getByTestId(
-      TestIds.workflowActions.viewModeToggle
-    )
+    const toggle = comfyPage.appMode.workflowActions.viewModeToggle
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     await expect(toggle).toBeVisible()
