@@ -15,11 +15,11 @@ describe('useManagerSurveyDialog', () => {
     closeDialog.mockReset()
   })
 
-  it('show() opens the survey dialog under its own key via the Reka layout renderer', () => {
+  it('show() opens the survey dialog under its own key via the layout renderer', () => {
     useManagerSurveyDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-manager-survey')
-    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps.headless).toBe(true)
   })
 
   it('show() wires onClose to close the survey dialog', () => {
