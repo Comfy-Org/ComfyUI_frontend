@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import type { SettingParams } from '@/platform/settings/types'
@@ -36,6 +36,10 @@ describe('CORE_SETTINGS', () => {
     vi.clearAllMocks()
     document.body.className = ''
     document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('uses compact sidebar size below the wide breakpoint', () => {

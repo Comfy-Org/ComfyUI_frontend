@@ -112,24 +112,41 @@ describe('usePartitionedBadges', () => {
     expect(result.core).toEqual([])
   })
 
-  it('tracks dynamic-pricing dependencies for an api node without throwing', () => {
+  it('tracks dynamic-pricing widget and input dependencies for an api node', () => {
     pricing.dynamic = true
     pricing.widgets = ['seed']
     pricing.inputs = ['model']
     pricing.groups = ['lora']
+    let modelReads = 0
+    let groupReads = 0
+    let unrelatedReads = 0
     const result = usePartitionedBadges(
       nodeData({
         apiNode: true,
         inputs: [
-          inputSlot('model', () => 1),
-          inputSlot('lora.0', () => 2),
-          inputSlot('unrelated', () => null)
+          inputSlot('model', () => {
+            modelReads += 1
+            return 1
+          }),
+          inputSlot('lora.0', () => {
+            groupReads += 1
+            return 2
+          }),
+          inputSlot('unrelated', () => {
+            unrelatedReads += 1
+            return null
+          })
         ]
       })
     ).value
 
-    expect(result).toHaveProperty('core')
-    expect(result).toHaveProperty('extension')
+    expect(getNodeRevisionRefMock).toHaveBeenCalledWith(toNodeId(1))
+    expect(getWidgetMock).toHaveBeenCalledTimes(1)
+    expect(modelReads).toBe(1)
+    expect(groupReads).toBe(1)
+    expect(unrelatedReads).toBe(0)
+    expect(result.core).toEqual([])
+    expect(result.extension).toEqual([])
   })
 
   it('adds an id badge when the id mode is enabled', () => {

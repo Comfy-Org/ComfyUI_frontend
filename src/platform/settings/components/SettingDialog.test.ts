@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
+
 import SettingDialog from './SettingDialog.vue'
 
 const testI18n = createI18n({
@@ -12,13 +15,17 @@ const testI18n = createI18n({
   messages: { en: {} }
 })
 
-interface MockSettingTreeNode {
-  key: string
-  label: string
-  leaf?: boolean
-  sortOrder?: number
-  data?: { id: string; name: string; sortOrder?: number }
+type MockSettingData = Omit<SettingParams, 'id' | 'type' | 'defaultValue'> & {
+  id: string
+}
+
+type MockSettingTreeNode = Omit<SettingTreeNode, 'data' | 'children'> & {
+  data?: MockSettingData
   children?: MockSettingTreeNode[]
+}
+
+type MockSettingGroup = Omit<ISettingGroup, 'settings'> & {
+  settings: MockSettingData[]
 }
 
 const mockFetchBalance = vi.hoisted(() => vi.fn())
@@ -49,13 +56,7 @@ const mockSettingSearch = vi.hoisted(() => ({
     inSearch: { value: boolean }
     searchResultsCategories: { value: Set<string> }
     matchedNavItemKeys: { value: Set<string> }
-    results: {
-      value: Array<{
-        label: string
-        category?: string
-        settings: Array<{ id: string; name: string; sortOrder?: number }>
-      }>
-    }
+    results: { value: MockSettingGroup[] }
   },
   handleSearch: vi.fn()
 }))
@@ -156,7 +157,7 @@ vi.mock('@/platform/settings/components/SettingsPanel.vue', () => ({
 vi.mock('@/platform/settings/composables/useSettingUI', async () => {
   const { computed, defineComponent, h, ref } = await import('vue')
 
-  const settingCategories = ref([
+  const settingCategories = ref<MockSettingTreeNode[]>([
     {
       key: 'Comfy',
       label: 'Comfy',
@@ -266,7 +267,7 @@ vi.mock('@/platform/settings/composables/useSettingSearch', async () => {
   const inSearch = ref(false)
   const searchResultsCategories = ref(new Set<string>())
   const matchedNavItemKeys = ref(new Set<string>())
-  const results = ref([
+  const results = ref<MockSettingGroup[]>([
     {
       label: 'Search Group',
       category: 'Comfy',
