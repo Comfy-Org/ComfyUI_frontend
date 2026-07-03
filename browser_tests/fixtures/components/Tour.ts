@@ -24,7 +24,8 @@ export class OnboardingCoachmarks {
       name: 'Start tutorial'
     })
     this.landingSkipButton = this.landing.getByRole('button', {
-      name: 'Skip for now'
+      name: 'Skip',
+      exact: true
     })
     this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
     this.cardNextButton = this.card.getByRole('button', { name: 'Next' })

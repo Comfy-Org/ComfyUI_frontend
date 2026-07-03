@@ -5,6 +5,8 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
 import type { CoachId, CoachStep } from './onboardingTours'
@@ -18,12 +20,7 @@ import { ZIndex } from '@primeuix/utils/zindex'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      g: { close: 'Close' },
-      onboardingCoachmarks: { stepLabel: 'Step {current} of {total}' }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
@@ -70,8 +67,6 @@ describe('TourSpotlight', () => {
   it('renders the spotlight and card for a step', () => {
     renderSpotlight()
     expect(screen.getByTestId('coach-spotlight')).toBeTruthy()
-    // aria-labelledby points at the rendered heading, so the dialog's
-    // accessible name stays in sync with the visible title.
     expect(screen.getByRole('dialog', { name: 'Run your app' })).toBeTruthy()
     expect(screen.getByText('Press to run')).toBeTruthy()
     expect(screen.getByText('Step 1 of 1')).toBeTruthy()

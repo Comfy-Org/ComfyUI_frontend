@@ -3,12 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import CoachmarkLanding from './CoachmarkLanding.vue'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { close: 'Close' } } }
+  messages: { en: enMessages }
 })
 
 function renderLanding() {
@@ -17,7 +19,7 @@ function renderLanding() {
       title: 'Welcome to Apps',
       message: 'A quick tour of the essentials.',
       primaryLabel: 'Start tutorial',
-      skipLabel: 'Skip for now'
+      skipLabel: 'Skip'
     },
     global: { plugins: [i18n] }
   })
@@ -44,9 +46,7 @@ describe('CoachmarkLanding', () => {
   it('emits skip when Skip is clicked', async () => {
     const user = userEvent.setup()
     const { emitted } = renderLanding()
-    await user.click(
-      await screen.findByRole('button', { name: 'Skip for now' })
-    )
+    await user.click(await screen.findByRole('button', { name: 'Skip' }))
     expect(emitted().skip).toHaveLength(1)
   })
 

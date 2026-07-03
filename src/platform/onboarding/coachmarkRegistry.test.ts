@@ -53,7 +53,6 @@ describe('targetMounted', () => {
   })
 
   it('ignores a registered target that is not laid out (e.g. hidden)', () => {
-    // A plain element measures 0×0 until it lays out.
     registerCoachmark('outputs', document.createElement('div'))
     expect(targetMounted('outputs')).toBe(false)
   })
@@ -112,7 +111,6 @@ describe('waitForTarget', () => {
 
     runFrames()
     await Promise.resolve()
-    // Registered but measures 0×0: still pending.
     expect(resolved).toBeUndefined()
 
     el.getBoundingClientRect = () => new DOMRect(0, 0, 80, 30)

@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import TourOverlay from './TourOverlay.vue'
 import type { CoachStep } from './onboardingTours'
 import { useCoachmarkTour } from './useCoachmarkTour'
@@ -44,11 +46,7 @@ vi.mock('./TourSpotlight.vue', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      g: { close: 'Close' }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 let s: ReturnType<typeof makeTourState>
@@ -98,7 +96,6 @@ describe('TourOverlay', () => {
     const user = userEvent.setup()
     s.step.value = landingStep()
     s.primaryLabel.value = 'Start tutorial'
-    s.skipLabel.value = 'Skip for now'
     renderOverlay()
 
     await user.click(
@@ -110,12 +107,9 @@ describe('TourOverlay', () => {
   it('ends the tour when the landing is dismissed', async () => {
     const user = userEvent.setup()
     s.step.value = landingStep()
-    s.skipLabel.value = 'Skip for now'
     renderOverlay()
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Skip for now' })
-    )
+    await user.click(await screen.findByRole('button', { name: 'Skip' }))
     expect(s.end).toHaveBeenCalledWith('skipped')
   })
 })

@@ -7,16 +7,19 @@ import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 
 const test = mergeTests(comfyPageFixture, onboardingFixture)
 
-// Relies on the default workflow the test server loads (locally: pnpm dev:test)
-// — an empty graph would show the welcome screen, not the tour's controls.
+// Relies on the test server's default workflow (locally: pnpm dev:test).
 test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
   test.describe('app-mode tour', () => {
-    test('opens on the welcome landing, focuses Start, and Skip dismisses it', async ({
+    // With no tour pre-seeded as seen, entering the app auto-opens it.
+    test.use({
+      initialSettings: { 'Comfy.OnboardingCoachmarks.Seen': [] }
+    })
+
+    test('auto-opens on the welcome landing, focuses Start, and Skip dismisses it', async ({
       comfyPage,
       onboarding
     }) => {
       await comfyPage.appMode.enterAppModeWithInputs([])
-      await onboarding.startTour('appMode')
       const coach = onboarding
 
       await expect(coach.landing).toBeVisible()
@@ -35,7 +38,6 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       onboarding
     }) => {
       await comfyPage.appMode.enterAppModeWithInputs([])
-      await onboarding.startTour('appMode')
       const coach = onboarding
       await expect(coach.landing).toBeVisible()
       await expect(coach.landingStartButton).toBeFocused()
@@ -53,8 +55,7 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
     }) => {
       const coach = onboarding
       await comfyPage.appMode.enterAppModeWithInputs([])
-      // The assets panel only mounts once its button is clicked; every other
-      // anchor should already be present in a running app.
+      // The assets panel only mounts once its button is clicked.
       for (const id of Object.values(COACH_IDS).filter(
         (id) => id !== COACH_IDS.assetsPanel
       )) {
@@ -79,8 +80,6 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       await expect(coach.landing).toBeVisible()
       await coach.landingStartButton.click()
 
-      // Step 3 (outputs) is the vertically-centred `leftCenter` placement that
-      // must not slide off the top/bottom edge.
       for (const step of [1, 2, 3]) {
         const card = coach.cardForStep(step)
         await expect(card).toBeVisible()

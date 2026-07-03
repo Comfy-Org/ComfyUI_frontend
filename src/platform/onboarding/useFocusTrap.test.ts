@@ -31,7 +31,6 @@ describe('useFocusTrap', () => {
     skip = button('skip')
     primary = button('primary')
     card.append(skip, primary)
-    // An element in neither the card nor the spotlighted target.
     outside = button('outside')
     document.body.append(target, card, outside)
     suspended = false

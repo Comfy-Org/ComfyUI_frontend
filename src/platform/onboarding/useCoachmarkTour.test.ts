@@ -5,6 +5,7 @@ import { defineComponent } from 'vue'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AppMode } from '@/utils/appMode'
 
 import { requestTour } from './coachmarkController'
@@ -14,8 +15,6 @@ import { useCoachmarkTour } from './useCoachmarkTour'
 
 const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 
-// In-memory setting store so seen-state reads/writes don't touch the real
-// settings API; seeded empty and reset per test.
 const settings = vi.hoisted(() => ({ seen: [] as string[] }))
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -32,8 +31,6 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
 }))
 
-// `mode` + `hasOutputs` drive the auto-open watcher; hoisted so tests can flip
-// them to simulate entering a populated vs empty app.
 const appModeMock = vi.hoisted(
   () =>
     ({ mode: null, hasOutputs: null }) as {
@@ -69,19 +66,7 @@ const APP_MODE_TARGETS: CoachId[] = [
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  missingWarn: false,
-  messages: {
-    en: {
-      onboardingCoachmarks: {
-        next: 'Next',
-        done: 'Done',
-        skip: 'Skip',
-        appMode: {
-          landing: { primary: 'Start tutorial', skip: 'Skip for now' }
-        }
-      }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 const flush = () => new Promise((resolve) => setTimeout(resolve))
@@ -106,8 +91,7 @@ function startedCount() {
 }
 
 describe('useCoachmarkTour', () => {
-  // Tracks every element mountTarget appends, so teardown removes them even when
-  // a test throws before its own cleanup would run.
+  // Removed in teardown even when a test throws before its own cleanup.
   const appendedTargets: HTMLElement[] = []
 
   afterEach(() => {
@@ -203,9 +187,7 @@ describe('useCoachmarkTour', () => {
     vi.useFakeTimers()
     const { api } = mountTour()
     void requestTour('appMode')
-    // Flush startTour + the opening landing step.
     await vi.advanceTimersByTimeAsync(0)
-    // Advance past the landing into the first deferred-target step.
     api.next()
     // The deferred target (inputs list) is never registered; exhaust the wait.
     await vi.advanceTimersByTimeAsync(8000)
@@ -223,8 +205,6 @@ describe('useCoachmarkTour', () => {
 
   it('ignores a second concurrent request while the first tour is resolving', async () => {
     mountTour()
-    // Both fire synchronously; the first resolves steps before the second runs,
-    // so the steps guard drops the second.
     void requestTour('appMode')
     void requestTour('appMode')
     await flush()
@@ -232,16 +212,12 @@ describe('useCoachmarkTour', () => {
   })
 
   it('advances through every step to completion and marks the tour seen', async () => {
-    // Register every app-mode target so each step resolves immediately as the
-    // user advances (spotlight steps defer their targets). The assets panel is
-    // mounted, so the assets-button step is skipped — the tour still completes.
     registerAppModeTargets()
     const { api } = mountTour()
     void requestTour('appMode')
     await flush()
 
-    // Advance until the tour completes (count-agnostic; extra presses after the
-    // final step are no-ops), capped so a stuck tour fails instead of hangs.
+    // Capped so a stuck tour fails instead of hanging.
     for (let i = 0; i < 12 && !settings.seen.includes('appMode'); i++) {
       api.next()
       await flush()
@@ -255,8 +231,6 @@ describe('useCoachmarkTour', () => {
   })
 
   it('resolves the deferred assets panel after the click-to-advance step', async () => {
-    // Every target except the assets panel — it's still closed, so the
-    // assets-button click step is shown (all five spotlight steps run).
     registerAppModeTargets(
       APP_MODE_TARGETS.filter((id) => id !== 'assets-panel')
     )
@@ -269,11 +243,8 @@ describe('useCoachmarkTour', () => {
       api.next()
       await flush()
     }
-    // The assets-button step advances only on a target click (Next is hidden);
-    // TourSpotlight emits `advance`, which next() handles — drive it directly.
     expect(api.step.value?.advanceOnTargetClick).toBe(true)
 
-    // The panel mounts when the button is clicked; advancing then spotlights it.
     mountTarget('assets-panel')
     api.next()
     await flush()
@@ -282,8 +253,6 @@ describe('useCoachmarkTour', () => {
   })
 
   it('drops the assets-button step (count 4) when the panel is already open', async () => {
-    // The panel is registered up front, so the step that only exists to open it
-    // is dropped at tour start — the indicator counts four steps, not five.
     registerAppModeTargets()
     const { api } = mountTour()
     void requestTour('appMode')
@@ -291,7 +260,6 @@ describe('useCoachmarkTour', () => {
 
     expect(api.countedSteps.value.length).toBe(4)
 
-    // landing → inputs → run → outputs → assets-panel (no assets-button step)
     for (let i = 0; i < 4; i++) {
       api.next()
       await flush()
@@ -310,21 +278,18 @@ describe('useCoachmarkTour', () => {
     void requestTour('appMode')
     await flush()
 
-    // The landing's `primary`/`skip` translation entries override both labels.
+    // The landing's `primary` entry overrides only the primary label.
     expect(api.step.value?.landing).toBe(true)
     expect(api.primaryLabel.value).toBe('Start tutorial')
-    expect(api.skipLabel.value).toBe('Skip for now')
+    expect(api.skipLabel.value).toBe('Skip')
 
-    // Every target is mounted, so the tour is a landing plus four spotlight steps.
     expect(api.countedSteps.value.length).toBe(4)
 
-    // Landing → first spotlight: labels fall back to the generic Next/Skip.
     api.next()
     await flush()
     expect(api.primaryLabel.value).toBe('Next')
     expect(api.skipLabel.value).toBe('Skip')
 
-    // Three more advances reach the final step, whose primary action reads Done.
     for (let i = 0; i < 3; i++) {
       api.next()
       await flush()
@@ -339,20 +304,17 @@ describe('useCoachmarkTour', () => {
     void requestTour('appMode')
     await flush()
 
-    // The count matches the "of M" the card shows: the landing isn't numbered
-    // (and the assets-button step is dropped — its panel is already mounted).
+    // The landing isn't numbered; the pre-open panel drops the assets-button step.
     const started = telemetry.track.mock.calls.find(
       ([stage]) => stage === 'started'
     )
     expect(started?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
 
-    // The landing's step_shown carries no step number or coach id.
     const landingShown = telemetry.track.mock.calls.find(
       ([stage]) => stage === 'step_shown'
     )
     expect(landingShown?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
 
-    // Advancing off the landing shows "Step 1 of 4", and the event agrees.
     api.next()
     await flush()
     const shown = telemetry.track.mock.calls
