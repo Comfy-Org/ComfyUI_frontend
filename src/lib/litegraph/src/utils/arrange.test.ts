@@ -18,7 +18,7 @@ function nodeFixture(
       graphNode.pos = [x, y]
     })
   }
-  // eslint-disable-next-line no-restricted-syntax
+
   return graphNode as unknown as ArrangeNode
 }
 

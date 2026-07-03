@@ -55,7 +55,7 @@ describe('workflowStore node locator translation', () => {
 
   it('derives a locator from a node based on whether its graph is a subgraph', () => {
     const store = useWorkflowStore()
-    // eslint-disable-next-line no-restricted-syntax
+
     const rootNode = { id: toNodeId(7), graph: {} } as unknown as LGraphNode
     expect(store.nodeToNodeLocatorId(rootNode)).toBe('7')
   })

@@ -41,7 +41,6 @@ function input(overrides: Partial<INodeInputSlot> = {}): INodeInputSlot {
 }
 
 function node(overrides: Record<string, unknown> = {}): LGraphNode {
-  // eslint-disable-next-line no-restricted-syntax
   return {
     inputs: [],
     isSubgraphNode: () => true,
