@@ -299,9 +299,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     )
 
     const triggerHandlers: {
-      [K in Exclude<LGraphTriggerAction, 'node:slot-links:changed'>]: (
-        event: LGraphTriggerParam<K>
-      ) => void
+      [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
     } = {
       'node:property:changed': (propertyEvent) => {
         const nodeId = toNodeId(propertyEvent.nodeId)
@@ -402,6 +400,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       'node:slot-errors:changed': (slotErrorsEvent) => {
         refreshNodeInputs(toNodeId(slotErrorsEvent.nodeId))
       },
+      // NodeSlots.linkedWidgetedInputs and usePartitionedBadges read vueNodeData.inputs[].link and need reprojection on link change; remove once those migrate to useLinkStore
+      'node:slot-links:changed': (slotLinksEvent) => {
+        if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
+          refreshNodeInputs(toNodeId(slotLinksEvent.nodeId))
+        }
+      },
       'node:slot-label:changed': (slotLabelEvent) => {
         const nodeId = toNodeId(slotLabelEvent.nodeId)
         const nodeRef = nodeRefs.get(nodeId)
@@ -423,6 +427,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           break
         case 'node:slot-errors:changed':
           triggerHandlers['node:slot-errors:changed'](event)
+          break
+        case 'node:slot-links:changed':
+          triggerHandlers['node:slot-links:changed'](event)
           break
         case 'node:slot-label:changed':
           triggerHandlers['node:slot-label:changed'](event)

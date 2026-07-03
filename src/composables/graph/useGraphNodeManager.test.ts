@@ -120,6 +120,23 @@ describe('Widget input link reactivity', () => {
     expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
   })
 
+  it('reprojects vueNodeData for the node when node:slot-links:changed fires for an input slot', () => {
+    const { graph, node } = createWidgetInputGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    const nodeDataBefore = vueNodeData.get(node.id)
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: 0,
+      connected: false,
+      linkId: 42
+    })
+
+    expect(vueNodeData.get(node.id)).not.toBe(nodeDataBefore)
+  })
+
   it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'prompt', type: 'STRING' }]
