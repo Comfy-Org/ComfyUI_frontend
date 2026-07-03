@@ -28,6 +28,11 @@ function renderLanding() {
 describe('CoachmarkLanding', () => {
   afterEach(cleanup)
 
+  it('renders a modal backdrop behind the landing card', async () => {
+    renderLanding()
+    expect(await screen.findByTestId('coach-landing-overlay')).toBeTruthy()
+  })
+
   it('renders the title and message', async () => {
     renderLanding()
     expect(await screen.findByText('Welcome to Apps')).toBeTruthy()

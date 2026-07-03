@@ -1,7 +1,13 @@
 <template>
-  <Dialog :open="true" @update:open="(value) => !value && emit('skip')">
+  <!-- The Dialog wrapper boolean-casts an absent `modal` to false, which
+       suppresses the DialogOverlay backdrop; it must be passed explicitly. -->
+  <Dialog :open="true" modal @update:open="(value) => !value && emit('skip')">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index class="bg-black/60" />
+      <DialogOverlay
+        v-reka-z-index
+        data-testid="coach-landing-overlay"
+        class="bg-black/60"
+      />
       <DialogContent
         v-reka-z-index
         data-testid="coach-landing"
