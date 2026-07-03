@@ -260,7 +260,6 @@ useExtensionService().registerExtension({
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)
-        // @ts-expect-error clipspace_return_node is an extension property added at runtime
         ComfyApp.clipspace_return_node = selectedNode
 
         const props = { node: selectedNode }

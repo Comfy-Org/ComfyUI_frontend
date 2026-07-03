@@ -549,7 +549,7 @@ export function getExecutionIdFromNodeData(
  * @returns The node if found, null otherwise
  */
 export function getNodeByLocatorId(
-  rootGraph: LGraph,
+  rootGraph: LGraph | null,
   locatorId: string
 ): LGraphNode | null {
   if (!rootGraph) return null
