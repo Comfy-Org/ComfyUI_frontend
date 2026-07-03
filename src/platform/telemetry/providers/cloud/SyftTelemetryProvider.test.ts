@@ -43,6 +43,17 @@ function mockScriptAppend() {
     .mockImplementation(<T extends Node>(node: T) => node)
 }
 
+function failScript(
+  appendChild: ReturnType<typeof mockScriptAppend>,
+  index: number
+) {
+  const script = appendChild.mock.calls[index]?.[0]
+  if (!(script instanceof HTMLScriptElement)) {
+    throw new Error('Expected Syft script to be appended')
+  }
+  script.dispatchEvent(new Event('error'))
+}
+
 describe('SyftTelemetryProvider', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -87,12 +98,7 @@ describe('SyftTelemetryProvider', () => {
     const SyftTelemetryProvider = await importProvider()
     const provider = new SyftTelemetryProvider()
 
-    const failedScript = appendChild.mock.calls[0]?.[0]
-    if (!(failedScript instanceof HTMLScriptElement)) {
-      throw new Error('Expected Syft script to be appended')
-    }
-
-    failedScript.dispatchEvent(new Event('error'))
+    failScript(appendChild, 0)
     await Promise.resolve()
 
     expect(window.syft).toBeUndefined()
@@ -111,7 +117,26 @@ describe('SyftTelemetryProvider', () => {
     ])
   })
 
-  it('re-identifies via trackUserLoggedIn after SDK load failure', async () => {
+  it('replays a pending identify after SDK load failure', async () => {
+    mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
+    const appendChild = mockScriptAppend()
+    mockCurrentUser.userEmail.value = 'restored@example.com'
+    const SyftTelemetryProvider = await importProvider()
+
+    new SyftTelemetryProvider().trackUserLoggedIn()
+
+    failScript(appendChild, 0)
+    await Promise.resolve()
+
+    expect(appendChild).toHaveBeenCalledTimes(2)
+    expect(window.syft?.q).toContainEqual([
+      'identify',
+      'restored@example.com',
+      { source: 'login' }
+    ])
+  })
+
+  it('replays at most once but still allows a later manual retry', async () => {
     mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     const appendChild = mockScriptAppend()
     mockCurrentUser.userEmail.value = 'restored@example.com'
@@ -120,18 +145,17 @@ describe('SyftTelemetryProvider', () => {
 
     provider.trackUserLoggedIn()
 
-    const failedScript = appendChild.mock.calls[0]?.[0]
-    if (!(failedScript instanceof HTMLScriptElement)) {
-      throw new Error('Expected Syft script to be appended')
-    }
-    failedScript.dispatchEvent(new Event('error'))
+    failScript(appendChild, 0)
+    await Promise.resolve()
+    failScript(appendChild, 1)
     await Promise.resolve()
 
+    expect(appendChild).toHaveBeenCalledTimes(2)
     expect(window.syft).toBeUndefined()
 
     provider.trackUserLoggedIn()
 
-    expect(appendChild).toHaveBeenCalledTimes(2)
+    expect(appendChild).toHaveBeenCalledTimes(3)
     expect(window.syft?.q).toContainEqual([
       'identify',
       'restored@example.com',

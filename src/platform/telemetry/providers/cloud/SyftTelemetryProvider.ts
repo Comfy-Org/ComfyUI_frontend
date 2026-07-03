@@ -9,6 +9,8 @@ const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
 
 let currentStub: SyftDataClient | null = null
 let lastIdentifiedEmail: string | null = null
+let pendingIdentify: { email: string; traits: SyftDataTraits } | null = null
+let hasReplayedIdentify = false
 
 const loadSyftSdk = createScriptLoader<SyftDataClient>(SYFT_SRC, () =>
   window.syft && window.syft !== currentStub ? window.syft : null
@@ -59,18 +61,32 @@ function bootstrapSyftClient(): SyftDataClient | null {
   currentStub = stub
   window.syft = stub
 
-  loadSyftSdk().catch((error: unknown) => {
-    if (window.syft === stub) {
-      delete window.syft
-      lastIdentifiedEmail = null
+  loadSyftSdk().then(
+    () => {
+      pendingIdentify = null
+    },
+    (error: unknown) => {
+      const stubOwnsGlobal = window.syft === stub
+      if (stubOwnsGlobal) {
+        delete window.syft
+        lastIdentifiedEmail = null
+      }
+      if (currentStub === stub) {
+        currentStub = null
+      }
+      console.warn('[Syft] SDK failed to load', error)
+      if (stubOwnsGlobal) replayPendingIdentify()
     }
-    if (currentStub === stub) {
-      currentStub = null
-    }
-    console.warn('[Syft] SDK failed to load', error)
-  })
+  )
 
   return window.syft
+}
+
+function replayPendingIdentify(): void {
+  if (!pendingIdentify || hasReplayedIdentify) return
+
+  hasReplayedIdentify = true
+  identifyUser(pendingIdentify.email, pendingIdentify.traits)
 }
 
 function identifyUser(email: string, traits: SyftDataTraits): void {
@@ -79,6 +95,7 @@ function identifyUser(email: string, traits: SyftDataTraits): void {
 
   syft.identify(email, traits)
   lastIdentifiedEmail = email
+  pendingIdentify = syft === currentStub ? { email, traits } : null
 }
 
 export class SyftTelemetryProvider implements TelemetryProvider {
