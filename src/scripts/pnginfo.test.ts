@@ -2,12 +2,15 @@ import fs from 'fs'
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { PartialDeep } from '@total-typescript/shoehorn'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import {
+  createMockLGraph,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
@@ -310,15 +313,15 @@ describe('importA1111', () => {
       SaveImage: [],
       VAEDecode: []
     }
-    return fromPartial<LGraphNode>({
+    return createMockLGraphNode({
       type,
       widgets: widgetsByType[type] ?? [],
       connect: vi.fn()
-    } as PartialDeep<LGraphNode>)
+    })
   }
 
   function createGraph(): LGraph {
-    return fromPartial<LGraph>({
+    return createMockLGraph({
       add: vi.fn(),
       arrange: vi.fn(),
       clear: vi.fn()

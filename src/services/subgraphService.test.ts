@@ -7,6 +7,7 @@ import type {
   ExportedSubgraphInstance,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 
@@ -45,11 +46,11 @@ const { useSubgraphService } = await import('./subgraphService')
 function createExportedSubgraph(
   overrides: Partial<ExportedSubgraph> = {}
 ): ExportedSubgraph {
-  return {
+  return createTestSubgraphData({
     id: 'subgraph-1',
     name: 'Test Subgraph',
     ...overrides
-  } as ExportedSubgraph
+  })
 }
 
 function createWorkflow(subgraphs?: ExportedSubgraph[]): ComfyWorkflowJSON {

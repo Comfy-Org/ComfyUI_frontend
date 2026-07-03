@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { PartialDeep } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   CanvasPointerEvent,
@@ -634,209 +635,198 @@ describe('ChangeTracker', () => {
   })
 
   describe('init', () => {
-    it('captures changes from registered browser, graph, and API events', async () => {
-      const windowListeners: ListenerMap = {}
-      const documentListeners: ListenerMap = {}
-      const windowAddSpy = vi
+    let windowListeners: ListenerMap
+    let documentListeners: ListenerMap
+    let windowAddSpy: MockInstance
+    let documentAddSpy: MockInstance
+    let rafSpy: MockInstance
+    let originalProcessMouseUp: typeof LGraphCanvas.prototype.processMouseUp
+    let originalPrompt: typeof LGraphCanvas.prototype.prompt
+    let originalClose: typeof LiteGraph.ContextMenu.prototype.close
+
+    beforeEach(() => {
+      windowListeners = {}
+      documentListeners = {}
+      originalProcessMouseUp = LGraphCanvas.prototype.processMouseUp
+      originalPrompt = LGraphCanvas.prototype.prompt
+      originalClose = LiteGraph.ContextMenu.prototype.close
+      windowAddSpy = vi
         .spyOn(window, 'addEventListener')
         .mockImplementation((type, listener) => {
           storeListener(windowListeners, type, listener)
         })
-      const documentAddSpy = vi
+      documentAddSpy = vi
         .spyOn(document, 'addEventListener')
         .mockImplementation((type, listener) => {
           storeListener(documentListeners, type, listener)
         })
-      const rafSpy = vi
+      rafSpy = vi
         .spyOn(window, 'requestAnimationFrame')
         .mockImplementation((callback) => {
           callback(0)
           return 1
         })
+    })
 
+    afterEach(() => {
+      LGraphCanvas.prototype.processMouseUp = originalProcessMouseUp
+      LGraphCanvas.prototype.prompt = originalPrompt
+      LiteGraph.ContextMenu.prototype.close = originalClose
+      windowAddSpy.mockRestore()
+      documentAddSpy.mockRestore()
+      rafSpy.mockRestore()
+    })
+
+    it('captures changes from registered browser, graph, and API events', async () => {
       const processMouseUp = vi.fn(() => true)
       const prompt = vi.fn()
       const close = vi.fn(() => true)
-      const originalProcessMouseUp = LGraphCanvas.prototype.processMouseUp
-      const originalPrompt = LGraphCanvas.prototype.prompt
-      const originalClose = LiteGraph.ContextMenu.prototype.close
 
       LGraphCanvas.prototype.processMouseUp = processMouseUp
       LGraphCanvas.prototype.prompt = prompt
       LiteGraph.ContextMenu.prototype.close = close
 
-      try {
-        ChangeTracker.init()
-        const tracker = createTracker()
-        const capture = vi.spyOn(tracker, 'captureCanvasState')
+      ChangeTracker.init()
+      const tracker = createTracker()
+      const capture = vi.spyOn(tracker, 'captureCanvasState')
 
-        dispatchStored(windowListeners, 'mouseup', new MouseEvent('mouseup'))
-        getApiListener('promptQueued')(
-          new CustomEvent('promptQueued', {
-            detail: fromPartial<ExecutedWsMessage>({})
-          })
-        )
-        getApiListener('graphCleared')(
-          new CustomEvent('graphCleared', {
-            detail: fromPartial<ExecutedWsMessage>({})
-          })
-        )
-        dispatchStored(
-          documentListeners,
-          'litegraph:canvas',
-          new CustomEvent('litegraph:canvas', {
-            detail: { subType: 'before-change' }
-          })
-        )
-        dispatchStored(
-          documentListeners,
-          'litegraph:canvas',
-          new CustomEvent('litegraph:canvas', {
-            detail: { subType: 'after-change' }
-          })
-        )
+      dispatchStored(windowListeners, 'mouseup', new MouseEvent('mouseup'))
+      getApiListener('promptQueued')(
+        new CustomEvent('promptQueued', {
+          detail: fromPartial<ExecutedWsMessage>({})
+        })
+      )
+      getApiListener('graphCleared')(
+        new CustomEvent('graphCleared', {
+          detail: fromPartial<ExecutedWsMessage>({})
+        })
+      )
+      dispatchStored(
+        documentListeners,
+        'litegraph:canvas',
+        new CustomEvent('litegraph:canvas', {
+          detail: { subType: 'before-change' }
+        })
+      )
+      dispatchStored(
+        documentListeners,
+        'litegraph:canvas',
+        new CustomEvent('litegraph:canvas', {
+          detail: { subType: 'after-change' }
+        })
+      )
 
-        expect(capture).toHaveBeenCalledTimes(4)
+      expect(capture).toHaveBeenCalledTimes(4)
 
-        dispatchStored(
-          windowListeners,
-          'keydown',
-          new KeyboardEvent('keydown', { key: 'Control' })
-        )
-        await flushAsyncFrame()
-        dispatchStored(windowListeners, 'keyup', new KeyboardEvent('keyup'))
+      dispatchStored(
+        windowListeners,
+        'keydown',
+        new KeyboardEvent('keydown', { key: 'Control' })
+      )
+      await flushAsyncFrame()
+      dispatchStored(windowListeners, 'keyup', new KeyboardEvent('keyup'))
 
-        expect(capture).toHaveBeenCalledTimes(5)
+      expect(capture).toHaveBeenCalledTimes(5)
 
-        const undoRedo = vi.spyOn(tracker, 'undoRedo').mockResolvedValue(true)
-        dispatchStored(
-          windowListeners,
-          'keydown',
-          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
-        )
-        await flushAsyncFrame()
+      const undoRedo = vi.spyOn(tracker, 'undoRedo').mockResolvedValue(true)
+      dispatchStored(
+        windowListeners,
+        'keydown',
+        new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+      )
+      await flushAsyncFrame()
 
-        expect(undoRedo).toHaveBeenCalledOnce()
-        expect(capture).toHaveBeenCalledTimes(5)
+      expect(undoRedo).toHaveBeenCalledOnce()
+      expect(capture).toHaveBeenCalledTimes(5)
 
-        undoRedo.mockResolvedValue(undefined)
-        dispatchStored(
-          windowListeners,
-          'keydown',
-          new KeyboardEvent('keydown', { key: 'a' })
-        )
-        await flushAsyncFrame()
+      undoRedo.mockResolvedValue(undefined)
+      dispatchStored(
+        windowListeners,
+        'keydown',
+        new KeyboardEvent('keydown', { key: 'a' })
+      )
+      await flushAsyncFrame()
 
-        expect(capture).toHaveBeenCalledTimes(6)
+      expect(capture).toHaveBeenCalledTimes(6)
 
-        const input = document.createElement('input')
-        document.body.append(input)
-        input.focus()
-        dispatchStored(
-          windowListeners,
-          'keydown',
-          new KeyboardEvent('keydown', { key: 'b' })
-        )
-        await flushAsyncFrame()
-        input.remove()
+      const input = document.createElement('input')
+      document.body.append(input)
+      input.focus()
+      dispatchStored(
+        windowListeners,
+        'keydown',
+        new KeyboardEvent('keydown', { key: 'b' })
+      )
+      await flushAsyncFrame()
+      input.remove()
 
-        expect(capture).toHaveBeenCalledTimes(6)
+      expect(capture).toHaveBeenCalledTimes(6)
 
-        mockMaskEditorIsOpened.mockReturnValue(true)
-        dispatchStored(
-          windowListeners,
-          'keydown',
-          new KeyboardEvent('keydown', { key: 'c' })
-        )
-        await flushAsyncFrame()
+      mockMaskEditorIsOpened.mockReturnValue(true)
+      dispatchStored(
+        windowListeners,
+        'keydown',
+        new KeyboardEvent('keydown', { key: 'c' })
+      )
+      await flushAsyncFrame()
 
-        expect(capture).toHaveBeenCalledTimes(6)
+      expect(capture).toHaveBeenCalledTimes(6)
 
-        const canvas = {} as LGraphCanvas
-        LGraphCanvas.prototype.processMouseUp.call(
-          canvas,
-          new MouseEvent('mouseup') as CanvasPointerEvent
-        )
+      const canvas = {} as LGraphCanvas
+      LGraphCanvas.prototype.processMouseUp.call(
+        canvas,
+        new MouseEvent('mouseup') as CanvasPointerEvent
+      )
 
-        expect(processMouseUp).toHaveBeenCalledOnce()
-        expect(capture).toHaveBeenCalledTimes(7)
+      expect(processMouseUp).toHaveBeenCalledOnce()
+      expect(capture).toHaveBeenCalledTimes(7)
 
-        const promptCallback = vi.fn()
-        LGraphCanvas.prototype.prompt.call(
-          canvas,
-          'title',
-          'value',
-          promptCallback,
-          new MouseEvent('mouseup') as CanvasPointerEvent
-        )
-        const extendedCallback = prompt.mock.calls[0]?.[2] as
-          | ((value: string) => void)
-          | undefined
-        extendedCallback?.('updated')
+      const promptCallback = vi.fn()
+      LGraphCanvas.prototype.prompt.call(
+        canvas,
+        'title',
+        'value',
+        promptCallback,
+        new MouseEvent('mouseup') as CanvasPointerEvent
+      )
+      const extendedCallback = prompt.mock.calls[0]?.[2] as
+        | ((value: string) => void)
+        | undefined
+      extendedCallback?.('updated')
 
-        expect(promptCallback).toHaveBeenCalledWith('updated')
-        expect(capture).toHaveBeenCalledTimes(8)
+      expect(promptCallback).toHaveBeenCalledWith('updated')
+      expect(capture).toHaveBeenCalledTimes(8)
 
-        LiteGraph.ContextMenu.prototype.close.call(
-          {} as InstanceType<typeof LiteGraph.ContextMenu>,
-          new MouseEvent('mouseup')
-        )
+      LiteGraph.ContextMenu.prototype.close.call(
+        {} as InstanceType<typeof LiteGraph.ContextMenu>,
+        new MouseEvent('mouseup')
+      )
 
-        expect(close).toHaveBeenCalledOnce()
-        expect(capture).toHaveBeenCalledTimes(9)
-      } finally {
-        LGraphCanvas.prototype.processMouseUp = originalProcessMouseUp
-        LGraphCanvas.prototype.prompt = originalPrompt
-        LiteGraph.ContextMenu.prototype.close = originalClose
-        windowAddSpy.mockRestore()
-        documentAddSpy.mockRestore()
-        rafSpy.mockRestore()
-      }
+      expect(close).toHaveBeenCalledOnce()
+      expect(capture).toHaveBeenCalledTimes(9)
     })
 
     it('ignores repeat keydowns and missing active trackers', async () => {
-      const windowListeners: ListenerMap = {}
-      const windowAddSpy = vi
-        .spyOn(window, 'addEventListener')
-        .mockImplementation((type, listener) => {
-          storeListener(windowListeners, type, listener)
-        })
-      const documentAddSpy = vi
-        .spyOn(document, 'addEventListener')
-        .mockImplementation(() => undefined)
-      const rafSpy = vi
-        .spyOn(window, 'requestAnimationFrame')
-        .mockImplementation((callback) => {
-          callback(0)
-          return 1
-        })
+      ChangeTracker.init()
+      const tracker = createTracker()
+      const capture = vi.spyOn(tracker, 'captureCanvasState')
 
-      try {
-        ChangeTracker.init()
-        const tracker = createTracker()
-        const capture = vi.spyOn(tracker, 'captureCanvasState')
+      dispatchStored(
+        windowListeners,
+        'keydown',
+        new KeyboardEvent('keydown', { key: 'x', repeat: true })
+      )
+      await flushAsyncFrame()
+      expect(capture).not.toHaveBeenCalled()
 
-        dispatchStored(
-          windowListeners,
-          'keydown',
-          new KeyboardEvent('keydown', { key: 'x', repeat: true })
-        )
-        await flushAsyncFrame()
-        expect(capture).not.toHaveBeenCalled()
-
-        mockWorkflowStore.activeWorkflow = null
-        dispatchStored(
-          windowListeners,
-          'keydown',
-          new KeyboardEvent('keydown', { key: 'x' })
-        )
-        await flushAsyncFrame()
-        expect(capture).not.toHaveBeenCalled()
-      } finally {
-        windowAddSpy.mockRestore()
-        documentAddSpy.mockRestore()
-        rafSpy.mockRestore()
-      }
+      mockWorkflowStore.activeWorkflow = null
+      dispatchStored(
+        windowListeners,
+        'keydown',
+        new KeyboardEvent('keydown', { key: 'x' })
+      )
+      await flushAsyncFrame()
+      expect(capture).not.toHaveBeenCalled()
     })
 
     it('stores executed outputs for the workflow that owns the prompt', () => {

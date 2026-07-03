@@ -1,9 +1,12 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import type { PartialDeep } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import {
+  createMockCanvas,
+  createMockLGraph,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 vi.mock('@/platform/telemetry/nodeAdded/nodeAddSource', () => ({
@@ -11,23 +14,20 @@ vi.mock('@/platform/telemetry/nodeAdded/nodeAddSource', () => ({
 }))
 
 function createNode() {
-  const node = fromPartial<LGraphNode>({
-    pos: [0, 0] as [number, number],
-    configure: vi.fn((info: { pos: [number, number] }) => {
-      node.pos = [...info.pos]
-    }),
-    connect: vi.fn()
-  } as PartialDeep<LGraphNode>)
+  const node = createMockLGraphNode({ connect: vi.fn() })
+  node.configure = vi.fn((info: ISerialisedNode) => {
+    node.pos = [...info.pos]
+  })
   return node
 }
 
 function createCanvas() {
-  return fromPartial<LGraphCanvas>({
-    graph: {
+  return createMockCanvas({
+    graph: createMockLGraph({
       beforeChange: vi.fn(),
       afterChange: vi.fn(),
       add: vi.fn()
-    },
+    }),
     graph_mouse: [100, 200] as [number, number],
     emitBeforeChange: vi.fn(),
     emitAfterChange: vi.fn(),

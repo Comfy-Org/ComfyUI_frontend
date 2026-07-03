@@ -1,15 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { createUuidv4, zeroUuid } from './uuid'
+import { createUuidv4 } from './uuid'
 
 describe('uuid utilities', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
-  })
-
-  it('exposes the all-zero UUID constant', () => {
-    expect(zeroUuid).toBe('00000000-0000-0000-0000-000000000000')
   })
 
   it('uses crypto.randomUUID when available', () => {

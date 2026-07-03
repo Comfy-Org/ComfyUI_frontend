@@ -142,6 +142,7 @@ describe('ComfyApi', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
@@ -349,7 +350,6 @@ describe('ComfyApi', () => {
     expect(status).toHaveBeenCalledWith(
       expect.objectContaining({ detail: null })
     )
-    vi.useRealTimers()
   })
 
   it('emits reconnect lifecycle events after an opened websocket closes', async () => {
@@ -377,7 +377,6 @@ describe('ComfyApi', () => {
     reconnectSocket.dispatchEvent(new Event('open'))
 
     expect(reconnected).toHaveBeenCalledOnce()
-    vi.useRealTimers()
   })
 
   it('routes websocket variants without session ids and display-node fallbacks', () => {

@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { PartialDeep } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -46,6 +46,12 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import {
+  createMockCanvas as createSharedMockCanvas,
+  createMockLGraph,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 const {
@@ -303,28 +309,30 @@ vi.mock('@/stores/subgraphNavigationStore', () => ({
 function createMockNode(
   options: Partial<LGraphNode> | Record<string, unknown> = {}
 ) {
-  return {
-    id: 1,
-    pos: [0, 0],
+  return createMockLGraphNode({
     size: [200, 100],
     type: 'LoadImage',
     connect: vi.fn(),
     getBounding: vi.fn(() => new Float64Array([0, 0, 200, 100])),
-    ...(options as Partial<LGraphNode>)
-  } as LGraphNode
+    ...options
+  })
 }
 
-function createMockCanvas(): Partial<LGraphCanvas> {
-  const mockGraph: Partial<LGraph> = {
-    change: vi.fn()
-  }
-
-  return {
-    graph: mockGraph as LGraph,
+function createMockCanvas(): LGraphCanvas {
+  return createSharedMockCanvas({
+    graph: createMockLGraph({ change: vi.fn() }),
     draw: vi.fn(),
-    selectItems: vi.fn(),
-    setDirty: vi.fn()
-  }
+    selectItems: vi.fn()
+  })
+}
+
+type ComfyAppWithPrivateNodeDefs = {
+  updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>): void
+}
+
+function exposePrivateNodeDefs(app: ComfyApp): ComfyAppWithPrivateNodeDefs {
+  // eslint-disable-next-line no-restricted-syntax -- intersecting ComfyApp with its private updateVueAppNodeDefs reduces to never, so a double assertion is the only way to spy on the private method
+  return app as unknown as ComfyAppWithPrivateNodeDefs
 }
 
 function attachLoadGraphCanvas(
@@ -374,6 +382,17 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
     extra: {},
     version: 0.4
   }
+}
+
+function createSerialisedGraph(): ISerialisedGraph {
+  return fromPartial<ISerialisedGraph>({
+    last_node_id: 0,
+    last_link_id: 0,
+    nodes: [],
+    links: [],
+    groups: [],
+    version: 0.4
+  })
 }
 
 describe('ComfyApp', () => {
@@ -872,12 +891,7 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
       vi.spyOn(app, 'registerNodesFromDefs').mockResolvedValue(undefined)
       const updateVueAppNodeDefs = vi
-        .spyOn(
-          app as unknown as {
-            updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>): void
-          },
-          'updateVueAppNodeDefs'
-        )
+        .spyOn(exposePrivateNodeDefs(app), 'updateVueAppNodeDefs')
         .mockImplementation(() => undefined)
 
       app.vueAppReady = false
@@ -915,11 +929,7 @@ describe('ComfyApp', () => {
           })
         }
 
-        ;(
-          app as unknown as {
-            updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>): void
-          }
-        ).updateVueAppNodeDefs(defs)
+        exposePrivateNodeDefs(app).updateVueAppNodeDefs(defs)
 
         const store = useNodeDefStore()
         expect(store.nodeDefsByName['frontend/Only']).toMatchObject({
@@ -1666,24 +1676,26 @@ describe('ComfyApp', () => {
       sampler.addWidget('combo', 'sampler_name', 'sample_euler', () => {}, {
         values: ['euler']
       })
-      sampler.addWidget(
+      const controlAfterGenerate = sampler.addWidget(
         'combo',
         'control_after_generate',
-        fromAny<string, boolean>(true),
+        'fixed',
         () => {},
         {
           values: ['fixed', 'randomize']
         }
       )
-      sampler.addWidget(
+      Reflect.set(controlAfterGenerate, 'value', true)
+      const ckptName = sampler.addWidget(
         'combo',
         'ckpt_name',
-        fromAny<string, null>(null),
+        'model.safetensors',
         () => {},
         {
           values: ['model.safetensors']
         }
       )
+      Reflect.set(ckptName, 'value', null)
       rootGraph.add(sampler)
       vi.spyOn(rootGraph, 'configure').mockImplementation(() => undefined)
       mockSettingStore.get.mockImplementation((key: string) => {
@@ -1887,7 +1899,7 @@ describe('ComfyApp', () => {
         }
       )
 
-      await app.loadGraphData(fromAny([]), true, true)
+      await app.loadGraphData([], true, true)
 
       expect(node.widgets?.[0].value).toBe('fixed')
       expect(mockLitegraphService.fitView).toHaveBeenCalled()
@@ -2435,9 +2447,7 @@ describe('ComfyApp', () => {
     it('falls back to parameters when workflow metadata is invalid', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(graph, 'serialize').mockReturnValue(
-        fromAny(createWorkflowGraphData())
-      )
+      vi.spyOn(graph, 'serialize').mockReturnValue(createSerialisedGraph())
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         workflow: '[]',
         parameters: 'Steps: 12'
@@ -2522,9 +2532,7 @@ describe('ComfyApp', () => {
     it('falls back to parameters when prompt metadata cannot be parsed', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(graph, 'serialize').mockReturnValue(
-        fromAny(createWorkflowGraphData())
-      )
+      vi.spyOn(graph, 'serialize').mockReturnValue(createSerialisedGraph())
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         prompt: '{',
         parameters: 'Steps: 6'

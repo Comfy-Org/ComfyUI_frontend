@@ -22,7 +22,7 @@ vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => fetchJobs)
 
 afterEach(() => {
   vi.restoreAllMocks()
-  vi.clearAllMocks()
+  vi.resetAllMocks()
 })
 
 function jsonResponse(data: unknown, init: ResponseInit = {}) {

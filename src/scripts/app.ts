@@ -1167,7 +1167,7 @@ export class ComfyApp {
   }
 
   async loadGraphData(
-    graphData?: ComfyWorkflowJSON,
+    graphData?: ComfyWorkflowJSON | unknown[],
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,

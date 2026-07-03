@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -7,17 +7,17 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 interface TestWidgetOptions {
   name: string
   type: string
-  default?: unknown
+  default?: IBaseWidget['value']
   multiline?: boolean
 }
 
 function createWidgetFactory() {
   return (node: LGraphNode, options: TestWidgetOptions): IBaseWidget => {
-    const widget: IBaseWidget = fromAny({
+    const widget = fromPartial<IBaseWidget>({
       name: options.name,
       type: options.type,
       value: options.default,
-      options
+      options: { multiline: options.multiline }
     })
     node.widgets = [...(node.widgets ?? []), widget]
     return widget
@@ -54,15 +54,8 @@ describe('errorNodeWidgets', () => {
     node.has_errors = true
 
     node.onConfigure?.(
-      fromAny({
-        widgets_values: {
-          length: 5,
-          0: 'short text',
-          1: longText,
-          2: 12,
-          3: true,
-          4: { nested: 'value' }
-        }
+      fromPartial({
+        widgets_values: ['short text', longText, 12, true, { nested: 'value' }]
       })
     )
 

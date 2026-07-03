@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -91,6 +92,10 @@ vi.mock(
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
+import {
+  createRequiredInputMissingNodeError,
+  seedRequiredInputMissingNodeError
+} from '@/utils/__tests__/executionErrorTestUtils'
 
 beforeEach(() => {
   mockShowErrorsTab.value = false
@@ -566,20 +571,11 @@ describe('executionErrorStore — node error operations', () => {
       store.lastPromptError = fromPartial<PromptError>({
         message: 'prompt failed'
       })
-      store.lastNodeErrors = {
-        '1': {
-          errors: [
-            {
-              type: 'required_input_missing',
-              message: 'Missing',
-              details: '',
-              extra_info: { input_name: 'x' }
-            }
-          ],
-          dependent_outputs: [],
-          class_type: 'Test'
-        }
-      }
+      seedRequiredInputMissingNodeError(
+        store,
+        createNodeExecutionId([toNodeId(1)]),
+        'x'
+      )
       store.showErrorOverlay()
 
       store.clearExecutionStartErrors()
@@ -591,7 +587,7 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('executionErrorStore derived graph state', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('derives execution error node ids through locator mapping', () => {
@@ -627,24 +623,19 @@ describe('executionErrorStore derived graph state', () => {
       message: 'prompt failed'
     })
     Reflect.set(store, 'lastExecutionError', { node_id: null })
+    const nodeError = createRequiredInputMissingNodeError('x')
     store.lastNodeErrors = {
       '1': {
+        ...nodeError,
         errors: [
-          {
-            type: 'required_input_missing',
-            message: 'Missing',
-            details: '',
-            extra_info: { input_name: 'x' }
-          },
+          ...nodeError.errors,
           {
             type: 'value_bigger_than_max',
             message: 'Too large',
             details: '',
             extra_info: { input_name: 'y' }
           }
-        ],
-        dependent_outputs: [],
-        class_type: 'Test'
+        ]
       }
     }
     missingNodesStore.setMissingNodeTypes([
@@ -691,20 +682,11 @@ describe('executionErrorStore derived graph state', () => {
       id: toNodeId(id),
       graph: activeGraph
     }))
-    store.lastNodeErrors = {
-      '1': {
-        errors: [
-          {
-            type: 'required_input_missing',
-            message: 'Missing',
-            details: '',
-            extra_info: { input_name: 'x' }
-          }
-        ],
-        dependent_outputs: [],
-        class_type: 'Test'
-      }
-    }
+    seedRequiredInputMissingNodeError(
+      store,
+      createNodeExecutionId([toNodeId(1)]),
+      'x'
+    )
     store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
       node_id: '2'
     })
@@ -719,20 +701,11 @@ describe('executionErrorStore derived graph state', () => {
       id: toNodeId(1),
       graph: mockApp.rootGraph
     })
-    store.lastNodeErrors = {
-      '1': {
-        errors: [
-          {
-            type: 'required_input_missing',
-            message: 'Missing',
-            details: '',
-            extra_info: { input_name: 'x' }
-          }
-        ],
-        dependent_outputs: [],
-        class_type: 'Test'
-      }
-    }
+    seedRequiredInputMissingNodeError(
+      store,
+      createNodeExecutionId([toNodeId(1)]),
+      'x'
+    )
 
     expect([...store.activeGraphErrorNodeIds]).toEqual(['1'])
   })
@@ -745,20 +718,11 @@ describe('executionErrorStore derived graph state', () => {
       id: toNodeId(1),
       graph: {}
     })
-    store.lastNodeErrors = {
-      '1': {
-        errors: [
-          {
-            type: 'required_input_missing',
-            message: 'Missing',
-            details: '',
-            extra_info: { input_name: 'x' }
-          }
-        ],
-        dependent_outputs: [],
-        class_type: 'Test'
-      }
-    }
+    seedRequiredInputMissingNodeError(
+      store,
+      createNodeExecutionId([toNodeId(1)]),
+      'x'
+    )
     store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
       node_id: '1'
     })
@@ -778,18 +742,7 @@ describe('executionErrorStore derived graph state', () => {
 
   it('maps node errors by locator and checks slots', () => {
     const store = useExecutionErrorStore()
-    const nodeError = {
-      errors: [
-        {
-          type: 'required_input_missing',
-          message: 'Missing',
-          details: '',
-          extra_info: { input_name: 'x' }
-        }
-      ],
-      dependent_outputs: [],
-      class_type: 'Test'
-    }
+    const nodeError = createRequiredInputMissingNodeError('x')
     mockExecutionIdToNodeLocatorId.mockImplementation((_rootGraph, id) =>
       id === 'missing' ? undefined : (`locator:${id}` as NodeLocatorId)
     )
@@ -820,20 +773,11 @@ describe('executionErrorStore derived graph state', () => {
 
     expect(store.isContainerWithInternalError(node)).toBe(false)
 
-    store.lastNodeErrors = {
-      '1:2': {
-        errors: [
-          {
-            type: 'required_input_missing',
-            message: 'Missing',
-            details: '',
-            extra_info: { input_name: 'x' }
-          }
-        ],
-        dependent_outputs: [],
-        class_type: 'Test'
-      }
-    }
+    seedRequiredInputMissingNodeError(
+      store,
+      createNodeExecutionId([toNodeId(1), toNodeId(2)]),
+      'x'
+    )
     mockGetExecutionIdByNode.mockReturnValue(
       createNodeExecutionId([toNodeId(1)])
     )
