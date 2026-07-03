@@ -146,12 +146,10 @@ export class ChangeTracker {
     }
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
-      for (let i = 0; i < navigation.length; i++) {
-        if (!app.rootGraph.subgraphs.has(navigation[i])) {
-          navigation.length = i
-          break
-        }
-      }
+      const firstInvalidIndex = navigation.findIndex(
+        (id) => !app.rootGraph.subgraphs.has(id)
+      )
+      if (firstInvalidIndex !== -1) navigation.splice(firstInvalidIndex)
       useSubgraphNavigationStore().restoreState(navigation)
 
       const activeId = navigation.at(-1)
