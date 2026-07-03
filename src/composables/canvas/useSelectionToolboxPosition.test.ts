@@ -61,21 +61,7 @@ describe('useSelectionToolboxPosition', () => {
     state: Partial<LGraphCanvas['state']> = {},
     ds: Partial<LGraphCanvas['ds']> = {}
   ) {
-    canvasStore.canvas = markRaw(
-      fromPartial<LGraphCanvas>({
-        canvas: document.createElement('canvas'),
-        ds: {
-          offset: ds.offset ?? [0, 0],
-          scale: ds.scale ?? 1
-        },
-        selectedItems: new Set(items),
-        state: {
-          draggingItems: false,
-          selectionChanged: true,
-          ...state
-        }
-      })
-    )
+    setCanvasSelection(items, state, ds)
 
     let toolbox: HTMLElement | undefined
     let visible!: ReturnType<typeof useSelectionToolboxPosition>['visible']
@@ -98,14 +84,15 @@ describe('useSelectionToolboxPosition', () => {
 
   function setCanvasSelection(
     items: Iterable<Positionable>,
-    state: Partial<LGraphCanvas['state']> = {}
+    state: Partial<LGraphCanvas['state']> = {},
+    ds: Partial<LGraphCanvas['ds']> = {}
   ) {
     canvasStore.canvas = markRaw(
       fromPartial<LGraphCanvas>({
         canvas: document.createElement('canvas'),
         ds: {
-          offset: [0, 0],
-          scale: 1
+          offset: ds.offset ?? [0, 0],
+          scale: ds.scale ?? 1
         },
         selectedItems: new Set(items),
         state: {
