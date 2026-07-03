@@ -41,6 +41,17 @@ block must list the pack with no `IMPORT FAILED` marker. An import failure is
 a pack bug or a missing dependency - fix that first; nothing downstream can
 work without a clean import.
 
+While you are here, note whether the pack ships frontend JS:
+
+```bash
+curl -s http://127.0.0.1:8288/extensions | grep -c "<pack-dir-name>"
+```
+
+Non-zero means the pack patches the frontend at runtime (restyled nodes,
+rebuilt widgets, injected page chrome). Write that down - it decides whether
+Step 6 needs the CI-parity run, and it is the single biggest source of
+"green locally, red on CI" surprises.
+
 ## Step 2 - read the pack's real node keys
 
 The manifest's `expectedNodes` are the pack's `object_info` keys (the same
@@ -122,6 +133,11 @@ to_node_id, to_slot, "TYPE"]`, plus the matching `link`/`links` ids on the
   your workflow needs a different existing asset staged, extend the
   `Stage run-tier assets` step in
   `.github/workflows/ci-tests-custom-nodes.yaml`.
+- A media path in the workflow (e.g. `input/plain_video.mp4`) resolves
+  against the backend process's working directory, not the repo. Locally,
+  copy the file into the `input/` dir of the directory you launched
+  `main.py` from, or the run tier fails validation with
+  `Invalid file path` and the test reports `TIMEOUT`.
 
 ## Step 5 - add the manifest row
 
@@ -144,7 +160,9 @@ Append one object to `browser_tests/fixtures/data/customNodeManifest.json`:
 every row and fails loudly on a missing field, an empty `repo`, a misspelled
 tier, or a `run` tier with an empty `workflow`.
 
-## Step 6 - prove it green locally
+## Step 6 - prove it green locally, in both environments
+
+### 6a - fast loop (dev server)
 
 ```bash
 pnpm test:custom-nodes
@@ -152,7 +170,30 @@ pnpm test:custom-nodes
 
 Green means: every tier for every pack passes, zero skips, and the suite's
 zero-visible-errors invariant held (no error overlay, dialog, node error, or
-error toast at any point). Failure classes and what they mean:
+error toast at any point). Iterate here - it is the fastest loop.
+
+### 6b - CI-parity run (required if the pack ships frontend JS)
+
+The dev server never loads pack frontend JS (its `/extensions` list is
+core-only), so 6a exercises vanilla nodes. If Step 1 found frontend JS, a
+6a green proves nothing about the pack's real runtime behavior. CI serves
+the built frontend from the backend, so reproduce that exactly:
+
+```bash
+pnpm build
+# relaunch the test backend with the same flags plus:
+#   --front-end-root <repo>/dist
+# and make sure any run-tier media is in that process's input/ dir
+PLAYWRIGHT_TEST_URL=http://127.0.0.1:8288 pnpm exec playwright test \
+  browser_tests/tests/customNodes/ --config playwright.chrome.config.ts --workers=1
+```
+
+Both real failures during the first 5-pack onboarding only existed here:
+rgthree's progress bar shifted the canvas and broke slot-drag coordinates,
+and rgthree's Seed rebuilt a declared input as widget-only. Skipping 6b
+means discovering that class of problem one CI round at a time.
+
+### Failure classes and what they mean
 
 - **T0 fails only in the Vue Nodes pass** (the LiteGraph pass is green):
   suspected Vue Nodes 2.0 incompatibility. Follow the policy below - do not
@@ -172,12 +213,6 @@ error toast at any point). Failure classes and what they mean:
   Seed does this to `seed`), so there is no socket to wire. Recorded and
   excluded, like wildcards - pack design, not a regression.
 
-A local green is necessary but not sufficient: pack frontend JS does not
-load under the Vite dev server (see the README gotcha), so behavior that
-depends on it only shows on CI or against a locally built `dist`. If your
-pack ships frontend JS, do the CI-parity run from the README gotcha before
-pushing.
-
 ## Step 7 - push and watch CI
 
 The `CI: Tests Custom Nodes` job (gating) re-does Steps 1-6 from scratch on
@@ -186,6 +221,12 @@ torch constraints, boots the backend, runs the suite, and fails on any
 install error, any test failure, or any skipped test. A new pack row is
 automatically picked up; no workflow edit is needed unless you must stage an
 extra asset (Step 4).
+
+If CI goes red on a pack you did not touch: `pin: ""` tracks the pack's
+default branch head, so upstream pushed something new. Reproduce under the
+Step 6b environment first, then either adjust the suite's expectation
+honestly (the way widget-only instance slots became a recorded exclusion)
+or pin the pack to its last good commit. Never paper over it with a skip.
 
 ## Vue Nodes 2.0 compatibility policy
 
@@ -214,10 +255,13 @@ failures and without skipping tests:
 ## Checklist
 
 - [ ] Pack installs clean on the test backend (no `IMPORT FAILED`)
+- [ ] Checked whether the pack ships frontend JS (Step 1 `/extensions` count)
 - [ ] `expectedNodes` copied exactly from `/object_info` (Step 2 traps checked)
 - [ ] All expected nodes are model-free and present in the run workflow
 - [ ] Workflow JSON under `browser_tests/assets/customNodes/`, no new binaries
+- [ ] Any media staged into the backend's own `input/` dir locally (Step 4)
 - [ ] Manifest row appended with every field (Step 5 table)
 - [ ] `vueNodesCompatible` omitted, or set `false` with recorded evidence
-- [ ] `pnpm test:custom-nodes` fully green locally, zero skips
+- [ ] 6a green: `pnpm test:custom-nodes` against the dev server, zero skips
+- [ ] 6b green when the pack ships frontend JS: built dist + backend-served run
 - [ ] Pushed; `CI: Tests Custom Nodes` green on the PR
