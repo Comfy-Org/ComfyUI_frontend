@@ -9,7 +9,7 @@ function nodeDef(name: string, python_module: string) {
 describe('nodeHelpUtil', () => {
   it('extracts normalized custom node package names', () => {
     expect(
-      extractCustomNodeName('custom_nodes.ComfyUI-TestPack@1.2.3.nodes')
+      extractCustomNodeName('custom_nodes.ComfyUI-TestPack@1_2_3.nodes')
     ).toBe('ComfyUI-TestPack')
     expect(extractCustomNodeName('nodes')).toBeNull()
     expect(extractCustomNodeName(undefined)).toBeNull()
