@@ -337,6 +337,29 @@ export default defineConfig([
     }
   },
   {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'TSAsExpression > TSAsExpression.expression',
+          message:
+            'Double type assertion. Use fromPartial<T>() from @total-typescript/shoehorn instead.'
+        },
+        {
+          selector: "ImportSpecifier[imported.name='fromAny']",
+          message: 'fromAny erases type checking. Use fromPartial<T>() instead.'
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='vi'][callee.property.name='mock'] > Literal[value='vue-i18n']",
+          message:
+            'Do not mock vue-i18n. Use a real createI18n instance (see src/components/searchbox/v2/__test__/testUtils.ts).'
+        }
+      ]
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
