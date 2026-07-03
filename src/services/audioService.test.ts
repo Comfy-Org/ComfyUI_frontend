@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAudioService } from '@/services/audioService'
@@ -137,9 +138,9 @@ describe('useAudioService', () => {
     it('should stop all tracks in a stream', () => {
       const mockTrack1 = { stop: vi.fn() }
       const mockTrack2 = { stop: vi.fn() }
-      const mockStream = {
+      const mockStream = fromPartial<MediaStream>({
         getTracks: vi.fn().mockReturnValue([mockTrack1, mockTrack2])
-      } as Partial<MediaStream> as MediaStream
+      })
 
       service.stopAllTracks(mockStream)
 
@@ -153,9 +154,9 @@ describe('useAudioService', () => {
     })
 
     it('should handle stream with no tracks', () => {
-      const mockStream = {
+      const mockStream = fromPartial<MediaStream>({
         getTracks: vi.fn().mockReturnValue([])
-      } as Partial<MediaStream> as MediaStream
+      })
 
       expect(() => service.stopAllTracks(mockStream)).not.toThrow()
       expect(mockStream.getTracks).toHaveBeenCalledTimes(1)
@@ -168,9 +169,9 @@ describe('useAudioService', () => {
           throw new Error('Stop failed')
         })
       }
-      const mockStream = {
+      const mockStream = fromPartial<MediaStream>({
         getTracks: vi.fn().mockReturnValue([mockTrack1, mockTrack2])
-      } as Partial<MediaStream> as MediaStream
+      })
 
       expect(() => service.stopAllTracks(mockStream)).toThrow()
       expect(mockTrack1.stop).toHaveBeenCalledTimes(1)

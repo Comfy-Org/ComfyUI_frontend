@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -201,11 +202,10 @@ describe('sortedTree', () => {
   })
 
   it('sorts children with missing labels by the empty-label fallback', () => {
-    const unlabeled = {
+    const unlabeled = fromPartial<TreeNode>({
       key: 'missing',
-      label: undefined as unknown as string,
       leaf: true
-    }
+    })
     const node: TreeNode = {
       key: 'root',
       label: 'root',
@@ -238,18 +238,16 @@ describe('sortedTree', () => {
     })
 
     it('sorts grouped children with missing labels', () => {
-      const unlabeledFolder = {
+      const unlabeledFolder = fromPartial<TreeNode>({
         key: 'folder-missing',
-        label: undefined as unknown as string,
         leaf: false,
         children: []
-      }
-      const unlabeledFile = {
+      })
+      const unlabeledFile = fromPartial<TreeNode>({
         key: 'file-missing',
-        label: undefined as unknown as string,
         leaf: true,
         children: []
-      }
+      })
       const node: TreeNode = {
         key: 'root',
         label: 'root',

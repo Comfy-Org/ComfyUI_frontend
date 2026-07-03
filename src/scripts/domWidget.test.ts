@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, test, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -186,12 +187,12 @@ describe('DOMWidgetImpl', () => {
         onDraw
       }
     })
-    const ctx = {
+    const ctx = fromPartial<CanvasRenderingContext2D>({
       beginPath: vi.fn(),
       fill: vi.fn(),
       fillStyle: '#000',
       rect: vi.fn()
-    } as unknown as CanvasRenderingContext2D
+    })
 
     widget.draw(ctx, node, 100, 10, 40, true)
 
@@ -215,12 +216,12 @@ describe('DOMWidgetImpl', () => {
         onDraw
       }
     })
-    const ctx = {
+    const ctx = fromPartial<CanvasRenderingContext2D>({
       beginPath: vi.fn(),
       fill: vi.fn(),
       fillStyle: '#000',
       rect: vi.fn()
-    } as unknown as CanvasRenderingContext2D
+    })
 
     widget.draw(ctx, node, 100, 10, 40, true)
 

@@ -265,7 +265,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   })
 
   it('recovers to root when canvas is unavailable during redirect cleanup', async () => {
-    const appWithOptionalCanvas = app as unknown as {
+    const appWithOptionalCanvas = app as {
       canvas: typeof app.canvas | undefined
     }
     const canvas = appWithOptionalCanvas.canvas

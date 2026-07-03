@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { PartialDeep } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -6,6 +8,8 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 
 const mockAssert = vi.hoisted(() => vi.fn())
@@ -109,7 +113,7 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
     outputs: [],
     properties: {}
   }))
-  return {
+  return Object.assign(fromPartial<ComfyWorkflowJSON>({}), {
     nodes,
     links: [],
     groups: [],
@@ -118,19 +122,19 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
     version: 0.4,
     last_node_id: nodeIdCounter,
     last_link_id: 0
-  } as unknown as ComfyWorkflowJSON
+  })
 }
 
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const state = initialState ?? createState()
-  const workflow = { path: '/test/workflow.json' } as never
+  const workflow = fromPartial<ComfyWorkflow>({ path: '/test/workflow.json' })
   const tracker = new ChangeTracker(workflow, state)
   mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
   return tracker
 }
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
-  vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+  vi.mocked(app.rootGraph.serialize).mockReturnValue(state as ISerialisedGraph)
 }
 
 type ListenerMap = Record<string, EventListener[]>
@@ -238,7 +242,7 @@ describe('ChangeTracker', () => {
 
     it('restores saved subgraph navigation when the subgraph exists', () => {
       const tracker = createTracker()
-      const subgraph = { id: 'subgraph-1' } as unknown as Subgraph
+      const subgraph = fromPartial<Subgraph>({ id: 'subgraph-1' })
       app.rootGraph.subgraphs.set('subgraph-1', subgraph)
       mockSubgraphNavigationStore.exportState.mockReturnValue(['subgraph-1'])
 
@@ -255,7 +259,7 @@ describe('ChangeTracker', () => {
         const tracker = createTracker()
         const original = tracker.activeState
 
-        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(null as never)
+        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(undefined)
         tracker.captureCanvasState()
         spy.mockRestore()
 
@@ -319,7 +323,7 @@ describe('ChangeTracker', () => {
       it('sets the active state without pushing undo when none exists yet', () => {
         const tracker = createTracker(createState(1))
         const changed = createState(2)
-        tracker.activeState = undefined as never
+        Reflect.set(tracker, 'activeState', undefined)
         mockCanvasState(changed)
 
         tracker.captureCanvasState()
@@ -669,12 +673,12 @@ describe('ChangeTracker', () => {
         dispatchStored(windowListeners, 'mouseup', new MouseEvent('mouseup'))
         getApiListener('promptQueued')(
           new CustomEvent('promptQueued', {
-            detail: {} as unknown as ExecutedWsMessage
+            detail: fromPartial<ExecutedWsMessage>({})
           })
         )
         getApiListener('graphCleared')(
           new CustomEvent('graphCleared', {
-            detail: {} as unknown as ExecutedWsMessage
+            detail: fromPartial<ExecutedWsMessage>({})
           })
         )
         dispatchStored(
@@ -845,30 +849,30 @@ describe('ChangeTracker', () => {
 
       executed(
         new CustomEvent('executed', {
-          detail: {
+          detail: fromPartial<ExecutedWsMessage>({
             prompt_id: 'promptA',
             node: '1',
             output: { images: ['first'] }
-          } as unknown as ExecutedWsMessage
+          } as PartialDeep<ExecutedWsMessage>)
         })
       )
       executed(
         new CustomEvent('executed', {
-          detail: {
+          detail: fromPartial<ExecutedWsMessage>({
             prompt_id: 'promptA',
             node: '1',
             merge: true,
             output: { images: ['second'], text: ['caption'] }
-          } as unknown as ExecutedWsMessage
+          } as PartialDeep<ExecutedWsMessage>)
         })
       )
       executed(
         new CustomEvent('executed', {
-          detail: {
+          detail: fromPartial<ExecutedWsMessage>({
             prompt_id: 'missing',
             node: '2',
             output: { images: ['ignored'] }
-          } as unknown as ExecutedWsMessage
+          } as PartialDeep<ExecutedWsMessage>)
         })
       )
 
@@ -887,21 +891,21 @@ describe('ChangeTracker', () => {
 
       executed(
         new CustomEvent('executed', {
-          detail: {
+          detail: fromPartial<ExecutedWsMessage>({
             prompt_id: 'promptA',
             node: '1',
             output: { value: 'old' }
-          } as unknown as ExecutedWsMessage
+          } as PartialDeep<ExecutedWsMessage>)
         })
       )
       executed(
         new CustomEvent('executed', {
-          detail: {
+          detail: fromPartial<ExecutedWsMessage>({
             prompt_id: 'promptA',
             node: '1',
             merge: true,
             output: { value: 'new' }
-          } as unknown as ExecutedWsMessage
+          } as PartialDeep<ExecutedWsMessage>)
         })
       )
 
@@ -914,13 +918,13 @@ describe('ChangeTracker', () => {
   describe('graphEqual', () => {
     it('compares workflow nodes as an unordered set and ignores extra.ds', () => {
       const first = createState(2)
-      const second = {
+      const second = fromPartial<ComfyWorkflowJSON>({
         ...createState(),
         nodes: [...first.nodes].reverse(),
         links: first.links,
         groups: first.groups,
         extra: { ds: { scale: 2 } }
-      } as unknown as ComfyWorkflowJSON
+      } as PartialDeep<ComfyWorkflowJSON>)
 
       expect(ChangeTracker.graphEqual(first, first)).toBe(true)
       expect(ChangeTracker.graphEqual(first, second)).toBe(true)
@@ -929,22 +933,22 @@ describe('ChangeTracker', () => {
     it('returns false for non-object values and meaningful graph differences', () => {
       const first = createState(1)
       const differentNodes = createState(2)
-      const differentLinks = {
+      const differentLinks = fromPartial<ComfyWorkflowJSON>({
         ...first,
         links: [[1, 1, 0, 2, 0, 'MODEL']]
-      } as unknown as ComfyWorkflowJSON
+      } as PartialDeep<ComfyWorkflowJSON>)
 
-      expect(ChangeTracker.graphEqual(first, null as never)).toBe(false)
+      expect(ChangeTracker.graphEqual(first, null)).toBe(false)
       expect(ChangeTracker.graphEqual(first, differentNodes)).toBe(false)
       expect(ChangeTracker.graphEqual(first, differentLinks)).toBe(false)
     })
 
     it('returns false for extra properties other than viewport state', () => {
       const first = createState()
-      const second = {
+      const second = fromPartial<ComfyWorkflowJSON>({
         ...first,
         extra: { custom: true }
-      } as unknown as ComfyWorkflowJSON
+      } as PartialDeep<ComfyWorkflowJSON>)
 
       expect(ChangeTracker.graphEqual(first, second)).toBe(false)
     })
@@ -957,10 +961,10 @@ describe('ChangeTracker', () => {
       'subgraphs'
     ] as const)('returns false when %s differs', (key) => {
       const first = createState()
-      const second = {
+      const second = fromPartial<ComfyWorkflowJSON>({
         ...first,
         [key]: [{ id: 1 }]
-      } as unknown as ComfyWorkflowJSON
+      } as PartialDeep<ComfyWorkflowJSON>)
 
       expect(ChangeTracker.graphEqual(first, second)).toBe(false)
     })

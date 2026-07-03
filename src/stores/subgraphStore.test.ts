@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -176,7 +176,9 @@ describe('useSubgraphStore', () => {
     vi.mocked(comfyApp.canvas).draw = vi.fn()
     vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
       nodes: [{ ...subgraphNode.serialize(), type: 'missing' }],
-      subgraphs: [fromAny<ExportedSubgraph, unknown>(subgraph.serialize())]
+      subgraphs: [
+        Object.assign(fromPartial<ExportedSubgraph>({}), subgraph.serialize())
+      ]
     }))
 
     await expect(store.publishSubgraph('invalid')).rejects.toThrow(
@@ -191,7 +193,9 @@ describe('useSubgraphStore', () => {
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
     vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
       nodes: [subgraphNode.serialize()],
-      subgraphs: [fromAny<ExportedSubgraph, unknown>(subgraph.serialize())]
+      subgraphs: [
+        Object.assign(fromPartial<ExportedSubgraph>({}), subgraph.serialize())
+      ]
     }))
     vi.mocked(useDialogService).mockReturnValue(
       fromPartial<ReturnType<typeof useDialogService>>({
@@ -211,7 +215,9 @@ describe('useSubgraphStore', () => {
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
     vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
       nodes: [subgraphNode.serialize()],
-      subgraphs: [fromAny<ExportedSubgraph, unknown>(subgraph.serialize())]
+      subgraphs: [
+        Object.assign(fromPartial<ExportedSubgraph>({}), subgraph.serialize())
+      ]
     }))
     vi.mocked(useDialogService).mockReturnValue(
       fromPartial<ReturnType<typeof useDialogService>>({
@@ -245,13 +251,11 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     const setGraph = vi.fn()
     const nested = { id: 'nested' }
-    vi.mocked(comfyApp.canvas).graph = fromAny<
-      NonNullable<typeof comfyApp.canvas.graph>,
-      unknown
-    >({
-      nodes: [{ subgraph: nested }],
-      setGraph
-    })
+    const canvasGraph = fromPartial<NonNullable<typeof comfyApp.canvas.graph>>(
+      {}
+    )
+    Reflect.set(canvasGraph, 'nodes', [{ subgraph: nested }])
+    vi.mocked(comfyApp.canvas).graph = canvasGraph
     vi.mocked(comfyApp.canvas).setGraph = setGraph
 
     await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
@@ -547,7 +551,7 @@ describe('useSubgraphStore', () => {
       'subgraphs/test.json'
     )
     if (!blueprint?.changeTracker) throw new Error('Blueprint was not loaded')
-    blueprint.changeTracker!.activeState = fromAny<ComfyWorkflowJSON, unknown>({
+    blueprint.changeTracker!.activeState = fromPartial<ComfyWorkflowJSON>({
       nodes: [{ id: 1, type: '123' }]
     })
 
@@ -563,7 +567,7 @@ describe('useSubgraphStore', () => {
       'subgraphs/test.json'
     )
     if (!blueprint?.changeTracker) throw new Error('Blueprint was not loaded')
-    blueprint.changeTracker!.activeState = fromAny<ComfyWorkflowJSON, unknown>({
+    blueprint.changeTracker!.activeState = fromPartial<ComfyWorkflowJSON>({
       nodes: [
         { id: 1, type: '123' },
         { id: 2, type: 'OtherNode' }
@@ -666,9 +670,7 @@ describe('useSubgraphStore', () => {
         failing_blueprint: {
           name: 'Failing Blueprint',
           info: { node_pack: 'test_pack' },
-          data: fromAny<string, unknown>(
-            Promise.reject(new Error('Network error'))
-          )
+          data: Promise.reject(new Error('Network error'))
         }
       }
     )

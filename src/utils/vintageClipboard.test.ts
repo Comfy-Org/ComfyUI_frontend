@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { PartialDeep } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,29 +11,28 @@ vi.mock('@/platform/telemetry/nodeAdded/nodeAddSource', () => ({
 }))
 
 function createNode() {
-  const node = {
-    pos: [0, 0],
+  const node = fromPartial<LGraphNode>({
+    pos: [0, 0] as [number, number],
     configure: vi.fn((info: { pos: [number, number] }) => {
       node.pos = [...info.pos]
     }),
     connect: vi.fn()
-  }
-  return node as unknown as LGraphNode
+  } as PartialDeep<LGraphNode>)
+  return node
 }
 
 function createCanvas() {
-  const graph = {
-    beforeChange: vi.fn(),
-    afterChange: vi.fn(),
-    add: vi.fn()
-  }
-  return {
-    graph,
-    graph_mouse: [100, 200],
+  return fromPartial<LGraphCanvas>({
+    graph: {
+      beforeChange: vi.fn(),
+      afterChange: vi.fn(),
+      add: vi.fn()
+    },
+    graph_mouse: [100, 200] as [number, number],
     emitBeforeChange: vi.fn(),
     emitAfterChange: vi.fn(),
     selectNodes: vi.fn()
-  } as unknown as LGraphCanvas
+  })
 }
 
 describe('deserialiseAndCreate', () => {

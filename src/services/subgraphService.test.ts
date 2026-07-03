@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { PartialDeep } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -51,13 +53,13 @@ function createExportedSubgraph(
 }
 
 function createWorkflow(subgraphs?: ExportedSubgraph[]): ComfyWorkflowJSON {
-  return {
+  return fromPartial<ComfyWorkflowJSON>({
     definitions: subgraphs
       ? {
           subgraphs
         }
       : undefined
-  } as unknown as ComfyWorkflowJSON
+  } as PartialDeep<ComfyWorkflowJSON>)
 }
 
 describe('useSubgraphService', () => {
@@ -68,7 +70,7 @@ describe('useSubgraphService', () => {
 
   it('registers a new subgraph node definition', () => {
     const service = useSubgraphService()
-    const subgraph = { id: 'runtime-subgraph' } as unknown as Subgraph
+    const subgraph = fromPartial<Subgraph>({ id: 'runtime-subgraph' })
     const exportedSubgraph = createExportedSubgraph()
 
     service.registerNewSubgraph(subgraph, exportedSubgraph)
@@ -105,7 +107,7 @@ describe('useSubgraphService', () => {
 
   it('uses an exported description when present', () => {
     const service = useSubgraphService()
-    const subgraph = { id: 'runtime-subgraph' } as unknown as Subgraph
+    const subgraph = fromPartial<Subgraph>({ id: 'runtime-subgraph' })
 
     service.registerNewSubgraph(
       subgraph,
@@ -132,7 +134,7 @@ describe('useSubgraphService', () => {
 
   it('registers existing root graph subgraphs from workflow data', () => {
     const service = useSubgraphService()
-    const subgraph = { id: 'existing-subgraph' } as unknown as Subgraph
+    const subgraph = fromPartial<Subgraph>({ id: 'existing-subgraph' })
     const exportedSubgraph = createExportedSubgraph()
     mocks.subgraphs.set('subgraph-1', subgraph)
 

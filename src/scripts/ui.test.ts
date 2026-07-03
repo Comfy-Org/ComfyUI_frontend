@@ -1,4 +1,5 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { PartialDeep } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockSettingStore } = vi.hoisted(() => ({
@@ -77,6 +78,11 @@ vi.mock('./ui/toggleSwitch', () => ({
 }))
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type {
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { api } from './api'
 import { app } from './app'
@@ -96,7 +102,7 @@ beforeEach(() => {
 async function click(button: HTMLButtonElement) {
   const handler = button.onclick
   expect(handler).toBeTypeOf('function')
-  await Promise.resolve(handler?.call(button, fromAny(new MouseEvent('click'))))
+  await Promise.resolve(handler?.call(button, new PointerEvent('click')))
 }
 
 function buttonByText(root: ParentNode, text: string): HTMLButtonElement {
@@ -151,13 +157,17 @@ describe('$el', () => {
 describe('ComfyUI legacy menu', () => {
   it('loads queue items and runs list actions', async () => {
     vi.mocked(api.getQueue).mockResolvedValue({
-      Running: [{ id: 'running', priority: 1 }],
-      Pending: [{ id: 'pending', priority: 2 }]
-    } as never)
-    vi.mocked(api.getJobDetail).mockResolvedValue({
-      outputs: { node: { images: ['image.png'] } }
-    } as never)
-    vi.mocked(extractWorkflow).mockResolvedValue({ nodes: [] } as never)
+      Running: [fromPartial<JobListItem>({ id: 'running', priority: 1 })],
+      Pending: [fromPartial<JobListItem>({ id: 'pending', priority: 2 })]
+    })
+    vi.mocked(api.getJobDetail).mockResolvedValue(
+      fromPartial<JobDetail>({
+        outputs: { node: { images: ['image.png'] } }
+      } as PartialDeep<JobDetail>)
+    )
+    vi.mocked(extractWorkflow).mockResolvedValue(
+      fromPartial<ComfyWorkflowJSON>({ nodes: [] })
+    )
     const ui = new ComfyUI(app)
 
     await ui.queue.show()
@@ -183,10 +193,10 @@ describe('ComfyUI legacy menu', () => {
 
   it('skips loading queue items when job details are unavailable', async () => {
     vi.mocked(api.getQueue).mockResolvedValue({
-      Running: [{ id: 'running', priority: 1 }],
+      Running: [fromPartial<JobListItem>({ id: 'running', priority: 1 })],
       Pending: []
-    } as never)
-    vi.mocked(api.getJobDetail).mockResolvedValue(null as never)
+    })
+    vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
     const ui = new ComfyUI(app)
 
     await ui.queue.show()
@@ -198,11 +208,15 @@ describe('ComfyUI legacy menu', () => {
 
   it('loads queue item workflows without outputs', async () => {
     vi.mocked(api.getQueue).mockResolvedValue({
-      Running: [{ id: 'running', priority: 1 }],
+      Running: [fromPartial<JobListItem>({ id: 'running', priority: 1 })],
       Pending: []
-    } as never)
-    vi.mocked(api.getJobDetail).mockResolvedValue({ id: 'running' } as never)
-    vi.mocked(extractWorkflow).mockResolvedValue({ nodes: [] } as never)
+    })
+    vi.mocked(api.getJobDetail).mockResolvedValue(
+      fromPartial<JobDetail>({ id: 'running' })
+    )
+    vi.mocked(extractWorkflow).mockResolvedValue(
+      fromPartial<ComfyWorkflowJSON>({ nodes: [] })
+    )
     const ui = new ComfyUI(app)
 
     await ui.queue.show()
@@ -214,9 +228,9 @@ describe('ComfyUI legacy menu', () => {
 
   it('loads history in reverse order', async () => {
     vi.mocked(api.getHistory).mockResolvedValue([
-      { id: 'old', priority: 1 },
-      { id: 'new', priority: 2 }
-    ] as never)
+      fromPartial<JobListItem>({ id: 'old', priority: 1 }),
+      fromPartial<JobListItem>({ id: 'new', priority: 2 })
+    ])
     const ui = new ComfyUI(app)
 
     await ui.history.show()
@@ -267,12 +281,20 @@ describe('ComfyUI legacy menu', () => {
     ui.autoQueueEnabled = true
     ui.autoQueueMode = 'change'
     ui.lastQueueSize = 1
-    graphChanged(fromAny(new CustomEvent('graphChanged')))
+    ;(graphChanged as EventListener)(
+      fromPartial<CustomEvent<ComfyWorkflowJSON>>(
+        new CustomEvent('graphChanged')
+      )
+    )
 
     expect(ui.graphHasChanged).toBe(true)
 
     ui.lastQueueSize = 0
-    graphChanged(fromAny(new CustomEvent('graphChanged')))
+    ;(graphChanged as EventListener)(
+      fromPartial<CustomEvent<ComfyWorkflowJSON>>(
+        new CustomEvent('graphChanged')
+      )
+    )
 
     expect(app.queuePrompt).toHaveBeenCalledWith(0, 1)
     expect(ui.graphHasChanged).toBe(false)
@@ -371,7 +393,7 @@ describe('ComfyUI legacy menu', () => {
     vi.mocked(api.getQueue).mockResolvedValue({
       Running: [],
       Pending: []
-    } as never)
+    })
     const ui = new ComfyUI(app)
 
     await click(buttonByText(document, 'View Queue'))

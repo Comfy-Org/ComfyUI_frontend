@@ -90,7 +90,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       return rafCallbacks.length
     })
     mockCanvas.subgraph = undefined
-    mockCanvas.graph = app.graph
+    mockCanvas.graph = app.graph ?? null
     mockCanvas.ds.scale = 1
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.state.scale = 1
@@ -140,7 +140,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     it('does not save when canvas is unavailable', () => {
       const store = useSubgraphNavigationStore()
       const canvas = app.canvas
-      const appWithOptionalCanvas = app as unknown as {
+      const appWithOptionalCanvas = app as {
         canvas: typeof app.canvas | undefined
       }
       appWithOptionalCanvas.canvas = undefined
@@ -185,7 +185,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     it('does nothing when canvas is unavailable', () => {
       const store = useSubgraphNavigationStore()
       const canvas = app.canvas
-      const appWithOptionalCanvas = app as unknown as {
+      const appWithOptionalCanvas = app as {
         canvas: typeof app.canvas | undefined
       }
       appWithOptionalCanvas.canvas = undefined
@@ -203,7 +203,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     it('does not apply cached viewport when canvas disappears', () => {
       const store = useSubgraphNavigationStore()
       const canvas = app.canvas
-      const appWithOptionalCanvas = app as unknown as {
+      const appWithOptionalCanvas = app as {
         canvas: typeof app.canvas | undefined
       }
       store.viewportCache.set(':root', { scale: 2.5, offset: [150, 250] })
@@ -320,7 +320,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(mockFitView).toHaveBeenCalledOnce()
 
       // User navigated away before the inner RAF fired
-      mockCanvas.subgraph = { id: 'different-graph' } as never
+      mockCanvas.subgraph = fromPartial<Subgraph>({ id: 'different-graph' })
       rafCallbacks[1](performance.now())
 
       expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
@@ -337,7 +337,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
 
       // Simulate graph switching away before rAF fires
-      mockCanvas.subgraph = { id: 'different-graph' } as never
+      mockCanvas.subgraph = fromPartial<Subgraph>({ id: 'different-graph' })
 
       rafCallbacks[0](performance.now())
 
@@ -350,12 +350,12 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const store = useSubgraphNavigationStore()
       const workflowStore = useWorkflowStore()
 
-      const mockRootGraph = {
+      const mockRootGraph = fromPartial<LGraph>({
         _nodes: [],
         nodes: [],
         subgraphs: new Map(),
         getNodeById: vi.fn()
-      } as Partial<LGraph> as LGraph
+      })
       const subgraph1 = {
         id: 'sub1',
         rootGraph: mockRootGraph,
@@ -367,7 +367,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockCanvas.ds.state.offset = [100, 100]
 
       // Enter subgraph
-      workflowStore.activeSubgraph = subgraph1 as Partial<Subgraph> as Subgraph
+      workflowStore.activeSubgraph = fromPartial<Subgraph>(subgraph1)
       await nextTick()
 
       // Root viewport saved

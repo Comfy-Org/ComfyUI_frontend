@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { DraggableList } from './draggableList'
@@ -85,7 +86,7 @@ describe('DraggableList', () => {
     const scrollBy = vi.fn((_left: number, top: number) => {
       container.scrollTop += top
     })
-    container.scrollBy = scrollBy as unknown as typeof container.scrollBy
+    Reflect.set(container, 'scrollBy', scrollBy)
     defineScrollMetrics(container, 120, 80)
     vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(0, 0, 100, 80)
@@ -133,7 +134,7 @@ describe('DraggableList', () => {
       container.scrollTop += top
     })
     container.scrollTop = 10
-    container.scrollBy = scrollBy as unknown as typeof container.scrollBy
+    Reflect.set(container, 'scrollBy', scrollBy)
     defineScrollMetrics(container, 120, 80)
     vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(0, 20, 100, 80)
@@ -143,21 +144,22 @@ describe('DraggableList', () => {
     setRect(items[2], 60)
 
     const list = new DraggableList(container, '.item')
-    const touchStart = {
-      button: 0,
-      clientX: 0,
-      clientY: 0,
+    const touchStart = fromPartial<TouchEvent>({
       preventDefault: vi.fn(),
       target: items[0].querySelector('.drag-handle')!,
-      touches: [{ clientX: 5, clientY: 30 }]
-    } as unknown as TouchEvent
-    const touchMove = {
-      clientX: 0,
-      clientY: 0,
+      touches: fromPartial<TouchList>({
+        0: fromPartial<Touch>({ clientX: 5, clientY: 30 }),
+        length: 1
+      })
+    })
+    const touchMove = fromPartial<TouchEvent>({
       preventDefault: vi.fn(),
       target: items[0].querySelector('.drag-handle')!,
-      touches: [{ clientX: 8, clientY: 10 }]
-    } as unknown as TouchEvent
+      touches: fromPartial<TouchList>({
+        0: fromPartial<Touch>({ clientX: 8, clientY: 10 }),
+        length: 1
+      })
+    })
 
     list.dragStart(touchStart)
     list.drag(touchMove)
@@ -171,12 +173,8 @@ describe('DraggableList', () => {
   it('updates idle item state around the dragged item midpoint', () => {
     const { container, items } = createList(3)
     const list = new DraggableList(container, '.item')
-    const state = list as unknown as {
-      items: HTMLElement[]
-      draggableItem: HTMLElement
-    }
-    state.items = items
-    state.draggableItem = items[1]
+    Reflect.set(list, 'items', items)
+    Reflect.set(list, 'draggableItem', items[1])
     list.itemsGap = 5
     items[0].classList.add('is-idle')
     items[1].classList.add('is-idle')
@@ -204,8 +202,7 @@ describe('DraggableList', () => {
     const { container } = createList(1)
     const list = new DraggableList(container, '.item')
     const off = vi.fn()
-    const disposableList = list as unknown as { off: Array<() => void> }
-    disposableList.off = [off]
+    Reflect.set(list, 'off', [off])
 
     list.setItemsGap()
     list.dispose()

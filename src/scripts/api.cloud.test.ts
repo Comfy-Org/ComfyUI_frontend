@@ -62,7 +62,7 @@ describe('ComfyApi cloud mode', () => {
         headers: { 'Content-Type': 'application/json' }
       })
     )
-    vi.stubGlobal('WebSocket', FakeWebSocket as unknown as typeof WebSocket)
+    vi.stubGlobal('WebSocket', FakeWebSocket)
   })
 
   it('adds cloud auth headers and enables unified retry for authenticated requests', async () => {

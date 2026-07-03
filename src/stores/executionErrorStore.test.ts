@@ -1,10 +1,13 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingNodeType } from '@/types/comfy'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import type { ExecutionErrorWsMessage, PromptError } from '@/schemas/apiSchema'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 // Mock dependencies
@@ -33,7 +36,8 @@ const {
     currentGraph: undefined as object | undefined
   },
   mockExecutionIdToNodeLocatorId: vi.fn(
-    (_rootGraph: unknown, id: string) => id as NodeLocatorId
+    (_rootGraph: unknown, id: string): NodeLocatorId | undefined =>
+      id as NodeLocatorId
   ),
   mockGetExecutionIdByNode: vi.fn(),
   mockGetNodeByExecutionId: vi.fn(),
@@ -538,8 +542,12 @@ describe('executionErrorStore — node error operations', () => {
   describe('startup clearing', () => {
     it('clears execution-start errors and closes the overlay when node errors are empty', () => {
       const store = useExecutionErrorStore()
-      store.lastExecutionError = fromAny({ node_id: '1' })
-      store.lastPromptError = fromAny({ message: 'prompt failed' })
+      store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+        node_id: '1'
+      })
+      store.lastPromptError = fromPartial<PromptError>({
+        message: 'prompt failed'
+      })
       store.lastNodeErrors = {}
       store.showErrorOverlay()
 
@@ -552,8 +560,12 @@ describe('executionErrorStore — node error operations', () => {
 
     it('keeps the overlay open when node errors remain after execution start', () => {
       const store = useExecutionErrorStore()
-      store.lastExecutionError = fromAny({ node_id: '1' })
-      store.lastPromptError = fromAny({ message: 'prompt failed' })
+      store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+        node_id: '1'
+      })
+      store.lastPromptError = fromPartial<PromptError>({
+        message: 'prompt failed'
+      })
       store.lastNodeErrors = {
         '1': {
           errors: [
@@ -584,20 +596,20 @@ describe('executionErrorStore derived graph state', () => {
 
   it('derives execution error node ids through locator mapping', () => {
     const store = useExecutionErrorStore()
-    mockExecutionIdToNodeLocatorId.mockReturnValue(
-      fromAny<NodeLocatorId, string>('graph:7')
-    )
-    store.lastExecutionError = fromAny({ node_id: '7' })
+    mockExecutionIdToNodeLocatorId.mockReturnValue('graph:7' as NodeLocatorId)
+    store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+      node_id: '7'
+    })
 
     expect(store.lastExecutionErrorNodeId).toBe(toNodeId(7))
   })
 
   it('returns null when there is no execution error locator', () => {
     const store = useExecutionErrorStore()
-    store.lastExecutionError = fromAny({ node_id: '7' })
-    mockExecutionIdToNodeLocatorId.mockReturnValue(
-      fromAny<NodeLocatorId, undefined>(undefined)
-    )
+    store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+      node_id: '7'
+    })
+    mockExecutionIdToNodeLocatorId.mockReturnValue(undefined)
 
     expect(store.lastExecutionErrorNodeId).toBeNull()
   })
@@ -611,8 +623,10 @@ describe('executionErrorStore derived graph state', () => {
   it('combines prompt, node, execution, and missing-node error counts', () => {
     const store = useExecutionErrorStore()
     const missingNodesStore = useMissingNodesErrorStore()
-    store.lastPromptError = fromAny({ message: 'prompt failed' })
-    store.lastExecutionError = fromAny({ node_id: null })
+    store.lastPromptError = fromPartial<PromptError>({
+      message: 'prompt failed'
+    })
+    Reflect.set(store, 'lastExecutionError', { node_id: null })
     store.lastNodeErrors = {
       '1': {
         errors: [
@@ -633,9 +647,9 @@ describe('executionErrorStore derived graph state', () => {
         class_type: 'Test'
       }
     }
-    missingNodesStore.setMissingNodeTypes(
-      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
-    )
+    missingNodesStore.setMissingNodeTypes([
+      { type: 'MissingNode', hint: '' }
+    ] as MissingNodeType[])
 
     expect(store.hasPromptError).toBe(true)
     expect(store.hasNodeError).toBe(true)
@@ -655,14 +669,16 @@ describe('executionErrorStore derived graph state', () => {
 
   it('includes defined execution node ids in the error id list', () => {
     const store = useExecutionErrorStore()
-    store.lastExecutionError = fromAny({ node_id: '2' })
+    store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+      node_id: '2'
+    })
 
     expect(store.allErrorExecutionIds).toEqual(['2'])
   })
 
   it('excludes undefined execution node ids from the error id list', () => {
     const store = useExecutionErrorStore()
-    store.lastExecutionError = fromAny({ node_id: undefined })
+    Reflect.set(store, 'lastExecutionError', { node_id: undefined })
 
     expect(store.allErrorExecutionIds).toEqual([])
   })
@@ -689,7 +705,9 @@ describe('executionErrorStore derived graph state', () => {
         class_type: 'Test'
       }
     }
-    store.lastExecutionError = fromAny({ node_id: '2' })
+    store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+      node_id: '2'
+    })
 
     expect([...store.activeGraphErrorNodeIds].sort()).toEqual(['1', '2'])
   })
@@ -741,7 +759,9 @@ describe('executionErrorStore derived graph state', () => {
         class_type: 'Test'
       }
     }
-    store.lastExecutionError = fromAny({ node_id: '1' })
+    store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+      node_id: '1'
+    })
 
     expect(store.activeGraphErrorNodeIds.size).toBe(0)
   })
@@ -749,7 +769,9 @@ describe('executionErrorStore derived graph state', () => {
   it('returns no active graph node ids before the graph is ready', () => {
     const store = useExecutionErrorStore()
     mockApp.isGraphReady = false
-    store.lastExecutionError = fromAny({ node_id: '2' })
+    store.lastExecutionError = fromPartial<ExecutionErrorWsMessage>({
+      node_id: '2'
+    })
 
     expect(store.activeGraphErrorNodeIds.size).toBe(0)
   })
@@ -769,35 +791,31 @@ describe('executionErrorStore derived graph state', () => {
       class_type: 'Test'
     }
     mockExecutionIdToNodeLocatorId.mockImplementation((_rootGraph, id) =>
-      id === 'missing'
-        ? fromAny<NodeLocatorId, undefined>(undefined)
-        : fromAny<NodeLocatorId, string>(`locator:${id}`)
+      id === 'missing' ? undefined : (`locator:${id}` as NodeLocatorId)
     )
     store.lastNodeErrors = {
       '1': nodeError,
       missing: nodeError
     }
 
-    const locator = fromAny<NodeLocatorId, string>('locator:1')
+    const locator = 'locator:1' as NodeLocatorId
     expect(store.getNodeErrors(locator)).toEqual(nodeError)
     expect(store.slotHasError(locator, 'x')).toBe(true)
     expect(store.slotHasError(locator, 'y')).toBe(false)
     expect(
-      store.getNodeErrors(fromAny<NodeLocatorId, string>('locator:missing'))
+      store.getNodeErrors('locator:missing' as NodeLocatorId)
     ).toBeUndefined()
   })
 
   it('returns no slot error when there are no node errors', () => {
     const store = useExecutionErrorStore()
 
-    expect(
-      store.slotHasError(fromAny<NodeLocatorId, string>('locator:1'), 'x')
-    ).toBe(false)
+    expect(store.slotHasError('locator:1' as NodeLocatorId, 'x')).toBe(false)
   })
 
   it('detects container nodes with internal errors', () => {
     const store = useExecutionErrorStore()
-    const node = fromAny<LGraphNode, unknown>({})
+    const node = fromPartial<LGraphNode>({})
     mockGetExecutionIdByNode.mockReturnValueOnce(undefined)
 
     expect(store.isContainerWithInternalError(node)).toBe(false)
@@ -828,7 +846,7 @@ describe('executionErrorStore derived graph state', () => {
     mockApp.isGraphReady = false
 
     expect(
-      store.isContainerWithInternalError(fromAny<LGraphNode, unknown>({}))
+      store.isContainerWithInternalError(fromPartial<LGraphNode>({}))
     ).toBe(false)
   })
 })
@@ -842,7 +860,7 @@ describe('surfaceMissingModels — silent option', () => {
   it('opens error overlay when silent is not specified and setting is enabled', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingModels([
-      fromAny({
+      fromPartial<MissingModelCandidate>({
         name: 'model.safetensors',
         nodeId: toNodeId('1'),
         nodeType: 'Loader',
@@ -859,7 +877,7 @@ describe('surfaceMissingModels — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingModels(
       [
-        fromAny({
+        fromPartial<MissingModelCandidate>({
           name: 'model.safetensors',
           nodeId: toNodeId('1'),
           nodeType: 'Loader',
@@ -878,7 +896,7 @@ describe('surfaceMissingModels — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingModels(
       [
-        fromAny({
+        fromPartial<MissingModelCandidate>({
           name: 'model.safetensors',
           nodeId: toNodeId('1'),
           nodeType: 'Loader',
@@ -904,7 +922,7 @@ describe('surfaceMissingModels — silent option', () => {
     const store = useExecutionErrorStore()
     mockShowErrorsTab.value = false
     store.surfaceMissingModels([
-      fromAny({
+      fromPartial<MissingModelCandidate>({
         name: 'model.safetensors',
         nodeId: toNodeId('1'),
         nodeType: 'Loader',
@@ -927,7 +945,7 @@ describe('surfaceMissingMedia — silent option', () => {
   it('opens error overlay when silent is not specified and setting is enabled', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingMedia([
-      fromAny({
+      fromPartial<MissingMediaCandidate>({
         name: 'photo.png',
         nodeId: toNodeId('1'),
         nodeType: 'LoadImage',
@@ -944,7 +962,7 @@ describe('surfaceMissingMedia — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingMedia(
       [
-        fromAny({
+        fromPartial<MissingMediaCandidate>({
           name: 'photo.png',
           nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
@@ -963,7 +981,7 @@ describe('surfaceMissingMedia — silent option', () => {
     const store = useExecutionErrorStore()
     store.surfaceMissingMedia(
       [
-        fromAny({
+        fromPartial<MissingMediaCandidate>({
           name: 'photo.png',
           nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
@@ -989,7 +1007,7 @@ describe('surfaceMissingMedia — silent option', () => {
     const store = useExecutionErrorStore()
     mockShowErrorsTab.value = false
     store.surfaceMissingMedia([
-      fromAny({
+      fromPartial<MissingMediaCandidate>({
         name: 'photo.png',
         nodeId: toNodeId('1'),
         nodeType: 'LoadImage',
@@ -1044,9 +1062,9 @@ describe('clearAllErrors', () => {
         class_type: 'Test'
       }
     }
-    missingNodesStore.setMissingNodeTypes(
-      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
-    )
+    missingNodesStore.setMissingNodeTypes([
+      { type: 'MissingNode', hint: '' }
+    ] as MissingNodeType[])
     executionErrorStore.showErrorOverlay()
 
     executionErrorStore.clearAllErrors()

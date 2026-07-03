@@ -1,4 +1,5 @@
 // oxlint-disable no-misused-spread
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -593,10 +594,10 @@ describe('graphTraversalUtil', () => {
       })
 
       it('skips malformed graph entries while searching', () => {
-        const malformedSubgraph = {
+        const malformedSubgraph = fromPartial<Subgraph>({
           id: 'malformed',
           nodes: []
-        } as unknown as Subgraph
+        })
         const graph = createMockGraph([
           createMockNode('10', {
             isSubgraph: true,
@@ -698,7 +699,7 @@ describe('graphTraversalUtil', () => {
     describe('getExecutionIdByNode', () => {
       it('returns null when the node has no graph', () => {
         const node = createMockNode('123')
-        node.graph = null as unknown as LGraph
+        node.graph = null
         const graph = createMockGraph([])
 
         expect(getExecutionIdByNode(graph, node)).toBeNull()
@@ -808,7 +809,7 @@ describe('graphTraversalUtil', () => {
           subgraph
         })
         const rootGraph = createMockGraph([subgraphNode])
-        interior.graph = null as unknown as LGraph
+        interior.graph = null
 
         expect(
           getExecutionIdForNodeInGraph(rootGraph, subgraph, interior.id)
@@ -1143,7 +1144,7 @@ describe('graphTraversalUtil', () => {
       })
 
       it('returns null when the root graph is unavailable', () => {
-        expect(getNodeByLocatorId(null as unknown as LGraph, '123')).toBeNull()
+        expect(getNodeByLocatorId(null, '123')).toBeNull()
       })
     })
 

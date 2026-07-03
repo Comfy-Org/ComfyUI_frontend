@@ -41,8 +41,8 @@ beforeEach(() => {
 
 describe('getWorkflowDataFromFile', () => {
   it('routes png/avif/mp3/ogg/webm to their parsers and returns the result', async () => {
-    vi.mocked(getPngMetadata).mockResolvedValue({ a: 1 } as never)
-    expect(await getWorkflowDataFromFile(file('image/png'))).toEqual({ a: 1 })
+    vi.mocked(getPngMetadata).mockResolvedValue({ a: '1' })
+    expect(await getWorkflowDataFromFile(file('image/png'))).toEqual({ a: '1' })
     expect(getPngMetadata).toHaveBeenCalled()
 
     await getWorkflowDataFromFile(file('image/avif'))
@@ -62,7 +62,7 @@ describe('getWorkflowDataFromFile', () => {
     vi.mocked(getWebpMetadata).mockResolvedValue({
       workflow: 'wf',
       prompt: 'pr'
-    } as never)
+    })
     expect(await getWorkflowDataFromFile(file('image/webp'))).toEqual({
       workflow: 'wf',
       prompt: 'pr'
@@ -73,7 +73,7 @@ describe('getWorkflowDataFromFile', () => {
     vi.mocked(getWebpMetadata).mockResolvedValue({
       Workflow: 'WF',
       Prompt: 'PR'
-    } as never)
+    })
     expect(await getWorkflowDataFromFile(file('image/webp'))).toEqual({
       workflow: 'WF',
       prompt: 'PR'
@@ -81,7 +81,7 @@ describe('getWorkflowDataFromFile', () => {
   })
 
   it('handles both flac mime types and extracts workflow/prompt', async () => {
-    vi.mocked(getFlacMetadata).mockResolvedValue({ workflow: 'w' } as never)
+    vi.mocked(getFlacMetadata).mockResolvedValue({ workflow: 'w' })
     expect(await getWorkflowDataFromFile(file('audio/flac'))).toEqual({
       workflow: 'w',
       prompt: undefined

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -6,6 +6,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import type { ComfyApp } from '@/scripts/app'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 const mockSettingGet = vi.hoisted(() => vi.fn())
@@ -161,7 +162,7 @@ function makeTargetWidget(overrides: Partial<MockWidget> = {}): MockWidget {
 
 function makeNode(inputs: LGraphNode['inputs'] = []) {
   const widgets: MockWidget[] = []
-  const node = {
+  const node = Object.assign(fromPartial<LGraphNode>({}), {
     id: 42,
     inputs,
     addWidget: vi.fn(
@@ -172,7 +173,7 @@ function makeNode(inputs: LGraphNode['inputs'] = []) {
         callback: () => void,
         options: Record<string, unknown>
       ) => {
-        const widget: MockWidget = fromAny({
+        const widget: MockWidget = fromPartial<MockWidget>({
           type,
           name,
           value,
@@ -185,8 +186,8 @@ function makeNode(inputs: LGraphNode['inputs'] = []) {
         return widget
       }
     )
-  }
-  return { node: node as unknown as LGraphNode, widgets }
+  })
+  return { node, widgets }
 }
 
 describe('widgets', () => {
@@ -225,7 +226,7 @@ describe('widgets', () => {
       {
         control_prefix: 'custom'
       }
-    ] as unknown as InputSpec)
+    ] as InputSpec)
 
     expect(result).toHaveLength(2)
     expect(widgets[0].name).toBe('custom control_after_generate')
@@ -251,7 +252,7 @@ describe('widgets', () => {
         addFilterList: false,
         controlAfterGenerateName: 'mode'
       },
-      ['COMBO', {}] as unknown as InputSpec
+      ['COMBO', {}] as InputSpec
     )
 
     expect(widgets).toHaveLength(1)
@@ -322,7 +323,7 @@ describe('widgets', () => {
         {
           control_after_generate: 'from_input_data'
         }
-      ] as unknown as InputSpec
+      ] as InputSpec
     )
 
     expect(result).toBe(widgets[0])
@@ -335,15 +336,20 @@ describe('widgets', () => {
     const intWidget = ComfyWidgets.INT(
       node,
       'value',
-      ['INT', {}] as unknown as InputSpec,
-      {} as never
+      ['INT', {}] as InputSpec,
+      fromPartial<ComfyApp>({})
     )
 
     expect(intWidget.widget.name).toBe('INT:value')
     expect(intWidget.minWidth).toBe(20)
     expect(intWidget.minHeight).toBe(30)
     expect(
-      ComfyWidgets.IMAGEUPLOAD(node, 'image', ['IMAGE', {}], {} as never)
+      ComfyWidgets.IMAGEUPLOAD(
+        node,
+        'image',
+        ['IMAGE', {}],
+        fromPartial<ComfyApp>({})
+      )
     ).toMatchObject({
       widget: { name: 'IMAGEUPLOAD:image' },
       minWidth: 5,

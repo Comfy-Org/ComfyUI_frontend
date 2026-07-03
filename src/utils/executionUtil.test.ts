@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
@@ -52,14 +54,14 @@ function graphWith(
       outputs: [{ name: 'out', localized_name: 'Output' }]
     }
   ]
-) {
-  return {
+): LGraph {
+  return fromPartial<LGraph>({
     computeExecutionOrder: vi.fn(() => nodes),
     serialize: vi.fn(() => ({
       nodes: workflowNodes,
       extra: workflowExtra
     }))
-  }
+  })
 }
 
 describe('graphToPrompt', () => {
@@ -109,10 +111,7 @@ describe('graphToPrompt', () => {
     }
     const graph = graphWith([node])
 
-    const { workflow, output } = await graphToPrompt(
-      graph as unknown as Parameters<typeof graphToPrompt>[0],
-      { sortNodes: true }
-    )
+    const { workflow, output } = await graphToPrompt(graph, { sortNodes: true })
 
     expect(virtualApply).toHaveBeenCalledTimes(1)
     expect(graph.serialize).toHaveBeenCalledWith({ sortNodes: true })
@@ -180,9 +179,7 @@ describe('graphToPrompt', () => {
       {}
     )
 
-    const { workflow, output } = await graphToPrompt(
-      graph as unknown as Parameters<typeof graphToPrompt>[0]
-    )
+    const { workflow, output } = await graphToPrompt(graph)
 
     expect(graph.serialize).toHaveBeenCalledWith({ sortNodes: false })
     expect(workflow.extra?.frontendVersion).toBeDefined()
@@ -198,9 +195,7 @@ describe('graphToPrompt', () => {
     }
     const graph = graphWith([node], {}, [{ id: 1 }])
 
-    const { workflow } = await graphToPrompt(
-      graph as unknown as Parameters<typeof graphToPrompt>[0]
-    )
+    const { workflow } = await graphToPrompt(graph)
 
     expect(workflow.nodes[0]).toEqual({ id: 1 })
   })

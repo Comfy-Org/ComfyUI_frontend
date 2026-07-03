@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -139,7 +138,7 @@ describe('ComfyApi', () => {
     FakeWebSocket.instances = []
     window.name = ''
     sessionStorage.clear()
-    vi.stubGlobal('WebSocket', FakeWebSocket as unknown as typeof WebSocket)
+    vi.stubGlobal('WebSocket', FakeWebSocket)
   })
 
   afterEach(() => {
@@ -183,7 +182,7 @@ describe('ComfyApi', () => {
     api.addEventListener('status', listener)
     api.addEventListener('status', throwingListener)
     api.addEventListener('status', asyncListener)
-    api.addEventListener('status', fromAny(objectListener))
+    api.addEventListener('status', objectListener)
 
     api.dispatchCustomEvent('status', { exec_info: { queue_remaining: 1 } })
     await Promise.resolve()

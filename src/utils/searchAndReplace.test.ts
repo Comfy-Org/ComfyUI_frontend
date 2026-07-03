@@ -1,5 +1,6 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { PartialDeep } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { fromAny } from '@total-typescript/shoehorn'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -95,11 +96,11 @@ describe('applyTextReplacements', () => {
 
   it('uses the node S&R property name before falling back to title', () => {
     const graph = createGraph([
-      fromAny<LGraphNode, object>({
+      fromPartial<LGraphNode>({
         title: 'AliasTitle',
         properties: { 'Node name for S&R': 'Alias' },
         widgets: [{ name: 'prompt', value: 'from-alias' }]
-      }),
+      } as PartialDeep<LGraphNode>),
       {
         title: 'VisibleTitle',
         widgets: [{ name: 'prompt', value: 'from-title' }]
@@ -205,7 +206,7 @@ describe('applyTextReplacements', () => {
 
   it('replaces nullish widget values with an empty string', () => {
     const graph = createGraph([
-      fromAny<LGraphNode, object>({
+      Object.assign(fromPartial<LGraphNode>({}), {
         title: 'Node',
         widgets: [{ name: 'prompt', value: null }]
       })

@@ -1,5 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
@@ -180,7 +180,7 @@ describe('createNode', () => {
     const newNode = new LGraphNode('LoadImage')
     const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(newNode)
     const graph = new LGraph()
-    vi.spyOn(graph, 'add').mockReturnValue(fromAny<LGraphNode, null>(null))
+    vi.spyOn(graph, 'add').mockReturnValue(null)
 
     await createNode(makeCanvas(graph), 'LoadImage')
 
@@ -516,7 +516,7 @@ describe('legacy workflow migration helpers', () => {
     compressWidgetInputSlots(graph)
 
     expect(graph.nodes[0].inputs?.map((input) => input.name)).toEqual(['kept'])
-    expect(graph.links[0][4]).toBe(0)
+    expect(graph.links[0]?.[4]).toBe(0)
     const subgraph = graph.definitions?.subgraphs?.[0]
     expect(subgraph?.nodes?.[0].inputs?.map((input) => input.name)).toEqual([
       'inner'

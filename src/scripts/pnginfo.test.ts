@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { PartialDeep } from '@total-typescript/shoehorn'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -309,11 +310,11 @@ describe('importA1111', () => {
       SaveImage: [],
       VAEDecode: []
     }
-    return {
+    return fromPartial<LGraphNode>({
       type,
       widgets: widgetsByType[type] ?? [],
       connect: vi.fn()
-    } as unknown as LGraphNode
+    } as PartialDeep<LGraphNode>)
   }
 
   function createGraph(): LGraph {

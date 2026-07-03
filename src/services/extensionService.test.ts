@@ -1,4 +1,5 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { toNodeId } from '@/types/nodeId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -149,7 +150,7 @@ describe('useExtensionService', () => {
 
   it('registers extension contributions across stores', async () => {
     const widgets = { CustomWidget: vi.fn() }
-    const extension = fromAny<ComfyExtension, unknown>({
+    const extension = Object.assign(fromPartial<ComfyExtension>({}), {
       name: 'registration-extension',
       keybindings: [{ commandId: 'command.one', combo: { key: 'K' } }],
       commands: [{ id: 'command.one', label: 'Command One' }],
@@ -184,13 +185,13 @@ describe('useExtensionService', () => {
     const onAuthUserResolved = vi.fn()
     const onAuthTokenRefreshed = vi.fn()
     const onAuthUserLogout = vi.fn()
-    const extension = fromAny<ComfyExtension, unknown>({
+    const extension = fromPartial<ComfyExtension>({
       name: 'auth-extension',
       onAuthUserResolved,
       onAuthTokenRefreshed,
       onAuthUserLogout
     })
-    const user = fromAny<AuthUserInfo, unknown>({ id: 'user-1' })
+    const user = fromPartial<AuthUserInfo>({ id: 'user-1' })
     const service = useExtensionService()
 
     service.registerExtension(extension)
@@ -207,7 +208,7 @@ describe('useExtensionService', () => {
 
   it('reports auth hook errors through the toast handler', async () => {
     const error = new Error('auth failed')
-    const extension = fromAny<ComfyExtension, unknown>({
+    const extension = fromPartial<ComfyExtension>({
       name: 'failing-auth-extension',
       onAuthUserResolved: vi.fn(() => {
         throw error
@@ -218,7 +219,7 @@ describe('useExtensionService', () => {
 
     service.registerExtension(extension)
     mockUserResolvedCallbacks.values[0](
-      fromAny<AuthUserInfo, unknown>({ id: 'user-1' })
+      fromPartial<AuthUserInfo>({ id: 'user-1' })
     )
 
     await vi.waitFor(() => {
@@ -242,15 +243,15 @@ describe('useExtensionService', () => {
     })
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockEnabledExtensions.value = [
-      fromAny<ComfyExtension, unknown>({
+      fromPartial<ComfyExtension>({
         name: 'working-extension',
         getSelectionToolboxCommands
       }),
-      fromAny<ComfyExtension, unknown>({
+      fromPartial<ComfyExtension>({
         name: 'non-function-extension',
         getSelectionToolboxCommands: ['not callable']
       }),
-      fromAny<ComfyExtension, unknown>({
+      fromPartial<ComfyExtension>({
         name: 'failing-extension',
         getSelectionToolboxCommands: failingGetSelectionToolboxCommands
       }),
@@ -260,12 +261,12 @@ describe('useExtensionService', () => {
 
     const results = service.invokeExtensions(
       'getSelectionToolboxCommands',
-      fromAny<LGraphNode, unknown>({ id: 1 })
+      Object.assign(fromPartial<LGraphNode>({}), { id: toNodeId(1) })
     )
 
     expect(results).toEqual([['command.one']])
     expect(getSelectionToolboxCommands).toHaveBeenCalledWith(
-      fromAny<LGraphNode, unknown>({ id: 1 }),
+      Object.assign(fromPartial<LGraphNode>({}), { id: toNodeId(1) }),
       mockApp.value
     )
     expect(consoleError).toHaveBeenCalledWith(
@@ -275,7 +276,7 @@ describe('useExtensionService', () => {
         extension: expect.objectContaining({ name: 'failing-extension' })
       }),
       expect.objectContaining({
-        args: [fromAny<LGraphNode, unknown>({ id: 1 })]
+        args: [Object.assign(fromPartial<LGraphNode>({}), { id: toNodeId(1) })]
       })
     )
     consoleError.mockRestore()
@@ -286,15 +287,15 @@ describe('useExtensionService', () => {
     const failingSetup = vi.fn().mockRejectedValue(new Error('setup failed'))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockEnabledExtensions.value = [
-      fromAny<ComfyExtension, unknown>({
+      fromPartial<ComfyExtension>({
         name: 'setup-extension',
         setup
       }),
-      fromAny<ComfyExtension, unknown>({
+      fromPartial<ComfyExtension>({
         name: 'non-function-extension',
         setup: true
       }),
-      fromAny<ComfyExtension, unknown>({
+      fromPartial<ComfyExtension>({
         name: 'failing-setup-extension',
         setup: failingSetup
       }),

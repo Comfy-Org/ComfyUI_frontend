@@ -1,7 +1,8 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyApp } from '@/scripts/app'
+import type { ComfyPopup } from '@/scripts/ui/components/popup'
 
 vi.mock('../../ui', () => ({
   $el: (tag: string, props?: Record<string, unknown>, children?: Node[]) => {
@@ -59,7 +60,7 @@ class MockPopup extends EventTarget {
 
 function mockApp(settingValue: boolean) {
   let listener: (() => void) | undefined
-  const app = {
+  const app = fromPartial<ComfyApp>({
     ui: {
       settings: {
         getSettingValue: vi.fn(() => settingValue),
@@ -68,7 +69,7 @@ function mockApp(settingValue: boolean) {
         })
       }
     }
-  } as unknown as ComfyApp
+  })
   return {
     app,
     setSettingValue(value: boolean) {
@@ -156,7 +157,9 @@ describe('ComfyButton', () => {
 
   it('toggles click popups and reflects popup open state in classes', () => {
     const popup = new MockPopup()
-    const button = new ComfyButton({ icon: 'dots' }).withPopup(fromAny(popup))
+    const button = new ComfyButton({ icon: 'dots' }).withPopup(
+      fromPartial<ComfyPopup>(popup)
+    )
 
     button.element.dispatchEvent(new MouseEvent('click'))
 
@@ -171,7 +174,7 @@ describe('ComfyButton', () => {
   it('opens hover popups while either the button or popup is hovered', () => {
     const popup = new MockPopup()
     const button = new ComfyButton({ icon: 'dots' }).withPopup(
-      fromAny(popup),
+      fromPartial<ComfyPopup>(popup),
       'hover'
     )
 
@@ -187,7 +190,7 @@ describe('ComfyButton', () => {
   it('does not click-toggle a hover popup while hovered', () => {
     const popup = new MockPopup()
     const button = new ComfyButton({ icon: 'dots' }).withPopup(
-      fromAny(popup),
+      fromPartial<ComfyPopup>(popup),
       'hover'
     )
 

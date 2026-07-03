@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -13,7 +14,7 @@ import {
 type NodeConstructor = { comfyClass?: string }
 
 function createMockNode(nodeConstructor?: NodeConstructor): LGraphNode {
-  return { constructor: nodeConstructor } as Partial<LGraphNode> as LGraphNode
+  return fromPartial<LGraphNode>({ constructor: nodeConstructor })
 }
 
 describe('typeGuardUtil', () => {

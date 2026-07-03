@@ -1,4 +1,5 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { PartialDeep } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -8,6 +9,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
+import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -367,10 +369,10 @@ describe('fixBadLinks', () => {
 
   it('deletes stale links from live graph link maps', () => {
     const linkId = toLinkId(1)
-    const originNode = fromAny<LGraphNode, unknown>({
+    const originNode = fromPartial<LGraphNode>({
       id: toNodeId(1),
       outputs: [{ links: [linkId] }]
-    })
+    } as PartialDeep<LGraphNode>)
     const link = fromPartial<LLink>({
       id: linkId,
       origin_id: originNode.id,
@@ -379,13 +381,14 @@ describe('fixBadLinks', () => {
       target_slot: 0,
       type: '*'
     })
-    const links = new Map([[linkId, link]])
-    const graph = fromAny<LGraph, unknown>({
+    const links = new Map([[linkId, link]]) as Map<LinkId, LLink> &
+      Record<LinkId, LLink>
+    const graph = fromPartial<LGraph>({
       links,
       getNodeById: vi.fn((nodeId) =>
         nodeId === originNode.id ? originNode : null
       )
-    })
+    } as PartialDeep<LGraph>)
 
     const result = fixBadLinks(graph, { fix: true, silent: true })
 
@@ -464,7 +467,7 @@ describe('fixBadLinks', () => {
         nodes: [createNode({ id: 1 })],
         links: []
       }),
-      links: [null as unknown as SerialisedLLinkArray]
+      links: [null]
     }
 
     const result = fixBadLinks(graph, { fix: true })
@@ -479,22 +482,21 @@ describe('fixBadLinks', () => {
   })
 
   it('deletes object-shaped serialized links', () => {
-    const graph = {
+    const objectLink = {
+      id: 1,
+      origin_id: 1,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: 0,
+      type: '*'
+    }
+    const graph = fromPartial<ISerialisedGraph>({
       ...createGraph({
         nodes: [],
         links: []
-      }),
-      links: [
-        {
-          id: 1,
-          origin_id: 1,
-          origin_slot: 0,
-          target_id: 2,
-          target_slot: 0,
-          type: '*'
-        }
-      ]
-    } as unknown as ISerialisedGraph
+      })
+    } as PartialDeep<ISerialisedGraph>)
+    Reflect.set(graph, 'links', [objectLink])
 
     const result = fixBadLinks(graph, { fix: true })
 
@@ -517,11 +519,12 @@ describe('fixBadLinks', () => {
       target_slot: 0,
       type: '*'
     })
-    const links = new Map([[linkId, link]])
-    const graph = fromAny<LGraph, unknown>({
+    const links = new Map([[linkId, link]]) as Map<LinkId, LLink> &
+      Record<LinkId, LLink>
+    const graph = fromPartial<LGraph>({
       links,
       getNodeById: vi.fn()
-    })
+    } as PartialDeep<LGraph>)
 
     const result = fixBadLinks(graph, { fix: true, silent: true })
 

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_DARK_COLOR_PALETTE } from '@/constants/coreColorPalettes'
@@ -207,7 +207,7 @@ describe('useColorPaletteService', () => {
   it('skips absent palette sections while still activating the palette', async () => {
     const completedPalette = makeCompletedPalette()
     mockColorPaletteStore.completePalette.mockReturnValue(
-      fromAny<CompletedPalette, unknown>({
+      fromPartial<CompletedPalette>({
         ...completedPalette,
         colors: {
           node_slot: undefined,

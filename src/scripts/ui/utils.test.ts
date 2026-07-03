@@ -15,7 +15,7 @@ describe('ui utils', () => {
     applyClasses(element, { five: true, six: false, seven: true })
     expect([...element.classList]).toEqual(['five', 'seven'])
 
-    applyClasses(element, null as unknown as string)
+    applyClasses(element, null)
     expect(element.className).toBe('')
   })
 
