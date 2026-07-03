@@ -26,7 +26,7 @@ interface LayoutMutations {
   resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
-  deleteNode(nodeId: NodeId, graphId?: UUID): void
+  deleteNode(nodeId: NodeId, graphId: UUID): void
 
   // Reroute operations
   createReroute(
@@ -180,7 +180,7 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a node
    */
-  const deleteNode = (nodeId: NodeId, graphId?: UUID): void => {
+  const deleteNode = (nodeId: NodeId, graphId: UUID): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 

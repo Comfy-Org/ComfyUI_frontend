@@ -176,7 +176,7 @@ export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
   previousLayout: NodeLayout
   /** Root graph the node belonged to, used to look up its connected links. */
-  graphId?: UUID
+  graphId: UUID
 }
 
 /**

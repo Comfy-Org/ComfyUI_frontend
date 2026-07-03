@@ -13,6 +13,7 @@ import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil
 import { useLinkStore } from '@/stores/linkStore'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
+import { zeroUuid } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -221,6 +222,8 @@ class LayoutStoreImpl implements LayoutStore {
               // Delete operation
               const existing = this.ynodes.get(nodeKey)
               if (existing) {
+                // No caller assigns null through this ref today; zeroUuid is a
+                // sentinel so the link cascade finds nothing to clean up.
                 this.applyOperation({
                   type: 'deleteNode',
                   entity: 'node',
@@ -228,7 +231,8 @@ class LayoutStoreImpl implements LayoutStore {
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor,
-                  previousLayout: yNodeToLayout(existing)
+                  previousLayout: yNodeToLayout(existing),
+                  graphId: zeroUuid
                 })
               }
             } else {
@@ -1086,9 +1090,10 @@ class LayoutStoreImpl implements LayoutStore {
     // Remove from spatial index
     this.spatialIndex.remove(nodeId)
     // Clean up geometry for links still connected to this node in the topology store
-    const connectedLinks = operation.graphId
-      ? useLinkStore().getNodeLinks(operation.graphId, nodeId)
-      : []
+    const connectedLinks = useLinkStore().getNodeLinks(
+      operation.graphId,
+      nodeId
+    )
     for (const { id: linkId } of connectedLinks) {
       this.deleteLinkLayout(linkId)
     }

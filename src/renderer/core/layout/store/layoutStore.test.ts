@@ -33,6 +33,10 @@ function expectSingleOperation(
   expect(operations[0]).toEqual(expect.objectContaining(expectedOperation))
 }
 
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
+
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
     // Clear the store before each test
@@ -156,6 +160,7 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       previousLayout: layout,
+      graphId: createUuidv4(),
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -671,6 +676,7 @@ describe('layoutStore CRDT operations', () => {
         entity: 'node',
         nodeId,
         previousLayout: layout,
+        graphId: createUuidv4(),
         timestamp: Date.now(),
         source: LayoutSource.External,
         actor: 'test'

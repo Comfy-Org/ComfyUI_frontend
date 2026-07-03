@@ -1,7 +1,10 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { useLayoutMutations } from './layoutMutations'
 
@@ -9,8 +12,10 @@ const NODE_1 = toNodeId('1')
 const NODE_2 = toNodeId('2')
 const MISSING_NODE = toNodeId('999')
 const NEW_NODE = toNodeId('99')
+const GRAPH_ID = createUuidv4()
 
 beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
   layoutStore.initializeFromLiteGraph([
     { id: NODE_1, pos: [10, 20], size: [200, 100] },
     { id: NODE_2, pos: [300, 400], size: [150, 80] }
@@ -95,7 +100,7 @@ describe('deleteNode', () => {
     const { deleteNode } = useLayoutMutations()
     const before1 = { ...layoutStore.getNodeLayoutRef(NODE_1).value }
     const before2 = { ...layoutStore.getNodeLayoutRef(NODE_2).value }
-    deleteNode(MISSING_NODE)
+    deleteNode(MISSING_NODE, GRAPH_ID)
     expect(layoutStore.getNodeLayoutRef(MISSING_NODE).value).toBeNull()
     expect(layoutStore.getNodeLayoutRef(NODE_1).value).toEqual(before1)
     expect(layoutStore.getNodeLayoutRef(NODE_2).value).toEqual(before2)
@@ -103,7 +108,7 @@ describe('deleteNode', () => {
 
   it('removes node from the store', () => {
     const { deleteNode } = useLayoutMutations()
-    deleteNode(NODE_1)
+    deleteNode(NODE_1, GRAPH_ID)
     expect(layoutStore.getNodeLayoutRef(NODE_1).value).toBeNull()
   })
 })
