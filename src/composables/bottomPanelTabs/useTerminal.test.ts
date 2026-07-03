@@ -78,9 +78,9 @@ vi.mock('es-toolkit/compat', () => ({
   debounce: (fn: () => void) => fn
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  isDesktop: true
-}))
+const mockDistribution = vi.hoisted(() => ({ isDesktop: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistribution)
 
 import { useTerminal } from './useTerminal'
 
@@ -118,6 +118,7 @@ describe('useTerminal', () => {
     mockXterm.terminalInstances.length = 0
     mockXterm.fitAddonInstances.length = 0
     mockResizeObserverInstances.length = 0
+    mockDistribution.isDesktop = true
     vi.stubGlobal('ResizeObserver', MockResizeObserver)
   })
 
@@ -135,6 +136,15 @@ describe('useTerminal', () => {
 
     app.unmount()
     expect(terminal.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('omits theme configuration when not running on desktop', () => {
+    mockDistribution.isDesktop = false
+
+    mountTerminal()
+
+    const terminal = mockXterm.terminalInstances[0]
+    expect(terminal.options).toEqual({ convertEol: true })
   })
 
   it('lets browser copy and paste shortcuts pass through', () => {
@@ -183,13 +193,19 @@ describe('useTerminal', () => {
   })
 
   it('estimates invalid fit dimensions from the root element', () => {
-    const { result, root } = mountTerminal()
+    let resize: () => void = () => {}
+    mountTerminal((terminal, rootRef) => {
+      resize = terminal.useAutoSize({
+        root: rootRef,
+        minCols: 30,
+        minRows: 10
+      }).resize
+    })
     const fitAddon = mockXterm.fitAddonInstances[0]
     fitAddon.proposeDimensions.mockReturnValue({
       cols: Number.NaN,
       rows: undefined
     })
-    const { resize } = result.useAutoSize({ root, minCols: 30, minRows: 10 })
     const terminal = mockXterm.terminalInstances[0]
 
     resize()
@@ -198,17 +214,19 @@ describe('useTerminal', () => {
   })
 
   it('keeps existing terminal dimensions when auto sizing is disabled', () => {
-    const { result, root } = mountTerminal()
+    let resize: () => void = () => {}
+    mountTerminal((terminal, rootRef) => {
+      resize = terminal.useAutoSize({
+        root: rootRef,
+        autoCols: false,
+        autoRows: false,
+        minCols: 10,
+        minRows: 10
+      }).resize
+    })
     const terminal = mockXterm.terminalInstances[0]
     terminal.cols = 90
     terminal.rows = 30
-    const { resize } = result.useAutoSize({
-      root,
-      autoCols: false,
-      autoRows: false,
-      minCols: 10,
-      minRows: 10
-    })
 
     resize()
 
