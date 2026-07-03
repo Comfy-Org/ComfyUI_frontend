@@ -117,13 +117,16 @@ describe('SyftTelemetryProvider', () => {
     ])
   })
 
-  it('replays a pending identify after SDK load failure', async () => {
+  it('replays a pending identify with its original traits after SDK load failure', async () => {
     mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     const appendChild = mockScriptAppend()
-    mockCurrentUser.userEmail.value = 'restored@example.com'
     const SyftTelemetryProvider = await importProvider()
 
-    new SyftTelemetryProvider().trackUserLoggedIn()
+    new SyftTelemetryProvider().trackAuth({
+      email: 'new@example.com',
+      is_new_user: true,
+      method: 'google'
+    })
 
     failScript(appendChild, 0)
     await Promise.resolve()
@@ -131,8 +134,8 @@ describe('SyftTelemetryProvider', () => {
     expect(appendChild).toHaveBeenCalledTimes(2)
     expect(window.syft?.q).toContainEqual([
       'identify',
-      'restored@example.com',
-      { source: 'login' }
+      'new@example.com',
+      { source: 'signup', method: 'google' }
     ])
   })
 
