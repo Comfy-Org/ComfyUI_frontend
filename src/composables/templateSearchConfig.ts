@@ -61,7 +61,7 @@ function searchOptions(combineWith: 'AND' | 'OR' = 'AND') {
 }
 
 // `{X}2{Y}` shorthand expanded by structure (t2i, txt2img, …) rather than one
-// entry per spelling. Same-modality pairs collapse (`img2img` → `image`).
+// entry per spelling.
 const MODALITY_STEMS: Record<string, string> = {
   t: 'text',
   txt: 'text',
@@ -77,6 +77,12 @@ const MODALITY_STEMS: Record<string, string> = {
   m: 'music'
 }
 
+const SAME_MODALITY_EDIT: Record<string, string> = {
+  image: 'image edit',
+  video: 'video edit',
+  audio: 'audio edit'
+}
+
 const ACRONYMS: Record<string, string> = {
   cn: 'controlnet'
 }
@@ -90,7 +96,8 @@ export function expandAbbreviation(token: string): string | null {
   const left = MODALITY_STEMS[match[1]]
   const right = MODALITY_STEMS[match[2]]
   if (!left || !right) return null
-  return left === right ? left : `${left} ${right}`
+  if (left === right) return SAME_MODALITY_EDIT[left] ?? left
+  return `${left} ${right}`
 }
 
 /** Expands shorthand tokens (`wan i2v` → `wan image video`); null if none expand. */

@@ -66,9 +66,9 @@ describe('expandAbbreviation', () => {
     expect(expandAbbreviation('txt2img')).toBe('text image')
   })
 
-  it('collapses same-modality pairs instead of duplicating', () => {
-    expect(expandAbbreviation('img2img')).toBe('image')
-    expect(expandAbbreviation('v2v')).toBe('video')
+  it('expands same-modality transforms to editing', () => {
+    expect(expandAbbreviation('img2img')).toBe('image edit')
+    expect(expandAbbreviation('v2v')).toBe('video edit')
   })
 
   it('expands known acronyms', () => {
@@ -181,5 +181,47 @@ describe('searchTemplates', () => {
   it('falls back to the name when a template has no title or description', () => {
     const index = buildIndex([buildTemplate({ name: 'flux_kontext_edit' })])
     expect(searchTemplates(index, 'kontext')).toEqual(['flux_kontext_edit'])
+  })
+
+  it('ranks an editing template above text-to-image for "img2img"', () => {
+    const index = buildIndex([
+      buildTemplate({
+        name: 'text_to_image',
+        title: 'Qwen Text to Image',
+        tags: ['Text to Image']
+      }),
+      buildTemplate({
+        name: 'image_edit',
+        title: 'Qwen Image Edit',
+        tags: ['Image Edit']
+      })
+    ])
+    expect(searchTemplates(index, 'img2img')[0]).toBe('image_edit')
+  })
+
+  it('ranks a title match above a tag match above a description-only match', () => {
+    const index = buildIndex([
+      buildTemplate({
+        name: 'in_description',
+        title: 'Something Else',
+        description: 'mentions upscale in passing'
+      }),
+      buildTemplate({ name: 'in_tag', title: 'Something', tags: ['Upscale'] }),
+      buildTemplate({ name: 'in_title', title: 'Upscale Studio' })
+    ])
+    expect(searchTemplates(index, 'upscale')).toEqual([
+      'in_title',
+      'in_tag',
+      'in_description'
+    ])
+  })
+
+  it('ranks an exact match above a typo match', () => {
+    const index = buildIndex([
+      buildTemplate({ name: 'typo_only', title: 'Controlnet Guidance' }),
+      buildTemplate({ name: 'exact', title: 'ControlNet' })
+    ])
+    // A clean "controlnet" query keeps the exact title first.
+    expect(searchTemplates(index, 'controlnet')[0]).toBe('exact')
   })
 })
