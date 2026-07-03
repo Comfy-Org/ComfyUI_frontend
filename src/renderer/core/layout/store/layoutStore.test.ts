@@ -781,7 +781,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
     }
   )
 
-  it('emits a deleteNode operation when setter receives null', () => {
+  it('ignores a null assignment; deletion goes through layoutMutations.deleteNode', () => {
     const ref = layoutStore.getNodeLayoutRef(REF_NODE)
     const layout = baseLayout()
     ref.value = layout
@@ -790,12 +790,8 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       ref.value = null
     })
 
-    expectSingleOperation(operations, {
-      type: 'deleteNode',
-      nodeId: REF_NODE,
-      previousLayout: layout
-    })
-    expect(ref.value).toBeNull()
+    expect(operations).toEqual([])
+    expect(ref.value).toEqual(layout)
   })
 })
 

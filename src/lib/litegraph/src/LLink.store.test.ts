@@ -25,6 +25,25 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graph.rootGraph.id, b.id, 0)).toBe(false)
   })
 
+  it('keeps writing to a disconnected link after it leaves the store', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in0', 'INT')
+    b.addInput('in1', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const link = a.connect(0, b, 0)!
+    graph.removeLink(link.id)
+
+    expect(() => {
+      link.target_slot = 3
+    }).not.toThrow()
+    expect(link.target_slot).toBe(3)
+  })
+
   it('moving a link via target_slot reindexes the store', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')

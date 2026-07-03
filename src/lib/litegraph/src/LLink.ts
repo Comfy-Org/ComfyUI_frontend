@@ -12,6 +12,7 @@ import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
+import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
@@ -98,6 +99,15 @@ type BasicReadonlyNetwork = Pick<
   'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
 >
 
+/** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
+function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
+  if (link._graphId) {
+    useLinkStore().updateEndpoint(link._graphId, link.id, patch)
+  } else {
+    Object.assign(link._state, patch)
+  }
+}
+
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
@@ -130,13 +140,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_id(value: NodeId) {
-    if (this._graphId) {
-      useLinkStore().updateEndpoint(this._graphId, this.id, {
-        originNodeId: value
-      })
-    } else {
-      this._state.originNodeId = value
-    }
+    applyEndpointPatch(this, { originNodeId: value })
   }
 
   /** Output slot index */
@@ -145,13 +149,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_slot(value: number) {
-    if (this._graphId) {
-      useLinkStore().updateEndpoint(this._graphId, this.id, {
-        originSlot: value
-      })
-    } else {
-      this._state.originSlot = value
-    }
+    applyEndpointPatch(this, { originSlot: value })
   }
 
   /** Input node ID */
@@ -160,13 +158,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_id(value: NodeId) {
-    if (this._graphId) {
-      useLinkStore().updateEndpoint(this._graphId, this.id, {
-        targetNodeId: value
-      })
-    } else {
-      this._state.targetNodeId = value
-    }
+    applyEndpointPatch(this, { targetNodeId: value })
   }
 
   /** Input slot index */
@@ -175,13 +167,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_slot(value: number) {
-    if (this._graphId) {
-      useLinkStore().updateEndpoint(this._graphId, this.id, {
-        targetSlot: value
-      })
-    } else {
-      this._state.targetSlot = value
-    }
+    applyEndpointPatch(this, { targetSlot: value })
   }
 
   get parentId() {
@@ -556,7 +542,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       }
     }
     network.links.delete(this.id)
-    if (this._graphId) useLinkStore().deleteLink(this._graphId, this.id)
+    if (this._graphId) {
+      useLinkStore().deleteLink(this._graphId, this.id)
+      this._graphId = undefined
+    }
     layoutStore.deleteLinkLayout(this.id)
   }
 

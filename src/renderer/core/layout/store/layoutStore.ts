@@ -13,7 +13,6 @@ import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil
 import { useLinkStore } from '@/stores/linkStore'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
-import { zeroUuid } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -218,83 +217,68 @@ class LayoutStoreImpl implements LayoutStore {
             return layout
           },
           set: (newLayout: NodeLayout | null) => {
-            if (newLayout === null) {
-              // Delete operation
-              const existing = this.ynodes.get(nodeKey)
-              if (existing) {
-                // No caller assigns null through this ref today; zeroUuid is a
-                // sentinel so the link cascade finds nothing to clean up.
-                this.applyOperation({
-                  type: 'deleteNode',
-                  entity: 'node',
-                  nodeId,
-                  timestamp: Date.now(),
-                  source: this.currentSource,
-                  actor: this.currentActor,
-                  previousLayout: yNodeToLayout(existing),
-                  graphId: zeroUuid
-                })
-              }
+            // No caller assigns null through this ref; deletion goes through
+            // layoutMutations.deleteNode, which carries a graphId.
+            if (newLayout === null) return
+
+            // Update operation - detect what changed
+            const existing = this.ynodes.get(nodeKey)
+            if (!existing) {
+              // Create operation
+              this.applyOperation({
+                type: 'createNode',
+                entity: 'node',
+                nodeId,
+                layout: newLayout,
+                timestamp: Date.now(),
+                source: this.currentSource,
+                actor: this.currentActor
+              })
             } else {
-              // Update operation - detect what changed
-              const existing = this.ynodes.get(nodeKey)
-              if (!existing) {
-                // Create operation
+              const existingLayout = yNodeToLayout(existing)
+
+              // Check what properties changed
+              if (
+                existingLayout.position.x !== newLayout.position.x ||
+                existingLayout.position.y !== newLayout.position.y
+              ) {
                 this.applyOperation({
-                  type: 'createNode',
+                  type: 'moveNode',
                   entity: 'node',
                   nodeId,
-                  layout: newLayout,
+                  position: newLayout.position,
+                  previousPosition: existingLayout.position,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
                 })
-              } else {
-                const existingLayout = yNodeToLayout(existing)
-
-                // Check what properties changed
-                if (
-                  existingLayout.position.x !== newLayout.position.x ||
-                  existingLayout.position.y !== newLayout.position.y
-                ) {
-                  this.applyOperation({
-                    type: 'moveNode',
-                    entity: 'node',
-                    nodeId,
-                    position: newLayout.position,
-                    previousPosition: existingLayout.position,
-                    timestamp: Date.now(),
-                    source: this.currentSource,
-                    actor: this.currentActor
-                  })
-                }
-                if (
-                  existingLayout.size.width !== newLayout.size.width ||
-                  existingLayout.size.height !== newLayout.size.height
-                ) {
-                  this.applyOperation({
-                    type: 'resizeNode',
-                    entity: 'node',
-                    nodeId,
-                    size: newLayout.size,
-                    previousSize: existingLayout.size,
-                    timestamp: Date.now(),
-                    source: this.currentSource,
-                    actor: this.currentActor
-                  })
-                }
-                if (existingLayout.zIndex !== newLayout.zIndex) {
-                  this.applyOperation({
-                    type: 'setNodeZIndex',
-                    entity: 'node',
-                    nodeId,
-                    zIndex: newLayout.zIndex,
-                    previousZIndex: existingLayout.zIndex,
-                    timestamp: Date.now(),
-                    source: this.currentSource,
-                    actor: this.currentActor
-                  })
-                }
+              }
+              if (
+                existingLayout.size.width !== newLayout.size.width ||
+                existingLayout.size.height !== newLayout.size.height
+              ) {
+                this.applyOperation({
+                  type: 'resizeNode',
+                  entity: 'node',
+                  nodeId,
+                  size: newLayout.size,
+                  previousSize: existingLayout.size,
+                  timestamp: Date.now(),
+                  source: this.currentSource,
+                  actor: this.currentActor
+                })
+              }
+              if (existingLayout.zIndex !== newLayout.zIndex) {
+                this.applyOperation({
+                  type: 'setNodeZIndex',
+                  entity: 'node',
+                  nodeId,
+                  zIndex: newLayout.zIndex,
+                  previousZIndex: existingLayout.zIndex,
+                  timestamp: Date.now(),
+                  source: this.currentSource,
+                  actor: this.currentActor
+                })
               }
             }
             trigger()

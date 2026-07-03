@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-type EndpointPatch = Partial<
+export type EndpointPatch = Partial<
   Pick<
     LinkTopology,
     'originNodeId' | 'originSlot' | 'targetNodeId' | 'targetSlot'
@@ -70,10 +72,12 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   function indexLink(graphId: UUID, topology: LinkTopology): void {
-    nodeTargetSlots(graphId, topology.targetNodeId).set(
-      topology.targetSlot,
-      topology.id
-    )
+    if (topology.targetNodeId !== UNASSIGNED_NODE_ID) {
+      nodeTargetSlots(graphId, topology.targetNodeId).set(
+        topology.targetSlot,
+        topology.id
+      )
+    }
     const originSlots = nodeOriginSlots(graphId, topology.originNodeId)
     const set =
       originSlots.get(topology.originSlot) ?? reactive(new Set<LinkId>())
@@ -82,11 +86,13 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   function unindexLink(graphId: UUID, topology: LinkTopology): void {
-    const targets = targetSlotIndex.value
-      .get(graphId)
-      ?.get(topology.targetNodeId)
-    if (targets?.get(topology.targetSlot) === topology.id) {
-      targets.delete(topology.targetSlot)
+    if (topology.targetNodeId !== UNASSIGNED_NODE_ID) {
+      const targets = targetSlotIndex.value
+        .get(graphId)
+        ?.get(topology.targetNodeId)
+      if (targets?.get(topology.targetSlot) === topology.id) {
+        targets.delete(topology.targetSlot)
+      }
     }
     const originSet = originSlotIndex.value
       .get(graphId)

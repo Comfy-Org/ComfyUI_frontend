@@ -109,4 +109,38 @@ describe('useLinkStore', () => {
     })
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
   })
+
+  it('does not let a second floating-input link corrupt real-slot lookups', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    store.registerLink(graphA, {
+      id: toLinkId(2),
+      originNodeId: toNodeId(5),
+      originSlot: 1,
+      targetNodeId: UNASSIGNED_NODE_ID,
+      targetSlot: -1,
+      type: 'INT'
+    })
+    store.registerLink(graphA, {
+      id: toLinkId(3),
+      originNodeId: toNodeId(5),
+      originSlot: 2,
+      targetNodeId: UNASSIGNED_NODE_ID,
+      targetSlot: -1,
+      type: 'INT'
+    })
+
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+    expect(store.getLink(graphA, toLinkId(2))).toBeDefined()
+    expect(store.getLink(graphA, toLinkId(3))).toBeDefined()
+    // The floating target slot is never indexed, so it can't be overwritten
+    expect(store.isInputSlotConnected(graphA, UNASSIGNED_NODE_ID, -1)).toBe(
+      false
+    )
+
+    expect(store.deleteLink(graphA, toLinkId(2))).toBe(true)
+    expect(store.getLink(graphA, toLinkId(3))).toBeDefined()
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
+  })
 })
