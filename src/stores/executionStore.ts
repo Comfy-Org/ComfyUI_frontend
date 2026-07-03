@@ -723,7 +723,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodes: string[]
     id: JobId
     promptOutput: ComfyApiWorkflow
-    workflow: ComfyWorkflow
+    workflow: ComfyWorkflow | undefined
   }) {
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
