@@ -6,7 +6,7 @@ import type {
 export const CHIP_SELECTOR = '[data-chip-type]'
 
 const CHIP_CLASS =
-  'prompt-chip mx-0.5 inline-flex items-center rounded-sm px-1 align-baseline select-none cursor-default bg-primary-background text-base-foreground'
+  'prompt-chip mx-0.5 inline-flex items-center rounded-sm px-1 align-baseline select-none cursor-default bg-primary-background/70 text-base-foreground'
 
 function isChipElement(node: Node): node is HTMLElement {
   return (

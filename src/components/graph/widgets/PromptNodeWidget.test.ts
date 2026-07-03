@@ -84,7 +84,7 @@ describe('PromptNodeWidget', () => {
       template: [{ type: 'var', name: 'setting' }],
       connected: ['setting']
     })
-    expect(screen.getByText('@setting')).toHaveClass('bg-primary-background')
+    expect(screen.getByText('@setting')).toHaveClass('bg-primary-background/70')
   })
 
   it('turns a variable chip blue when its socket becomes connected', async () => {
@@ -94,7 +94,7 @@ describe('PromptNodeWidget', () => {
 
     g.promptNode.inputs.push({ name: 'animal', link: 1 })
 
-    await waitFor(() => expect(chip).toHaveClass('bg-primary-background'))
+    await waitFor(() => expect(chip).toHaveClass('bg-primary-background/70'))
     expect(chip).not.toHaveClass('bg-destructive-background')
   })
 

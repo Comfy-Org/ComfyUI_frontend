@@ -129,7 +129,7 @@ function refreshChipStates() {
   const connected = new Set(connectedNames)
   for (const chip of host.querySelectorAll<HTMLElement>(CHIP_SELECTOR)) {
     const resolvable = connected.has(chip.getAttribute('data-chip-name') ?? '')
-    chip.classList.toggle('bg-primary-background', resolvable)
+    chip.classList.toggle('bg-primary-background/70', resolvable)
     chip.classList.toggle('bg-destructive-background', !resolvable)
   }
 }

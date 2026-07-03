@@ -65,11 +65,11 @@ class PromptNode extends LGraphNode {
           const widgetState = state()
           if (widgetState) widgetState.value = fallback
         },
-        getMinHeight: () => 180
+        getMinHeight: () => 140
       }
     )
 
-    this.setSize([340, 280])
+    this.setSize([340, 240])
   }
 
   private getTemplate(): PromptTemplate {
