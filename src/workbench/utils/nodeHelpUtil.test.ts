@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-
 import { extractCustomNodeName, getNodeHelpBaseUrl } from './nodeHelpUtil'
 
-function nodeDef(name: string, python_module: string): ComfyNodeDefImpl {
-  return { name, python_module } as ComfyNodeDefImpl
+function nodeDef(name: string, python_module: string) {
+  return { name, python_module }
 }
 
 describe('nodeHelpUtil', () => {

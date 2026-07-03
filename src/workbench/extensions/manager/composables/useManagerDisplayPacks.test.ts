@@ -1,4 +1,5 @@
 import type * as VueUse from '@vueuse/core'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -85,11 +86,11 @@ vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
 }))
 
 function pack(id: string, latestVersion?: string): NodePack {
-  return {
+  return fromPartial<NodePack>({
     id,
     name: id,
     latest_version: latestVersion ? { version: latestVersion } : undefined
-  } as NodePack
+  })
 }
 
 function display(
