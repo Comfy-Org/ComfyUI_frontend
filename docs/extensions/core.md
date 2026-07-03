@@ -54,6 +54,13 @@ The following table lists ALL core extensions in the system as of 2025-01-30:
 | webcamCapture.ts        | Provides webcam capture capabilities                         | Media     |
 | widgetInputs.ts         | Implements various widget input types                        | Widgets   |
 
+### PreviewAny Compatibility
+
+`Comfy.PreviewAny` reapplies restored runtime outputs to its own
+`preview_markdown` and `preview_text` widgets when `onNodeOutputsUpdated` fires,
+matching the values set after execution. This is limited to nodes whose
+`comfyClass` is `PreviewAny`.
+
 ### Conditional Lines Subdirectory
 
 Located in `extensions/core/load3d/conditional-lines/`:

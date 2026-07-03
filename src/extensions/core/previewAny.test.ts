@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyExtension } from '@/types/comfy'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 const { getNodeByLocatorIdMock } = vi.hoisted(() => ({
   getNodeByLocatorIdMock: vi.fn()
@@ -40,7 +44,7 @@ interface MockNode {
 
 type PreviewAnyExtension = ComfyExtension & {
   onNodeOutputsUpdated: (
-    nodeOutputs: Record<string, { text?: string | string[] }>
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
   ) => void
 }
 
@@ -131,9 +135,10 @@ describe('PreviewAny extension', () => {
   it('restores preview widgets from node output updates', async () => {
     const { ext, node } = await setupNode()
     getNodeByLocatorIdMock.mockReturnValue(node)
+    const locatorId = createNodeLocatorId(null, toNodeId(1))
 
     ext.onNodeOutputsUpdated({
-      '1': { text: 'restored preview text' }
+      [locatorId]: { text: 'restored preview text' }
     })
 
     expect(
