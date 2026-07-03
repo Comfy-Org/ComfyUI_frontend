@@ -3799,7 +3799,7 @@ export class LGraphNode
     const title = String(rawTitle) + (this.pinned ? '📌' : '')
     if (title) {
       if (selected) {
-        ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR
+        ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR ?? '#FFF'
       } else {
         ctx.fillStyle = this.constructor.title_text_color || default_title_color
       }
