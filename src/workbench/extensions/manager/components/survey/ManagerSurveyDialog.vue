@@ -82,7 +82,6 @@ const surveyUrl = computed(() => {
   if (!base) return undefined
   try {
     const url = new URL(base)
-    url.searchParams.set('embed', 'true')
     // Link responses to the logged-in user; omit for anonymous responses.
     const distinctId = resolvedUserInfo.value?.id
     if (distinctId) url.searchParams.set('distinct_id', distinctId)
