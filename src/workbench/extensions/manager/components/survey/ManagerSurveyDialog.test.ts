@@ -47,7 +47,7 @@ describe('ManagerSurveyDialog', () => {
     mocks.resolvedUserInfo.value = null
   })
 
-  it('embeds the configured survey URL with embed flag and the logged-in user', () => {
+  it('embeds the configured survey URL with the logged-in user', () => {
     mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
     mocks.resolvedUserInfo.value = { id: 'user-123' }
 
@@ -57,7 +57,7 @@ describe('ManagerSurveyDialog', () => {
       screen.getByTestId('manager-survey-iframe').getAttribute('src')!
     )
     expect(src.origin + src.pathname).toBe(SURVEY_URL)
-    expect(src.searchParams.get('embed')).toBe('true')
+    expect(src.searchParams.has('embed')).toBe(false)
     expect(src.searchParams.get('distinct_id')).toBe('user-123')
   })
 
