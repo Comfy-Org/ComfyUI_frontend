@@ -350,7 +350,8 @@ export default defineConfig([
             'Double type assertion. Use fromPartial<T>() from @total-typescript/shoehorn instead.'
         },
         {
-          selector: "ImportSpecifier[imported.name='fromAny']",
+          selector:
+            "ImportDeclaration[source.value='@total-typescript/shoehorn'] > ImportSpecifier[imported.name='fromAny']",
           message: 'fromAny erases type checking. Use fromPartial<T>() instead.'
         },
         {
