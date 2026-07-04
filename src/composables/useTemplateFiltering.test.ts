@@ -740,6 +740,51 @@ describe('useTemplateFiltering', () => {
       expect(filteredTemplates.value[0].name).toBe('api-cloud')
     })
 
+    it('runsOn ComfyUI filter keeps only open-source templates', () => {
+      const comfyTemplate: TemplateInfo = {
+        name: 'comfy-native',
+        description: 'Runs on ComfyUI',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: true
+      }
+      const partnerTemplate: TemplateInfo = {
+        name: 'partner-remote',
+        description: 'Runs on partner nodes',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: false
+      }
+
+      const templates = ref([comfyTemplate, partnerTemplate])
+
+      const { selectedRunsOn, filteredTemplates, filteredCount } =
+        useTemplateFiltering(templates)
+
+      selectedRunsOn.value = [RUNS_ON_COMFYUI]
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('comfy-native')
+    })
+
+    it('unknown runsOn value matches no templates', () => {
+      const comfyTemplate: TemplateInfo = {
+        name: 'comfy-native',
+        description: 'Runs on ComfyUI',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: true
+      }
+
+      const templates = ref([comfyTemplate])
+
+      const { selectedRunsOn, filteredCount } = useTemplateFiltering(templates)
+
+      selectedRunsOn.value = ['Legacy Value']
+
+      expect(filteredCount.value).toBe(0)
+    })
+
     it('stale persisted model selection does not cause zero results', () => {
       setDistribution('cloud')
       const cloudFlux: TemplateInfo = {
