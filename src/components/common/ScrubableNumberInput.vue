@@ -73,7 +73,13 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, usePointerSwipe, whenever } from '@vueuse/core'
+import {
+  breakpointsTailwind,
+  onClickOutside,
+  usePointerSwipe,
+  useBreakpoints,
+  whenever
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -102,6 +108,8 @@ const {
 
 const { t } = useI18n()
 const modelValue = defineModel<number>({ default: 0 })
+
+const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
@@ -145,7 +153,8 @@ function handlePointerUp() {
 }
 
 const { distanceX, isSwiping } = usePointerSwipe(swipeElement, {
-  onSwipeEnd: () => (dragDelta = 0)
+  onSwipeEnd: () => (dragDelta = 0),
+  pointerTypes: isMobile.value ? ['mouse', 'touch'] : ['mouse']
 })
 
 whenever(distanceX, () => {
