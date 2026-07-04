@@ -193,7 +193,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     resolvedOutputs: NodeId[]
   ) {
     if (ChangeTracker.isLoadingGraph) return
-    if (!app.rootGraph?.nodes.length) return
+    if (!app.rootGraph?.nodes?.length) return
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
     if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
     console.warn(
