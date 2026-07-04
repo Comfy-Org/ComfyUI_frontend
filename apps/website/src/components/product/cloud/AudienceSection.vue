@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
-
 import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
+import CardArrow from '../../common/CardArrow.vue'
 import GlassCard from '../../common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -44,7 +43,7 @@ const cards = [
         v-for="card in cards"
         :key="card.labelKey"
         :href="externalLinks.cloud"
-        class="rounded-4.5xl block overflow-hidden bg-primary-comfy-ink"
+        class="group rounded-4.5xl block overflow-hidden bg-primary-comfy-ink"
       >
         <img
           :src="card.image"
@@ -62,12 +61,7 @@ const cards = [
               {{ t(card.labelKey, locale) }}
             </p>
 
-            <div
-              class="hover:bg-primary-comfy-yellow flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm transition-colors hover:text-primary-comfy-ink"
-              aria-hidden="true"
-            >
-              <ChevronRight class="size-5" :stroke-width="2" />
-            </div>
+            <CardArrow hover="group" class="shrink-0" />
           </div>
 
           <h3
