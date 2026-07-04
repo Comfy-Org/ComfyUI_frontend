@@ -34,9 +34,9 @@ const activeVariant = computed(
 )
 
 // The desktop graph is authored in a fixed design coordinate space and scaled
-// as a single unit to fit the viewport width, so wires and the OUTPUT bleed are
-// preserved on every screen. Node positions are live state so they can be
-// dragged; widths are fixed per node and heights are measured once for wiring.
+// as a single unit to fit the viewport width, so the whole composition stays on
+// screen at every size. Node positions are live state so they can be dragged;
+// widths are fixed per node and heights are measured once for wiring.
 const MAX_SCALE = 1.3
 
 const positions = ref<Record<NodeId, Point>>(structuredClone(homePositions))
@@ -77,9 +77,9 @@ const stageStyle = computed(() => ({
 }))
 
 function nodeStyle(id: NodeId) {
+  const { x, y } = positions.value[id]
   return {
-    left: `${positions.value[id].x}px`,
-    top: `${positions.value[id].y}px`,
+    transform: `translate3d(${x}px, ${y}px, 0)`,
     width: `${NODE_W[id]}px`
   }
 }
@@ -213,7 +213,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
 
         <!-- The headline stays beneath the nodes so a dragged window passes
              cleanly over it instead of flipping layers mid-drag. -->
-        <div class="absolute top-[150px] left-[636px] -translate-x-1/2">
+        <div class="absolute top-[140px] left-[800px] -translate-x-1/2">
           <HeroHeadline :locale />
         </div>
 
@@ -221,7 +221,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="image"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute top-0 left-0 cursor-grab touch-none will-change-transform select-none active:cursor-grabbing',
               dragging === 'image' && 'z-30 cursor-grabbing'
             )
           "
@@ -242,7 +242,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="texture"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute top-0 left-0 cursor-grab touch-none will-change-transform select-none active:cursor-grabbing',
               dragging === 'texture' && 'z-30 cursor-grabbing'
             )
           "
@@ -265,7 +265,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="color"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute top-0 left-0 cursor-grab touch-none will-change-transform select-none active:cursor-grabbing',
               dragging === 'color' && 'z-30 cursor-grabbing'
             )
           "
@@ -286,7 +286,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="lighting"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute top-0 left-0 cursor-grab touch-none will-change-transform select-none active:cursor-grabbing',
               dragging === 'lighting' && 'z-30 cursor-grabbing'
             )
           "
@@ -307,7 +307,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="output"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute top-0 left-0 cursor-grab touch-none will-change-transform select-none active:cursor-grabbing',
               dragging === 'output' && 'z-30 cursor-grabbing'
             )
           "
@@ -319,7 +319,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
               :controls
               :variant="activeVariant"
               :locale
-              class="h-[560px]"
+              class="aspect-square"
             />
           </HeroGraphNode>
         </div>

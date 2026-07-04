@@ -7,34 +7,31 @@ export const STAGE_H = 780
 
 export const NODE_W: Record<NodeId, number> = {
   image: 300,
-  texture: 200,
+  texture: 190,
   color: 210,
   lighting: 210,
-  output: 760
+  output: 500
 }
 
-// Whole graph is nudged left of the stage centre so the OUTPUT node bleeds less
-// far off the right edge.
+// Inputs stack on the left, the control chain runs under the centred headline,
+// and the OUTPUT sits fully inside the right edge so nothing bleeds offscreen.
 export const homePositions: Record<NodeId, Point> = {
-  image: { x: 16, y: 28 },
-  texture: { x: 52, y: 512 },
-  color: { x: 404, y: 446 },
-  lighting: { x: 662, y: 446 },
-  output: { x: 956, y: 110 }
+  image: { x: 24, y: 40 },
+  texture: { x: 60, y: 545 },
+  color: { x: 396, y: 486 },
+  lighting: { x: 650, y: 486 },
+  output: { x: 1080, y: 126 }
 }
 
-// Drags are confined to an invisible bounding box: the stage rect, widened
-// where a node's home position already bleeds past it (the OUTPUT's
-// right-edge bleed), so every node stops at the edge instead of getting cut
-// off.
+// Drags are confined to an invisible bounding box — the stage rect — so every
+// node stops at the edge instead of getting cut off.
 export function clampNodePosition(
   id: NodeId,
   point: Point,
   height: number
 ): Point {
-  const home = homePositions[id]
   return {
-    x: clamp(point.x, 0, Math.max(STAGE_W - NODE_W[id], home.x)),
-    y: clamp(point.y, 0, Math.max(STAGE_H - height, home.y))
+    x: clamp(point.x, 0, STAGE_W - NODE_W[id]),
+    y: clamp(point.y, 0, STAGE_H - height)
   }
 }
