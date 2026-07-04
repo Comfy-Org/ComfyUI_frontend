@@ -11,6 +11,10 @@ import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
 import { app } from '@/scripts/app'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  generateCanvasPatternImage,
+  getEffectiveCanvasBackgroundColor
+} from '@/utils/canvasPatternUtil'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const THEME_PROPERTY_MAP = {
@@ -153,10 +157,18 @@ export const useColorPaletteService = () => {
     app.canvas.default_link_color = palette.LINK_COLOR
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
+      app.canvas.background_image = ''
       app.canvas.clear_background_color = 'transparent'
     } else {
-      app.canvas.background_image = palette.BACKGROUND_IMAGE
-      app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
+      const backgroundColor = getEffectiveCanvasBackgroundColor(
+        settingStore.get('Comfy.Canvas.BackgroundColor'),
+        palette.CLEAR_BACKGROUND_COLOR
+      )
+      app.canvas.background_image = generateCanvasPatternImage(
+        settingStore.get('Comfy.Canvas.BackgroundPattern'),
+        backgroundColor
+      )
+      app.canvas.clear_background_color = backgroundColor
     }
     app.canvas._pattern = undefined
 

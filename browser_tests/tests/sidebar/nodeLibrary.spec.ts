@@ -292,6 +292,10 @@ test.describe('Node library sidebar', () => {
     const dialog = comfyPage.page.getByRole('dialog', {
       name: 'Customize Folder'
     })
+    // Capture the dialog header position before opening the modal color
+    // picker: while the picker is open it sets aria-hidden on the dialog,
+    // so it can no longer be located by role.
+    const dialogBox = await dialog.boundingBox()
     await dialog
       .locator('.color-customization-selector-container > button')
       .last()
@@ -299,6 +303,17 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page
       .getByLabel('Color saturation and brightness')
       .click({ position: { x: 10, y: 10 } })
+
+    // The color picker popover is modal: while it is open the rest of the
+    // dialog is inert (pointer-events disabled), so dismiss it before
+    // interacting with other controls. A coordinate click on the dialog
+    // header lands on the dismiss layer and closes the popover.
+    if (dialogBox) {
+      await comfyPage.page.mouse.click(dialogBox.x + 40, dialogBox.y + 16)
+    }
+    await expect(
+      comfyPage.page.getByLabel('Color saturation and brightness')
+    ).toBeHidden()
 
     // Select Folder icon (2nd button in Icon group)
     const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')

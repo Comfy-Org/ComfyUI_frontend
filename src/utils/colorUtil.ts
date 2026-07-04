@@ -426,6 +426,26 @@ export function hsvaToHex(hsva: HSVA): string {
   return `${hex}${alphaHex}`.toLowerCase()
 }
 
+function linearizeSrgbChannel(channel: number): number {
+  const c = channel / 255
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+}
+
+/** WCAG relative luminance (0..1) of a parseable CSS color. */
+export function getRelativeLuminance(color: string): number {
+  const { r, g, b } = parseToRgb(color)
+  return (
+    0.2126 * linearizeSrgbChannel(r) +
+    0.7152 * linearizeSrgbChannel(g) +
+    0.0722 * linearizeSrgbChannel(b)
+  )
+}
+
+/** True when dark foreground marks should be used on this background. */
+export function isLightColor(color: string): boolean {
+  return getRelativeLuminance(color) > 0.179
+}
+
 const applyColorAdjustments = (
   color: string,
   options: ColorAdjustOptions

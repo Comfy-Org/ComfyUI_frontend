@@ -5,6 +5,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { ZIndex } from '@primeuix/utils/zindex'
 import { computed, ref, watch } from 'vue'
 
 import type { HSVA } from '@/utils/colorUtil'
@@ -23,9 +24,15 @@ const modelValue = defineModel<string>({ default: '#000000' })
 const hsva = ref<HSVA>(hexToHsva(modelValue.value || '#000000'))
 const displayMode = ref<'hex' | 'rgba'>('hex')
 
+// Guard against echoing external model changes back: hex -> hsva -> hex is
+// not an identity (rounding), so without the flag an outside write (e.g.
+// resetting a setting to '') would immediately be overwritten.
+let syncingFromModel = false
+
 watch(modelValue, (newVal) => {
   const current = hsvaToHex(hsva.value)
   if (newVal !== current) {
+    syncingFromModel = true
     hsva.value = hexToHsva(newVal || '#000000')
   }
 })
@@ -33,6 +40,10 @@ watch(modelValue, (newVal) => {
 watch(
   hsva,
   (newHsva) => {
+    if (syncingFromModel) {
+      syncingFromModel = false
+      return
+    }
     const hex = hsvaToHex(newHsva)
     if (hex !== modelValue.value) {
       modelValue.value = hex
@@ -60,10 +71,29 @@ const previewColor = computed(() => {
 const displayHex = computed(() => rgbToHex(baseRgb.value).toLowerCase())
 
 const isOpen = ref(false)
+
+// The popover portals to body, so a static z-index can lose to dialogs that
+// take theirs from the shared PrimeVue ZIndex counter (see vRekaZIndex.ts).
+// Reka copies the content's z-index onto its popper wrapper, so compute the
+// content z-index from the same counter on each open to stack above
+// whichever dialog opened the picker.
+const BASE_POPOVER_Z_INDEX = 1700
+const popoverZIndex = ref(BASE_POPOVER_Z_INDEX)
+
+watch(isOpen, (open) => {
+  if (open) {
+    popoverZIndex.value = Math.max(
+      BASE_POPOVER_Z_INDEX,
+      ZIndex.getCurrent('modal') + 1
+    )
+  }
+})
 </script>
 
 <template>
-  <PopoverRoot v-model:open="isOpen">
+  <!-- Modal so the click that dismisses the popover cannot fall through to
+       the canvas and start a drag-select marquee. -->
+  <PopoverRoot v-model:open="isOpen" modal>
     <PopoverTrigger as-child>
       <button
         type="button"
@@ -115,7 +145,7 @@ const isOpen = ref(false)
         align="start"
         :side-offset="7"
         :collision-padding="10"
-        class="z-1700"
+        :style="{ zIndex: popoverZIndex }"
       >
         <ColorPickerPanel
           v-model:hsva="hsva"

@@ -3,11 +3,13 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
   adjustColor,
+  getRelativeLuminance,
   hexToHsva,
   hexToInt,
   hexToRgb,
   hsbToRgb,
   hsvaToHex,
+  isLightColor,
   isTransparent,
   luminance,
   parseToRgb,
@@ -432,6 +434,31 @@ describe('colorUtil - adjustColor', () => {
       expect(adjustColor('rgba(0, 0, 0, 0.5)', { opacity: 1.5 })).toBe(
         'hsla(0, 0%, 0%, 1)'
       )
+    })
+  })
+})
+
+describe('colorUtil - luminance', () => {
+  describe('getRelativeLuminance', () => {
+    it('returns 0 for black and 1 for white', () => {
+      expect(getRelativeLuminance('#000000')).toBe(0)
+      expect(getRelativeLuminance('#ffffff')).toBeCloseTo(1)
+    })
+
+    it('returns the WCAG luminance for mid gray', () => {
+      expect(getRelativeLuminance('#808080')).toBeCloseTo(0.2159, 3)
+    })
+  })
+
+  describe('isLightColor', () => {
+    it('classifies dark backgrounds as dark', () => {
+      expect(isLightColor('#141414')).toBe(false)
+      expect(isLightColor('#0000ff')).toBe(false)
+    })
+
+    it('classifies light backgrounds as light', () => {
+      expect(isLightColor('#f0f0f0')).toBe(true)
+      expect(isLightColor('#808080')).toBe(true)
     })
   })
 })
