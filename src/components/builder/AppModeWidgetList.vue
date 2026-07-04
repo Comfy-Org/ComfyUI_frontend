@@ -21,6 +21,7 @@ import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.v
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
@@ -46,6 +47,7 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
 const widgetValueStore = useWidgetValueStore()
+const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
 
 const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
@@ -77,6 +79,13 @@ function ensureSelectedWidgetState(
   )
 }
 
+function isWidgetInputLinked(node: LGraphNode, widgetName: string): boolean {
+  const graphId = node.graph?.rootGraph.id
+  const slot = node.inputs?.findIndex((i) => i.widget?.name === widgetName)
+  if (!graphId || slot === undefined || slot < 0) return false
+  return linkStore.isInputSlotConnected(graphId, node.id, slot)
+}
+
 const mappedSelections = computed((): WidgetEntry[] => {
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
@@ -85,13 +94,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
     ensureSelectedWidgetState(widgetId, widget)
     const fullNodeData = nodeToNodeData(node, widgetId)
-    if (
-      node.inputs?.some(
-        (input) => input.widget?.name === widget.name && input.link != null
-      )
-    ) {
-      return []
-    }
+    if (isWidgetInputLinked(node, widget.name)) return []
 
     return [
       {

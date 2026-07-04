@@ -248,7 +248,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const id = node.id
 
     setSource(LayoutSource.Canvas)
-    void deleteNode(id, graph.rootGraph.id)
+    deleteNode(id)
     dropNodeReferences(id)
     for (const nodeId of nodeRefs.keys()) refreshNodeInputs(nodeId)
     originalCallback?.(node)

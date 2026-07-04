@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toNodeId } from '@/types/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
 
 import { useLayoutMutations } from './layoutMutations'
 
@@ -12,7 +11,6 @@ const NODE_1 = toNodeId('1')
 const NODE_2 = toNodeId('2')
 const MISSING_NODE = toNodeId('999')
 const NEW_NODE = toNodeId('99')
-const GRAPH_ID = createUuidv4()
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -100,7 +98,7 @@ describe('deleteNode', () => {
     const { deleteNode } = useLayoutMutations()
     const before1 = { ...layoutStore.getNodeLayoutRef(NODE_1).value }
     const before2 = { ...layoutStore.getNodeLayoutRef(NODE_2).value }
-    deleteNode(MISSING_NODE, GRAPH_ID)
+    deleteNode(MISSING_NODE)
     expect(layoutStore.getNodeLayoutRef(MISSING_NODE).value).toBeNull()
     expect(layoutStore.getNodeLayoutRef(NODE_1).value).toEqual(before1)
     expect(layoutStore.getNodeLayoutRef(NODE_2).value).toEqual(before2)
@@ -108,7 +106,7 @@ describe('deleteNode', () => {
 
   it('removes node from the store', () => {
     const { deleteNode } = useLayoutMutations()
-    deleteNode(NODE_1, GRAPH_ID)
+    deleteNode(NODE_1)
     expect(layoutStore.getNodeLayoutRef(NODE_1).value).toBeNull()
   })
 })

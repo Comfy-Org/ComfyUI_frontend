@@ -17,12 +17,10 @@ export type EndpointPatch = Partial<
 
 type GraphLinkIndex = Map<UUID, Map<LinkId, LinkTopology>>
 type TargetSlotIndex = Map<UUID, Map<NodeId, Map<number, LinkId>>>
-type OriginSlotIndex = Map<UUID, Map<NodeId, Map<number, Set<LinkId>>>>
 
 export const useLinkStore = defineStore('link', () => {
   const graphLinks = ref<GraphLinkIndex>(new Map())
   const targetSlotIndex = ref<TargetSlotIndex>(new Map())
-  const originSlotIndex = ref<OriginSlotIndex>(new Map())
 
   function getGraphLinks(graphId: UUID): Map<LinkId, LinkTopology> {
     const existing = graphLinks.value.get(graphId)
@@ -42,16 +40,6 @@ export const useLinkStore = defineStore('link', () => {
     return next
   }
 
-  function getGraphOriginSlots(
-    graphId: UUID
-  ): Map<NodeId, Map<number, Set<LinkId>>> {
-    const existing = originSlotIndex.value.get(graphId)
-    if (existing) return existing
-    const next = reactive(new Map<NodeId, Map<number, Set<LinkId>>>())
-    originSlotIndex.value.set(graphId, next)
-    return next
-  }
-
   function nodeTargetSlots(graphId: UUID, nodeId: NodeId): Map<number, LinkId> {
     const nodeMap = getGraphTargetSlots(graphId)
     const existing = nodeMap.get(nodeId)
@@ -61,52 +49,34 @@ export const useLinkStore = defineStore('link', () => {
     return next
   }
 
-  function nodeOriginSlots(
-    graphId: UUID,
-    nodeId: NodeId
-  ): Map<number, Set<LinkId>> {
-    const nodeMap = getGraphOriginSlots(graphId)
-    const existing = nodeMap.get(nodeId)
-    if (existing) return existing
-    const next = reactive(new Map<number, Set<LinkId>>())
-    nodeMap.set(nodeId, next)
-    return next
-  }
-
   function indexLink(graphId: UUID, topology: LinkTopology): void {
-    if (topology.targetNodeId !== UNASSIGNED_NODE_ID) {
-      nodeTargetSlots(graphId, topology.targetNodeId).set(
-        topology.targetSlot,
-        topology.id
-      )
-    }
-    const originSlots = nodeOriginSlots(graphId, topology.originNodeId)
-    const set =
-      originSlots.get(topology.originSlot) ?? reactive(new Set<LinkId>())
-    set.add(topology.id)
-    originSlots.set(topology.originSlot, set)
+    if (topology.targetNodeId === UNASSIGNED_NODE_ID) return
+    nodeTargetSlots(graphId, topology.targetNodeId).set(
+      topology.targetSlot,
+      topology.id
+    )
   }
 
   function unindexLink(graphId: UUID, topology: LinkTopology): void {
-    if (topology.targetNodeId !== UNASSIGNED_NODE_ID) {
-      const targets = targetSlotIndex.value
-        .get(graphId)
-        ?.get(topology.targetNodeId)
-      if (targets?.get(topology.targetSlot) === topology.id) {
-        targets.delete(topology.targetSlot)
-      }
-    }
-    const originSet = originSlotIndex.value
+    if (topology.targetNodeId === UNASSIGNED_NODE_ID) return
+    const targets = targetSlotIndex.value
       .get(graphId)
-      ?.get(topology.originNodeId)
-      ?.get(topology.originSlot)
-    originSet?.delete(topology.id)
+      ?.get(topology.targetNodeId)
+    if (targets?.get(topology.targetSlot) === topology.id) {
+      targets.delete(topology.targetSlot)
+    }
   }
 
+  /**
+   * Registers a link's topology and (re)asserts its target-slot index. On an id
+   * collision with a different object the newest object wins, so the store never
+   * diverges from the graph's link map; re-registering the same object re-claims
+   * the slot index (used to restore the survivor after duplicate purging).
+   */
   function registerLink(graphId: UUID, topology: LinkTopology): LinkTopology {
     const links = getGraphLinks(graphId)
     const existing = links.get(topology.id)
-    if (existing) return existing
+    if (existing && existing !== topology) unindexLink(graphId, existing)
     links.set(topology.id, topology)
     indexLink(graphId, topology)
     return topology
@@ -160,35 +130,9 @@ export const useLinkStore = defineStore('link', () => {
     return linkId === undefined ? undefined : getLink(graphId, linkId)
   }
 
-  function getOutputSlotLinks(
-    graphId: UUID,
-    nodeId: NodeId,
-    slot: number
-  ): LinkTopology[] {
-    const ids = nodeOriginSlots(graphId, nodeId).get(slot)
-    if (!ids) return []
-    return [...ids].flatMap((id) => {
-      const topology = getLink(graphId, id)
-      return topology ? [topology] : []
-    })
-  }
-
-  function getNodeLinks(graphId: UUID, nodeId: NodeId): LinkTopology[] {
-    const ids = new Set<LinkId>()
-    for (const id of nodeTargetSlots(graphId, nodeId).values()) ids.add(id)
-    for (const set of nodeOriginSlots(graphId, nodeId).values()) {
-      for (const id of set) ids.add(id)
-    }
-    return [...ids].flatMap((id) => {
-      const topology = getLink(graphId, id)
-      return topology ? [topology] : []
-    })
-  }
-
   function clearGraph(graphId: UUID): void {
     graphLinks.value.delete(graphId)
     targetSlotIndex.value.delete(graphId)
-    originSlotIndex.value.delete(graphId)
   }
 
   return {
@@ -198,8 +142,6 @@ export const useLinkStore = defineStore('link', () => {
     deleteLink,
     isInputSlotConnected,
     getInputSlotLink,
-    getOutputSlotLinks,
-    getNodeLinks,
     clearGraph
   }
 })

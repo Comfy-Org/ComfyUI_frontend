@@ -123,6 +123,14 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set id(value: LinkId) {
+    if (this._graphId !== undefined && value !== this._state.id) {
+      // Re-key in the store so its map key and slot indices track the new id.
+      const store = useLinkStore()
+      store.deleteLink(this._graphId, this._state.id)
+      this._state.id = value
+      store.registerLink(this._graphId, this._state)
+      return
+    }
     this._state.id = value
   }
 

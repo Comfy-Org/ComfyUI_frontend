@@ -10,7 +10,6 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
-import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -175,8 +174,6 @@ export interface CreateNodeOperation extends NodeOpBase {
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
   previousLayout: NodeLayout
-  /** Root graph the node belonged to, used to look up its connected links. */
-  graphId: UUID
 }
 
 /**

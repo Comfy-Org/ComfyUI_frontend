@@ -18,6 +18,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
@@ -923,6 +924,27 @@ describe('_removeDuplicateLinks', () => {
     expect(target.inputs[0].link).toBe(keptLinkId)
     expect(graph._links.has(keptLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
+  })
+
+  it('drops purged duplicates from the link store', () => {
+    const { graph, source, target } = createConnectedGraph()
+    const keptLinkId = target.inputs[0].link!
+
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
+    const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
+    graph._addLink(dup)
+    source.outputs[0].links!.push(dup.id)
+
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    expect(store.getLink(graphId, dup.id)).toBeDefined()
+
+    graph._removeDuplicateLinks()
+
+    expect(store.getLink(graphId, dup.id)).toBeUndefined()
+    expect(store.getLink(graphId, keptLinkId)).toBeDefined()
+    expect(store.isInputSlotConnected(graphId, target.id, 0)).toBe(true)
   })
 
   it('keeps the valid link when input.link is at a shifted slot index', () => {

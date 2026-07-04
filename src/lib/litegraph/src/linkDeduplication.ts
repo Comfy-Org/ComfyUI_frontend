@@ -1,5 +1,5 @@
+import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
-import type { SerializedNodeId } from '@/types/nodeId'
 import type { LLink, LinkId } from './LLink'
 
 /** Generates a unique string key for a link's connection tuple. */
@@ -39,20 +39,23 @@ export function selectSurvivorLink(
   return ids[0]
 }
 
-/** Removes duplicate links from origin outputs and the graph's link map. */
+/**
+ * Removes duplicate links from origin outputs and the graph, routing the map
+ * removal through {@link LGraph._removeLink} so the link and layout stores stay
+ * in sync.
+ */
 export function purgeOrphanedLinks(
   ids: LinkId[],
   keepId: LinkId,
-  links: Map<LinkId, LLink>,
-  getNodeById: (id: SerializedNodeId) => LGraphNode | null
+  graph: LGraph
 ): void {
   for (const id of ids) {
     if (id === keepId) continue
 
-    const link = links.get(id)
+    const link = graph._links.get(id)
     if (!link) continue
 
-    const originNode = getNodeById(link.origin_id)
+    const originNode = graph.getNodeById(link.origin_id)
     const output = originNode?.outputs?.[link.origin_slot]
     if (output?.links) {
       for (let i = output.links.length - 1; i >= 0; i--) {
@@ -60,8 +63,13 @@ export function purgeOrphanedLinks(
       }
     }
 
-    links.delete(id)
+    graph._removeLink(id)
   }
+
+  // Removing a duplicate that shared the survivor's target slot clears that
+  // slot from the link store's index, so re-assert the survivor afterwards.
+  const survivor = graph._links.get(keepId)
+  if (survivor) graph._addLink(survivor)
 }
 
 /** Ensures input.link on the target node points to the surviving link. */

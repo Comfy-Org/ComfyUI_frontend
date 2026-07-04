@@ -8,6 +8,7 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -1456,6 +1457,7 @@ export class LGraph
   removeFloatingLink(link: LLink): void {
     this.floatingLinksInternal.delete(link.id)
     useLinkStore().deleteLink(this.rootGraph.id, link.id)
+    link._graphId = undefined
 
     const slot =
       link.target_id !== UNASSIGNED_NODE_ID
@@ -1474,6 +1476,29 @@ export class LGraph
 
       if (reroute.totalLinks === 0) this.removeReroute(reroute.id)
     }
+  }
+
+  /**
+   * Adds a link to this graph's {@link _links} map and registers its topology
+   * with the link store. The single entry point for populating {@link _links};
+   * routing every add through here keeps the store from silently desyncing.
+   */
+  _addLink(link: LLink): void {
+    this._links.set(link.id, link)
+    registerLinkTopology(this, link)
+  }
+
+  /**
+   * Removes a link from this graph's {@link _links} map, the link store, and
+   * the layout store, and detaches it from the store. The single entry point
+   * for removing from {@link _links}.
+   */
+  _removeLink(linkId: LinkId): void {
+    const link = this._links.get(linkId)
+    this._links.delete(linkId)
+    if (link) link._graphId = undefined
+    useLinkStore().deleteLink(this.rootGraph.id, linkId)
+    layoutStore.deleteLinkLayout(linkId)
   }
 
   /**
@@ -1678,9 +1703,7 @@ export class LGraph
       const node = this.getNodeById(sampleLink.target_id)
       const keepId = selectSurvivorLink(ids, node)
 
-      purgeOrphanedLinks(ids, keepId, this._links, (id) =>
-        this.getNodeById(toNodeId(id))
-      )
+      purgeOrphanedLinks(ids, keepId, this)
       repairInputLinks(ids, keepId, node)
     }
   }
@@ -1919,7 +1942,7 @@ export class LGraph
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
           link.origin_id = subgraphNode.id
           link.origin_slot = i - 1
-          this.links.set(link.id, link)
+          this._addLink(link)
           if (subgraphOutput instanceof SubgraphOutput) {
             subgraphOutput.connect(
               subgraphNode.findOutputSlotByType(link.type, true, true),
@@ -2506,8 +2529,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            this._links.set(link.id, link)
-            registerLinkTopology(this, link)
+            this._addLink(link)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2548,8 +2570,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            this._links.set(link.id, link)
-            registerLinkTopology(this, link)
+            this._addLink(link)
           }
         }
 

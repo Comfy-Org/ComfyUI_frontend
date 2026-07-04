@@ -10,7 +10,6 @@ import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { useLinkStore } from '@/stores/linkStore'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -1073,14 +1072,8 @@ class LayoutStoreImpl implements LayoutStore {
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
     // Remove from spatial index
     this.spatialIndex.remove(nodeId)
-    // Clean up geometry for links still connected to this node in the topology store
-    const connectedLinks = useLinkStore().getNodeLinks(
-      operation.graphId,
-      nodeId
-    )
-    for (const { id: linkId } of connectedLinks) {
-      this.deleteLinkLayout(linkId)
-    }
+    // Link geometry is cleaned up per-link by LLink.disconnect / LGraph._removeLink
+    // as the node's connections are severed, so nothing to do here.
 
     change.type = 'delete'
     change.nodeIds.push(nodeId)

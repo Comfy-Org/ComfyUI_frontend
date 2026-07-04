@@ -31,7 +31,7 @@ import { BadgePosition, LGraphBadge } from './LGraphBadge'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
-import { LLink, registerLinkTopology } from './LLink'
+import { LLink } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
@@ -2969,8 +2969,7 @@ export class LGraphNode
     )
 
     // add to graph links list
-    graph._links.set(link.id, link)
-    registerLinkTopology(graph, link)
+    graph._addLink(link)
 
     // connect in output
     output.links ??= []

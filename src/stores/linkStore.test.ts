@@ -48,27 +48,6 @@ describe('useLinkStore', () => {
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
   })
 
-  it('tracks output-slot fan-out', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 0))
-    store.registerLink(graphA, link(2, 5, 0, 10, 0))
-    expect(
-      store.getOutputSlotLinks(graphA, toNodeId(5), 0).map((l) => l.id)
-    ).toEqual([toLinkId(1), toLinkId(2)])
-  })
-
-  it('returns all links touching a node from both ends', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 0)) // 9 as target
-    store.registerLink(graphA, link(2, 9, 1, 10, 0)) // 9 as origin
-    expect(
-      store
-        .getNodeLinks(graphA, toNodeId(9))
-        .map((l) => l.id)
-        .sort((a, b) => a - b)
-    ).toEqual([toLinkId(1), toLinkId(2)])
-  })
-
   it('reindexes on endpoint move', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
@@ -77,13 +56,21 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 4)).toBe(true)
   })
 
-  it('deletes a link from data and both indices', () => {
+  it('deletes a link from data and the target-slot index', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
     expect(store.deleteLink(graphA, toLinkId(1))).toBe(true)
     expect(store.getLink(graphA, toLinkId(1))).toBeUndefined()
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
-    expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0)).toEqual([])
+  })
+
+  it('lets the newest topology win an id collision without desyncing the index', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    store.registerLink(graphA, link(1, 5, 0, 9, 4))
+    expect(store.getLink(graphA, toLinkId(1))?.targetSlot).toBe(4)
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
   })
 
   it('scopes by graph and does not clear on tab switch', () => {
