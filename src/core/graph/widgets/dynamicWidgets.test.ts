@@ -1,6 +1,8 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, test } from 'vitest'
+
+import type { DynamicGroupNode } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -50,11 +52,22 @@ function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
 function addDynamicGroup(
   node: LGraphNode,
   template: object,
-  { min, max, name = 'g' }: { min?: number; max?: number; name?: string } = {}
+  {
+    min,
+    max,
+    name = 'g',
+    group_name
+  }: {
+    min?: number
+    max?: number
+    name?: string
+    group_name?: string
+  } = {}
 ) {
   const options: Record<string, unknown> = { template }
   if (min !== undefined) options.min = min
   if (max !== undefined) options.max = max
+  if (group_name !== undefined) options.group_name = group_name
   addNodeInput(
     node,
     transformInputSpecV1ToV2(['COMFY_DYNAMICGROUP_V3', options] as InputSpec, {
@@ -416,5 +429,60 @@ describe('Dynamic Groups', () => {
     // Row 0 is at the min boundary — removing it is a no-op.
     state.removeRow(0)
     expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
+  })
+
+  test('controller value setter rebuilds rows within min and max', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 1, max: 4 })
+    const controller = widgetNamed(node, 'g')
+
+    controller.value = 3
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a', 'g.2.a'])
+    expect(controller.value).toBe(3)
+
+    controller.value = 99
+    expect(widgetNames(node)).toStrictEqual([
+      'g',
+      'g.0.a',
+      'g.1.a',
+      'g.2.a',
+      'g.3.a'
+    ])
+    expect(controller.value).toBe(4)
+
+    controller.value = 0
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
+    expect(controller.value).toBe(1)
+  })
+
+  test('stores group_name on dynamic group state', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, {
+      min: 1,
+      max: 3,
+      name: 'loras',
+      group_name: 'Lora'
+    })
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup.loras
+
+    expect(state.groupName).toBe('Lora')
+  })
+
+  test('remove row renames linked input widget metadata', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+
+    const row2Input = node.addInput('g.2.a', 'STRING')
+    row2Input.widget = { name: 'g.2.a' }
+
+    state.removeRow(1)
+
+    expect(row2Input.name).toBe('g.1.a')
+    expect(row2Input.widget?.name).toBe('g.1.a')
   })
 })

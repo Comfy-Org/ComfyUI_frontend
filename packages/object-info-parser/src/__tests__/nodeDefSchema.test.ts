@@ -89,4 +89,21 @@ describe('zDynamicGroupInputSpec', () => {
       ]).success
     ).toBe(true)
   })
+
+  it('applies default min and max', () => {
+    const parsed = zDynamicGroupInputSpec.parse([
+      'COMFY_DYNAMICGROUP_V3',
+      { template }
+    ])
+    expect(parsed[1].min).toBe(0)
+    expect(parsed[1].max).toBe(50)
+  })
+
+  it('accepts an optional group_name', () => {
+    const parsed = zDynamicGroupInputSpec.parse([
+      'COMFY_DYNAMICGROUP_V3',
+      { template, group_name: 'Lora' }
+    ])
+    expect(parsed[1].group_name).toBe('Lora')
+  })
 })
