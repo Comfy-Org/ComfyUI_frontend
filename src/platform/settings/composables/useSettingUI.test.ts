@@ -10,6 +10,7 @@ import {
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingParams } from '@/platform/settings/types'
 
 import { useSettingUI } from './useSettingUI'
 
@@ -82,17 +83,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
   getSettingInfo: vi.fn()
 }))
 
-interface MockSettingParams {
-  id: string
-  name: string
-  type: string
-  defaultValue: unknown
-  category?: string[]
-  hideInVueNodes?: boolean
-}
+type SettingFixture = Omit<SettingParams, 'id'> & { id: string }
 
 describe('useSettingUI', () => {
-  const mockSettings: Record<string, MockSettingParams> = {
+  const mockSettings: Record<string, SettingFixture> = {
     'Comfy.Locale': {
       id: 'Comfy.Locale',
       name: 'Locale',
@@ -112,7 +106,7 @@ describe('useSettingUI', () => {
       defaultValue: 'dark'
     }
   }
-  let settingsById: Record<string, MockSettingParams>
+  let settingsById: Record<string, SettingFixture>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia())
