@@ -437,10 +437,7 @@ test.describe('FE-910 marquee selection and select all', () => {
     await expect(tab.selectedCards).toHaveCount(0)
     await expect
       .poll(() =>
-        tab.searchInput.evaluate((el) => {
-          if (!(el instanceof HTMLInputElement)) {
-            throw new Error('expected the asset search input')
-          }
+        tab.searchInput.evaluate((el: HTMLInputElement) => {
           return { start: el.selectionStart, end: el.selectionEnd }
         })
       )

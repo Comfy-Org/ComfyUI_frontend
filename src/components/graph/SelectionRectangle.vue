@@ -23,15 +23,11 @@ const selectionRect = ref<{
   w: number
   h: number
 } | null>(null)
-const panelBounds = ref<RectEdges | null>(null)
+const panelBounds = ref<RectEdges>()
 
 useRafFn(() => {
   const canvas = canvasStore.canvas
-  if (!canvas) {
-    selectionRect.value = null
-    panelBounds.value = null
-    return
-  }
+  if (!canvas) return
 
   const { pointer, dragging_rectangle } = canvas
 
@@ -47,16 +43,16 @@ useRafFn(() => {
     selectionRect.value = { x, y, w, h }
   } else {
     selectionRect.value = null
-    panelBounds.value = null
+    panelBounds.value = undefined
   }
 })
 
 const isVisible = computed(() => selectionRect.value !== null)
 
-function getCanvasPanelBounds(): RectEdges | null {
+function getCanvasPanelBounds(): RectEdges | undefined {
   const panelEl = document.querySelector('.graph-canvas-panel')
   const canvasEl = document.getElementById('graph-canvas')
-  if (!panelEl || !canvasEl) return null
+  if (!panelEl || !canvasEl) return undefined
 
   const panel = panelEl.getBoundingClientRect()
   const canvas = canvasEl.getBoundingClientRect()

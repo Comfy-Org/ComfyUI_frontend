@@ -104,9 +104,9 @@
         <div v-else class="size-full">
           <AssetsSidebarGridView
             :assets="displayAssets"
-            :is-selected="isSelected"
-            :show-output-count="shouldShowOutputCount"
-            :get-output-count="getOutputCount"
+            :is-selected
+            :show-output-count
+            :get-output-count
             @select-asset="handleAssetSelect"
             @context-menu="handleAssetContextMenu"
             @approach-end="handleApproachEnd"
@@ -251,7 +251,7 @@ const contextMenuFileKind = computed<MediaKind>(() =>
   getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
-const shouldShowOutputCount = (item: AssetItem): boolean => {
+const showOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
     return false
   }

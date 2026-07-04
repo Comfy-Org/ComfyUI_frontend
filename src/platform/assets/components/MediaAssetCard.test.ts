@@ -1,5 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -35,7 +36,7 @@ const asset: AssetItem = {
 }
 
 function renderCard() {
-  setActivePinia(createPinia())
+  setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
