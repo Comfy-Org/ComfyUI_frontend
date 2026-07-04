@@ -279,7 +279,6 @@ describe('fixBadLinks', () => {
     const links = new Map([[linkId, link]])
     const graph = fromAny<LGraph, unknown>({
       links,
-      _removeLink: vi.fn((id) => links.delete(id)),
       getNodeById: vi.fn((nodeId) =>
         nodeId === originNode.id ? originNode : null
       )

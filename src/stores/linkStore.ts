@@ -68,15 +68,15 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   /**
-   * Registers a link's topology and (re)asserts its target-slot index. On an id
-   * collision with a different object the newest object wins, so the store never
-   * diverges from the graph's link map; re-registering the same object re-claims
-   * the slot index (used to restore the survivor after duplicate purging).
+   * Registers a link's topology, keyed by link id within the graph bucket. The
+   * first registration for an id wins: subgraph link ids are not unique across
+   * the sibling subgraphs that share a root bucket, so re-registration must not
+   * clobber the entry already indexed for that id.
    */
   function registerLink(graphId: UUID, topology: LinkTopology): LinkTopology {
     const links = getGraphLinks(graphId)
     const existing = links.get(topology.id)
-    if (existing && existing !== topology) unindexLink(graphId, existing)
+    if (existing) return existing
     links.set(topology.id, topology)
     indexLink(graphId, topology)
     return topology

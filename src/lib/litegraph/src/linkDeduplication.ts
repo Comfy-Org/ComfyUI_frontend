@@ -39,11 +39,7 @@ export function selectSurvivorLink(
   return ids[0]
 }
 
-/**
- * Removes duplicate links from origin outputs and the graph, routing the map
- * removal through {@link LGraph._removeLink} so the link and layout stores stay
- * in sync.
- */
+/** Removes duplicate links from origin outputs and the graph's link map. */
 export function purgeOrphanedLinks(
   ids: LinkId[],
   keepId: LinkId,
@@ -63,13 +59,8 @@ export function purgeOrphanedLinks(
       }
     }
 
-    graph._removeLink(id)
+    graph._links.delete(id)
   }
-
-  // Removing a duplicate that shared the survivor's target slot clears that
-  // slot from the link store's index, so re-assert the survivor afterwards.
-  const survivor = graph._links.get(keepId)
-  if (survivor) graph._addLink(survivor)
 }
 
 /** Ensures input.link on the target node points to the surviving link. */

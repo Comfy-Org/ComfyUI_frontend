@@ -64,13 +64,13 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
   })
 
-  it('lets the newest topology win an id collision without desyncing the index', () => {
+  it('keeps the first registration for a colliding id (subgraph ids are not unique)', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    store.registerLink(graphA, link(1, 5, 0, 9, 4))
-    expect(store.getLink(graphA, toLinkId(1))?.targetSlot).toBe(4)
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
+    store.registerLink(graphA, link(1, 7, 0, 8, 3))
+    expect(store.getLink(graphA, toLinkId(1))?.targetSlot).toBe(2)
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
+    expect(store.isInputSlotConnected(graphA, toNodeId(8), 3)).toBe(false)
   })
 
   it('scopes by graph and does not clear on tab switch', () => {

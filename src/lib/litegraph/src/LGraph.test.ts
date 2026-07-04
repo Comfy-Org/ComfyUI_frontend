@@ -926,23 +926,16 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.has(dupLink.id)).toBe(false)
   })
 
-  it('drops purged duplicates from the link store', () => {
+  it('keeps the survivor connected in the link store after purging duplicates', () => {
     const { graph, source, target } = createConnectedGraph()
     const keptLinkId = target.inputs[0].link!
 
-    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
-    graph.state.lastLinkId = linkId
-    const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
-    graph._addLink(dup)
-    source.outputs[0].links!.push(dup.id)
-
-    const store = useLinkStore()
-    const graphId = graph.rootGraph.id
-    expect(store.getLink(graphId, dup.id)).toBeDefined()
+    injectDuplicateLink(graph, source, target)
 
     graph._removeDuplicateLinks()
 
-    expect(store.getLink(graphId, dup.id)).toBeUndefined()
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
     expect(store.getLink(graphId, keptLinkId)).toBeDefined()
     expect(store.isInputSlotConnected(graphId, target.id, 0)).toBe(true)
   })

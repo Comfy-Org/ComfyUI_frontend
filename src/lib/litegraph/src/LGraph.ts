@@ -8,7 +8,6 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -1486,19 +1485,6 @@ export class LGraph
   _addLink(link: LLink): void {
     this._links.set(link.id, link)
     registerLinkTopology(this, link)
-  }
-
-  /**
-   * Removes a link from this graph's {@link _links} map, the link store, and
-   * the layout store, and detaches it from the store. The single entry point
-   * for removing from {@link _links}.
-   */
-  _removeLink(linkId: LinkId): void {
-    const link = this._links.get(linkId)
-    this._links.delete(linkId)
-    if (link) link._graphId = undefined
-    useLinkStore().deleteLink(this.rootGraph.id, linkId)
-    layoutStore.deleteLinkLayout(linkId)
   }
 
   /**

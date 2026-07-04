@@ -1072,8 +1072,8 @@ class LayoutStoreImpl implements LayoutStore {
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
     // Remove from spatial index
     this.spatialIndex.remove(nodeId)
-    // Link geometry is cleaned up per-link by LLink.disconnect / LGraph._removeLink
-    // as the node's connections are severed, so nothing to do here.
+    // Link geometry is cleaned up per-link by LLink.disconnect as the node's
+    // connections are severed, so nothing to do here.
 
     change.type = 'delete'
     change.nodeIds.push(nodeId)
