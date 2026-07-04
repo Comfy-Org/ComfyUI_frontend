@@ -608,3 +608,16 @@ export function unregisterLinkTopology(link: LLink): void {
   useLinkStore().deleteLink(link._graphId, link.id)
   link._graphId = undefined
 }
+
+/**
+ * Unregisters every link and floating link a graph owns. Used when a graph's
+ * links leave the store without a whole-bucket wipe: subgraph-definition
+ * removal, and clearing a graph that shares its bucket with other graphs.
+ * @param graph The graph whose links should be unregistered
+ */
+export function unregisterAllLinkTopologies(
+  graph: Pick<LGraph, 'links' | 'floatingLinks'>
+): void {
+  for (const link of graph.links.values()) unregisterLinkTopology(link)
+  for (const link of graph.floatingLinks.values()) unregisterLinkTopology(link)
+}

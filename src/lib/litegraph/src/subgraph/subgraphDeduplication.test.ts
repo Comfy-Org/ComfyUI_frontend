@@ -14,7 +14,7 @@ import type {
 } from '../types/serialisation'
 
 import {
-  deduplicateSubgraphLinkIds,
+  deduplicateSubgraphIds,
   topologicalSortSubgraphs
 } from './subgraphDeduplication'
 
@@ -109,7 +109,7 @@ function link(id: number, target: number): SerialisableLLink {
   }
 }
 
-describe('deduplicateSubgraphLinkIds', () => {
+describe('deduplicateSubgraphIds (link ids)', () => {
   it('remaps colliding link ids and patches every reference', () => {
     const a = makeSubgraph('a')
     a.links = [link(1, 8)]
@@ -135,17 +135,23 @@ describe('deduplicateSubgraphLinkIds', () => {
     b.links = [link(1, 9)]
 
     // A root link already uses id 1, so both subgraph copies must be remapped.
-    deduplicateSubgraphLinkIds([a, b], new Set([1]), makeState())
+    const { subgraphs } = deduplicateSubgraphIds(
+      [a, b],
+      new Set(),
+      new Set([1]),
+      makeState()
+    )
+    const [clonedA, clonedB] = subgraphs
 
-    const allIds = [1, a.links[0].id, b.links[0].id]
+    const allIds = [1, clonedA.links![0].id, clonedB.links![0].id]
     expect(new Set(allIds).size).toBe(allIds.length)
 
-    const aId = a.links[0].id
+    const aId = clonedA.links![0].id
     expect(aId).not.toBe(1)
-    expect(a.nodes![0].inputs![0].link).toBe(aId)
-    expect(a.nodes![0].outputs![0].links).toEqual([aId])
-    expect(a.inputs![0].linkIds).toEqual([aId])
-    expect(a.reroutes![0].linkIds).toEqual([aId])
+    expect(clonedA.nodes![0].inputs![0].link).toBe(aId)
+    expect(clonedA.nodes![0].outputs![0].links).toEqual([aId])
+    expect(clonedA.inputs![0].linkIds).toEqual([aId])
+    expect(clonedA.reroutes![0].linkIds).toEqual([aId])
   })
 
   it('remaps floating-link ids within the same id space as regular links', () => {
@@ -153,9 +159,15 @@ describe('deduplicateSubgraphLinkIds', () => {
     a.links = [link(1, 8)]
     a.floatingLinks = [link(1, 9)]
 
-    deduplicateSubgraphLinkIds([a], new Set([1]), makeState())
+    const { subgraphs } = deduplicateSubgraphIds(
+      [a],
+      new Set(),
+      new Set([1]),
+      makeState()
+    )
+    const [clonedA] = subgraphs
 
-    const allIds = [1, a.links[0].id, a.floatingLinks[0].id]
+    const allIds = [1, clonedA.links![0].id, clonedA.floatingLinks![0].id]
     expect(new Set(allIds).size).toBe(allIds.length)
   })
 
@@ -163,8 +175,13 @@ describe('deduplicateSubgraphLinkIds', () => {
     const a = makeSubgraph('a')
     a.links = [link(5, 8)]
 
-    deduplicateSubgraphLinkIds([a], new Set([1, 2]), makeState())
+    const { subgraphs } = deduplicateSubgraphIds(
+      [a],
+      new Set(),
+      new Set([1, 2]),
+      makeState()
+    )
 
-    expect(a.links[0].id).toBe(5)
+    expect(subgraphs[0].links![0].id).toBe(5)
   })
 })

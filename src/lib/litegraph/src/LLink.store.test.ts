@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
 import { registerLinkTopology } from './LLink'
 import {
@@ -139,6 +141,32 @@ describe('LLink ↔ linkStore integration', () => {
 
     const store = useLinkStore()
     expect(store.getLink(graphId, link.id)).toBeUndefined()
+  })
+
+  it('detaches a floating link from the store when it is removed', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    a.addOutput('out', '*')
+    graph.add(a)
+
+    const floating = new LLink(
+      toLinkId(7),
+      '*',
+      a.id,
+      0,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    graph.addFloatingLink(floating)
+    const graphId = graph.rootGraph.id
+    const store = useLinkStore()
+    expect(store.getLink(graphId, floating.id)).toBeDefined()
+
+    graph.removeFloatingLink(floating)
+
+    expect(store.getLink(graphId, floating.id)).toBeUndefined()
+    floating.origin_slot = 5
+    expect(floating.origin_slot).toBe(5)
   })
 
   it('moving a link via target_slot reindexes the store', () => {

@@ -31,7 +31,12 @@ import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import { LLink, registerLinkTopology, unregisterLinkTopology } from './LLink'
+import {
+  LLink,
+  registerLinkTopology,
+  unregisterAllLinkTopologies,
+  unregisterLinkTopology
+} from './LLink'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
@@ -94,8 +99,7 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
-  deduplicateSubgraphLinkIds,
-  deduplicateSubgraphNodeIds,
+  deduplicateSubgraphIds,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
 
@@ -403,10 +407,7 @@ export class LGraph
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each link individually.
-      for (const link of this._links.values()) unregisterLinkTopology(link)
-      for (const link of this.floatingLinksInternal.values()) {
-        unregisterLinkTopology(link)
-      }
+      unregisterAllLinkTopologies(this)
     }
 
     this.id = zeroUuid
@@ -1130,12 +1131,7 @@ export class LGraph
 
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, fireNodeRemovalLifecycle)
-        for (const link of node.subgraph._links.values()) {
-          unregisterLinkTopology(link)
-        }
-        for (const link of node.subgraph.floatingLinks.values()) {
-          unregisterLinkTopology(link)
-        }
+        unregisterAllLinkTopologies(node.subgraph)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1470,7 +1466,7 @@ export class LGraph
 
   removeFloatingLink(link: LLink): void {
     this.floatingLinksInternal.delete(link.id)
-    useLinkStore().deleteLink(this.rootGraph.id, link.id)
+    unregisterLinkTopology(link)
 
     const slot =
       link.target_id !== UNASSIGNED_NODE_ID
@@ -2608,9 +2604,9 @@ export class LGraph
         this[i] = data[i]
       }
 
-      // Subgraph definitions — deduplicate node IDs before configuring.
-      // deduplicateSubgraphNodeIds clones internally to avoid mutating
-      // the caller's data (e.g. reactive Pinia state).
+      // Subgraph definitions — deduplicate node and link IDs before
+      // configuring. deduplicateSubgraphIds clones internally to avoid
+      // mutating the caller's data (e.g. reactive Pinia state).
       const subgraphs = data.definitions?.subgraphs
       let effectiveNodesData = nodesData
       if (subgraphs) {
@@ -2629,28 +2625,22 @@ export class LGraph
           if (typeof n.id === 'number') reservedNodeIds.add(n.id)
         }
 
+        const reservedLinkIds = new Set<number>()
+        for (const link of this._links.values())
+          reservedLinkIds.add(Number(link.id))
+        for (const sg of this.subgraphs.values())
+          for (const link of sg._links.values())
+            reservedLinkIds.add(Number(link.id))
+
         const deduplicated = this.isRootGraph
-          ? deduplicateSubgraphNodeIds(
+          ? deduplicateSubgraphIds(
               subgraphs,
               reservedNodeIds,
+              reservedLinkIds,
               this.state,
               nodesData
             )
           : undefined
-
-        if (deduplicated) {
-          const reservedLinkIds = new Set<number>()
-          for (const link of this._links.values())
-            reservedLinkIds.add(Number(link.id))
-          for (const sg of this.subgraphs.values())
-            for (const link of sg._links.values())
-              reservedLinkIds.add(Number(link.id))
-          deduplicateSubgraphLinkIds(
-            deduplicated.subgraphs,
-            reservedLinkIds,
-            this.state
-          )
-        }
 
         const finalSubgraphs = deduplicated?.subgraphs ?? subgraphs
         effectiveNodesData = deduplicated?.rootNodes ?? nodesData

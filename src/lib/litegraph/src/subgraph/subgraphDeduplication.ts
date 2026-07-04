@@ -17,12 +17,37 @@ interface DeduplicationResult {
 }
 
 /**
+ * Dedupes node and link IDs across serialized subgraph definitions so every
+ * node and link in a root graph has a unique id. Subgraph definitions each
+ * number their entities from scratch, but the widget store keys node widgets
+ * and the link store keys links in one root-scoped bucket, so colliding ids
+ * would clobber each other's entries. Returns deep clones; inputs are not
+ * mutated. `state.lastNodeId` and `state.lastLinkId` are advanced.
+ */
+export function deduplicateSubgraphIds(
+  subgraphs: ExportedSubgraph[],
+  reservedNodeIds: Set<number>,
+  reservedLinkIds: Set<number>,
+  state: LGraphState,
+  rootNodes?: ISerialisedNode[]
+): DeduplicationResult {
+  const result = deduplicateSubgraphNodeIds(
+    subgraphs,
+    reservedNodeIds,
+    state,
+    rootNodes
+  )
+  deduplicateSubgraphLinkIds(result.subgraphs, reservedLinkIds, state)
+  return result
+}
+
+/**
  * Dedupes node IDs across serialized subgraph definitions to prevent widget
  * store key collisions, and patches any root-level legacy proxyWidgets that
  * reference the remapped inner IDs. Returns deep clones; inputs are not
  * mutated. `state.lastNodeId` is advanced.
  */
-export function deduplicateSubgraphNodeIds(
+function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
   reservedNodeIds: Set<number>,
   state: LGraphState,
@@ -63,14 +88,11 @@ export function deduplicateSubgraphNodeIds(
 }
 
 /**
- * Dedupes link IDs across serialized subgraph definitions so every link in a
- * root graph has a unique id. Subgraph definitions each number their links from
- * scratch, but the link store keys all of a root graph's links (its subgraphs'
- * included) in one bucket, so colliding ids would clobber each other's index
- * entries. Mutates the given subgraphs in place — pass the clones returned by
+ * Dedupes link IDs across serialized subgraph definitions. Mutates the given
+ * subgraphs in place — only ever called on the clones produced by
  * {@link deduplicateSubgraphNodeIds} — and advances `state.lastLinkId`.
  */
-export function deduplicateSubgraphLinkIds(
+function deduplicateSubgraphLinkIds(
   subgraphs: ExportedSubgraph[],
   reservedLinkIds: Set<number>,
   state: LGraphState
