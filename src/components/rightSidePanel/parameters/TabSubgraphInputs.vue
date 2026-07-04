@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  getWidgetName,
   isWidgetPromotedOnSubgraphNode,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
@@ -83,7 +82,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
     ({ node: interiorNode, widget }) =>
       !isWidgetPromotedOnSubgraphNode(node, {
         sourceNodeId: interiorNode.id,
-        sourceWidgetName: getWidgetName(widget)
+        sourceWidgetName: widget.name
       })
   )
 })

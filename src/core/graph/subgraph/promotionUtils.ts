@@ -30,10 +30,6 @@ type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 export type WidgetItem = [LGraphNode, IBaseWidget]
 export { CANVAS_IMAGE_PREVIEW_WIDGET }
 
-export function getWidgetName(w: IBaseWidget): string {
-  return w.name
-}
-
 function isLinkedPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: SerializedNodeId,
@@ -224,7 +220,7 @@ function toPromotionSource(
 ): PromotedWidgetSource {
   return {
     sourceNodeId: node.id,
-    sourceWidgetName: getWidgetName(widget)
+    sourceWidgetName: widget.name
   }
 }
 
@@ -245,7 +241,7 @@ export function promoteValueWidgetViaSubgraphInput(
   sourceNode: LGraphNode,
   sourceWidget: IBaseWidget
 ): CanonicalPromotionResult {
-  const sourceWidgetName = getWidgetName(sourceWidget)
+  const sourceWidgetName = sourceWidget.name
   if (isLinkedPromotion(subgraphNode, sourceNode.id, sourceWidgetName)) {
     return { ok: true }
   }
@@ -595,7 +591,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
       Sentry.addBreadcrumb({
         category: 'subgraph',
         level: 'warning',
-        message: `Failed to promote widget "${getWidgetName(w)}" on node ${n.id}: ${result.reason}`
+        message: `Failed to promote widget "${w.name}" on node ${n.id}: ${result.reason}`
       })
     }
   }
