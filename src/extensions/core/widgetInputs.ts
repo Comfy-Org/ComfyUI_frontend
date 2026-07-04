@@ -7,14 +7,12 @@ import type {
   LLink
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import {
   ComfyWidgets,
   addValueControlWidgets,
@@ -29,7 +27,7 @@ import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
-  controlValues?: TWidgetValue[]
+  controlValues?: WidgetValue[]
   lastType?: string
   static override category: string
   constructor(title: string) {

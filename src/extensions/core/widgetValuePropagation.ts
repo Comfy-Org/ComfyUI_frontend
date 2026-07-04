@@ -2,15 +2,15 @@ import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { app } from '@/scripts/app'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 type SourceNode = Pick<LGraphNode, 'graph' | 'outputs' | 'widgets'>
 
 export function applyFirstWidgetValueToGraph(
   node: SourceNode,
   extraLinks: LLink[] = [],
-  transformValue?: (value: TWidgetValue) => TWidgetValue
+  transformValue?: (value: WidgetValue) => WidgetValue
 ) {
   const output = node.outputs[0]
   if (!output?.links?.length || !node.graph) return

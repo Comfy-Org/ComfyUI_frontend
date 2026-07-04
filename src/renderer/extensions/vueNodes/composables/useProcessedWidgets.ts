@@ -241,7 +241,7 @@ function createWidgetUpdateHandler({
     widgetValueStore.setValue(id, newValue)
     if (live) {
       const normalized = normalizeWidgetValue(newValue)
-      live.widget.value = normalized ?? undefined
+      live.widget.value = normalized
       live.widget.callback?.(normalized, app.canvas, live.node)
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }

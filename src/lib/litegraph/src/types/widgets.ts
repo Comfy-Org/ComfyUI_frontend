@@ -2,6 +2,7 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 
 import type {
@@ -411,7 +412,7 @@ export function isWidgetValue(value: unknown): value is TWidgetValue {
  * @see IWidget
  */
 export interface IBaseWidget<
-  TValue = boolean | number | string | object | undefined,
+  TValue = WidgetValue,
   TType extends string = string,
   TOptions extends IWidgetOptions = IWidgetOptions
 > {

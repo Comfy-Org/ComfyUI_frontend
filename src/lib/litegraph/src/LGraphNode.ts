@@ -97,6 +97,7 @@ import type {
   TWidgetType,
   TWidgetValue
 } from './types/widgets'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { findFreeSlotOfType } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import { getWidgetIds } from './utils/widget'
@@ -1079,14 +1080,17 @@ export class LGraphNode
    * @param name
    * @param value
    */
-  setProperty(name: string, value: TWidgetValue): void {
+  setProperty(name: string, value: WidgetValue): void {
     this.properties ||= {}
-    if (value === this.properties[name]) return
+    // Node properties are persisted and cannot hold null/void, so normalize
+    // before comparing and storing.
+    const nextValue = value ?? undefined
+    if (nextValue === this.properties[name]) return
 
     const prev_value = this.properties[name]
-    this.properties[name] = value
+    this.properties[name] = nextValue
     // abort change
-    if (this.onPropertyChanged?.(name, value, prev_value) === false)
+    if (this.onPropertyChanged?.(name, nextValue, prev_value) === false)
       this.properties[name] = prev_value
 
     if (this.widgets) {

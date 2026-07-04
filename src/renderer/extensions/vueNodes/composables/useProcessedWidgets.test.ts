@@ -477,7 +477,7 @@ describe('live widget update handler', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('forwards null (not undefined) to the live widget callback', () => {
+  it('forwards null (not undefined) to both the live widget value and callback', () => {
     const callback = vi.fn()
     const id = widgetId(GRAPH_ID, toNodeId(1), 'test_widget')
     const liveWidget = createMockWidget({
@@ -500,6 +500,7 @@ describe('live widget update handler', () => {
 
     processed.updateHandler(null)
 
+    expect(liveWidget.value).toBeNull()
     expect(callback).toHaveBeenCalledTimes(1)
     expect(callback.mock.calls[0][0]).toBeNull()
   })
