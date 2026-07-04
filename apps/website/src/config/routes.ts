@@ -60,7 +60,7 @@ export const externalLinks = {
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
-  docsApi: 'https://docs.comfy.org/api-reference/cloud',
+  docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   docsMcp: 'https://docs.comfy.org/agent-tools/cloud',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
