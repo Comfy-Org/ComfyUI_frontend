@@ -17,7 +17,7 @@ test.describe(
   'Template distribution filtering count',
   { tag: '@cloud' },
   () => {
-    test.beforeEach(async ({ comfyPage, templateApi }) => {
+    test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
       await comfyPage.settings.setSetting(
         'Comfy.Templates.SelectedUseCases',
@@ -25,8 +25,6 @@ test.describe(
       )
       await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
       await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'default')
-
-      await templateApi.mockThumbnails()
     })
 
     test('displayed count matches visible cards when distribution filter excludes templates', async ({
@@ -56,7 +54,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -101,7 +99,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -143,7 +141,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -184,7 +182,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -222,7 +220,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
