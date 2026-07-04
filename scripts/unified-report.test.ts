@@ -29,13 +29,26 @@ describe('formatCoverageMetric', () => {
 })
 
 describe('renderCriticalCoverageReport', () => {
-  it('renders critical coverage rows from a summary', () => {
+  it('aggregates critical files only, ignoring total and non-critical paths', () => {
     expect(
       renderCriticalCoverageReport({
         total: {
-          statements: { covered: 8, total: 10, pct: 80 },
-          functions: { covered: 3, total: 4, pct: 75 },
-          lines: { covered: 9, total: 10, pct: 90 }
+          statements: { covered: 999, total: 1000, pct: 99.9 }
+        },
+        '/repo/src/utils/a.ts': {
+          statements: { covered: 5, total: 6, pct: 83.33 },
+          functions: { covered: 2, total: 2, pct: 100 },
+          lines: { covered: 6, total: 6, pct: 100 }
+        },
+        '/repo/src/stores/b.ts': {
+          statements: { covered: 3, total: 4, pct: 75 },
+          functions: { covered: 1, total: 2, pct: 50 },
+          lines: { covered: 3, total: 4, pct: 75 }
+        },
+        '/repo/src/views/NotCritical.vue': {
+          statements: { covered: 0, total: 50, pct: 0 },
+          functions: { covered: 0, total: 5, pct: 0 },
+          lines: { covered: 0, total: 50, pct: 0 }
         }
       })
     ).toBe(

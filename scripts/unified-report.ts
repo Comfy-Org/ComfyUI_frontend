@@ -2,6 +2,8 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
+import { CRITICAL_COVERAGE_DIRS } from './criticalCoverageDirs'
+
 const args: string[] = process.argv.slice(2)
 
 function getArg(name: string): string | undefined {
@@ -25,9 +27,19 @@ export type CoverageMetric = {
   covered: number
   pct: number
 }
-export type CoverageSummary = {
-  total?: Partial<Record<CoverageMetricName, CoverageMetric>>
-}
+// json-summary output: a 'total' entry plus one entry per covered file,
+// all sharing the same metric shape
+export type CoverageSummary = Record<
+  string,
+  Partial<Record<CoverageMetricName, CoverageMetric>> | undefined
+>
+
+const COVERAGE_METRIC_NAMES: CoverageMetricName[] = [
+  'statements',
+  'branches',
+  'functions',
+  'lines'
+]
 
 export function formatCoverageMetric(metric?: CoverageMetric): string {
   if (
@@ -42,11 +54,41 @@ export function formatCoverageMetric(metric?: CoverageMetric): string {
   return `${metric.covered}/${metric.total} | ${metric.pct.toFixed(2)}%`
 }
 
+function isCriticalFile(filePath: string): boolean {
+  const normalized = filePath.replaceAll('\\', '/')
+  return CRITICAL_COVERAGE_DIRS.some((dir) => normalized.includes(`/${dir}/`))
+}
+
+// The coverage run spans all of src (a single run, per #13423), so the
+// critical slice is aggregated here from the per-file entries rather than
+// read off summary.total.
+export function computeCriticalCoverageTotals(
+  summary: CoverageSummary
+): Partial<Record<CoverageMetricName, CoverageMetric>> {
+  const totals: Partial<Record<CoverageMetricName, CoverageMetric>> = {}
+  for (const [filePath, metrics] of Object.entries(summary)) {
+    if (filePath === 'total' || !metrics || !isCriticalFile(filePath)) continue
+    for (const name of COVERAGE_METRIC_NAMES) {
+      const metric = metrics[name]
+      if (!metric) continue
+      const acc = (totals[name] ??= { covered: 0, total: 0, pct: 0 })
+      acc.covered += metric.covered
+      acc.total += metric.total
+    }
+  }
+  for (const name of COVERAGE_METRIC_NAMES) {
+    const acc = totals[name]
+    if (acc) acc.pct = acc.total === 0 ? 100 : (acc.covered / acc.total) * 100
+  }
+  return totals
+}
+
 export function renderCriticalCoverageReport(
   summary: CoverageSummary = JSON.parse(
     readFileSync('temp/critical-coverage/coverage-summary.json', 'utf-8')
   ) as CoverageSummary
 ): string {
+  const totals = computeCriticalCoverageTotals(summary)
   const rows: Array<[string, CoverageMetricName]> = [
     ['Statements', 'statements'],
     ['Branches', 'branches'],
@@ -60,8 +102,7 @@ export function renderCriticalCoverageReport(
     '| Metric | Covered | Coverage |',
     '|---|---:|---:|',
     ...rows.map(([label, key]) => {
-      const metric = summary.total?.[key]
-      return `| ${label} | ${formatCoverageMetric(metric)} |`
+      return `| ${label} | ${formatCoverageMetric(totals[key])} |`
     })
   ].join('\n')
 }

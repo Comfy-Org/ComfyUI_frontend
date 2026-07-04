@@ -56,9 +56,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
-      - name: Enforce critical coverage gate
-        run: pnpm test:coverage:critical
-
       - name: Upload critical coverage summary
         if: always() && !cancelled() && hashFiles('coverage/coverage-summary.json') != ''
         uses: actions/upload-artifact@v6

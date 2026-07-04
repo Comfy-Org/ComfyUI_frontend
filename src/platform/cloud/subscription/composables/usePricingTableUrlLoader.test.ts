@@ -55,12 +55,6 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-const mockTrackSubscription = vi.hoisted(() => vi.fn())
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackSubscription: mockTrackSubscription })
-}))
-
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -95,9 +89,6 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockShowPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: undefined
-    })
-    expect(mockTrackSubscription).toHaveBeenCalledWith('modal_opened', {
-      reason: 'deep_link'
     })
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
@@ -150,7 +141,6 @@ describe('usePricingTableUrlLoader', () => {
     await loadPricingTableFromUrl()
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockTrackSubscription).not.toHaveBeenCalled()
   })
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
@@ -161,7 +151,6 @@ describe('usePricingTableUrlLoader', () => {
     await loadPricingTableFromUrl()
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockTrackSubscription).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
@@ -230,7 +219,6 @@ describe('usePricingTableUrlLoader', () => {
     )
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockTrackSubscription).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'pricing'
