@@ -93,6 +93,7 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  deduplicateSubgraphLinkIds,
   deduplicateSubgraphNodeIds,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -1456,7 +1457,6 @@ export class LGraph
   removeFloatingLink(link: LLink): void {
     this.floatingLinksInternal.delete(link.id)
     useLinkStore().deleteLink(this.rootGraph.id, link.id)
-    link._graphId = undefined
 
     const slot =
       link.target_id !== UNASSIGNED_NODE_ID
@@ -2609,6 +2609,20 @@ export class LGraph
               nodesData
             )
           : undefined
+
+        if (deduplicated) {
+          const reservedLinkIds = new Set<number>()
+          for (const link of this._links.values())
+            reservedLinkIds.add(Number(link.id))
+          for (const sg of this.subgraphs.values())
+            for (const link of sg._links.values())
+              reservedLinkIds.add(Number(link.id))
+          deduplicateSubgraphLinkIds(
+            deduplicated.subgraphs,
+            reservedLinkIds,
+            this.state
+          )
+        }
 
         const finalSubgraphs = deduplicated?.subgraphs ?? subgraphs
         effectiveNodesData = deduplicated?.rootNodes ?? nodesData
