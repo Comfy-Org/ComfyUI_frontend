@@ -351,17 +351,22 @@ vi.mock('@/stores/queueStore', () => ({
   useQueueUIStore: vi.fn(() => ({}))
 }))
 
-const mockGroupFns = vi.hoisted(() => ({
-  resizeTo: vi.fn(),
-  recomputeInsideNodes: vi.fn()
-}))
-
 const MockLGraphGroup = vi.hoisted(() =>
   vi.fn(function (this: Record<string, unknown>) {
-    this['resizeTo'] = mockGroupFns.resizeTo
-    this['recomputeInsideNodes'] = mockGroupFns.recomputeInsideNodes
+    this['resizeTo'] = vi.fn()
+    this['recomputeInsideNodes'] = vi.fn()
   })
 )
+
+function lastGroupInstance() {
+  const instances = MockLGraphGroup.mock.instances as {
+    resizeTo: ReturnType<typeof vi.fn>
+    recomputeInsideNodes: ReturnType<typeof vi.fn>
+  }[]
+  const instance = instances.at(-1)
+  if (!instance) throw new Error('No LGraphGroup was constructed')
+  return instance
+}
 vi.mock('@/lib/litegraph/src/litegraph', async () => {
   const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
   return {
@@ -1218,7 +1223,7 @@ describe('useCoreCommands', () => {
 
       await findCommand('Comfy.Graph.GroupSelectedNodes').function()
 
-      expect(mockGroupFns.resizeTo).toHaveBeenCalled()
+      expect(lastGroupInstance().resizeTo).toHaveBeenCalled()
       expect(app.canvas.graph!.add).toHaveBeenCalled()
     })
   })
@@ -1236,8 +1241,8 @@ describe('useCoreCommands', () => {
 
       await findCommand('Comfy.Graph.FitGroupToContents').function()
 
-      expect(mockGroupFns.recomputeInsideNodes).toHaveBeenCalled()
-      expect(mockGroupFns.resizeTo).toHaveBeenCalled()
+      expect(group.recomputeInsideNodes).toHaveBeenCalled()
+      expect(group.resizeTo).toHaveBeenCalled()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
     })
   })

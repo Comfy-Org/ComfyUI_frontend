@@ -65,12 +65,14 @@ vi.mock('@/stores/assetsStore', () => ({
 }))
 
 function createMockNode(): LGraphNode {
-  return Object.assign({} as LGraphNode, {
+  const node = fromPartial<LGraphNode>({
     isUploading: false,
-    imgs: [new Image()],
     graph: { setDirtyCanvas: vi.fn() },
-    size: [300, 400]
+    size: [300, 400],
+    constructor: {}
   })
+  node.imgs = [new Image()]
+  return node
 }
 
 function createFile(name = 'test.png', type = 'image/png'): File {
