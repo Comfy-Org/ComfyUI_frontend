@@ -162,5 +162,17 @@ export const educationFaqs: readonly EducationFaq[] = [
       'zh-CN':
         '我们可以提供一页式摘要，包含定价、条款和安全详情；如果无法使用银行卡，我们也可以设置发票或采购订单付款。请发送邮件至 education@comfy.org，我们会为您准备好所需的资料。'
     }
+  },
+  {
+    id: 'full-terms',
+    question: {
+      en: 'Where can I read the full terms?',
+      'zh-CN': '我在哪里可以阅读完整条款？'
+    },
+    answer: {
+      en: '<a href="https://www.notion.so/comfy-org/Comfy-for-Education-Terms-3766d73d365081b78d7ac3fb6dd7f61f?source=copy_link" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Comfy for Education Terms</a>. You\'re on a standard Comfy Cloud plan at an education rate, so the <a href="https://comfy.org/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Comfy Terms of Service</a> and <a href="https://comfy.org/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Privacy Policy</a> apply too.',
+      'zh-CN':
+        '<a href="https://www.notion.so/comfy-org/Comfy-for-Education-Terms-3766d73d365081b78d7ac3fb6dd7f61f?source=copy_link" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Comfy 教育版条款</a>。您使用的是按教育优惠价提供的标准 Comfy Cloud 计划，因此 <a href="https://comfy.org/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Comfy 服务条款</a>和<a href="https://comfy.org/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">隐私政策</a>也同样适用。'
+    }
   }
 ] as const
