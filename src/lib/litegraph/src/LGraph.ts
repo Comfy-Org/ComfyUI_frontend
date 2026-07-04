@@ -8,6 +8,7 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -30,7 +31,7 @@ import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import { LLink, registerLinkTopology } from './LLink'
+import { LLink, registerLinkTopology, unregisterLinkTopology } from './LLink'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
@@ -399,6 +400,13 @@ export class LGraph
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
+    } else {
+      // Subgraphs and unconfigured (zero-uuid) graphs share their store
+      // bucket with other graphs, so unregister each link individually.
+      for (const link of this._links.values()) unregisterLinkTopology(link)
+      for (const link of this.floatingLinksInternal.values()) {
+        unregisterLinkTopology(link)
+      }
     }
 
     this.id = zeroUuid
@@ -1122,6 +1130,12 @@ export class LGraph
 
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, fireNodeRemovalLifecycle)
+        for (const link of node.subgraph._links.values()) {
+          unregisterLinkTopology(link)
+        }
+        for (const link of node.subgraph.floatingLinks.values()) {
+          unregisterLinkTopology(link)
+        }
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1485,6 +1499,20 @@ export class LGraph
   _addLink(link: LLink): void {
     this._links.set(link.id, link)
     registerLinkTopology(this, link)
+  }
+
+  /**
+   * Removes a link from this graph's {@link _links} map and unregisters it
+   * from the link and layout stores. The delete-side counterpart to
+   * {@link _addLink}; routing every removal through here keeps the stores
+   * from silently desyncing.
+   */
+  _removeLink(linkId: LinkId): void {
+    const link = this._links.get(linkId)
+    if (!link) return
+    this._links.delete(linkId)
+    unregisterLinkTopology(link)
+    layoutStore.deleteLinkLayout(linkId)
   }
 
   /**

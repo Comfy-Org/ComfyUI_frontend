@@ -192,10 +192,7 @@ function remapNodeIds(
   return remappedIds
 }
 
-/**
- * Finds the next unused node ID by incrementing `state.lastNodeId`.
- * Throws if the ID space is exhausted.
- */
+/** Parses a serialized node ID as an integer, or `null` when non-numeric. */
 function numericSerializedNodeId(id: SerializedNodeId): number | null {
   const key = toNodeId(id)
   const numericId = Number(key)
@@ -204,6 +201,10 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
     : null
 }
 
+/**
+ * Finds the next unused ID by repeatedly calling `advance`.
+ * Throws if the ID space is exhausted.
+ */
 function findNextAvailableId(
   usedIds: Set<number>,
   advance: () => number,

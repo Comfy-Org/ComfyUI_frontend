@@ -427,7 +427,7 @@ export function fixBadLinks(
       logger.log(`Deleting link #${data.deletedLinks[i]}.`)
       if ((graph as LGraph).getNodeById) {
         const liveGraph = graph as LGraph
-        liveGraph.links.delete(toLinkId(data.deletedLinks[i]!))
+        liveGraph._removeLink(toLinkId(data.deletedLinks[i]!))
       } else {
         graph = graph as ISerialisedGraph
         // Sometimes we got objects for links if passed after ComfyUI's loadGraphData modifies the

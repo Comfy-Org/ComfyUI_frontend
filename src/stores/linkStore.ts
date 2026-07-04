@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive, ref, toRaw } from 'vue'
 
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
@@ -72,14 +72,16 @@ export const useLinkStore = defineStore('link', () => {
    * first registration for an id wins: subgraph link ids are not unique across
    * the sibling subgraphs that share a root bucket, so re-registration must not
    * clobber the entry already indexed for that id.
+   * @returns `true` if `topology` is the registered entry for its id, `false`
+   * if a different topology already holds the id.
    */
-  function registerLink(graphId: UUID, topology: LinkTopology): LinkTopology {
+  function registerLink(graphId: UUID, topology: LinkTopology): boolean {
     const links = getGraphLinks(graphId)
     const existing = links.get(topology.id)
-    if (existing) return existing
+    if (existing && toRaw(existing) !== topology) return false
     links.set(topology.id, topology)
     indexLink(graphId, topology)
-    return topology
+    return true
   }
 
   function getLink(graphId: UUID, linkId: LinkId): LinkTopology | undefined {

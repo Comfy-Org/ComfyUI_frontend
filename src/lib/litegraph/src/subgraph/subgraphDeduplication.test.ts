@@ -148,6 +148,17 @@ describe('deduplicateSubgraphLinkIds', () => {
     expect(a.reroutes![0].linkIds).toEqual([aId])
   })
 
+  it('remaps floating-link ids within the same id space as regular links', () => {
+    const a = makeSubgraph('a')
+    a.links = [link(1, 8)]
+    a.floatingLinks = [link(1, 9)]
+
+    deduplicateSubgraphLinkIds([a], new Set([1]), makeState())
+
+    const allIds = [1, a.links[0].id, a.floatingLinks[0].id]
+    expect(new Set(allIds).size).toBe(allIds.length)
+  })
+
   it('leaves non-colliding link ids untouched', () => {
     const a = makeSubgraph('a')
     a.links = [link(5, 8)]

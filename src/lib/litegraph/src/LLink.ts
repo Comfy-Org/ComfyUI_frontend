@@ -542,10 +542,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       }
     }
     network.links.delete(this.id)
-    if (this._graphId) {
-      useLinkStore().deleteLink(this._graphId, this.id)
-      this._graphId = undefined
-    }
+    unregisterLinkTopology(this)
     layoutStore.deleteLinkLayout(this.id)
   }
 
@@ -582,6 +579,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
  * Registers a link's topology into {@link useLinkStore} by reference, so the
  * store and {@link LLink._state} always agree.  Call this at every site that
  * adds a link to a graph's link map (or floating link map).
+ *
+ * {@link LLink._graphId} is only set when the store keeps this link's state:
+ * a link that loses a first-wins id collision stays detached, so its writes
+ * and removal cannot corrupt the winner's registration.
  * @param graph The graph (or subgraph) the link belongs to
  * @param link The link to register
  */
@@ -591,6 +592,19 @@ export function registerLinkTopology(
 ): void {
   if (link.id === toLinkId(-1)) return // transient toFloating clone
   const graphId = graph.rootGraph.id
-  link._graphId = graphId
-  useLinkStore().registerLink(graphId, link._state)
+  if (useLinkStore().registerLink(graphId, link._state)) {
+    link._graphId = graphId
+  }
+}
+
+/**
+ * Removes a link's topology from {@link useLinkStore} and detaches the link.
+ * No-op for links that never won registration ({@link LLink._graphId} unset),
+ * so a first-wins collision loser cannot remove the winner's entry.
+ * @param link The link to unregister
+ */
+export function unregisterLinkTopology(link: LLink): void {
+  if (!link._graphId) return
+  useLinkStore().deleteLink(link._graphId, link.id)
+  link._graphId = undefined
 }
