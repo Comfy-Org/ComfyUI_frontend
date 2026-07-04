@@ -202,11 +202,31 @@ export class AppModeHelper {
   }
 
   /**
+   * Ensure app mode (linear view) is active, entering it only when needed.
+   *
+   * A workflow with populated linearData resolves to app mode on load, so a
+   * blind toggle would exit it. Toggle only when the current mode is not
+   * already the linear view.
+   */
+  async enterAppMode() {
+    const { workflow } = this.comfyPage
+    await workflow.waitForActiveWorkflow()
+    const mode =
+      (await workflow.getActiveWorkflowActiveAppMode()) ??
+      (await workflow.getActiveWorkflowInitialMode()) ??
+      'graph'
+    if (mode !== 'app' && mode !== 'builder:arrange') {
+      await this.comfyPage.command.executeCommand('Comfy.ToggleLinear')
+    }
+  }
+
+  /**
    * Inject linearData into the current graph and enter app mode.
    *
    * Serializes the graph, injects linearData with the given inputs and
-   * auto-detected output node IDs, then reloads so the appModeStore
-   * picks up the data via its activeWorkflow watcher.
+   * auto-detected output node IDs, then reloads. Populated linearData now
+   * resolves to app mode on load, so this enters app mode idempotently
+   * rather than blindly toggling.
    *
    * @param inputs - Widget selections as [nodeId, widgetName] tuples
    */
@@ -233,7 +253,7 @@ export class AppModeHelper {
       )
     }, inputs)
     await this.comfyPage.nextFrame()
-    await this.toggleAppMode()
+    await this.enterAppMode()
   }
 
   /**

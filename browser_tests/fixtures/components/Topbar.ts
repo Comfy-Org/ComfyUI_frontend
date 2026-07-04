@@ -60,8 +60,10 @@ export class Topbar {
   }
 
   getWorkflowTab(tabName: string): Locator {
+    // App mode keeps the graph-view tab bar in the DOM (hidden) while showing
+    // the linear-view tab bar, so match only the visible label.
     return this.page
-      .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
+      .locator('.workflow-tabs .workflow-label:visible', { hasText: tabName })
       .locator('..')
   }
 

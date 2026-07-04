@@ -31,7 +31,7 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await enableErrorsOverlay(comfyPage)
       await comfyPage.workflow.loadWorkflow('linear-validation-warning')
-      await comfyPage.appMode.toggleAppMode()
+      await comfyPage.appMode.enterAppMode()
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
     })
 
