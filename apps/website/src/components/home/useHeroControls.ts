@@ -1,7 +1,8 @@
 import { clamp } from 'es-toolkit'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import type { CSSProperties } from 'vue'
 
+import { imageVariants, resolveBakedRender } from './heroGraphData'
 import type { Point } from './heroGraphWires'
 import type { TranslationKey } from '../../i18n/translations'
 
@@ -116,6 +117,12 @@ export const lightModes: LightMode[] = [
 // column drive the same OUTPUT overlays. Returns plain refs (mutated directly by
 // the node controls) plus computed CSS the output frame binds inline.
 export function useHeroControls() {
+  const variantId = ref<string>(imageVariants[0].id)
+  const variant = computed(
+    () =>
+      imageVariants.find((v) => v.id === variantId.value) ?? imageVariants[0]
+  )
+
   const colorPresetId = ref<ColorPresetId>('cyberpunk')
   const swatchId = ref(colorSwatches[0].id)
   const colorIntensity = ref(72)
@@ -137,21 +144,33 @@ export function useHeroControls() {
     () => lightModes.find((m) => m.id === lightModeId.value) ?? lightModes[0]
   )
 
+  // A real ComfyUI render for the selected combo, when one has been generated.
+  // While it is showing, the CSS grade steps back to a subtle preview layer so
+  // the output quality is the render's, not a filter approximation.
+  const bakedRender = computed(() =>
+    resolveBakedRender(
+      variant.value.key,
+      colorPresetId.value,
+      lightModeId.value
+    )
+  )
+
   const outputFilter = computed(() => {
-    const c = colorIntensity.value / 100
     const l = lightIntensity.value / 100
+    const brightness = 1 + l * (lightMode.value.core - 0.3) * 0.45
+    if (bakedRender.value) return `brightness(${brightness.toFixed(3)})`
+    const c = colorIntensity.value / 100
     const p = colorPreset.value
     const saturate = 1 + (p.saturate - 1) * c
     const contrast = 1 + (p.contrast - 1) * c
     const hue = p.hue * c
-    const brightness = 1 + l * (lightMode.value.core - 0.3) * 0.45
     return `saturate(${saturate.toFixed(3)}) contrast(${contrast.toFixed(3)}) hue-rotate(${hue.toFixed(1)}deg) brightness(${brightness.toFixed(3)})`
   })
 
   const colorLayerStyle = computed<CSSProperties>(() => ({
     backgroundImage: `linear-gradient(125deg, rgb(${swatch.value.rgb} / 0.55), rgb(${swatch.value.rgb} / 0.06) 72%)`,
     mixBlendMode: colorPreset.value.blend,
-    opacity: (colorIntensity.value / 100) * 0.5
+    opacity: (colorIntensity.value / 100) * (bakedRender.value ? 0.15 : 0.5)
   }))
 
   const lightLayerStyle = computed<CSSProperties>(() => {
@@ -168,8 +187,27 @@ export function useHeroControls() {
     }
     return {
       backgroundImage: layers.join(', '),
-      opacity: (lightIntensity.value / 100) * 0.72
+      opacity:
+        (lightIntensity.value / 100) *
+        (bakedRender.value?.includesLight ? 0.3 : 0.72)
     }
+  })
+
+  // Warm the cache for the active input's other renders so preset/light swaps
+  // land instantly instead of flashing while the file loads.
+  onMounted(() => {
+    watchEffect(() => {
+      for (const preset of colorPresets) {
+        for (const mode of lightModes) {
+          const baked = resolveBakedRender(
+            variant.value.key,
+            preset.id,
+            mode.id
+          )
+          if (baked) new Image().src = baked.src
+        }
+      }
+    })
   })
 
   function setLightFromUnit(x: number, y: number) {
@@ -185,6 +223,9 @@ export function useHeroControls() {
   }
 
   return {
+    variantId,
+    variant,
+    bakedRender,
     colorPresetId,
     swatchId,
     colorIntensity,

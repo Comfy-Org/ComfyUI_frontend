@@ -26,12 +26,7 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const controls = useHeroControls()
-const { activeNode } = controls
-
-const activeId = ref<string>(imageVariants[0].id)
-const activeVariant = computed(
-  () => imageVariants.find((v) => v.id === activeId.value) ?? imageVariants[0]
-)
+const { activeNode, variantId } = controls
 
 // The desktop graph is authored in a fixed design coordinate space and scaled
 // as a single unit to fit the viewport width, so the whole composition stays on
@@ -231,9 +226,9 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           <HeroGraphNode :label="t('hero.node.image', locale)" accent>
             <HeroImagePicker
               :variants="imageVariants"
-              :active-id="activeId"
+              :active-id="variantId"
               :locale
-              @select="(id) => (activeId = id)"
+              @select="(id) => (variantId = id)"
             />
           </HeroGraphNode>
         </div>
@@ -315,12 +310,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           @pointerdown="onPointerDown('output', $event)"
         >
           <HeroGraphNode :label="t('hero.node.output', locale)">
-            <HeroOutputFrame
-              :controls
-              :variant="activeVariant"
-              :locale
-              class="aspect-square"
-            />
+            <HeroOutputFrame :controls :locale class="aspect-square" />
           </HeroGraphNode>
         </div>
       </div>
@@ -336,11 +326,11 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
         <HeroGraphNode :label="t('hero.node.image', locale)" accent>
           <HeroImagePicker
             :variants="imageVariants"
-            :active-id="activeId"
+            :active-id="variantId"
             :locale
             hide-preview
             thumb-class="h-14"
-            @select="(id) => (activeId = id)"
+            @select="(id) => (variantId = id)"
           />
         </HeroGraphNode>
 
@@ -420,12 +410,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
         </div>
 
         <HeroGraphNode :label="t('hero.node.output', locale)" accent>
-          <HeroOutputFrame
-            :controls
-            :variant="activeVariant"
-            :locale
-            class="h-[150px]"
-          />
+          <HeroOutputFrame :controls :locale class="h-[150px]" />
         </HeroGraphNode>
       </div>
     </div>

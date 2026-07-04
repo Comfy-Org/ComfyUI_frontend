@@ -4,29 +4,36 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import type { ImageVariant } from './heroGraphData'
 import type { HeroControls } from './useHeroControls'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const {
   controls,
-  variant,
   locale = 'en',
   class: customClass = ''
 } = defineProps<{
   controls: HeroControls
-  variant: ImageVariant
   locale?: Locale
   class?: HTMLAttributes['class']
 }>()
 
-const { outputFilter, colorLayerStyle, lightLayerStyle, lightMode } = controls
+const {
+  variant,
+  bakedRender,
+  colorIntensity,
+  outputFilter,
+  colorLayerStyle,
+  lightLayerStyle,
+  lightMode
+} = controls
 
-const metaText = computed(
-  () =>
-    `${t('hero.output.grade', locale)} · ${t('hero.output.colorActive', locale)} · ${t(lightMode.value.labelKey, locale)} ${t('hero.output.lightingSuffix', locale)}`
-)
+const metaText = computed(() => {
+  const grade = bakedRender.value
+    ? t('hero.output.rendered', locale)
+    : t('hero.output.grade', locale)
+  return `${grade} · ${t('hero.output.colorActive', locale)} · ${t(lightMode.value.labelKey, locale)} ${t('hero.output.lightingSuffix', locale)}`
+})
 </script>
 
 <template>
@@ -40,6 +47,21 @@ const metaText = computed(
           data-testid="hero-output-image"
           draggable="false"
           class="absolute inset-0 size-full object-cover"
+        />
+      </Transition>
+      <!-- Real ComfyUI render for the selected combo; the REMIX slider blends
+           it over the base output like a strength control. -->
+      <Transition name="hero-glitch">
+        <img
+          v-if="bakedRender"
+          :key="bakedRender.src"
+          :src="bakedRender.src"
+          alt=""
+          aria-hidden="true"
+          data-testid="hero-baked-render"
+          draggable="false"
+          class="absolute inset-0 size-full object-cover"
+          :style="{ opacity: colorIntensity / 100 }"
         />
       </Transition>
     </div>

@@ -125,6 +125,10 @@ const translations = {
   },
   'hero.output.lightingSuffix': { en: 'lighting', 'zh-CN': '光照' },
   'hero.output.live': { en: 'Live preview', 'zh-CN': '实时预览' },
+  'hero.output.rendered': {
+    en: 'Rendered with ComfyUI',
+    'zh-CN': '由 ComfyUI 渲染'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {
