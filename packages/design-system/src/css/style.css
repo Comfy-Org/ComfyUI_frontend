@@ -8,12 +8,12 @@
 
 @plugin 'tailwindcss-primeui';
 
-@plugin "./iconifyDynamicPlugin.js";
+@plugin "./iconifyDynamicPlugin.ts";
 
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,bytedance-mono,claude,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,gemini-mono,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
+@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 @custom-variant touch (@media (hover: none));
 
