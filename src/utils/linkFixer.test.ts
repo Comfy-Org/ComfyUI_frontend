@@ -340,12 +340,12 @@ describe('fixBadLinks ↔ linkStore integration', () => {
 
     const store = useLinkStore()
     const graphId = graph.rootGraph.id
-    expect(store.getLink(graphId, zombie.id)).toBeDefined()
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
 
     const result = fixBadLinks(graph, { fix: true, silent: true })
 
     expect(result).toMatchObject({ fixed: true, deleted: 1 })
     expect(graph._links.has(zombie.id)).toBe(false)
-    expect(store.getLink(graphId, zombie.id)).toBeUndefined()
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(false)
   })
 })

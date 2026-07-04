@@ -938,8 +938,7 @@ describe('_removeDuplicateLinks', () => {
 
     const store = useLinkStore()
     const graphId = graph.rootGraph.id
-    expect(store.getLink(graphId, dup.id)).toBeUndefined()
-    expect(store.getLink(graphId, keptLinkId)).toBeDefined()
+    expect(dup._graphId).toBeUndefined()
     expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
   })
 

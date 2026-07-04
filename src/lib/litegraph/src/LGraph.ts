@@ -99,7 +99,7 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
-  deduplicateSubgraphIds,
+  deduplicateSubgraphNodeIds,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
 
@@ -2604,9 +2604,9 @@ export class LGraph
         this[i] = data[i]
       }
 
-      // Subgraph definitions — deduplicate node and link IDs before
-      // configuring. deduplicateSubgraphIds clones internally to avoid
-      // mutating the caller's data (e.g. reactive Pinia state).
+      // Subgraph definitions — deduplicate node IDs before configuring.
+      // deduplicateSubgraphNodeIds clones internally to avoid mutating
+      // the caller's data (e.g. reactive Pinia state).
       const subgraphs = data.definitions?.subgraphs
       let effectiveNodesData = nodesData
       if (subgraphs) {
@@ -2625,18 +2625,10 @@ export class LGraph
           if (typeof n.id === 'number') reservedNodeIds.add(n.id)
         }
 
-        const reservedLinkIds = new Set<number>()
-        for (const link of this._links.values())
-          reservedLinkIds.add(Number(link.id))
-        for (const sg of this.subgraphs.values())
-          for (const link of sg._links.values())
-            reservedLinkIds.add(Number(link.id))
-
         const deduplicated = this.isRootGraph
-          ? deduplicateSubgraphIds(
+          ? deduplicateSubgraphNodeIds(
               subgraphs,
               reservedNodeIds,
-              reservedLinkIds,
               this.state,
               nodesData
             )

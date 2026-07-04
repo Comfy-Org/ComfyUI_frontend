@@ -4,19 +4,9 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { describe, expect, it } from 'vitest'
 
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
+import type { ExportedSubgraph } from '../types/serialisation'
 
-import type { LGraphState } from '../LGraph'
-import type {
-  ExportedSubgraph,
-  SerialisableLLink
-} from '../types/serialisation'
-
-import {
-  deduplicateSubgraphIds,
-  topologicalSortSubgraphs
-} from './subgraphDeduplication'
+import { topologicalSortSubgraphs } from './subgraphDeduplication'
 
 function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
   return {
@@ -86,102 +76,5 @@ describe('topologicalSortSubgraphs', () => {
 
   it('returns original order for empty array', () => {
     expect(topologicalSortSubgraphs([])).toEqual([])
-  })
-})
-
-function makeState(): LGraphState {
-  return {
-    lastNodeId: 0,
-    lastLinkId: toLinkId(0),
-    lastGroupId: 0,
-    lastRerouteId: toRerouteId(0)
-  }
-}
-
-function link(id: number, target: number): SerialisableLLink {
-  return {
-    id,
-    origin_id: 3,
-    origin_slot: 0,
-    target_id: target,
-    target_slot: 0,
-    type: 'number'
-  }
-}
-
-describe('deduplicateSubgraphIds (link ids)', () => {
-  it('remaps colliding link ids and patches every reference', () => {
-    const a = makeSubgraph('a')
-    a.links = [link(1, 8)]
-    a.nodes = [
-      {
-        id: 8,
-        type: 'x',
-        pos: [0, 0],
-        size: [100, 100],
-        flags: {},
-        order: 0,
-        mode: 0,
-        inputs: [{ name: 'in', type: 'number', link: 1 }],
-        outputs: [{ name: 'out', type: 'number', links: [1] }]
-      }
-    ] as ExportedSubgraph['nodes']
-    a.inputs = [
-      { id: 'io-a', name: 'a', type: 'number', linkIds: [1] }
-    ] as ExportedSubgraph['inputs']
-    a.reroutes = [{ id: 1, pos: [0, 0], linkIds: [1] }]
-
-    const b = makeSubgraph('b')
-    b.links = [link(1, 9)]
-
-    // A root link already uses id 1, so both subgraph copies must be remapped.
-    const { subgraphs } = deduplicateSubgraphIds(
-      [a, b],
-      new Set(),
-      new Set([1]),
-      makeState()
-    )
-    const [clonedA, clonedB] = subgraphs
-
-    const allIds = [1, clonedA.links![0].id, clonedB.links![0].id]
-    expect(new Set(allIds).size).toBe(allIds.length)
-
-    const aId = clonedA.links![0].id
-    expect(aId).not.toBe(1)
-    expect(clonedA.nodes![0].inputs![0].link).toBe(aId)
-    expect(clonedA.nodes![0].outputs![0].links).toEqual([aId])
-    expect(clonedA.inputs![0].linkIds).toEqual([aId])
-    expect(clonedA.reroutes![0].linkIds).toEqual([aId])
-  })
-
-  it('remaps floating-link ids within the same id space as regular links', () => {
-    const a = makeSubgraph('a')
-    a.links = [link(1, 8)]
-    a.floatingLinks = [link(1, 9)]
-
-    const { subgraphs } = deduplicateSubgraphIds(
-      [a],
-      new Set(),
-      new Set([1]),
-      makeState()
-    )
-    const [clonedA] = subgraphs
-
-    const allIds = [1, clonedA.links![0].id, clonedA.floatingLinks![0].id]
-    expect(new Set(allIds).size).toBe(allIds.length)
-  })
-
-  it('leaves non-colliding link ids untouched', () => {
-    const a = makeSubgraph('a')
-    a.links = [link(5, 8)]
-
-    const { subgraphs } = deduplicateSubgraphIds(
-      [a],
-      new Set(),
-      new Set([1, 2]),
-      makeState()
-    )
-
-    expect(subgraphs[0].links![0].id).toBe(5)
   })
 })

@@ -1,4 +1,3 @@
-import { toLinkId } from '@/types/linkId'
 import type { LGraphState } from '../LGraph'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -17,37 +16,12 @@ interface DeduplicationResult {
 }
 
 /**
- * Dedupes node and link IDs across serialized subgraph definitions so every
- * node and link in a root graph has a unique id. Subgraph definitions each
- * number their entities from scratch, but the widget store keys node widgets
- * and the link store keys links in one root-scoped bucket, so colliding ids
- * would clobber each other's entries. Returns deep clones; inputs are not
- * mutated. `state.lastNodeId` and `state.lastLinkId` are advanced.
- */
-export function deduplicateSubgraphIds(
-  subgraphs: ExportedSubgraph[],
-  reservedNodeIds: Set<number>,
-  reservedLinkIds: Set<number>,
-  state: LGraphState,
-  rootNodes?: ISerialisedNode[]
-): DeduplicationResult {
-  const result = deduplicateSubgraphNodeIds(
-    subgraphs,
-    reservedNodeIds,
-    state,
-    rootNodes
-  )
-  deduplicateSubgraphLinkIds(result.subgraphs, reservedLinkIds, state)
-  return result
-}
-
-/**
  * Dedupes node IDs across serialized subgraph definitions to prevent widget
  * store key collisions, and patches any root-level legacy proxyWidgets that
  * reference the remapped inner IDs. Returns deep clones; inputs are not
  * mutated. `state.lastNodeId` is advanced.
  */
-function deduplicateSubgraphNodeIds(
+export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
   reservedNodeIds: Set<number>,
   state: LGraphState,
@@ -88,89 +62,6 @@ function deduplicateSubgraphNodeIds(
 }
 
 /**
- * Dedupes link IDs across serialized subgraph definitions. Mutates the given
- * subgraphs in place — only ever called on the clones produced by
- * {@link deduplicateSubgraphNodeIds} — and advances `state.lastLinkId`.
- */
-function deduplicateSubgraphLinkIds(
-  subgraphs: ExportedSubgraph[],
-  reservedLinkIds: Set<number>,
-  state: LGraphState
-): void {
-  const usedLinkIds = new Set(reservedLinkIds)
-  for (const id of reservedLinkIds) reserveLinkId(id, state)
-
-  for (const subgraph of subgraphs) {
-    const remapped = remapLinkIds(subgraph, usedLinkIds, state)
-    if (remapped.size > 0) patchLinkReferences(subgraph, remapped)
-  }
-}
-
-function reserveLinkId(id: number, state: LGraphState): void {
-  if (id > state.lastLinkId) state.lastLinkId = toLinkId(id)
-}
-
-/**
- * Remaps a subgraph's colliding link and floating-link IDs to fresh values,
- * updating `usedLinkIds` and `state.lastLinkId`.
- * @returns A map of old ID → new ID for links that were remapped.
- */
-function remapLinkIds(
-  subgraph: ExportedSubgraph,
-  usedLinkIds: Set<number>,
-  state: LGraphState
-): Map<number, number> {
-  const remapped = new Map<number, number>()
-
-  for (const link of [
-    ...(subgraph.links ?? []),
-    ...(subgraph.floatingLinks ?? [])
-  ]) {
-    if (usedLinkIds.has(link.id)) {
-      const newId = findNextAvailableId(
-        usedLinkIds,
-        () => (state.lastLinkId = toLinkId(state.lastLinkId + 1)),
-        'Link'
-      )
-      remapped.set(link.id, newId)
-      link.id = newId
-      usedLinkIds.add(newId)
-    } else {
-      usedLinkIds.add(link.id)
-      reserveLinkId(link.id, state)
-    }
-  }
-
-  return remapped
-}
-
-/** Patches every reference to a remapped link ID within a subgraph. */
-function patchLinkReferences(
-  subgraph: ExportedSubgraph,
-  remapped: Map<number, number>
-): void {
-  const remap = (id: number) => remapped.get(id) ?? id
-
-  for (const node of subgraph.nodes ?? []) {
-    for (const input of node.inputs ?? []) {
-      if (input.link != null) input.link = remap(input.link)
-    }
-    for (const output of node.outputs ?? []) {
-      if (output.links) output.links = output.links.map(remap)
-    }
-  }
-  for (const slot of [
-    ...(subgraph.inputs ?? []),
-    ...(subgraph.outputs ?? [])
-  ]) {
-    if (slot.linkIds) slot.linkIds = slot.linkIds.map(remap)
-  }
-  for (const reroute of subgraph.reroutes ?? []) {
-    reroute.linkIds = reroute.linkIds.map(remap)
-  }
-}
-
-/**
  * Remaps duplicate node IDs to unique values, updating `usedNodeIds`
  * and `state.lastNodeId` as new IDs are allocated.
  *
@@ -190,11 +81,7 @@ function remapNodeIds(
     const numericId = numericSerializedNodeId(id)
 
     if (usedNodeIdKeys.has(key)) {
-      const newId = findNextAvailableId(
-        usedNodeIds,
-        () => ++state.lastNodeId,
-        'Node'
-      )
+      const newId = findNextAvailableId(usedNodeIds, () => ++state.lastNodeId)
       remappedIds.set(key, newId)
       node.id = newId
       usedNodeIds.add(newId)
@@ -229,13 +116,12 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
  */
 function findNextAvailableId(
   usedIds: Set<number>,
-  advance: () => number,
-  entity: 'Node' | 'Link'
+  advance: () => number
 ): number {
   while (true) {
     const nextId = advance()
     if (nextId > MAX_ID) {
-      throw new Error(`${entity} ID space exhausted`)
+      throw new Error('Node ID space exhausted')
     }
     if (!usedIds.has(nextId)) return nextId
   }

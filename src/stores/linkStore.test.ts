@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -34,100 +35,119 @@ describe('useLinkStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('registers and reads a link', () => {
+  it('answers input-slot connectedness with one lookup', () => {
     const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    expect(store.getLink(graphA, toLinkId(1))?.originNodeId).toBe(toNodeId(5))
-  })
-
-  it('answers input-slot connectedness in O(1)', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    expect(store.registerLink(graphA, link(1, 5, 0, 9, 2))).toBe(true)
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
   })
 
-  it('reindexes on endpoint move', () => {
+  it('re-keys the link when its target moves', () => {
     const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    store.updateEndpoint(graphA, toLinkId(1), { targetSlot: 4 })
+    const topology = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, topology)
+
+    expect(store.updateEndpoint(graphA, topology, { targetSlot: 4 })).toBe(true)
+
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 4)).toBe(true)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
   })
 
-  it('deletes a link from data and the target-slot index', () => {
+  it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    expect(store.deleteLink(graphA, toLinkId(1))).toBe(true)
-    expect(store.getLink(graphA, toLinkId(1))).toBeUndefined()
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
+
+    expect(store.registerLink(graphA, link(2, 5, 0, 9, 2))).toBe(false)
+
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
   })
 
-  it('keeps the first registration for a colliding id (subgraph ids are not unique)', () => {
+  it('only the registered link can vacate its slot', () => {
     const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    store.registerLink(graphA, link(1, 7, 0, 8, 3))
-    expect(store.getLink(graphA, toLinkId(1))?.targetSlot).toBe(2)
+    const registered = link(1, 5, 0, 9, 2)
+    const loser = link(2, 5, 0, 9, 2)
+    store.registerLink(graphA, registered)
+    store.registerLink(graphA, loser)
+
+    expect(store.deleteLink(graphA, loser)).toBe(false)
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
-    expect(store.isInputSlotConnected(graphA, toNodeId(8), 3)).toBe(false)
+
+    expect(store.deleteLink(graphA, registered)).toBe(true)
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
+  })
+
+  it('reports a lost placement when a target moves onto an occupied slot', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    const mover = link(2, 5, 1, 9, 3)
+    store.registerLink(graphA, mover)
+
+    expect(store.updateEndpoint(graphA, mover, { targetSlot: 2 })).toBe(false)
+
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
+    expect(mover.targetSlot).toBe(2)
+  })
+
+  it('never answers target queries from floating links', () => {
+    const store = useLinkStore()
+    const inputFloating: LinkTopology = {
+      ...link(1, 5, 0, 9, 2),
+      originNodeId: UNASSIGNED_NODE_ID,
+      originSlot: -1
+    }
+    expect(store.registerLink(graphA, inputFloating)).toBe(true)
+
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
+
+    const real = link(2, 5, 0, 9, 2)
+    expect(store.registerLink(graphA, real)).toBe(true)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(2))
+
+    expect(store.deleteLink(graphA, inputFloating)).toBe(true)
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
+  })
+
+  it('re-keys a floating link that gains a real origin', () => {
+    const store = useLinkStore()
+    const floating: LinkTopology = {
+      ...link(1, 5, 0, 9, 2),
+      originNodeId: UNASSIGNED_NODE_ID,
+      originSlot: -1
+    }
+    store.registerLink(graphA, floating)
+
+    expect(
+      store.updateEndpoint(graphA, floating, {
+        originNodeId: toNodeId(5),
+        originSlot: 0
+      })
+    ).toBe(true)
+
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+  })
+
+  it('lets sibling subgraphs register output-node links without clobbering', () => {
+    const store = useLinkStore()
+    const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
+    const second = link(1, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
+
+    expect(store.registerLink(graphA, first)).toBe(true)
+    expect(store.registerLink(graphA, second)).toBe(true)
+
+    expect(store.deleteLink(graphA, first)).toBe(true)
+    expect(store.deleteLink(graphA, second)).toBe(true)
   })
 
   it('scopes by graph and does not clear on tab switch', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
     store.registerLink(graphB, link(1, 5, 0, 9, 2))
-    expect(store.getLink(graphA, toLinkId(1))).toBeDefined()
-    expect(store.getLink(graphB, toLinkId(1))).toBeDefined()
+
     store.clearGraph(graphB)
-    expect(store.getLink(graphA, toLinkId(1))).toBeDefined() // A survives
-    expect(store.getLink(graphB, toLinkId(1))).toBeUndefined()
-  })
-
-  it('stores a floating link with UNASSIGNED_NODE_ID', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, {
-      id: toLinkId(1),
-      originNodeId: UNASSIGNED_NODE_ID,
-      originSlot: -1,
-      targetNodeId: toNodeId(9),
-      targetSlot: 2,
-      type: 'INT'
-    })
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
-  })
-
-  it('does not let a second floating-input link corrupt real-slot lookups', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    store.registerLink(graphA, {
-      id: toLinkId(2),
-      originNodeId: toNodeId(5),
-      originSlot: 1,
-      targetNodeId: UNASSIGNED_NODE_ID,
-      targetSlot: -1,
-      type: 'INT'
-    })
-    store.registerLink(graphA, {
-      id: toLinkId(3),
-      originNodeId: toNodeId(5),
-      originSlot: 2,
-      targetNodeId: UNASSIGNED_NODE_ID,
-      targetSlot: -1,
-      type: 'INT'
-    })
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
-    expect(store.getLink(graphA, toLinkId(2))).toBeDefined()
-    expect(store.getLink(graphA, toLinkId(3))).toBeDefined()
-    // The floating target slot is never indexed, so it can't be overwritten
-    expect(store.isInputSlotConnected(graphA, UNASSIGNED_NODE_ID, -1)).toBe(
-      false
-    )
-
-    expect(store.deleteLink(graphA, toLinkId(2))).toBe(true)
-    expect(store.getLink(graphA, toLinkId(3))).toBeDefined()
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
+    expect(store.isInputSlotConnected(graphB, toNodeId(9), 2)).toBe(false)
   })
 })
