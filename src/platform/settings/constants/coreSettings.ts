@@ -473,7 +473,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.NodeBadge.ShowApiPricing',
     category: ['Comfy', 'API Nodes'],
-    name: 'Show API node pricing badge',
+    name: 'Show Partner node pricing badge',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.20.3'
