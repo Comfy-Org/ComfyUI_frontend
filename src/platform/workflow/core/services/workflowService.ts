@@ -43,6 +43,35 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
   return linearMode ? 'app' : 'graph'
 }
 
+function hasAppSelections(linearData: unknown): boolean {
+  if (typeof linearData !== 'object' || linearData === null) return false
+  const { inputs, outputs } = linearData as {
+    inputs?: unknown
+    outputs?: unknown
+  }
+  return (
+    (Array.isArray(inputs) && inputs.length > 0) ||
+    (Array.isArray(outputs) && outputs.length > 0)
+  )
+}
+
+/**
+ * Resolve the initial app mode for a freshly loaded, serialized workflow.
+ *
+ * An explicit `extra.linearMode` boolean is authoritative. When it is absent,
+ * fall back to inferring App Mode from a populated `extra.linearData` so app
+ * configs written without the flag (e.g. earlier `create_app` output, whose
+ * node ids may mix number/string types) open as apps instead of silently
+ * degrading to Graph mode.
+ */
+function resolveFreshLoadMode(
+  extra: ComfyWorkflowJSON['extra']
+): AppMode | null {
+  const explicit = linearModeToAppMode(extra?.linearMode)
+  if (explicit) return explicit
+  return hasAppSelections(extra?.linearData) ? 'app' : null
+}
+
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
@@ -453,8 +482,8 @@ export const useWorkflowService = () => {
     const wasAppMode = isAppMode.value
 
     // Determine the initial app mode for fresh loads from serialized state.
-    // null means linearMode was never explicitly set (not builder-saved).
-    const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
+    // null means neither an explicit linearMode nor an inferable app config.
+    const freshLoadMode = resolveFreshLoadMode(workflowData.extra)
     useAppModeStore().loadSelections(workflowData.extra?.linearData)
 
     function trackIfEnteringApp(workflow: ComfyWorkflow) {
@@ -495,9 +524,8 @@ export const useWorkflowService = () => {
             // Prefer the file's linearMode over the draft's since the file
             // is the authoritative saved state.
             loadedWorkflow.initialMode =
-              linearModeToAppMode(
-                loadedWorkflow.initialState?.extra?.linearMode
-              ) ?? freshLoadMode
+              resolveFreshLoadMode(loadedWorkflow.initialState?.extra) ??
+              freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
           if (shareId) {

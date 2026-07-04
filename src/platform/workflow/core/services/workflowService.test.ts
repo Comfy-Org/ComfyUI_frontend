@@ -701,6 +701,73 @@ describe('useWorkflowService', () => {
 
       expect(existingWorkflow.shareId).toBe('share-2')
     })
+
+    describe('initial app mode inference', () => {
+      async function loadFreshTemporary(
+        extra: Record<string, unknown>
+      ): Promise<LoadedComfyWorkflow> {
+        vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+        const tempWorkflow = createModeTestWorkflow({
+          path: 'workflows/shared.json'
+        })
+        vi.mocked(workflowStore.createNewTemporary).mockReturnValue(
+          tempWorkflow
+        )
+        vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
+
+        await useWorkflowService().afterLoadNewGraph(
+          'shared',
+          makeWorkflowData(extra) as never
+        )
+        return tempWorkflow
+      }
+
+      it('infers app mode from linearData outputs when linearMode is absent', async () => {
+        const workflow = await loadFreshTemporary({
+          linearData: { inputs: [], outputs: [4] }
+        })
+
+        expect(workflow.initialMode).toBe('app')
+      })
+
+      it('infers app mode when linearData mixes number and string node ids', async () => {
+        const workflow = await loadFreshTemporary({
+          linearData: {
+            inputs: [
+              [3, 'file'],
+              [5, 'upscaler_model'],
+              ['5', 'upscaler_creativity']
+            ],
+            outputs: [4]
+          }
+        })
+
+        expect(workflow.initialMode).toBe('app')
+      })
+
+      it('honors an explicit linearMode:false over populated linearData', async () => {
+        const workflow = await loadFreshTemporary({
+          linearMode: false,
+          linearData: { inputs: [[1, 'prompt']], outputs: [4] }
+        })
+
+        expect(workflow.initialMode).toBe('graph')
+      })
+
+      it('leaves mode unset when there is no linearMode or linearData', async () => {
+        const workflow = await loadFreshTemporary({})
+
+        expect(workflow.initialMode).toBeNull()
+      })
+
+      it('does not infer app mode from empty linearData selections', async () => {
+        const workflow = await loadFreshTemporary({
+          linearData: { inputs: [], outputs: [] }
+        })
+
+        expect(workflow.initialMode).toBeNull()
+      })
+    })
   })
 
   describe('per-workflow mode switching', () => {
