@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,7 +41,7 @@ vi.mock('@/stores/maskEditorStore', () => ({
 }))
 
 function createMockElement(width = 1200, height = 800): HTMLElement {
-  return {
+  return fromPartial<HTMLElement>({
     clientWidth: width,
     clientHeight: height,
     style: {} as CSSStyleDeclaration,
@@ -53,11 +54,11 @@ function createMockElement(width = 1200, height = 800): HTMLElement {
         right: width,
         bottom: height
       }) as DOMRect
-  } as unknown as HTMLElement
+  })
 }
 
 function createMockCanvas(width: number, height: number): HTMLCanvasElement {
-  return {
+  return fromPartial<HTMLCanvasElement>({
     width,
     height,
     clientWidth: width,
@@ -72,7 +73,7 @@ function createMockCanvas(width: number, height: number): HTMLCanvasElement {
         right: width,
         bottom: height
       }) as DOMRect
-  } as unknown as HTMLCanvasElement
+  })
 }
 
 function createMockImage(width: number, height: number): HTMLImageElement {
@@ -81,17 +82,15 @@ function createMockImage(width: number, height: number): HTMLImageElement {
 
 function createTouchList(...points: { x: number; y: number }[]): TouchList {
   const touches = points.map((p) => ({ clientX: p.x, clientY: p.y }) as Touch)
-  return Object.assign(touches, {
+  const obj: unknown = Object.assign(touches, {
     length: touches.length,
     item: (i: number) => touches[i]
-  }) as unknown as TouchList
+  })
+  return obj as TouchList
 }
 
 function createTouchEvent(touches: TouchList): TouchEvent {
-  return {
-    touches,
-    preventDefault: vi.fn()
-  } as unknown as TouchEvent
+  return fromPartial<TouchEvent>({ touches, preventDefault: vi.fn() })
 }
 
 async function initComposable() {
@@ -100,7 +99,7 @@ async function initComposable() {
   const root = createMockElement()
   const container = createMockElement()
   const canvas = createMockCanvas(800, 600)
-  mockStore.canvasContainer = container as unknown as HTMLElement
+  mockStore.canvasContainer = container
   mockStore.maskCanvas = canvas
   await pz.initializeCanvasPanZoom(img, root)
   vi.clearAllMocks()
@@ -129,7 +128,7 @@ describe('usePanAndZoom', () => {
     it('sets zoom and pan on the store', async () => {
       const pz = usePanAndZoom()
       const container = createMockElement()
-      mockStore.canvasContainer = container as unknown as HTMLElement
+      mockStore.canvasContainer = container
 
       await pz.initializeCanvasPanZoom(
         createMockImage(800, 600),
@@ -145,7 +144,7 @@ describe('usePanAndZoom', () => {
 
     it('accounts for panel widths via setPanOffset', async () => {
       const pz = usePanAndZoom()
-      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+      mockStore.canvasContainer = createMockElement()
 
       const toolPanel = createMockElement()
       vi.spyOn(toolPanel, 'getBoundingClientRect').mockReturnValue({
@@ -170,7 +169,7 @@ describe('usePanAndZoom', () => {
     it('syncs rgbCanvas dimensions when they differ', async () => {
       const pz = usePanAndZoom()
       const rgbCanvas = createMockCanvas(400, 300)
-      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+      mockStore.canvasContainer = createMockElement()
       mockStore.rgbCanvas = rgbCanvas
 
       await pz.initializeCanvasPanZoom(
@@ -180,6 +179,50 @@ describe('usePanAndZoom', () => {
 
       expect(rgbCanvas.width).toBe(800)
       expect(rgbCanvas.height).toBe(600)
+    })
+
+    it('returns before publishing pan when the canvas container is unavailable', async () => {
+      const pz = usePanAndZoom()
+
+      await pz.initializeCanvasPanZoom(
+        createMockImage(800, 600),
+        createMockElement()
+      )
+
+      expect(mockStore.setPanOffset).not.toHaveBeenCalled()
+      expect(mockStore.setZoomRatio).not.toHaveBeenCalled()
+    })
+
+    it('keeps rgbCanvas dimensions when they already match the image', async () => {
+      const pz = usePanAndZoom()
+      const rgbCanvas = createMockCanvas(800, 600)
+      mockStore.canvasContainer = createMockElement()
+      mockStore.rgbCanvas = rgbCanvas
+
+      await pz.initializeCanvasPanZoom(
+        createMockImage(800, 600),
+        createMockElement()
+      )
+
+      expect(rgbCanvas.width).toBe(800)
+      expect(rgbCanvas.height).toBe(600)
+      expect(rgbCanvas.style.width).not.toBe('')
+    })
+
+    it('can be initialized again without replacing the current image reference', async () => {
+      const pz = usePanAndZoom()
+      mockStore.canvasContainer = createMockElement()
+
+      await pz.initializeCanvasPanZoom(
+        createMockImage(800, 600),
+        createMockElement()
+      )
+      await pz.initializeCanvasPanZoom(
+        createMockImage(400, 300),
+        createMockElement()
+      )
+
+      expect(mockStore.setZoomRatio).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -280,7 +323,7 @@ describe('usePanAndZoom', () => {
     it('returns early when maskCanvas is null', async () => {
       const pz = usePanAndZoom()
       const container = createMockElement()
-      mockStore.canvasContainer = container as unknown as HTMLElement
+      mockStore.canvasContainer = container
       mockStore.maskCanvas = null
       await pz.initializeCanvasPanZoom(
         createMockImage(800, 600),
@@ -345,6 +388,13 @@ describe('usePanAndZoom', () => {
       expect(mockStore.brushVisible).toBe(false)
     })
 
+    it('accepts touch starts without active touches', () => {
+      const pz = usePanAndZoom()
+      pz.handleTouchStart(createTouchEvent(createTouchList()))
+      expect(mockStore.brushVisible).toBe(false)
+      expect(mockStore.canvasHistory.undo).not.toHaveBeenCalled()
+    })
+
     it('ignores touch when pen pointer is active', () => {
       const pz = usePanAndZoom()
       pz.addPenPointerId(1)
@@ -401,6 +451,49 @@ describe('usePanAndZoom', () => {
       expect(mockStore.setZoomRatio).toHaveBeenCalled()
     })
 
+    it('returns from pinch zoom when the mask canvas is unavailable', async () => {
+      const pz = usePanAndZoom()
+      mockStore.maskCanvas = null
+
+      pz.handleTouchStart(
+        createTouchEvent(
+          createTouchList({ x: 200, y: 300 }, { x: 400, y: 300 })
+        )
+      )
+
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 150, y: 300 }, { x: 450, y: 300 })
+        )
+      )
+
+      expect(mockStore.setZoomRatio).not.toHaveBeenCalled()
+    })
+
+    it('uses the cached mask canvas for consecutive pinch moves', async () => {
+      const { pz } = await initComposable()
+
+      pz.handleTouchStart(
+        createTouchEvent(
+          createTouchList({ x: 200, y: 300 }, { x: 400, y: 300 })
+        )
+      )
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 150, y: 300 }, { x: 450, y: 300 })
+        )
+      )
+      vi.clearAllMocks()
+
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 140, y: 300 }, { x: 460, y: 300 })
+        )
+      )
+
+      expect(mockStore.setZoomRatio).toHaveBeenCalled()
+    })
+
     it('touch move is ignored when pen is active', async () => {
       const pz = usePanAndZoom()
       pz.addPenPointerId(1)
@@ -417,6 +510,26 @@ describe('usePanAndZoom', () => {
       const event = createTouchEvent(createTouchList({ x: 200, y: 300 }))
       pz.handleTouchEnd(event)
       expect(event.preventDefault).toHaveBeenCalled()
+    })
+
+    it('stops pinch zooming when all touches end', async () => {
+      const { pz } = await initComposable()
+
+      pz.handleTouchStart(
+        createTouchEvent(
+          createTouchList({ x: 200, y: 300 }, { x: 400, y: 300 })
+        )
+      )
+      pz.handleTouchEnd(createTouchEvent(createTouchList()))
+      vi.clearAllMocks()
+
+      await pz.handleTouchMove(
+        createTouchEvent(
+          createTouchList({ x: 150, y: 300 }, { x: 450, y: 300 })
+        )
+      )
+
+      expect(mockStore.setZoomRatio).not.toHaveBeenCalled()
     })
   })
 

@@ -124,6 +124,80 @@ describe('nodeOrganizationService', () => {
     })
   })
 
+  describe('organizeNodesTab', () => {
+    it('returns no sections for an empty node list', () => {
+      expect(nodeOrganizationService.organizeNodesTab([])).toEqual([])
+    })
+
+    it('classifies blueprints, partner nodes, Comfy nodes, and extensions', () => {
+      const sections = nodeOrganizationService.organizeNodesTab([
+        createMockNodeDef({
+          name: 'MyBlueprint',
+          nodeSource: {
+            type: NodeSourceType.Blueprint,
+            className: 'blueprint',
+            displayText: 'Blueprint',
+            badgeText: 'B'
+          },
+          isGlobal: false
+        }),
+        createMockNodeDef({
+          name: 'ComfyBlueprint',
+          python_module: 'blueprint.comfy',
+          isGlobal: true
+        }),
+        createMockNodeDef({
+          name: 'PartnerApi',
+          category: 'api node/image'
+        }),
+        createMockNodeDef({
+          name: 'CoreNode',
+          nodeSource: {
+            type: NodeSourceType.Core,
+            className: 'core',
+            displayText: 'Core',
+            badgeText: 'C'
+          }
+        }),
+        createMockNodeDef({
+          name: 'EssentialNode',
+          nodeSource: {
+            type: NodeSourceType.Essentials,
+            className: 'essentials',
+            displayText: 'Essentials',
+            badgeText: 'E'
+          }
+        }),
+        createMockNodeDef({
+          name: 'ExtensionNode'
+        })
+      ])
+
+      expect(sections.map((section) => section.category)).toEqual([
+        'blueprints',
+        'comfyNodes',
+        'partnerNodes',
+        'extensions'
+      ])
+      expect(sections[0].tree.children?.map((child) => child.key)).toEqual([
+        'root/my-blueprints',
+        'root/comfy-blueprints'
+      ])
+    })
+
+    it('omits sections that have no matching nodes', () => {
+      const sections = nodeOrganizationService.organizeNodesTab([
+        createMockNodeDef({
+          name: 'OnlyExtension'
+        })
+      ])
+
+      expect(sections.map((section) => section.category)).toEqual([
+        'extensions'
+      ])
+    })
+  })
+
   describe('getGroupingIcon', () => {
     it('should return strategy icon', () => {
       const icon = nodeOrganizationService.getGroupingIcon('category')
@@ -216,6 +290,12 @@ describe('nodeOrganizationService', () => {
         expect(path).toEqual(['core', 'TestNode'])
       })
 
+      it('should handle custom_nodes without a package segment', () => {
+        const nodeDef = createMockNodeDef({ python_module: 'custom_nodes' })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['custom_nodes', 'TestNode'])
+      })
+
       it('should handle non-standard module paths', () => {
         const nodeDef = createMockNodeDef({
           python_module: 'some.other.module.path'
@@ -282,6 +362,19 @@ describe('nodeOrganizationService', () => {
         const path = strategy?.getNodePath(nodeDef)
         expect(path).toEqual(['Unknown', 'TestNode'])
       })
+
+      it('should handle core source type', () => {
+        const nodeDef = createMockNodeDef({
+          nodeSource: {
+            type: NodeSourceType.Core,
+            className: 'core',
+            displayText: 'Core',
+            badgeText: 'C'
+          }
+        })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['Core', 'TestNode'])
+      })
     })
 
     describe('node name edge cases', () => {
@@ -325,6 +418,15 @@ describe('nodeOrganizationService', () => {
 
       expect(strategy?.compare(nodeA, nodeB)).toBeGreaterThan(0)
       expect(strategy?.compare(nodeB, nodeA)).toBeLessThan(0)
+    })
+
+    it('alphabetical sort handles missing display names', () => {
+      const strategy =
+        nodeOrganizationService.getSortingStrategy('alphabetical')
+      const nodeA = createMockNodeDef({ display_name: undefined })
+      const nodeB = createMockNodeDef({ display_name: undefined })
+
+      expect(strategy?.compare(nodeA, nodeB)).toBe(0)
     })
   })
 })

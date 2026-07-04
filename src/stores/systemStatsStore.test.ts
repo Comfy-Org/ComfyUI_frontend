@@ -2,11 +2,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
+const mockData = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 
 // Mock the API
 vi.mock('@/scripts/api', () => ({
@@ -19,7 +21,9 @@ vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return mockData.isDesktop
   },
-  isCloud: false
+  get isCloud() {
+    return mockData.isCloud
+  }
 }))
 
 describe('useSystemStatsStore', () => {
@@ -138,6 +142,7 @@ describe('useSystemStatsStore', () => {
   describe('getFormFactor', () => {
     beforeEach(() => {
       // Reset systemStats for each test
+      mockData.isCloud = false
       store.systemStats = null
     })
 
@@ -147,7 +152,7 @@ describe('useSystemStatsStore', () => {
 
     it('should return "other" when os is not available', () => {
       store.systemStats = {
-        system: {
+        system: fromPartial<SystemStats['system']>({
           python_version: '3.10.0',
           embedded_python: false,
           comfyui_version: '1.0.0',
@@ -155,11 +160,17 @@ describe('useSystemStatsStore', () => {
           argv: [],
           ram_total: 16000000000,
           ram_free: 8000000000
-        } as Partial<SystemStats['system']> as SystemStats['system'],
+        }),
         devices: []
       }
 
       expect(store.getFormFactor()).toBe('other')
+    })
+
+    it('should return "cloud" in cloud mode', () => {
+      mockData.isCloud = true
+
+      expect(store.getFormFactor()).toBe('cloud')
     })
 
     describe('desktop environment', () => {

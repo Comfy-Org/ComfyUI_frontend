@@ -89,6 +89,13 @@ describe('evaluateMathExpression', () => {
     }
   )
 
+  test.for(['-', '2*', '3/-'])(
+    'dangling operator returns undefined: "%s"',
+    (input) => {
+      expect(evaluateMathExpression(input)).toBeUndefined()
+    }
+  )
+
   test('division by zero returns Infinity', () => {
     expect(evaluateMathExpression('1/0')).toBe(Infinity)
   })

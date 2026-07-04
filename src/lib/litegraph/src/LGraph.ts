@@ -2494,6 +2494,7 @@ export class LGraph
         // Deprecated - old schema version, links are arrays
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
+            if (!linkData) continue
             const link = LLink.createFromArray(linkData)
             this._links.set(link.id, link)
           }

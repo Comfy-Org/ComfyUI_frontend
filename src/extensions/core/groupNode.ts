@@ -62,7 +62,7 @@ interface GroupNodeConfigEntry {
 }
 
 export interface GroupNodeWorkflowData {
-  external: (number | string)[][]
+  external: (number | string | null)[][]
   links: SerialisedLLinkArray[]
   nodes: {
     index?: number

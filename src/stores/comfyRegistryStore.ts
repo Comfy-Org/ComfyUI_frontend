@@ -56,7 +56,9 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   /**
    * Get a list of packs by their IDs from the registry
    */
-  const getPacksByIds = async (ids: NodePack['id'][]): Promise<NodePack[]> => {
+  const getPacksByIds = async (
+    ids: (NodePack['id'] | undefined)[]
+  ): Promise<NodePack[]> => {
     const [cachedPacksIds, uncachedPacksIds] = partition(ids, (id) =>
       getPacksByIdCache.has(id)
     )
