@@ -2187,6 +2187,7 @@ const translations = {
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
+  'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
   'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
