@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -221,6 +221,51 @@ test.describe('Hero image picker @interaction', () => {
 
     await expect(activeImage(page)).toHaveAttribute('src', /input-mirror\.png/)
     await expect(mirrorThumb).toHaveAttribute('aria-pressed', 'true')
+  })
+})
+
+test.describe('Hero graph drag bounds @interaction', () => {
+  async function dragNodeTo(page: Page, node: Locator, x: number, y: number) {
+    const box = (await node.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(x, y, { steps: 15 })
+    await page.mouse.up()
+  }
+
+  test('a dragged node stops at the stage edges instead of escaping', async ({
+    page,
+    viewport
+  }) => {
+    await page.goto('/')
+
+    const node = page.locator('[data-node="texture"]')
+    await expect(node).toBeVisible()
+    const stageBox = (await page.getByTestId('hero-stage').boundingBox())!
+
+    await dragNodeTo(page, node, 1, viewport!.height - 1)
+    await expect
+      .poll(async () => {
+        const box = (await node.boundingBox())!
+        return {
+          atLeftEdge: Math.abs(box.x - stageBox.x) <= 2,
+          atBottomEdge:
+            Math.abs(box.y + box.height - (stageBox.y + stageBox.height)) <= 2
+        }
+      })
+      .toEqual({ atLeftEdge: true, atBottomEdge: true })
+
+    await dragNodeTo(page, node, viewport!.width - 1, 1)
+    await expect
+      .poll(async () => {
+        const box = (await node.boundingBox())!
+        return {
+          atRightEdge:
+            Math.abs(box.x + box.width - (stageBox.x + stageBox.width)) <= 2,
+          atTopEdge: Math.abs(box.y - stageBox.y) <= 2
+        }
+      })
+      .toEqual({ atRightEdge: true, atTopEdge: true })
   })
 })
 

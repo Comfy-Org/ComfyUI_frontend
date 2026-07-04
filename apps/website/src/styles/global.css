@@ -300,37 +300,6 @@
   }
 }
 
-/* OUTPUT frame responds to an engaged control node with a soft neon rim and a
-   slow specular sweep — premium, not flashy. */
-.hero-output-live {
-  box-shadow:
-    0 0 0 1px rgb(242 255 89 / 0.35),
-    0 0 45px -8px rgb(242 255 89 / 0.45);
-}
-
-.hero-output-sweep::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  width: 45%;
-  background: linear-gradient(
-    100deg,
-    transparent,
-    rgb(255 255 255 / 0.16),
-    transparent
-  );
-  animation: hero-output-sweep 2.8s ease-in-out infinite;
-}
-
-@keyframes hero-output-sweep {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(160%);
-  }
-}
-
 @keyframes hero-live-pulse {
   0%,
   100% {

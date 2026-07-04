@@ -21,47 +21,16 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
-const {
-  activeNode,
-  reducedMotion,
-  pointer,
-  outputFilter,
-  colorLayerStyle,
-  lightLayerStyle,
-  lightMode
-} = controls
+const { outputFilter, colorLayerStyle, lightLayerStyle, lightMode } = controls
 
 const metaText = computed(
   () =>
     `${t('hero.output.grade', locale)} · ${t('hero.output.colorActive', locale)} · ${t(lightMode.value.labelKey, locale)} ${t('hero.output.lightingSuffix', locale)}`
 )
-
-function onMove(e: PointerEvent) {
-  if (reducedMotion.value || e.pointerType !== 'mouse') return
-  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  pointer.value = {
-    x: (e.clientX - r.left) / r.width,
-    y: (e.clientY - r.top) / r.height
-  }
-}
-
-function onLeave() {
-  pointer.value = null
-}
 </script>
 
 <template>
-  <div
-    :class="
-      cn(
-        'relative w-full overflow-hidden rounded-xl transition-shadow duration-500',
-        activeNode && 'hero-output-live',
-        customClass
-      )
-    "
-    @pointermove="onMove"
-    @pointerleave="onLeave"
-  >
+  <div :class="cn('relative w-full overflow-hidden rounded-xl', customClass)">
     <div class="relative size-full" :style="{ filter: outputFilter }">
       <Transition name="hero-glitch">
         <img
@@ -82,10 +51,6 @@ function onLeave() {
     <div
       class="pointer-events-none absolute inset-0 mix-blend-screen transition-opacity duration-500"
       :style="lightLayerStyle"
-    />
-    <div
-      v-if="activeNode"
-      class="hero-output-sweep pointer-events-none absolute inset-0"
     />
 
     <div

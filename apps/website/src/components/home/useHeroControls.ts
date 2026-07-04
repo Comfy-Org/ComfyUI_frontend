@@ -1,4 +1,3 @@
-import { usePreferredReducedMotion } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
@@ -117,9 +116,6 @@ export const lightModes: LightMode[] = [
 // column drive the same OUTPUT overlays. Returns plain refs (mutated directly by
 // the node controls) plus computed CSS the output frame binds inline.
 export function useHeroControls() {
-  const motionPref = usePreferredReducedMotion()
-  const reducedMotion = computed(() => motionPref.value === 'reduce')
-
   const colorPresetId = ref<ColorPresetId>('cyberpunk')
   const swatchId = ref(colorSwatches[0].id)
   const colorIntensity = ref(72)
@@ -129,9 +125,6 @@ export function useHeroControls() {
   const lightDir = ref<Point>({ x: 0.64, y: 0.3 })
 
   const activeNode = ref<HeroNodeId | null>(null)
-  // Cursor position over the output (0..1), letting the light drift toward the
-  // pointer on fine-pointer devices; null when absent or motion-reduced.
-  const pointer = ref<Point | null>(null)
 
   const colorPreset = computed(
     () =>
@@ -161,20 +154,10 @@ export function useHeroControls() {
     opacity: (colorIntensity.value / 100) * 0.5
   }))
 
-  const lightPos = computed<Point>(() => {
-    const base = lightDir.value
-    const p = pointer.value
-    if (!p || reducedMotion.value) return base
-    return {
-      x: base.x + (p.x - base.x) * 0.3,
-      y: base.y + (p.y - base.y) * 0.3
-    }
-  })
-
   const lightLayerStyle = computed<CSSProperties>(() => {
     const m = lightMode.value
-    const x = (lightPos.value.x * 100).toFixed(1)
-    const y = (lightPos.value.y * 100).toFixed(1)
+    const x = (lightDir.value.x * 100).toFixed(1)
+    const y = (lightDir.value.y * 100).toFixed(1)
     const layers = [
       `radial-gradient(circle at ${x}% ${y}%, rgb(${m.tint} / 0.9), transparent ${m.spread}%)`
     ]
@@ -202,7 +185,6 @@ export function useHeroControls() {
   }
 
   return {
-    reducedMotion,
     colorPresetId,
     swatchId,
     colorIntensity,
@@ -211,7 +193,6 @@ export function useHeroControls() {
     lightDir,
     lightMode,
     activeNode,
-    pointer,
     outputFilter,
     colorLayerStyle,
     lightLayerStyle,

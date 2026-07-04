@@ -10,6 +10,13 @@ import HeroImagePicker from './HeroImagePicker.vue'
 import HeroLightingNode from './HeroLightingNode.vue'
 import HeroOutputFrame from './HeroOutputFrame.vue'
 import { imageVariants, textureImage } from './heroGraphData'
+import {
+  NODE_W,
+  STAGE_H,
+  STAGE_W,
+  clampNodePosition,
+  homePositions
+} from './heroGraphLayout'
 import { computeWires } from './heroGraphWires'
 import type { NodeId, Point, Rect } from './heroGraphWires'
 import { useHeroControls } from './useHeroControls'
@@ -30,27 +37,9 @@ const activeVariant = computed(
 // as a single unit to fit the viewport width, so wires and the OUTPUT bleed are
 // preserved on every screen. Node positions are live state so they can be
 // dragged; widths are fixed per node and heights are measured once for wiring.
-const STAGE_W = 1600
-const STAGE_H = 780
 const MAX_SCALE = 1.3
 
-const NODE_W: Record<NodeId, number> = {
-  image: 300,
-  texture: 200,
-  color: 210,
-  lighting: 210,
-  output: 760
-}
-
-// Whole graph is nudged left of the stage centre so the OUTPUT node bleeds less
-// far off the right edge.
-const positions = ref<Record<NodeId, Point>>({
-  image: { x: 16, y: 28 },
-  texture: { x: 52, y: 512 },
-  color: { x: 404, y: 446 },
-  lighting: { x: 662, y: 446 },
-  output: { x: 956, y: 110 }
-})
+const positions = ref<Record<NodeId, Point>>(structuredClone(homePositions))
 
 const frameRef = ref<HTMLElement>()
 const stageRef = ref<HTMLElement>()
@@ -129,10 +118,11 @@ function onPointerMove(e: PointerEvent) {
   const dx = e.clientX - drag.px
   const dy = e.clientY - drag.py
   if (Math.hypot(dx, dy) < 4) return
-  positions.value[drag.id] = {
-    x: drag.ox + dx / scale.value,
-    y: drag.oy + dy / scale.value
-  }
+  positions.value[drag.id] = clampNodePosition(
+    drag.id,
+    { x: drag.ox + dx / scale.value, y: drag.oy + dy / scale.value },
+    heights.value[drag.id] ?? 0
+  )
 }
 
 function onPointerUp() {
@@ -170,6 +160,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
     >
       <div
         ref="stageRef"
+        data-testid="hero-stage"
         class="absolute top-0 left-1/2 origin-top"
         :style="stageStyle"
       >
@@ -220,7 +211,9 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           </g>
         </svg>
 
-        <div class="absolute top-[150px] left-[636px] z-20 -translate-x-1/2">
+        <!-- The headline stays beneath the nodes so a dragged window passes
+             cleanly over it instead of flipping layers mid-drag. -->
+        <div class="absolute top-[150px] left-[636px] -translate-x-1/2">
           <HeroHeadline :locale />
         </div>
 
