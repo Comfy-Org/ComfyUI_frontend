@@ -4,8 +4,6 @@ import { ChevronRight } from '@lucide/vue'
 
 import type { HTMLAttributes } from 'vue'
 
-// Decorative "go" affordance for clickable cards. `hover="group"` highlights
-// when the parent (a `group`) is hovered; `hover="self"` only on its own hover.
 const { hover = 'self', class: className } = defineProps<{
   hover?: 'self' | 'group'
   class?: HTMLAttributes['class']
