@@ -308,6 +308,15 @@ function insertRowAfterGroup(
   node.widgets!.splice(lastIdx + 1, 0, ...rowWidgets)
 }
 
+function removeGroupInputs(
+  node: DynamicGroupNode,
+  predicate: (name: string) => boolean
+): void {
+  for (let i = node.inputs.length - 1; i >= 0; i--) {
+    if (predicate(node.inputs[i].name)) node.removeInput(i)
+  }
+}
+
 function syncController(group: string, node: DynamicGroupNode): void {
   const state = node.comfyDynamic.dynamicGroup[group]
   const controller = node.widgets?.find((w) => w.name === group)
@@ -339,7 +348,7 @@ function removeRow(group: string, row: number, node: DynamicGroupNode): void {
     belongsToRow(group, w.name, row)
   ))
     w.onRemove?.()
-  remove(node.inputs, (inp) => belongsToRow(group, inp.name, row))
+  removeGroupInputs(node, (name) => belongsToRow(group, name, row))
 
   for (const w of node.widgets ?? []) {
     const shifted = shiftedFieldName(group, w.name, row)
@@ -365,7 +374,7 @@ function rebuildRows(group: string, count: number, node: DynamicGroupNode) {
   const isRowMember = (name: string) => isGroupField(group, name)
   for (const w of remove(node.widgets, (w) => isRowMember(w.name)))
     w.onRemove?.()
-  remove(node.inputs, (inp) => isRowMember(inp.name))
+  removeGroupInputs(node, isRowMember)
 
   const insertAt = node.widgets.findIndex((w) => w.name === group) + 1
   const rowWidgets: IBaseWidget[] = []
@@ -424,7 +433,10 @@ function dynamicGroupWidget(
     },
     set(count: unknown) {
       if (typeof count !== 'number') return
-      rebuildRows(inputName, count, typedNode)
+      const state = typedNode.comfyDynamic.dynamicGroup[inputName]
+      if (!state) return
+      const clamped = Math.min(Math.max(count, state.min), state.max)
+      rebuildRows(inputName, clamped, typedNode)
       syncController(inputName, typedNode)
     },
     configurable: true

@@ -369,6 +369,39 @@ describe('Dynamic Groups', () => {
     expect(widgetNamed(node, 'g.1.a')).toBe(row2Field)
   })
 
+  test('remove row disconnects linked sockets and renumbers inputs', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<
+            string,
+            { addRow: () => void; removeRow: (r: number) => void }
+          >
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+    state.addRow()
+
+    const graph = new LGraph()
+    graph.add(node)
+    node.addInput('g.1.a', 'STRING')
+    const row1Index = node.inputs.findIndex((i) => i.name === 'g.1.a')
+    connectInput(node, row1Index, graph)
+    const linkId = node.inputs[row1Index].link!
+    node.addInput('g.2.a', 'STRING')
+
+    state.removeRow(1)
+
+    expect(graph.links[linkId]).toBeUndefined()
+    expect(inputNames(node)).toStrictEqual(['g.1.a'])
+    expect(node.inputs[0].link).toBeNull()
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+  })
+
   test('rows below min cannot be removed', () => {
     const node = testNode()
     addDynamicGroup(node, stringTemplate, { min: 1, max: 5 })
