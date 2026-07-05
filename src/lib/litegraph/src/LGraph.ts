@@ -1620,12 +1620,7 @@ export class LGraph
 
     // Register reroute in Layout Store for spatial tracking
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createReroute(
-      rerouteId,
-      { x: pos[0], y: pos[1] },
-      before.parentId,
-      before instanceof Reroute ? [...before.linkIds] : [before.id]
-    )
+    layoutMutations.createReroute(rerouteId, { x: pos[0], y: pos[1] })
 
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {

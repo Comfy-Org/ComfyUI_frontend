@@ -427,24 +427,13 @@ export class Reroute
   }
 
   removeAllFloatingLinks() {
-    for (const linkId of [...this.floatingLinkIds]) {
-      this.removeFloatingLink(linkId)
-    }
-  }
-
-  removeFloatingLink(linkId: LinkId) {
     const network = this.network.deref()
     if (!network) return
 
-    const floatingLink = network.floatingLinks.get(linkId)
-    if (!floatingLink) {
-      console.warn(
-        `[Reroute.removeFloatingLink] Floating link not found: ${linkId}, ignoring.`
-      )
-      return
+    for (const linkId of [...this.floatingLinkIds]) {
+      const floatingLink = network.floatingLinks.get(linkId)
+      if (floatingLink) network.removeFloatingLink(floatingLink)
     }
-
-    network.removeFloatingLink(floatingLink)
   }
 
   remove() {

@@ -10,7 +10,6 @@ import type { NodeId } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutSource,
-  LinkId,
   NodeLayout,
   Point,
   RerouteId,
@@ -28,12 +27,7 @@ interface LayoutMutations {
   deleteNode(nodeId: NodeId): void
 
   // Reroute operations
-  createReroute(
-    rerouteId: RerouteId,
-    position: Point,
-    parentId?: RerouteId,
-    linkIds?: LinkId[]
-  ): void
+  createReroute(rerouteId: RerouteId, position: Point): void
   deleteReroute(rerouteId: RerouteId): void
   moveReroute(
     rerouteId: RerouteId,
@@ -212,25 +206,13 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Create a new reroute
    */
-  const createReroute = (
-    rerouteId: RerouteId,
-    position: Point,
-    parentId?: RerouteId,
-    linkIds: LinkId[] = []
-  ): void => {
-    logger.debug('Creating reroute:', {
-      rerouteId,
-      position,
-      parentId,
-      linkCount: linkIds.length
-    })
+  const createReroute = (rerouteId: RerouteId, position: Point): void => {
+    logger.debug('Creating reroute:', { rerouteId, position })
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
       rerouteId,
       position,
-      parentId,
-      linkIds,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
