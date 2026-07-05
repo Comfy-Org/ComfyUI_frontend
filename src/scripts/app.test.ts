@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
@@ -10,7 +10,7 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -22,6 +22,7 @@ import {
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { api } from '@/scripts/api'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -241,6 +242,152 @@ describe('ComfyApp', () => {
         'workflows/review.json'
       )
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
+
+    it('continues queuing the original workflow after switching tabs mid-batch', async () => {
+      function createMarkedGraph(name: string) {
+        const graph = new LGraph()
+        graph.extra.queueTestWorkflow = name
+        return graph
+      }
+
+      const workflowA = new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: 0,
+        size: 0
+      })
+      const workflowB = new ComfyWorkflow({
+        path: 'workflows/b.json',
+        modified: 0,
+        size: 0
+      })
+      const graphA = createMarkedGraph('a')
+      const graphB = createMarkedGraph('b')
+
+      Reflect.set(app, 'rootGraphInternal', graphA)
+      mockWorkspaceWorkflow.activeWorkflow = workflowA
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(
+        async (graph = app.rootGraph) => {
+          const workflowName = graph.extra.queueTestWorkflow as string
+          return {
+            output: {
+              [workflowName]: {
+                class_type: 'PreviewAny',
+                inputs: {},
+                _meta: { title: workflowName }
+              }
+            },
+            workflow: {
+              ...createWorkflowGraphData(),
+              extra: { queueTestWorkflow: workflowName }
+            }
+          }
+        }
+      )
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        if (vi.mocked(api.queuePrompt).mock.calls.length === 1) {
+          Reflect.set(app, 'rootGraphInternal', graphB)
+          mockWorkspaceWorkflow.activeWorkflow = workflowB
+        }
+
+        return {
+          prompt_id: `job-${vi.mocked(api.queuePrompt).mock.calls.length}`,
+          node_errors: {},
+          error: ''
+        }
+      })
+
+      await app.queuePrompt(0, 2)
+
+      const queuedWorkflowNames = vi
+        .mocked(api.queuePrompt)
+        .mock.calls.map(([, data]) => Object.keys(data.output)[0])
+      expect(queuedWorkflowNames).toEqual(['a', 'a'])
+    })
+
+    it('runs afterQueued on the original workflow when switching tabs while the request is in flight', async () => {
+      const nodeType = 'test/QueuePromptMarker'
+      class QueuePromptMarkerNode extends LGraphNode {
+        constructor() {
+          super('QueuePromptMarker', nodeType)
+        }
+      }
+      LiteGraph.registerNodeType(nodeType, QueuePromptMarkerNode)
+
+      function createMarkedGraph(name: string) {
+        const graph = new LGraph()
+        graph.extra.queueTestWorkflow = name
+        const node = LiteGraph.createNode(nodeType)!
+        graph.add(node)
+        return graph
+      }
+
+      try {
+        const workflowA = new ComfyWorkflow({
+          path: 'workflows/a.json',
+          modified: 0,
+          size: 0
+        })
+        const workflowB = new ComfyWorkflow({
+          path: 'workflows/b.json',
+          modified: 0,
+          size: 0
+        })
+        const graph = createMarkedGraph('a')
+        const graphB = createMarkedGraph('b')
+
+        workflowA.changeTracker = new ChangeTracker(
+          workflowA,
+          graph.asSerialisable() as unknown as ComfyWorkflowJSON
+        )
+        Reflect.set(app, 'rootGraphInternal', graph)
+        mockWorkspaceWorkflow.activeWorkflow = workflowA
+        vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+        vi.spyOn(app, 'graphToPrompt').mockImplementation(
+          async (graph = app.rootGraph) => {
+            const workflowName = graph.extra.queueTestWorkflow as string
+            return {
+              output: {
+                [workflowName]: {
+                  class_type: 'PreviewAny',
+                  inputs: {},
+                  _meta: { title: workflowName }
+                }
+              },
+              workflow: {
+                ...createWorkflowGraphData(),
+                extra: { queueTestWorkflow: workflowName }
+              }
+            }
+          }
+        )
+        vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+          if (vi.mocked(api.queuePrompt).mock.calls.length === 1) {
+            workflowA.changeTracker!.activeState =
+              graph.asSerialisable() as unknown as ComfyWorkflowJSON
+            graph.configure(graphB.asSerialisable())
+            mockWorkspaceWorkflow.activeWorkflow = workflowB
+          }
+
+          return {
+            prompt_id: `job-${vi.mocked(api.queuePrompt).mock.calls.length}`,
+            node_errors: {},
+            error: ''
+          }
+        })
+
+        await app.queuePrompt(0, 2)
+
+        const afterQueuedWorkflowNames = vi
+          .mocked(executeWidgetsCallback)
+          .mock.calls.map(
+            ([nodes]) => nodes[0]?.graph?.extra.queueTestWorkflow as string
+          )
+        expect(afterQueuedWorkflowNames).toEqual(['a', 'a'])
+      } finally {
+        LiteGraph.unregisterNodeType(nodeType)
+      }
     })
   })
 
