@@ -1,6 +1,7 @@
 import type { LGraphState } from '../LGraph'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -149,6 +150,86 @@ function patchPromotedWidgets(
   for (const widget of widgets) {
     const newId = remappedIds.get(toNodeId(widget.id))
     if (newId !== undefined) widget.id = newId
+  }
+}
+
+/**
+ * Dedupes reroute IDs across serialized subgraph definitions. Reroute IDs
+ * must be unique within a root graph: the reroute store keys every reroute
+ * in a root graph (its subgraphs' included) in one bucket, but subgraph
+ * definitions from older frontends or external tools may number their
+ * reroutes from scratch. Remaps colliding IDs in place and patches every
+ * reference within the subgraph (`reroute.parentId`, `link.parentId`),
+ * advancing `state.lastRerouteId`.
+ */
+export function deduplicateSubgraphRerouteIds(
+  subgraphs: ExportedSubgraph[],
+  reservedRerouteIds: Set<number>,
+  state: LGraphState
+): void {
+  const usedRerouteIds = new Set(reservedRerouteIds)
+  for (const id of reservedRerouteIds) reserveRerouteId(id, state)
+
+  for (const subgraph of subgraphs) {
+    const remapped = remapRerouteIds(subgraph, usedRerouteIds, state)
+    if (remapped.size > 0) patchRerouteReferences(subgraph, remapped)
+  }
+}
+
+/** Advances `state.lastRerouteId` so future allocations skip `id`. */
+function reserveRerouteId(id: number, state: LGraphState): void {
+  if (id > state.lastRerouteId) state.lastRerouteId = toRerouteId(id)
+}
+
+/**
+ * Remaps duplicate reroute IDs to unique values, updating `usedRerouteIds`
+ * and `state.lastRerouteId` as new IDs are allocated.
+ * @returns A map of old ID → new ID for reroutes that were remapped.
+ */
+function remapRerouteIds(
+  subgraph: ExportedSubgraph,
+  usedRerouteIds: Set<number>,
+  state: LGraphState
+): Map<number, number> {
+  const remapped = new Map<number, number>()
+
+  for (const reroute of subgraph.reroutes ?? []) {
+    if (usedRerouteIds.has(reroute.id)) {
+      const newId = findNextAvailableId(usedRerouteIds, () =>
+        Number((state.lastRerouteId = toRerouteId(state.lastRerouteId + 1)))
+      )
+      remapped.set(reroute.id, newId)
+      console.warn(
+        `LiteGraph: duplicate subgraph reroute ID ${reroute.id} remapped to ${newId}`
+      )
+      reroute.id = newId
+      usedRerouteIds.add(newId)
+    } else {
+      usedRerouteIds.add(reroute.id)
+      reserveRerouteId(reroute.id, state)
+    }
+  }
+
+  return remapped
+}
+
+/** Patches every reference to a remapped reroute ID within a subgraph. */
+function patchRerouteReferences(
+  subgraph: ExportedSubgraph,
+  remapped: Map<number, number>
+): void {
+  for (const reroute of subgraph.reroutes ?? []) {
+    if (reroute.parentId === undefined) continue
+    const newParentId = remapped.get(reroute.parentId)
+    if (newParentId !== undefined) reroute.parentId = newParentId
+  }
+  for (const link of [
+    ...(subgraph.links ?? []),
+    ...(subgraph.floatingLinks ?? [])
+  ]) {
+    if (link.parentId === undefined) continue
+    const newParentId = remapped.get(link.parentId)
+    if (newParentId !== undefined) link.parentId = toRerouteId(newParentId)
   }
 }
 

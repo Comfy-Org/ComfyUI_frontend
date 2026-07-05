@@ -3,9 +3,12 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
+
+import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 
 function connectedGraph() {
   const graph = new LGraph()
@@ -92,6 +95,34 @@ describe('Reroute ↔ rerouteStore integration', () => {
     graph.clear()
 
     expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
+  })
+
+  it('deduplicates colliding subgraph reroute ids into one root bucket', () => {
+    LiteGraph.registerNodeType('dummy', LGraphNode)
+    const data = structuredClone(
+      duplicateSubgraphNodeIds
+    ) as unknown as SerialisableGraph
+    const [a, b] = data.definitions!.subgraphs!
+    a.reroutes = [{ id: 1, pos: [0, 0], linkIds: [1] }]
+    a.links![0].parentId = toRerouteId(1)
+    b.reroutes = [{ id: 1, pos: [0, 0], linkIds: [2] }]
+    b.links![0].parentId = toRerouteId(1)
+
+    const graph = new LGraph(data)
+
+    const store = useRerouteStore()
+    const subgraphs = [...graph.subgraphs.values()]
+    const rerouteIds = subgraphs.map((sg) => [...sg.reroutes.keys()][0])
+    expect(new Set(rerouteIds).size).toBe(2)
+
+    for (const sg of subgraphs) {
+      const [reroute] = [...sg.reroutes.values()]
+      expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(
+        reroute.id
+      )
+      const [link] = [...sg._links.values()]
+      expect(link.parentId).toBe(reroute.id)
+    }
   })
 
   it('floating marker survives through the store state', () => {
