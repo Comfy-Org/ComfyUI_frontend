@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { CRITICAL_COVERAGE_DIRS } from './criticalCoverageDirs'
@@ -55,8 +56,13 @@ export function formatCoverageMetric(metric?: CoverageMetric): string {
 }
 
 function isCriticalFile(filePath: string): boolean {
-  const normalized = filePath.replaceAll('\\', '/')
-  return CRITICAL_COVERAGE_DIRS.some((dir) => normalized.includes(`/${dir}/`))
+  // json-summary keys are absolute; anchor them to the repo root so a
+  // critical dir can only match at the start of the relative path, never
+  // mid-path (e.g. a nested `**/src/composables/`).
+  const repoRelative = relative(process.cwd(), filePath).replaceAll('\\', '/')
+  return CRITICAL_COVERAGE_DIRS.some((dir) =>
+    repoRelative.startsWith(`${dir}/`)
+  )
 }
 
 // The coverage run spans all of src (a single run, per #13423), so the

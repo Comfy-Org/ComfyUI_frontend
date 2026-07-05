@@ -35,20 +35,25 @@ describe('renderCriticalCoverageReport', () => {
         total: {
           statements: { covered: 999, total: 1000, pct: 99.9 }
         },
-        '/repo/src/utils/a.ts': {
+        [`${process.cwd()}/src/utils/a.ts`]: {
           statements: { covered: 5, total: 6, pct: 83.33 },
           functions: { covered: 2, total: 2, pct: 100 },
           lines: { covered: 6, total: 6, pct: 100 }
         },
-        '/repo/src/stores/b.ts': {
+        'src/stores/b.ts': {
           statements: { covered: 3, total: 4, pct: 75 },
           functions: { covered: 1, total: 2, pct: 50 },
           lines: { covered: 3, total: 4, pct: 75 }
         },
-        '/repo/src/views/NotCritical.vue': {
+        [`${process.cwd()}/src/views/NotCritical.vue`]: {
           statements: { covered: 0, total: 50, pct: 0 },
           functions: { covered: 0, total: 5, pct: 0 },
           lines: { covered: 0, total: 50, pct: 0 }
+        },
+        [`${process.cwd()}/src/lib/nested/src/utils/impostor.ts`]: {
+          statements: { covered: 0, total: 40, pct: 0 },
+          functions: { covered: 0, total: 4, pct: 0 },
+          lines: { covered: 0, total: 40, pct: 0 }
         }
       })
     ).toBe(
