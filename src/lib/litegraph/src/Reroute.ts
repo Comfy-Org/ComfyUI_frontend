@@ -1,7 +1,10 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
+import type { UUID } from '@/utils/uuid'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -25,13 +28,8 @@ import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 
+export type { FloatingRerouteSlot } from '@/types/rerouteChain'
 export type { RerouteId } from '@/types/rerouteId'
-
-/** The input or output slot that an incomplete reroute link is connected to. */
-export interface FloatingRerouteSlot {
-  /** Floating connection to an input or output */
-  slotType: 'input' | 'output'
-}
 
 /**
  * Represents an additional point on the graph that a link path will travel through.  Used for visual organisation only.
@@ -59,24 +57,38 @@ export class Reroute
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   private readonly network: WeakRef<LinkNetwork>
 
-  private parentIdInternal?: RerouteId
+  /**
+   * The reroute's chain state. Once registered with {@link useRerouteStore},
+   * this is the store's reactive proxy, so field writes are tracked.
+   */
+  _chain: RerouteChain
+
+  /** The graph this reroute is registered with in {@link useRerouteStore}, if any. */
+  _graphId?: UUID
+
   public get parentId(): RerouteId | undefined {
-    return this.parentIdInternal
+    return this._chain.parentId
   }
 
   /** Ignores attempts to create an infinite loop. @inheritdoc */
   public set parentId(value) {
     if (value === this.id) return
     if (this.getReroutes() === null) return
-    this.parentIdInternal = value
+    this._chain.parentId = value
   }
 
   public get parent(): Reroute | undefined {
-    return this.network.deref()?.getReroute(this.parentIdInternal)
+    return this.network.deref()?.getReroute(this._chain.parentId)
   }
 
   /** This property is only defined on the last reroute of a floating reroute chain (closest to input end). */
-  floating?: FloatingRerouteSlot
+  get floating(): FloatingRerouteSlot | undefined {
+    return this._chain.floating
+  }
+
+  set floating(value: FloatingRerouteSlot | undefined) {
+    this._chain.floating = value
+  }
 
   private readonly posInternal: Point = [0, 0]
   /** @inheritdoc */
@@ -213,6 +225,7 @@ export class Reroute
   ) {
     this.id = id
     this.network = new WeakRef(network)
+    this._chain = { id }
     this.parentId = parentId
     if (pos) this.pos = pos
     this.linkIds = new Set(linkIds)
@@ -268,15 +281,15 @@ export class Reroute
    */
   getReroutes(visited = new Set<Reroute>()): Reroute[] | null {
     // No parentId - last in the chain
-    if (this.parentIdInternal === undefined) return [this]
+    if (this._chain.parentId === undefined) return [this]
     // Invalid chain - looped
     if (visited.has(this)) return null
     visited.add(this)
 
-    const parent = this.network.deref()?.reroutes.get(this.parentIdInternal)
+    const parent = this.network.deref()?.reroutes.get(this._chain.parentId)
     // Invalid parent (or network) - drop silently to recover
     if (!parent) {
-      this.parentIdInternal = undefined
+      this._chain.parentId = undefined
       return [this]
     }
 
@@ -295,14 +308,14 @@ export class Reroute
     withParentId: RerouteId,
     visited = new Set<Reroute>()
   ): Reroute | null | undefined {
-    if (this.parentIdInternal === withParentId) return this
+    if (this._chain.parentId === withParentId) return this
     if (visited.has(this)) return null
     visited.add(this)
-    if (this.parentIdInternal === undefined) return
+    if (this._chain.parentId === undefined) return
 
     return this.network
       .deref()
-      ?.reroutes.get(this.parentIdInternal)
+      ?.reroutes.get(this._chain.parentId)
       ?.findNextReroute(withParentId, visited)
   }
 
@@ -821,4 +834,32 @@ function getNextPos(
 /** Returns the direction from one point to another in radians. */
 function getDirection(fromPos: Point, toPos: Point) {
   return Math.atan2(toPos[1] - fromPos[1], toPos[0] - fromPos[0])
+}
+
+/**
+ * Registers a reroute's chain state into {@link useRerouteStore} and adopts
+ * the store's reactive proxy as {@link Reroute._chain}, so the store and the
+ * reroute always agree and field writes are tracked.  Call this at every
+ * site that adds a reroute to a graph's reroute map.
+ * @param graph The graph (or subgraph) the reroute belongs to
+ * @param reroute The reroute to register
+ */
+export function registerRerouteChain(
+  graph: { rootGraph: { id: UUID } },
+  reroute: Reroute
+): void {
+  const graphId = graph.rootGraph.id
+  reroute._chain = useRerouteStore().registerReroute(graphId, reroute._chain)
+  reroute._graphId = graphId
+}
+
+/**
+ * Removes a reroute's chain state from {@link useRerouteStore} and detaches
+ * the reroute. No-op for reroutes that were never registered.
+ * @param reroute The reroute to unregister
+ */
+export function unregisterRerouteChain(reroute: Reroute): void {
+  if (!reroute._graphId) return
+  useRerouteStore().deleteReroute(reroute._graphId, reroute._chain)
+  reroute._graphId = undefined
 }

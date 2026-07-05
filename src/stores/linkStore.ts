@@ -132,6 +132,14 @@ export const useLinkStore = defineStore('link', () => {
     return targetIndex.value.get(graphId)?.get(targetKey(nodeId, slot))
   }
 
+  /** Iterates every registered topology in a graph's bucket. */
+  function* graphTopologies(graphId: UUID): Generator<LinkTopology> {
+    const targets = targetIndex.value.get(graphId)
+    if (targets) yield* targets.values()
+    const unkeyed = unkeyedLinks.value.get(graphId)
+    if (unkeyed) yield* unkeyed.values()
+  }
+
   function clearGraph(graphId: UUID): void {
     targetIndex.value.delete(graphId)
     unkeyedLinks.value.delete(graphId)
@@ -143,6 +151,7 @@ export const useLinkStore = defineStore('link', () => {
     deleteLink: displace,
     isInputSlotConnected,
     getInputSlotLink,
+    graphTopologies,
     clearGraph
   }
 })

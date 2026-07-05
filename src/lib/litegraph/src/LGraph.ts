@@ -13,6 +13,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -39,7 +40,11 @@ import {
 } from './LLink'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
-import { Reroute } from './Reroute'
+import {
+  registerRerouteChain,
+  Reroute,
+  unregisterRerouteChain
+} from './Reroute'
 import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
@@ -404,10 +409,14 @@ export class LGraph
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
+      useRerouteStore().clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each link individually.
       unregisterAllLinkTopologies(this)
+      for (const reroute of this.reroutes.values()) {
+        unregisterRerouteChain(reroute)
+      }
     }
 
     this.id = zeroUuid
@@ -1132,6 +1141,9 @@ export class LGraph
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, fireNodeRemovalLifecycle)
         unregisterAllLinkTopologies(node.subgraph)
+        for (const reroute of node.subgraph.reroutes.values()) {
+          unregisterRerouteChain(reroute)
+        }
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1480,7 +1492,7 @@ export class LGraph
     for (const reroute of reroutes) {
       reroute.floatingLinkIds.delete(link.id)
       if (reroute.floatingLinkIds.size === 0) {
-        delete reroute.floating
+        reroute.floating = undefined
       }
 
       if (reroute.totalLinks === 0) this.removeReroute(reroute.id)
@@ -1534,6 +1546,32 @@ export class LGraph
   }
 
   /**
+   * Adds a reroute to this graph's {@link reroutes} map and registers its
+   * chain state with the reroute store. The single entry point for
+   * populating {@link reroutes}; routing every add through here keeps the
+   * store from silently desyncing.
+   */
+  _addReroute(reroute: Reroute): void {
+    this.reroutesInternal.set(reroute.id, reroute)
+    registerRerouteChain(this, reroute)
+  }
+
+  /**
+   * Removes a reroute from this graph's {@link reroutes} map and
+   * unregisters it from the reroute and layout stores. The delete-side
+   * counterpart to {@link _addReroute}.
+   */
+  _removeReroute(id: RerouteId): void {
+    const reroute = this.reroutesInternal.get(id)
+    if (!reroute) return
+    this.reroutesInternal.delete(id)
+    unregisterRerouteChain(reroute)
+    const layoutMutations = useLayoutMutations()
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.deleteReroute(id)
+  }
+
+  /**
    * Configures a reroute on the graph where ID is already known (probably deserialisation).
    * Creates the object if it does not exist.
    * @param serialisedReroute See {@link SerialisableReroute}
@@ -1558,7 +1596,7 @@ export class LGraph
       parentId === undefined ? undefined : toRerouteId(parentId)
     const typedLinkIds = linkIds?.map(toLinkId)
     reroute.update(typedParentId, pos, typedLinkIds, floating)
-    this.reroutes.set(rerouteId, reroute)
+    this._addReroute(reroute)
     return reroute
   }
 
@@ -1587,7 +1625,7 @@ export class LGraph
       linkIds,
       floatingLinkIds
     )
-    this.reroutes.set(rerouteId, reroute)
+    this._addReroute(reroute)
 
     // Register reroute in Layout Store for spatial tracking
     layoutMutations.setSource(LayoutSource.Canvas)
@@ -1628,7 +1666,6 @@ export class LGraph
    * @param id ID of reroute to remove
    */
   removeReroute(id: RerouteId): void {
-    const layoutMutations = useLayoutMutations()
     const { reroutes } = this
     const reroute = reroutes.get(id)
     if (!reroute) return
@@ -1671,11 +1708,7 @@ export class LGraph
       }
     }
 
-    reroutes.delete(id)
-
-    // Delete reroute from Layout Store
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteReroute(id)
+    this._removeReroute(id)
 
     // This does not belong here; it should be handled by the caller, or run by a remove-many API.
     // https://github.com/Comfy-Org/litegraph.js/issues/898
@@ -2261,7 +2294,7 @@ export class LGraph
         reroute.pos[1] + offsetY
       ])
       rerouteIdMap.set(reroute.id, migratedReroute.id)
-      this.reroutes.set(migratedReroute.id, migratedReroute)
+      this._addReroute(migratedReroute)
       toSelect.push(migratedReroute)
     }
     //iterate over newly created links to update reroute parentIds
@@ -2515,7 +2548,6 @@ export class LGraph
     data: ISerialisedGraph | SerialisableGraph,
     keep_old?: boolean
   ): boolean | undefined {
-    const layoutMutations = useLayoutMutations()
     const options: LGraphEventMap['configuring'] = {
       data,
       clearGraph: !keep_old
@@ -2707,10 +2739,7 @@ export class LGraph
       for (const reroute of this.reroutes.values()) {
         // Drop broken links, and ignore reroutes with no valid links
         if (!reroute.validateLinks(this._links, this.floatingLinks)) {
-          this.reroutes.delete(reroute.id)
-          // Clean up layout store
-          layoutMutations.setSource(LayoutSource.Canvas)
-          layoutMutations.deleteReroute(reroute.id)
+          this._removeReroute(reroute.id)
         }
       }
 

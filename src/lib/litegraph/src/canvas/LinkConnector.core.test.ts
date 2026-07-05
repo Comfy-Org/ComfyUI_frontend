@@ -59,6 +59,7 @@ const test = baseTest.extend<TestContext>({
       getReroute: ((id: RerouteId | null | undefined) =>
         id == null ? undefined : reroutes.get(id)) as LinkNetwork['getReroute'],
       removeReroute: (id: RerouteId) => reroutes.delete(id),
+      _removeReroute: (id: RerouteId) => void reroutes.delete(id),
       add: (node: LGraphNode) => graph.add(node)
     })
   },

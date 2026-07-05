@@ -4,9 +4,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
@@ -32,8 +30,6 @@ import type {
   ReadonlyLinkNetwork
 } from './interfaces'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
-
-const layoutMutations = useLayoutMutations()
 
 export type { LinkId } from '@/types/linkId'
 export type SerialisedLLinkArray = [
@@ -544,10 +540,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     for (const reroute of reroutes) {
       reroute.linkIds.delete(this.id)
       if (!keepReroutes && !reroute.totalLinks) {
-        network.reroutes.delete(reroute.id)
-        // Delete reroute from Layout Store
-        layoutMutations.setSource(LayoutSource.Canvas)
-        layoutMutations.deleteReroute(reroute.id)
+        network._removeReroute(reroute.id)
       }
     }
     network.links.delete(this.id)

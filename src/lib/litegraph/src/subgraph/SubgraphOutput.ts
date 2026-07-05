@@ -89,7 +89,7 @@ export class SubgraphOutput extends SubgraphSlot {
     const reroutes = LLink.getReroutes(subgraph, link)
     for (const reroute of reroutes) {
       reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
+      reroute.floating = undefined
       reroute._dragging = undefined
     }
 
