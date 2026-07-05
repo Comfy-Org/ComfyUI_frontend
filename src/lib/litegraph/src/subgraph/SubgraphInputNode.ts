@@ -180,13 +180,13 @@ export class SubgraphInputNode
 
     // Break floating links
     const inputIndex = node.inputs.indexOf(input)
-    for (const link of slotFloatingLinks(
+    for (const floatingLink of slotFloatingLinks(
       subgraph,
       'input',
       node.id,
       inputIndex
     )) {
-      subgraph.removeFloatingLink(link)
+      subgraph.removeFloatingLink(floatingLink)
     }
 
     input.link = null

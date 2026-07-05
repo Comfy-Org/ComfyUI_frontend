@@ -180,8 +180,8 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.origin_id = SUBGRAPH_OUTPUT_ID
-    floatingLink.origin_slot = output.parent.slots.indexOf(output)
+    floatingLink.target_id = SUBGRAPH_OUTPUT_ID
+    floatingLink.target_slot = output.parent.slots.indexOf(output)
   }
 
   connectToRerouteInput(

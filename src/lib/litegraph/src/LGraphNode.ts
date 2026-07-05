@@ -1690,6 +1690,15 @@ export class LGraphNode
         }
       }
     }
+    if (this.graph) {
+      for (const floatingLink of this.graph.floatingLinks.values()) {
+        if (
+          floatingLink.origin_id === this.id &&
+          floatingLink.origin_slot > slot
+        )
+          floatingLink.origin_slot--
+      }
+    }
 
     this.onOutputRemoved?.(slot)
     this.setDirtyCanvas(true, true)
@@ -1742,6 +1751,15 @@ export class LGraphNode
       if (this.graph) {
         const link = this.graph._links.get(input.link)
         if (link) link.target_slot--
+      }
+    }
+    if (this.graph) {
+      for (const floatingLink of this.graph.floatingLinks.values()) {
+        if (
+          floatingLink.target_id === this.id &&
+          floatingLink.target_slot > slot
+        )
+          floatingLink.target_slot--
       }
     }
     this.onInputRemoved?.(slot, slot_info[0])
