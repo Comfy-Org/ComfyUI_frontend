@@ -1,8 +1,8 @@
 # Reroute Chain Store
 
 Date: 2026-07-04
-Status: Accepted (design review; follow-up to the link topology store,
-PR #13436)
+Status: Accepted (design review; follow-up to the
+[link topology store](link-topology-store.md), PR #13436)
 
 Design record for extracting reroute connectivity state into a dedicated
 store per [ADR 0008](../adr/0008-entity-component-system.md). Amends the

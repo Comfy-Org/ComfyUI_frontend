@@ -4,6 +4,11 @@ Canonical vocabulary for the graph domain. Terms are added as they are
 resolved during design work; keep entries implementation-free. Intended
 to grow into a proper reference document.
 
+Design records that rely on this vocabulary:
+[Link Topology Store](link-topology-store.md),
+[Reroute Chain Store](reroute-chain-store.md),
+[ADR 0008](../adr/0008-entity-component-system.md).
+
 ## Links & Reroutes
 
 - **Link** — a directed data connection from one node's output slot to

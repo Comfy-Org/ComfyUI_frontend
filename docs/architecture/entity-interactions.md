@@ -66,7 +66,7 @@ graph TD
     Link -.->|"origin_id, target_id"| Node
     Link -.->|"parentId"| Reroute
     Slot -.->|"link / links[]"| Link
-    Reroute -.->|"linkIds"| Link
+    Reroute -.->|"linkIds (derived, rerouteStore)"| Link
     Reroute -.->|"parentId"| Reroute
     Group -.->|"_children Set"| Node
     Group -.->|"_children Set"| Reroute
@@ -103,9 +103,13 @@ type: ISlotType"]
     Link -.->|"parentId"| R1["Reroute A"]
     R1 -.->|"parentId"| R2["Reroute B"]
 
-    R1 -.-|"linkIds Set"| Link
-    R2 -.-|"linkIds Set"| Link
+    R1 -.-|"linkIds (derived)"| Link
+    R2 -.-|"linkIds (derived)"| Link
 ```
+
+`Reroute.linkIds` / `floatingLinkIds` are read-only accessors derived from the
+links' own `parentId` chains by `rerouteStore` — membership is never stored
+(see [reroute-chain-store.md](reroute-chain-store.md)).
 
 ### Subgraph Boundary Connections
 
@@ -142,13 +146,19 @@ graph TD
 ```mermaid
 graph LR
     Slot["Source Slot"] -->|"drag starts"| FL["Floating LLink
-origin_id=-1 or target_id=-1"]
+origin or target = UNASSIGNED_NODE_ID"]
     FL -->|"stored in"| FLMap["graph.floatingLinks Map"]
+    FL -->|"registered in"| SideSet["linkStore unkeyed side set
+(no unique target slot)"]
     FL -.->|"may pass through"| Reroute
-    Reroute -.-|"floatingLinkIds Set"| FL
+    Reroute -.-|"floatingLinkIds (derived)"| FL
     FL -->|"on drop"| Permanent["Permanent LLink
-(registered in graph._links)"]
+(graph._links + linkStore target index)"]
 ```
+
+A floating link's slot attachment is fully encoded in its own endpoints —
+slots hold no floating-link sets (`slotFloatingLinks()` in `LLink.ts` derives
+attachment by scanning `graph.floatingLinks`).
 
 ## 3. Rendering
 
@@ -254,7 +264,7 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> Created: node.connect() or connectSlots()
-    Created --> Registered: graph._links.set(id, link)
+    Created --> Registered: graph._addLink(link)
 
     state Registered {
         [*] --> Active
@@ -268,12 +278,18 @@ stateDiagram-v2
 
     note right of Created
         new LLink(id, type, origin, slot, target, slot)
+        _addLink sets graph._links entry and
+        registers topology in linkStore
+        (keyed by target input slot).
         Output slot.links[] updated.
         Input slot.link set.
     end note
 
     note right of Removed
-        Removed from graph._links.
+        Removed from graph._links and
+        unregistered from linkStore
+        (via _removeLink or link.disconnect).
+        Link geometry dropped from layoutStore.
         Orphaned reroutes cleaned up.
         graph._version incremented.
     end note
@@ -363,6 +379,10 @@ graph TD
 (Pinia)"]
         PES["PreviewExposureStore
 (Pinia)"]
+        LKS["LinkStore
+(Pinia)"]
+        RRS["RerouteStore
+(Pinia)"]
         LM["LayoutMutations
 (composable)"]
     end
@@ -383,10 +403,20 @@ lastRerouteId, lastGroupId)"]
     SGNode -->|"host-scoped preview exposures"| PES
     PES -.->|"keyed by host node locator"| SGNode
 
-    %% LayoutMutations
+    %% LinkStore
+    Graph -->|"_addLink()/_removeLink() register/unregister"| LKS
+    Link <-->|"_state IS the store entry (endpoint accessors)"| LKS
+    LKS -.->|"keyed by rootGraphId + targetNodeId:targetSlot"| Link
+
+    %% RerouteStore
+    Graph -->|"_addReroute()/_removeReroute()"| RRS
+    Reroute <-->|"_chain (parentId, floating)"| RRS
+    RRS -.->|"derived linkIds membership"| Reroute
+
+    %% LayoutMutations (geometry only)
     Node -->|"pos/size setter"| LM
     Reroute -->|"move()"| LM
-    Link -->|"connectSlots()/disconnect()"| LM
+    Link -->|"disconnect(): drop link geometry"| LM
     Graph -->|"add()/remove()"| LM
 
     %% Graph state
