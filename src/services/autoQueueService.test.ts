@@ -69,4 +69,30 @@ describe('setupAutoQueueHandler', () => {
 
     expect(app.queuePrompt).toHaveBeenCalledWith(0, 3, undefined, workflowA)
   })
+
+  it('clears the Run Instant workflow when instant mode stops', async () => {
+    const workflowA = { path: 'workflows/a.json' } as LoadedComfyWorkflow
+    const workflowB = { path: 'workflows/b.json' } as LoadedComfyWorkflow
+    const queueSettingsStore = useQueueSettingsStore()
+    const queueCountStore = useQueuePendingTaskCountStore()
+
+    mockWorkspaceWorkflow.activeWorkflow = workflowA
+    queueSettingsStore.batchCount = 2
+    setupAutoQueueHandler()
+
+    queueSettingsStore.$patch({ mode: 'instant-running' })
+    await nextTick()
+    queueSettingsStore.$patch({ mode: 'instant-idle' })
+    await nextTick()
+    mockWorkspaceWorkflow.activeWorkflow = workflowB
+    queueSettingsStore.$patch({ mode: 'instant-running' })
+    await nextTick()
+
+    queueCountStore.$patch({ count: 1 })
+    await nextTick()
+    queueCountStore.$patch({ count: 0 })
+    await nextTick()
+
+    expect(app.queuePrompt).toHaveBeenCalledWith(0, 2, undefined, workflowB)
+  })
 })

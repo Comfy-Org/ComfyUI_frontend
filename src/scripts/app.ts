@@ -1625,19 +1625,19 @@ export class ComfyApp {
     if (activeWorkflow?.path === item.workflow.path) return this.rootGraph
 
     item.detachedGraph ??= new LGraph(
-      clone(
-        item.workflow.activeState ?? item.workflowState
-      ) as unknown as SerialisableGraph
+      clone(item.workflowState) as unknown as SerialisableGraph
     )
     return item.detachedGraph
   }
 
-  private syncDetachedQueueGraph(item: QueueItem, graph: LGraph) {
-    if (!item.workflow?.changeTracker || graph === this.rootGraph) return
-
+  private syncQueueGraphState(item: QueueItem, graph: LGraph) {
     const activeState = clone(
       graph.asSerialisable()
     ) as unknown as ComfyWorkflowJSON
+    item.workflowState = activeState
+
+    if (!item.workflow?.changeTracker || graph === this.rootGraph) return
+
     item.workflow.changeTracker.activeState = activeState
     item.workflow.isModified = !ChangeTracker.graphEqual(
       item.workflow.changeTracker.initialState,
@@ -1709,6 +1709,7 @@ export class ComfyApp {
               isPartialExecution
             })
           })
+          this.syncQueueGraphState(item, queueGraph)
 
           const queuedWorkflow =
             item.workflow ??
@@ -1870,7 +1871,7 @@ export class ComfyApp {
               isPartialExecution
             })
           }
-          this.syncDetachedQueueGraph(item, afterQueueGraph)
+          this.syncQueueGraphState(item, afterQueueGraph)
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
