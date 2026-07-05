@@ -418,8 +418,12 @@ export class Reroute
 
     const offsetY = LiteGraph.NODE_SLOT_HEIGHT * 0.7
     const { pos } = this
+    const previousPos = { x: pos[0], y: pos[1] }
     pos[0] = snapTo * Math.round(pos[0] / snapTo)
     pos[1] = snapTo * Math.round((pos[1] - offsetY) / snapTo) + offsetY
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.moveReroute(this.id, { x: pos[0], y: pos[1] }, previousPos)
     return true
   }
 

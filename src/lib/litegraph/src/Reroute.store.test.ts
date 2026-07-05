@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -190,6 +191,18 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     expect(a.parentId).toBeUndefined()
     expect(c.getReroutes()).not.toBeNull()
+  })
+
+  it('snapToGrid mirrors the snapped position into the layout store', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([12, 17], link)!
+
+    reroute.snapToGrid(10)
+
+    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+      x: reroute.pos[0],
+      y: reroute.pos[1]
+    })
   })
 
   it('floating marker survives through the store state', () => {
