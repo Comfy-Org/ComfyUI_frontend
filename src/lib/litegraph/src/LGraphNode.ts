@@ -31,7 +31,7 @@ import { BadgePosition, LGraphBadge } from './LGraphBadge'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
-import { LLink } from './LLink'
+import { LLink, slotFloatingLinks } from './LLink'
 import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
@@ -3093,11 +3093,14 @@ export class LGraphNode
     const output = this.outputs[slot]
     if (!output) return false
 
-    if (output._floatingLinks) {
-      for (const link of output._floatingLinks) {
-        if (link.hasOrigin(this.id, slot)) {
-          this.graph?.removeFloatingLink(link)
-        }
+    if (this.graph) {
+      for (const link of slotFloatingLinks(
+        this.graph,
+        'output',
+        this.id,
+        slot
+      )) {
+        this.graph.removeFloatingLink(link)
       }
     }
 
@@ -3257,11 +3260,9 @@ export class LGraphNode
 
     // Break floating links, except the one whose reroute chain is being
     // reconnected (its reroute would be pruned before the new link is added).
-    if (input._floatingLinks?.size) {
-      for (const link of input._floatingLinks) {
-        if (link.parentId === keepFloatingReroute) continue
-        graph.removeFloatingLink(link)
-      }
+    for (const link of slotFloatingLinks(graph, 'input', this.id, slot)) {
+      if (link.parentId === keepFloatingReroute) continue
+      graph.removeFloatingLink(link)
     }
 
     const link_id = this.inputs[slot].link

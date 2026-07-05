@@ -1453,34 +1453,12 @@ export class LGraph
     }
     this.floatingLinksInternal.set(link.id, link)
     registerLinkTopology(this, link)
-
-    const slot =
-      link.target_id !== UNASSIGNED_NODE_ID
-        ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
-        : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
-    if (slot) {
-      slot._floatingLinks ??= new Set()
-      slot._floatingLinks.add(link)
-    } else {
-      console.warn(
-        `Adding invalid floating link: target/slot: [${link.target_id}/${link.target_slot}] origin/slot: [${link.origin_id}/${link.origin_slot}]`
-      )
-    }
-
     return link
   }
 
   removeFloatingLink(link: LLink): void {
     this.floatingLinksInternal.delete(link.id)
     unregisterLinkTopology(link)
-
-    const slot =
-      link.target_id !== UNASSIGNED_NODE_ID
-        ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
-        : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
-    if (slot) {
-      slot._floatingLinks?.delete(link)
-    }
 
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {

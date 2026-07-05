@@ -5,7 +5,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
@@ -230,6 +230,8 @@ export function useSlotLinkInteraction({
 
   const resolveExistingInputLinkAnchor = (
     graph: LGraph,
+    nodeId: NodeId,
+    slotIndex: number,
     inputSlot: INodeInputSlot | undefined
   ): { position: Point; direction: LinkDirection } | null => {
     if (!inputSlot) return null
@@ -260,10 +262,7 @@ export function useSlotLinkInteraction({
       if (directAnchor) return directAnchor
     }
 
-    const floatingLinkIterator = inputSlot._floatingLinks?.values()
-    const floatingLink = floatingLinkIterator
-      ? floatingLinkIterator.next().value
-      : undefined
+    const [floatingLink] = slotFloatingLinks(graph, 'input', nodeId, slotIndex)
     if (!floatingLink) return null
 
     if (floatingLink.parentId != null) {
@@ -631,11 +630,15 @@ export function useSlotLinkInteraction({
     const ctrlOrMeta = event.ctrlKey || event.metaKey
 
     const inputLinkId = inputSlot?.link ?? null
-    const inputFloatingCount = inputSlot?._floatingLinks?.size ?? 0
+    const inputFloatingCount = isInputSlot
+      ? slotFloatingLinks(graph, 'input', localNodeId, index).length
+      : 0
     const hasExistingInputLink = inputLinkId != null || inputFloatingCount > 0
 
     const outputLinkCount = outputSlot?.links?.length ?? 0
-    const outputFloatingCount = outputSlot?._floatingLinks?.size ?? 0
+    const outputFloatingCount = isOutputSlot
+      ? slotFloatingLinks(graph, 'output', localNodeId, index).length
+      : 0
     const hasExistingOutputLink = outputLinkCount > 0 || outputFloatingCount > 0
 
     const shouldBreakExistingInputLink =
@@ -675,7 +678,7 @@ export function useSlotLinkInteraction({
 
     const existingAnchor =
       isInputSlot && !shouldBreakExistingInputLink
-        ? resolveExistingInputLinkAnchor(graph, inputSlot)
+        ? resolveExistingInputLinkAnchor(graph, localNodeId, index, inputSlot)
         : null
 
     const shouldMoveExistingOutput =

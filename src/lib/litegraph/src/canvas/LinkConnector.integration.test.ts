@@ -12,6 +12,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
+import { slotFloatingLinks } from '../LLink'
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import { toLinkId } from '@/types/linkId'
@@ -168,18 +169,23 @@ const test = baseTest.extend<TestContext>({
           expect(link.origin_id).not.toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).not.toBe(-1)
           expect(link.target_slot).toBe(-1)
-          const outputFloatingLinks = graph.getNodeById(link.origin_id)
-            ?.outputs[link.origin_slot]._floatingLinks
-          expect(outputFloatingLinks).toBeDefined()
+          const outputFloatingLinks = slotFloatingLinks(
+            graph,
+            'output',
+            link.origin_id,
+            link.origin_slot
+          )
           expect(outputFloatingLinks).toContain(link)
         } else {
           expect(link.origin_id).toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).toBe(-1)
           expect(link.target_slot).not.toBe(-1)
-          const inputFloatingLinks = graph.getNodeById(link.target_id)?.inputs[
+          const inputFloatingLinks = slotFloatingLinks(
+            graph,
+            'input',
+            link.target_id,
             link.target_slot
-          ]._floatingLinks
-          expect(inputFloatingLinks).toBeDefined()
+          )
           expect(inputFloatingLinks).toContain(link)
         }
       }
@@ -240,7 +246,7 @@ describe('LinkConnector Integration', () => {
         graph.links.get(hasInputNode.inputs[0].link!)!
       )
 
-      connector.moveInputLink(graph, hasInputNode.inputs[0])
+      connector.moveInputLink(graph, hasInputNode, hasInputNode.inputs[0])
       expect(connector.state.connectingTo).toBe('input')
       expect(connector.state.draggingExistingLinks).toBe(true)
       expect(connector.renderLinks.length).toBe(1)
@@ -346,9 +352,13 @@ describe('LinkConnector Integration', () => {
 
         expect([0, undefined]).toContain(output.links?.length)
 
-        expect([0, undefined]).toContain(input._floatingLinks?.size)
+        expect(
+          slotFloatingLinks(graph, 'input', toNodeId(nodeId), 0)
+        ).toHaveLength(0)
 
-        expect([0, undefined]).toContain(output._floatingLinks?.size)
+        expect(
+          slotFloatingLinks(graph, 'output', toNodeId(nodeId), 0)
+        ).toHaveLength(0)
       }
     })
 
@@ -367,7 +377,7 @@ describe('LinkConnector Integration', () => {
 
       const atOutputNodeEvent = mockedNodeTitleDropEvent(hasOutputNode)
 
-      connector.moveInputLink(graph, hasInputNode.inputs[0])
+      connector.moveInputLink(graph, hasInputNode, hasInputNode.inputs[0])
       connector.dropLinks(graph, atOutputNodeEvent)
       connector.reset()
 
@@ -396,7 +406,7 @@ describe('LinkConnector Integration', () => {
 
       const atHasOutputNode = mockedInputDropEvent(hasOutputNode, 0)
 
-      connector.moveInputLink(graph, hasInputNode.inputs[0])
+      connector.moveInputLink(graph, hasInputNode, hasInputNode.inputs[0])
       connector.dropLinks(graph, atHasOutputNode)
       connector.reset()
 
@@ -422,7 +432,7 @@ describe('LinkConnector Integration', () => {
         ?.map((linkId) => graph.links.get(linkId)!)
         .map((link) => LLink.getReroutes(graph, link))
 
-      connector.moveOutputLink(graph, hasOutputNode.outputs[0])
+      connector.moveOutputLink(graph, hasOutputNode, hasOutputNode.outputs[0])
       expect(connector.state.connectingTo).toBe('output')
       expect(connector.state.draggingExistingLinks).toBe(true)
       expect(connector.renderLinks.length).toBe(3)
@@ -551,9 +561,13 @@ describe('LinkConnector Integration', () => {
 
         expect([0, undefined]).toContain(output.links?.length)
 
-        expect([0, undefined]).toContain(input._floatingLinks?.size)
+        expect(
+          slotFloatingLinks(graph, 'input', toNodeId(nodeId), 0)
+        ).toHaveLength(0)
 
-        expect([0, undefined]).toContain(output._floatingLinks?.size)
+        expect(
+          slotFloatingLinks(graph, 'output', toNodeId(nodeId), 0)
+        ).toHaveLength(0)
       }
     })
 
@@ -571,7 +585,11 @@ describe('LinkConnector Integration', () => {
         canvasY
       )
 
-      connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
+      connector.moveOutputLink(
+        graph,
+        manyOutputsNode,
+        manyOutputsNode.outputs[0]
+      )
       connector.dropLinks(graph, floatingRerouteEvent)
       connector.reset()
 
@@ -606,7 +624,11 @@ describe('LinkConnector Integration', () => {
         manyOutputsNode.outputs[0].links!
       )
 
-      connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
+      connector.moveOutputLink(
+        graph,
+        manyOutputsNode,
+        manyOutputsNode.outputs[0]
+      )
       expect(connector.isRerouteValidDrop(reroute7)).toBe(false)
       expect(connector.isRerouteValidDrop(reroute10)).toBe(false)
       expect(connector.isRerouteValidDrop(reroute13)).toBe(false)
@@ -643,7 +665,7 @@ describe('LinkConnector Integration', () => {
 
       const atInputNodeEvent = mockedNodeTitleDropEvent(hasInputNode)
 
-      connector.moveOutputLink(graph, hasOutputNode.outputs[0])
+      connector.moveOutputLink(graph, hasOutputNode, hasOutputNode.outputs[0])
       connector.dropLinks(graph, atInputNodeEvent)
       connector.reset()
 
@@ -681,7 +703,7 @@ describe('LinkConnector Integration', () => {
 
       const atInputNodeOutSlot = mockedOutputDropEvent(hasInputNode, 0)
 
-      connector.moveOutputLink(graph, hasOutputNode.outputs[0])
+      connector.moveOutputLink(graph, hasOutputNode, hasOutputNode.outputs[0])
       connector.dropLinks(graph, atInputNodeOutSlot)
       connector.reset()
 
@@ -758,16 +780,20 @@ describe('LinkConnector Integration', () => {
       const hasInputNode = graph.getNodeById(toNodeId(2))!
       const toInput = hasInputNode.inputs[0]
 
-      connector.moveInputLink(graph, fromFloatingInput)
+      connector.moveInputLink(graph, floatingInputNode, fromFloatingInput)
       const dropEvent = mockedInputDropEvent(hasInputNode, 0)
       connector.dropLinks(graph, dropEvent)
       connector.reset()
 
       expect(fromFloatingInput.link).toBeNull()
-      expect(fromFloatingInput._floatingLinks?.size).toBe(0)
+      expect(
+        slotFloatingLinks(graph, 'input', floatingInputNode.id, 0)
+      ).toHaveLength(0)
 
       expect(toInput.link).toBeNull()
-      expect(toInput._floatingLinks?.size).toBe(1)
+      expect(
+        slotFloatingLinks(graph, 'input', hasInputNode.id, 0)
+      ).toHaveLength(1)
     })
 
     test('Allow reroutes to be used as manual switches', ({
@@ -817,7 +843,7 @@ describe('LinkConnector Integration', () => {
     validateIntegrityNoChanges
   }) => {
     const floatingOutNode = graph.getNodeById(toNodeId(1))!
-    connector.moveOutputLink(graph, floatingOutNode.outputs[0])
+    connector.moveOutputLink(graph, floatingOutNode, floatingOutNode.outputs[0])
 
     const manyOutputsNode = graph.getNodeById(toNodeId(4))!
     const dropEvent = createMockCanvasPointerEvent(
@@ -829,12 +855,14 @@ describe('LinkConnector Integration', () => {
 
     const output = manyOutputsNode.outputs[0]
     expect(output.links!.length).toBe(6)
-    expect(output._floatingLinks!.size).toBe(1)
+    expect(
+      slotFloatingLinks(graph, 'output', manyOutputsNode.id, 0)
+    ).toHaveLength(1)
 
     validateIntegrityNoChanges()
 
     // Move again
-    connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
+    connector.moveOutputLink(graph, manyOutputsNode, manyOutputsNode.outputs[0])
 
     const disconnectedNode = graph.getNodeById(toNodeId(9))!
     const dropEvent2 = createMockCanvasPointerEvent(
@@ -846,13 +874,17 @@ describe('LinkConnector Integration', () => {
 
     const newOutput = disconnectedNode.outputs[0]
     expect(newOutput.links!.length).toBe(6)
-    expect(newOutput._floatingLinks!.size).toBe(1)
+    expect(
+      slotFloatingLinks(graph, 'output', disconnectedNode.id, 0)
+    ).toHaveLength(1)
 
     validateIntegrityNoChanges()
 
     disconnectedNode.disconnectOutput(0)
 
-    expect(newOutput._floatingLinks!.size).toBe(0)
+    expect(
+      slotFloatingLinks(graph, 'output', disconnectedNode.id, 0)
+    ).toHaveLength(0)
     expect(graph.floatingLinks.size).toBe(6)
 
     // The final reroutes should all be floating
@@ -878,9 +910,13 @@ describe('LinkConnector Integration', () => {
 
       expect([0, undefined]).toContain(output.links?.length)
 
-      expect([0, undefined]).toContain(input._floatingLinks?.size)
+      expect(
+        slotFloatingLinks(graph, 'input', toNodeId(nodeId), 0)
+      ).toHaveLength(0)
 
-      expect([0, undefined]).toContain(output._floatingLinks?.size)
+      expect(
+        slotFloatingLinks(graph, 'output', toNodeId(nodeId), 0)
+      ).toHaveLength(0)
     }
   })
 

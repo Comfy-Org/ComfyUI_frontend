@@ -1,7 +1,7 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
@@ -179,10 +179,14 @@ export class SubgraphInputNode
     const { subgraph } = this
 
     // Break floating links
-    if (input._floatingLinks?.size) {
-      for (const link of input._floatingLinks) {
-        subgraph.removeFloatingLink(link)
-      }
+    const inputIndex = node.inputs.indexOf(input)
+    for (const link of slotFloatingLinks(
+      subgraph,
+      'input',
+      node.id,
+      inputIndex
+    )) {
+      subgraph.removeFloatingLink(link)
     }
 
     input.link = null

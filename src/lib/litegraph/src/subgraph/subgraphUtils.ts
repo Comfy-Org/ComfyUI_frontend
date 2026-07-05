@@ -2,7 +2,7 @@ import { isEqual } from 'es-toolkit'
 import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -114,8 +114,10 @@ export function getBoundaryLinks(
 
       // Inputs
       if (node.inputs) {
-        for (const input of node.inputs) {
-          addFloatingLinks(input._floatingLinks)
+        for (const [inputIndex, input] of node.inputs.entries()) {
+          addFloatingLinks(
+            slotFloatingLinks(graph, 'input', node.id, inputIndex)
+          )
 
           if (input.link == null) continue
 
@@ -142,8 +144,10 @@ export function getBoundaryLinks(
 
       // Outputs
       if (node.outputs) {
-        for (const output of node.outputs) {
-          addFloatingLinks(output._floatingLinks)
+        for (const [outputIndex, output] of node.outputs.entries()) {
+          addFloatingLinks(
+            slotFloatingLinks(graph, 'output', node.id, outputIndex)
+          )
 
           if (!output.links) continue
 
@@ -204,9 +208,7 @@ export function getBoundaryLinks(
    * Adds any floating links that cross the boundary.
    * @param floatingLinks The floating links to check
    */
-  function addFloatingLinks(floatingLinks: Set<LLink> | undefined): void {
-    if (!floatingLinks) return
-
+  function addFloatingLinks(floatingLinks: LLink[]): void {
     for (const link of floatingLinks) {
       const crossesBoundary = LLink.getReroutes(graph, link).some(
         (reroute) => !items.has(reroute)
