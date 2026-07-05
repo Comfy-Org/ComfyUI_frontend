@@ -14,7 +14,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type {
   SerialisableGraph,
-  SerialisableLLink
+  SerialisableLLink,
+  SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
@@ -318,6 +319,33 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect(JSON.stringify(second.floatingLinks)).toBe(
       JSON.stringify(first.floatingLinks)
     )
+  })
+
+  const REROUTE_KEYS = ['id', 'parentId', 'pos', 'linkIds', 'floating'] as const
+
+  function expectRerouteContractKeyOrder(reroute: SerialisableReroute) {
+    const serialized: Record<string, unknown> = JSON.parse(
+      JSON.stringify(reroute)
+    )
+    const expectedKeys = REROUTE_KEYS.filter(
+      (key) => reroute[key] !== undefined
+    )
+    expect(Object.keys(serialized)).toEqual(expectedKeys)
+  }
+
+  test('reroutes keep contract key order and round-trip byte-identically', ({
+    expect,
+    reroutesComplexGraph
+  }) => {
+    const first = reroutesComplexGraph.asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    const reroutes = first.reroutes ?? []
+    expect(reroutes.length).toBeGreaterThan(0)
+    expect(reroutes.some((r) => r.floating !== undefined)).toBe(true)
+    expect(reroutes.some((r) => r.parentId === undefined)).toBe(true)
+    for (const reroute of reroutes) expectRerouteContractKeyOrder(reroute)
+    expect(JSON.stringify(second.reroutes)).toBe(JSON.stringify(first.reroutes))
   })
 })
 
