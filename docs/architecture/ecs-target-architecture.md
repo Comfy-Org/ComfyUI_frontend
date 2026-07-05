@@ -286,8 +286,8 @@ graph TD
         direction TB
         CS["ConnectivitySystem
 Manages link/slot mutations.
-Writes: LinkEndpoints, SlotConnection,
-Connectivity"]
+Writes: LinkTopology (shipped),
+SlotConnection (future), Connectivity"]
         VS["VersionSystem
 Centralizes change tracking.
 Replaces 15+ scattered _version++.
@@ -373,7 +373,7 @@ graph LR
     LS -.->|read| WC
 
     CS -->|write| LE
-    CS -->|write| SC
+    CS -.->|future write| SC
     CS -->|write| Con
 
     ES -.->|read| Con

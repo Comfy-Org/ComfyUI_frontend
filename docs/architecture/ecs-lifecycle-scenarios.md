@@ -96,15 +96,15 @@ sequenceDiagram
 
 ### Key Differences
 
-| Aspect              | Current                                          | ECS                                                                                                       |
-| ------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| Lines of code       | ~107 in one method                               | ~30 in system function                                                                                    |
-| Entity types known  | Graph knows about all 6+ types                   | ConnectivitySystem coordinates linkStore + layout/widget/output stores                                    |
-| Cleanup             | Manual per-slot, per-link, per-reroute           | linkStore unregistration per link (via `_removeLink`) + geometry drop per layout entry                    |
-| Canvas notification | `setDirtyCanvas()` called explicitly             | Vue reactivity: components re-render when store entries change                                            |
-| Store cleanup       | WidgetValueStore/LayoutStore NOT cleaned up      | Coordinated: `deleteWidget`, linkStore unregister + `deleteNode`, `removeNodeOutputs`, `unregisterWidget` |
-| Undo/redo           | `beforeChange()`/`afterChange()` manually placed | Layout mutations are command records, replayable and undoable                                             |
-| Testability         | Needs full LGraph + LGraphCanvas                 | Needs only the relevant stores + ConnectivitySystem                                                       |
+| Aspect              | Current                                                                       | ECS                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Lines of code       | ~107 in one method                                                            | ~30 in system function                                                                                    |
+| Entity types known  | Graph knows about all 6+ types                                                | ConnectivitySystem coordinates linkStore + layout/widget/output stores                                    |
+| Cleanup             | Manual per-slot, per-link, per-reroute                                        | linkStore unregistration per link (via `_removeLink`) + geometry drop per layout entry                    |
+| Canvas notification | `setDirtyCanvas()` called explicitly                                          | Vue reactivity: components re-render when store entries change                                            |
+| Store cleanup       | WidgetValueStore not cleaned up; link geometry still removed from LayoutStore | Coordinated: `deleteWidget`, linkStore unregister + `deleteNode`, `removeNodeOutputs`, `unregisterWidget` |
+| Undo/redo           | `beforeChange()`/`afterChange()` manually placed                              | Layout mutations are command records, replayable and undoable                                             |
+| Testability         | Needs full LGraph + LGraphCanvas                                              | Needs only the relevant stores + ConnectivitySystem                                                       |
 
 ## 2. Serialization
 

@@ -12,16 +12,16 @@ no longer a store; ADR 0009 represents it as ordinary linked `SubgraphInput`
 state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 `WidgetId`.
 
-| Store                   | Extracts From       | Scoping           | Key Format                                                | Data Shape                    |
-| ----------------------- | ------------------- | ----------------- | --------------------------------------------------------- | ----------------------------- |
-| WidgetValueStore        | `BaseWidget`        | `graphId`         | `WidgetId` (`graphId:nodeId:name`)                        | Plain `WidgetState` object    |
-| DomWidgetStore          | `BaseDOMWidget`     | Global            | `widgetId` (UUID)                                         | Position, visibility, z-index |
-| LayoutStore             | Node, Link, Reroute | Workflow-level    | `nodeId`, `linkId`, `rerouteId`                           | Y.js CRDT maps (pos, size)    |
-| NodeOutputStore         | Execution results   | `nodeLocatorId`   | `"${subgraphId}:${nodeId}"`                               | Output data, preview URLs     |
-| SubgraphNavigationStore | Canvas viewport     | `subgraphId`      | `subgraphId` or `'root'`                                  | LRU viewport cache            |
-| PreviewExposureStore    | Subgraph host node  | host node locator | host locator + exposure name                              | Display-only preview state    |
-| LinkStore               | `LLink`             | Root graph        | `` `${targetNodeId}:${targetSlot}` `` (target input slot) | Plain `LinkTopology` object   |
-| RerouteStore            | `Reroute`           | Root graph        | `RerouteId`                                               | Plain `RerouteChain` object   |
+| Store                   | Extracts From                | Scoping           | Key Format                                                | Data Shape                    |
+| ----------------------- | ---------------------------- | ----------------- | --------------------------------------------------------- | ----------------------------- |
+| WidgetValueStore        | `BaseWidget`                 | `graphId`         | `WidgetId` (`graphId:nodeId:name`)                        | Plain `WidgetState` object    |
+| DomWidgetStore          | `BaseDOMWidget`              | Global            | `widgetId` (UUID)                                         | Position, visibility, z-index |
+| LayoutStore             | Node, Link geometry, Reroute | Workflow-level    | `nodeId`, `linkId`, `rerouteId`                           | Y.js CRDT maps (pos, size)    |
+| NodeOutputStore         | Execution results            | `nodeLocatorId`   | `"${subgraphId}:${nodeId}"`                               | Output data, preview URLs     |
+| SubgraphNavigationStore | Canvas viewport              | `subgraphId`      | `subgraphId` or `'root'`                                  | LRU viewport cache            |
+| PreviewExposureStore    | Subgraph host node           | host node locator | host locator + exposure name                              | Display-only preview state    |
+| LinkStore               | `LLink`                      | Root graph        | `` `${targetNodeId}:${targetSlot}` `` (target input slot) | Plain `LinkTopology` object   |
+| RerouteStore            | `Reroute`                    | Root graph        | `RerouteId`                                               | Plain `RerouteChain` object   |
 
 **Update (2026-07-05):** `LinkStore` (`src/stores/linkStore.ts`, PR #13436) and
 `RerouteStore` (`src/stores/rerouteStore.ts`, PR #13449) hold plain-data records
