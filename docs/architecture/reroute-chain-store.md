@@ -84,13 +84,14 @@ through the proxy and is tracked.
 the `Reroute` class reads and writes chain state through it, so
 `reroute.parentId` mutations are tracked with no action chokepoint.
 
-`LLink` currently deviates — `registerLinkTopology` leaves `link._state`
+`LLink` previously deviated — `registerLinkTopology` left `link._state`
 raw, which is why `linkStore.updateEndpoint` must re-wrap with
-`reactive()` before patching, and why bare `link.parentId` writes are
+`reactive()` before patching, and why bare `link.parentId` writes were
 invisible to effects. This migration aligns it with the `BaseWidget`
 pattern: link registration re-assigns `_state` to the store proxy,
-making `link.parentId` writes tracked and the `updateEndpoint` wrap
-redundant.
+making `link.parentId` writes tracked. `updateEndpoint` keeps its
+`reactive()` wrap as a guard — the store is public API and may be
+handed a raw topology object.
 
 ## Decision 5: Serialization
 
@@ -101,8 +102,11 @@ ascending arrays, so chain-consistent workflows round-trip byte-identical.
 
 Workflows whose stored `linkIds` contradict their chains are repaired on
 the next save (membership re-derived, stale ids dropped, order
-normalized). No compatibility shim for such files. `floatingLinkIds`
-stays unserialized, rebuilt at runtime as before.
+normalized). A reroute that no chain reaches at all is dropped at load —
+where `validateLinks` used to preserve it if its stored ids named live
+links — because the chain is primary. No compatibility shim for such
+files. `floatingLinkIds` stays unserialized, rebuilt at runtime as
+before.
 
 ## Scope
 

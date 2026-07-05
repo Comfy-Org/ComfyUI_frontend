@@ -195,9 +195,10 @@ function remapRerouteIds(
 
   for (const reroute of subgraph.reroutes ?? []) {
     if (usedRerouteIds.has(reroute.id)) {
-      const newId = findNextAvailableId(usedRerouteIds, () =>
-        Number((state.lastRerouteId = toRerouteId(state.lastRerouteId + 1)))
-      )
+      const newId = findNextAvailableId(usedRerouteIds, () => {
+        state.lastRerouteId = toRerouteId(state.lastRerouteId + 1)
+        return state.lastRerouteId
+      })
       remapped.set(reroute.id, newId)
       console.warn(
         `LiteGraph: duplicate subgraph reroute ID ${reroute.id} remapped to ${newId}`

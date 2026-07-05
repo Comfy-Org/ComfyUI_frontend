@@ -1,5 +1,5 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { useRerouteStore } from '@/stores/rerouteStore'
+import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -9,6 +9,7 @@ import type { UUID } from '@/utils/uuid'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
+import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
@@ -31,11 +32,6 @@ const layoutMutations = useLayoutMutations()
 
 export type { FloatingRerouteSlot } from '@/types/rerouteChain'
 export type { RerouteId } from '@/types/rerouteId'
-
-const EMPTY_MEMBERSHIP: RerouteMembership = {
-  linkIds: new Set(),
-  floatingLinkIds: new Set()
-}
 
 /**
  * Represents an additional point on the graph that a link path will travel through.  Used for visual organisation only.
@@ -819,7 +815,7 @@ function getDirection(fromPos: Point, toPos: Point) {
  * @param reroute The reroute to register
  */
 export function registerRerouteChain(
-  graph: { rootGraph: { id: UUID } },
+  graph: Pick<LGraph, 'rootGraph'>,
   reroute: Reroute
 ): void {
   const graphId = graph.rootGraph.id

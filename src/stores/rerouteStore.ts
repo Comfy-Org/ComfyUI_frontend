@@ -15,7 +15,7 @@ export interface RerouteMembership {
   floatingLinkIds: ReadonlySet<LinkId>
 }
 
-const EMPTY_MEMBERSHIP: RerouteMembership = {
+export const EMPTY_MEMBERSHIP: RerouteMembership = {
   linkIds: new Set(),
   floatingLinkIds: new Set()
 }
@@ -49,7 +49,7 @@ export const useRerouteStore = defineStore('reroute', () => {
   function buildMembershipIndex(
     graphId: UUID
   ): Map<RerouteId, RerouteMembership> {
-    const bucket = graphChains(graphId)
+    const bucket = chains.value.get(graphId)
     const index = new Map<
       RerouteId,
       { linkIds: Set<LinkId>; floatingLinkIds: Set<LinkId> }
@@ -69,7 +69,7 @@ export const useRerouteStore = defineStore('reroute', () => {
         }
         const members = floating ? entry.floatingLinkIds : entry.linkIds
         members.add(topology.id)
-        rerouteId = bucket.get(rerouteId)?.parentId
+        rerouteId = bucket?.get(rerouteId)?.parentId
       }
     }
     return index

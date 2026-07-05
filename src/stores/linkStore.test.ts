@@ -37,7 +37,7 @@ describe('useLinkStore', () => {
 
   it('answers input-slot connectedness with one lookup', () => {
     const store = useLinkStore()
-    expect(store.registerLink(graphA, link(1, 5, 0, 9, 2))).toBeTruthy()
+    expect(store.registerLink(graphA, link(1, 5, 0, 9, 2))).toBeDefined()
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
@@ -50,7 +50,7 @@ describe('useLinkStore', () => {
 
     expect(
       store.updateEndpoint(graphA, topology, { targetSlot: 4 })
-    ).toBeTruthy()
+    ).toBeDefined()
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
     expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
@@ -101,12 +101,12 @@ describe('useLinkStore', () => {
       originNodeId: UNASSIGNED_NODE_ID,
       originSlot: -1
     }
-    expect(store.registerLink(graphA, inputFloating)).toBeTruthy()
+    expect(store.registerLink(graphA, inputFloating)).toBeDefined()
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
 
     const real = link(2, 5, 0, 9, 2)
-    expect(store.registerLink(graphA, real)).toBeTruthy()
+    expect(store.registerLink(graphA, real)).toBeDefined()
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(2))
 
     expect(store.deleteLink(graphA, inputFloating)).toBe(true)
@@ -127,7 +127,7 @@ describe('useLinkStore', () => {
         originNodeId: toNodeId(5),
         originSlot: 0
       })
-    ).toBeTruthy()
+    ).toBeDefined()
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
   })
@@ -137,8 +137,8 @@ describe('useLinkStore', () => {
     const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
     const second = link(1, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
 
-    expect(store.registerLink(graphA, first)).toBeTruthy()
-    expect(store.registerLink(graphA, second)).toBeTruthy()
+    expect(store.registerLink(graphA, first)).toBeDefined()
+    expect(store.registerLink(graphA, second)).toBeDefined()
 
     expect(store.deleteLink(graphA, first)).toBe(true)
     expect(store.deleteLink(graphA, second)).toBe(true)

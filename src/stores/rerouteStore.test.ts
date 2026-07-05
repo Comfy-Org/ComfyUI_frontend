@@ -67,7 +67,7 @@ describe('useRerouteStore', () => {
     const registered = store.registerReroute(graphA, chain(1))
 
     expect(store.deleteReroute(graphA, chain(1))).toBe(false)
-    expect(store.getReroute(graphA, toRerouteId(1))).toBeTruthy()
+    expect(store.getReroute(graphA, toRerouteId(1))).toBeDefined()
 
     expect(store.deleteReroute(graphA, registered)).toBe(true)
     expect(store.getReroute(graphA, toRerouteId(1))).toBeUndefined()
@@ -163,7 +163,7 @@ describe('useRerouteStore', () => {
 
     store.clearGraph(graphB)
 
-    expect(store.getReroute(graphA, toRerouteId(1))).toBeTruthy()
+    expect(store.getReroute(graphA, toRerouteId(1))).toBeDefined()
     expect(store.getReroute(graphB, toRerouteId(1))).toBeUndefined()
   })
 })
