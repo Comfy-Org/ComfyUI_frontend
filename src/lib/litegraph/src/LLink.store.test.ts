@@ -1,11 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
 import { registerLinkTopology } from './LLink'
 import {
@@ -31,6 +33,27 @@ describe('LLink ↔ linkStore integration', () => {
 
     graph.removeLink(link.id)
     expect(store.isInputSlotConnected(graph.rootGraph.id, b.id, 0)).toBe(false)
+  })
+
+  it('link.parentId writes are observable through the store query', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const link = a.connect(0, b, 0)!
+    const store = useLinkStore()
+    const parentId = computed(
+      () => store.getInputSlotLink(graph.rootGraph.id, b.id, 0)?.parentId
+    )
+    expect(parentId.value).toBeUndefined()
+
+    link.parentId = toRerouteId(7)
+
+    expect(parentId.value).toBe(7)
   })
 
   it('keeps writing to a disconnected link after it leaves the store', () => {

@@ -117,7 +117,11 @@ function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
 
-  readonly _state: LinkTopology
+  /**
+   * The link's topology state. Once registered with {@link useLinkStore},
+   * this is the store's reactive proxy, so field writes are tracked.
+   */
+  _state: LinkTopology
 
   /** The graph this link is registered with in {@link useLinkStore}, if any. */
   _graphId?: UUID
@@ -581,8 +585,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 }
 
 /**
- * Registers a link's topology into {@link useLinkStore} by reference, so the
- * store and {@link LLink._state} always agree.  Call this at every site that
+ * Registers a link's topology into {@link useLinkStore} and adopts the
+ * store's reactive proxy as {@link LLink._state}, so the store and the link
+ * always agree and field writes are tracked.  Call this at every site that
  * adds a link to a graph's link map (or floating link map).
  *
  * {@link LLink._graphId} is only set when the store keeps this link's state:
@@ -597,7 +602,9 @@ export function registerLinkTopology(
 ): void {
   if (link.id === toLinkId(-1)) return // transient toFloating clone
   const graphId = graph.rootGraph.id
-  if (useLinkStore().registerLink(graphId, link._state)) {
+  const registered = useLinkStore().registerLink(graphId, link._state)
+  if (registered) {
+    link._state = registered
     link._graphId = graphId
   }
 }

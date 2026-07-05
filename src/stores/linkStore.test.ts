@@ -37,7 +37,7 @@ describe('useLinkStore', () => {
 
   it('answers input-slot connectedness with one lookup', () => {
     const store = useLinkStore()
-    expect(store.registerLink(graphA, link(1, 5, 0, 9, 2))).toBe(true)
+    expect(store.registerLink(graphA, link(1, 5, 0, 9, 2))).toBeTruthy()
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
@@ -48,7 +48,9 @@ describe('useLinkStore', () => {
     const topology = link(1, 5, 0, 9, 2)
     store.registerLink(graphA, topology)
 
-    expect(store.updateEndpoint(graphA, topology, { targetSlot: 4 })).toBe(true)
+    expect(
+      store.updateEndpoint(graphA, topology, { targetSlot: 4 })
+    ).toBeTruthy()
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
     expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
@@ -58,7 +60,7 @@ describe('useLinkStore', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
 
-    expect(store.registerLink(graphA, link(2, 5, 0, 9, 2))).toBe(false)
+    expect(store.registerLink(graphA, link(2, 5, 0, 9, 2))).toBeUndefined()
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
   })
@@ -83,7 +85,9 @@ describe('useLinkStore', () => {
     const mover = link(2, 5, 1, 9, 3)
     store.registerLink(graphA, mover)
 
-    expect(store.updateEndpoint(graphA, mover, { targetSlot: 2 })).toBe(false)
+    expect(
+      store.updateEndpoint(graphA, mover, { targetSlot: 2 })
+    ).toBeUndefined()
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
@@ -97,12 +101,12 @@ describe('useLinkStore', () => {
       originNodeId: UNASSIGNED_NODE_ID,
       originSlot: -1
     }
-    expect(store.registerLink(graphA, inputFloating)).toBe(true)
+    expect(store.registerLink(graphA, inputFloating)).toBeTruthy()
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
 
     const real = link(2, 5, 0, 9, 2)
-    expect(store.registerLink(graphA, real)).toBe(true)
+    expect(store.registerLink(graphA, real)).toBeTruthy()
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(2))
 
     expect(store.deleteLink(graphA, inputFloating)).toBe(true)
@@ -123,7 +127,7 @@ describe('useLinkStore', () => {
         originNodeId: toNodeId(5),
         originSlot: 0
       })
-    ).toBe(true)
+    ).toBeTruthy()
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
   })
@@ -133,8 +137,8 @@ describe('useLinkStore', () => {
     const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
     const second = link(1, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
 
-    expect(store.registerLink(graphA, first)).toBe(true)
-    expect(store.registerLink(graphA, second)).toBe(true)
+    expect(store.registerLink(graphA, first)).toBeTruthy()
+    expect(store.registerLink(graphA, second)).toBeTruthy()
 
     expect(store.deleteLink(graphA, first)).toBe(true)
     expect(store.deleteLink(graphA, second)).toBe(true)
