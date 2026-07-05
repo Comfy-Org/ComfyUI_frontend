@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
+import { useReleaseMediaOnUnmount } from '@/composables/useReleaseMediaOnUnmount'
+
 const { src } = defineProps<{
   src: string
   label?: string
@@ -9,6 +11,8 @@ const { src } = defineProps<{
 const videoRef = useTemplateRef('videoRef')
 const width = ref('')
 const height = ref('')
+
+useReleaseMediaOnUnmount(videoRef)
 </script>
 <template>
   <video
