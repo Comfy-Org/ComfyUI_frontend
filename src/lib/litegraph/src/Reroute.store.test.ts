@@ -205,6 +205,22 @@ describe('Reroute ↔ rerouteStore integration', () => {
     })
   })
 
+  it('refuses parentId writes that would create a cycle, allows repair', () => {
+    const { graph, link } = connectedGraph()
+    const first = graph.createReroute([10, 10], link)!
+    const second = graph.createReroute([20, 20], first)!
+    expect(first.parentId).toBe(second.id)
+
+    second.parentId = first.id
+
+    expect(second.parentId).toBeUndefined()
+
+    second._chain.parentId = first.id
+    second.parentId = undefined
+
+    expect(second.parentId).toBeUndefined()
+  })
+
   it('floating marker survives through the store state', () => {
     const { graph, a, link } = connectedGraph()
     const store = useRerouteStore()

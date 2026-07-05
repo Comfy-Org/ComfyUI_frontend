@@ -2223,7 +2223,8 @@ export class LGraph
 
     /**
      * A reroute chain segment, terminal-first. `complete` is false when the
-     * walk stopped at a broken reference; stitching stops there too.
+     * walk stopped at a broken reference or a cycle; stitching stops there
+     * too.
      */
     interface ChainSegment {
       segment: RerouteId[]
@@ -2236,14 +2237,17 @@ export class LGraph
       const visited = new Set<RerouteId>()
       let id = start
       while (id !== undefined) {
-        if (visited.has(id)) throw new Error('Infinite parentId loop')
+        if (visited.has(id)) {
+          console.error('Infinite parentId loop when unpacking')
+          return { segment, complete: false }
+        }
         visited.add(id)
-        segment.push(id)
         const reroute = this.reroutes.get(id)
         if (!reroute) {
           console.error('Broken Id link when unpacking')
           return { segment, complete: false }
         }
+        segment.push(id)
         id = reroute.parentId
       }
       return { segment, complete: true }
@@ -2255,7 +2259,10 @@ export class LGraph
       const visited = new Set<RerouteId>()
       let id = start
       while (id !== undefined) {
-        if (visited.has(id)) throw new Error('Infinite parentId loop')
+        if (visited.has(id)) {
+          console.error('Infinite parentId loop when unpacking')
+          return { segment, complete: false }
+        }
         visited.add(id)
         const migratedId = rerouteIdMap.get(id)
         if (migratedId === undefined) {

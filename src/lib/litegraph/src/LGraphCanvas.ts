@@ -4293,9 +4293,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Remove reroutes that no pasted link passes through
-    for (const reroute of reroutes.values()) {
+    for (const [sourceId, reroute] of reroutes) {
       if (reroute.totalLinks === 0) {
         graph.removeReroute(reroute.id)
+        reroutes.delete(sourceId)
+
+        const index = created.indexOf(reroute)
+        if (index !== -1) created.splice(index, 1)
       }
     }
 

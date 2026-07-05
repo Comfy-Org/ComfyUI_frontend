@@ -1,6 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { LinkConnector } from '@/lib/litegraph/src/litegraph'
+import type { Reroute } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   createMockLGraphNode,
   createMockLinkNetwork,
@@ -13,8 +16,19 @@ const mockSetConnectingLinks = vi.fn()
 
 type RenderLinkItem = LinkConnector['renderLinks'][number]
 
+interface MockRenderLinkOptions {
+  canConnectToOutput?: boolean
+  canConnectToReroute?: boolean
+}
+
 // Mock a structure that has the needed method
-function mockRenderLinkImpl(canConnect: boolean): RenderLinkItem {
+function mockRenderLinkImpl(
+  canConnect: boolean,
+  {
+    canConnectToOutput = false,
+    canConnectToReroute = false
+  }: MockRenderLinkOptions = {}
+): RenderLinkItem {
   const partial: Partial<RenderLinkItem> = {
     toType: 'output',
     fromPos: [0, 0],
@@ -25,8 +39,8 @@ function mockRenderLinkImpl(canConnect: boolean): RenderLinkItem {
     fromSlot: createMockNodeOutputSlot(),
     dragDirection: 0,
     canConnectToInput: vi.fn().mockReturnValue(canConnect),
-    canConnectToOutput: vi.fn().mockReturnValue(false),
-    canConnectToReroute: vi.fn().mockReturnValue(false),
+    canConnectToOutput: vi.fn().mockReturnValue(canConnectToOutput),
+    canConnectToReroute: vi.fn().mockReturnValue(canConnectToReroute),
     connectToInput: vi.fn(),
     connectToOutput: vi.fn(),
     connectToSubgraphInput: vi.fn(),
@@ -71,6 +85,35 @@ describe('LinkConnector', () => {
       expect(connector.isInputValidDrop(mockNode, mockInput)).toBe(false)
       expect(link1.canConnectToInput).toHaveBeenCalledWith(mockNode, mockInput)
       expect(link2.canConnectToInput).toHaveBeenCalledWith(mockNode, mockInput)
+    })
+  })
+
+  describe('dropOnReroute', () => {
+    test('skips render links that cannot connect to the reroute', () => {
+      const valid = mockRenderLinkImpl(false, {
+        canConnectToOutput: true,
+        canConnectToReroute: true
+      })
+      const invalid = mockRenderLinkImpl(false, {
+        canConnectToOutput: true,
+        canConnectToReroute: false
+      })
+      connector.renderLinks.push(valid, invalid)
+      connector.state.connectingTo = 'output'
+      const output = createMockNodeOutputSlot()
+      const reroute = fromPartial<Reroute>({
+        findSourceOutput: () => ({ node: mockNode, output })
+      })
+
+      connector.dropOnReroute(reroute, fromPartial<CanvasPointerEvent>({}))
+
+      expect(valid.connectToRerouteOutput).toHaveBeenCalledWith(
+        reroute,
+        mockNode,
+        output,
+        connector.events
+      )
+      expect(invalid.connectToRerouteOutput).not.toHaveBeenCalled()
     })
   })
 })

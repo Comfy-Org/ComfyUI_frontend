@@ -226,11 +226,10 @@ export class SubgraphInputNode
       input: subgraphInput
     })
 
-    const slotIndex = node.inputs.findIndex((inp) => inp === input)
-    if (slotIndex !== -1) {
+    if (inputIndex !== -1) {
       node.onConnectionsChange?.(
         NodeSlotType.INPUT,
-        slotIndex,
+        inputIndex,
         false,
         link,
         subgraphInput
@@ -238,7 +237,7 @@ export class SubgraphInputNode
       subgraph.trigger('node:slot-links:changed', {
         nodeId: node.id,
         slotType: NodeSlotType.INPUT,
-        slotIndex: slotIndex,
+        slotIndex: inputIndex,
         connected: false,
         linkId: link.id
       })
