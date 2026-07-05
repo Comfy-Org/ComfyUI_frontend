@@ -1,5 +1,6 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
@@ -30,6 +31,11 @@ const layoutMutations = useLayoutMutations()
 
 export type { FloatingRerouteSlot } from '@/types/rerouteChain'
 export type { RerouteId } from '@/types/rerouteId'
+
+const EMPTY_MEMBERSHIP: RerouteMembership = {
+  linkIds: new Set(),
+  floatingLinkIds: new Set()
+}
 
 /**
  * Represents an additional point on the graph that a link path will travel through.  Used for visual organisation only.
@@ -132,11 +138,24 @@ export class Reroute
   /** @inheritdoc */
   selected?: boolean
 
-  /** The ID ({@link LLink.id}) of every link using this reroute */
-  linkIds: Set<LinkId>
+  private get membership(): RerouteMembership {
+    return this._graphId
+      ? useRerouteStore().getMembership(this._graphId, this.id)
+      : EMPTY_MEMBERSHIP
+  }
+
+  /**
+   * The ID ({@link LLink.id}) of every link using this reroute.
+   * Derived from the links' parentId chains; never stored.
+   */
+  get linkIds(): ReadonlySet<LinkId> {
+    return this.membership.linkIds
+  }
 
   /** The ID ({@link LLink.id}) of every floating link using this reroute */
-  floatingLinkIds: Set<LinkId>
+  get floatingLinkIds(): ReadonlySet<LinkId> {
+    return this.membership.floatingLinkIds
+  }
 
   /** Cached cos */
   cos: number = 0
@@ -213,62 +232,35 @@ export class Reroute
    * @param id Unique identifier for this reroute
    * @param network The network of links this reroute belongs to.  Internally converted to a WeakRef.
    * @param pos Position in graph coordinates
-   * @param linkIds Link IDs ({@link LLink.id}) of all links that use this reroute
    */
   constructor(
     id: RerouteId,
     network: LinkNetwork,
     pos?: Point,
-    parentId?: RerouteId,
-    linkIds?: Iterable<LinkId>,
-    floatingLinkIds?: Iterable<LinkId>
+    parentId?: RerouteId
   ) {
     this.id = id
     this.network = new WeakRef(network)
     this._chain = { id }
     this.parentId = parentId
     if (pos) this.pos = pos
-    this.linkIds = new Set(linkIds)
-    this.floatingLinkIds = new Set(floatingLinkIds)
   }
 
   /**
-   * Applies a new parentId to the reroute, and optinoally a new position and linkId.
+   * Applies a new parentId to the reroute, and optionally a new position.
    * Primarily used for deserialisation.
    * @param parentId The ID of the reroute prior to this reroute, or
    * `undefined` if it is the first reroute connected to a nodes output
    * @param pos The position of this reroute
-   * @param linkIds All link IDs that pass through this reroute
    */
   update(
     parentId: RerouteId | undefined,
     pos?: Point,
-    linkIds?: Iterable<LinkId>,
     floating?: FloatingRerouteSlot
   ): void {
     this.parentId = parentId
     if (pos) this.pos = pos
-    if (linkIds) this.linkIds = new Set(linkIds)
     this.floating = floating
-  }
-
-  /**
-   * Validates the linkIds this reroute has.  Removes broken links.
-   * @param links Collection of valid links
-   * @returns true if any links remain after validation
-   */
-  validateLinks(
-    links: ReadonlyMap<LinkId, LLink>,
-    floatingLinks: ReadonlyMap<LinkId, LLink>
-  ): boolean {
-    const { linkIds, floatingLinkIds } = this
-    for (const linkId of linkIds) {
-      if (!links.has(linkId)) linkIds.delete(linkId)
-    }
-    for (const linkId of floatingLinkIds) {
-      if (!floatingLinks.has(linkId)) floatingLinkIds.delete(linkId)
-    }
-    return linkIds.size > 0 || floatingLinkIds.size > 0
   }
 
   /**
@@ -456,7 +448,7 @@ export class Reroute
   }
 
   removeAllFloatingLinks() {
-    for (const linkId of this.floatingLinkIds) {
+    for (const linkId of [...this.floatingLinkIds]) {
       this.removeFloatingLink(linkId)
     }
   }
@@ -468,30 +460,12 @@ export class Reroute
     const floatingLink = network.floatingLinks.get(linkId)
     if (!floatingLink) {
       console.warn(
-        `[Reroute.removeFloatingLink] Floating link not found: ${linkId}, ignoring and discarding ID.`
+        `[Reroute.removeFloatingLink] Floating link not found: ${linkId}, ignoring.`
       )
-      this.floatingLinkIds.delete(linkId)
       return
     }
 
     network.removeFloatingLink(floatingLink)
-  }
-
-  /**
-   * Removes a link or floating link from this reroute, by matching link object instance equality.
-   * @param link The link to remove.
-   * @remarks Does not remove the link from the network.
-   */
-  removeLink(link: LLink) {
-    const network = this.network.deref()
-    if (!network) return
-
-    const floatingLink = network.floatingLinks.get(link.id)
-    if (link === floatingLink) {
-      this.floatingLinkIds.delete(link.id)
-    } else {
-      this.linkIds.delete(link.id)
-    }
   }
 
   remove() {
@@ -701,7 +675,7 @@ export class Reroute
       id,
       parentId,
       pos: [pos[0], pos[1]],
-      linkIds: [...linkIds],
+      linkIds: [...linkIds].sort((a, b) => a - b),
       floating: this.floating ? { slotType: this.floating.slotType } : undefined
     }
   }

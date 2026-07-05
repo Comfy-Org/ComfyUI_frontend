@@ -537,15 +537,15 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       network.addFloatingLink(newLink)
     }
 
+    network.links.delete(this.id)
+    unregisterLinkTopology(this)
+    layoutStore.deleteLinkLayout(this.id)
+
     for (const reroute of reroutes) {
-      reroute.linkIds.delete(this.id)
       if (!keepReroutes && !reroute.totalLinks) {
         network._removeReroute(reroute.id)
       }
     }
-    network.links.delete(this.id)
-    unregisterLinkTopology(this)
-    layoutStore.deleteLinkLayout(this.id)
   }
 
   /**

@@ -2990,7 +2990,6 @@ export class LGraphNode
     // Reroutes
     const reroutes = LLink.getReroutes(graph, link)
     for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
       if (reroute.floating) reroute.floating = undefined
       reroute._dragging = undefined
     }
@@ -3079,7 +3078,6 @@ export class LGraphNode
     if (!link)
       throw new Error('[connectFloatingReroute] Floating link not found')
 
-    reroute.floatingLinkIds.add(link.id)
     link.parentId = reroute.id
     parentReroute.floating = undefined
     return reroute

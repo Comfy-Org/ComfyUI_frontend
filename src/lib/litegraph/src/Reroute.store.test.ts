@@ -125,6 +125,24 @@ describe('Reroute ↔ rerouteStore integration', () => {
     }
   })
 
+  it('linkIds follows the chain without manual set maintenance', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.setReroute({
+      id: toRerouteId(1),
+      parentId: undefined,
+      pos: [10, 10],
+      linkIds: []
+    })
+
+    link.parentId = reroute.id
+
+    expect([...reroute.linkIds]).toEqual([link.id])
+
+    link.parentId = undefined
+
+    expect(reroute.linkIds.size).toBe(0)
+  })
+
   it('floating marker survives through the store state', () => {
     const { graph, a, link } = connectedGraph()
     const store = useRerouteStore()

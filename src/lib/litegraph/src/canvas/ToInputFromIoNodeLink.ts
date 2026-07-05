@@ -120,7 +120,6 @@ export class ToInputFromIoNodeLink implements RenderLink {
     for (const reroute of originalReroutes) {
       if (reroute.id === fromReroute?.id) break
 
-      reroute.removeLink(link)
       if (reroute.totalLinks === 0) {
         if (link.isFloating) {
           // Cannot float from both sides - remove

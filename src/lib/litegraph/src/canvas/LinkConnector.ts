@@ -806,14 +806,14 @@ export class LinkConnector {
       return
     }
 
-    // Connecting to output
+    // Connecting to output. Resolve the source once: re-anchoring the first
+    // link's chain onto the reroute changes its membership immediately.
+    const result = reroute.findSourceOutput()
+    if (!result) return
+    const { node, output } = result
+
     for (const link of this.renderLinks) {
       if (link.toType !== 'output') continue
-
-      const result = reroute.findSourceOutput()
-      if (!result) continue
-
-      const { node, output } = result
       if (!link.canConnectToOutput(node, output)) continue
 
       link.connectToRerouteOutput(reroute, node, output, this.events)
@@ -832,20 +832,9 @@ export class LinkConnector {
 
     // From reroute to reroute
     if (renderLink instanceof ToInputRenderLink) {
-      const { node, fromSlot, fromSlotIndex, fromReroute } = renderLink
+      const { node, fromSlot, fromSlotIndex } = renderLink
 
       reroute.setFloatingLinkOrigin(node, fromSlot, fromSlotIndex)
-
-      // Clean floating link IDs from reroutes about to be removed from the chain
-      if (fromReroute != null) {
-        for (const originalReroute of originalReroutes) {
-          if (originalReroute.id === fromReroute.id) break
-
-          for (const linkId of reroute.floatingLinkIds) {
-            originalReroute.floatingLinkIds.delete(linkId)
-          }
-        }
-      }
     }
 
     // Filter before any connections are re-created

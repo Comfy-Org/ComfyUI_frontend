@@ -194,7 +194,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     })
 
     const reroute = { id: 1, pos: [200, 200] as Point, linkIds: new Set([1]) }
-    ;(graph.reroutes as Map<number, typeof reroute>).set(1, reroute)
+    ;(graph.reroutes as unknown as Map<number, typeof reroute>).set(1, reroute)
 
     ensureCorrectLayoutScale(undefined, graph as LGraph)
 

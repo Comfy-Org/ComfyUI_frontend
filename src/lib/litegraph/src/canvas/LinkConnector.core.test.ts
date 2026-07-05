@@ -1,5 +1,7 @@
 // oxlint-disable no-empty-pattern
-import { test as baseTest, describe, expect, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { test as baseTest, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
   MovingInputLink,
@@ -26,8 +28,11 @@ import {
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
 
+import { registerLinkTopology } from '../LLink'
+import { registerRerouteChain } from '../Reroute'
+
 interface TestContext {
-  network: LinkNetwork & { add(node: LGraphNode): void }
+  network: LinkNetwork & { add(node: LGraphNode): void; rootGraph: LGraph }
   connector: LinkConnector
   setConnectingLinks: (value: ConnectingLink[]) => void
   createTestNode: (id: number, slotType?: ISlotType) => LGraphNode
@@ -38,6 +43,8 @@ interface TestContext {
     slotType?: ISlotType
   ) => LLink
 }
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const test = baseTest.extend<TestContext>({
   network: async ({}, use) => {
@@ -60,7 +67,8 @@ const test = baseTest.extend<TestContext>({
         id == null ? undefined : reroutes.get(id)) as LinkNetwork['getReroute'],
       removeReroute: (id: RerouteId) => reroutes.delete(id),
       _removeReroute: (id: RerouteId) => void reroutes.delete(id),
-      add: (node: LGraphNode) => graph.add(node)
+      add: (node: LGraphNode) => graph.add(node),
+      rootGraph: graph
     })
   },
 
@@ -242,11 +250,11 @@ describe('LinkConnector', () => {
       targetNode.addInput('in', 'number')
 
       const link = createTestLink(1, 1, 2)
-      const reroute = new Reroute(toRerouteId(1), network, [0, 0], undefined, [
-        link.id
-      ])
+      const reroute = new Reroute(toRerouteId(1), network, [0, 0])
       network.reroutes.set(reroute.id, reroute)
+      registerRerouteChain(network, reroute)
       link.parentId = reroute.id
+      registerLinkTopology(network, link)
 
       connector.dragFromReroute(network, reroute)
 

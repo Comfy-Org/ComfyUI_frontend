@@ -1470,10 +1470,6 @@ export class LGraph
       )
     }
 
-    const reroutes = LLink.getReroutes(this, link)
-    for (const reroute of reroutes) {
-      reroute.floatingLinkIds.add(link.id)
-    }
     return link
   }
 
@@ -1491,7 +1487,6 @@ export class LGraph
 
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {
-      reroute.floatingLinkIds.delete(link.id)
       if (reroute.floatingLinkIds.size === 0) {
         reroute.floating = undefined
       }
@@ -1581,7 +1576,6 @@ export class LGraph
     id,
     parentId,
     pos,
-    linkIds,
     floating
   }: OptionalProps<SerialisableReroute, 'id'>): Reroute {
     const rerouteId =
@@ -1595,8 +1589,7 @@ export class LGraph
     const reroute = this.reroutes.get(rerouteId) ?? new Reroute(rerouteId, this)
     const typedParentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    const typedLinkIds = linkIds?.map(toLinkId)
-    reroute.update(typedParentId, pos, typedLinkIds, floating)
+    reroute.update(typedParentId, pos, floating)
     this._addReroute(reroute)
     return reroute
   }
@@ -1615,17 +1608,11 @@ export class LGraph
     }
     const rerouteId = toRerouteId(Number(this.state.lastRerouteId) + 1)
     this.state.lastRerouteId = rerouteId
-    const linkIds = before instanceof Reroute ? before.linkIds : [before.id]
+    const linkIds =
+      before instanceof Reroute ? [...before.linkIds] : [before.id]
     const floatingLinkIds =
-      before instanceof Reroute ? before.floatingLinkIds : [before.id]
-    const reroute = new Reroute(
-      rerouteId,
-      this,
-      pos,
-      before.parentId,
-      linkIds,
-      floatingLinkIds
-    )
+      before instanceof Reroute ? [...before.floatingLinkIds] : [before.id]
+    const reroute = new Reroute(rerouteId, this, pos, before.parentId)
     this._addReroute(reroute)
 
     // Register reroute in Layout Store for spatial tracking
@@ -1634,7 +1621,7 @@ export class LGraph
       rerouteId,
       { x: pos[0], y: pos[1] },
       before.parentId,
-      Array.from(linkIds)
+      linkIds
     )
 
     for (const linkId of linkIds) {
@@ -2120,30 +2107,6 @@ export class LGraph
       group.pos[1] += offsetY
       toSelect.push(group)
     }
-    //cleanup reoute.linkIds now, but leave link.parentIds dangling
-    for (const islot of subgraphNode.inputs) {
-      if (!islot.link) continue
-      const link = this.links.get(islot.link)
-      if (!link) {
-        console.warn('Broken link', islot, islot.link)
-        continue
-      }
-      for (const reroute of LLink.getReroutes(this, link)) {
-        reroute.linkIds.delete(link.id)
-      }
-    }
-    for (const oslot of subgraphNode.outputs) {
-      for (const linkId of oslot.links ?? []) {
-        const link = this.links.get(linkId)
-        if (!link) {
-          console.warn('Broken link', oslot, linkId)
-          continue
-        }
-        for (const reroute of LLink.getReroutes(this, link)) {
-          reroute.linkIds.delete(link.id)
-        }
-      }
-    }
     const newLinks: {
       oid: NodeId
       oslot: number
@@ -2304,11 +2267,11 @@ export class LGraph
       if (!linkInstance) {
         continue
       }
+      const visited = new Set<RerouteId>()
       let instance: Reroute | LLink | undefined = linkInstance
       let parentId: RerouteId | undefined
       if (newLink.externalFirst) {
         parentId = newLink.eparent
-        //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)
@@ -2316,9 +2279,9 @@ export class LGraph
             console.error('Broken Id link when unpacking')
             break
           }
-          if (instance.linkIds.has(linkInstance.id))
+          if (visited.has(instance.id))
             throw new Error('Infinite parentId loop')
-          instance.linkIds.add(linkInstance.id)
+          visited.add(instance.id)
           parentId = instance.parentId
         }
       }
@@ -2336,9 +2299,8 @@ export class LGraph
           console.error('Broken Id link when unpacking')
           break
         }
-        if (instance.linkIds.has(linkInstance.id))
-          throw new Error('Infinite parentId loop')
-        instance.linkIds.add(linkInstance.id)
+        if (visited.has(instance.id)) throw new Error('Infinite parentId loop')
+        visited.add(instance.id)
         const oldReroute = subgraphNode.subgraph.reroutes.get(parentId)
         if (!oldReroute) {
           console.error('Broken Id link when unpacking')
@@ -2356,9 +2318,9 @@ export class LGraph
             console.error('Broken Id link when unpacking')
             break
           }
-          if (instance.linkIds.has(linkInstance.id))
+          if (visited.has(instance.id))
             throw new Error('Infinite parentId loop')
-          instance.linkIds.add(linkInstance.id)
+          visited.add(instance.id)
           parentId = instance.parentId
         }
       }
@@ -2750,10 +2712,9 @@ export class LGraph
         }
       }
 
-      // Drop broken reroutes
+      // Drop reroutes that no live link or floating link passes through
       for (const reroute of this.reroutes.values()) {
-        // Drop broken links, and ignore reroutes with no valid links
-        if (!reroute.validateLinks(this._links, this.floatingLinks)) {
+        if (reroute.totalLinks === 0) {
           this._removeReroute(reroute.id)
         }
       }

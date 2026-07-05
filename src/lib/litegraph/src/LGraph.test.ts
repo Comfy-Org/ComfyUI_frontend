@@ -44,6 +44,8 @@ import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
   const lastNode = nodes[nodes.length - 1]
