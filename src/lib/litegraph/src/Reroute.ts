@@ -243,23 +243,6 @@ export class Reroute
   }
 
   /**
-   * Applies a new parentId to the reroute, and optionally a new position.
-   * Primarily used for deserialisation.
-   * @param parentId The ID of the reroute prior to this reroute, or
-   * `undefined` if it is the first reroute connected to a nodes output
-   * @param pos The position of this reroute
-   */
-  update(
-    parentId: RerouteId | undefined,
-    pos?: Point,
-    floating?: FloatingRerouteSlot
-  ): void {
-    this.parentId = parentId
-    if (pos) this.pos = pos
-    this.floating = floating
-  }
-
-  /**
    * Retrieves an ordered array of all reroutes from the node output.
    * @param visited Internal.  A set of reroutes that this function
    * has already visited whilst recursing up the chain.
@@ -807,6 +790,31 @@ function getDirection(fromPos: Point, toPos: Point) {
 }
 
 /**
+ * Marks a link's reroute chain as no longer floating: clears each reroute's
+ * floating marker and drag state, and removes any floating link that
+ * terminates at the chain's last reroute. Call when a real link connects
+ * through the chain.
+ * @param network The network containing the chain
+ * @param link The link whose chain was just connected
+ */
+export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
+  const reroutes = LLink.getReroutes(network, link)
+  for (const reroute of reroutes) {
+    reroute.floating = undefined
+    reroute._dragging = undefined
+  }
+
+  const lastReroute = reroutes.at(-1)
+  if (!lastReroute) return
+  for (const linkId of lastReroute.floatingLinkIds) {
+    const floatingLink = network.floatingLinks.get(linkId)
+    if (floatingLink?.parentId === lastReroute.id) {
+      network.removeFloatingLink(floatingLink)
+    }
+  }
+}
+
+/**
  * Registers a reroute's chain state into {@link useRerouteStore} and adopts
  * the store's reactive proxy as {@link Reroute._chain}, so the store and the
  * reroute always agree and field writes are tracked.  Call this at every
@@ -832,4 +840,16 @@ export function unregisterRerouteChain(reroute: Reroute): void {
   if (!reroute._graphId) return
   useRerouteStore().deleteReroute(reroute._graphId, reroute._chain)
   reroute._graphId = undefined
+}
+
+/**
+ * Unregisters every reroute a graph owns. Used when a graph's reroutes
+ * leave the store without a whole-bucket wipe: subgraph-definition removal,
+ * and clearing a graph that shares its bucket with other graphs.
+ * @param graph The graph whose reroutes should be unregistered
+ */
+export function unregisterAllRerouteChains(
+  graph: Pick<LGraph, 'reroutes'>
+): void {
+  for (const reroute of graph.reroutes.values()) unregisterRerouteChain(reroute)
 }

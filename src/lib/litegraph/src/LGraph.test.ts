@@ -399,8 +399,6 @@ describe('Graph Clearing and Callbacks', () => {
   })
 
   test('clear() removes graph-scoped preview and widget-value state', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const graph = new LGraph()
     const graphId = 'graph-clear-cleanup' as UUID
     graph.id = graphId
@@ -529,10 +527,6 @@ describe('node:before-removed event', () => {
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 
@@ -891,8 +885,6 @@ describe('ensureGlobalIdUniqueness', () => {
 })
 
 describe('_removeDuplicateLinks', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   class TestNode extends LGraphNode {
     constructor(title?: string) {
       super(title ?? 'TestNode')
@@ -1207,7 +1199,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   const SHARED_NODE_IDS = [3, 8, 37]
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('dummy', DummyNode)
   })
 

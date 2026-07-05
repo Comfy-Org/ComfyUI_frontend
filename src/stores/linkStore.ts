@@ -84,7 +84,7 @@ export const useLinkStore = defineStore('link', () => {
     const existing = targets.get(key)
     if (existing && toRaw(existing) !== toRaw(topology)) return undefined
     targets.set(key, topology)
-    return targets.get(key)
+    return reactive(topology)
   }
 
   /** Removes a link's placement; only the registered topology may vacate it. */

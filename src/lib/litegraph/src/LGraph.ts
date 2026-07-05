@@ -43,6 +43,7 @@ import { MapProxyHandler } from './MapProxyHandler'
 import {
   registerRerouteChain,
   Reroute,
+  unregisterAllRerouteChains,
   unregisterRerouteChain
 } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -415,9 +416,7 @@ export class LGraph
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each link individually.
       unregisterAllLinkTopologies(this)
-      for (const reroute of this.reroutes.values()) {
-        unregisterRerouteChain(reroute)
-      }
+      unregisterAllRerouteChains(this)
     }
 
     this.id = zeroUuid
@@ -1142,9 +1141,7 @@ export class LGraph
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, fireNodeRemovalLifecycle)
         unregisterAllLinkTopologies(node.subgraph)
-        for (const reroute of node.subgraph.reroutes.values()) {
-          unregisterRerouteChain(reroute)
-        }
+        unregisterAllRerouteChains(node.subgraph)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
@@ -1587,9 +1584,10 @@ export class LGraph
     }
 
     const reroute = this.reroutes.get(rerouteId) ?? new Reroute(rerouteId, this)
-    const typedParentId =
+    reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    reroute.update(typedParentId, pos, floating)
+    if (pos) reroute.pos = pos
+    reroute.floating = floating
     this._addReroute(reroute)
     return reroute
   }
@@ -1608,10 +1606,15 @@ export class LGraph
     }
     const rerouteId = toRerouteId(Number(this.state.lastRerouteId) + 1)
     this.state.lastRerouteId = rerouteId
-    const linkIds =
-      before instanceof Reroute ? [...before.linkIds] : [before.id]
-    const floatingLinkIds =
-      before instanceof Reroute ? [...before.floatingLinkIds] : [before.id]
+    const chainLinks =
+      before instanceof Reroute
+        ? [
+            ...[...before.linkIds].map((id) => this._links.get(id)),
+            ...[...before.floatingLinkIds].map((id) =>
+              this.floatingLinks.get(id)
+            )
+          ]
+        : [before]
     const reroute = new Reroute(rerouteId, this, pos, before.parentId)
     this._addReroute(reroute)
 
@@ -1621,22 +1624,11 @@ export class LGraph
       rerouteId,
       { x: pos[0], y: pos[1] },
       before.parentId,
-      linkIds
+      before instanceof Reroute ? [...before.linkIds] : [before.id]
     )
 
-    for (const linkId of linkIds) {
-      const link = this._links.get(linkId)
-      if (!link) continue
-      if (link.parentId === before.parentId) link.parentId = rerouteId
-
-      const reroutes = LLink.getReroutes(this, link)
-      for (const x of reroutes.filter((x) => x.parentId === before.parentId)) {
-        x.parentId = rerouteId
-      }
-    }
-
-    for (const linkId of floatingLinkIds) {
-      const link = this.floatingLinks.get(linkId)
+    // Splice the new reroute into every chain that contained `before`
+    for (const link of chainLinks) {
       if (!link) continue
       if (link.parentId === before.parentId) link.parentId = rerouteId
 
