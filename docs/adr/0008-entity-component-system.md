@@ -148,6 +148,13 @@ A node carrying a subgraph gains these additional components. Subgraphs are not 
 | `RerouteLinks`  | `parentId`, input/output link IDs |
 | `RerouteVisual` | `color`, badge config             |
 
+> **Amended (2026-07-04):** `RerouteLinks` was superseded during design
+> review. The stored component is chain state only —
+> `RerouteChain { parentId, floating? }` — and link membership
+> (`linkIds` / `floatingLinkIds`) is derived from the links' `parentId`
+> chains rather than stored. See
+> [Reroute Chain Store](../architecture/reroute-chain-store.md).
+
 #### Group
 
 | Component       | Data (from `LGraphGroup`)           |
