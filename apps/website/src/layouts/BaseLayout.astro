@@ -5,6 +5,8 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
+import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { SHOW_ANNOUNCEMENT_BANNER } from '../config/features'
 import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
@@ -137,8 +139,9 @@ const websiteJsonLd = {
       </noscript>
     )}
 
+    {SHOW_ANNOUNCEMENT_BANNER && <AnnouncementBanner locale={locale} client:load />}
     <HeaderMain locale={locale} github-stars={githubStars} client:load />
-    <main class="mt-20 lg:mt-32">
+    <main>
       <slot />
     </main>
     <SiteFooter locale={locale} client:load />
