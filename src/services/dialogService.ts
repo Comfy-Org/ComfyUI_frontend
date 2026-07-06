@@ -95,6 +95,23 @@ export interface ExecutionErrorDialogInput {
   traceback: string[]
 }
 
+// prompt() and confirm() share the 'global-prompt' key, and
+// dialogStore.showDialog merely raises an existing dialog with the same key —
+// a concurrent second caller's onConfirm/onClose would never be wired and its
+// promise would never settle. Serialize them FIFO so every promise settles.
+let globalPromptTail: Promise<unknown> = Promise.resolve()
+
+function enqueueGlobalPrompt<T>(
+  show: (resolve: (value: T) => void) => void
+): Promise<T> {
+  const result = globalPromptTail.then(() => new Promise<T>(show))
+  globalPromptTail = result.then(
+    () => undefined,
+    () => undefined
+  )
+  return result
+}
+
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
@@ -265,7 +282,7 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
-    return new Promise((resolve) => {
+    return enqueueGlobalPrompt<string | null>((resolve) => {
       dialogStore.showDialog({
         key: 'global-prompt',
         title,
@@ -302,7 +319,7 @@ export const useDialogService = () => {
     hint,
     denyLabel
   }: ConfirmOptions): Promise<boolean | null> {
-    return new Promise((resolve) => {
+    return enqueueGlobalPrompt<boolean | null>((resolve) => {
       const options: ShowDialogOptions = {
         key: 'global-prompt',
         title,
