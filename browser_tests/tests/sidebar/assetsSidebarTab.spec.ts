@@ -371,6 +371,36 @@ test.describe('FE-910 marquee selection and select all', () => {
     await expect(tab.selectedCards).toHaveCount(2)
   })
 
+  test('a Ctrl/Cmd+Shift marquee removes the covered cards from the selection', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await tab.getAssetCardByName('alpha').hover()
+    await page.keyboard.press('ControlOrMeta+a')
+    await expect(tab.selectedCards).toHaveCount(2)
+
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!beta) throw new Error('beta card has no layout box')
+
+    // Ctrl+Shift makes the marquee subtractive: rubber-band over beta only.
+    await page.keyboard.down('Control')
+    await page.keyboard.down('Shift')
+    await page.mouse.move(beta.x + 12, beta.y + 12)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width - 12, beta.y + beta.height - 12, {
+      steps: 12
+    })
+    await page.mouse.up()
+    await page.keyboard.up('Shift')
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(1)
+  })
+
   test('Ctrl/Cmd-dragging from an asset card starts a marquee selection', async ({
     comfyPage
   }) => {

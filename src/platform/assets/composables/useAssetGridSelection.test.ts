@@ -155,6 +155,46 @@ describe('useAssetGridSelection', () => {
       expect(callbacks.setSelectedIds.mock.lastCall![0]).toEqual(['b'])
     })
 
+    it('removes covered cards when Cmd+Shift is held (macOS subtractive)', async () => {
+      const callbacks = createCallbacks({
+        getSelectedIds: vi.fn(() => ['a', 'b'])
+      })
+      await renderHarness(callbacks)
+
+      grid().dispatchEvent(
+        pointer('pointerdown', {
+          clientX: 0,
+          clientY: 0,
+          metaKey: true,
+          shiftKey: true
+        })
+      )
+      window.dispatchEvent(pointer('pointermove', { clientX: 55, clientY: 50 }))
+
+      expect(callbacks.setSelectedIds.mock.lastCall![0]).toEqual(['b'])
+    })
+
+    it('restores cards when the subtractive marquee shrinks back off them', async () => {
+      const callbacks = createCallbacks({
+        getSelectedIds: vi.fn(() => ['a', 'b'])
+      })
+      await renderHarness(callbacks)
+
+      grid().dispatchEvent(
+        pointer('pointerdown', {
+          clientX: 55,
+          clientY: 55,
+          ctrlKey: true,
+          shiftKey: true
+        })
+      )
+      window.dispatchEvent(pointer('pointermove', { clientX: 5, clientY: 45 }))
+      expect(callbacks.setSelectedIds.mock.lastCall![0]).toEqual(['b'])
+
+      window.dispatchEvent(pointer('pointermove', { clientX: 54, clientY: 54 }))
+      expect(callbacks.setSelectedIds.mock.lastCall![0]).toEqual(['a', 'b'])
+    })
+
     it('ignores movement below the drag threshold', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
