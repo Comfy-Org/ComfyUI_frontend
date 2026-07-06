@@ -54,7 +54,7 @@ function searchOptions(combineWith: 'AND' | 'OR' = 'AND') {
   return {
     boost: { title: 3, models: 2, tags: 2, description: 0.5 },
     prefix: true,
-    fuzzy: (term: string) => termFuzziness(term),
+    fuzzy: termFuzziness,
     combineWith,
     tokenize
   }
@@ -140,14 +140,18 @@ export function createTemplateSearchIndex(
   return index
 }
 
-// log1p compresses heavy-tailed usage so one mega-popular template can't
-// dominate the tiebreak.
-function usageTiebreak(a: SearchResult, b: SearchResult): number {
-  const top = Math.max(a.score, b.score)
-  if (top > 0 && Math.abs(a.score - b.score) / top <= USAGE_TIEBREAK_BAND) {
+// Rank by relevance, with usage breaking ties inside a score band. Scores are
+// bucketed so the ordering is a stable total order (a pairwise relative-band
+// compare is intransitive). log1p dampens heavy-tailed usage.
+export function rankByRelevanceThenUsage(hits: SearchResult[]): SearchResult[] {
+  const bandSize =
+    hits.reduce((max, hit) => Math.max(max, hit.score), 0) * USAGE_TIEBREAK_BAND
+  const bucket = (score: number) =>
+    bandSize > 0 ? Math.round(score / bandSize) : 0
+  return [...hits].sort((a, b) => {
+    if (bucket(a.score) !== bucket(b.score)) return b.score - a.score
     return Math.log1p(Number(b.usage ?? 0)) - Math.log1p(Number(a.usage ?? 0))
-  }
-  return b.score - a.score
+  })
 }
 
 /** Ordered template names for a query: literal matches first, then dedup'd expansion matches. */
@@ -161,7 +165,7 @@ export function searchTemplates(
   const andThenOr = (q: string): SearchResult[] => {
     const and = index.search(q, searchOptions('AND'))
     const hits = and.length > 0 ? and : index.search(q, searchOptions('OR'))
-    return hits.sort(usageTiebreak)
+    return rankByRelevanceThenUsage(hits)
   }
 
   const ordered: string[] = []

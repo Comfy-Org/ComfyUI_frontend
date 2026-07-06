@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import type { SearchResult } from 'minisearch'
+
 import {
   createTemplateSearchIndex,
   expandAbbreviation,
   expandQuery,
+  rankByRelevanceThenUsage,
   searchTemplates,
   termFuzziness,
   tokenize
@@ -222,5 +225,39 @@ describe('searchTemplates', () => {
       buildTemplate({ name: 'exact', title: 'ControlNet' })
     ])
     expect(searchTemplates(index, 'controlnet')[0]).toBe('exact')
+  })
+})
+
+describe('rankByRelevanceThenUsage', () => {
+  const hit = (id: string, score: number, usage: number): SearchResult =>
+    ({ id, score, usage }) as unknown as SearchResult
+
+  // Scores 0.93/0.965/1.0 with usages 100/50/1 form an intransitive cycle under
+  // a pairwise relative-band compare (A>B, B>C, but A<C), which makes Array.sort
+  // input-order-dependent. Bucketing must give one stable order for any input.
+  it('produces a stable order for an intransitive cluster', () => {
+    const a = hit('a', 0.93, 100)
+    const b = hit('b', 0.965, 50)
+    const c = hit('c', 1.0, 1)
+
+    const order = (hits: SearchResult[]) =>
+      rankByRelevanceThenUsage(hits).map((h) => h.id)
+
+    const expected = order([a, b, c])
+    expect(order([c, b, a])).toEqual(expected)
+    expect(order([b, a, c])).toEqual(expected)
+    expect(order([c, a, b])).toEqual(expected)
+  })
+
+  it('breaks ties within a band by usage but not across bands', () => {
+    const strong = hit('strong', 1.0, 1)
+    const nearStrong = hit('near', 0.98, 500)
+    const weak = hit('weak', 0.5, 9000)
+
+    const ids = rankByRelevanceThenUsage([weak, strong, nearStrong]).map(
+      (h) => h.id
+    )
+    // near (higher usage, same band as strong) leads; weak stays last on score.
+    expect(ids).toEqual(['near', 'strong', 'weak'])
   })
 })
