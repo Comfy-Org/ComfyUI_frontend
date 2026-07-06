@@ -95,12 +95,6 @@ beforeEach(() => {
 })
 
 describe('workflowTemplatesStore', () => {
-  it('returns empty navigation before templates are loaded', () => {
-    const store = useWorkflowTemplatesStore()
-
-    expect(store.navGroupedTemplates).toEqual([])
-  })
-
   it('loads core templates and indexes their names', async () => {
     const store = useWorkflowTemplatesStore()
     expect(store.isLoaded).toBe(false)

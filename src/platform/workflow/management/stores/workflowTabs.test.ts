@@ -2,10 +2,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
-vi.mock('@/scripts/app', () => ({ app: {} }))
+vi.mock('@/scripts/app', () => ({ app: { canvas: {} } }))
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -31,7 +34,11 @@ vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
 }))
 
 function wf(path: string): ComfyWorkflow {
-  return fromPartial<ComfyWorkflow>({ path })
+  const workflow = fromPartial<ComfyWorkflow>({
+    path,
+    load: async () => workflow as LoadedComfyWorkflow
+  })
+  return workflow
 }
 
 beforeEach(() => {
@@ -93,8 +100,18 @@ describe('workflowStore tab management', () => {
     expect(store.openWorkflows).toEqual([left, mid, right])
   })
 
-  it('reports no active workflow before one is opened', () => {
+  it('marks a workflow active only after it is opened', async () => {
     const store = useWorkflowStore()
-    expect(store.isActive(wf('a.json'))).toBe(false)
+    const opened = wf('opened.json')
+    const background = wf('background.json')
+    store.attachWorkflow(opened)
+    store.attachWorkflow(background)
+
+    expect(store.isActive(opened)).toBe(false)
+
+    await store.openWorkflow(opened)
+
+    expect(store.isActive(opened)).toBe(true)
+    expect(store.isActive(background)).toBe(false)
   })
 })

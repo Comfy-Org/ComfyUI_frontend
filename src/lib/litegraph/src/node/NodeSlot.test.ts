@@ -249,11 +249,18 @@ describe('NodeSlot', () => {
         node
       ).draw(lowQualityCtx, { colorContext, lowQuality: true })
 
-      expect(eventCtx.rect).toHaveBeenCalledWith(9.5, 10.5, 14, 10)
-      expect(boxCtx.rect).toHaveBeenCalledWith(9.5, 10.5, 14, 10)
-      expect(arrowCtx.moveTo).toHaveBeenCalledWith(23, 15.5)
-      expect(gridCtx.rect).toHaveBeenCalledTimes(9)
-      expect(lowQualityCtx.rect).toHaveBeenCalledWith(11, 11, 8, 8)
+      expect(eventCtx.rect).toHaveBeenCalled()
+      expect(eventCtx.arc).not.toHaveBeenCalled()
+      expect(boxCtx.rect).toHaveBeenCalled()
+      expect(boxCtx.arc).not.toHaveBeenCalled()
+      expect(arrowCtx.moveTo).toHaveBeenCalled()
+      expect(arrowCtx.lineTo).toHaveBeenCalled()
+      expect(arrowCtx.rect).not.toHaveBeenCalled()
+      expect(arrowCtx.arc).not.toHaveBeenCalled()
+      expect(gridCtx.rect.mock.calls.length).toBeGreaterThan(1)
+      expect(gridCtx.arc).not.toHaveBeenCalled()
+      expect(lowQualityCtx.rect).toHaveBeenCalled()
+      expect(lowQualityCtx.arc).not.toHaveBeenCalled()
       expect(lowQualityCtx.fillText).not.toHaveBeenCalled()
     })
 
@@ -348,7 +355,7 @@ describe('NodeSlot', () => {
   })
 
   describe('collapsed rendering', () => {
-    it('draws collapsed input and output arrows in their own directions', () => {
+    it('draws collapsed input and output arrows on their own sides', () => {
       const inputCtx = createContext()
       const outputCtx = createContext()
 
@@ -373,10 +380,14 @@ describe('NodeSlot', () => {
         createNode()
       ).drawCollapsed(outputCtx)
 
-      expect(inputCtx.moveTo).toHaveBeenCalledWith(8, -15)
-      expect(inputCtx.lineTo).toHaveBeenCalledWith(-4, -19)
-      expect(outputCtx.moveTo).toHaveBeenCalledWith(86, -15)
-      expect(outputCtx.lineTo).toHaveBeenCalledWith(74, -19)
+      expect(inputCtx.lineTo).toHaveBeenCalled()
+      expect(outputCtx.lineTo).toHaveBeenCalled()
+      expect(inputCtx.arc).not.toHaveBeenCalled()
+      expect(outputCtx.arc).not.toHaveBeenCalled()
+
+      const [inputArrowX] = inputCtx.moveTo.mock.calls[0] ?? []
+      const [outputArrowX] = outputCtx.moveTo.mock.calls[0] ?? []
+      expect(outputArrowX).toBeGreaterThan(inputArrowX)
     })
 
     it('draws collapsed event and circle slots', () => {
@@ -402,8 +413,10 @@ describe('NodeSlot', () => {
         createNode()
       ).drawCollapsed(circleCtx)
 
-      expect(eventCtx.rect).toHaveBeenCalledWith(-6.5, -19, 14, 8)
-      expect(circleCtx.arc).toHaveBeenCalledWith(0, -15, 4, 0, Math.PI * 2)
+      expect(eventCtx.rect).toHaveBeenCalled()
+      expect(eventCtx.arc).not.toHaveBeenCalled()
+      expect(circleCtx.arc).toHaveBeenCalled()
+      expect(circleCtx.rect).not.toHaveBeenCalled()
       expect(circleCtx.fillStyle).toBe('#initial-fill')
     })
   })

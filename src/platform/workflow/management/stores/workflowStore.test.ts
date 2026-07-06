@@ -263,10 +263,13 @@ describe('useWorkflowStore', () => {
       expect(workflowDataWithoutId.id).toBeUndefined()
     })
 
-    it('should create a new temporary workflow with the default path', () => {
+    it('should register new temporary workflows with unique paths', () => {
       const workflow = store.createNewTemporary()
+      const workflow2 = store.createNewTemporary()
 
-      expect(workflow.path).toBe('workflows/Unsaved Workflow.json')
+      expect(workflow.isTemporary).toBe(true)
+      expect(store.getWorkflowByPath(workflow.path)).not.toBeNull()
+      expect(workflow2.path).not.toBe(workflow.path)
     })
   })
 

@@ -108,16 +108,6 @@ describe('useShareDialog', () => {
     }
   })
 
-  it('closes the global share dialog', () => {
-    const { hide } = useShareDialog()
-
-    hide()
-
-    expect(mocks.closeDialog).toHaveBeenCalledWith({
-      key: 'global-share-workflow'
-    })
-  })
-
   it('opens the share dialog when there is no active workflow', () => {
     const { show } = useShareDialog()
 

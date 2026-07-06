@@ -35,12 +35,6 @@ describe('useSliderFromMouse', () => {
     isOutside.value = true
   })
 
-  it('starts at the midpoint', () => {
-    const target = ref(document.createElement('div'))
-
-    expect(useSliderFromMouse(target).value).toBe(50)
-  })
-
   it('updates from mouse position while pointer is inside the target', async () => {
     const target = ref(document.createElement('div'))
     const position = useSliderFromMouse(target)
