@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 
 import {
+  assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
   asyncUploadResponseSchema,
@@ -424,6 +425,17 @@ function createAssetService() {
       if (modelTypeMode && !asset.loader_path) {
         console.warn(
           `Asset ${asset.id} (${asset.name}) has no loader_path; skipping.`
+        )
+        continue
+      }
+
+      // The loader value flows into viewMetadata URLs and widget values, so a
+      // traversal-shaped path must not pass through even if the backend's own
+      // validation ever regresses.
+      const loaderValue = asset.loader_path ?? getAssetFilename(asset)
+      if (!assetFilenameSchema.safeParse(loaderValue).success) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) has an unsafe loader path ('${loaderValue}'); skipping.`
         )
         continue
       }

@@ -533,6 +533,31 @@ describe(assetService.getAssetModels, () => {
     warn.mockRestore()
   })
 
+  it('drops assets whose loader path is traversal-shaped', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'evil',
+          name: 'evil.safetensors',
+          loader_path: '../../secrets/evil.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'ok',
+          name: 'fine.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([{ name: 'fine.safetensors', pathIndex: 0 }])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('unsafe'))
+    warn.mockRestore()
+  })
+
   it('falls back to filename metadata then name on bare-tag backends', async () => {
     mockSupportsModelTypeTags.value = false
     fetchApiMock.mockResolvedValueOnce(
