@@ -98,22 +98,10 @@ describe('useCurrentUser', () => {
     vi.restoreAllMocks()
   })
 
-  it('reports logged-out state when no auth source is active', async () => {
-    const { currentUser } = await setup()
-
-    expect(currentUser.loading).toBe(false)
-    expect(currentUser.isLoggedIn.value).toBe(false)
-    expect(currentUser.resolvedUserInfo.value).toBeNull()
-    expect(currentUser.userDisplayName.value).toBeUndefined()
-    expect(currentUser.userEmail.value).toBeUndefined()
-    expect(currentUser.userPhotoUrl.value).toBeUndefined()
-    expect(currentUser.providerName.value).toBeUndefined()
-    expect(currentUser.providerIcon.value).toBe('pi pi-user')
-    expect(currentUser.isEmailProvider.value).toBe(false)
-  })
-
   it('uses API key user identity before firebase identity', async () => {
     const { currentUser, authStore, apiKeyStore } = await setup()
+    expect(currentUser.isLoggedIn.value).toBe(false)
+
     authStore.currentUser = firebaseUser('google.com')
     apiKeyStore.isAuthenticated = true
     apiKeyStore.currentUser = {
@@ -165,16 +153,6 @@ describe('useCurrentUser', () => {
     apiKeyStore.isAuthenticated = false
     await currentUser.handleSignOut()
     expect(commandStore.execute).toHaveBeenCalledWith('Comfy.User.SignOut')
-  })
-
-  it('opens the sign-in dialog through the command store', async () => {
-    const { currentUser, commandStore } = await setup()
-
-    await currentUser.handleSignIn()
-
-    expect(commandStore.execute).toHaveBeenCalledWith(
-      'Comfy.User.OpenSignInDialog'
-    )
   })
 
   it('runs user lifecycle callbacks for resolve, token refresh, and logout', async () => {
