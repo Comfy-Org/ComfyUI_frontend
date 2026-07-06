@@ -47,7 +47,7 @@ const hasBioSlot = Astro.slots.has('default')
               <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas italic">
                 {person.bio}
               </p>
-            ) : hasBioSlot ? (
+            ) : hasBioSlot && people.length === 1 ? (
               <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas italic">
                 <slot />
               </p>
