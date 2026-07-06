@@ -1,10 +1,10 @@
 # Node Badge Store
 
 Date: 2026-07-05 (updated 2026-07-06)
-Status: Partially implemented — decisions 1–4 shipped as
-`src/stores/nodeBadgeStore.ts` + `src/systems/badgeSystem.ts` (slice A);
-decision 5 and the open decisions below await the consumer-cutover PR
-(slice B). Follow-up to the
+Status: Implemented — slice A (store + system) and slice B (consumer
+cutover, resolved decisions below) shipped as
+`src/stores/nodeBadgeStore.ts`, `src/systems/badgeSystem.ts`,
+`src/lib/litegraph/src/nodeBadgeDraw.ts`. Follow-up to the
 [link topology store](link-topology-store.md),
 [reroute chain store](reroute-chain-store.md), and the
 [node data store draft](node-data-store.md)
@@ -110,11 +110,11 @@ Frame-budget parity per ADR 0008's render mitigations applies.
   `registeredNodeIds` to attach/detach per-node effect scopes. Litegraph
   never imports the system, so the pricing/nodeDef dependency graph
   (which runtime-imports the litegraph barrel) stays acyclic. The system
-  takes a `resolveNode` seam and will be bootstrapped at the app layer
-  in slice B, when the `Comfy.NodeBadge` extension stops pushing
-  closures; until then rows are written only under test. Row writes are
-  refused for unregistered nodes so a late effect flush cannot
-  resurrect a bucket key the chokepoints deleted.
+  takes a `resolveNode` seam and is bootstrapped at the app layer by the
+  `Comfy.NodeBadge` extension (`useNodeBadge`), restarting per root
+  graph on `afterConfigureGraph`. Row writes are refused for
+  unregistered nodes so a late effect flush cannot resurrect a bucket
+  key the chokepoints deleted.
 - Two write paths: `setBadgesOfKind` is the system's bulk
   replace-one-kind recompute path (`@internal`); extension rows go
   through `registerBadge`/`deleteBadge` per row, identity-checked, so
@@ -123,38 +123,52 @@ Frame-budget parity per ADR 0008's render mitigations applies.
   (untracked instance state) to map pricing input names to slot
   indices — parity with the legacy closures. Those reads become store
   lookups when slot data is store-backed (node data store draft).
-- Core rows are fine-grained — one row per part in lifecycle, id, source
-  order — with one visibility rule (`badgeTextVisible`, the legacy
-  semantics: `HideBuiltIn` respected for every part). Joining,
-  bracket decoration, and truncation are renderer presentation and move
-  to the slice-B legacy draw cache. Rows store lifecycle text with the
-  `[]` brackets trimmed. Known unification effects: the Vue renderer
-  gains `HideBuiltIn` handling for id badges, and core nodes' `🦊`
-  source row becomes data the Vue partition may substitute with its
-  Comfy-logo chip.
+- Core rows are fine-grained — one row per part, tagged
+  `part: 'lifecycle' | 'id' | 'source'` and carrying the raw projected
+  text — with one visibility rule (`badgeTextVisible`, the legacy
+  semantics: `HideBuiltIn` respected for every part). Each renderer owns
+  presentation: the legacy draw cache joins parts in id, lifecycle,
+  source order and truncates; the Vue partition trims lifecycle
+  brackets, and replaces a built-in node's source row with its
+  Comfy-logo chip. Known unification effect: the Vue renderer gains
+  `HideBuiltIn` handling for id and lifecycle badges on built-in nodes.
 - A credits row is emitted only when the display price label is
   non-empty; async pricing fills it via the per-node revision ref.
-- Subgraph credits aggregation is not yet in the system — it stays on
-  the `updateSubgraphCredits` closure path until open decision 3 below
-  is resolved.
 
-## Open decisions (interview pending)
+## Implementation notes (slice B)
 
-1. **Legacy `node.badges` surface** — recommended: a converting
-   accessor exposing the node's `BadgeData[]` proxy; bare
-   `LGraphBadge`/thunk pushes auto-convert (thunk evaluated once,
-   `Image` icons dropped) with a one-time deprecation warning pointing
-   at the store API. Alternatives: delete the property outright, or a
-   read-only view. Ecosystem scan found zero genuine third-party
-   writers; ADR 0008 extension-impact guidance applies regardless.
-2. **`node.badgePosition`** — recommended: delete (single writer sets a
-   constant `TopRight` on every node; single reader; renderer policy,
-   not badge data). Deprecated accessor warns on write.
-3. **Subgraph credits aggregation triggers** — recommended: the three
-   existing events (`litegraph:set-graph`, `subgraph-converted`,
-   `afterConfigureGraph`) bump a revision the system watches; swap to
+- Wrapper `SubgraphNode` credits rows are aggregated by the system from
+  the inner nodes' store rows: several priced inner (recursively
+  collected, non-wrapper) nodes collapse to `Partner Nodes x N`; exactly
+  one shows its price with the wrapper's promoted widget values
+  overriding the inner node's own. The aggregation tracks the inner
+  rows, the registered-node set, and a structure revision.
+- Legacy `drawBadges` renders the store rows through a per-node
+  memoized `LGraphBadge` cache (decision 5); `iconKey` resolves through
+  a generic litegraph `badgeIconRegistry`, with the `credits` icon
+  registered by the system module.
+
+## Resolved decisions (2026-07-06 interview)
+
+1. **Legacy `node.badges` surface — kept as a raw extension-only push
+   surface.** Directive: delete unless actively used. A GitHub-wide scan
+   found three custom-node packs actively writing it
+   (ComfyUI-Wildcard-Pipeline pushes and splices `LGraphBadge`
+   instances; ComfyUI-Enhancement-Utils and ComfyUI-XENodes push
+   per-frame getter thunks for ticking execution-time badges), so the
+   array stays, is no longer written by core/credits code, and both
+   renderers append it after the store rows — thunks still evaluate per
+   frame in the legacy canvas. The earlier "zero third-party writers"
+   scan was wrong.
+2. **`node.badgePosition` — deleted**, along with the `BadgePosition`
+   enum. Zero uses outside this repo; the legacy canvas now always
+   renders badges top-right (the only surviving behaviour).
+3. **Subgraph credits aggregation triggers — event-bumped revision.**
+   `litegraph:set-graph`, `subgraph-converted`, and
+   `afterConfigureGraph` bump `bumpSubgraphCreditsRevision()`; swap to
    reactive `SubgraphStructure` dependencies when that state is
-   store-backed.
+   store-backed. Aggregation behaviour itself is preserved (explicit
+   user requirement).
 
 ## Scope and sequencing
 
