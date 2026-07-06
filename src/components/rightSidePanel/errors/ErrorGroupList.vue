@@ -289,7 +289,7 @@
                   cn(
                     isCardInSelection(card.id) && [
                       SELECTION_EMPHASIS_CLASS,
-                      'p-1'
+                      'py-1'
                     ]
                   )
                 "

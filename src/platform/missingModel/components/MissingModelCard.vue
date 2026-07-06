@@ -3,7 +3,7 @@
     <div
       v-if="importableModelRows.length > 0"
       data-testid="missing-model-importable-rows"
-      class="flex flex-col gap-1 overflow-hidden"
+      class="-mx-1.5 flex flex-col gap-1 overflow-hidden px-1.5"
     >
       <MissingModelRow
         v-for="row in importableModelRows"

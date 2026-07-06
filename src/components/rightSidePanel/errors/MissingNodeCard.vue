@@ -56,7 +56,7 @@
         >
       </template>
     </i18n-t>
-    <div class="flex flex-col gap-1 overflow-hidden">
+    <div class="-mx-1.5 flex flex-col gap-1 overflow-hidden px-1.5">
       <MissingPackGroupRow
         v-for="group in missingPackGroups"
         :key="group.packId ?? '__unknown__'"

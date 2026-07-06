@@ -3,9 +3,12 @@ import type { MissingNodeType } from '@/types/comfy'
 /**
  * Background applied to error rows/cards that belong to the canvas
  * selection. Uses the design-system selection blue so panel emphasis
- * matches the canvas selection color in both themes.
+ * matches the canvas selection color in both themes. The negative margin
+ * and matching padding cancel out, so text never shifts — the background
+ * simply bleeds 6px past the content for breathing room.
  */
-export const SELECTION_EMPHASIS_CLASS = 'rounded-sm bg-blue-selection'
+export const SELECTION_EMPHASIS_CLASS =
+  'rounded-sm bg-blue-selection -mx-1.5 px-1.5'
 
 /** True when any node type resolves to a node in the given id set. */
 export function someNodeTypeInSelection(
