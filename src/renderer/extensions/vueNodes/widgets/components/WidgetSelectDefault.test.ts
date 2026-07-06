@@ -364,11 +364,12 @@ describe('WidgetSelectDefault', () => {
       expect(icon).toHaveClass('animate-spin')
 
       const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
+      clearTimeoutSpy.mockClear()
 
       await user.keyboard('{Escape}')
       await nextTick()
 
-      expect(clearTimeoutSpy).toHaveBeenCalled()
+      expect(clearTimeoutSpy).toHaveBeenCalledTimes(1)
       clearTimeoutSpy.mockRestore()
 
       expect(

@@ -52,7 +52,7 @@
             aria-hidden="true"
             :disabled
             class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
-            @click="handleOpenChange(true)"
+            @click="handleOpenChange(!isOpen)"
           >
             <i
               :class="
@@ -119,6 +119,8 @@
               <div
                 class="flex items-center justify-center gap-2 p-4 text-xs text-muted-foreground"
                 data-testid="widget-select-default-loading"
+                role="status"
+                aria-live="polite"
               >
                 <i
                   class="icon-[lucide--loader-circle] size-4 animate-spin"
