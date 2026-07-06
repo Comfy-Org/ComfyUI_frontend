@@ -11,12 +11,10 @@
       />
     </div>
 
-    <div
-      class="min-w-0 flex-1 overflow-y-auto bg-interface-panel-surface p-3"
-      aria-live="polite"
-    >
+    <div class="min-w-0 flex-1 overflow-y-auto bg-interface-panel-surface p-3">
       <div
         v-if="filteredGroups.length === 0"
+        role="status"
         class="px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
       >
         {{
