@@ -59,11 +59,10 @@ export const useAppModeStore = defineStore('appMode', () => {
   const viewMode = computed<ViewMode>(() => (isAppMode.value ? 'app' : 'graph'))
 
   /**
-   * Frame-lagged mirror of {@link viewMode} that drives the view-mode toggle's
-   * segment morph. Lagging by two frames lets a toggle that mounts mid-switch
-   * render the previous mode first, then animate into the new one. It lives in
-   * the store so the value outlives the graph-mode toggle unmounting and the
-   * app-mode toggle mounting in its place during a switch.
+   * Frame-lagged mirror of {@link viewMode} driving the view-mode toggle's
+   * segment morph. The two-frame lag lets a toggle that mounts mid-switch
+   * render the previous mode first, then animate in. Kept in the store so it
+   * outlives the graph-mode toggle unmounting as the app toggle replaces it.
    */
   const displayViewMode = ref<ViewMode>(viewMode.value)
   let outerFrame: number | undefined

@@ -25,9 +25,9 @@ interface ViewModeSegment {
   label: string
   switchLabel: string
   switchTooltip: string
-  /** Truth: drives behavior and aria. Flips as soon as the mode changes. */
+  /** Drives behavior and aria; flips as soon as the mode changes. */
   active: boolean
-  /** Frame-lagged mirror of {@link active}: drives the morph styling/order. */
+  /** Frame-lagged mirror of {@link active} that drives the morph order. */
   displayActive: boolean
 }
 
@@ -82,9 +82,8 @@ const segments = computed<ViewModeSegment[]>(() =>
   }))
 )
 
-// Display-inactive segment first (left), display-active last (right). On mode
-// switch the array reorders and TransitionGroup FLIP-animates the keyed nodes
-// to their new spots.
+// Display-inactive segment first (left), display-active last (right). The
+// reorder on mode switch is what TransitionGroup FLIP-animates.
 const orderedSegments = computed(() => {
   const [graph, app] = segments.value
   return graph.displayActive ? [app, graph] : [graph, app]
@@ -92,8 +91,7 @@ const orderedSegments = computed(() => {
 
 const toggleContainer = useTemplateRef<HTMLDivElement>('toggleContainer')
 
-// The active segment is the only element carrying popup semantics, which makes
-// this a stable, markup-derived way to find it.
+// The active segment is the only element with popup semantics.
 function activeSegmentElement() {
   return (
     toggleContainer.value?.querySelector<HTMLElement>(
@@ -131,10 +129,9 @@ function onSegmentKeydown(seg: ViewModeSegment, e: KeyboardEvent) {
   if (!dropdownOpen.value) toggleDropdown()
 }
 
-// Reimplements the two trigger-element behaviors of a stock DropdownMenuTrigger
-// (which this component cannot use without breaking the FLIP morph): a click on
-// the open menu's trigger toggles it closed instead of dismiss-then-reopen, and
-// focus returns to the trigger on close unless the user interacted elsewhere.
+// A stock DropdownMenuTrigger would break the FLIP morph, so re-create its two
+// behaviors: clicking the open trigger toggles closed (not dismiss-then-reopen),
+// and focus returns to the trigger on close unless the user interacted outside.
 let interactedOutside = false
 function onInteractOutside(event: PointerDownOutsideEvent | FocusOutsideEvent) {
   const target = event.target
