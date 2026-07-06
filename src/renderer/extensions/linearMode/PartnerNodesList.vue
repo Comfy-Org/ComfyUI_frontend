@@ -4,31 +4,31 @@ import {
   CollapsibleRoot,
   CollapsibleTrigger
 } from 'reka-ui'
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
-import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
-import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { app } from '@/scripts/app'
+import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
 defineProps<{ mobile?: boolean }>()
 
-const { isCreditsBadge } = usePriceBadge()
 const { t } = useI18n()
+const badgeStore = useNodeBadgeStore()
 
 const creditsBadges = computed(() =>
   mapAllNodes(app.graph, (node) => {
     if (node.isSubgraphNode()) return
 
-    const priceBadge = node.badges.find(isCreditsBadge)
-    if (!priceBadge) return
+    const priceRow = badgeStore
+      .getBadges(app.graph.rootGraph.id, node.id)
+      .find((row) => row.kind === 'credits')
+    if (!priceRow) return
 
-    trackNodePrice(node)
-    return [node.title, toValue(priceBadge).text, node.id] as const
+    return [node.title, priceRow.text, node.id] as const
   })
 )
 </script>

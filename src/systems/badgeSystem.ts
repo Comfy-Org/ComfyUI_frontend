@@ -2,6 +2,7 @@ import { effectScope, ref, watch, watchEffect } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import { registerBadgeIcon } from '@/lib/litegraph/src/badgeIconRegistry'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -117,6 +118,11 @@ const CREDITS_BASE_BG_COLOR = '#8D6932'
 const SYSTEM_BADGE_KINDS = BADGE_KIND_ORDER.filter(
   (kind) => kind !== 'extension'
 )
+
+const creditsIconSvg = new Image()
+creditsIconSvg.src =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='oklch(83.01%25 0.163 83.16)' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15.536 11.293a1 1 0 0 0 0 1.414l2.376 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0zm-13.239 0a1 1 0 0 0 0 1.414l2.377 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414L6.088 8.916a1 1 0 0 0-1.414 0zm6.619 6.619a1 1 0 0 0 0 1.415l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.415l-2.377-2.376a1 1 0 0 0-1.414 0zm0-13.238a1 1 0 0 0 0 1.414l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z'/%3E%3C/svg%3E"
+registerBadgeIcon('credits', { image: creditsIconSvg, size: 8 })
 
 /**
  * Reads the pricing-relevant store state so the calling effect re-runs when

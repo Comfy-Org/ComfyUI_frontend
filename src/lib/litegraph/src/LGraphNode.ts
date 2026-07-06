@@ -9,6 +9,7 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
+import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -27,7 +28,8 @@ import {
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
-import { BadgePosition, LGraphBadge } from './LGraphBadge'
+import { LGraphBadge } from './LGraphBadge'
+import { badgeDrawObjects } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -420,9 +422,12 @@ export class LGraphNode
   widgets_start_y?: number
   lostFocusAt?: number
   gotFocusAt?: number
+  /**
+   * Extension-provided badges, drawn after the system-written rows held in
+   * {@link useNodeBadgeStore}. Thunks are re-evaluated every frame.
+   */
   badges: (LGraphBadge | (() => LGraphBadge))[] = []
   title_buttons: LGraphButton[] = []
-  badgePosition: BadgePosition = BadgePosition.TopLeft
   onOutputRemoved?(this: LGraphNode, slot: number): void
   onInputRemoved?(this: LGraphNode, slot: number, input: INodeInputSlot): void
   /**
@@ -3594,18 +3599,20 @@ export class LGraphNode
   }
 
   drawBadges(ctx: CanvasRenderingContext2D, { gap = 2 } = {}): void {
-    const badgeInstances = this.badges.map((badge) =>
-      badge instanceof LGraphBadge ? badge : badge()
-    )
-    const isLeftAligned = this.badgePosition === BadgePosition.TopLeft
+    const graphId = this.graph?.rootGraph.id
+    const rows = graphId
+      ? useNodeBadgeStore().getBadges(graphId, this.id)
+      : undefined
+    const badgeInstances = [
+      ...(rows ? badgeDrawObjects(this, rows) : []),
+      ...this.badges.map((badge) =>
+        badge instanceof LGraphBadge ? badge : badge()
+      )
+    ]
 
-    let currentX = isLeftAligned
-      ? 0
-      : this.width -
-        badgeInstances.reduce(
-          (acc, badge) => acc + badge.getWidth(ctx) + gap,
-          0
-        )
+    let currentX =
+      this.width -
+      badgeInstances.reduce((acc, badge) => acc + badge.getWidth(ctx) + gap, 0)
     const y = -(LiteGraph.NODE_TITLE_HEIGHT + gap)
 
     for (const badge of badgeInstances) {
