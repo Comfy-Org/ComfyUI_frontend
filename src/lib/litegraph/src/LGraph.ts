@@ -15,6 +15,7 @@ import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -473,11 +474,15 @@ export class LGraph
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
       useRerouteStore().clearGraph(graphId)
+      useNodeBadgeStore().clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each link individually.
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
+      for (const node of this._nodes) {
+        useNodeBadgeStore().unregisterNode(this.rootGraph.id, node.id)
+      }
     }
 
     this.id = zeroUuid
@@ -1086,6 +1091,8 @@ export class LGraph
     node.graph = this
     this.incrementVersion()
 
+    useNodeBadgeStore().registerNode(this.rootGraph.id, node.id)
+
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
     if (node.widgets) {
@@ -1201,6 +1208,9 @@ export class LGraph
 
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, fireNodeRemovalLifecycle)
+        forEachNode(node.subgraph, (innerNode) =>
+          useNodeBadgeStore().unregisterNode(this.rootGraph.id, innerNode.id)
+        )
         unregisterAllLinkTopologies(node.subgraph)
         unregisterAllRerouteChains(node.subgraph)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
@@ -1229,6 +1239,7 @@ export class LGraph
     if (pos != -1) this._nodes.splice(pos, 1)
 
     delete this._nodes_by_id[node.id]
+    useNodeBadgeStore().unregisterNode(this.rootGraph.id, node.id)
 
     this.onNodeRemoved?.(node)
 

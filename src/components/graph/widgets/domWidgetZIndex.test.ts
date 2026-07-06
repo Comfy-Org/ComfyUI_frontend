@@ -1,8 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getDomWidgetZIndex } from './domWidgetZIndex'
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('getDomWidgetZIndex', () => {
   it('follows graph node ordering when node.order is stale', () => {
