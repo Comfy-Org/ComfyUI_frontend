@@ -106,8 +106,8 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
   })
 
-  it('isolates a desktop-login redemption failure so it does not abort the boot chain', async () => {
-    mocks.redeemDesktopLogin.mockRejectedValueOnce(new Error('boom'))
+  it('does not let a pending desktop-login redemption block the other loaders', async () => {
+    mocks.redeemDesktopLogin.mockReturnValueOnce(new Promise(() => {}))
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()

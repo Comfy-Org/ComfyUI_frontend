@@ -389,6 +389,15 @@ describe('useDesktopLoginRedemption', () => {
     )
   })
 
+  it('contains an unexpected internal error instead of rejecting', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockRouteQuery.value = { desktop_login_code: VALID_CODE }
+    mockConfirm.mockRejectedValue(new Error('dialog exploded'))
+
+    const { redeemIfPresent } = await importComposable()
+    await expect(redeemIfPresent()).resolves.toBeUndefined()
+  })
+
   it('keeps the stash and skips the request when unauthenticated', async () => {
     mockRouteQuery.value = { desktop_login_code: VALID_CODE }
     mockAuthStore.currentUser = null
@@ -426,5 +435,12 @@ describe('stripDesktopLoginCodeFromPath', () => {
     const strip = await importHelper()
     expect(strip('/some/path?x=1')).toBe('/some/path?x=1')
     expect(strip('/')).toBe('/')
+  })
+
+  it('preserves the percent-encoding of the surviving params', async () => {
+    const strip = await importHelper()
+    expect(strip(`/p?name=My%20Flow&desktop_login_code=${VALID_CODE}`)).toBe(
+      '/p?name=My%20Flow'
+    )
   })
 })

@@ -47,18 +47,22 @@ interface RedeemDesktopLoginCodePayload {
 /**
  * Strips the desktop login code from an in-app full path (e.g. the
  * previousFullPath post-login redirect target) so the one-time code never
- * re-enters the visible URL after redemption.
+ * re-enters the visible URL after redemption. Operates on the raw string:
+ * URLSearchParams would re-encode the other params (e.g. %20 → +), and
+ * vue-router decodes + as a literal plus, silently changing their values.
  */
 export function stripDesktopLoginCodeFromPath(fullPath: string): string {
-  let url: URL
-  try {
-    url = new URL(fullPath, 'http://internal.invalid')
-  } catch {
-    return fullPath
-  }
-  if (!url.searchParams.has(DESKTOP_LOGIN_CODE_KEY)) return fullPath
-  url.searchParams.delete(DESKTOP_LOGIN_CODE_KEY)
-  return `${url.pathname}${url.search}${url.hash}`
+  const match = fullPath.match(/^([^?#]*)\?([^#]*)(#.*)?$/s)
+  if (!match) return fullPath
+  const [, path, query, hash = ''] = match
+  const params = query.split('&')
+  const kept = params.filter(
+    (param) =>
+      param !== DESKTOP_LOGIN_CODE_KEY &&
+      !param.startsWith(`${DESKTOP_LOGIN_CODE_KEY}=`)
+  )
+  if (kept.length === params.length) return fullPath
+  return `${path}${kept.length ? `?${kept.join('&')}` : ''}${hash}`
 }
 
 // Module-scoped so exactly-once semantics survive shared-composable disposal
@@ -145,7 +149,7 @@ function useDesktopLoginRedemptionInternal() {
     const code = readCodeFromIntent()
     if (!code) return
 
-    await until(() => authStore.isInitialized).toBe(true)
+    await until(() => authStore.isInitialized).toBe(true, { timeout: 16_000 })
     // No session yet (e.g. code captured on the login page): keep the stash
     // and let the post-login trigger redeem it.
     const user = authStore.currentUser
@@ -218,17 +222,23 @@ function useDesktopLoginRedemptionInternal() {
   }
 
   const redeemIfPresent = async (): Promise<void> => {
-    // The code must never linger in the visible URL, even when redemption is
-    // already settled (e.g. a previousFullPath redirect resurrecting it).
-    stripCodeFromUrl()
-    if (completed) {
-      clearPreservedQuery(NAMESPACE)
-      return
+    // Never rejects: every trigger fire-and-forgets this from view setup or
+    // boot paths that must not be derailed by a redemption failure.
+    try {
+      // The code must never linger in the visible URL, even when redemption is
+      // already settled (e.g. a previousFullPath redirect resurrecting it).
+      stripCodeFromUrl()
+      if (completed) {
+        clearPreservedQuery(NAMESPACE)
+        return
+      }
+      inFlight ??= redeemOnce().finally(() => {
+        inFlight = null
+      })
+      await inFlight
+    } catch (error) {
+      console.error('[DesktopLoginRedemption] Redemption failed:', error)
     }
-    inFlight ??= redeemOnce().finally(() => {
-      inFlight = null
-    })
-    await inFlight
   }
 
   return { redeemIfPresent }

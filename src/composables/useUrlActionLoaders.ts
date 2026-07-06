@@ -21,18 +21,9 @@ export function useUrlActionLoaders() {
   const desktopLoginRedemption = isCloud ? useDesktopLoginRedemption() : null
 
   async function runUrlActionLoaders() {
-    // Redeem a desktop login code from URL if present
-    // (e.g., ?desktop_login_code=dlc_...); the desktop app is polling for it.
-    if (desktopLoginRedemption) {
-      try {
-        await desktopLoginRedemption.redeemIfPresent()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to redeem desktop login code:',
-          error
-        )
-      }
-    }
+    // Redeem a desktop login code (?desktop_login_code=dlc_...) in the
+    // background: it can await user approval and must not delay the others.
+    void desktopLoginRedemption?.redeemIfPresent()
 
     // Accept workspace invite from URL if present (e.g., ?invite=TOKEN).
     // WorkspaceAuthGate ensures flag state is resolved before the app mounts.

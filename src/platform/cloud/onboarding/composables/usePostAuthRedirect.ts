@@ -29,13 +29,10 @@ export function usePostAuthRedirect(options: {
   const desktopLoginRedemption = useDesktopLoginRedemption()
 
   async function onAuthSuccess() {
-    // Kick off redemption of a pending desktop login code so the polling
-    // desktop app picks up the session promptly; the approval dialog and
-    // request run in the background and must never block the normal
-    // post-login toast/redirect.
-    desktopLoginRedemption.redeemIfPresent().catch((error: unknown) => {
-      console.error('Failed to redeem desktop login code:', error)
-    })
+    // Kick off redemption of a pending desktop login code in the background so
+    // the polling desktop app picks up the session promptly; it must never
+    // block the post-login toast/redirect.
+    void desktopLoginRedemption.redeemIfPresent()
 
     toastStore.add({
       severity: 'success',
