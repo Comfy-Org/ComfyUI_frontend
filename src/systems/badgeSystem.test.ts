@@ -290,6 +290,26 @@ describe('startBadgeSystem', () => {
     stop()
   })
 
+  it('follows a workflow load that replaces an unconfigured graph id', async () => {
+    const badgeStore = useNodeBadgeStore()
+    const node = makeNode(4)
+    let liveGraphId: UUID = 'graph-unconfigured'
+    const stop = startBadgeSystem({
+      resolveGraphId: () => liveGraphId,
+      resolveNode: (id) => (id === node.id ? node : undefined)
+    })
+
+    liveGraphId = 'graph-configured'
+    badgeStore.registerNode(liveGraphId, node.id)
+    await nextTick()
+
+    expect(
+      badgeStore.getBadges(liveGraphId, node.id).map((b) => b.text)
+    ).toEqual(['#4'])
+
+    stop()
+  })
+
   it('stops writing after the system itself is stopped', async () => {
     const badgeStore = useNodeBadgeStore()
     const node = makeNode(7)
