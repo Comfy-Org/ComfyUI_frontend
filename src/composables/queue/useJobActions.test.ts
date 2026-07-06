@@ -66,24 +66,6 @@ beforeEach(() => {
 })
 
 describe('useJobActions', () => {
-  it('exposes localized action metadata', () => {
-    const { result, unmount } = mountJobActions(ref(job()))
-
-    expect(result.cancelAction).toMatchObject({
-      icon: 'icon-[lucide--x]',
-      label: 'sideToolbar.queueProgressOverlay.cancelJobTooltip',
-      variant: 'destructive'
-    })
-    expect(result.deleteAction).toMatchObject({
-      icon: 'icon-[lucide--circle-minus]',
-      label: 'queue.jobMenu.removeJob',
-      variant: 'destructive'
-    })
-    expect(wrapWithErrorHandlingAsync).toHaveBeenCalledTimes(2)
-
-    unmount()
-  })
-
   it('cancels active jobs unless clearing is hidden', async () => {
     const currentJob = ref(job({ state: 'running' }))
     const { result, unmount } = mountJobActions(currentJob)

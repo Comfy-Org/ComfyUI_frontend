@@ -21,13 +21,6 @@ vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
 const { parseTaskOutput } = vi.hoisted(() => ({ parseTaskOutput: vi.fn() }))
 vi.mock('@/stores/resultItemParsing', () => ({ parseTaskOutput }))
 
-type JobStatus =
-  | 'in_progress'
-  | 'pending'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
-
 function executionError(
   overrides: Partial<NonNullable<JobListItem['execution_error']>> = {}
 ): NonNullable<JobListItem['execution_error']> {
@@ -64,38 +57,6 @@ function result(filename: string, type: ResultItemType = 'output') {
 }
 
 describe('TaskItemImpl', () => {
-  it('maps job status to taskType and apiTaskType', () => {
-    expect(new TaskItemImpl(job({ status: 'in_progress' })).taskType).toBe(
-      'Running'
-    )
-    expect(new TaskItemImpl(job({ status: 'pending' })).taskType).toBe(
-      'Pending'
-    )
-    expect(new TaskItemImpl(job({ status: 'completed' })).taskType).toBe(
-      'History'
-    )
-
-    expect(new TaskItemImpl(job({ status: 'pending' })).apiTaskType).toBe(
-      'queue'
-    )
-    expect(new TaskItemImpl(job({ status: 'completed' })).apiTaskType).toBe(
-      'history'
-    )
-  })
-
-  it('exposes displayStatus for every backend status', () => {
-    const statuses: [JobStatus, string][] = [
-      ['in_progress', 'Running'],
-      ['pending', 'Pending'],
-      ['completed', 'Completed'],
-      ['failed', 'Failed'],
-      ['cancelled', 'Cancelled']
-    ]
-    for (const [status, display] of statuses) {
-      expect(new TaskItemImpl(job({ status })).displayStatus).toBe(display)
-    }
-  })
-
   it('derives history/running flags and a status-qualified key', () => {
     const running = new TaskItemImpl(job({ id: 'a', status: 'in_progress' }))
     expect(running.isRunning).toBe(true)

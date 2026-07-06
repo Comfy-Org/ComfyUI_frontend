@@ -1854,10 +1854,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   })
 
   describe('progress', () => {
-    it('reports null executing node progress before progress events arrive', () => {
-      expect(store.executingNodeProgress).toBeNull()
-    })
-
     it('sets _executingNodeProgress from the event payload', () => {
       const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
 

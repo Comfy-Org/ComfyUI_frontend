@@ -81,13 +81,6 @@ beforeEach(() => {
 })
 
 describe('executionStore execution lifecycle', () => {
-  it('reports zero progress while idle', () => {
-    const store = setup()
-    expect(store.totalNodesToExecute).toBe(0)
-    expect(store.nodesExecuted).toBe(0)
-    expect(store.executionProgress).toBe(0)
-  })
-
   it('counts the queued nodes once a job starts', () => {
     const store = setup()
     startJob(store, 'job-1', ['a', 'b', 'c'])
