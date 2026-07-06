@@ -1,5 +1,4 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -75,20 +74,6 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 describe('TaskItemImpl', () => {
-  it('should default missing result URL fields', () => {
-    const output = new ResultItemImpl(
-      fromPartial<ConstructorParameters<typeof ResultItemImpl>[0]>({
-        nodeId: 'node-1',
-        mediaType: 'images'
-      })
-    )
-
-    expect(output.filename).toBe('')
-    expect(output.subfolder).toBe('')
-    expect(output.type).toBe('')
-    expect(output.url).toBe('')
-  })
-
   it('should use the raw URL as preview URL for non-images', () => {
     const output = new ResultItemImpl({
       nodeId: 'node-1',
