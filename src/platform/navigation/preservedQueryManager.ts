@@ -4,7 +4,12 @@ const STORAGE_PREFIX = 'Comfy.PreservedQuery.'
 const preservedQueries = new Map<string, Record<string, string>>()
 
 const readQueryParam = (value: unknown): string | undefined => {
-  return typeof value === 'string' ? value : undefined
+  if (typeof value === 'string') return value
+  if (!Array.isArray(value)) return undefined
+  return value.find(
+    (entry: unknown): entry is string =>
+      typeof entry === 'string' && entry !== ''
+  )
 }
 
 const getStorageKey = (namespace: string) => `${STORAGE_PREFIX}${namespace}`

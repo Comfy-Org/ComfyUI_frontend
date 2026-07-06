@@ -101,7 +101,7 @@
     "color": "Color",
     "error": "Error",
     "enter": "Enter",
-    "enterSubgraph": "Enter Subgraph",
+    "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
@@ -429,6 +429,11 @@
   },
   "manager": {
     "title": "Nodes Manager",
+    "survey": {
+      "title": "Join the waitlist",
+      "intro": "Installing custom nodes is coming soon to Comfy Cloud. Answer a few quick questions to join the waitlist and help shape this feature.",
+      "error": "This survey couldn't be loaded. Please try again later."
+    },
     "nodePackInfo": "Node Pack Info",
     "basicInfo": "Basic Info",
     "actions": "Actions",
