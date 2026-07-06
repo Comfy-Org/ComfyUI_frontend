@@ -181,6 +181,34 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     }
   }
 
+  function removeMissingModelsBySourceScope(executionId: string) {
+    if (!missingModelCandidates.value) return
+    const prefix = `${executionId}:`
+    const removedNames = new Set<string>()
+    const remaining: MissingModelCandidate[] = []
+    for (const candidate of missingModelCandidates.value) {
+      const sourceExecutionId =
+        candidate.sourceExecutionId == null
+          ? undefined
+          : String(candidate.sourceExecutionId)
+      if (
+        sourceExecutionId === executionId ||
+        sourceExecutionId?.startsWith(prefix)
+      ) {
+        removedNames.add(candidate.name)
+      } else {
+        remaining.push(candidate)
+      }
+    }
+    if (removedNames.size === 0) return
+    missingModelCandidates.value = remaining.length ? remaining : null
+    for (const name of removedNames) {
+      if (!remaining.some((candidate) => candidate.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+  }
+
   function addMissingModels(models: MissingModelCandidate[]) {
     if (!models.length) return
     const existing = missingModelCandidates.value ?? []
@@ -267,6 +295,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     removeMissingModelByWidget,
     removeMissingModelsByNodeId,
     removeMissingModelsByPrefix,
+    removeMissingModelsBySourceScope,
     clearMissingModels,
     refreshMissingModels,
     createVerificationAbortController,

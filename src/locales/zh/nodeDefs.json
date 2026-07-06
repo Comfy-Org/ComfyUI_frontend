@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "为 Ideogram 4 模型构建 JSON 提示。",
+    "display_name": "构建 JSON 提示（Ideogram）",
+    "inputs": {
+      "aesthetics": {
+        "name": "美学",
+        "tooltip": "必填美学关键词（如：情绪化、电影感、去饱和）。"
+      },
+      "background": {
+        "name": "背景",
+        "tooltip": "图像背景或环境的必填描述。"
+      },
+      "color_palette": {
+        "name": "色板",
+        "tooltip": "用于引导图像主色调的十六进制颜色代码。最多可填 16 项。"
+      },
+      "element": {
+        "name": "元素",
+        "tooltip": "来自节点 Create Bounding Boxes 的提示元素。"
+      },
+      "high_level_description": {
+        "name": "高级描述",
+        "tooltip": "对图像的可选描述，一到两句话。强烈推荐填写。"
+      },
+      "lighting": {
+        "name": "光照",
+        "tooltip": "必填光照描述（如：金色时刻、轮廓光、戏剧性阴影）。"
+      },
+      "medium": {
+        "name": "媒介",
+        "tooltip": "必填媒介类型（如：摄影、插画、3d_render、绘画、平面设计）。当风格为 photo 时，设置为摄影。"
+      },
+      "style": {
+        "name": "风格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "提示",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -2633,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "数组转字符串",
+    "inputs": {
+      "array": {
+        "name": "数组"
+      },
+      "indent": {
+        "name": "缩进",
+        "tooltip": "每级缩进的空格数。0 生成紧凑的单行字符串。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "字典转字符串",
+    "inputs": {
+      "dictionary": {
+        "name": "字典"
+      },
+      "indent": {
+        "name": "缩进",
+        "tooltip": "每级缩进的空格数。0 生成紧凑的单行字符串。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "图像到视频Latent（Cosmos）",
     "inputs": {
@@ -2691,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "在画布上绘制边界框。输出 Ideogram 提示元素、像素空间边界框和预览图像。",
+    "display_name": "创建边界框",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "在画布和预览中用作背景的可选图像。"
+      },
+      "editor_state": {
+        "name": "编辑器状态",
+        "tooltip": "绘制边界框并设置每个框的类型、文本、描述、色板。先添加背景元素，最后添加前景元素。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "画布及边界框像素网格的高度。"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "画布及边界框像素网格的宽度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "预览",
+        "tooltip": null
+      },
+      "1": {
+        "name": "边界框",
+        "tooltip": null
+      },
+      "2": {
+        "name": "元素",
         "tooltip": null
       }
     }
@@ -12025,6 +12138,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "模型融合（LTXV）",
     "inputs": {
@@ -17694,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "种子",
+    "inputs": {
+      "fixed": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "种子",
         "tooltip": null
       }
     }

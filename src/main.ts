@@ -32,13 +32,12 @@ import { i18n } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
-const requiresRemoteConfigBootstrap = isCloud || hasHostTelemetryBridge
 
-if (requiresRemoteConfigBootstrap) {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
-}
+// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
+// against the server's runtime values instead of the build-time defaults.
+const { refreshRemoteConfig } =
+  await import('@/platform/remoteConfig/refreshRemoteConfig')
+await refreshRemoteConfig({ useAuth: false })
 
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')

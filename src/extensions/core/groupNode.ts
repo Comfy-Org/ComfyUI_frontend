@@ -2,6 +2,7 @@ import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
@@ -814,8 +815,10 @@ export class GroupNodeConfig {
  * `configure`. The load-time migration unpacks each instance via
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
-class GroupNodeHandler {
+export class GroupNodeHandler {
   node: LGraphNode
   groupData: GroupNodeConfig
 
@@ -851,7 +854,10 @@ class GroupNodeHandler {
       const selectedIds = Object.keys(app.canvas.selected_nodes)
       const newNodes: LGraphNode[] = []
       for (let i = 0; i < selectedIds.length; i++) {
-        const newNode = app.rootGraph.getNodeById(selectedIds[i])
+        const selectedId = parseNodeId(selectedIds[i])
+        const newNode = selectedId
+          ? app.rootGraph.getNodeById(selectedId)
+          : null
         const innerNodeData = nodeData.nodes[i]
         if (!newNode) continue
         newNodes.push(newNode)
@@ -905,9 +911,10 @@ class GroupNodeHandler {
 
     const reconnectInputs = (selectedIds: (string | number)[]) => {
       for (const innerNodeIndex in oldToNewInputMap) {
-        const newNode = app.rootGraph.getNodeById(
-          selectedIds[Number(innerNodeIndex)]
-        )
+        const selectedId = parseNodeId(selectedIds[Number(innerNodeIndex)])
+        const newNode = selectedId
+          ? app.rootGraph.getNodeById(selectedId)
+          : null
         if (!newNode) continue
         const map = oldToNewInputMap[Number(innerNodeIndex)]
         for (const innerInputId in map) {
@@ -938,9 +945,10 @@ class GroupNodeHandler {
           const link = app.rootGraph.links[l]
           if (!link) continue
           const targetNode = app.rootGraph.getNodeById(link.target_id)
-          const newNode = app.rootGraph.getNodeById(
-            selectedIds[slot.node.index ?? 0]
-          )
+          const selectedId = parseNodeId(selectedIds[slot.node.index ?? 0])
+          const newNode = selectedId
+            ? app.rootGraph.getNodeById(selectedId)
+            : null
           if (targetNode) {
             newNode?.connect(slot.slot, targetNode, link.target_slot)
           }
