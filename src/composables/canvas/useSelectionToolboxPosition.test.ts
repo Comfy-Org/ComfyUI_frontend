@@ -277,8 +277,7 @@ describe('useSelectionToolboxPosition', () => {
   })
 
   it('ignores selected items without valid ids', () => {
-    const item = Object.assign({} as Positionable, {
-      id: null,
+    const item = fromPartial<Positionable>({
       pos: [100, 200],
       size: [160, 80],
       boundingRect: [100, 200, 160, 80]
