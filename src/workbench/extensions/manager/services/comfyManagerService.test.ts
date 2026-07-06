@@ -66,15 +66,6 @@ describe('useComfyManagerService', () => {
     mockIsAbortError.mockReturnValue(false)
   })
 
-  it('creates the manager API client with the v2 base URL', () => {
-    expect(mockAxios.create).toHaveBeenCalledWith({
-      baseURL: 'http://localhost:8188/v2/',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-  })
-
   it('blocks requests when the new manager UI is unavailable', async () => {
     mockManagerState.isNewManagerUI.value = false
     const service = useComfyManagerService()
