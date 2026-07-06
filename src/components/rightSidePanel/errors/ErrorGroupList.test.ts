@@ -89,9 +89,10 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
   })
 }
 
-function renderList(pinia: TestingPinia) {
+function renderList(pinia: TestingPinia, props: Record<string, unknown> = {}) {
   const user = userEvent.setup()
-  render(ErrorGroupList, {
+  const { rerender } = render(ErrorGroupList, {
+    props,
     global: {
       plugins: [PrimeVue, testI18n, pinia],
       stubs: {
@@ -101,7 +102,7 @@ function renderList(pinia: TestingPinia) {
       }
     }
   })
-  return { user }
+  return { user, rerender }
 }
 
 function createPinia() {
@@ -235,5 +236,44 @@ describe('ErrorGroupList selection emphasis', () => {
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
+  })
+
+  it('carousel ignores collapse state, renders no toggles, and snaps to matches', async () => {
+    const scrollTo = vi
+      .spyOn(Element.prototype, 'scrollTo')
+      .mockImplementation(() => {})
+    const pinia = createPinia()
+    seedTwoErrorGroups(pinia)
+    const { user, rerender } = renderList(pinia)
+    const canvasStore = useCanvasStore(pinia)
+
+    // Collapse a group in list mode, then switch the same instance to
+    // carousel (the resolution panel does this when the viewport narrows)
+    const loaderSection = getSectionByTitle('Validation failed')
+    const [loaderHeader] = within(loaderSection).getAllByRole('button')
+    await user.click(loaderHeader)
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+
+    await rerender({ carousel: true })
+
+    // Collapse state is ignored: the body renders regardless…
+    expect(
+      within(getSectionByTitle('Validation failed')).getByText('LoaderNode')
+    ).toBeInTheDocument()
+    // …and no collapse affordances exist at all
+    expect(screen.queryByLabelText('Collapse')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Expand')).not.toBeInTheDocument()
+
+    // Selection snaps to the matched slide instead of collapsing others
+    canvasStore.selectedItems = fromAny<
+      typeof canvasStore.selectedItems,
+      unknown
+    >([SAMPLER_NODE])
+    await waitFor(() => {
+      expect(scrollTo).toHaveBeenCalled()
+    })
+    expect(
+      within(getSectionByTitle('Validation failed')).getByText('LoaderNode')
+    ).toBeInTheDocument()
   })
 })
