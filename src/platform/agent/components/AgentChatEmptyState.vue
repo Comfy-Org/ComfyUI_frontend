@@ -1,26 +1,47 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { motion } from 'motion-v'
+
 import Empty from '@/components/ui/empty/Empty.vue'
 import EmptyHeader from '@/components/ui/empty/EmptyHeader.vue'
 import EmptyMedia from '@/components/ui/empty/EmptyMedia.vue'
 import EmptyTitle from '@/components/ui/empty/EmptyTitle.vue'
+import AgentShaderBackground from '@/platform/agent/components/AgentShaderBackground.vue'
+import { useAgentPersonality } from '@/platform/agent/composables/agentPersonalityState'
+import { useAgentHoverMotion } from '@/platform/agent/composables/useAgentHoverMotion'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const { name } = defineProps<{
   name?: string
 }>()
+
+const agentPersonality = useAgentPersonality()
+const reducedMotion = computed(
+  () => !!useSettingStore().get('Comfy.Appearance.DisableAnimations')
+)
+const { transition, whileHover, animate } = useAgentHoverMotion(
+  agentPersonality.hover,
+  agentPersonality.idle,
+  reducedMotion
+)
 </script>
 
 <template>
   <Empty class="pt-12">
     <EmptyHeader>
       <EmptyMedia>
-        <div class="rounded-xl border border-plum-600">
-          <img
-            src="/assets/images/comfy-logo-single.svg"
-            alt=""
-            class="block size-12"
+        <motion.div
+          class="relative flex size-12 items-center justify-center overflow-hidden rounded-xl border border-plum-600 bg-ink-700"
+          :while-hover="whileHover"
+          :animate="animate"
+          :transition="transition"
+        >
+          <AgentShaderBackground />
+          <i
+            class="relative z-10 icon-[comfy--comfy-c] size-6 text-brand-yellow"
             aria-hidden="true"
           />
-        </div>
+        </motion.div>
       </EmptyMedia>
       <EmptyTitle
         class="text-base/snug font-semibold text-base-foreground @min-[570px]:text-2xl/snug"

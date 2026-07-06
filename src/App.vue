@@ -2,12 +2,13 @@
   <router-view />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
+  <component :is="AgentPersonalityDevPanel" v-if="AgentPersonalityDevPanel" />
 </template>
 
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import { computed, onMounted, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
@@ -17,6 +18,14 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+
+// Dev-only tuning panel for the agent's shader/hover personality. The dynamic
+// import keeps `dialkit` out of production bundles entirely.
+const AgentPersonalityDevPanel = import.meta.env.DEV
+  ? defineAsyncComponent(
+      () => import('@/platform/agent/components/AgentPersonalityDevPanel.vue')
+    )
+  : undefined
 
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
