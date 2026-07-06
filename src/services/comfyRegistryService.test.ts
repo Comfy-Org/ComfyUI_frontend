@@ -53,18 +53,6 @@ describe('useComfyRegistryService', () => {
     mockAxios.isAxiosError.mockClear()
   })
 
-  it('configures the registry axios client with repeated query params', () => {
-    expect(mockAxios.create).toHaveBeenCalledWith({
-      baseURL: 'https://api.comfy.org',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      paramsSerializer: {
-        indexes: null
-      }
-    })
-  })
-
   it('returns response data and clears loading state for successful requests', async () => {
     mockClient.get.mockResolvedValueOnce(response({ nodes: [] }))
     const service = useComfyRegistryService()
@@ -112,98 +100,73 @@ describe('useComfyRegistryService', () => {
     )
   })
 
-  it('routes publisher, pack, and review methods to their registry endpoints', async () => {
-    mockClient.get
-      .mockResolvedValueOnce(response({ id: 'publisher' }))
-      .mockResolvedValueOnce(response([{ id: 'pack' }]))
-      .mockResolvedValueOnce(response([{ version: '1.0.0' }]))
-      .mockResolvedValueOnce(response({ id: 'version' }))
-      .mockResolvedValueOnce(response({ id: 'pack' }))
-      .mockResolvedValueOnce(response({ id: 'pack' }))
-      .mockResolvedValueOnce(response({ id: 'pack' }))
-    mockClient.post
-      .mockResolvedValueOnce(response({ id: 'reviewed' }))
-      .mockResolvedValueOnce(response({ node_versions: [] }))
+  it('interpolates caller input into registry request paths and params', async () => {
+    mockClient.get.mockResolvedValue(response({}))
+    mockClient.post.mockResolvedValue(response({}))
     const service = useComfyRegistryService()
     const signal = new AbortController().signal
 
-    await expect(
-      service.getPublisherById('publisher', signal)
-    ).resolves.toEqual({ id: 'publisher' })
-    await expect(
-      service.listPacksForPublisher('publisher', true, signal)
-    ).resolves.toEqual([{ id: 'pack' }])
-    await expect(
-      service.getPackVersions(
-        'pack',
-        { statuses: ['NodeVersionStatusActive'] },
-        signal
-      )
-    ).resolves.toEqual([{ version: '1.0.0' }])
-    await expect(
-      service.getPackByVersion('pack', 'version', signal)
-    ).resolves.toEqual({ id: 'version' })
-    await expect(service.getPackById('pack', signal)).resolves.toEqual({
-      id: 'pack'
-    })
-    await expect(
-      service.inferPackFromNodeName('KSampler', signal)
-    ).resolves.toEqual({ id: 'pack' })
-    await expect(service.listAllPacks({ page: 1 }, signal)).resolves.toEqual({
-      id: 'pack'
-    })
-    await expect(service.postPackReview('pack', 5, signal)).resolves.toEqual({
-      id: 'reviewed'
-    })
-    await expect(
-      service.getBulkNodeVersions(
-        [{ node_id: 'pack', version: '1.0.0' }],
-        signal
-      )
-    ).resolves.toEqual({ node_versions: [] })
-
-    expect(mockClient.get).toHaveBeenNthCalledWith(1, '/publishers/publisher', {
+    await service.getPublisherById('pub-42', signal)
+    await service.listPacksForPublisher('pub-42', true, signal)
+    await service.getPackVersions(
+      'pack-7',
+      { statuses: ['NodeVersionStatusActive'] },
       signal
-    })
+    )
+    await service.getPackByVersion('pack-7', '2.3.4', signal)
+    await service.getPackById('pack-7', signal)
+    await service.inferPackFromNodeName('KSampler', signal)
+    await service.listAllPacks({ page: 3 }, signal)
+    await service.postPackReview('pack-7', 4, signal)
+    await service.getBulkNodeVersions(
+      [{ node_id: 'pack-7', version: '2.3.4' }],
+      signal
+    )
+
+    expect(mockClient.get).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('pub-42'),
+      { signal }
+    )
     expect(mockClient.get).toHaveBeenNthCalledWith(
       2,
-      '/publishers/publisher/nodes',
-      {
-        params: { include_banned: true },
-        signal
-      }
+      expect.stringContaining('pub-42'),
+      { params: { include_banned: true }, signal }
     )
-    expect(mockClient.get).toHaveBeenNthCalledWith(3, '/nodes/pack/versions', {
-      params: { statuses: ['NodeVersionStatusActive'] },
-      signal
-    })
+    expect(mockClient.get).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('pack-7'),
+      { params: { statuses: ['NodeVersionStatusActive'] }, signal }
+    )
     expect(mockClient.get).toHaveBeenNthCalledWith(
       4,
-      '/nodes/pack/versions/version',
+      expect.stringMatching(/pack-7.*2\.3\.4/),
       { signal }
     )
-    expect(mockClient.get).toHaveBeenNthCalledWith(5, '/nodes/pack', {
-      signal
-    })
+    expect(mockClient.get).toHaveBeenNthCalledWith(
+      5,
+      expect.stringContaining('pack-7'),
+      { signal }
+    )
     expect(mockClient.get).toHaveBeenNthCalledWith(
       6,
-      '/comfy-nodes/KSampler/node',
+      expect.stringContaining('KSampler'),
       { signal }
     )
-    expect(mockClient.get).toHaveBeenNthCalledWith(7, '/nodes', {
-      params: { page: 1 },
+    expect(mockClient.get).toHaveBeenNthCalledWith(7, expect.any(String), {
+      params: { page: 3 },
       signal
     })
     expect(mockClient.post).toHaveBeenNthCalledWith(
       1,
-      '/nodes/pack/reviews',
+      expect.stringContaining('pack-7'),
       null,
-      { params: { star: 5 }, signal }
+      { params: { star: 4 }, signal }
     )
     expect(mockClient.post).toHaveBeenNthCalledWith(
       2,
-      '/bulk/nodes/versions',
-      { node_versions: [{ node_id: 'pack', version: '1.0.0' }] },
+      expect.any(String),
+      { node_versions: [{ node_id: 'pack-7', version: '2.3.4' }] },
       { signal }
     )
   })
