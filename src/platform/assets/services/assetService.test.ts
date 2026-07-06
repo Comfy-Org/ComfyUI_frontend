@@ -558,6 +558,23 @@ describe(assetService.getAssetModels, () => {
     warn.mockRestore()
   })
 
+  it('groups slashed bare tags by their top-level segment', async () => {
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'slashed',
+          name: 'model1.safetensors',
+          tags: ['models', 'Chatterbox/subfolder1/model1']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('Chatterbox')
+
+    expect(models).toEqual([{ name: 'model1.safetensors', pathIndex: 0 }])
+  })
+
   it('falls back to filename metadata then name on bare-tag backends', async () => {
     mockSupportsModelTypeTags.value = false
     fetchApiMock.mockResolvedValueOnce(

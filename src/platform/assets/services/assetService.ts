@@ -218,7 +218,9 @@ function normalizeAssetTags(tags: string[]): string[] {
 /**
  * Resolves the model folder a tag represents, or undefined when the tag is not
  * a folder category. `supports_model_type_tags` backends carry the category as
- * a namespaced `model_type:<folder>` tag; older backends mint the bare folder.
+ * a namespaced `model_type:<folder>` tag; older backends mint bare tags, which
+ * may carry subfolder paths (e.g. `Chatterbox/sub/model`) and group by their
+ * top-level segment, matching the asset browser's legacy grouping.
  */
 function modelFolderFromTag(
   tag: string,
@@ -229,7 +231,8 @@ function modelFolderFromTag(
       ? tag.slice(MODEL_TYPE_TAG_PREFIX.length)
       : undefined
   }
-  return tag === MODELS_TAG ? undefined : tag
+  if (tag === MODELS_TAG || tag.length === 0) return undefined
+  return tag.split('/')[0]
 }
 
 /**
