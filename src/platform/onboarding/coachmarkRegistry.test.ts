@@ -4,7 +4,6 @@ import { nextTick } from 'vue'
 import {
   clearCoachmarks,
   coachmarkElements,
-  elementsFor,
   registerCoachmark,
   targetMounted,
   unregisterCoachmark,
@@ -35,12 +34,6 @@ describe('coachmarkRegistry', () => {
     registerCoachmark('app-run-button', b)
     unregisterCoachmark('app-run-button', a)
     expect(coachmarkElements('app-run-button')).toEqual([b])
-  })
-
-  it('gathers the elements registered for any of several ids', () => {
-    registerCoachmark('app-run-button', a)
-    registerCoachmark('outputs', b)
-    expect(elementsFor(['app-run-button', 'outputs'])).toEqual([a, b])
   })
 })
 

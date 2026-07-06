@@ -143,9 +143,12 @@ const expectsTargetInteraction = computed(() => !!step.advanceOnTargetClick)
 // Last step's "Done" already dismisses, so hide Skip unless the step has no primary button.
 const showSkip = computed(() => !isLast || expectsTargetInteraction.value)
 
+// The blocker only lets pointer events through to the target on interaction
+// steps, so only then does the target join the focus cycle — keyboard and
+// mouse users get the same reach.
 const focusTrap = useCoachmarkFocusTrap({
   cardRef,
-  getTarget: () => targetEl.value,
+  getTarget: () => (expectsTargetInteraction.value ? targetEl.value : null),
   isSuspended: () => waitingForTarget,
   onEscape: () => emit('skip')
 })

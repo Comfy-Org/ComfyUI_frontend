@@ -2,11 +2,14 @@ import { useEventListener } from '@vueuse/core'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
 
+import { isLaidOut } from './coachmarkRegistry'
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 interface FocusTrapOptions {
   cardRef: Ref<HTMLElement | null>
+  /** Return null when the target should stay outside the trap (no interaction expected). */
   getTarget: () => HTMLElement | null
   isSuspended: () => boolean
   onEscape: () => void
@@ -37,7 +40,7 @@ export function useCoachmarkFocusTrap(options: FocusTrapOptions) {
     if (cardRef.value) {
       items.push(...cardRef.value.querySelectorAll<HTMLElement>(FOCUSABLE))
     }
-    return items
+    return items.filter(isLaidOut)
   }
 
   useEventListener(

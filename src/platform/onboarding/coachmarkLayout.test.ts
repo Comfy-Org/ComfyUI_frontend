@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import {
+  CARD_GAP,
   blockerClipPath,
   clampSpotlight,
-  noTargetCardLeft
+  noTargetCardLeft,
+  topSafeInset
 } from './coachmarkLayout'
 
 const VIEWPORT = { width: 1000, height: 800 }
@@ -49,6 +51,26 @@ describe('blockerClipPath', () => {
     expect(clip).toContain('10px 60px')
     expect(clip).toContain('40px 60px')
     expect(clip).toContain('40px 20px')
+  })
+})
+
+describe('topSafeInset', () => {
+  afterEach(() => {
+    document.documentElement.style.removeProperty('--comfy-topbar-height')
+  })
+
+  it('converts a rem top bar height to px and adds the card gap', () => {
+    document.documentElement.style.setProperty('--comfy-topbar-height', '3rem')
+    expect(topSafeInset()).toBe(48 + CARD_GAP)
+  })
+
+  it('reads a px top bar height directly and adds the card gap', () => {
+    document.documentElement.style.setProperty('--comfy-topbar-height', '50px')
+    expect(topSafeInset()).toBe(50 + CARD_GAP)
+  })
+
+  it('falls back to the card gap alone when the token is unset', () => {
+    expect(topSafeInset()).toBe(CARD_GAP)
   })
 })
 

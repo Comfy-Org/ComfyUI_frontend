@@ -141,6 +141,37 @@ describe('TourSpotlight', () => {
     expect(emitted().skip).toHaveLength(1)
   })
 
+  it('pulls focus back to the card when the step expects no target interaction', async () => {
+    const target = mountTarget('assets-button')
+    renderSpotlight({ step: spotlightStep({ coachId: 'assets-button' }) })
+    await nextTick()
+
+    target.focus()
+    target.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await nextTick()
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
+  })
+
+  it('leaves focus in the target on a click-to-advance step', async () => {
+    const target = mountTarget('assets-button')
+    renderSpotlight({
+      step: spotlightStep({
+        advanceOnTargetClick: true,
+        coachId: 'assets-button'
+      })
+    })
+    await nextTick()
+
+    target.focus()
+    target.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await nextTick()
+    await nextTick()
+
+    expect(target).toHaveFocus()
+  })
+
   it('disables the primary button while waiting for a deferred target', () => {
     renderSpotlight({ waitingForTarget: true })
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()

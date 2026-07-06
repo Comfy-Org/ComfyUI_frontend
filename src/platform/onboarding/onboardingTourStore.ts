@@ -49,14 +49,13 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   ) {
     const tour = activeTour.value
     if (!tour) return
-    const coachId = step.value?.coachId
     telemetry?.trackOnboardingTour(stage, {
       tour,
       step_count: countedSteps.value.length,
       ...(stage !== 'started' &&
         countedStepIdx.value >= 0 && {
           step_number: countedStepIdx.value + 1,
-          coach_id: Array.isArray(coachId) ? coachId.join('+') : coachId
+          coach_id: step.value?.coachId
         }),
       ...(skipReason && { skip_reason: skipReason })
     })
@@ -151,16 +150,18 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     activeTour.value = null
   }
 
-  for (const [entryPath, active] of useTourTriggers()) {
+  for (const [entryPath, trigger] of useTourTriggers()) {
     watch(
-      active,
+      trigger.autoOpen,
       (visible) => {
         if (visible) startTour(entryPath)
-        else if (activeTour.value === entryPath)
-          finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
       },
       { immediate: true }
     )
+    watch(trigger.holds, (holding) => {
+      if (!holding && activeTour.value === entryPath)
+        finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
+    })
   }
 
   function hasSeenTour(entryPath: EntryPath): boolean {

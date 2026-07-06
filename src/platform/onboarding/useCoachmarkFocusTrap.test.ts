@@ -4,9 +4,18 @@ import type { EffectScope } from 'vue'
 
 import { useCoachmarkFocusTrap } from './useCoachmarkFocusTrap'
 
+/** A focusable button with a measured size, so the trap counts it as visible. */
 function button(label: string): HTMLButtonElement {
   const el = document.createElement('button')
   el.textContent = label
+  el.getBoundingClientRect = () => new DOMRect(0, 0, 40, 20)
+  return el
+}
+
+/** A focusable button that is not laid out (e.g. display:none). */
+function hiddenButton(label: string): HTMLButtonElement {
+  const el = button(label)
+  el.getBoundingClientRect = () => new DOMRect(0, 0, 0, 0)
   return el
 }
 
@@ -92,6 +101,13 @@ describe('useCoachmarkFocusTrap', () => {
     outside.focus()
     press('Tab', true)
     expect(document.activeElement).toBe(primary)
+  })
+
+  it('skips a focusable element that is not laid out', () => {
+    target.append(hiddenButton('hidden'))
+    t2.focus()
+    press('Tab')
+    expect(document.activeElement).toBe(skip)
   })
 
   it('invokes onEscape when Escape is pressed', () => {

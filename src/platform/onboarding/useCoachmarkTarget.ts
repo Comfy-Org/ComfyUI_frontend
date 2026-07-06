@@ -4,7 +4,7 @@ import { computed, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
-import { elementsFor, isLaidOut } from './coachmarkRegistry'
+import { coachmarkElements, isLaidOut } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
 // A target animating in via CSS transform reports through neither scroll nor
@@ -64,7 +64,7 @@ export function useCoachmarkTarget(
 ) {
   const candidateEls = computed<readonly HTMLElement[]>(() => {
     const id = toValue(step)?.coachId
-    return id ? elementsFor(id) : []
+    return id ? coachmarkElements(id) : []
   })
 
   const targetEl = computed<HTMLElement | null>(

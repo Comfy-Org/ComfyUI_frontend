@@ -31,13 +31,13 @@ export interface CoachStep {
    * `primary`/`skip` button-label overrides.
    */
   name: string
-  /** Element to spotlight (a list spotlights the first visible candidate). */
-  coachId?: CoachId | CoachId[]
+  /** Element to spotlight (the first laid-out registered candidate wins). */
+  coachId?: CoachId
   placement: CoachPlacement
   /** The user advances by clicking the spotlighted element, not Next. */
   advanceOnTargetClick?: boolean
   /** Drop this step at tour start when this target is already mounted. */
-  skipIfMounted?: CoachId | CoachId[]
+  skipIfMounted?: CoachId
   /** Target mounts later (e.g. a dialog); wait for it instead of dropping the step. */
   deferTarget?: boolean
   /** Renders the landing dialog instead of a spotlight. */
@@ -52,7 +52,7 @@ export interface CoachStep {
  */
 export function resolveSteps(
   steps: CoachStep[],
-  isMounted: (id: CoachId | CoachId[]) => boolean
+  isMounted: (id: CoachId) => boolean
 ): CoachStep[] {
   return steps.filter((s) => {
     if (s.skipIfMounted && isMounted(s.skipIfMounted)) return false

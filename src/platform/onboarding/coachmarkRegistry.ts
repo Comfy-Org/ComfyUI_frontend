@@ -28,18 +28,13 @@ export function coachmarkElements(id: CoachId): readonly HTMLElement[] {
   return registry.get(id) ?? EMPTY
 }
 
-export function elementsFor(id: CoachId | CoachId[]): readonly HTMLElement[] {
-  if (!Array.isArray(id)) return coachmarkElements(id)
-  return id.flatMap((coachId) => [...coachmarkElements(coachId)])
-}
-
-export function targetMounted(id: CoachId | CoachId[]): boolean {
-  return elementsFor(id).some(isLaidOut)
+export function targetMounted(id: CoachId): boolean {
+  return coachmarkElements(id).some(isLaidOut)
 }
 
 /** Resolves once a laid-out element for the id exists; false on timeout or abort. */
 export function waitForTarget(
-  id: CoachId | CoachId[],
+  id: CoachId,
   signal: AbortSignal,
   timeoutMs: number
 ): Promise<boolean> {
@@ -67,10 +62,10 @@ export function waitForTarget(
     // the target hasn't even mounted.
     function poll() {
       if (targetMounted(id)) finish(true)
-      else if (elementsFor(id).length) frame = requestAnimationFrame(poll)
+      else if (coachmarkElements(id).length) frame = requestAnimationFrame(poll)
     }
     const stopWatch = watch(
-      () => elementsFor(id).length,
+      () => coachmarkElements(id).length,
       () => {
         cancelAnimationFrame(frame)
         poll()

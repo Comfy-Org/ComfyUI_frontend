@@ -186,6 +186,38 @@ describe('onboardingTourStore', () => {
     expect(startedCount()).toBe(1)
   })
 
+  it('dismisses a replayed tour without the seen-flag when the user leaves its mode', async () => {
+    settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
+    const store = mountStore()
+    enterApp('app', false)
+    await flush()
+    store.replayTour('appMode')
+    await flush()
+    expect(store.step?.name).toBe('landing')
+
+    enterApp('graph', false)
+    await flush()
+
+    expect(store.step).toBeNull()
+    const skipped = telemetry.track.mock.calls.find(
+      ([stage]) => stage === 'skipped'
+    )
+    expect(skipped?.[1]).toMatchObject({ skip_reason: 'trigger_lost' })
+  })
+
+  it('keeps the tour running when outputs disappear but the mode still holds', async () => {
+    registerAppModeTargets()
+    const store = mountStore()
+    enterApp('app', true)
+    await flush()
+    expect(startedCount()).toBe(1)
+
+    enterApp('app', false)
+    await flush()
+
+    expect(store.step).not.toBeNull()
+  })
+
   it('marks the tour seen when it ends normally', async () => {
     const store = mountStore()
     store.replayTour('appMode')
