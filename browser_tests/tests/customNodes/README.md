@@ -53,7 +53,7 @@ Any `-g` pattern works against the generic scripts, e.g.
   cleared graph, counted exactly, and each added node's own `[data-node-id]`
   element mounts under Vue Nodes 2.0. Both renderer passes - unless the pack
   declares `vueNodesCompatible: false` in the manifest (evidence required;
-  see [ADDING_PACKS.md](ADDING_PACKS.md)), in which case its tests run their
+  see [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)), in which case its tests run their
   LiteGraph-canvas assertions only. Never a skip.
 - **T1 run**: the manifest workflow is loaded and queued; the backend's
   `executing` event stream must contain every expected node id, and the run
@@ -80,7 +80,7 @@ Any `-g` pattern works against the generic scripts, e.g.
 One manifest row plus one small workflow JSON - no new test code. The
 authoritative step-by-step process (verifying the pack's real node keys,
 authoring the run workflow, the `vueNodesCompatible` evidence rule, what CI
-does with the row) lives in [ADDING_PACKS.md](ADDING_PACKS.md). Follow it
+does with the row) lives in [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md). Follow it
 exactly; the traps it lists all shipped in real packs.
 
 ## Gotchas
