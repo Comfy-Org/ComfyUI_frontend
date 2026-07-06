@@ -1375,6 +1375,23 @@ const translations = {
     en: 'Partner with us on custom features, dedicated support, and a deeper campus partnership.',
     'zh-CN': '与我们合作，获得定制功能、专属支持以及更深入的校园合作。'
   },
+  // Student Ambassador interest band (education only); zh-CN drafted, pending review.
+  'pricing.studentAmbassador.comingSoon': {
+    en: 'Coming Soon',
+    'zh-CN': '即将推出'
+  },
+  'pricing.studentAmbassador.label': {
+    en: 'Student Ambassador',
+    'zh-CN': '学生大使'
+  },
+  'pricing.studentAmbassador.description': {
+    en: 'For students who want to bring Comfy to their campus.',
+    'zh-CN': '面向希望将 Comfy 带到校园的学生。'
+  },
+  'pricing.studentAmbassador.cta': {
+    en: 'Register Interest',
+    'zh-CN': '登记意向'
+  },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'

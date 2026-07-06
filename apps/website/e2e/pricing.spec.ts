@@ -40,6 +40,7 @@ test.describe('Pricing page @smoke', () => {
     await expect(page.getByText(/Yearly \(Up to 25% off\)/)).toHaveCount(0)
     await expect(page.getByText(/Educational savings/i)).toHaveCount(0)
     await expect(page.getByText(/Creative Campus/i)).toHaveCount(0)
+    await expect(page.getByText(/Student Ambassador/i)).toHaveCount(0)
   })
 })
 

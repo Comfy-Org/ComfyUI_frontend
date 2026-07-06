@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
+import { externalLinks } from '../src/config/routes'
 import { educationFaqs } from '../src/data/educationFaq'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
@@ -8,6 +9,7 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH = '/edu'
 const LEARNING_PATH = '/learning'
 const PRICING_PATH = '/cloud/pricing'
+const STUDENT_AMBASSADOR_FORM = externalLinks.studentAmbassadorForm
 
 const MONTHLY_LABEL = t('pricing.period.monthly', 'en')
 const EDU_YEARLY_TOGGLE = t('pricing.period.yearly.edu', 'en')
@@ -22,6 +24,18 @@ const pricingSection = (page: Page) =>
   page.locator('section').filter({
     has: page.getByRole('heading', { name: /Choose a plan/i })
   })
+
+// The pricing section is an Astro `client:visible` island, so the billing
+// toggle only becomes interactive once it hydrates — a click can otherwise
+// land before the handler is attached. Retry the click (only while the target
+// state is absent, so a re-click can't deselect) until a sentinel price shows.
+const switchToMonthly = async (page: Page, sentinel: Locator) => {
+  const monthly = page.getByText(MONTHLY_LABEL, { exact: true })
+  await expect(async () => {
+    if (!(await sentinel.isVisible())) await monthly.click()
+    await expect(sentinel).toBeVisible({ timeout: 1000 })
+  }).toPass({ timeout: 15_000 })
+}
 const FAQ_COUNT = educationFaqs.length
 const FIRST_FAQ = educationFaqs[0]
 const HERO_TITLE_TEXT = t('education.hero.title', 'en').replace(/\s+/g, ' ')
@@ -167,9 +181,8 @@ test.describe('Education pricing — desktop @smoke', () => {
     await expect(section.getByText(eduSavings(25)).first()).toBeVisible()
 
     // Flip to monthly: 10% off the monthly list price.
-    await page.getByText(MONTHLY_LABEL, { exact: true }).click()
+    await switchToMonthly(page, section.getByText('$18', { exact: true }))
 
-    await expect(section.getByText('$18', { exact: true })).toBeVisible()
     await expect(section.getByText('$31.50', { exact: true })).toBeVisible()
     await expect(section.getByText('$90', { exact: true })).toBeVisible()
 
@@ -227,10 +240,9 @@ test.describe('Education pricing — team card @smoke', () => {
     const section = pricingSection(page)
     await section.scrollIntoViewIfNeeded()
 
-    await page.getByText(MONTHLY_LABEL, { exact: true }).click()
-
     // Monthly, default tier (basePrice $700) → 10% off → $630.
-    await expect(section.getByText('$630', { exact: true })).toBeVisible()
+    await switchToMonthly(page, section.getByText('$630', { exact: true }))
+
     await expect(
       section.locator('span.line-through', { hasText: /^\$700$/ })
     ).toBeVisible()
@@ -264,6 +276,34 @@ test.describe('Education pricing — Creative Campus band @smoke', () => {
     const contact = section.getByRole('link', { name: CONTACT_CTA })
     await expect(contact).toBeVisible()
     await expect(contact).toHaveAttribute('href', '/contact')
+  })
+})
+
+test.describe('Education pricing — Student Ambassador band @smoke', () => {
+  const AMBASSADOR_LABEL = t('pricing.studentAmbassador.label', 'en')
+  const AMBASSADOR_TAG = t('pricing.studentAmbassador.comingSoon', 'en')
+  const AMBASSADOR_DESC = t('pricing.studentAmbassador.description', 'en')
+  const AMBASSADOR_CTA = t('pricing.studentAmbassador.cta', 'en')
+
+  test('renders the band with an active Register Interest CTA to the form', async ({
+    page
+  }) => {
+    await page.goto(PATH)
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    await expect(
+      section.getByText(AMBASSADOR_LABEL, { exact: true })
+    ).toBeVisible()
+    await expect(
+      section.getByText(AMBASSADOR_TAG, { exact: true })
+    ).toBeVisible()
+    await expect(section.getByText(AMBASSADOR_DESC)).toBeVisible()
+
+    const register = section.getByRole('link', { name: AMBASSADOR_CTA })
+    await expect(register).toBeVisible()
+    await expect(register).toHaveAttribute('href', STUDENT_AMBASSADOR_FORM)
+    await expect(register).toHaveAttribute('target', '_blank')
   })
 })
 

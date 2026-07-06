@@ -17,6 +17,7 @@ import PricingEnterpriseBand from './PricingEnterpriseBand.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
+import PricingStudentAmbassadorBand from './PricingStudentAmbassadorBand.vue'
 import PricingTeamCard from './PricingTeamCard.vue'
 
 const { locale = 'en', education = false } = defineProps<{
@@ -178,6 +179,8 @@ function eduSavingsFor(plan: PricingPlan): string | undefined {
       <PricingTeamCard :billing-period="billingPeriod" :education :locale />
 
       <PricingEnterpriseBand :education :locale />
+
+      <PricingStudentAmbassadorBand v-if="education" :locale />
     </div>
 
     <!-- Footnote -->

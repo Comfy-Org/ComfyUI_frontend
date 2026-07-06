@@ -72,6 +72,8 @@ export const externalLinks = {
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',
   reddit: 'https://www.reddit.com/r/comfyui/',
+  studentAmbassadorForm:
+    'https://docs.google.com/forms/d/e/1FAIpQLScY3Ui44Mgho-4OQ1UAH3JLc3LCkY5kHDkHY7EZI6etTkVpZQ/viewform',
   support: 'https://support.comfy.org/hc/en-us',
   workflows: 'https://comfy.org/workflows',
   x: 'https://x.com/ComfyUI',
