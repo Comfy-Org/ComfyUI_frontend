@@ -53,7 +53,7 @@ mirror (the hard constraint of this phase):
 | position / size / z     | `layoutStore`                                                                                                                                          |
 | widget values / order   | `widgetValueStore`                                                                                                                                     |
 | input link connectivity | `linkStore` (`getInputSlotLink` / `isInputSlotConnected`)                                                                                              |
-| `badges`                | stay class-side: badge entries hold closures (`() => LGraphBadge`), which violate the plain-data component rule                                        |
+| `badges`                | `nodeBadgeStore` — plain `BadgeData` rows written by a badge system; see [Node Badge Store](node-badge-store.md)                                       |
 | `inputs` / `outputs`    | deferred — see Decision 3                                                                                                                              |
 
 `VueNodeData.selected` and `.executing` are dead fields today (no
