@@ -8,7 +8,7 @@
       <AsyncSearchInput v-model="searchQuery" class="flex-1" />
       <CollapseToggleButton
         v-model="isAllCollapsed"
-        :show="!isSearching && tabErrorGroups.length > 1"
+        :show="!isSearching && allErrorGroups.length > 1"
       />
     </div>
 
@@ -59,6 +59,30 @@
               {{ t('rightSidePanel.resolveBeforeRun') }}
             </span>
           </div>
+        </div>
+
+        <!-- Selection context strip -->
+        <div
+          v-if="selectionStripLabel"
+          data-testid="selection-context-strip"
+          :class="
+            cn(
+              'flex items-center gap-2 px-3 py-1.5',
+              carousel
+                ? 'mb-2 rounded-md border border-secondary-background bg-base-foreground/5'
+                : 'border-t border-secondary-background bg-base-foreground/5'
+            )
+          "
+        >
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--locate] size-3.5 shrink-0 text-muted-foreground"
+          />
+          <span
+            class="min-w-0 flex-1 truncate text-xs font-semibold text-base-foreground"
+          >
+            {{ selectionStripLabel }}
+          </span>
         </div>
 
         <!-- Group by Class Type -->
@@ -204,7 +228,13 @@
                   <li
                     v-for="item in getExecutionItemList(group)"
                     :key="item.key"
-                    class="min-w-0"
+                    :class="
+                      cn(
+                        'min-w-0',
+                        isCardInSelection(item.cardId) &&
+                          'rounded-sm bg-primary-background/10'
+                      )
+                    "
                   >
                     <div class="flex min-w-0 items-center gap-2">
                       <span class="flex min-w-0 flex-1 items-center gap-1">
@@ -279,7 +309,12 @@
                   v-for="card in group.cards"
                   :key="card.id"
                   :card="card"
-                  :compact="isSingleNodeSelected"
+                  :class="
+                    cn(
+                      isCardInSelection(card.id) &&
+                        'rounded-md p-1 ring-1 ring-primary-background/60'
+                    )
+                  "
                   @locate-node="handleLocateNode"
                   @copy-to-clipboard="copyToClipboard"
                 />
@@ -365,6 +400,7 @@ import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacemen
 
 interface ExecutionItemListEntry {
   key: string
+  cardId: string
   nodeId: string
   label: string
   displayDetails?: string
@@ -404,6 +440,7 @@ function getExecutionItemList(group: ErrorGroup): ExecutionItemListEntry[] {
       if (!label) continue
       items.push({
         key: `${card.id}:${idx}`,
+        cardId: card.id,
         nodeId: card.nodeId,
         label,
         displayDetails: error.displayDetails
@@ -443,20 +480,63 @@ function getExecutionItemDetailId(key: string) {
 
 const {
   allErrorGroups,
-  tabErrorGroups,
   filteredGroups,
   collapseState,
-  isSingleNodeSelected,
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
-  filteredMissingModelGroups: missingModelGroups,
-  filteredMissingMediaGroups: missingMediaGroups,
-  swapNodeGroups
+  missingModelGroups,
+  missingMediaGroups,
+  swapNodeGroups,
+  hasSelection,
+  selectedNodeCount,
+  selectedNodeTitle,
+  selectionMatchedGroupKeys,
+  selectionMatchedCardIds,
+  selectionErrorCount
 } = useErrorGroups(searchQuery)
 
 const totalErrorCount = computed(() =>
   filteredGroups.value.reduce((sum, group) => sum + group.count, 0)
+)
+
+const selectionStripLabel = computed(() => {
+  if (!hasSelection.value || selectionErrorCount.value === 0) return null
+  if (selectedNodeTitle.value) {
+    return t(
+      'rightSidePanel.selectedNodeErrors',
+      { node: selectedNodeTitle.value, count: selectionErrorCount.value },
+      selectionErrorCount.value
+    )
+  }
+  return t(
+    'rightSidePanel.selectedNodesErrors',
+    { nodes: selectedNodeCount.value, count: selectionErrorCount.value },
+    selectionErrorCount.value
+  )
+})
+
+function isCardInSelection(cardId: string): boolean {
+  return hasSelection.value && selectionMatchedCardIds.value.has(cardId)
+}
+
+/**
+ * Selection acts as emphasis, not a filter: expand the groups containing
+ * the selected nodes' errors and collapse the rest. Selections without
+ * matching errors (or clearing the selection) leave collapse state alone.
+ */
+watch(
+  () =>
+    hasSelection.value
+      ? Array.from(selectionMatchedGroupKeys.value).sort().join('\n')
+      : '',
+  (matchedKeySignature) => {
+    if (!matchedKeySignature) return
+    const matchedKeys = new Set(matchedKeySignature.split('\n'))
+    for (const group of allErrorGroups.value) {
+      setSectionCollapsed(group.groupKey, !matchedKeys.has(group.groupKey))
+    }
+  }
 )
 
 // Matches the carousel track's gap-2 (8px) between slides
@@ -501,7 +581,7 @@ const isAllCollapsed = computed({
     return filteredGroups.value.every((g) => isSectionCollapsed(g.groupKey))
   },
   set(collapse: boolean) {
-    for (const group of tabErrorGroups.value) {
+    for (const group of allErrorGroups.value) {
       setSectionCollapsed(group.groupKey, collapse)
     }
   }

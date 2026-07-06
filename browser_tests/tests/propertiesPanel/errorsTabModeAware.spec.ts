@@ -286,7 +286,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingModelGroup).toBeHidden()
     })
 
-    test('Selecting a node filters errors tab to only that node', async ({
+    test('Selecting a node keeps all errors visible and shows selection context', async ({
       comfyPage
     }) => {
       await loadWorkflowAndOpenErrorsTab(
@@ -301,14 +301,20 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       const node1 = await comfyPage.nodeOps.getNodeRefById('1')
       await node1.click('title')
+
+      // Selection no longer filters the list — the count stays global
+      // and the selection is surfaced via the context strip instead.
       await expect(
         getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
       ).toBeVisible()
-      await expect(
-        missingModelGroup.getByTestId(TestIds.dialogs.missingModelLocate)
-      ).toHaveCount(1)
+      await expectReferenceBadge(missingModelGroup, 2)
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(strip).toBeVisible()
 
       await comfyPage.canvas.click()
+      await expect(strip).toBeHidden()
       await expectReferenceBadge(missingModelGroup, 2)
     })
   })
@@ -381,7 +387,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingMediaGroup).toBeHidden()
     })
 
-    test('Selecting a node filters errors tab to only that node', async ({
+    test('Selecting a node keeps all media rows visible and shows selection context', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_media_multiple')
@@ -403,9 +409,17 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       const node = await comfyPage.nodeOps.getNodeRefById('10')
       await node.click('title')
-      await expect(mediaRows).toHaveCount(1)
+
+      // Selection no longer filters the list — rows stay global and the
+      // selection is surfaced via the context strip instead.
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(strip).toBeVisible()
+      await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
+      await expect(strip).toBeHidden()
       await expect(mediaRows).toHaveCount(2)
     })
   })

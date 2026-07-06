@@ -259,11 +259,24 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     }
   })
 
-  const isSingleNodeSelected = computed(
-    () =>
-      selectedNodeInfo.value.nodeIds?.size === 1 &&
-      selectedNodeInfo.value.containerExecutionIds.size === 0
+  const hasSelection = computed(() => selectedNodeInfo.value.nodeIds !== null)
+
+  const selectedNodeCount = computed(
+    () => selectedNodeInfo.value.nodeIds?.size ?? 0
   )
+
+  const selectedNodeTitle = computed(() => {
+    if (selectedNodeCount.value !== 1) return null
+    const node = canvasStore.selectedItems.find(isLGraphNode)
+    if (!node) return null
+    return (
+      resolveNodeDisplayName(node, {
+        emptyLabel: '',
+        untitledLabel: '',
+        st
+      }) || null
+    )
+  })
 
   const errorNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
@@ -776,7 +789,23 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   })
 
-  const tabErrorGroups = computed<ErrorGroup[]>(() => {
+  const missingNodesInSelection = computed(() => {
+    if (!hasSelection.value) return true
+    for (const executionNodeId of missingNodeCache.value.keys()) {
+      if (isAssetErrorInSelection(executionNodeId as NodeExecutionId)) {
+        return true
+      }
+    }
+    return false
+  })
+
+  /**
+   * The subset of error groups whose errors belong to the current canvas
+   * selection. Equals the full set when nothing is selected. Display always
+   * shows all groups; this subset only drives selection emphasis
+   * (auto-expand, card highlight, context strip).
+   */
+  const selectionScopedGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
     processPromptError(groupsMap, true)
@@ -785,10 +814,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
     const filterByNode = selectedNodeInfo.value.nodeIds !== null
 
-    // Missing nodes are intentionally unfiltered — they represent
-    // pack-level problems relevant regardless of which node is selected.
     return [
-      ...buildMissingNodeGroups(),
+      ...(missingNodesInSelection.value ? buildMissingNodeGroups() : []),
       ...(filterByNode
         ? buildMissingModelGroupsFiltered()
         : buildMissingModelGroups()),
@@ -799,24 +826,49 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   })
 
+  const selectionMatchedGroupKeys = computed<Set<string>>(() => {
+    if (!hasSelection.value) return new Set()
+    return new Set(selectionScopedGroups.value.map((group) => group.groupKey))
+  })
+
+  const selectionMatchedCardIds = computed<Set<string>>(() => {
+    const ids = new Set<string>()
+    if (!hasSelection.value) return ids
+    for (const group of selectionScopedGroups.value) {
+      if (group.type !== 'execution') continue
+      for (const card of group.cards) ids.add(card.id)
+    }
+    return ids
+  })
+
+  const selectionErrorCount = computed(() => {
+    if (!hasSelection.value) return 0
+    return selectionScopedGroups.value.reduce(
+      (sum, group) => sum + group.count,
+      0
+    )
+  })
+
   const filteredGroups = computed<ErrorGroup[]>(() => {
     const query = toValue(searchQuery).trim()
-    return searchErrorGroups(tabErrorGroups.value, query)
+    return searchErrorGroups(allErrorGroups.value, query)
   })
 
   return {
     allErrorGroups,
-    tabErrorGroups,
     filteredGroups,
     collapseState,
-    isSingleNodeSelected,
     errorNodeCache,
     missingNodeCache,
     missingPackGroups,
     missingModelGroups,
     missingMediaGroups,
-    filteredMissingModelGroups,
-    filteredMissingMediaGroups,
-    swapNodeGroups
+    swapNodeGroups,
+    hasSelection,
+    selectedNodeCount,
+    selectedNodeTitle,
+    selectionMatchedGroupKeys,
+    selectionMatchedCardIds,
+    selectionErrorCount
   }
 }

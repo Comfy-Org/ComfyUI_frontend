@@ -126,6 +126,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useErrorGroups } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
@@ -986,24 +988,13 @@ describe('useErrorGroups', () => {
     })
   })
 
-  describe('unfiltered vs selection-filtered model/media groups', () => {
-    it('exposes both unfiltered (missingModelGroups) and filtered (filteredMissingModelGroups)', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.missingModelGroups).toBeDefined()
-      expect(groups.filteredMissingModelGroups).toBeDefined()
-      expect(groups.missingMediaGroups).toBeDefined()
-      expect(groups.filteredMissingMediaGroups).toBeDefined()
-    })
-
-    it('missingModelGroups returns total candidates regardless of selection (ErrorOverlay contract)', async () => {
+  describe('selection does not shrink displayed groups', () => {
+    it('missingModelGroups returns total candidates regardless of selection', async () => {
       const { store, groups } = createErrorGroups()
       store.surfaceMissingModels([
         makeModel('a.safetensors', { nodeId: '1', directory: 'checkpoints' }),
         makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
       ])
-      // Simulate canvas selection of a single node so the filtered
-      // variant actually narrows. Without this, both sides return the
-      // same value trivially and the test can't prove the contract.
       vi.mocked(isLGraphNode).mockReturnValue(true)
       const canvasStore = useCanvasStore()
       canvasStore.selectedItems = fromAny<
@@ -1012,21 +1003,14 @@ describe('useErrorGroups', () => {
       >([{ id: '1' }])
       await nextTick()
 
-      // Unfiltered total stays at one group of two models regardless of
-      // the selection — ErrorOverlay reads this for the overlay label
-      // and must not shrink with canvas selection.
+      // Displayed groups never shrink with canvas selection — the count
+      // and list always describe the whole workflow.
       expect(groups.missingModelGroups.value).toHaveLength(1)
       expect(groups.missingModelGroups.value[0].models).toHaveLength(2)
-
-      // Filtered variant does narrow under the same selection state —
-      // this is how the errors tab scopes cards to the selected node.
-      // Exact filtered output depends on the app.rootGraph lookup
-      // (mocked to return undefined here); what matters is that the
-      // filtered shape is a different reference and does not blindly
-      // mirror the unfiltered one.
-      expect(groups.filteredMissingModelGroups.value).not.toBe(
-        groups.missingModelGroups.value
-      )
+      expect(
+        groups.filteredGroups.value.find((g) => g.type === 'missing_model')
+          ?.count
+      ).toBe(2)
     })
 
     it('counts missing media by affected node rows, not grouped filenames', async () => {
@@ -1051,8 +1035,8 @@ describe('useErrorGroups', () => {
     })
   })
 
-  describe('tabErrorGroups', () => {
-    it('filters prompt error when a node is selected', async () => {
+  describe('selection emphasis', () => {
+    it('keeps prompt errors visible but unmatched when a node is selected', async () => {
       const { store, groups } = createErrorGroups()
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
@@ -1067,11 +1051,78 @@ describe('useErrorGroups', () => {
       }
       await nextTick()
 
-      const promptGroup = groups.tabErrorGroups.value.find(
+      // Prompt errors are workflow-level: still displayed under selection…
+      const promptGroup = groups.filteredGroups.value.find(
         (g) =>
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
-      expect(promptGroup).toBeUndefined()
+      expect(promptGroup).toBeDefined()
+      // …but never emphasized as belonging to the selected node.
+      expect(
+        groups.selectionMatchedGroupKeys.value.has(promptGroup!.groupKey)
+      ).toBe(false)
+    })
+
+    it('reports no selection state when nothing is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastNodeErrors = {
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        }
+      }
+      await nextTick()
+
+      expect(groups.hasSelection.value).toBe(false)
+      expect(groups.selectionMatchedGroupKeys.value.size).toBe(0)
+      expect(groups.selectionMatchedCardIds.value.size).toBe(0)
+      expect(groups.selectionErrorCount.value).toBe(0)
+    })
+
+    it('matches groups and cards of the selected error node', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      const selectedNode = { id: '1' }
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>(
+          String(nodeId) === '1' ? selectedNode : { id: String(nodeId) }
+        )
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([selectedNode])
+      store.lastNodeErrors = {
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        },
+        '2': {
+          class_type: 'CLIPLoader',
+          dependent_outputs: [],
+          errors: [
+            { type: 'file_not_found', message: 'File not found', details: '' }
+          ]
+        }
+      }
+      await nextTick()
+
+      expect(groups.hasSelection.value).toBe(true)
+      expect(groups.selectionErrorCount.value).toBe(1)
+      expect(groups.selectionMatchedCardIds.value.has('node-1')).toBe(true)
+      expect(groups.selectionMatchedCardIds.value.has('node-2')).toBe(false)
+      // Both error groups remain displayed regardless of the selection
+      const executionGroups = groups.filteredGroups.value.filter(
+        (g) => g.type === 'execution'
+      )
+      const displayedCardIds = executionGroups.flatMap((g) =>
+        g.type === 'execution' ? g.cards.map((c) => c.id) : []
+      )
+      expect(displayedCardIds).toContain('node-1')
+      expect(displayedCardIds).toContain('node-2')
     })
   })
 })
