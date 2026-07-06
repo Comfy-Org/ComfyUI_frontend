@@ -10,6 +10,8 @@ export class ControlsManager implements ControlsManagerInterface {
   controls: OrbitControls
   private eventManager: EventManagerInterface
   private camera: THREE.Camera
+  private readonly interactionElement: HTMLElement
+  private suppressionScope: HTMLElement | null = null
 
   constructor(
     renderer: THREE.WebGLRenderer,
@@ -20,8 +22,53 @@ export class ControlsManager implements ControlsManagerInterface {
     this.camera = camera
 
     const container = renderer.domElement.parentElement || renderer.domElement
+    this.interactionElement = container as HTMLElement
     this.controls = new OrbitControls(camera, container)
     this.controls.enableDamping = true
+    this.interactionElement.addEventListener(
+      'pointerdown',
+      this.armContextMenuSuppression
+    )
+    this.interactionElement.addEventListener(
+      'pointerup',
+      this.scheduleContextMenuDisarm
+    )
+    this.interactionElement.addEventListener(
+      'pointercancel',
+      this.scheduleContextMenuDisarm
+    )
+  }
+
+  private readonly armContextMenuSuppression = (event: PointerEvent): void => {
+    if (event.button !== 2) return
+    this.disarmContextMenuSuppression()
+    this.suppressionScope =
+      this.interactionElement.closest<HTMLElement>('[data-node-id]')
+    this.suppressionScope?.addEventListener(
+      'contextmenu',
+      this.suppressContextMenu,
+      { capture: true, once: true }
+    )
+  }
+
+  private readonly suppressContextMenu = (event: Event): void => {
+    event.preventDefault()
+    event.stopPropagation()
+    this.suppressionScope = null
+  }
+
+  private readonly scheduleContextMenuDisarm = (event: PointerEvent): void => {
+    if (event.button !== 2) return
+    requestAnimationFrame(() => this.disarmContextMenuSuppression())
+  }
+
+  private disarmContextMenuSuppression(): void {
+    this.suppressionScope?.removeEventListener(
+      'contextmenu',
+      this.suppressContextMenu,
+      { capture: true }
+    )
+    this.suppressionScope = null
   }
 
   init(): void {
@@ -44,6 +91,19 @@ export class ControlsManager implements ControlsManagerInterface {
   }
 
   dispose(): void {
+    this.interactionElement.removeEventListener(
+      'pointerdown',
+      this.armContextMenuSuppression
+    )
+    this.interactionElement.removeEventListener(
+      'pointerup',
+      this.scheduleContextMenuDisarm
+    )
+    this.interactionElement.removeEventListener(
+      'pointercancel',
+      this.scheduleContextMenuDisarm
+    )
+    this.disarmContextMenuSuppression()
     this.controls.dispose()
   }
 

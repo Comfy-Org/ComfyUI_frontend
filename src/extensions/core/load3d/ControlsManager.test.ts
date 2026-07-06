@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ControlsManager } from './ControlsManager'
 import type { EventManagerInterface } from './interfaces'
@@ -164,6 +164,126 @@ describe('ControlsManager', () => {
       manager.dispose()
 
       expect(manager.controls.dispose).toHaveBeenCalled()
+    })
+  })
+
+  describe('context menu suppression', () => {
+    function setup() {
+      const canvas = document.createElement('canvas')
+      const wrapper = document.createElement('div')
+      wrapper.appendChild(canvas)
+      const nodeRoot = document.createElement('div')
+      nodeRoot.setAttribute('data-node-id', 'node-1')
+      nodeRoot.appendChild(wrapper)
+      const releasePoint = document.createElement('div')
+      nodeRoot.appendChild(releasePoint)
+      document.body.appendChild(nodeRoot)
+      const renderer = { domElement: canvas } as unknown as THREE.WebGLRenderer
+      manager = new ControlsManager(renderer, camera, events)
+      return { canvas, nodeRoot, releasePoint }
+    }
+
+    function rightPress(target: EventTarget) {
+      target.dispatchEvent(
+        new PointerEvent('pointerdown', { button: 2, bubbles: true })
+      )
+    }
+
+    function rightRelease(target: EventTarget) {
+      target.dispatchEvent(
+        new PointerEvent('pointerup', { button: 2, bubbles: true })
+      )
+    }
+
+    function fireContextMenu(target: EventTarget): MouseEvent {
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true
+      })
+      target.dispatchEvent(event)
+      return event
+    }
+
+    const nextFrame = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+    afterEach(() => {
+      manager.dispose()
+      document
+        .querySelectorAll('[data-node-id]')
+        .forEach((node) => node.remove())
+    })
+
+    it('suppresses the contextmenu on the node after a right-press in the viewport', () => {
+      const { canvas, releasePoint } = setup()
+
+      rightPress(canvas)
+      const event = fireContextMenu(releasePoint)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('stops the contextmenu before node-level bubble handlers', () => {
+      const { canvas, nodeRoot, releasePoint } = setup()
+      const nodeHandler = vi.fn()
+      nodeRoot.addEventListener('contextmenu', nodeHandler)
+
+      rightPress(canvas)
+      fireContextMenu(releasePoint)
+
+      expect(nodeHandler).not.toHaveBeenCalled()
+    })
+
+    it('only suppresses one contextmenu per right-press', () => {
+      const { canvas, releasePoint } = setup()
+
+      rightPress(canvas)
+      fireContextMenu(releasePoint)
+      const second = fireContextMenu(releasePoint)
+
+      expect(second.defaultPrevented).toBe(false)
+    })
+
+    it('ignores left presses', () => {
+      const { canvas, releasePoint } = setup()
+
+      canvas.dispatchEvent(
+        new PointerEvent('pointerdown', { button: 0, bubbles: true })
+      )
+      const event = fireContextMenu(releasePoint)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('disarms once the right release settles', async () => {
+      const { canvas, releasePoint } = setup()
+
+      rightPress(canvas)
+      rightRelease(canvas)
+      await nextFrame()
+      const event = fireContextMenu(releasePoint)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('does nothing without an owning node root', () => {
+      const renderer = makeRenderer({ withParent: true })
+      manager = new ControlsManager(renderer, camera, events)
+
+      rightPress(renderer.domElement)
+      const event = fireContextMenu(document.body)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('dispose removes an armed suppression', () => {
+      const { canvas, releasePoint } = setup()
+
+      rightPress(canvas)
+      manager.dispose()
+      const event = fireContextMenu(releasePoint)
+
+      expect(event.defaultPrevented).toBe(false)
     })
   })
 
