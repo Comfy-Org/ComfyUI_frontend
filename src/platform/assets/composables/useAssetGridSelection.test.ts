@@ -136,6 +136,25 @@ describe('useAssetGridSelection', () => {
       ).toEqual(['a', 'c'])
     })
 
+    it('removes covered cards from the selection when Ctrl+Shift is held (subtractive)', async () => {
+      const callbacks = createCallbacks({
+        getSelectedIds: vi.fn(() => ['a', 'b'])
+      })
+      await renderHarness(callbacks)
+
+      grid().dispatchEvent(
+        pointer('pointerdown', {
+          clientX: 0,
+          clientY: 0,
+          ctrlKey: true,
+          shiftKey: true
+        })
+      )
+      window.dispatchEvent(pointer('pointermove', { clientX: 55, clientY: 50 }))
+
+      expect(callbacks.setSelectedIds.mock.lastCall![0]).toEqual(['b'])
+    })
+
     it('ignores movement below the drag threshold', async () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)

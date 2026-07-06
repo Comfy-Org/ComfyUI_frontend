@@ -51,6 +51,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   let startY = 0
   let pointerId = 0
   let baseIds: string[] = []
+  let isSubtractive = false
   let isTracking = false
   let isDragging = false
   let suppressNextClick = false
@@ -87,7 +88,10 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
       dragBounds
     )
     marqueeRect.value = rect
-    setSelectedIds([...selectMarqueeIds(dragCards, rect, baseIds)], getAssets())
+    setSelectedIds(
+      [...selectMarqueeIds(dragCards, rect, baseIds, isSubtractive)],
+      getAssets()
+    )
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -175,6 +179,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     startY = e.clientY
     pointerId = e.pointerId
     baseIds = e.shiftKey || e.ctrlKey || e.metaKey ? getSelectedIds() : []
+    isSubtractive = (e.ctrlKey || e.metaKey) && e.shiftKey
     isDragging = false
     isTracking = true
   }

@@ -54,6 +54,11 @@ describe('selectMarqueeIds', () => {
     expect([...result].sort()).toEqual(['a', 'c'])
   })
 
+  it('removes intersecting cards from the base selection (subtractive)', () => {
+    const result = selectMarqueeIds(cards, box(15, 0, 35, 10), ['a', 'b'], true)
+    expect([...result]).toEqual(['a'])
+  })
+
   it('returns a copy of the base when nothing intersects', () => {
     const base = new Set(['a'])
     const result = selectMarqueeIds(cards, box(100, 100, 110, 110), base)

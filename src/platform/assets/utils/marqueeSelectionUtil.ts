@@ -28,19 +28,21 @@ function rectsIntersect(a: RectEdges, b: RectEdges): boolean {
 
 /**
  * Resolve the asset ids a marquee covers, starting from `baseIds` (the selection
- * to preserve when a modifier makes the drag additive). A fresh Set is returned;
+ * to preserve when a modifier makes the drag additive). With `subtract`, covered
+ * ids are removed from `baseIds` instead of added. A fresh Set is returned;
  * `baseIds` is never mutated.
  */
 export function selectMarqueeIds(
   cards: readonly MarqueeCard[],
   marquee: RectEdges,
-  baseIds: Iterable<string> = []
+  baseIds: Iterable<string> = [],
+  subtract = false
 ): Set<string> {
   const result = new Set(baseIds)
   for (const { id, rect } of cards) {
-    if (rectsIntersect(rect, marquee)) {
-      result.add(id)
-    }
+    if (!rectsIntersect(rect, marquee)) continue
+    if (subtract) result.delete(id)
+    else result.add(id)
   }
   return result
 }
