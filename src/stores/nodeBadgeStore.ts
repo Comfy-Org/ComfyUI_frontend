@@ -22,7 +22,7 @@ function kindRank(kind: BadgeKind): number {
 export const useNodeBadgeStore = defineStore('nodeBadge', () => {
   const buckets = ref(new Map<UUID, Map<NodeId, BadgeData[]>>())
 
-  function graphBadges(graphId: UUID): Map<NodeId, BadgeData[]> {
+  function graphBucket(graphId: UUID): Map<NodeId, BadgeData[]> {
     const existing = buckets.value.get(graphId)
     if (existing) return existing
     const next = reactive(new Map<NodeId, BadgeData[]>())
@@ -30,27 +30,30 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
     return next
   }
 
-  function nodeRows(graphId: UUID, nodeId: NodeId): BadgeData[] {
-    const bucket = graphBadges(graphId)
-    const existing = bucket.get(nodeId)
-    if (existing) return existing
-    const next: BadgeData[] = reactive([])
-    bucket.set(nodeId, next)
-    return next
+  /**
+   * A registered node's rows; `undefined` for unregistered nodes so row
+   * writes cannot re-create a bucket key `unregisterNode` just deleted.
+   */
+  function registeredRows(
+    graphId: UUID,
+    nodeId: NodeId
+  ): BadgeData[] | undefined {
+    return buckets.value.get(graphId)?.get(nodeId)
   }
 
   /**
-   * Appends a badge row.
+   * Appends a badge row to a registered node; refused otherwise.
    * @returns The store-held reactive row — callers keep it as their live
    * state object so later field writes are tracked and identity-checked
-   * deletes match.
+   * deletes match — or `undefined` when the node is not registered.
    */
   function registerBadge(
     graphId: UUID,
     nodeId: NodeId,
     badge: BadgeData
-  ): BadgeData {
-    const rows = nodeRows(graphId, nodeId)
+  ): BadgeData | undefined {
+    const rows = registeredRows(graphId, nodeId)
+    if (!rows) return undefined
     rows.push(badge)
     return rows.at(-1)!
   }
@@ -69,14 +72,18 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
     return true
   }
 
-  /** Replaces every row of one kind; the system's recompute write path. */
+  /**
+   * Replaces every row of one kind; the system's recompute write path.
+   * Refused for unregistered nodes.
+   */
   function setBadgesOfKind(
     graphId: UUID,
     nodeId: NodeId,
     kind: BadgeKind,
     badges: BadgeData[]
   ): void {
-    const rows = nodeRows(graphId, nodeId)
+    const rows = registeredRows(graphId, nodeId)
+    if (!rows) return
     const kept = rows.filter((row) => row.kind !== kind)
     rows.splice(0, rows.length, ...kept, ...badges)
   }
@@ -90,7 +97,8 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
 
   /** Registers a node; a registered node's rows are system-maintained. */
   function registerNode(graphId: UUID, nodeId: NodeId): void {
-    nodeRows(graphId, nodeId)
+    const bucket = graphBucket(graphId)
+    if (!bucket.has(nodeId)) bucket.set(nodeId, reactive([]))
   }
 
   function unregisterNode(graphId: UUID, nodeId: NodeId): void {

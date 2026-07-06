@@ -25,6 +25,7 @@ describe('useNodeBadgeStore', () => {
 
   it('registers a badge and reads it back', () => {
     const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
     store.registerBadge(graphA, node1, badge('extension', 'v2'))
 
     expect(store.getBadges(graphA, node1)).toEqual([
@@ -35,6 +36,7 @@ describe('useNodeBadgeStore', () => {
 
   it('orders rows by kind (core, credits, extension), not insertion', () => {
     const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
     store.registerBadge(graphA, node1, badge('extension', 'ext'))
     store.registerBadge(graphA, node1, badge('credits', '$0.04'))
     store.registerBadge(graphA, node1, badge('core', '#1'))
@@ -48,7 +50,8 @@ describe('useNodeBadgeStore', () => {
 
   it('returns tracked rows whose writes are observable', () => {
     const store = useNodeBadgeStore()
-    const row = store.registerBadge(graphA, node1, badge('extension', 'old'))
+    store.registerNode(graphA, node1)
+    const row = store.registerBadge(graphA, node1, badge('extension', 'old'))!
 
     const text = computed(() => store.getBadges(graphA, node1)[0]?.text)
     expect(text.value).toBe('old')
@@ -60,7 +63,8 @@ describe('useNodeBadgeStore', () => {
 
   it('deletes a row; only the registered row may vacate it', () => {
     const store = useNodeBadgeStore()
-    const row = store.registerBadge(graphA, node1, badge('extension', 'v2'))
+    store.registerNode(graphA, node1)
+    const row = store.registerBadge(graphA, node1, badge('extension', 'v2'))!
 
     expect(store.deleteBadge(graphA, node1, badge('extension', 'v2'))).toBe(
       false
@@ -74,7 +78,8 @@ describe('useNodeBadgeStore', () => {
 
   it('replaces only the written kind, preserving other kinds', () => {
     const store = useNodeBadgeStore()
-    const kept = store.registerBadge(graphA, node1, badge('extension', 'ext'))
+    store.registerNode(graphA, node1)
+    const kept = store.registerBadge(graphA, node1, badge('extension', 'ext'))!
     store.setBadgesOfKind(graphA, node1, 'credits', [badge('credits', '$0.02')])
 
     store.setBadgesOfKind(graphA, node1, 'credits', [
@@ -89,6 +94,7 @@ describe('useNodeBadgeStore', () => {
 
   it('recomputes reads when a kind is rewritten', () => {
     const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
     store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
 
     const texts = computed(() =>
@@ -126,6 +132,8 @@ describe('useNodeBadgeStore', () => {
 
   it('unregisters a node without touching its neighbours', () => {
     const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
+    store.registerNode(graphA, node2)
     store.registerBadge(graphA, node1, badge('extension', 'a'))
     store.registerBadge(graphA, node2, badge('extension', 'b'))
 
@@ -136,8 +144,33 @@ describe('useNodeBadgeStore', () => {
     expect(store.getBadges(graphA, node2)).toHaveLength(1)
   })
 
+  it('refuses row writes for unregistered nodes', () => {
+    const store = useNodeBadgeStore()
+
+    expect(store.registerBadge(graphA, node1, badge('extension', 'x'))).toBe(
+      undefined
+    )
+    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
+
+    expect(store.registeredNodeIds(graphA)).toEqual([])
+    expect(store.getBadges(graphA, node1)).toEqual([])
+  })
+
+  it('does not resurrect a node unregistered mid-flight', () => {
+    const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
+    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
+
+    store.unregisterNode(graphA, node1)
+    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
+
+    expect(store.registeredNodeIds(graphA)).toEqual([])
+  })
+
   it('scopes buckets by graph', () => {
     const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
+    store.registerNode(graphB, node1)
     store.registerBadge(graphA, node1, badge('extension', 'a'))
     store.registerBadge(graphB, node1, badge('extension', 'b'))
 

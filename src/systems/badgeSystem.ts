@@ -173,6 +173,9 @@ function gatherSources(
  */
 export function startBadgeSystem(options: BadgeSystemOptions): () => void {
   const badgeStore = useNodeBadgeStore()
+  // Instantiate source stores before any effect runs: a store's first
+  // instantiation mutates pinia.state and would invalidate the effect
+  // that triggered it.
   useSettingStore()
   useNodeDefStore()
   useColorPaletteStore()
@@ -184,18 +187,14 @@ export function startBadgeSystem(options: BadgeSystemOptions): () => void {
     scope.run(() => {
       watchEffect(() => {
         const rows = computeBadges(gatherSources(options, nodeId))
-        badgeStore.setBadgesOfKind(
-          options.graphId,
-          nodeId,
-          'core',
-          rows.filter((row) => row.kind === 'core')
-        )
-        badgeStore.setBadgesOfKind(
-          options.graphId,
-          nodeId,
-          'credits',
-          rows.filter((row) => row.kind === 'credits')
-        )
+        for (const kind of ['core', 'credits'] as const) {
+          badgeStore.setBadgesOfKind(
+            options.graphId,
+            nodeId,
+            kind,
+            rows.filter((row) => row.kind === kind)
+          )
+        }
       })
     })
     return scope

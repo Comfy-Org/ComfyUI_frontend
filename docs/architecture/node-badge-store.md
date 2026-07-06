@@ -109,8 +109,16 @@ Frame-budget parity per ADR 0008's render mitigations applies.
   (`registerNode`/`unregisterNode`/`clearGraph`), and the system watches
   `registeredNodeIds` to attach/detach per-node effect scopes. Litegraph
   never imports the system, so the pricing/nodeDef dependency graph
-  (which runtime-imports the litegraph barrel) stays acyclic; the system
-  is bootstrapped at the app layer with a `resolveNode` seam.
+  (which runtime-imports the litegraph barrel) stays acyclic. The system
+  takes a `resolveNode` seam and will be bootstrapped at the app layer
+  in slice B, when the `Comfy.NodeBadge` extension stops pushing
+  closures; until then rows are written only under test. Row writes are
+  refused for unregistered nodes so a late effect flush cannot
+  resurrect a bucket key the chokepoints deleted.
+- The shell still reads `node.constructor.nodeData` and `node.inputs`
+  (untracked instance state) to map pricing input names to slot
+  indices — parity with the legacy closures. Those reads become store
+  lookups when slot data is store-backed (node data store draft).
 - Core rows are fine-grained — one row per part in lifecycle, id, source
   order — with one visibility rule (`badgeTextVisible`, the legacy
   semantics: `HideBuiltIn` respected for every part). Joining,
