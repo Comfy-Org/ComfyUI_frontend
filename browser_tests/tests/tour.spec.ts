@@ -58,13 +58,13 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
     }) => {
       const coach = onboarding
       await comfyPage.appMode.enterAppModeWithInputs([])
-      // The assets panel only mounts once its button is clicked.
+      // The assets panel only mounts once the assets sidebar tab is open.
       for (const id of Object.values(COACH_IDS).filter(
         (id) => id !== COACH_IDS.assetsPanel
       )) {
         await expect(coach.coachAnchor(id)).toBeVisible()
       }
-      await coach.coachAnchor(COACH_IDS.assetsButton).click()
+      await comfyPage.page.getByRole('button', { name: 'Media Assets' }).click()
       await expect(coach.coachAnchor(COACH_IDS.assetsPanel)).toBeVisible()
     })
   })
@@ -90,11 +90,8 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
         await coach.cardNextButton.click()
       }
 
-      // Step 4 (assets button) advances by clicking its target, not Next.
+      // The final assets step auto-opens the assets panel — no target click.
       await expect(coach.cardForStep(4)).toBeInViewport({ ratio: 1 })
-      await coach.coachAnchor(COACH_IDS.assetsButton).click()
-
-      await expect(coach.cardForStep(5)).toBeInViewport({ ratio: 1 })
 
       await coach.cardDoneButton.click()
       await expect(coach.card).toBeHidden()

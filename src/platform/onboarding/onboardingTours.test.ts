@@ -33,27 +33,4 @@ describe('resolveSteps', () => {
     const steps = [step({ coachId: 'app-run-button', deferTarget: true })]
     expect(resolveSteps(steps, isMounted(false))).toEqual(steps)
   })
-
-  it('drops a step whose skip target is already mounted', () => {
-    const steps = [
-      step({
-        coachId: 'assets-button',
-        deferTarget: true,
-        skipIfMounted: 'assets-panel'
-      }),
-      step({ coachId: 'assets-panel', deferTarget: true })
-    ]
-    expect(resolveSteps(steps, isMounted(true))).toEqual([steps[1]])
-  })
-
-  it('keeps a skip-conditional step when its skip target is not mounted', () => {
-    const steps = [
-      step({
-        coachId: 'assets-button',
-        deferTarget: true,
-        skipIfMounted: 'assets-panel'
-      })
-    ]
-    expect(resolveSteps(steps, isMounted(false))).toEqual(steps)
-  })
 })

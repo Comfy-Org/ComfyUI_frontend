@@ -31,8 +31,10 @@ const baseProps = {
   title: 'Run your app',
   body: 'Press to run',
   isLast: false,
+  canGoBack: false,
   primaryLabel: 'Next',
   skipLabel: 'Skip',
+  backLabel: 'Back',
   countedStepIdx: 0,
   countedStepsTotal: 1,
   waitingForTarget: false
@@ -78,15 +80,16 @@ describe('TourSpotlight', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeTruthy()
   })
 
-  it('keeps Skip on the last step when it advances by target interaction', () => {
-    renderSpotlight({
-      isLast: true,
-      step: spotlightStep({
-        advanceOnTargetClick: true,
-        coachId: 'assets-button'
-      })
-    })
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeTruthy()
+  it('shows Back and emits back when there is a previous step', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderSpotlight({ canGoBack: true })
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    expect(emitted().back).toHaveLength(1)
+  })
+
+  it('hides Back on the first step', () => {
+    renderSpotlight({ canGoBack: false })
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
   })
 
   it('claims the modal stack on mount and releases it on unmount', async () => {
@@ -141,9 +144,9 @@ describe('TourSpotlight', () => {
     expect(emitted().skip).toHaveLength(1)
   })
 
-  it('pulls focus back to the card when the step expects no target interaction', async () => {
-    const target = mountTarget('assets-button')
-    renderSpotlight({ step: spotlightStep({ coachId: 'assets-button' }) })
+  it('pulls stray focus back to the card', async () => {
+    const target = mountTarget('app-run-button')
+    renderSpotlight({ step: spotlightStep({ coachId: 'app-run-button' }) })
     await nextTick()
 
     target.focus()
@@ -154,69 +157,9 @@ describe('TourSpotlight', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
   })
 
-  it('leaves focus in the target on a click-to-advance step', async () => {
-    const target = mountTarget('assets-button')
-    renderSpotlight({
-      step: spotlightStep({
-        advanceOnTargetClick: true,
-        coachId: 'assets-button'
-      })
-    })
-    await nextTick()
-
-    target.focus()
-    target.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
-    await nextTick()
-    await nextTick()
-
-    expect(target).toHaveFocus()
-  })
-
   it('disables the primary button while waiting for a deferred target', () => {
     renderSpotlight({ waitingForTarget: true })
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
-  })
-
-  it('hides the primary button on a click-to-advance step', () => {
-    renderSpotlight({
-      step: spotlightStep({
-        advanceOnTargetClick: true,
-        coachId: 'assets-button'
-      })
-    })
-    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
-  })
-
-  it('emits advance when the spotlighted target is clicked', async () => {
-    const user = userEvent.setup()
-    const target = mountTarget('assets-button')
-    const { emitted } = renderSpotlight({
-      step: spotlightStep({
-        advanceOnTargetClick: true,
-        coachId: 'assets-button'
-      })
-    })
-
-    await user.click(target)
-    expect(emitted().advance).toHaveLength(1)
-  })
-
-  it('pulses the outline after the user stalls on a click-to-advance step', async () => {
-    vi.useFakeTimers()
-    renderSpotlight({
-      step: spotlightStep({
-        advanceOnTargetClick: true,
-        coachId: 'assets-button'
-      })
-    })
-
-    expect(
-      screen.getByTestId('coach-spotlight').getAttribute('class')
-    ).not.toMatch(/coach-pulse/)
-    await vi.advanceTimersByTimeAsync(4000)
-    expect(screen.getByTestId('coach-spotlight').getAttribute('class')).toMatch(
-      /coach-pulse/
-    )
   })
 
   it('hides the spotlight and dims via the blocker for a step with no target', () => {

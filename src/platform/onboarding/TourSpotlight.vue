@@ -7,23 +7,17 @@
           !targetRect && 'bg-coach-scrim'
         )
       "
-      :style="blockerStyle"
     />
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      :class="
-        cn(
-          'pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
-          outlinePulsing && 'motion-safe:animate-coach-pulse'
-        )
-      "
+      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
       :style="spotlightStyle"
     />
     <div
       ref="cardRef"
       role="dialog"
-      :aria-modal="!expectsTargetInteraction"
+      aria-modal="true"
       :aria-labelledby="titleId"
       :aria-describedby="`${subtitleId} ${bodyId}`"
       class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
@@ -46,21 +40,33 @@
         <template #actions>
           <Button
             v-if="showSkip"
-            variant="secondary"
+            variant="textonly"
             size="md"
             @click="emit('skip')"
           >
             {{ skipLabel }}
           </Button>
-          <Button
-            v-if="!expectsTargetInteraction"
-            variant="inverted"
-            size="md"
-            :disabled="waitingForTarget"
-            @click="emit('advance')"
-          >
-            {{ primaryLabel }}
-          </Button>
+          <div class="ml-auto flex items-center gap-3">
+            <Button
+              v-if="canGoBack"
+              variant="secondary"
+              size="md"
+              class="border border-solid border-border-default"
+              @click="emit('back')"
+            >
+              <i class="icon-[lucide--arrow-left]" />
+              {{ backLabel }}
+            </Button>
+            <Button
+              variant="inverted"
+              size="md"
+              :disabled="waitingForTarget"
+              @click="emit('advance')"
+            >
+              {{ primaryLabel }}
+              <i v-if="!isLast" class="icon-[lucide--arrow-right]" />
+            </Button>
+          </div>
         </template>
       </CoachmarkCard>
     </div>
@@ -69,17 +75,9 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useWindowSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import { ZIndex } from '@primeuix/utils/zindex'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onScopeDispose,
-  ref,
-  useId,
-  watch
-} from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
@@ -90,7 +88,6 @@ import {
   CARD_WIDTH,
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
-  blockerClipPath,
   clampSpotlight,
   noTargetCardLeft
 } from './coachmarkLayout'
@@ -98,15 +95,15 @@ import type { CoachStep } from './onboardingTours'
 import { useCoachmarkFocusTrap } from './useCoachmarkFocusTrap'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
-const PULSE_IDLE_MS = 4000
-
 const {
   step,
   title,
   body,
   isLast,
+  canGoBack,
   primaryLabel,
   skipLabel,
+  backLabel,
   countedStepIdx,
   countedStepsTotal,
   waitingForTarget
@@ -115,8 +112,10 @@ const {
   title: string
   body: string
   isLast: boolean
+  canGoBack: boolean
   primaryLabel: string
   skipLabel: string
+  backLabel: string
   countedStepIdx: number
   countedStepsTotal: number
   waitingForTarget: boolean
@@ -124,6 +123,7 @@ const {
 
 const emit = defineEmits<{
   advance: []
+  back: []
   skip: []
 }>()
 
@@ -139,46 +139,16 @@ const { width: windowWidth, height: windowHeight } = useWindowSize()
 const { targetRect, targetEl, floatingStyles, isPositioned } =
   useCoachmarkTarget(() => step, cardRef)
 
-const expectsTargetInteraction = computed(() => !!step.advanceOnTargetClick)
-// Last step's "Done" already dismisses, so hide Skip unless the step has no primary button.
-const showSkip = computed(() => !isLast || expectsTargetInteraction.value)
+// Last step's "Done" already dismisses, so hide Skip there.
+const showSkip = computed(() => !isLast)
 
-// The blocker only lets pointer events through to the target on interaction
-// steps, so only then does the target join the focus cycle — keyboard and
-// mouse users get the same reach.
+// The blocker is fully modal, so no external target ever joins the focus cycle.
 const focusTrap = useCoachmarkFocusTrap({
   cardRef,
-  getTarget: () => (expectsTargetInteraction.value ? targetEl.value : null),
+  getTarget: () => null,
   isSuspended: () => waitingForTarget,
   onEscape: () => emit('skip')
 })
-
-useEventListener(
-  document,
-  'click',
-  (e: MouseEvent) => {
-    if (!expectsTargetInteraction.value) return
-    const target = targetEl.value
-    if (target && e.composedPath().includes(target)) emit('advance')
-  },
-  { capture: true }
-)
-
-const pulsing = ref(false)
-let pulseTimer: ReturnType<typeof setTimeout> | undefined
-const outlinePulsing = computed(
-  () => pulsing.value && expectsTargetInteraction.value
-)
-
-function schedulePulse() {
-  clearTimeout(pulseTimer)
-  pulsing.value = false
-  if (!expectsTargetInteraction.value) return
-  pulseTimer = setTimeout(() => {
-    pulsing.value = true
-  }, PULSE_IDLE_MS)
-}
-onScopeDispose(() => clearTimeout(pulseTimer))
 
 async function raiseOverlay() {
   await nextTick()
@@ -195,7 +165,6 @@ async function raiseOverlay() {
 watch(
   () => step,
   () => {
-    schedulePulse()
     void raiseOverlay()
     void focusTrap.focusCard()
   },
@@ -214,14 +183,6 @@ const spotlightStyle = computed(() => {
   const r = targetRect.value
   if (!r) return { opacity: '0' }
   return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
-})
-
-// Interaction steps punch a hole in the blocker so only the target stays clickable.
-const blockerStyle = computed(() => {
-  const r = targetRect.value
-  if (r && expectsTargetInteraction.value)
-    return { clipPath: blockerClipPath(r) }
-  return {}
 })
 
 const cardStyle = computed(() => {

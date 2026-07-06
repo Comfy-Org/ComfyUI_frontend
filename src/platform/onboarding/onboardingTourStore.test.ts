@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
 
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
@@ -57,7 +58,6 @@ const APP_MODE_TARGETS: CoachId[] = [
   'inputs-list',
   'app-run-button',
   'outputs',
-  'assets-button',
   'assets-panel'
 ]
 
@@ -378,7 +378,7 @@ describe('onboardingTourStore', () => {
     expect(completed?.[1]).not.toHaveProperty('skip_reason')
   })
 
-  it('resolves the deferred assets panel after the click-to-advance step', async () => {
+  it('opens the assets sidebar tab and resolves its deferred panel on the assets step', async () => {
     registerAppModeTargets(
       APP_MODE_TARGETS.filter((id) => id !== 'assets-panel')
     )
@@ -386,33 +386,57 @@ describe('onboardingTourStore', () => {
     store.replayTour('appMode')
     await flush()
 
-    expect(store.countedStepsTotal).toBe(5)
+    expect(store.countedStepsTotal).toBe(4)
+    // Advance landing -> inputs -> run -> outputs, then onto the assets step.
     for (let i = 0; i < 4; i++) {
       store.next()
       await flush()
     }
-    expect(store.step?.advanceOnTargetClick).toBe(true)
+    // The assets step defers on its panel; the tab auto-opens while it waits.
+    expect(store.waitingForTarget).toBe(true)
+    expect(useSidebarTabStore().activeSidebarTabId).toBe('assets')
 
     mountTarget('assets-panel')
-    store.next()
     await flush()
 
+    expect(store.waitingForTarget).toBe(false)
     expect(store.step?.coachId).toBe('assets-panel')
   })
 
-  it('drops the assets-button step (count 4) when the panel is already open', async () => {
+  it('leaves an already-open assets tab open when reaching the assets step', async () => {
+    registerAppModeTargets()
+    const store = mountStore()
+    const sidebar = useSidebarTabStore()
+    sidebar.toggleSidebarTab('assets')
+    expect(sidebar.activeSidebarTabId).toBe('assets')
+
+    store.replayTour('appMode')
+    await flush()
+    for (let i = 0; i < 4; i++) {
+      store.next()
+      await flush()
+    }
+
+    expect(store.step?.coachId).toBe('assets-panel')
+    expect(sidebar.activeSidebarTabId).toBe('assets')
+  })
+
+  it('steps back to the previous step', async () => {
     registerAppModeTargets()
     const store = mountStore()
     store.replayTour('appMode')
     await flush()
 
-    expect(store.countedStepsTotal).toBe(4)
+    store.next()
+    await flush()
+    store.next()
+    await flush()
+    expect(store.step?.coachId).toBe('app-run-button')
+    expect(store.canGoBack).toBe(true)
 
-    for (let i = 0; i < 4; i++) {
-      store.next()
-      await flush()
-    }
-    expect(store.step?.coachId).toBe('assets-panel')
+    store.back()
+    await flush()
+    expect(store.step?.coachId).toBe('inputs-list')
   })
 
   it('reports step index 0 while no tour is active', () => {
@@ -452,7 +476,7 @@ describe('onboardingTourStore', () => {
     store.replayTour('appMode')
     await flush()
 
-    // The landing isn't numbered; the pre-open panel drops the assets-button step.
+    // The landing isn't numbered, so the four spotlight steps carry the count.
     const started = telemetry.track.mock.calls.find(
       ([stage]) => stage === 'started'
     )

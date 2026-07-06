@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   CARD_GAP,
-  blockerClipPath,
   clampSpotlight,
   noTargetCardLeft,
   topSafeInset
@@ -39,18 +38,6 @@ describe('clampSpotlight', () => {
   it('never produces a negative size for an off-screen target', () => {
     const r = new DOMRect(2000, 100, 50, 40)
     expect(clampSpotlight(r, 8, VIEWPORT)).toMatchObject({ width: '0px' })
-  })
-})
-
-describe('blockerClipPath', () => {
-  it('punches a hole at the target rect corners', () => {
-    const clip = blockerClipPath(new DOMRect(10, 20, 30, 40))
-    expect(clip).toContain('evenodd')
-    // Inner loop traces the target rect (left/top → left/bottom → right/...).
-    expect(clip).toContain('10px 20px')
-    expect(clip).toContain('10px 60px')
-    expect(clip).toContain('40px 60px')
-    expect(clip).toContain('40px 20px')
   })
 })
 

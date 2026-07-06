@@ -40,6 +40,9 @@ const { hasOutputs } = storeToRefs(appModeStore)
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const assetsPanelCoach = computed(() =>
+  activeTab.value?.id === 'assets' ? COACH_IDS.assetsPanel : undefined
+)
 const sidebarOnLeft = computed(
   () => settingStore.get('Comfy.Sidebar.Location') === 'left'
 )
@@ -136,9 +139,7 @@ function dragDrop(e: DragEvent) {
         <AppBuilder v-if="showLeftBuilder" />
         <div
           v-else-if="sidebarOnLeft && activeTab"
-          v-coachmark="
-            activeTab?.id === 'assets' ? COACH_IDS.assetsPanel : undefined
-          "
+          v-coachmark="assetsPanelCoach"
           class="size-full overflow-x-hidden border-r border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />
@@ -194,9 +195,7 @@ function dragDrop(e: DragEvent) {
         />
         <div
           v-else-if="activeTab"
-          v-coachmark="
-            activeTab?.id === 'assets' ? COACH_IDS.assetsPanel : undefined
-          "
+          v-coachmark="assetsPanelCoach"
           class="h-full overflow-x-hidden border-l border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />

@@ -38,18 +38,6 @@ export function clampSpotlight(
   }
 }
 
-/**
- * A single polygon tracing the viewport then the target rect; the `evenodd`
- * fill-rule subtracts the inner loop, leaving a hole at the target's bounds.
- */
-export function blockerClipPath(r: DOMRect): string {
-  const x1 = `${r.left}px`
-  const y1 = `${r.top}px`
-  const x2 = `${r.right}px`
-  const y2 = `${r.bottom}px`
-  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1} ${y1}, ${x1} ${y2}, ${x2} ${y2}, ${x2} ${y1}, ${x1} ${y1})`
-}
-
 export function noTargetCardLeft(viewportWidth: number): number {
   return Math.max(VIEWPORT_MARGIN, (viewportWidth - CARD_WIDTH) / 2)
 }

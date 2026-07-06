@@ -1,5 +1,6 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
+import { useEventListener } from '@vueuse/core'
 import { computed, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
@@ -34,7 +35,7 @@ const captureReference: Middleware = {
   fn: (state) => ({ data: { rect: state.rects.reference } })
 }
 
-function middleware(step: CoachStep | null): Middleware[] {
+function middleware(step: CoachStep | null, topInset: number): Middleware[] {
   const list: Middleware[] = [offset(CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // shift only guards the main axis by default; crossAxis keeps vertically-
@@ -43,7 +44,7 @@ function middleware(step: CoachStep | null): Middleware[] {
     shift({
       crossAxis: true,
       padding: {
-        top: topSafeInset(),
+        top: topInset,
         left: VIEWPORT_MARGIN,
         right: VIEWPORT_MARGIN,
         bottom: CARD_GAP
@@ -71,6 +72,13 @@ export function useCoachmarkTarget(
     () => candidateEls.value.find(isLaidOut) ?? null
   )
 
+  // The top bar's height only changes on resize, so read it once and refresh
+  // then — Floating UI re-runs the middleware every frame while tracking motion.
+  const topInset = ref(topSafeInset())
+  useEventListener('resize', () => {
+    topInset.value = topSafeInset()
+  })
+
   const { floatingStyles, middlewareData, isPositioned, update } = useFloating(
     targetEl,
     cardRef,
@@ -78,7 +86,7 @@ export function useCoachmarkTarget(
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
-      middleware: () => middleware(toValue(step))
+      middleware: () => middleware(toValue(step), topInset.value)
     }
   )
 

@@ -18,7 +18,6 @@ export const COACH_IDS = {
   appRunButton: 'app-run-button',
   inputsList: 'inputs-list',
   outputs: 'outputs',
-  assetsButton: 'assets-button',
   assetsPanel: 'assets-panel'
 } as const
 
@@ -34,10 +33,8 @@ export interface CoachStep {
   /** Element to spotlight (the first laid-out registered candidate wins). */
   coachId?: CoachId
   placement: CoachPlacement
-  /** The user advances by clicking the spotlighted element, not Next. */
-  advanceOnTargetClick?: boolean
-  /** Drop this step at tour start when this target is already mounted. */
-  skipIfMounted?: CoachId
+  /** Open this sidebar tab when the step starts (e.g. to reveal its target). */
+  openSidebarTab?: string
   /** Target mounts later (e.g. a dialog); wait for it instead of dropping the step. */
   deferTarget?: boolean
   /** Renders the landing dialog instead of a spotlight. */
@@ -46,18 +43,16 @@ export interface CoachStep {
 }
 
 /**
- * Fixes the running step set (and so the step count) at tour start: drops
- * `skipIfMounted` matches and steps whose own target isn't mounted, keeping
- * targetless and deferred steps.
+ * Fixes the running step set (and so the step count) at tour start: drops steps
+ * whose own target isn't mounted, keeping targetless and deferred steps.
  */
 export function resolveSteps(
   steps: CoachStep[],
   isMounted: (id: CoachId) => boolean
 ): CoachStep[] {
-  return steps.filter((s) => {
-    if (s.skipIfMounted && isMounted(s.skipIfMounted)) return false
-    return !s.coachId || s.deferTarget || isMounted(s.coachId)
-  })
+  return steps.filter(
+    (s) => !s.coachId || s.deferTarget || isMounted(s.coachId)
+  )
 }
 
 export const TOURS: Record<EntryPath, CoachStep[]> = {
@@ -87,18 +82,11 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       deferTarget: true
     },
     {
-      name: 'assetsButton',
-      coachId: COACH_IDS.assetsButton,
-      placement: 'right',
-      deferTarget: true,
-      advanceOnTargetClick: true,
-      skipIfMounted: COACH_IDS.assetsPanel
-    },
-    {
       name: 'assets',
       coachId: COACH_IDS.assetsPanel,
       placement: 'auto',
-      deferTarget: true
+      deferTarget: true,
+      openSidebarTab: 'assets'
     }
   ]
 }

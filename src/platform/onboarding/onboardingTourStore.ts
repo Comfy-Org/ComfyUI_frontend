@@ -9,6 +9,7 @@ import type {
   OnboardingTourStage
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
 import { TOURS, TOUR_SEEN_SETTING, resolveSteps } from './onboardingTours'
@@ -42,6 +43,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const s = step.value
     return s ? countedSteps.value.indexOf(s) : 0
   })
+  // Back navigates the numbered steps only — never into the landing.
+  const canGoBack = computed(() => countedStepIdx.value > 0)
 
   function trackTour(
     stage: OnboardingTourStage,
@@ -83,6 +86,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       : t('onboardingCoachmarks.skip')
   )
 
+  const backLabel = computed(() => t('onboardingCoachmarks.back'))
+
   async function showStep(idx: number) {
     const nextStep = steps.value[idx]
     if (!nextStep) return
@@ -91,6 +96,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     stepController = controller
     const { signal } = controller
     waitingForTarget.value = false
+    if (nextStep.openSidebarTab) openSidebarTab(nextStep.openSidebarTab)
     if (
       nextStep.deferTarget &&
       nextStep.coachId &&
@@ -102,7 +108,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
         signal,
         DEFER_TIMEOUT_MS
       )
-      if (signal.aborted) return
+      if (signal.aborted) {
+        if (stepController === controller) waitingForTarget.value = false
+        return
+      }
       waitingForTarget.value = false
       // Point at the timed-out step so telemetry reports it, and skip without
       // the seen-flag so a missed target isn't permanent.
@@ -121,6 +130,11 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     trackTour('step_shown')
   }
 
+  function openSidebarTab(tabId: string) {
+    const sidebar = useSidebarTabStore()
+    if (sidebar.activeSidebarTabId !== tabId) sidebar.toggleSidebarTab(tabId)
+  }
+
   function next() {
     if (waitingForTarget.value) return
     if (isLast.value) {
@@ -128,6 +142,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       return
     }
     void showStep(stepIdx.value + 1)
+  }
+
+  function back() {
+    if (canGoBack.value) void showStep(stepIdx.value - 1)
   }
 
   function skip() {
@@ -192,15 +210,18 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   return {
     step,
     isLast,
+    canGoBack,
     title,
     body,
     primaryLabel,
     skipLabel,
+    backLabel,
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
     replayTour,
     next,
+    back,
     skip
   }
 })

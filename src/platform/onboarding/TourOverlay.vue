@@ -16,12 +16,15 @@
     :title="tour.title"
     :body="tour.body"
     :is-last="tour.isLast"
+    :can-go-back="tour.canGoBack"
     :primary-label="tour.primaryLabel"
     :skip-label="tour.skipLabel"
+    :back-label="tour.backLabel"
     :counted-step-idx="tour.countedStepIdx"
     :counted-steps-total="tour.countedStepsTotal"
     :waiting-for-target="tour.waitingForTarget"
     @advance="tour.next"
+    @back="tour.back"
     @skip="tour.skip"
   />
 </template>
