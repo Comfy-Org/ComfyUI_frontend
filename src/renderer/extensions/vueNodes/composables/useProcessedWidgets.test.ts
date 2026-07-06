@@ -277,6 +277,42 @@ describe('computeProcessedWidgets', () => {
     })
   })
 
+  it('prefers live widget metadata over stored render metadata', () => {
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'value')
+    registerWidgetState(id, {
+      type: 'number',
+      value: 5,
+      label: 'Stored Label',
+      options: { min: 0, max: 5 }
+    })
+    const liveWidget = createMockWidget({
+      widgetId: id,
+      name: 'value',
+      type: 'slider',
+      label: 'Live Label',
+      options: { advanced: true, hidden: true, max: 10 }
+    })
+    const { graph } = createGraphWithNode([liveWidget], nodeId)
+
+    const result = processWidgets({
+      widgetIds: [id],
+      nodeId,
+      rootGraph: graph,
+      showAdvanced: true
+    })
+
+    expect(result[0]).toMatchObject({
+      renderKey: `${id}:slider`,
+      visible: false,
+      simplified: {
+        type: 'slider',
+        label: 'Live Label',
+        options: { advanced: true, hidden: true, min: 0, max: 10 }
+      }
+    })
+  })
+
   it('preserves null values from widgetId state', () => {
     const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
     registerWidgetState(id, {
