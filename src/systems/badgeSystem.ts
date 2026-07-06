@@ -18,7 +18,7 @@ import { adjustColor } from '@/utils/colorUtil'
 import type { UUID } from '@/utils/uuid'
 
 /** The badge-relevant projection of a node's definition. */
-export interface NodeDefBadgeSources {
+interface NodeDefBadgeSources {
   isCoreNode: boolean
   lifecycleText: string
   sourceText: string
