@@ -12,6 +12,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="true"
+        :class="cn(isRowHighlighted(row) && ROW_HIGHLIGHT_CLASS)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -36,6 +37,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="false"
+        :class="cn(isRowHighlighted(row) && ROW_HIGHLIGHT_CLASS)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -62,6 +64,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
@@ -86,8 +89,12 @@ const MODEL_TYPE_SORT_ORDER = [
   'diffusion_models'
 ] as const
 
-const { missingModelGroups } = defineProps<{
+const ROW_HIGHLIGHT_CLASS = 'rounded-md ring-1 ring-primary-background/60'
+
+const { missingModelGroups, highlightedNodeIds } = defineProps<{
   missingModelGroups: MissingModelGroup[]
+  /** Execution node ids to emphasize (current canvas selection). */
+  highlightedNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -171,5 +178,12 @@ function getModelTypeSortIndex(directory: string | null) {
 
 function canCloudImport(row: MissingModelRowEntry) {
   return row.isAssetSupported && row.directory !== null
+}
+
+function isRowHighlighted(row: MissingModelRowEntry) {
+  if (!highlightedNodeIds?.size) return false
+  return row.model.referencingNodes.some((ref) =>
+    highlightedNodeIds.has(String(ref.nodeId))
+  )
 }
 </script>

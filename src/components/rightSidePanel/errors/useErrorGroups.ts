@@ -789,15 +789,59 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   })
 
-  const missingNodesInSelection = computed(() => {
-    if (!hasSelection.value) return true
-    for (const executionNodeId of missingNodeCache.value.keys()) {
-      if (isAssetErrorInSelection(executionNodeId as NodeExecutionId)) {
-        return true
-      }
+  function nodeTypeMatchesSelection(nodeType: MissingNodeType): boolean {
+    return (
+      typeof nodeType !== 'string' &&
+      nodeType.nodeId != null &&
+      isAssetCandidateInSelection(nodeType.nodeId)
+    )
+  }
+
+  /** Missing-node/swap groups narrowed to the current selection. */
+  function buildMissingNodeGroupsScoped(): ErrorGroup[] {
+    const error = missingNodesStore.missingNodesError
+    if (!error) return []
+
+    const groups: ErrorGroup[] = []
+    const matchedSwapGroupCount = swapNodeGroups.value.filter((group) =>
+      group.nodeTypes.some(nodeTypeMatchesSelection)
+    ).length
+    const matchedPackGroupCount = missingPackGroups.value.filter((group) =>
+      group.nodeTypes.some(nodeTypeMatchesSelection)
+    ).length
+
+    if (matchedSwapGroupCount > 0) {
+      groups.push({
+        type: 'swap_nodes' as const,
+        groupKey: 'swap_nodes',
+        count: matchedSwapGroupCount,
+        priority: 0,
+        ...resolveMissingErrorMessage({
+          kind: 'swap_nodes',
+          nodeTypes: error.nodeTypes,
+          count: matchedSwapGroupCount,
+          isCloud
+        })
+      })
     }
-    return false
-  })
+
+    if (matchedPackGroupCount > 0) {
+      groups.push({
+        type: 'missing_node' as const,
+        groupKey: 'missing_node',
+        count: matchedPackGroupCount,
+        priority: 1,
+        ...resolveMissingErrorMessage({
+          kind: 'missing_node',
+          nodeTypes: error.nodeTypes,
+          count: matchedPackGroupCount,
+          isCloud
+        })
+      })
+    }
+
+    return groups.sort((a, b) => a.priority - b.priority)
+  }
 
   /**
    * The subset of error groups whose errors belong to the current canvas
@@ -815,7 +859,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const filterByNode = selectedNodeInfo.value.nodeIds !== null
 
     return [
-      ...(missingNodesInSelection.value ? buildMissingNodeGroups() : []),
+      ...(filterByNode
+        ? buildMissingNodeGroupsScoped()
+        : buildMissingNodeGroups()),
       ...(filterByNode
         ? buildMissingModelGroupsFiltered()
         : buildMissingModelGroups()),
@@ -824,6 +870,34 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         : buildMissingMediaGroups()),
       ...toSortedGroups(groupsMap)
     ]
+  })
+
+  /**
+   * Execution node ids of missing-asset candidates (models, media, missing
+   * node types) that belong to the current selection. Drives row-level
+   * highlighting inside the missing-* cards.
+   */
+  const selectionMatchedAssetNodeIds = computed<Set<string>>(() => {
+    const ids = new Set<string>()
+    if (!hasSelection.value) return ids
+
+    const addIfMatched = (nodeId: string | number | null | undefined) => {
+      if (nodeId == null) return
+      if (isAssetCandidateInSelection(nodeId)) ids.add(String(nodeId))
+    }
+
+    for (const candidate of missingModelStore.missingModelCandidates ?? []) {
+      addIfMatched(candidate.nodeId)
+    }
+    for (const candidate of missingMediaStore.missingMediaCandidates ?? []) {
+      addIfMatched(candidate.nodeId)
+    }
+    for (const nodeType of missingNodesStore.missingNodesError?.nodeTypes ??
+      []) {
+      if (typeof nodeType === 'string') continue
+      addIfMatched(nodeType.nodeId)
+    }
+    return ids
   })
 
   const selectionMatchedGroupKeys = computed<Set<string>>(() => {
@@ -869,6 +943,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     selectedNodeTitle,
     selectionMatchedGroupKeys,
     selectionMatchedCardIds,
+    selectionMatchedAssetNodeIds,
     selectionErrorCount
   }
 }

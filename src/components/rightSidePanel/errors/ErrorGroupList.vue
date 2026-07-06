@@ -210,6 +210,7 @@
                 v-if="group.type === 'missing_node'"
                 :show-info-button="shouldShowManagerButtons"
                 :missing-pack-groups="missingPackGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
                 @locate-node="handleLocateMissingNode"
                 @open-manager-info="handleOpenManagerInfo"
               />
@@ -218,6 +219,7 @@
               <SwapNodesCard
                 v-if="group.type === 'swap_nodes'"
                 :swap-node-groups="swapNodeGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
                 @locate-node="handleLocateMissingNode"
                 @replace="handleReplaceGroup"
               />
@@ -324,6 +326,7 @@
               <MissingModelCard
                 v-if="group.type === 'missing_model'"
                 :missing-model-groups="missingModelGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
                 @locate-model="handleLocateAssetNode"
               />
 
@@ -331,6 +334,7 @@
               <MissingMediaCard
                 v-if="group.type === 'missing_media'"
                 :missing-media-groups="missingMediaGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
                 @locate-node="handleLocateAssetNode"
               />
             </ErrorCardSection>
@@ -493,6 +497,7 @@ const {
   selectedNodeTitle,
   selectionMatchedGroupKeys,
   selectionMatchedCardIds,
+  selectionMatchedAssetNodeIds,
   selectionErrorCount
 } = useErrorGroups(searchQuery)
 
@@ -522,16 +527,26 @@ function isCardInSelection(cardId: string): boolean {
 
 /**
  * Selection acts as emphasis, not a filter: expand the groups containing
- * the selected nodes' errors and collapse the rest. Selections without
- * matching errors (or clearing the selection) leave collapse state alone.
+ * the selected nodes' errors and collapse the rest. When the emphasis ends
+ * (selection cleared or moved to a node without errors), re-expand all
+ * groups so the tab reads as the workflow overview again.
  */
+let selectionEmphasisApplied = false
 watch(
   () =>
     hasSelection.value
       ? Array.from(selectionMatchedGroupKeys.value).sort().join('\n')
       : '',
   (matchedKeySignature) => {
-    if (!matchedKeySignature) return
+    if (!matchedKeySignature) {
+      if (!selectionEmphasisApplied) return
+      selectionEmphasisApplied = false
+      for (const group of allErrorGroups.value) {
+        setSectionCollapsed(group.groupKey, false)
+      }
+      return
+    }
+    selectionEmphasisApplied = true
     const matchedKeys = new Set(matchedKeySignature.split('\n'))
     for (const group of allErrorGroups.value) {
       setSectionCollapsed(group.groupKey, !matchedKeys.has(group.groupKey))

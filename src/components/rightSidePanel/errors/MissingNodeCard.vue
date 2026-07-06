@@ -62,6 +62,12 @@
         :key="group.packId ?? '__unknown__'"
         :group="group"
         :show-info-button="showInfoButton"
+        :class="
+          cn(
+            isGroupHighlighted(group) &&
+              'rounded-md ring-1 ring-primary-background/60'
+          )
+        "
         @locate-node="emit('locateNode', $event)"
         @open-manager-info="emit('openManagerInfo', $event)"
       />
@@ -94,6 +100,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 import { compare, valid } from 'semver'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
@@ -107,9 +114,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
 
-const { showInfoButton, missingPackGroups } = defineProps<{
+const { showInfoButton, missingPackGroups, highlightedNodeIds } = defineProps<{
   showInfoButton: boolean
   missingPackGroups: MissingPackGroup[]
+  /** Execution node ids to emphasize (current canvas selection). */
+  highlightedNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -168,4 +177,14 @@ const hasInstalledPacksPendingRestart = computed(() =>
     (g) => g.packId !== null && comfyManagerStore.isPackInstalled(g.packId)
   )
 )
+
+function isGroupHighlighted(group: MissingPackGroup) {
+  if (!highlightedNodeIds?.size) return false
+  return group.nodeTypes.some(
+    (nodeType) =>
+      typeof nodeType !== 'string' &&
+      nodeType.nodeId != null &&
+      highlightedNodeIds.has(String(nodeType.nodeId))
+  )
+}
 </script>

@@ -1114,6 +1114,7 @@ describe('useErrorGroups', () => {
       expect(groups.selectionErrorCount.value).toBe(1)
       expect(groups.selectionMatchedCardIds.value.has('node-1')).toBe(true)
       expect(groups.selectionMatchedCardIds.value.has('node-2')).toBe(false)
+      expect(groups.selectionMatchedAssetNodeIds.value.size).toBe(0)
       // Both error groups remain displayed regardless of the selection
       const executionGroups = groups.filteredGroups.value.filter(
         (g) => g.type === 'execution'
@@ -1123,6 +1124,67 @@ describe('useErrorGroups', () => {
       )
       expect(displayedCardIds).toContain('node-1')
       expect(displayedCardIds).toContain('node-2')
+    })
+
+    it('narrows missing-node emphasis to packs containing the selected node', async () => {
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '2' }])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
+        makeMissingNodeType('NodeC', { cnrId: 'pack-2', nodeId: '3' })
+      ])
+      await nextTick()
+
+      // Emphasis counts only the packs containing the selected node…
+      expect(groups.selectionMatchedGroupKeys.value.has('missing_node')).toBe(
+        true
+      )
+      expect(groups.selectionErrorCount.value).toBe(1)
+      // …and marks only the selected node for row highlighting.
+      expect(groups.selectionMatchedAssetNodeIds.value.has('2')).toBe(true)
+      expect(groups.selectionMatchedAssetNodeIds.value.has('3')).toBe(false)
+      // Display still shows every pack.
+      const missingNodeGroup = groups.filteredGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingNodeGroup?.count).toBe(2)
+    })
+
+    it('does not emphasize missing-node groups for unrelated selections', async () => {
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '99' }])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' })
+      ])
+      await nextTick()
+
+      expect(groups.selectionMatchedGroupKeys.value.has('missing_node')).toBe(
+        false
+      )
+      expect(groups.selectionErrorCount.value).toBe(0)
+      // Display is unaffected by the unrelated selection.
+      expect(
+        groups.filteredGroups.value.find((g) => g.type === 'missing_node')
+          ?.count
+      ).toBe(1)
     })
   })
 })

@@ -9,7 +9,13 @@
         v-for="item in missingMediaItems"
         :key="item.key"
         data-testid="missing-media-row"
-        class="min-w-0"
+        :class="
+          cn(
+            'min-w-0',
+            highlightedNodeIds?.has(item.nodeId) &&
+              'rounded-sm bg-primary-background/10'
+          )
+        "
       >
         <div class="flex min-w-0 items-center gap-2">
           <span class="flex min-w-0 flex-1">
@@ -44,6 +50,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessageResolver'
@@ -54,8 +61,10 @@ import { st } from '@/i18n'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
-const { missingMediaGroups } = defineProps<{
+const { missingMediaGroups, highlightedNodeIds } = defineProps<{
   missingMediaGroups: MissingMediaGroup[]
+  /** Execution node ids to emphasize (current canvas selection). */
+  highlightedNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
