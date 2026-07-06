@@ -30,6 +30,23 @@ describe('preservedQueryManager', () => {
     expect(sessionStorage.getItem('Comfy.PreservedQuery.template')).toBeTruthy()
   })
 
+  it('merges newly captured keys into the preserved namespace payload', () => {
+    capturePreservedQuery(NAMESPACE, { template: 'flux' }, [
+      'template',
+      'source',
+      'mode'
+    ])
+
+    capturePreservedQuery(NAMESPACE, { source: 'custom' }, [
+      'template',
+      'source',
+      'mode'
+    ])
+
+    const merged = mergePreservedQueryIntoQuery(NAMESPACE)
+    expect(merged).toEqual({ template: 'flux', source: 'custom' })
+  })
+
   it('captures the first non-empty string element of an array-valued param', () => {
     capturePreservedQuery(NAMESPACE, { template: ['', 'flux', 'sdxl'] }, [
       'template'
@@ -49,6 +66,20 @@ describe('preservedQueryManager', () => {
     expect(getPreservedQueryParam(NAMESPACE, 'source')).toBeUndefined()
     expect(getPreservedQueryParam(NAMESPACE, 'mode')).toBeUndefined()
     expect(mergePreservedQueryIntoQuery(NAMESPACE)).toBeUndefined()
+  })
+
+  it('removes a preserved key when the route supplies an empty value', () => {
+    capturePreservedQuery(NAMESPACE, { template: 'flux', source: 'custom' }, [
+      'template',
+      'source'
+    ])
+
+    capturePreservedQuery(NAMESPACE, { template: '' }, ['template', 'source'])
+
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBeUndefined()
+    expect(mergePreservedQueryIntoQuery(NAMESPACE)).toEqual({
+      source: 'custom'
+    })
   })
 
   it('reads a preserved query param by key', () => {

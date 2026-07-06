@@ -9,10 +9,10 @@ interface PreservedQueryDefinition {
   namespace: string
   keys: string[]
   /**
-   * When set, keys present in the query are removed from the URL before the
-   * navigation completes, so the preserved-query stash is the ONLY place the
-   * value exists afterwards. Later guards, afterEach hooks, and views must
-   * never read a strip-marked key from route.query or fullPath.
+   * When set, keys present in the query are removed from the client-side URL
+   * before navigation completes. Later guards, afterEach hooks, and views must
+   * read a strip-marked key from the preserved-query stash instead of
+   * route.query or fullPath.
    */
   stripAfterCapture?: boolean
 }

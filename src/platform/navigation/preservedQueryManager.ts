@@ -12,6 +12,9 @@ const readQueryParam = (value: unknown): string | undefined => {
   )
 }
 
+const hasQueryKey = (query: LocationQuery, key: string) =>
+  Object.hasOwn(query, key)
+
 const getStorageKey = (namespace: string) => `${STORAGE_PREFIX}${namespace}`
 
 const isValidQueryRecord = (
@@ -75,20 +78,37 @@ export const capturePreservedQuery = (
   query: LocationQuery,
   keys: string[]
 ) => {
-  const payload: Record<string, string> = {}
+  hydratePreservedQuery(namespace)
+  const payload: Record<string, string> = {
+    ...(preservedQueries.get(namespace) ?? {})
+  }
+  let changed = false
 
   keys.forEach((key) => {
+    if (!hasQueryKey(query, key)) return
+
     const value = readQueryParam(query[key])
     if (value) {
       payload[key] = value
+      changed = true
+      return
+    }
+
+    if (key in payload) {
+      delete payload[key]
+      changed = true
     }
   })
 
-  if (Object.keys(payload).length === 0) {
+  if (!changed) {
     return
   }
 
-  preservedQueries.set(namespace, payload)
+  if (Object.keys(payload).length === 0) {
+    preservedQueries.delete(namespace)
+  } else {
+    preservedQueries.set(namespace, payload)
+  }
   writeToStorage(namespace, payload)
 }
 
