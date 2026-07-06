@@ -1,10 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import {
+  LGraphEventMode,
   LGraphGroup,
   LGraphNode,
   LiteGraph
@@ -12,6 +14,8 @@ import {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/scripts/app', () => {
@@ -162,8 +166,11 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   }))
 }))
 
+const mockExecutionStore = vi.hoisted(() => ({
+  activeJobId: null as string | null
+}))
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({}))
+  useExecutionStore: vi.fn(() => mockExecutionStore)
 }))
 
 const mockToastStore = vi.hoisted(() => ({
@@ -491,6 +498,7 @@ describe('useCoreCommands', () => {
     }
     mockManagerState.managerUIState.value = 'enabled'
     mockSubgraphNavigationStore.navigationStack = []
+    mockExecutionStore.activeJobId = null
 
     vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
 
@@ -583,16 +591,34 @@ describe('useCoreCommands', () => {
   })
 
   describe('Undo/Redo commands', () => {
-    it('Undo should call changeTracker.undo', async () => {
+    it('should use the workflow change tracker when no mask editor is open', async () => {
       await findCommand('Comfy.Undo').function()
-
-      expect(mockChangeTracker.undo).toHaveBeenCalled()
-    })
-
-    it('Redo should call changeTracker.redo', async () => {
       await findCommand('Comfy.Redo').function()
 
+      expect(mockChangeTracker.undo).toHaveBeenCalled()
       expect(mockChangeTracker.redo).toHaveBeenCalled()
+    })
+
+    it('should route to the mask editor history while its dialog is open', async () => {
+      useDialogStore().showDialog({
+        key: 'global-mask-editor',
+        component: defineComponent({ render: () => null })
+      })
+      const maskEditorStore = useMaskEditorStore()
+      const maskUndo = vi
+        .spyOn(maskEditorStore.canvasHistory, 'undo')
+        .mockImplementation(() => {})
+      const maskRedo = vi
+        .spyOn(maskEditorStore.canvasHistory, 'redo')
+        .mockImplementation(() => {})
+
+      await findCommand('Comfy.Undo').function()
+      await findCommand('Comfy.Redo').function()
+
+      expect(maskUndo).toHaveBeenCalled()
+      expect(maskRedo).toHaveBeenCalled()
+      expect(mockChangeTracker.undo).not.toHaveBeenCalled()
+      expect(mockChangeTracker.redo).not.toHaveBeenCalled()
     })
   })
 
@@ -1019,10 +1045,12 @@ describe('useCoreCommands', () => {
   })
 
   describe('Interrupt command', () => {
-    it('should call api.interrupt and show toast', async () => {
+    it('should interrupt the active job and show a toast', async () => {
+      mockExecutionStore.activeJobId = 'job-123'
+
       await findCommand('Comfy.Interrupt').function()
 
-      expect(api.interrupt).toHaveBeenCalled()
+      expect(api.interrupt).toHaveBeenCalledWith('job-123')
       expect(mockToastStore.add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'info' })
       )
@@ -1038,7 +1066,7 @@ describe('useCoreCommands', () => {
   })
 
   describe('ToggleTheme command', () => {
-    it('should switch from dark to light theme', async () => {
+    it('should switch from a dark theme to the default light theme', async () => {
       const mockStore = createMockSettingStore(false)
       vi.mocked(useSettingStore).mockReturnValue(mockStore)
 
@@ -1046,39 +1074,50 @@ describe('useCoreCommands', () => {
 
       expect(mockStore.set).toHaveBeenCalledWith(
         'Comfy.ColorPalette',
-        expect.any(String)
+        DEFAULT_LIGHT_COLOR_PALETTE.id
       )
     })
 
-    it('should switch from light to the previous dark theme', async () => {
+    it('should return to the previously active dark theme, not the default', async () => {
       const mockStore = createMockSettingStore(false)
       vi.mocked(useSettingStore).mockReturnValue(mockStore)
+      const toggleTheme = findCommand('Comfy.ToggleTheme').function
+
+      mockColorPaletteStore.completedActivePalette = {
+        id: 'solarized',
+        light_theme: false
+      }
+      await toggleTheme()
+
       mockColorPaletteStore.completedActivePalette = {
         id: 'light-default',
         light_theme: true
       }
+      await toggleTheme()
 
-      await findCommand('Comfy.ToggleTheme').function()
-
-      expect(mockStore.set).toHaveBeenCalledWith(
+      expect(mockStore.set).toHaveBeenLastCalledWith(
         'Comfy.ColorPalette',
-        expect.any(String)
+        'solarized'
       )
     })
   })
 
   describe('ToggleSelectedNodes commands', () => {
-    it('Mute should toggle selected nodes mode and mark dirty', async () => {
+    it('Mute should toggle selected nodes to NEVER mode and mark dirty', async () => {
       await findCommand('Comfy.Canvas.ToggleSelectedNodes.Mute').function()
 
-      expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalled()
+      expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalledWith(
+        LGraphEventMode.NEVER
+      )
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
-    it('Bypass should toggle selected nodes mode and mark dirty', async () => {
+    it('Bypass should toggle selected nodes to BYPASS mode and mark dirty', async () => {
       await findCommand('Comfy.Canvas.ToggleSelectedNodes.Bypass').function()
 
-      expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalled()
+      expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalledWith(
+        LGraphEventMode.BYPASS
+      )
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
@@ -1541,10 +1580,11 @@ describe('useCoreCommands', () => {
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
-    it('Comfy.RefreshNodeDefinitions awaits app.refreshComboInNodes', async () => {
+    it('Comfy.RefreshNodeDefinitions refreshes node combos and the model store', async () => {
       await findCommand('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
+      expect(mockModelStoreRefresh).toHaveBeenCalled()
     })
 
     it('creates blank and default workflows with telemetry', async () => {
