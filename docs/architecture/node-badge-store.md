@@ -1,10 +1,13 @@
 # Node Badge Store
 
-Date: 2026-07-05
-Status: Draft (design interview in progress; follow-up to the
+Date: 2026-07-05 (updated 2026-07-06)
+Status: Partially implemented — decisions 1–4 shipped as
+`src/stores/nodeBadgeStore.ts` + `src/systems/badgeSystem.ts` (slice A);
+decision 5 and the open decisions below await the consumer-cutover PR
+(slice B). Follow-up to the
 [link topology store](link-topology-store.md),
 [reroute chain store](reroute-chain-store.md), and the
-[node data store draft](node-data-store.md))
+[node data store draft](node-data-store.md)
 
 Design record for extracting node badges off `LGraphNode` instances into
 a dedicated store per [ADR 0008](../adr/0008-entity-component-system.md),
@@ -98,6 +101,30 @@ mirror: no other component stores this projection.
 `LGraphBadge` draw objects keyed by row content (the `Reroute` id-badge
 pattern, memoized). `_boundingRect` hit-test state stays renderer-side.
 Frame-budget parity per ADR 0008's render mitigations applies.
+
+## Implementation notes (slice A)
+
+- Registration is bucket-key presence: the `LGraph.add`/`remove`/`clear`
+  chokepoints call the import-light store trio
+  (`registerNode`/`unregisterNode`/`clearGraph`), and the system watches
+  `registeredNodeIds` to attach/detach per-node effect scopes. Litegraph
+  never imports the system, so the pricing/nodeDef dependency graph
+  (which runtime-imports the litegraph barrel) stays acyclic; the system
+  is bootstrapped at the app layer with a `resolveNode` seam.
+- Core rows are fine-grained — one row per part in lifecycle, id, source
+  order — with one visibility rule (`badgeTextVisible`, the legacy
+  semantics: `HideBuiltIn` respected for every part). Joining,
+  bracket decoration, and truncation are renderer presentation and move
+  to the slice-B legacy draw cache. Rows store lifecycle text with the
+  `[]` brackets trimmed. Known unification effects: the Vue renderer
+  gains `HideBuiltIn` handling for id badges, and core nodes' `🦊`
+  source row becomes data the Vue partition may substitute with its
+  Comfy-logo chip.
+- A credits row is emitted only when the display price label is
+  non-empty; async pricing fills it via the per-node revision ref.
+- Subgraph credits aggregation is not yet in the system — it stays on
+  the `updateSubgraphCredits` closure path until open decision 3 below
+  is resolved.
 
 ## Open decisions (interview pending)
 
