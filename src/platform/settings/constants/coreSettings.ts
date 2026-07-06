@@ -4,6 +4,7 @@ import {
   SUPPORTED_LOCALE_OPTIONS
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -978,7 +979,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.7'
   },
   {
-    id: 'Comfy.OnboardingCoachmarks.Seen',
+    id: TOUR_SEEN_SETTING,
     name: 'Onboarding coachmark tours the user has already seen',
     type: 'hidden',
     defaultValue: [],

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import {
   clearCoachmarks,
@@ -115,6 +116,33 @@ describe('waitForTarget', () => {
 
     el.getBoundingClientRect = () => new DOMRect(0, 0, 80, 30)
     runFrames()
+    await Promise.resolve()
+    expect(resolved).toBe(true)
+  })
+
+  it('does not schedule rAF polling while no candidate is registered', () => {
+    const signal = new AbortController().signal
+    void waitForTarget('outputs', signal, 1000)
+    expect(frames).toHaveLength(0)
+  })
+
+  it('parks the poll when the last candidate unregisters and resumes on re-registration', async () => {
+    const el = document.createElement('div')
+    const signal = new AbortController().signal
+    let resolved: boolean | undefined
+    void waitForTarget('outputs', signal, 1000).then((v) => (resolved = v))
+
+    registerCoachmark('outputs', el)
+    await nextTick()
+    expect(frames.length).toBeGreaterThan(0)
+
+    unregisterCoachmark('outputs', el)
+    await nextTick()
+    runFrames()
+    expect(frames).toHaveLength(0)
+
+    registerCoachmark('outputs', laidOut())
+    await nextTick()
     await Promise.resolve()
     expect(resolved).toBe(true)
   })

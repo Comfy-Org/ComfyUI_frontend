@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { useFocusTrap } from './useFocusTrap'
+import { useCoachmarkFocusTrap } from './useCoachmarkFocusTrap'
 
 function button(label: string): HTMLButtonElement {
   const el = document.createElement('button')
@@ -10,7 +10,7 @@ function button(label: string): HTMLButtonElement {
   return el
 }
 
-describe('useFocusTrap', () => {
+describe('useCoachmarkFocusTrap', () => {
   let scope: EffectScope
   let target: HTMLElement
   let card: HTMLElement
@@ -37,7 +37,7 @@ describe('useFocusTrap', () => {
     onEscape = vi.fn<() => void>()
     scope = effectScope()
     scope.run(() =>
-      useFocusTrap({
+      useCoachmarkFocusTrap({
         cardRef: ref(card),
         getTarget: () => target,
         isSuspended: () => suspended,
@@ -110,5 +110,18 @@ describe('useFocusTrap', () => {
     focusOutside()
     await nextTick()
     expect(document.activeElement).toBe(outside)
+  })
+
+  it('leaves Tab to the mounting UI while suspended', () => {
+    suspended = true
+    t1.focus()
+    press('Tab')
+    expect(document.activeElement).toBe(t1)
+  })
+
+  it('still invokes onEscape while suspended', () => {
+    suspended = true
+    press('Escape')
+    expect(onEscape).toHaveBeenCalledOnce()
   })
 })

@@ -8,7 +8,8 @@ import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import { requestTour } from '@/platform/onboarding/coachmarkController'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -91,6 +92,10 @@ async function runButtonClick(e: Event) {
 function handleDragDrop() {
   return widgetListRef.value?.handleDragDrop()
 }
+
+function replayAppModeTour() {
+  useOnboardingTourStore().replayTour('appMode')
+}
 </script>
 <template>
   <div
@@ -108,11 +113,16 @@ function handleDragDrop() {
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <Button
+        v-tooltip.bottom="{
+          value: t('onboardingCoachmarks.appMode.replay'),
+          showDelay: 300,
+          hideDelay: 300
+        }"
         variant="textonly"
         size="icon"
-        :aria-label="t('linearMode.welcome.startTour')"
+        :aria-label="t('onboardingCoachmarks.appMode.replay')"
         class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
-        @click="requestTour('appMode')"
+        @click="replayAppModeTour"
       >
         <i class="icon-[lucide--circle-question-mark] size-4" />
       </Button>
@@ -121,7 +131,7 @@ function handleDragDrop() {
       class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
-        v-coachmark="'inputs-list'"
+        v-coachmark="COACH_IDS.inputsList"
         data-testid="linear-widgets"
         class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
       >
@@ -162,7 +172,7 @@ function handleDragDrop() {
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <div v-coachmark="'app-run-button'">
+        <div v-coachmark="COACH_IDS.appRunButton">
           <SubscribeToRunButton
             v-if="!isActiveSubscription"
             class="mt-4 w-full"
@@ -214,7 +224,7 @@ function handleDragDrop() {
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <div v-coachmark="'app-run-button'">
+        <div v-coachmark="COACH_IDS.appRunButton">
           <div
             class="m-1 mb-2 text-node-component-slot-text"
             v-text="t('linearMode.runCount')"

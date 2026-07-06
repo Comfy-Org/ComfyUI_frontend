@@ -3,7 +3,10 @@ import { expect, mergeTests } from '@playwright/test'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 
-import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import {
+  COACH_IDS,
+  TOUR_SEEN_SETTING
+} from '@/platform/onboarding/onboardingTours'
 
 const test = mergeTests(comfyPageFixture, onboardingFixture)
 
@@ -12,7 +15,7 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
   test.describe('app-mode tour', () => {
     // With no tour pre-seeded as seen, entering the app auto-opens it.
     test.use({
-      initialSettings: { 'Comfy.OnboardingCoachmarks.Seen': [] }
+      initialSettings: { [TOUR_SEEN_SETTING]: [] }
     })
 
     test('auto-opens on the welcome landing, focuses Start, and Skip dismisses it', async ({
@@ -30,7 +33,7 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
 
       await coach.landingSkipButton.click()
       await expect(coach.landing).toBeHidden()
-      expect(await coach.seen('appMode')).toBe(true)
+      await expect.poll(() => coach.seen('appMode')).toBe(true)
     })
 
     test('Escape dismisses the welcome landing and marks it seen', async ({
@@ -44,7 +47,7 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
 
       await comfyPage.page.keyboard.press('Escape')
       await expect(coach.landing).toBeHidden()
-      expect(await coach.seen('appMode')).toBe(true)
+      await expect.poll(() => coach.seen('appMode')).toBe(true)
     })
   })
 
@@ -67,7 +70,7 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
   })
 
   test.describe('spotlight placement', () => {
-    test('every spotlight card stays fully within the viewport', async ({
+    test('every spotlight card stays fully within the viewport and Done completes the tour', async ({
       comfyPage,
       onboarding
     }) => {
@@ -89,9 +92,13 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
 
       // Step 4 (assets button) advances by clicking its target, not Next.
       await expect(coach.cardForStep(4)).toBeInViewport({ ratio: 1 })
-      await coach.coachAnchor('assets-button').click()
+      await coach.coachAnchor(COACH_IDS.assetsButton).click()
 
       await expect(coach.cardForStep(5)).toBeInViewport({ ratio: 1 })
+
+      await coach.cardDoneButton.click()
+      await expect(coach.card).toBeHidden()
+      await expect.poll(() => coach.seen('appMode')).toBe(true)
     })
   })
 })

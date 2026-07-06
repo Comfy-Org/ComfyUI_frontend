@@ -1,7 +1,7 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
-import { computed, ref, watch, watchEffect } from 'vue'
-import type { Ref } from 'vue'
+import { computed, ref, toValue, watch, watchEffect } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
 import { elementsFor, isLaidOut } from './coachmarkRegistry'
@@ -59,11 +59,11 @@ function middleware(step: CoachStep | null): Middleware[] {
  * Floating UI, following the target until its rect settles.
  */
 export function useCoachmarkTarget(
-  step: Ref<CoachStep | null>,
+  step: MaybeRefOrGetter<CoachStep | null>,
   cardRef: Ref<HTMLElement | null>
 ) {
   const candidateEls = computed<readonly HTMLElement[]>(() => {
-    const id = step.value?.coachId
+    const id = toValue(step)?.coachId
     return id ? elementsFor(id) : []
   })
 
@@ -77,8 +77,8 @@ export function useCoachmarkTarget(
     {
       strategy: 'fixed',
       transform: false,
-      placement: () => floatingPlacement(step.value),
-      middleware: () => middleware(step.value)
+      placement: () => floatingPlacement(toValue(step)),
+      middleware: () => middleware(toValue(step))
     }
   )
 
@@ -98,7 +98,7 @@ export function useCoachmarkTarget(
   })
 
   watch(
-    () => step.value,
+    () => toValue(step),
     (s) => {
       trackMotion.value = !!s?.deferTarget
     },

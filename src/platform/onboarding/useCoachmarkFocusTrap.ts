@@ -14,9 +14,10 @@ interface FocusTrapOptions {
 
 /**
  * Traps focus across two disjoint subtrees — the coach card and the externally
- * spotlighted target — which a single-subtree trap (Reka FocusScope) can't model.
+ * spotlighted target — which a single-subtree trap (Reka FocusScope or VueUse's
+ * useFocusTrap) can't model.
  */
-export function useFocusTrap(options: FocusTrapOptions) {
+export function useCoachmarkFocusTrap(options: FocusTrapOptions) {
   const { cardRef, getTarget, isSuspended, onEscape } = options
 
   /** Focus the primary action (the last button); Skip comes first in the DOM. */
@@ -49,7 +50,9 @@ export function useFocusTrap(options: FocusTrapOptions) {
         onEscape()
         return
       }
-      if (e.key !== 'Tab') return
+      // While suspended (waiting on a deferred target), leave Tab to the UI
+      // that is mounting; only the Escape bail-out stays active.
+      if (e.key !== 'Tab' || isSuspended()) return
       const items = focusCycle()
       if (!items.length) return
       e.preventDefault()

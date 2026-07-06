@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 
-export type CoachTour = 'appMode'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 
-const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
+export type CoachTour = 'appMode'
 
 /** Accessible name of each tour's in-app replay (help) button. */
 const TOUR_REPLAY_BUTTONS: Record<CoachTour, string> = {
@@ -17,6 +17,7 @@ export class OnboardingCoachmarks {
   /** The current spotlight step card (the dialog carrying a "Step N of M" label). */
   public readonly card: Locator
   public readonly cardNextButton: Locator
+  public readonly cardDoneButton: Locator
 
   constructor(public readonly page: Page) {
     this.landing = page.getByTestId('coach-landing')
@@ -29,6 +30,7 @@ export class OnboardingCoachmarks {
     })
     this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
     this.cardNextButton = this.card.getByRole('button', { name: 'Next' })
+    this.cardDoneButton = this.card.getByRole('button', { name: 'Done' })
   }
 
   /** The tour's in-app help button, which replays it past the seen-flag. */
@@ -53,7 +55,7 @@ export class OnboardingCoachmarks {
   private async clearSeen() {
     await this.page.evaluate(
       async (key) => window.app!.extensionManager.setting.set(key, []),
-      SEEN_SETTING
+      TOUR_SEEN_SETTING
     )
   }
 
@@ -68,7 +70,7 @@ export class OnboardingCoachmarks {
         (await window.app!.extensionManager.setting.get(key)) as
           | string[]
           | undefined,
-      SEEN_SETTING
+      TOUR_SEEN_SETTING
     )
     return !!seen?.includes(tour)
   }

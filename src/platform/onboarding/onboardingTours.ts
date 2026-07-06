@@ -1,5 +1,8 @@
 export type EntryPath = 'appMode'
 
+/** Setting holding the tours the user has completed or dismissed. */
+export const TOUR_SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
+
 export type CoachPlacement =
   | 'left'
   | 'right'

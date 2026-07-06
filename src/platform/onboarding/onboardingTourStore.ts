@@ -1,31 +1,33 @@
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { defineStore } from 'pinia'
+import { computed, ref, shallowRef, watch } from 'vue'
 
+import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import type { OnboardingTourStage } from '@/platform/telemetry/types'
+import type {
+  OnboardingTourSkipReason,
+  OnboardingTourStage
+} from '@/platform/telemetry/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import { onTourRequested } from './coachmarkController'
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
-import { TOURS, resolveSteps } from './onboardingTours'
+import { TOURS, TOUR_SEEN_SETTING, resolveSteps } from './onboardingTours'
 import type { CoachStep, EntryPath } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
 
-const SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
 const DEFER_TIMEOUT_MS = 8000
 
 /**
  * The tour state machine: which tour starts and when, which steps run, and the
  * advance/skip/complete lifecycle.
  */
-export function useCoachmarkTour() {
-  const { t, te } = useI18n()
+export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const settingStore = useSettingStore()
   const telemetry = useTelemetry()
 
-  const steps = ref<CoachStep[]>([])
+  const steps = shallowRef<CoachStep[]>([])
   const stepIdx = ref(0)
-  const suspendFocusGuard = ref(false)
+  const waitingForTarget = ref(false)
   const activeTour = ref<EntryPath | null>(null)
   let stepController: AbortController | null = null
 
@@ -35,12 +37,16 @@ export function useCoachmarkTour() {
   const isLast = computed(() => stepIdx.value === steps.value.length - 1)
 
   const countedSteps = computed(() => steps.value.filter((s) => !s.landing))
+  const countedStepsTotal = computed(() => countedSteps.value.length)
   const countedStepIdx = computed(() => {
     const s = step.value
     return s ? countedSteps.value.indexOf(s) : 0
   })
 
-  function trackTour(stage: OnboardingTourStage) {
+  function trackTour(
+    stage: OnboardingTourStage,
+    skipReason?: OnboardingTourSkipReason
+  ) {
     const tour = activeTour.value
     if (!tour) return
     const coachId = step.value?.coachId
@@ -51,7 +57,8 @@ export function useCoachmarkTour() {
         countedStepIdx.value >= 0 && {
           step_number: countedStepIdx.value + 1,
           coach_id: Array.isArray(coachId) ? coachId.join('+') : coachId
-        })
+        }),
+      ...(skipReason && { skip_reason: skipReason })
     })
   }
 
@@ -84,25 +91,30 @@ export function useCoachmarkTour() {
     const controller = new AbortController()
     stepController = controller
     const { signal } = controller
-    suspendFocusGuard.value = false
+    waitingForTarget.value = false
     if (
       nextStep.deferTarget &&
       nextStep.coachId &&
       !targetMounted(nextStep.coachId)
     ) {
-      suspendFocusGuard.value = true
+      waitingForTarget.value = true
       const found = await waitForTarget(
         nextStep.coachId,
         signal,
         DEFER_TIMEOUT_MS
       )
       if (signal.aborted) return
-      suspendFocusGuard.value = false
+      waitingForTarget.value = false
       // Point at the timed-out step so telemetry reports it, and skip without
       // the seen-flag so a missed target isn't permanent.
       if (!found) {
         stepIdx.value = idx
-        end('skipped', false)
+        finish('skipped', { markSeen: false, skipReason: 'target_timeout' })
+        useToastStore().add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('onboardingCoachmarks.loadError')
+        })
         return
       }
     }
@@ -111,45 +123,54 @@ export function useCoachmarkTour() {
   }
 
   function next() {
+    if (waitingForTarget.value) return
     if (isLast.value) {
-      end('completed')
+      finish('completed')
       return
     }
     void showStep(stepIdx.value + 1)
   }
 
-  function end(outcome: 'completed' | 'skipped', markSeen = true) {
-    trackTour(outcome)
+  function skip() {
+    finish('skipped')
+  }
+
+  function finish(
+    outcome: 'completed' | 'skipped',
+    {
+      markSeen = true,
+      skipReason = 'user'
+    }: { markSeen?: boolean; skipReason?: OnboardingTourSkipReason } = {}
+  ) {
+    trackTour(outcome, outcome === 'skipped' ? skipReason : undefined)
     stepController?.abort()
-    suspendFocusGuard.value = false
+    waitingForTarget.value = false
     steps.value = []
     stepIdx.value = 0
     if (markSeen && activeTour.value) markTourSeen(activeTour.value)
     activeTour.value = null
   }
 
-  onBeforeUnmount(() => {
-    stepController?.abort()
-  })
-
   for (const [entryPath, active] of useTourTriggers()) {
     watch(
       active,
       (visible) => {
         if (visible) startTour(entryPath)
+        else if (activeTour.value === entryPath)
+          finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
       },
       { immediate: true }
     )
   }
 
   function hasSeenTour(entryPath: EntryPath): boolean {
-    return settingStore.get(SEEN_SETTING).includes(entryPath)
+    return settingStore.get(TOUR_SEEN_SETTING).includes(entryPath)
   }
 
   function markTourSeen(entryPath: EntryPath) {
-    const seen = settingStore.get(SEEN_SETTING)
+    const seen = settingStore.get(TOUR_SEEN_SETTING)
     if (seen.includes(entryPath)) return
-    void settingStore.set(SEEN_SETTING, [...seen, entryPath])
+    void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
   function startTour(entryPath: EntryPath, force = false) {
@@ -163,7 +184,9 @@ export function useCoachmarkTour() {
     void showStep(0)
   }
 
-  onTourRequested((tour) => startTour(tour, true))
+  function replayTour(entryPath: EntryPath) {
+    startTour(entryPath, true)
+  }
 
   return {
     step,
@@ -173,9 +196,10 @@ export function useCoachmarkTour() {
     primaryLabel,
     skipLabel,
     countedStepIdx,
-    countedSteps,
-    suspendFocusGuard,
+    countedStepsTotal,
+    waitingForTarget,
+    replayTour,
     next,
-    end
+    skip
   }
-}
+})

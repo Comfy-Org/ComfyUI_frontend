@@ -7,6 +7,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -88,7 +89,7 @@ function showApps() {
             value: t('sideToolbar.mediaAssets.title'),
             ...tooltipOptions
           }"
-          v-coachmark="'assets-button'"
+          v-coachmark="COACH_IDS.assetsButton"
           variant="textonly"
           size="unset"
           :aria-label="t('sideToolbar.mediaAssets.title')"

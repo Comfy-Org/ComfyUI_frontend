@@ -6,12 +6,12 @@
       <DialogOverlay
         v-reka-z-index
         data-testid="coach-landing-overlay"
-        class="bg-black/60"
+        class="bg-coach-scrim"
       />
       <DialogContent
         v-reka-z-index
         data-testid="coach-landing"
-        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border-default bg-secondary-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:min-h-98 md:max-w-[800px] md:flex-row"
+        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border-default bg-secondary-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:min-h-98 md:flex-row"
         @pointer-down-outside.prevent
         @open-auto-focus="onOpenAutoFocus"
       >
@@ -58,6 +58,7 @@
               ref="startButtonRef"
               variant="inverted"
               size="lg"
+              :disabled="waitingForTarget"
               @click="emit('start')"
             >
               {{ primaryLabel }}
@@ -84,13 +85,15 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
-const { title, message, image, primaryLabel, skipLabel } = defineProps<{
-  title: string
-  message: string
-  image?: string
-  primaryLabel: string
-  skipLabel: string
-}>()
+const { title, message, image, primaryLabel, skipLabel, waitingForTarget } =
+  defineProps<{
+    title: string
+    message: string
+    image?: string
+    primaryLabel: string
+    skipLabel: string
+    waitingForTarget: boolean
+  }>()
 
 const emit = defineEmits<{
   start: []

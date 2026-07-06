@@ -3713,7 +3713,6 @@
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
-      "startTour": "Take a tour of App Mode",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
       "getStarted": "Click {runButton} to get started.",
@@ -4496,7 +4495,9 @@
     "skip": "Skip",
     "next": "Next",
     "done": "Done",
+    "loadError": "Something went wrong showing this tour",
     "appMode": {
+      "replay": "Take a tour of App Mode",
       "landing": {
         "title": "Welcome to Apps",
         "body": "A quick tour of the essentials, in about a minute. You'll fill inputs and see your first generation.",

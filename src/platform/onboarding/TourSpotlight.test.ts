@@ -35,7 +35,7 @@ const baseProps = {
   skipLabel: 'Skip',
   countedStepIdx: 0,
   countedStepsTotal: 1,
-  suspendFocusGuard: false
+  waitingForTarget: false
 }
 
 function renderSpotlight(
@@ -115,11 +115,11 @@ describe('TourSpotlight', () => {
     await nextTick()
 
     unmount()
-    // Every set must pair with a clear (plus the unmount clear), or entries
-    // leak into the shared modal sequence.
+    // Sets must pair with clears or entries leak; the +1 is the unmount clear.
     expect(vi.mocked(ZIndex.clear).mock.calls.length).toBe(
       vi.mocked(ZIndex.set).mock.calls.length + 1
     )
+    expect(ZIndex.set).toHaveBeenCalled()
   })
 
   it('emits advance on the primary button and skip on the secondary', async () => {
@@ -139,6 +139,11 @@ describe('TourSpotlight', () => {
 
     await user.keyboard('{Escape}')
     expect(emitted().skip).toHaveLength(1)
+  })
+
+  it('disables the primary button while waiting for a deferred target', () => {
+    renderSpotlight({ waitingForTarget: true })
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
   })
 
   it('hides the primary button on a click-to-advance step', () => {

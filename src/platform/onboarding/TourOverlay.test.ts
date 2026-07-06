@@ -2,16 +2,16 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import TourOverlay from './TourOverlay.vue'
 import type { CoachStep } from './onboardingTours'
-import { useCoachmarkTour } from './useCoachmarkTour'
+import { useOnboardingTourStore } from './onboardingTourStore'
 
-vi.mock('./useCoachmarkTour', () => ({ useCoachmarkTour: vi.fn() }))
+vi.mock('./onboardingTourStore', () => ({ useOnboardingTourStore: vi.fn() }))
 
 function makeTourState() {
   return {
@@ -22,10 +22,10 @@ function makeTourState() {
     primaryLabel: ref('Next'),
     skipLabel: ref('Skip'),
     countedStepIdx: ref(0),
-    countedSteps: ref<CoachStep[]>([]),
-    suspendFocusGuard: ref(false),
+    countedStepsTotal: ref(0),
+    waitingForTarget: ref(false),
     next: vi.fn(),
-    end: vi.fn()
+    skip: vi.fn()
   }
 }
 
@@ -67,7 +67,7 @@ function renderOverlay() {
 describe('TourOverlay', () => {
   beforeEach(() => {
     s = makeTourState()
-    vi.mocked(useCoachmarkTour).mockReturnValue(fromPartial(s))
+    vi.mocked(useOnboardingTourStore).mockReturnValue(fromPartial(reactive(s)))
   })
 
   afterEach(cleanup)
@@ -89,7 +89,7 @@ describe('TourOverlay', () => {
     expect(s.next).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'skip' }))
-    expect(s.end).toHaveBeenCalledWith('skipped')
+    expect(s.skip).toHaveBeenCalledOnce()
   })
 
   it('renders the landing step and starts the tour on its primary action', async () => {
@@ -104,12 +104,23 @@ describe('TourOverlay', () => {
     expect(s.next).toHaveBeenCalledOnce()
   })
 
+  it('disables the landing primary action while waiting for a deferred target', async () => {
+    s.step.value = landingStep()
+    s.primaryLabel.value = 'Start tutorial'
+    s.waitingForTarget.value = true
+    renderOverlay()
+
+    expect(
+      await screen.findByRole('button', { name: 'Start tutorial' })
+    ).toBeDisabled()
+  })
+
   it('ends the tour when the landing is dismissed', async () => {
     const user = userEvent.setup()
     s.step.value = landingStep()
     renderOverlay()
 
     await user.click(await screen.findByRole('button', { name: 'Skip' }))
-    expect(s.end).toHaveBeenCalledWith('skipped')
+    expect(s.skip).toHaveBeenCalledOnce()
   })
 })

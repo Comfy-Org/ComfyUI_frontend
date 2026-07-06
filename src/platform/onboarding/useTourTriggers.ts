@@ -1,3 +1,4 @@
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
@@ -10,7 +11,14 @@ import type { EntryPath } from './onboardingTours'
 export function useTourTriggers(): [EntryPath, ComputedRef<boolean>][] {
   const { mode } = useAppMode()
   const appModeStore = useAppModeStore()
+  const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   return [
-    ['appMode', computed(() => mode.value === 'app' && appModeStore.hasOutputs)]
+    [
+      'appMode',
+      computed(
+        () =>
+          desktopLayout.value && mode.value === 'app' && appModeStore.hasOutputs
+      )
+    ]
   ]
 }

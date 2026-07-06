@@ -1,4 +1,4 @@
-import { shallowReactive } from 'vue'
+import { shallowReactive, watch } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
@@ -52,6 +52,7 @@ export function waitForTarget(
     function finish(found: boolean) {
       if (done) return
       done = true
+      stopWatch()
       cancelAnimationFrame(frame)
       clearTimeout(timer)
       signal.removeEventListener('abort', onAbort)
@@ -60,13 +61,25 @@ export function waitForTarget(
     function onAbort() {
       finish(false)
     }
+    // Laid-out-ness is a layout read the registry can't observe, so it needs
+    // polling — but only while a candidate exists. Registration is reactive,
+    // so the watch (re)starts the poll instead of spinning every frame while
+    // the target hasn't even mounted.
     function poll() {
       if (targetMounted(id)) finish(true)
-      else frame = requestAnimationFrame(poll)
+      else if (elementsFor(id).length) frame = requestAnimationFrame(poll)
     }
+    const stopWatch = watch(
+      () => elementsFor(id).length,
+      () => {
+        cancelAnimationFrame(frame)
+        poll()
+      },
+      { flush: 'post' }
+    )
     const timer = setTimeout(() => finish(false), timeoutMs)
     signal.addEventListener('abort', onAbort)
-    frame = requestAnimationFrame(poll)
+    poll()
   })
 }
 

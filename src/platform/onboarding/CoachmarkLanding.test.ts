@@ -19,7 +19,8 @@ function renderLanding() {
       title: 'Welcome to Apps',
       message: 'A quick tour of the essentials.',
       primaryLabel: 'Start tutorial',
-      skipLabel: 'Skip'
+      skipLabel: 'Skip',
+      waitingForTarget: false
     },
     global: { plugins: [i18n] }
   })

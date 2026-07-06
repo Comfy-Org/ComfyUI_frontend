@@ -2,7 +2,10 @@
   <div ref="overlayRef" class="pointer-events-none fixed inset-0">
     <div
       :class="
-        cn('pointer-events-auto absolute inset-0', !targetRect && 'bg-black/60')
+        cn(
+          'pointer-events-auto absolute inset-0',
+          !targetRect && 'bg-coach-scrim'
+        )
       "
       :style="blockerStyle"
     />
@@ -11,9 +14,8 @@
       data-testid="coach-spotlight"
       :class="
         cn(
-          'pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] outline-2 outline-white motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
-          outlinePulsing &&
-            'motion-safe:animate-[coach-pulse_1.2s_ease-in-out_infinite]'
+          'pointer-events-none absolute rounded-[10px] shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
+          outlinePulsing && 'motion-safe:animate-coach-pulse'
         )
       "
       :style="spotlightStyle"
@@ -24,7 +26,7 @@
       :aria-modal="!expectsTargetInteraction"
       :aria-labelledby="titleId"
       :aria-describedby="`${subtitleId} ${bodyId}`"
-      class="pointer-events-auto absolute max-h-[calc(100vh-72px)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
+      class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
       :style="cardStyle"
     >
       <CoachmarkCard
@@ -54,6 +56,7 @@
             v-if="!expectsTargetInteraction"
             variant="inverted"
             size="md"
+            :disabled="waitingForTarget"
             @click="emit('advance')"
           >
             {{ primaryLabel }}
@@ -92,8 +95,8 @@ import {
   noTargetCardLeft
 } from './coachmarkLayout'
 import type { CoachStep } from './onboardingTours'
+import { useCoachmarkFocusTrap } from './useCoachmarkFocusTrap'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
-import { useFocusTrap } from './useFocusTrap'
 
 const PULSE_IDLE_MS = 4000
 
@@ -106,7 +109,7 @@ const {
   skipLabel,
   countedStepIdx,
   countedStepsTotal,
-  suspendFocusGuard
+  waitingForTarget
 } = defineProps<{
   step: CoachStep
   title: string
@@ -116,7 +119,7 @@ const {
   skipLabel: string
   countedStepIdx: number
   countedStepsTotal: number
-  suspendFocusGuard: boolean
+  waitingForTarget: boolean
 }>()
 
 const emit = defineEmits<{
@@ -133,18 +136,17 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const stepRef = computed<CoachStep | null>(() => step)
 const { targetRect, targetEl, floatingStyles, isPositioned } =
-  useCoachmarkTarget(stepRef, cardRef)
+  useCoachmarkTarget(() => step, cardRef)
 
 const expectsTargetInteraction = computed(() => !!step.advanceOnTargetClick)
 // Last step's "Done" already dismisses, so hide Skip unless the step has no primary button.
 const showSkip = computed(() => !isLast || expectsTargetInteraction.value)
 
-const focusTrap = useFocusTrap({
+const focusTrap = useCoachmarkFocusTrap({
   cardRef,
   getTarget: () => targetEl.value,
-  isSuspended: () => suspendFocusGuard,
+  isSuspended: () => waitingForTarget,
   onEscape: () => emit('skip')
 })
 
@@ -201,10 +203,9 @@ onBeforeUnmount(() => {
   if (overlayRef.value) ZIndex.clear(overlayRef.value)
 })
 
-const viewport = () => ({
-  width: windowWidth.value,
-  height: windowHeight.value
-})
+function viewport() {
+  return { width: windowWidth.value, height: windowHeight.value }
+}
 
 const spotlightStyle = computed(() => {
   const r = targetRect.value
@@ -240,11 +241,3 @@ const cardStyle = computed(() => {
   }
 })
 </script>
-
-<style>
-@keyframes coach-pulse {
-  50% {
-    outline-color: rgb(255 255 255 / 0.4);
-  }
-}
-</style>
