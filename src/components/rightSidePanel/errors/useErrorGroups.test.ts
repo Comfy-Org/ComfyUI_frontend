@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -126,7 +127,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import {
+  getExecutionIdByNode,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useErrorGroups } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
@@ -207,6 +212,7 @@ describe('useErrorGroups', () => {
     setActivePinia(createPinia())
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
+    vi.mocked(getNodeByExecutionId).mockReset()
   })
 
   describe('missingPackGroups', () => {
@@ -1012,7 +1018,9 @@ describe('useErrorGroups', () => {
           ?.count
       ).toBe(2)
     })
+  })
 
+  describe('missing media counting', () => {
     it('counts missing media by affected node rows, not grouped filenames', async () => {
       const { store, groups } = createErrorGroups()
       store.surfaceMissingMedia([
@@ -1036,7 +1044,7 @@ describe('useErrorGroups', () => {
   })
 
   describe('selection emphasis', () => {
-    it('keeps prompt errors visible but unmatched when a node is selected', async () => {
+    it('never marks workflow-level prompt errors as matched by a selection', async () => {
       const { store, groups } = createErrorGroups()
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
@@ -1051,13 +1059,11 @@ describe('useErrorGroups', () => {
       }
       await nextTick()
 
-      // Prompt errors are workflow-level: still displayed under selection…
-      const promptGroup = groups.filteredGroups.value.find(
+      const promptGroup = groups.allErrorGroups.value.find(
         (g) =>
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
-      // …but never emphasized as belonging to the selected node.
       expect(
         groups.selectionMatchedGroupKeys.value.has(promptGroup!.groupKey)
       ).toBe(false)
@@ -1185,6 +1191,73 @@ describe('useErrorGroups', () => {
         groups.filteredGroups.value.find((g) => g.type === 'missing_node')
           ?.count
       ).toBe(1)
+    })
+
+    it('matches errors through graph resolution, not raw execution ids', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      // The error is keyed by a subgraph execution id ('2:5') that resolves
+      // to a different graph node id ('7') at the current graph level.
+      const selectedNode = { id: '7' }
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>(
+          String(nodeId) === '2:5' ? selectedNode : undefined
+        )
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([selectedNode])
+      store.lastNodeErrors = {
+        '2:5': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        }
+      }
+      await nextTick()
+
+      expect(groups.selectionErrorCount.value).toBe(1)
+      expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
+    })
+
+    it('matches interior errors when a subgraph container is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      // A container selection matches interior errors by execution-id prefix,
+      // even when the interior node does not resolve at the current level.
+      const containerNode = fromAny<SubgraphNode, unknown>(
+        Object.assign(Object.create(SubgraphNode.prototype), { id: '2' })
+      )
+      vi.mocked(getNodeByExecutionId).mockReturnValue(null)
+      vi.mocked(getExecutionIdByNode).mockReturnValue(
+        fromAny<NodeExecutionId, unknown>('2')
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([containerNode])
+      store.lastNodeErrors = {
+        '2:5': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        },
+        '9': {
+          class_type: 'CLIPLoader',
+          dependent_outputs: [],
+          errors: [
+            { type: 'file_not_found', message: 'File not found', details: '' }
+          ]
+        }
+      }
+      await nextTick()
+
+      expect(groups.selectionErrorCount.value).toBe(1)
+      expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
+      expect(groups.selectionMatchedCardIds.value.has('node-9')).toBe(false)
     })
   })
 })

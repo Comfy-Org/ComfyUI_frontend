@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import SwapNodeGroupRow from '@/platform/nodeReplacement/components/SwapNodeGroupRow.vue'
 
@@ -22,13 +23,7 @@ const { swapNodeGroups, highlightedNodeIds } = defineProps<{
 }>()
 
 function isGroupHighlighted(group: SwapNodeGroup) {
-  if (!highlightedNodeIds?.size) return false
-  return group.nodeTypes.some(
-    (nodeType) =>
-      typeof nodeType !== 'string' &&
-      nodeType.nodeId != null &&
-      highlightedNodeIds.has(String(nodeType.nodeId))
-  )
+  return someNodeTypeInSelection(group.nodeTypes, highlightedNodeIds)
 }
 
 const emit = defineEmits<{

@@ -9,11 +9,13 @@
         v-for="item in missingMediaItems"
         :key="item.key"
         data-testid="missing-media-row"
+        :aria-current="
+          highlightedNodeIds?.has(item.nodeId) ? 'true' : undefined
+        "
         :class="
           cn(
             'min-w-0',
-            highlightedNodeIds?.has(item.nodeId) &&
-              'rounded-sm bg-primary-background/10'
+            highlightedNodeIds?.has(item.nodeId) && SELECTION_EMPHASIS_CLASS
           )
         "
       >
@@ -53,6 +55,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import { SELECTION_EMPHASIS_CLASS } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'

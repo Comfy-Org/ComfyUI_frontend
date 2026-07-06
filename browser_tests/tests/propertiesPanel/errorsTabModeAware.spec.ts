@@ -312,6 +312,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.propertiesPanel.selectionContextStrip
       )
       await expect(strip).toBeVisible()
+      // The strip count is scoped to the selection (1 matched model),
+      // diverging from the global reference badge (2)
+      await expect(strip).toContainText('1 error')
 
       await comfyPage.canvas.click()
       await expect(strip).toBeHidden()
@@ -416,6 +419,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.propertiesPanel.selectionContextStrip
       )
       await expect(strip).toBeVisible()
+      await expect(strip).toContainText('1 error')
       await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })

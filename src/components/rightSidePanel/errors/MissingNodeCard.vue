@@ -107,6 +107,7 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
+import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
 
 const { showInfoButton, missingPackGroups, highlightedNodeIds } = defineProps<{
   showInfoButton: boolean
@@ -173,12 +174,6 @@ const hasInstalledPacksPendingRestart = computed(() =>
 )
 
 function isGroupHighlighted(group: MissingPackGroup) {
-  if (!highlightedNodeIds?.size) return false
-  return group.nodeTypes.some(
-    (nodeType) =>
-      typeof nodeType !== 'string' &&
-      nodeType.nodeId != null &&
-      highlightedNodeIds.has(String(nodeType.nodeId))
-  )
+  return someNodeTypeInSelection(group.nodeTypes, highlightedNodeIds)
 }
 </script>

@@ -1,10 +1,11 @@
 <template>
   <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
     <div
+      :aria-current="highlighted ? 'true' : undefined"
       :class="
         cn(
           'flex min-h-8 w-full items-center gap-1',
-          highlighted && 'rounded-sm bg-primary-background/10'
+          highlighted && SELECTION_EMPHASIS_CLASS
         )
       "
     >
@@ -223,6 +224,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { SELECTION_EMPHASIS_CLASS } from './selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'

@@ -24,6 +24,7 @@ import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { shouldRenderExecutionItemList } from './executionItemList'
+import { someNodeTypeInSelection } from './selectionEmphasis'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
@@ -594,38 +595,50 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return Array.from(map.values()).sort((a, b) => a.type.localeCompare(b.type))
   })
 
-  /** Builds an ErrorGroup from missingNodesError. Returns [] when none present. */
-  function buildMissingNodeGroups(): ErrorGroup[] {
+  /**
+   * Builds ErrorGroups from missingNodesError. Returns [] when none present.
+   * `includeGroup` narrows which swap/pack groups are counted (used to scope
+   * emphasis to the canvas selection); groups reduced to zero are omitted.
+   */
+  function buildMissingNodeGroups(
+    includeGroup: (nodeTypes: MissingNodeType[]) => boolean = () => true
+  ): ErrorGroup[] {
     const error = missingNodesStore.missingNodesError
     if (!error) return []
 
     const groups: ErrorGroup[] = []
+    const swapCount = swapNodeGroups.value.filter((group) =>
+      includeGroup(group.nodeTypes)
+    ).length
+    const packCount = missingPackGroups.value.filter((group) =>
+      includeGroup(group.nodeTypes)
+    ).length
 
-    if (swapNodeGroups.value.length > 0) {
+    if (swapCount > 0) {
       groups.push({
         type: 'swap_nodes' as const,
         groupKey: 'swap_nodes',
-        count: swapNodeGroups.value.length,
+        count: swapCount,
         priority: 0,
         ...resolveMissingErrorMessage({
           kind: 'swap_nodes',
-          nodeTypes: missingNodesStore.missingNodesError?.nodeTypes ?? [],
-          count: swapNodeGroups.value.length,
+          nodeTypes: error.nodeTypes,
+          count: swapCount,
           isCloud
         })
       })
     }
 
-    if (missingPackGroups.value.length > 0) {
+    if (packCount > 0) {
       groups.push({
         type: 'missing_node' as const,
         groupKey: 'missing_node',
-        count: missingPackGroups.value.length,
+        count: packCount,
         priority: 1,
         ...resolveMissingErrorMessage({
           kind: 'missing_node',
           nodeTypes: error.nodeTypes,
-          count: missingPackGroups.value.length,
+          count: packCount,
           isCloud
         })
       })
@@ -712,31 +725,31 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return executionNodeId ? isAssetErrorInSelection(executionNodeId) : false
   }
 
-  const filteredMissingModelGroups = computed(() => {
-    if (!selectedNodeInfo.value.nodeIds) return missingModelGroups.value
+  /** Model groups narrowed to the selection, for emphasis derivation only. */
+  const missingModelGroupsForSelection = computed(() => {
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
-    const filtered = candidates.filter(
+    const matched = candidates.filter(
       (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
-    if (!filtered.length) return []
-    return groupMissingModelCandidates(filtered, isCloud)
+    if (!matched.length) return []
+    return groupMissingModelCandidates(matched, isCloud)
   })
 
-  const filteredMissingMediaGroups = computed(() => {
-    if (!selectedNodeInfo.value.nodeIds) return missingMediaGroups.value
+  /** Media groups narrowed to the selection, for emphasis derivation only. */
+  const missingMediaGroupsForSelection = computed(() => {
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
-    const filtered = candidates.filter(
+    const matched = candidates.filter(
       (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
-    if (!filtered.length) return []
-    return groupCandidatesByMediaType(filtered)
+    if (!matched.length) return []
+    return groupCandidatesByMediaType(matched)
   })
 
-  function buildMissingModelGroupsFiltered(): ErrorGroup[] {
-    if (!filteredMissingModelGroups.value.length) return []
-    const count = countMissingModels(filteredMissingModelGroups.value)
+  function buildMissingModelGroupsForSelection(): ErrorGroup[] {
+    if (!missingModelGroupsForSelection.value.length) return []
+    const count = countMissingModels(missingModelGroupsForSelection.value)
     return [
       {
         type: 'missing_model' as const,
@@ -745,7 +758,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         priority: 2,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
-          groups: filteredMissingModelGroups.value,
+          groups: missingModelGroupsForSelection.value,
           count,
           isCloud
         })
@@ -753,10 +766,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   }
 
-  function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
-    if (!filteredMissingMediaGroups.value.length) return []
+  function buildMissingMediaGroupsForSelection(): ErrorGroup[] {
+    if (!missingMediaGroupsForSelection.value.length) return []
     const totalRows = countMissingMediaReferences(
-      filteredMissingMediaGroups.value
+      missingMediaGroupsForSelection.value
     )
     return [
       {
@@ -766,7 +779,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         priority: 3,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
-          groups: filteredMissingMediaGroups.value,
+          groups: missingMediaGroupsForSelection.value,
           count: totalRows,
           isCloud
         })
@@ -789,85 +802,26 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   })
 
-  function nodeTypeMatchesSelection(nodeType: MissingNodeType): boolean {
-    return (
-      typeof nodeType !== 'string' &&
-      nodeType.nodeId != null &&
-      isAssetCandidateInSelection(nodeType.nodeId)
-    )
-  }
-
-  /** Missing-node/swap groups narrowed to the current selection. */
-  function buildMissingNodeGroupsScoped(): ErrorGroup[] {
-    const error = missingNodesStore.missingNodesError
-    if (!error) return []
-
-    const groups: ErrorGroup[] = []
-    const matchedSwapGroupCount = swapNodeGroups.value.filter((group) =>
-      group.nodeTypes.some(nodeTypeMatchesSelection)
-    ).length
-    const matchedPackGroupCount = missingPackGroups.value.filter((group) =>
-      group.nodeTypes.some(nodeTypeMatchesSelection)
-    ).length
-
-    if (matchedSwapGroupCount > 0) {
-      groups.push({
-        type: 'swap_nodes' as const,
-        groupKey: 'swap_nodes',
-        count: matchedSwapGroupCount,
-        priority: 0,
-        ...resolveMissingErrorMessage({
-          kind: 'swap_nodes',
-          nodeTypes: error.nodeTypes,
-          count: matchedSwapGroupCount,
-          isCloud
-        })
-      })
-    }
-
-    if (matchedPackGroupCount > 0) {
-      groups.push({
-        type: 'missing_node' as const,
-        groupKey: 'missing_node',
-        count: matchedPackGroupCount,
-        priority: 1,
-        ...resolveMissingErrorMessage({
-          kind: 'missing_node',
-          nodeTypes: error.nodeTypes,
-          count: matchedPackGroupCount,
-          isCloud
-        })
-      })
-    }
-
-    return groups.sort((a, b) => a.priority - b.priority)
-  }
-
   /**
    * The subset of error groups whose errors belong to the current canvas
-   * selection. Equals the full set when nothing is selected. Display always
-   * shows all groups; this subset only drives selection emphasis
-   * (auto-expand, card highlight, context strip).
+   * selection. Empty when nothing is selected. Display always shows all
+   * groups; this subset only drives selection emphasis (auto-expand, card
+   * highlight, context strip).
    */
   const selectionScopedGroups = computed<ErrorGroup[]>(() => {
-    const groupsMap = new Map<string, GroupEntry>()
+    if (!hasSelection.value) return []
 
+    const groupsMap = new Map<string, GroupEntry>()
     processPromptError(groupsMap, true)
     processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
-    const filterByNode = selectedNodeInfo.value.nodeIds !== null
-
     return [
-      ...(filterByNode
-        ? buildMissingNodeGroupsScoped()
-        : buildMissingNodeGroups()),
-      ...(filterByNode
-        ? buildMissingModelGroupsFiltered()
-        : buildMissingModelGroups()),
-      ...(filterByNode
-        ? buildMissingMediaGroupsFiltered()
-        : buildMissingMediaGroups()),
+      ...buildMissingNodeGroups((nodeTypes) =>
+        someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
+      ),
+      ...buildMissingModelGroupsForSelection(),
+      ...buildMissingMediaGroupsForSelection(),
       ...toSortedGroups(groupsMap)
     ]
   })
