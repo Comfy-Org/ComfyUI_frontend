@@ -399,6 +399,10 @@ test.describe('FE-910 marquee selection and select all', () => {
     await page.keyboard.up('Control')
 
     await expect(tab.selectedCards).toHaveCount(1)
+    await expect(tab.getAssetCardByName('alpha')).toHaveAttribute(
+      'data-selected',
+      'true'
+    )
   })
 
   test('Ctrl/Cmd-dragging from an asset card starts a marquee selection', async ({
