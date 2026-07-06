@@ -2004,6 +2004,14 @@
     "coreNodesFromVersion": "Core nodes from version {version}:",
     "unknownVersion": "unknown"
   },
+  "errorResolution": {
+    "title": "Fix workflow errors",
+    "backToApp": "Back to App Mode",
+    "allResolved": "All errors resolved",
+    "allResolvedDesc": "You're ready to go back to App Mode and run this workflow.",
+    "showErrors": "Show errors",
+    "hideErrors": "Hide errors"
+  },
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",

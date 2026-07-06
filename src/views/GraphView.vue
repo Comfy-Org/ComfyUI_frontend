@@ -29,6 +29,7 @@
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
+  <ErrorResolutionOverlay />
 </template>
 
 <script setup lang="ts">
@@ -47,6 +48,7 @@ import {
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
+import ErrorResolutionOverlay from '@/components/errorResolution/ErrorResolutionOverlay.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
