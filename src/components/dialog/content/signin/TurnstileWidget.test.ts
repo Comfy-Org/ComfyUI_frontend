@@ -344,5 +344,55 @@ describe('TurnstileWidget', () => {
         vi.useRealTimers()
       }
     })
+
+    it('resets the widget to fetch a fresh challenge on token expiry', async () => {
+      const { api, options } = fakeTurnstile()
+      mockLoadTurnstile.mockResolvedValue(api)
+      window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+
+      renderWidget()
+      await flush()
+
+      options()!.callback!('token-abc')
+      options()!['expired-callback']!()
+      await flush()
+
+      expect(api.reset).toHaveBeenCalledWith('widget-id')
+    })
+
+    it('falls back if a post-solve expiry is not followed by a fresh token within the load timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        const { api, options } = fakeTurnstile()
+        mockLoadTurnstile.mockResolvedValue(api)
+        window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+
+        const { emitted } = renderWidget()
+        await vi.advanceTimersByTimeAsync(0)
+
+        // Establish a solved, available widget: an initial error marks it
+        // unavailable, then solving a challenge clears that (the same
+        // transition the existing "clears the unavailable fallback" test
+        // verifies), so the expiry below is the only thing driving fallback.
+        options()!['error-callback']!()
+        options()!.callback!('token-abc')
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([false])
+
+        // The token later expires (e.g. tab backgrounded past its ~300s
+        // lifetime) without the widget itself erroring.
+        options()!['expired-callback']!()
+        await vi.advanceTimersByTimeAsync(0)
+
+        // A fresh challenge was requested, but nothing solves it before the
+        // re-armed load timeout elapses, so submission must eventually be
+        // unblocked rather than staying stuck forever.
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([false])
+        await vi.advanceTimersByTimeAsync(9_000)
+
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 })

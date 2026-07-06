@@ -97,6 +97,14 @@ onMounted(async () => {
       'expired-callback': () => {
         clearToken()
         errorMessage.value = t('auth.turnstile.expired')
+        if (widgetId && window.turnstile) {
+          window.turnstile.reset(widgetId)
+          // A solved token can expire on its own (e.g. the tab was
+          // backgrounded past the token's ~300s lifetime) without the widget
+          // ever erroring, so proactively request a fresh challenge and
+          // re-arm the load timeout in case it doesn't resolve in time.
+          armTimeout()
+        }
       },
       'error-callback': () => {
         clearToken()
