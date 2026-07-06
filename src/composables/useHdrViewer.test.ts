@@ -258,7 +258,7 @@ vi.mock('@/renderer/hdr/hdrStats', () => ({
   computeChannelHistograms: mocks.computeChannelHistograms
 }))
 
-import { CHANNEL_MODES, useHdrViewer } from './useHdrViewer'
+import { useHdrViewer } from './useHdrViewer'
 
 type HdrViewer = ReturnType<typeof useHdrViewer>
 
@@ -327,10 +327,6 @@ describe('useHdrViewer', () => {
     for (const app of mountedApps) app.unmount()
     mountedApps = []
     vi.unstubAllGlobals()
-  })
-
-  it('exposes all channel modes', () => {
-    expect(CHANNEL_MODES).toEqual(['rgb', 'r', 'g', 'b', 'a', 'luminance'])
   })
 
   it('mounts hdr textures through the RGBE loader and exposes image metadata', async () => {
