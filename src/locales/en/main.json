@@ -189,7 +189,6 @@
     "searchPlaceholder": "Search {subject}...",
     "downloadWithSize": "Download ({size})",
     "noResultsFound": "No Results Found",
-    "loading": "Loading...",
     "noResults": "No Results",
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",

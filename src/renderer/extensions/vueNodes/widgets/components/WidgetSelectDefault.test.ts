@@ -351,6 +351,35 @@ describe('WidgetSelectDefault', () => {
       ).not.toBeInTheDocument()
       expect(optionLabels()).toEqual(options)
     })
+
+    it('cancels the pending resolve timer when the dropdown is closed early', async () => {
+      const options = Array.from({ length: 101 }, (_, i) => `option-${i}`)
+      const { user } = renderComponent(createWidget(options))
+
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.click(screen.getByTestId('widget-select-default-trigger'))
+      await nextTick()
+
+      const icon = screen.getByTestId('widget-select-trigger-icon')
+      expect(icon).toHaveClass('animate-spin')
+
+      await user.keyboard('{Escape}')
+      await nextTick()
+
+      expect(
+        screen.queryByTestId('widget-select-default-loading')
+      ).not.toBeInTheDocument()
+
+      await flushPromises()
+      await nextTick()
+
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.click(screen.getByTestId('widget-select-default-trigger'))
+      await nextTick()
+
+      expect(icon).toHaveClass('animate-spin')
+      expect(screen.getByTestId('widget-select-default-loading')).toBeVisible()
+    })
   })
 
   describe('rendered state', () => {

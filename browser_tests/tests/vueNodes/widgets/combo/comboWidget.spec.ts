@@ -312,6 +312,8 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
   })
 
   test('Dropdown displays over Selection Toolbox', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+    await comfyPage.searchBoxV2.setup()
     await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
 
     const nodeName = 'Resize Image/Mask'

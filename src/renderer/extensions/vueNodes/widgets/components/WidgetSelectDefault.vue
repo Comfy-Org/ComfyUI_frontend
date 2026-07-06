@@ -132,7 +132,7 @@
                 :options="filteredOptions"
                 :estimate-size="32"
                 :overscan="20"
-                :text-content="(opt: SelectOption) => opt.label"
+                :text-content="getVirtualizerTextContent"
               >
                 <ComboboxItem
                   :key="option.key"
@@ -239,7 +239,10 @@ function fromComboboxValue(value: string | undefined) {
 }
 
 // So reka scrolls to the selected option on open instead of the top.
-function isSelectedOption(option: SelectOption | string, value: string) {
+function isSelectedOption(
+  option: SelectOption | string,
+  value: string
+): boolean {
   const optionValue = typeof option === 'string' ? option : option.comboboxValue
   return optionValue === value
 }
@@ -285,6 +288,7 @@ const searchInputContainerRef = ref<HTMLElement>()
 const { start: startResolveTimer, stop: stopResolveTimer } = useTimeoutFn(
   () => {
     isResolving.value = false
+    refreshOptions()
   },
   0,
   { immediate: false }
@@ -318,22 +322,27 @@ function getOptionLabel(value: string) {
   }
 }
 
-const normalizedOptions = computed<SelectOption[]>(() => {
-  void optionsRefreshKey.value
+function getVirtualizerTextContent(option: SelectOption): string {
+  return option.label
+}
 
-  return resolveValues(widgetOptions.value?.values).map((value, index) => ({
+const resolvedValues = computed(() => {
+  void optionsRefreshKey.value
+  return resolveValues(widgetOptions.value?.values)
+})
+
+const knownOptionValues = computed(() => new Set(resolvedValues.value))
+
+const isFilterable = computed(() => resolvedValues.value.length > 4)
+
+const normalizedOptions = computed<SelectOption[]>(() => {
+  return resolvedValues.value.map((value, index) => ({
     comboboxValue: toComboboxValue(value),
     key: `${value}-${index}`,
     label: getOptionLabel(value),
     value
   }))
 })
-
-const knownOptionValues = computed(
-  () => new Set(normalizedOptions.value.map((option) => option.value))
-)
-
-const isFilterable = computed(() => normalizedOptions.value.length > 4)
 
 const filteredOptions = computed(() => {
   if (isResolving.value) return []
@@ -357,14 +366,10 @@ const viewportStyle = computed<CSSProperties>(() => ({
 }))
 
 const longestLabel = computed(() =>
-  filteredOptions.value.reduce(
+  normalizedOptions.value.reduce(
     (longest, opt) => (opt.label.length > longest.length ? opt.label : longest),
     ''
   )
-)
-
-const selectedOption = computed(() =>
-  normalizedOptions.value.find((option) => option.value === modelValue.value)
 )
 
 const comboboxValue = computed(() => {
@@ -378,13 +383,14 @@ const isInvalid = computed(
   () =>
     modelValue.value !== undefined &&
     modelValue.value !== '' &&
-    !selectedOption.value
+    !knownOptionValues.value.has(modelValue.value)
 )
 
 const selectedLabel = computed(() => {
-  if (selectedOption.value) return selectedOption.value.label
-  if (isInvalid.value) return String(modelValue.value)
-  return ''
+  const value = modelValue.value
+  if (value === undefined) return ''
+  if (!knownOptionValues.value.has(value)) return String(value)
+  return getOptionLabel(value)
 })
 
 function selectOption(rekaValue: string | undefined) {
@@ -409,10 +415,10 @@ function handleOpenChange(open: boolean) {
   isOpen.value = open
 
   if (open) {
-    refreshOptions()
     const values = widgetOptions.value?.values
     if (!values || (Array.isArray(values) && values.length <= 100)) {
       isResolving.value = false
+      refreshOptions()
     } else {
       isResolving.value = true
       startResolveTimer()
