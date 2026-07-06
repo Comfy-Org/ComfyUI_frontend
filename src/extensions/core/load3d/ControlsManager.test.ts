@@ -266,6 +266,19 @@ describe('ControlsManager', () => {
       expect(event.defaultPrevented).toBe(false)
     })
 
+    it('disarms after pointercancel settles', async () => {
+      const { canvas, releasePoint } = setup()
+
+      rightPress(canvas)
+      canvas.dispatchEvent(
+        new PointerEvent('pointercancel', { button: -1, bubbles: true })
+      )
+      await nextFrame()
+      const event = fireContextMenu(releasePoint)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
     it('does nothing without an owning node root', () => {
       const renderer = makeRenderer({ withParent: true })
       manager = new ControlsManager(renderer, camera, events)

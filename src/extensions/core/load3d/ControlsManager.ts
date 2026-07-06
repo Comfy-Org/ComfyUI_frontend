@@ -53,12 +53,12 @@ export class ControlsManager implements ControlsManagerInterface {
 
   private readonly suppressContextMenu = (event: Event): void => {
     event.preventDefault()
-    event.stopPropagation()
+    event.stopImmediatePropagation()
     this.suppressionScope = null
   }
 
   private readonly scheduleContextMenuDisarm = (event: PointerEvent): void => {
-    if (event.button !== 2) return
+    if (event.type === 'pointerup' && event.button !== 2) return
     requestAnimationFrame(() => this.disarmContextMenuSuppression())
   }
 
