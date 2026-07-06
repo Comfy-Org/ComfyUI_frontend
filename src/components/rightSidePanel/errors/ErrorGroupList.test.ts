@@ -247,8 +247,6 @@ describe('ErrorGroupList selection emphasis', () => {
     const { user, rerender } = renderList(pinia)
     const canvasStore = useCanvasStore(pinia)
 
-    // Collapse a group in list mode, then switch the same instance to
-    // carousel (the resolution panel does this when the viewport narrows)
     const loaderSection = getSectionByTitle('Validation failed')
     const [loaderHeader] = within(loaderSection).getAllByRole('button')
     await user.click(loaderHeader)
@@ -256,24 +254,29 @@ describe('ErrorGroupList selection emphasis', () => {
 
     await rerender({ carousel: true })
 
-    // Collapse state is ignored: the body renders regardless…
     expect(
-      within(getSectionByTitle('Validation failed')).getByText('LoaderNode')
+      within(getSectionByTitle('Validation failed')).getByText('LoaderNode'),
+      'the carousel ignores collapse state carried over from the list'
     ).toBeInTheDocument()
-    // …and no collapse affordances exist at all
-    expect(screen.queryByLabelText('Collapse')).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Collapse'),
+      'the carousel renders no collapse affordances'
+    ).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Expand')).not.toBeInTheDocument()
 
-    // Selection snaps to the matched slide instead of collapsing others
     canvasStore.selectedItems = fromAny<
       typeof canvasStore.selectedItems,
       unknown
     >([SAMPLER_NODE])
     await waitFor(() => {
-      expect(scrollTo).toHaveBeenCalled()
+      expect(
+        scrollTo,
+        'selection snaps to the matched slide'
+      ).toHaveBeenCalled()
     })
     expect(
-      within(getSectionByTitle('Validation failed')).getByText('LoaderNode')
+      within(getSectionByTitle('Validation failed')).getByText('LoaderNode'),
+      'unmatched slides stay expanded instead of collapsing'
     ).toBeInTheDocument()
   })
 })

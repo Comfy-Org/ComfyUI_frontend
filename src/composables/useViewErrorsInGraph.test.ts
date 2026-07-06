@@ -117,13 +117,15 @@ describe('useViewErrorsInGraph', () => {
     expect(rightSidePanelStore.isOpen).toBeFalsy()
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
 
-    // The minimap is collapsed and the graph is fit into view on entry
-    expect(settingsMock.set).toHaveBeenCalledWith(
-      'Comfy.Minimap.Visible',
-      false
-    )
+    expect(
+      settingsMock.set,
+      'the minimap collapses on entry'
+    ).toHaveBeenCalledWith('Comfy.Minimap.Visible', false)
     await vi.waitFor(() => {
-      expect(executeCommandMock).toHaveBeenCalledWith('Comfy.Canvas.FitView')
+      expect(
+        executeCommandMock,
+        'the graph is fit into view on entry'
+      ).toHaveBeenCalledWith('Comfy.Canvas.FitView')
     })
   })
 

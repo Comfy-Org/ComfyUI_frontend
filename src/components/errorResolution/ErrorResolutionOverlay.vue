@@ -5,7 +5,7 @@
       data-testid="error-resolution-back"
       variant="secondary"
       size="lg"
-      class="pointer-events-auto fixed top-2 left-2 z-1000"
+      class="fixed top-2 left-2 z-1000"
       @click="backToAppMode"
     >
       <i class="icon-[lucide--arrow-left] size-4" />

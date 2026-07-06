@@ -375,7 +375,8 @@
                 cn(
                   'rounded-full transition-all',
                   index === activeSlide ? 'size-2' : 'size-1.5',
-                  isSlideMatched(group.groupKey)
+                  hasSelectionEmphasis &&
+                    selectionMatchedGroupKeys.has(group.groupKey)
                     ? 'bg-primary-background-hover'
                     : index === activeSlide
                       ? 'bg-base-foreground'
@@ -432,7 +433,7 @@ interface ExecutionItemListEntry {
   displayDetails?: string
 }
 
-const { showSearch = true, carousel = false } = defineProps<{
+const { showSearch = true, carousel } = defineProps<{
   showSearch?: boolean
   /** Render error groups as horizontally swipeable cards (narrow screens). */
   carousel?: boolean
@@ -604,26 +605,24 @@ const selectionEmphasisSignature = computed(() =>
     : ''
 )
 
-function isSlideMatched(groupKey: string): boolean {
-  return (
-    hasSelectionEmphasis.value && selectionMatchedGroupKeys.value.has(groupKey)
-  )
-}
-
-/**
- * Selection acts as emphasis, not a filter, translated per layout. In the
- * list, the groups containing the selected nodes' errors expand and the
- * rest collapse; when the emphasis ends, everything re-expands into the
- * workflow overview. The carousel never collapses (a collapsed slide reads
- * as an empty card) — it snaps to the first matched slide instead, and the
- * dots mark every matched slide.
- */
+// Emphasis per layout: the list expands matched groups and collapses the
+// rest; the carousel never collapses (a collapsed slide reads as an empty
+// card) and snaps to the first matched slide instead.
 watch(
   selectionEmphasisSignature,
   (signature, previousSignature) => {
+    if (!signature) {
+      if (!previousSignature) return
+      // Restore regardless of layout: collapse state persists across the
+      // carousel (which ignores it), so a stale emphasis must not resurface
+      // when the panel returns to the list layout.
+      for (const groupKey of Object.keys(collapseState)) {
+        setSectionCollapsed(groupKey, false)
+      }
+      return
+    }
+    const matchedKeys = selectionMatchedGroupKeys.value
     if (carousel) {
-      if (!signature) return
-      const matchedKeys = selectionMatchedGroupKeys.value
       const matchedIndex = filteredGroups.value.findIndex((group) =>
         matchedKeys.has(group.groupKey)
       )
@@ -632,14 +631,6 @@ watch(
       void nextTick(() => scrollToSlide(matchedIndex))
       return
     }
-    if (!signature) {
-      if (!previousSignature) return
-      for (const groupKey of Object.keys(collapseState)) {
-        setSectionCollapsed(groupKey, false)
-      }
-      return
-    }
-    const matchedKeys = selectionMatchedGroupKeys.value
     for (const group of allErrorGroups.value) {
       setSectionCollapsed(group.groupKey, !matchedKeys.has(group.groupKey))
     }

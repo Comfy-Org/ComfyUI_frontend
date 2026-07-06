@@ -7,29 +7,35 @@
         isNarrow
           ? 'inset-x-0 top-0 border-b'
           : cn(
-              'top-14 right-1 w-90 max-w-[calc(100vw-0.5rem)] rounded-lg border shadow-interface',
-              isMinimapVisible ? 'bottom-66' : 'bottom-[54px]'
+              // Centered in the band above the canvas menu (or the open
+              // minimap): equal 10%-of-band gaps top and bottom
+              'right-1 w-90 max-w-[calc(100vw-0.5rem)] rounded-lg border shadow-interface',
+              isMinimapVisible
+                ? 'top-[calc((100%-258px)/10)] bottom-[calc(258px+(100%-258px)/10)]'
+                : 'top-[calc((100%-58px)/10)] bottom-[calc(58px+(100%-58px)/10)]'
             )
       )
     "
     :aria-label="t('errorResolution.title')"
   >
-    <div class="flex min-w-0 shrink-0 items-center gap-2 p-2">
+    <div
+      v-if="isNarrow"
+      class="flex min-w-0 shrink-0 items-center gap-2 bg-base-foreground/5 p-2"
+    >
       <Button
-        v-if="isNarrow"
         data-testid="error-resolution-back"
-        variant="secondary"
-        class="shrink-0"
+        variant="base"
+        size="icon"
+        class="shrink-0 border border-interface-stroke"
+        :aria-label="t('errorResolution.backToApp')"
         @click="emit('back')"
       >
         <i class="icon-[lucide--arrow-left] size-4" />
-        {{ t('errorResolution.backToApp') }}
       </Button>
-
       <template v-if="isResolved">
         <i
           aria-hidden="true"
-          class="icon-[lucide--circle-check] size-4 shrink-0 text-success-background"
+          class="icon-[lucide--circle-check] size-5 shrink-0 text-success-background"
         />
         <span class="min-w-0 flex-1 truncate text-sm font-semibold">
           {{ t('errorResolution.allResolved') }}
@@ -37,21 +43,27 @@
       </template>
       <template v-else>
         <span
-          class="flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive-background/15 text-xs font-extrabold text-destructive-background-hover tabular-nums"
+          class="flex h-10 min-w-7 shrink-0 items-center justify-center px-1 text-2xl/none font-extrabold text-destructive-background-hover tabular-nums"
         >
           {{ totalErrorCount }}
         </span>
-        <span class="min-w-0 flex-1 truncate text-sm font-semibold">
-          {{
-            isNarrow
-              ? t('rightSidePanel.errorsDetected', totalErrorCount)
-              : t('errorResolution.title')
-          }}
-        </span>
+        <span
+          aria-hidden="true"
+          class="h-8 w-px shrink-0 bg-interface-stroke"
+        />
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5 px-1">
+          <span
+            class="truncate text-xs/tight font-semibold text-base-foreground"
+          >
+            {{ t('rightSidePanel.errorsDetected', totalErrorCount) }}
+          </span>
+          <span class="truncate text-2xs/tight text-muted-foreground">
+            {{ t('rightSidePanel.resolveBeforeRun') }}
+          </span>
+        </div>
       </template>
 
       <Button
-        v-if="isNarrow"
         variant="textonly"
         size="icon"
         class="shrink-0"
@@ -86,6 +98,9 @@
             aria-hidden="true"
             class="icon-[lucide--circle-check] size-10 text-success-background"
           />
+          <p class="m-0 text-sm font-semibold text-base-foreground">
+            {{ t('errorResolution.allResolved') }}
+          </p>
           <p class="m-0 text-sm text-muted-foreground">
             {{ t('errorResolution.allResolvedDesc') }}
           </p>
@@ -96,7 +111,7 @@
         </div>
         <ErrorGroupList
           v-else
-          :show-search="!isNarrow"
+          :show-search="false"
           :carousel="isNarrow"
           class="min-h-0 flex-1"
         />
