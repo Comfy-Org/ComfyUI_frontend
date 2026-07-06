@@ -189,13 +189,12 @@ describe('ComfyApp', () => {
   })
 
   describe('graph (deprecated getter)', () => {
-    it('returns undefined before the root graph is initialized', () => {
+    it('returns undefined until the root graph is initialized', () => {
       expect(app.graph).toBeUndefined()
-    })
 
-    it('returns the root graph once initialized', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
+
       expect(app.graph).toBe(graph)
     })
   })
