@@ -216,6 +216,40 @@ describe('dialogStore', () => {
       expect(store.dialogStack).toHaveLength(10)
     })
 
+    it('keeps the stack capped when evicted onClose opens another dialog', () => {
+      const store = useDialogStore()
+      const onClose = vi.fn(() => {
+        store.showDialog({
+          key: 'reentrant-dialog',
+          component: MockComponent
+        })
+      })
+
+      store.showDialog({
+        key: 'evicted-dialog',
+        component: MockComponent,
+        priority: 10,
+        dialogComponentProps: { onClose }
+      })
+
+      for (let i = 0; i < 9; i++) {
+        store.showDialog({
+          key: `filler-${i}`,
+          component: MockComponent
+        })
+      }
+
+      store.showDialog({
+        key: 'overflow-dialog',
+        component: MockComponent
+      })
+
+      expect(onClose).toHaveBeenCalledTimes(1)
+      expect(store.isDialogOpen('evicted-dialog')).toBe(false)
+      expect(store.isDialogOpen('reentrant-dialog')).toBe(true)
+      expect(store.dialogStack).toHaveLength(10)
+    })
+
     it('evicts the most recently shown dialog when priorities are equal', () => {
       const store = useDialogStore()
       const onClose = vi.fn()
