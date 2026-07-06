@@ -2,6 +2,7 @@ import type { DetachedWindowAPI } from 'happy-dom'
 import { createPinia, disposePinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import type { Ref } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -60,10 +61,6 @@ const APP_MODE_TARGETS: CoachId[] = [
   'outputs',
   'assets-panel'
 ]
-
-function flush() {
-  return new Promise((resolve) => setTimeout(resolve))
-}
 
 function seenTours(): string[] {
   return (settings.store.get(TOUR_SEEN_SETTING) as string[] | undefined) ?? []
@@ -137,28 +134,28 @@ describe('onboardingTourStore', () => {
   it('auto-opens when entering a populated app it has not seen', async () => {
     mountStore()
     enterApp('app', true)
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(1)
   })
 
   it('auto-opens when instantiated in an already-populated app', async () => {
     enterApp('app', true)
     mountStore()
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(1)
   })
 
   it('does not auto-open in an empty app with no linear controls', async () => {
     mountStore()
     enterApp('app', false)
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(0)
   })
 
   it('does not auto-open in arrange (builder) mode', async () => {
     mountStore()
     enterApp('builder:arrange', true)
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(0)
   })
 
@@ -166,7 +163,7 @@ describe('onboardingTourStore', () => {
     setViewport({ width: 500, height: 800 })
     enterApp('app', true)
     mountStore()
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(0)
   })
 
@@ -174,7 +171,7 @@ describe('onboardingTourStore', () => {
     settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
     mountStore()
     enterApp('app', true)
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(0)
   })
 
@@ -182,7 +179,7 @@ describe('onboardingTourStore', () => {
     settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(1)
   })
 
@@ -190,13 +187,13 @@ describe('onboardingTourStore', () => {
     settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
     const store = mountStore()
     enterApp('app', false)
-    await flush()
+    await nextTick()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
     expect(store.step?.name).toBe('landing')
 
     enterApp('graph', false)
-    await flush()
+    await nextTick()
 
     expect(store.step).toBeNull()
     const skipped = telemetry.track.mock.calls.find(
@@ -209,11 +206,11 @@ describe('onboardingTourStore', () => {
     registerAppModeTargets()
     const store = mountStore()
     enterApp('app', true)
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(1)
 
     enterApp('app', false)
-    await flush()
+    await nextTick()
 
     expect(store.step).not.toBeNull()
   })
@@ -221,7 +218,7 @@ describe('onboardingTourStore', () => {
   it('marks the tour seen when it ends normally', async () => {
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
     store.skip()
     expect(seenTours()).toContain('appMode')
 
@@ -265,12 +262,12 @@ describe('onboardingTourStore', () => {
   it('advances once a deferred target mounts during the wait', async () => {
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
     store.next()
     expect(store.waitingForTarget).toBe(true)
 
     mountTarget('inputs-list')
-    await flush()
+    await nextTick()
 
     expect(store.waitingForTarget).toBe(false)
     expect(store.step?.coachId).toBe('inputs-list')
@@ -314,11 +311,11 @@ describe('onboardingTourStore', () => {
     registerAppModeTargets()
     const store = mountStore()
     enterApp('app', true)
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(1)
 
     enterApp('graph', true)
-    await flush()
+    await nextTick()
 
     expect(store.step).toBeNull()
     expect(seenTours()).not.toContain('appMode')
@@ -328,7 +325,7 @@ describe('onboardingTourStore', () => {
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'trigger_lost' })
 
     enterApp('app', true)
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(2)
   })
 
@@ -354,7 +351,7 @@ describe('onboardingTourStore', () => {
     const store = mountStore()
     store.replayTour('appMode')
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
     expect(startedCount()).toBe(1)
   })
 
@@ -362,12 +359,12 @@ describe('onboardingTourStore', () => {
     registerAppModeTargets()
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
 
     // Capped so a stuck tour fails instead of hanging.
     for (let i = 0; i < 12 && !seenTours().includes('appMode'); i++) {
       store.next()
-      await flush()
+      await nextTick()
     }
 
     expect(seenTours()).toContain('appMode')
@@ -384,20 +381,20 @@ describe('onboardingTourStore', () => {
     )
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
 
     expect(store.countedStepsTotal).toBe(4)
     // Advance landing -> inputs -> run -> outputs, then onto the assets step.
     for (let i = 0; i < 4; i++) {
       store.next()
-      await flush()
+      await nextTick()
     }
     // The assets step defers on its panel; the tab auto-opens while it waits.
     expect(store.waitingForTarget).toBe(true)
     expect(useSidebarTabStore().activeSidebarTabId).toBe('assets')
 
     mountTarget('assets-panel')
-    await flush()
+    await nextTick()
 
     expect(store.waitingForTarget).toBe(false)
     expect(store.step?.coachId).toBe('assets-panel')
@@ -411,10 +408,10 @@ describe('onboardingTourStore', () => {
     expect(sidebar.activeSidebarTabId).toBe('assets')
 
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
     for (let i = 0; i < 4; i++) {
       store.next()
-      await flush()
+      await nextTick()
     }
 
     expect(store.step?.coachId).toBe('assets-panel')
@@ -425,17 +422,17 @@ describe('onboardingTourStore', () => {
     registerAppModeTargets()
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
 
     store.next()
-    await flush()
+    await nextTick()
     store.next()
-    await flush()
+    await nextTick()
     expect(store.step?.coachId).toBe('app-run-button')
     expect(store.canGoBack).toBe(true)
 
     store.back()
-    await flush()
+    await nextTick()
     expect(store.step?.coachId).toBe('inputs-list')
   })
 
@@ -448,7 +445,7 @@ describe('onboardingTourStore', () => {
     registerAppModeTargets()
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
 
     // The landing's `primary` entry overrides only the primary label.
     expect(store.step?.landing).toBe(true)
@@ -458,13 +455,13 @@ describe('onboardingTourStore', () => {
     expect(store.countedStepsTotal).toBe(4)
 
     store.next()
-    await flush()
+    await nextTick()
     expect(store.primaryLabel).toBe('Next')
     expect(store.skipLabel).toBe('Skip')
 
     for (let i = 0; i < 3; i++) {
       store.next()
-      await flush()
+      await nextTick()
     }
     expect(store.isLast).toBe(true)
     expect(store.primaryLabel).toBe('Done')
@@ -474,7 +471,7 @@ describe('onboardingTourStore', () => {
     registerAppModeTargets()
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
 
     // The landing isn't numbered, so the four spotlight steps carry the count.
     const started = telemetry.track.mock.calls.find(
@@ -488,7 +485,7 @@ describe('onboardingTourStore', () => {
     expect(landingShown?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
 
     store.next()
-    await flush()
+    await nextTick()
     const shown = telemetry.track.mock.calls
       .filter(([stage]) => stage === 'step_shown')
       .at(-1)
@@ -504,11 +501,11 @@ describe('onboardingTourStore', () => {
     registerAppModeTargets()
     const store = mountStore()
     store.replayTour('appMode')
-    await flush()
+    await nextTick()
     expect(store.step?.landing).toBe(true)
 
     store.next()
-    await flush()
+    await nextTick()
 
     expect(store.step?.landing).toBeFalsy()
     const skipped = telemetry.track.mock.calls.some(
