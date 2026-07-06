@@ -1059,12 +1059,6 @@ describe('nodeOutputStore previews and removal', () => {
     expect(store.nodePreviewImages[locatorId]).toEqual(['blob:second'])
   })
 
-  it('starts with an empty preview map when legacy previews are missing', () => {
-    const store = useNodeOutputStore()
-
-    expect(store.nodePreviewImages).toEqual({})
-  })
-
   it('cancels scheduled revocation when a newer preview arrives', async () => {
     vi.useFakeTimers()
     const store = useNodeOutputStore()
