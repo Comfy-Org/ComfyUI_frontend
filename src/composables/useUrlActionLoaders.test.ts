@@ -18,11 +18,9 @@ const mocks = vi.hoisted(() => ({
   loadInvite: vi.fn().mockResolvedValue(undefined),
   loadCreateWorkspace: vi.fn().mockResolvedValue(undefined),
   loadPricingTable: vi.fn().mockResolvedValue(undefined),
-  redeemDesktopLogin: vi.fn().mockResolvedValue(undefined),
   useInvite: vi.fn(),
   useCreateWorkspace: vi.fn(),
-  usePricingTable: vi.fn(),
-  useDesktopLoginRedemption: vi.fn()
+  usePricingTable: vi.fn()
 }))
 mocks.useInvite.mockImplementation(() => ({
   loadInviteFromUrl: mocks.loadInvite
@@ -32,9 +30,6 @@ mocks.useCreateWorkspace.mockImplementation(() => ({
 }))
 mocks.usePricingTable.mockImplementation(() => ({
   loadPricingTableFromUrl: mocks.loadPricingTable
-}))
-mocks.useDesktopLoginRedemption.mockImplementation(() => ({
-  redeemIfPresent: mocks.redeemDesktopLogin
 }))
 
 vi.mock('@/platform/workspace/composables/useInviteUrlLoader', () => ({
@@ -46,10 +41,6 @@ vi.mock('@/platform/workspace/composables/useCreateWorkspaceUrlLoader', () => ({
 vi.mock(
   '@/platform/cloud/subscription/composables/usePricingTableUrlLoader',
   () => ({ usePricingTableUrlLoader: mocks.usePricingTable })
-)
-vi.mock(
-  '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption',
-  () => ({ useDesktopLoginRedemption: mocks.useDesktopLoginRedemption })
 )
 
 describe('useUrlActionLoaders', () => {
@@ -68,11 +59,9 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useInvite).not.toHaveBeenCalled()
     expect(mocks.useCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.usePricingTable).not.toHaveBeenCalled()
-    expect(mocks.useDesktopLoginRedemption).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadPricingTable).not.toHaveBeenCalled()
-    expect(mocks.redeemDesktopLogin).not.toHaveBeenCalled()
   })
 
   it('runs all loaders on cloud when team workspaces are enabled', async () => {
@@ -82,7 +71,6 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
-    expect(mocks.redeemDesktopLogin).toHaveBeenCalledOnce()
   })
 
   it('runs the pricing loader but skips the flag-gated loaders when team workspaces are disabled', async () => {
@@ -104,16 +92,5 @@ describe('useUrlActionLoaders', () => {
 
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
-  })
-
-  it('does not let a pending desktop-login redemption block the other loaders', async () => {
-    mocks.redeemDesktopLogin.mockReturnValueOnce(new Promise(() => {}))
-
-    const { runUrlActionLoaders } = useUrlActionLoaders()
-    await expect(runUrlActionLoaders()).resolves.toBeUndefined()
-
-    expect(mocks.loadInvite).toHaveBeenCalledOnce()
-    expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
-    expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
   })
 })

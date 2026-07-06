@@ -1,5 +1,4 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useDesktopLoginRedemption } from '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { isCloud } from '@/platform/distribution/types'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
@@ -18,13 +17,8 @@ export function useUrlActionLoaders() {
     ? useCreateWorkspaceUrlLoader()
     : null
   const pricingTableUrlLoader = isCloud ? usePricingTableUrlLoader() : null
-  const desktopLoginRedemption = isCloud ? useDesktopLoginRedemption() : null
 
   async function runUrlActionLoaders() {
-    // Redeem a desktop login code (?desktop_login_code=dlc_...) in the
-    // background: it can await user approval and must not delay the others.
-    void desktopLoginRedemption?.redeemIfPresent()
-
     // Accept workspace invite from URL if present (e.g., ?invite=TOKEN).
     // WorkspaceAuthGate ensures flag state is resolved before the app mounts.
     if (inviteUrlLoader && flags.teamWorkspacesEnabled) {

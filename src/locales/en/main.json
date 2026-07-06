@@ -2421,7 +2421,9 @@
     "successSummary": "Signed in",
     "successDetail": "You can return to the ComfyUI desktop app.",
     "expiredSummary": "Desktop sign-in failed",
-    "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app."
+    "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app.",
+    "failedSummary": "Desktop sign-in failed",
+    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app."
   },
   "validation": {
     "invalidEmail": "Invalid email address",
