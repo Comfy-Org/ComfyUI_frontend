@@ -71,6 +71,10 @@ function websiteId(siteUrl: string): string {
   return `${siteUrl}/#website`
 }
 
+function breadcrumbId(pageUrl: string): string {
+  return `${pageUrl}#breadcrumb`
+}
+
 function organizationNode(siteUrl: string): JsonLdNode {
   return {
     '@type': 'Organization',
@@ -105,7 +109,7 @@ function breadcrumbNode(
 ): JsonLdNode {
   return {
     '@type': 'BreadcrumbList',
-    '@id': `${pageUrl}#breadcrumb`,
+    '@id': breadcrumbId(pageUrl),
     itemListElement: crumbs.map(([name, item], index) => {
       const isLast = index === crumbs.length - 1
       // Google uses the current page URL for the final crumb, so its item is
@@ -137,7 +141,7 @@ export function buildStoryJsonLd(
         name: `${story.title} — Comfy`,
         isPartOf: { '@id': websiteId(siteUrl) },
         primaryImageOfPage: { '@type': 'ImageObject', url: story.cover },
-        breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
+        breadcrumb: { '@id': breadcrumbId(pageUrl) },
         inLanguage: locale
       },
       breadcrumbNode(pageUrl, [
@@ -181,7 +185,7 @@ export function buildCustomersCollectionJsonLd(
         url: pageUrl,
         name: context.collectionLabel,
         isPartOf: { '@id': websiteId(siteUrl) },
-        breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
+        breadcrumb: { '@id': breadcrumbId(pageUrl) },
         mainEntity: { '@id': listId },
         inLanguage: locale
       },
