@@ -1366,6 +1366,15 @@ const translations = {
     'zh-CN': '需要更多成员？想要更多灵活性或定制功能？'
   },
   'pricing.enterprise.cta': { en: 'Contact Us', 'zh-CN': '联系我们' },
+  // Education re-skin of the enterprise band; zh-CN drafted, pending native review.
+  'pricing.creativeCampus.label': {
+    en: 'Creative Campus',
+    'zh-CN': '创意校园'
+  },
+  'pricing.creativeCampus.description': {
+    en: 'Partner with us on custom features, dedicated support, and a deeper campus partnership.',
+    'zh-CN': '与我们合作，获得定制功能、专属支持以及更深入的校园合作。'
+  },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'

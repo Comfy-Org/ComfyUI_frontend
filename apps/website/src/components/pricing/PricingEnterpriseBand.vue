@@ -8,11 +8,19 @@ import Button from '../ui/button/Button.vue'
 import PricingCard from './PricingCard.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 
-const { locale = 'en' } = defineProps<{
+const { locale = 'en', education = false } = defineProps<{
   locale?: Locale
+  education?: boolean
 }>()
 
 const ctaHref = computed(() => getRoutes(locale).contact)
+
+const labelKey = education
+  ? 'pricing.creativeCampus.label'
+  : 'pricing.enterprise.label'
+const descriptionKey = education
+  ? 'pricing.creativeCampus.description'
+  : 'pricing.enterprise.description'
 </script>
 
 <template>
@@ -21,9 +29,9 @@ const ctaHref = computed(() => getRoutes(locale).contact)
       <div
         class="flex flex-col gap-6 lg:col-span-2 lg:flex-row lg:items-center"
       >
-        <PricingPlanLabel :label="t('pricing.enterprise.label', locale)" />
+        <PricingPlanLabel :label="t(labelKey, locale)" />
         <p class="text-primary-warm-white text-sm">
-          {{ t('pricing.enterprise.description', locale) }}
+          {{ t(descriptionKey, locale) }}
         </p>
       </div>
       <Button :href="ctaHref" variant="outline">

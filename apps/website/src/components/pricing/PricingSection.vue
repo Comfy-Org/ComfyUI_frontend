@@ -177,7 +177,7 @@ function eduSavingsFor(plan: PricingPlan): string | undefined {
 
       <PricingTeamCard :billing-period="billingPeriod" :education :locale />
 
-      <PricingEnterpriseBand :locale />
+      <PricingEnterpriseBand :education :locale />
     </div>
 
     <!-- Footnote -->

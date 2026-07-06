@@ -238,6 +238,35 @@ test.describe('Education pricing — team card @smoke', () => {
   })
 })
 
+test.describe('Education pricing — Creative Campus band @smoke', () => {
+  const CAMPUS_LABEL = t('pricing.creativeCampus.label', 'en')
+  const CAMPUS_DESC = t('pricing.creativeCampus.description', 'en')
+  const CONTACT_CTA = t('pricing.enterprise.cta', 'en')
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('renders the Creative Campus label and description', async ({
+    page
+  }) => {
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    await expect(section.getByText(CAMPUS_LABEL, { exact: true })).toBeVisible()
+    await expect(section.getByText(CAMPUS_DESC)).toBeVisible()
+  })
+
+  test('Contact Us CTA routes to /contact', async ({ page }) => {
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    const contact = section.getByRole('link', { name: CONTACT_CTA })
+    await expect(contact).toBeVisible()
+    await expect(contact).toHaveAttribute('href', '/contact')
+  })
+})
+
 test.describe('Education landing — mobile @mobile', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
