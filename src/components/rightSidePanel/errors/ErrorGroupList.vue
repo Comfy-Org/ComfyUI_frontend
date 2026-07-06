@@ -68,10 +68,10 @@
             data-testid="selection-context-strip"
             :class="
               cn(
-                'flex items-center px-3 py-1.5',
+                'flex items-center px-3',
                 carousel
-                  ? 'mb-2 rounded-md border border-secondary-background'
-                  : 'border-t border-secondary-background'
+                  ? 'mb-2 rounded-md border border-secondary-background py-1.5'
+                  : 'border-t border-secondary-background pt-3.5 pb-1.5'
               )
             "
           >
