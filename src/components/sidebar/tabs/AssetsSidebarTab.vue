@@ -160,6 +160,7 @@
 
 <script setup lang="ts">
 import {
+  unrefElement,
   useAsyncState,
   useDebounceFn,
   useStorage,
@@ -173,10 +174,9 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch,
-  watchEffect
+  useTemplateRef,
+  watch
 } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -285,11 +285,10 @@ const {
   deactivate: deactivateSelection
 } = useAssetSelection()
 
-const panelRef = ref<ComponentPublicInstance>()
-const marqueePanelRef = ref<HTMLElement>()
-watchEffect(() => {
-  const el = panelRef.value?.$el
-  marqueePanelRef.value = el instanceof HTMLElement ? el : undefined
+const panelRef = useTemplateRef('panelRef')
+const marqueePanelRef = computed(() => {
+  const el = unrefElement(panelRef)
+  return el instanceof HTMLElement ? el : undefined
 })
 
 const {
