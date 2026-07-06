@@ -1800,9 +1800,11 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   describe('executing', () => {
     it('is a no-op when there is no active job', () => {
+      store.activeJobId = 'ghost-job'
+
       fire('executing', null)
 
-      expect(store.activeJobId).toBeNull()
+      expect(store.activeJobId).toBe('ghost-job')
     })
 
     it('clears _executingNodeProgress and activeJobId when detail is null', () => {

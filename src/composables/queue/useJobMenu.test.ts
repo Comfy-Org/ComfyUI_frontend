@@ -130,8 +130,7 @@ vi.mock('@/services/jobOutputCache', () => ({
 
 const createAnnotatedPathMock = vi.fn()
 vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: (filename: string, subfolder: string, type: string) =>
-    createAnnotatedPathMock(filename, subfolder, type)
+  createAnnotatedPath: (...args: unknown[]) => createAnnotatedPathMock(...args)
 }))
 
 const appendJsonExtMock = vi.fn((value: string) =>
@@ -610,8 +609,7 @@ describe('useJobMenu', () => {
         subfolder: 'bar',
         type: undefined
       },
-      { rootFolder: undefined },
-      undefined
+      { rootFolder: undefined }
     )
     expect(node.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
   })
