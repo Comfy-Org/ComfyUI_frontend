@@ -173,15 +173,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const vueNodeData = reactive(new Map<NodeId, VueNodeData>())
   const nodeRefs = new Map<NodeId, LGraphNode>()
 
-  const refreshNodeInputs = (nodeId: NodeId) => {
-    const nodeRef = nodeRefs.get(nodeId)
-    const currentData = vueNodeData.get(nodeId)
-    if (!nodeRef?.inputs || !currentData) return
-
-    nodeRef.inputs = [...nodeRef.inputs]
-    vueNodeData.set(nodeId, { ...currentData, inputs: nodeRef.inputs })
-  }
-
   const getNode = (id: NodeId): LGraphNode | undefined => nodeRefs.get(id)
 
   const syncWithGraph = () => {
@@ -258,7 +249,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     setSource(LayoutSource.Canvas)
     deleteNode(id)
     dropNodeReferences(id)
-    for (const nodeId of nodeRefs.keys()) refreshNodeInputs(nodeId)
     originalCallback?.(node)
   }
 
