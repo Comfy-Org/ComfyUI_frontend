@@ -101,14 +101,38 @@ describe('useNodeBadgeStore', () => {
     expect(texts.value).toEqual(['#1 beta'])
   })
 
-  it('clears a node without touching its neighbours', () => {
+  it('registers a node with no rows and lists it', () => {
+    const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
+
+    expect(store.registeredNodeIds(graphA)).toEqual([node1])
+    expect(store.getBadges(graphA, node1)).toEqual([])
+    expect(store.registeredNodeIds(graphB)).toEqual([])
+  })
+
+  it('tracks registration changes reactively', () => {
+    const store = useNodeBadgeStore()
+    store.registerNode(graphA, node1)
+
+    const ids = computed(() => store.registeredNodeIds(graphA))
+    expect(ids.value).toEqual([node1])
+
+    store.registerNode(graphA, node2)
+    expect(ids.value).toEqual([node1, node2])
+
+    store.unregisterNode(graphA, node2)
+    expect(ids.value).toEqual([node1])
+  })
+
+  it('unregisters a node without touching its neighbours', () => {
     const store = useNodeBadgeStore()
     store.registerBadge(graphA, node1, badge('extension', 'a'))
     store.registerBadge(graphA, node2, badge('extension', 'b'))
 
-    store.clearNode(graphA, node1)
+    store.unregisterNode(graphA, node1)
 
     expect(store.getBadges(graphA, node1)).toEqual([])
+    expect(store.registeredNodeIds(graphA)).toEqual([node2])
     expect(store.getBadges(graphA, node2)).toHaveLength(1)
   })
 

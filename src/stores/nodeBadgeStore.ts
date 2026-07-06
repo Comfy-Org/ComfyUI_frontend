@@ -88,8 +88,18 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
     return [...rows].sort((a, b) => kindRank(a.kind) - kindRank(b.kind))
   }
 
-  function clearNode(graphId: UUID, nodeId: NodeId): void {
+  /** Registers a node; a registered node's rows are system-maintained. */
+  function registerNode(graphId: UUID, nodeId: NodeId): void {
+    nodeRows(graphId, nodeId)
+  }
+
+  function unregisterNode(graphId: UUID, nodeId: NodeId): void {
     buckets.value.get(graphId)?.delete(nodeId)
+  }
+
+  /** The registered nodes of a graph bucket; reads are tracked. */
+  function registeredNodeIds(graphId: UUID): NodeId[] {
+    return [...(buckets.value.get(graphId)?.keys() ?? [])]
   }
 
   function clearGraph(graphId: UUID): void {
@@ -101,7 +111,9 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
     deleteBadge,
     setBadgesOfKind,
     getBadges,
-    clearNode,
+    registerNode,
+    unregisterNode,
+    registeredNodeIds,
     clearGraph
   }
 })
