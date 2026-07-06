@@ -134,6 +134,42 @@ describe('computeBadges', () => {
 
     expect(rows.filter((b) => b.kind === 'credits')).toEqual([])
   })
+
+  function subgraphPricing(rowCount: number, singleLabel = '') {
+    return {
+      isApiNode: false,
+      showApiPricing: true,
+      priceLabel: '',
+      subgraphCredits: { rowCount, singleLabel }
+    }
+  }
+
+  it('aggregates multiple inner credits rows into a partner count', () => {
+    const rows = computeBadges(sources({ pricing: subgraphPricing(5) }))
+
+    expect(rows.at(-1)).toMatchObject({
+      kind: 'credits',
+      text: 'Partner Nodes x 5',
+      iconKey: 'credits'
+    })
+  })
+
+  it('passes a single inner credits label through to the wrapper', () => {
+    const rows = computeBadges(
+      sources({ pricing: subgraphPricing(1, '$0.05/Run') })
+    )
+
+    expect(rows.at(-1)).toMatchObject({ kind: 'credits', text: '$0.05/Run' })
+  })
+
+  it.for([
+    { name: 'no inner credits rows', pricing: subgraphPricing(0) },
+    { name: 'a single empty label', pricing: subgraphPricing(1, '') }
+  ])('projects no wrapper credits row given $name', ({ pricing }) => {
+    const rows = computeBadges(sources({ pricing }))
+
+    expect(rows.filter((b) => b.kind === 'credits')).toEqual([])
+  })
 })
 
 describe('startBadgeSystem', () => {

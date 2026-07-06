@@ -1,8 +1,10 @@
-import { effectScope, watch, watchEffect } from 'vue'
+import { effectScope, ref, watch, watchEffect } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
@@ -38,7 +40,17 @@ export interface BadgeSources {
     source: NodeBadgeMode
   }
   colors: { fgColor: string; bgColor: string; creditsBgColor: string }
-  pricing: { isApiNode: boolean; showApiPricing: boolean; priceLabel: string }
+  pricing: {
+    isApiNode: boolean
+    showApiPricing: boolean
+    priceLabel: string
+    /**
+     * Present on SubgraphNode wrappers: how many inner (recursively
+     * collected, non-wrapper) nodes carry credits rows, and — when
+     * exactly one does — the label the wrapper should display.
+     */
+    subgraphCredits?: { rowCount: number; singleLabel: string }
+  }
 }
 
 function badgeTextVisible(
@@ -71,18 +83,27 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
       bgColor: colors.bgColor
     }))
 
-  const showCredits =
-    pricing.isApiNode && pricing.showApiPricing && pricing.priceLabel.length > 0
-  if (showCredits) {
+  const creditsText = computeCreditsText(pricing)
+  if (creditsText) {
     rows.push({
       kind: 'credits',
-      text: pricing.priceLabel,
+      text: creditsText,
       iconKey: 'credits',
       fgColor: colors.fgColor,
       bgColor: colors.creditsBgColor
     })
   }
   return rows
+}
+
+function computeCreditsText(pricing: BadgeSources['pricing']): string {
+  const { subgraphCredits } = pricing
+  if (subgraphCredits) {
+    if (subgraphCredits.rowCount > 1)
+      return `Partner Nodes x ${subgraphCredits.rowCount}`
+    return subgraphCredits.rowCount === 1 ? subgraphCredits.singleLabel : ''
+  }
+  return pricing.isApiNode && pricing.showApiPricing ? pricing.priceLabel : ''
 }
 
 export interface BadgeSystemOptions {
@@ -122,6 +143,86 @@ function touchPricingSources(graphId: UUID, node: LGraphNode): void {
   })
 }
 
+const subgraphCreditsRevision = ref(0)
+
+/**
+ * Signals the system that subgraph structure changed in a way its tracked
+ * store sources cannot observe (graph switched, subgraph converted,
+ * workflow configured). Every wrapper's credits aggregation recomputes.
+ */
+export function bumpSubgraphCreditsRevision(): void {
+  subgraphCreditsRevision.value++
+}
+
+type LinkedWidgetInput = INodeInputSlot & { _subgraphSlot?: SubgraphInput }
+
+/** Promoted widget values on the wrapper override the inner node's own. */
+function collectPromotedOverrides(
+  wrapper: SubgraphNode,
+  innerNode: LGraphNode
+): ReadonlyMap<string, unknown> {
+  const overrides = new Map<string, unknown>()
+  for (const input of wrapper.inputs as LinkedWidgetInput[]) {
+    if (!input.widgetId) continue
+    for (const linkId of input._subgraphSlot?.linkIds ?? []) {
+      const link = wrapper.subgraph.getLink(linkId)
+      if (link?.target_id !== innerNode.id) continue
+      const widgetName = innerNode.inputs[link.target_slot]?.widget?.name
+      if (!widgetName) continue
+      overrides.set(
+        widgetName,
+        useWidgetValueStore().getWidget(input.widgetId)?.value
+      )
+    }
+  }
+  return overrides
+}
+
+/**
+ * A wrapper's credits sources: the inner (recursively collected,
+ * non-wrapper) nodes whose store rows include a credits row. Tracks the
+ * inner rows, the registered-node set, and the structure revision, so the
+ * wrapper recomputes when inner prices, membership, or structure change.
+ */
+function gatherSubgraphCredits(
+  graphId: UUID,
+  wrapper: SubgraphNode
+): { rowCount: number; singleLabel: string } {
+  void subgraphCreditsRevision.value
+  const badgeStore = useNodeBadgeStore()
+  void badgeStore.registeredNodeIds(graphId)
+
+  const creditLeaves: LGraphNode[] = []
+  const visited = new Set<string>()
+  function walk(nodes: LGraphNode[]): void {
+    for (const inner of nodes) {
+      if (inner.isSubgraphNode()) {
+        const subgraphId = String(inner.subgraph.id)
+        if (visited.has(subgraphId)) continue
+        visited.add(subgraphId)
+        walk(inner.subgraph.nodes)
+        continue
+      }
+      const hasCredits = badgeStore
+        .getBadges(graphId, inner.id)
+        .some((row) => row.kind === 'credits')
+      if (hasCredits) creditLeaves.push(inner)
+    }
+  }
+  walk(wrapper.subgraph.nodes)
+
+  if (creditLeaves.length !== 1) {
+    return { rowCount: creditLeaves.length, singleLabel: '' }
+  }
+  const leaf = creditLeaves[0]
+  const singleLabel =
+    useNodePricing().getNodeDisplayPrice(
+      leaf,
+      collectPromotedOverrides(wrapper, leaf)
+    ) ?? ''
+  return { rowCount: 1, singleLabel }
+}
+
 function gatherSources(
   options: BadgeSystemOptions,
   nodeId: NodeId
@@ -139,6 +240,9 @@ function gatherSources(
     touchPricingSources(graphId, node)
     priceLabel = useNodePricing().getNodeDisplayPrice(node) ?? ''
   }
+  const subgraphCredits = node?.isSubgraphNode()
+    ? gatherSubgraphCredits(graphId, node)
+    : undefined
 
   return {
     nodeId,
@@ -165,7 +269,7 @@ function gatherSources(
         ? adjustColor(CREDITS_BASE_BG_COLOR, { lightness: 0.5 })
         : CREDITS_BASE_BG_COLOR
     },
-    pricing: { isApiNode, showApiPricing, priceLabel }
+    pricing: { isApiNode, showApiPricing, priceLabel, subgraphCredits }
   }
 }
 
