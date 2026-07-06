@@ -40,9 +40,27 @@ const GRID_SPACING = { x: 420, y: 360 }
 // a network-restricted backend in a non-interruptible call, jamming the
 // prompt queue for everything after it.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
+  'rgthree-comfy': {
+    'Power Primitive (rgthree)':
+      'requires its pack JS to build the primitive value at queue time; raw defaults KeyError. Whether a page applies pack JS varies by serving setup, so excluded unconditionally - curated-workflow candidate',
+    'Power Puter (rgthree)':
+      'requires its pack JS to compile the expression at queue time; raw defaults KeyError. Excluded unconditionally - curated-workflow candidate'
+  },
+  'ComfyUI-KJNodes': {
+    PointsEditor:
+      'requires its pack JS to inject the points JSON at queue time; raw defaults JSONDecodeError. Excluded unconditionally - curated-workflow candidate',
+    SplineEditor:
+      'requires its pack JS to inject the spline JSON at queue time; raw defaults JSONDecodeError. Excluded unconditionally - curated-workflow candidate',
+    StringToFloatList:
+      'requires its pack JS to normalize the list string at queue time; raw defaults ValueError. Excluded unconditionally - curated-workflow candidate'
+  },
   ComfyUI_essentials: {
     'RemBGSession+':
-      'initializes a rembg session that downloads its ONNX model at execution; hangs (non-interruptibly) on a backend without network/model access'
+      'initializes a rembg session that downloads its ONNX model at execution; hangs (non-interruptibly) on a backend without network/model access',
+    'TransitionMask+':
+      'list-expanded execution emits no per-node executing event on some runs, so the executed-set signal flip-flops between PASS and PARTIAL; mount/save-reload/connectivity tiers still cover it',
+    'TransparentBGSession+':
+      'ML-session initializer like RemBGSession+; sets up/downloads a background-removal model at execution, unstable on a bare backend'
   }
 }
 
@@ -309,23 +327,23 @@ for (const entry of loadManifest()) {
       )
 
       const batches = batchAutoRunnable(verdicts, AUTO_RUN_BATCH)
-      const failures: string[] = []
-      // Defaults that fail backend validation (file paths that don't exist on
-      // a bare backend, empty dir scans) mean "cannot run alone" - recorded
-      // like NEEDS_MODELS, not failed. A validation regression for nodes that
-      // DID run clean shows up as a diff in this logged list.
-      const rejectedOnDefaults: string[] = []
-      let ran = 0
+      const hardFailures: string[] = []
+      // Nodes observed unable to run standalone: backend validation rejects
+      // their defaults, or execution errors on them (empty expressions,
+      // empty folders, no webcam). Reconciled against the committed
+      // cannotRunAlone baseline below - never silently dropped.
+      const cannotRun = new Map<string, string>()
+      const ranClean = new Set<string>()
       for (const batch of batches) {
         const outcome = await runBatch(comfyPage.page, batch)
         if (outcome === 'PASS') {
-          ran += batch.length
+          for (const verdict of batch) ranClean.add(verdict.key)
           continue
         }
         // A jammed queue makes every further run a false timeout - stop and
         // name the suspects instead of bisecting through poisoned results.
         if (outcome.startsWith('HUNG_BACKEND')) {
-          failures.push(
+          hardFailures.push(
             `[${batch.map((verdict) => verdict.key).join(', ')}]: ${outcome} - add the offender to AUTO_RUN_EXCLUDE with its mechanism`
           )
           break
@@ -334,23 +352,42 @@ for (const entry of loadManifest()) {
         // instead of implicating its nine batch-mates.
         for (const verdict of batch) {
           const single = await runBatch(comfyPage.page, [verdict])
-          if (single === 'PASS') ran += 1
-          else if (single === 'VALIDATION_FAIL')
-            rejectedOnDefaults.push(verdict.key)
+          if (single === 'PASS') ranClean.add(verdict.key)
           else if (single.startsWith('HUNG_BACKEND')) {
-            failures.push(
+            hardFailures.push(
               `${verdict.key}: ${single} - add to AUTO_RUN_EXCLUDE with its mechanism`
             )
             break
-          } else failures.push(`${verdict.key}: ${single}`)
+          } else cannotRun.set(verdict.key, single)
         }
       }
-      if (rejectedOnDefaults.length > 0)
-        console.log(
-          `${entry.pack}: ${rejectedOnDefaults.length} node(s) rejected at validation on default values (need curated fixtures): ${rejectedOnDefaults.join(', ')}`
-        )
-      expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
-      console.log(`${entry.pack} auto-ran ${ran} node(s) clean`)
+      // Two-way baseline reconciliation. A failure missing from the baseline
+      // is a regression (a node that used to run clean broke); a baseline
+      // entry that now runs clean, or names a node that is not even
+      // auto-runnable, is stale and must be removed - the list cannot rot.
+      const baseline = new Set(entry.cannotRunAlone ?? [])
+      const runnable = new Set(
+        batches.flatMap((batch) => batch.map((verdict) => verdict.key))
+      )
+      for (const [key, detail] of cannotRun)
+        if (!baseline.has(key))
+          hardFailures.push(
+            `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
+          )
+      for (const key of baseline) {
+        if (ranClean.has(key))
+          hardFailures.push(
+            `${key}: ran clean but is listed in cannotRunAlone - remove the stale entry`
+          )
+        else if (!runnable.has(key))
+          hardFailures.push(
+            `${key}: listed in cannotRunAlone but is not auto-runnable on this backend - remove the stale entry`
+          )
+      }
+      console.log(
+        `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
+      )
+      expect(hardFailures, JSON.stringify(hardFailures, null, 1)).toEqual([])
     })
   })
 }

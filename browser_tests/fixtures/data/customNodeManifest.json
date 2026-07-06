@@ -8,7 +8,14 @@
     "expectedNodes": ["ImpactInt", "ImpactFloat"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 30000
+    "timeoutMs": 30000,
+    "cannotRunAlone": [
+      "CLIPSegDetectorProvider",
+      "ImpactMakeImageBatch",
+      "ImpactMakeMaskBatch",
+      "MasksToMaskList",
+      "NoiseInjectionDetailerHookProvider"
+    ]
   },
   {
     "pack": "ComfyUI-VideoHelperSuite",
@@ -19,7 +26,16 @@
     "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 90000
+    "timeoutMs": 90000,
+    "cannotRunAlone": [
+      "VHS_LoadAudio",
+      "VHS_LoadImagePath",
+      "VHS_LoadImages",
+      "VHS_LoadImagesPath",
+      "VHS_LoadVideoFFmpegPath",
+      "VHS_LoadVideoPath",
+      "VHS_SelectLatest"
+    ]
   },
   {
     "pack": "rgthree-comfy",
@@ -30,7 +46,8 @@
     "expectedNodes": ["Seed (rgthree)", "Display Any (rgthree)"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 30000
+    "timeoutMs": 30000,
+    "cannotRunAlone": ["Image or Latent Size (rgthree)"]
   },
   {
     "pack": "ComfyUI_essentials",
@@ -41,7 +58,17 @@
     "expectedNodes": ["SimpleMathInt+", "DisplayAny"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 30000
+    "timeoutMs": 30000,
+    "cannotRunAlone": [
+      "MaskFromList+",
+      "SimpleMath+",
+      "SimpleMathDual+",
+      "SimpleMathFloat+",
+      "SimpleMathInt+",
+      "SimpleMathPercent+",
+      "SimpleMathSlider+",
+      "SimpleMathSliderLowRes+"
+    ]
   },
   {
     "pack": "ComfyUI-KJNodes",
@@ -52,7 +79,21 @@
     "expectedNodes": ["INTConstant", "FloatConstant"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 30000
+    "timeoutMs": 30000,
+    "cannotRunAlone": [
+      "CameraPoseVisualizer",
+      "CreateAudioMask",
+      "CreateMagicMask",
+      "CreateVoronoiMask",
+      "GenerateNoise",
+      "ImageAndMaskPreview",
+      "LoadImagesFromFolderKJ",
+      "LoadVideosFromFolder",
+      "MaskOrImageToWeight",
+      "VisualizeCUDAMemoryHistory",
+      "WebcamCaptureCV2",
+      "WidgetToString"
+    ]
   },
   {
     "pack": "ComfyUI-Custom-Scripts",
@@ -63,7 +104,8 @@
     "expectedNodes": ["StringFunction|pysssss", "ShowText|pysssss"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 30000
+    "timeoutMs": 30000,
+    "cannotRunAlone": ["LoadText|pysssss", "MathExpression|pysssss"]
   },
   {
     "pack": "was-node-suite-comfyui",
@@ -74,6 +116,17 @@
     "expectedNodes": ["Constant Number", "Number to Text", "Text to Console"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 30000
+    "timeoutMs": 30000,
+    "cannotRunAlone": [
+      "Bus Node",
+      "Diffusers Hub Model Down-Loader",
+      "Image Aspect Ratio",
+      "Image Batch",
+      "Latent Batch",
+      "Mask Batch",
+      "Mask Rect Area",
+      "Number Counter",
+      "Random Number"
+    ]
   }
 ]

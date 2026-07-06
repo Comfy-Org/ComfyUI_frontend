@@ -37,6 +37,13 @@ export interface CustomNodeManifestEntry {
   // A key that stops existing on the backend fails the suite, so entries
   // cannot silently rot.
   vueIncompatibleNodes?: Record<string, string>
+  // Auto-run baseline: nodes observed unable to execute standalone on a bare
+  // backend (validation reject or execution error on pure defaults - empty
+  // expressions, empty folders, no webcam). Asserted BOTH ways: a failing
+  // node missing from this list is a regression, and a listed node that now
+  // runs clean must be removed. Weak-signal territory by design - a wrong
+  // entry here means a fixture gap, never a skipped test.
+  cannotRunAlone?: string[]
 }
 
 function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
@@ -84,6 +91,15 @@ function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
       ))
   )
     missing.push('vueIncompatibleNodes (node key -> non-empty reason string)')
+  if (
+    entry.cannotRunAlone !== undefined &&
+    (!Array.isArray(entry.cannotRunAlone) ||
+      entry.cannotRunAlone.some(
+        (key) => typeof key !== 'string' || key.length === 0
+      ) ||
+      new Set(entry.cannotRunAlone).size !== entry.cannotRunAlone.length)
+  )
+    missing.push('cannotRunAlone (unique non-empty node keys)')
   if (missing.length > 0)
     throw new Error(
       `custom-node manifest entry ${index} (${entry.pack ?? '?'}) missing: ${missing.join(', ')}`

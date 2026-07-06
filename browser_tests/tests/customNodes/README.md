@@ -58,6 +58,17 @@ Any `-g` pattern works against the generic scripts, e.g.
 - **T1 run**: the manifest workflow is loaded and queued; the backend's
   `executing` event stream must contain every expected node id, and the run
   must end in `execution_success`.
+- **Every-node tiers** (`allNodes.spec.ts`): the pack's FULL node list,
+  discovered live from `/object_info`, is exercised with zero
+  configuration - every registered node mounts in both renderers (chunked
+  at an empirically calibrated batch size), survives a serialize/configure
+  save-reload round-trip, and executes for real on the backend when
+  self-sufficient (all required inputs are widgets with valid defaults).
+  Nodes that cannot run alone are classified and logged
+  (`NEEDS_WIRES` / `NEEDS_MODELS` / `NO_SINK` / rejected-at-validation),
+  never silently dropped; the documented exception ledgers (see
+  [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)) carry a written mechanism for every
+  escape hatch.
 - **connectivity (contract)**: wiring-only, no execution. A
   type-pairing generator (`fixtures/customNode/typePairing.ts`) indexes
   `/object_info` producers/consumers and plans one representative typed edge

@@ -1,7 +1,7 @@
 // Measurement tool, not a gate: finds the largest mount-check batch size that
 // is deterministic (identical results across repeats) and fast, for the
 // all-nodes load tier. Run explicitly against a backend with the manifest
-// packs installed and pack JS loaded (dist-serving; see ADDING_PACKS 6b):
+// packs installed and pack JS loaded (dist-serving; see ADDING_CUSTOM_NODES 6b):
 //   CN_CALIBRATE=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8288 \
 //     pnpm exec playwright test browser_tests/tools/batchCalibration.spec.ts \
 //     --config playwright.chrome.config.ts --workers=1

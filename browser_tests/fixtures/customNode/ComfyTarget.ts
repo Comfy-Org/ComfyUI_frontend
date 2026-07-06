@@ -96,10 +96,19 @@ export class LocalDesktopTarget {
     // app.api.queuePrompt, which submits an already-serialized (empty) prompt.
     // A backend validation reject emits NO events at all - without checking the
     // queue result, every rejected prompt would burn the full wait and
-    // masquerade as TIMEOUT.
-    const queued = await page.evaluate(() => window.app!.queuePrompt(0))
-    if (queued === false)
-      return { outcome: 'VALIDATION_FAIL', executedNodes: [] }
+    // masquerade as TIMEOUT. But a false return is NOT proof of a backend
+    // reject: pack JS hooking the queue path (Impact's wildcard processing)
+    // can refuse transiently right after nodes are created. Retry once -
+    // genuine backend rejects are deterministic and fail both attempts.
+    let queued = await page.evaluate(() => window.app!.queuePrompt(0))
+    if (queued === false) {
+      await page.evaluate(
+        () => new Promise((resolve) => setTimeout(resolve, 250))
+      )
+      queued = await page.evaluate(() => window.app!.queuePrompt(0))
+      if (queued === false)
+        return { outcome: 'VALIDATION_FAIL', executedNodes: [] }
+    }
 
     await page
       .waitForFunction(

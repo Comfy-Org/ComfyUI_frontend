@@ -10,6 +10,28 @@ real node keys out of `/object_info`, author one small model-free workflow,
 add one row to the manifest, prove it green locally, push. No new test code
 is ever needed - the specs iterate the manifest.
 
+## What a manifest row buys you (the tiers)
+
+Adding the one row enrolls the pack in two kinds of coverage:
+
+- **Every-node tiers (automatic, zero configuration).** The suite reads the
+  pack's FULL node list from the live backend and, for every registered
+  node: mounts it in both renderers, round-trips it through save/reload,
+  plans typed connections for all its concrete slots, and executes it for
+  real when it is self-sufficient (every required input is a widget with a
+  valid default; output wired to `PreviewAny` or the node is its own
+  terminus). Nodes that cannot run alone are classified and logged, never
+  silently dropped: `NEEDS_WIRES` (required socket inputs), `NEEDS_MODELS`
+  (empty model/file combo on the bare backend), `NO_SINK` (nothing
+  observable to queue), or "rejected at validation on defaults" (needs a
+  curated fixture).
+- **Curated tiers (the row's fields).** `expectedNodes` + `workflow` drive
+  the hand-authored run-tier chain (Step 4) proving a real multi-node
+  wiring executes end to end, and serve as must-exist sentinels.
+
+Every-node coverage means a pack update is tested the moment CI installs
+it - including nodes you never listed.
+
 ## Step 0 - prerequisites
 
 - A local test backend and dev server set up exactly per the
@@ -215,6 +237,37 @@ means discovering that class of problem one CI round at a time.
   frontend JS rebuilt a declared input as a widget-only control (rgthree's
   Seed does this to `seed`), so there is no socket to wire. Recorded and
   excluded, like wildcards - pack design, not a regression.
+- **Auto-run reports a node "not in cannotRunAlone"**: the node failed to
+  execute on pure defaults (validation reject, or a real exception from
+  degenerate defaults - empty expression, empty folder, no webcam). If the
+  node USED to run clean this is a regression; otherwise add it to the
+  row's `cannotRunAlone` baseline with the run log in the PR. The check is
+  two-way: a listed node that starts running clean fails the suite until
+  the stale entry is removed.
+- **Auto-run fails with `HUNG_BACKEND`**: a node blocked forever during
+  execution (the canonical case downloads a model at runtime and hangs
+  without network). The failure names the suspects and the remedy: add the
+  offender to `AUTO_RUN_EXCLUDE` in `allNodes.spec.ts` with its mechanism,
+  and restart the test backend (the hang is non-interruptible).
+- **Mount test fails on console errors**: a pack's JS logged real errors
+  while its nodes mounted. If it is pack-attributed noise with no visible
+  error surface (KJNodes' loader previews fetching `filename=undefined`),
+  add a scoped `CONSOLE_ERROR_ALLOWLIST` entry with the mechanism;
+  otherwise it is a finding.
+
+### The exception ledgers (all reasons on the record)
+
+Every escape hatch is a reviewed list whose entries carry the mechanism, so
+the gate stays honest and none can grow silently:
+
+| Ledger                       | Lives in               | Covers                                                                                     |
+| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `vueIncompatibleNodes`       | manifest row           | node cannot mount under Vue Nodes 2.0 (evidence rule below)                                |
+| `cannotRunAlone`             | manifest row           | node cannot execute standalone on a bare backend; asserted both ways so entries cannot rot |
+| `AUTO_RUN_EXCLUDE`           | `allNodes.spec.ts`     | executing the node is unsafe on a bare backend (runtime downloads, hangs)                  |
+| `CONSOLE_ERROR_ALLOWLIST`    | `allNodes.spec.ts`     | pack-attributed console noise with no visible error surface                                |
+| `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts` | pack JS legitimately vetoes a planned wiring                                               |
+| `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts` | pack's own serialize/configure drops links it manages itself                               |
 
 ## Step 7 - push and watch CI
 
@@ -247,7 +300,11 @@ failures and without skipping tests:
    and the failure reproduces on a retry. A README grumble, a hunch, or an
    old forum thread is not evidence. Record the evidence (the failing
    assertion and the pack version) in the PR description of the change that
-   sets the flag.
+   sets the flag. When only SOME of a pack's nodes fail to mount, use the
+   per-node `vueIncompatibleNodes` ledger in the manifest row instead of
+   flagging the whole pack - compatibility is per-node, not per-pack (all
+   823 nodes across the first 7 packs mount clean, so both mechanisms ship
+   unused; the every-node mount tier is what earns an entry).
 3. **Effect of `false`**: the load tier runs its LiteGraph pass only, and
    the connectivity drag test does not drag that pack's edges under Vue
    Nodes. The tests still run and pass their canvas assertions - nothing is
@@ -270,4 +327,6 @@ failures and without skipping tests:
 - [ ] `vueNodesCompatible` omitted, or set `false` with recorded evidence
 - [ ] 6a green: `pnpm test:custom-nodes` against the dev server, zero skips
 - [ ] 6b green when the pack ships frontend JS: built dist + backend-served run
+- [ ] Every-node tiers green: no unexplained mount/save-reload/auto-run
+      failures; any new ledger entry carries its mechanism
 - [ ] Pushed; `CI: Tests Custom Nodes` green on the PR
