@@ -12,9 +12,6 @@ const readQueryParam = (value: unknown): string | undefined => {
   )
 }
 
-const hasQueryKey = (query: LocationQuery, key: string) =>
-  Object.hasOwn(query, key)
-
 const getStorageKey = (namespace: string) => `${STORAGE_PREFIX}${namespace}`
 
 const isValidQueryRecord = (
@@ -73,11 +70,34 @@ export const hydratePreservedQuery = (namespace: string) => {
   }
 }
 
+/**
+ * By default each capture replaces the namespace stash with the values present
+ * in the given query. With `merge`, values are merged into the existing stash
+ * and a key supplied with an empty value clears its stashed entry — for
+ * namespaces where the stash, not the URL, is the surviving carrier.
+ */
 export const capturePreservedQuery = (
   namespace: string,
   query: LocationQuery,
-  keys: string[]
+  keys: string[],
+  { merge = false }: { merge?: boolean } = {}
 ) => {
+  if (!merge) {
+    const payload: Record<string, string> = {}
+    keys.forEach((key) => {
+      const value = readQueryParam(query[key])
+      if (value) {
+        payload[key] = value
+      }
+    })
+    if (Object.keys(payload).length === 0) {
+      return
+    }
+    preservedQueries.set(namespace, payload)
+    writeToStorage(namespace, payload)
+    return
+  }
+
   hydratePreservedQuery(namespace)
   const payload: Record<string, string> = {
     ...(preservedQueries.get(namespace) ?? {})
@@ -85,7 +105,7 @@ export const capturePreservedQuery = (
   let changed = false
 
   keys.forEach((key) => {
-    if (!hasQueryKey(query, key)) return
+    if (!Object.hasOwn(query, key)) return
 
     const value = readQueryParam(query[key])
     if (value) {

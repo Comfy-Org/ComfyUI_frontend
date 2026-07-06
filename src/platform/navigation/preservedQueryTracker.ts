@@ -12,7 +12,10 @@ interface PreservedQueryDefinition {
    * When set, keys present in the query are removed from the client-side URL
    * before navigation completes. Later guards, afterEach hooks, and views must
    * read a strip-marked key from the preserved-query stash instead of
-   * route.query or fullPath.
+   * route.query or fullPath. Because the stash is the only carrier after
+   * stripping, captures for the namespace merge into the existing stash and an
+   * explicitly empty value clears the stashed key; non-strip namespaces keep
+   * replace-on-capture semantics.
    */
   stripAfterCapture?: boolean
 }
@@ -29,7 +32,9 @@ export const installPreservedQueryTracker = (
       hydratePreservedQuery(namespace)
       const presentKeys = keys.filter((key) => queryKeys.has(key))
       if (presentKeys.length === 0) return
-      capturePreservedQuery(namespace, to.query, keys)
+      capturePreservedQuery(namespace, to.query, keys, {
+        merge: stripAfterCapture
+      })
       if (stripAfterCapture) {
         presentKeys.forEach((key) => keysToStrip.add(key))
       }

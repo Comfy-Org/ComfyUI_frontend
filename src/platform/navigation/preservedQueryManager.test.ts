@@ -30,21 +30,49 @@ describe('preservedQueryManager', () => {
     expect(sessionStorage.getItem('Comfy.PreservedQuery.template')).toBeTruthy()
   })
 
-  it('merges newly captured keys into the preserved namespace payload', () => {
-    capturePreservedQuery(NAMESPACE, { template: 'flux' }, [
-      'template',
-      'source',
-      'mode'
-    ])
+  it('merges newly captured keys into the payload when merge is set', () => {
+    capturePreservedQuery(
+      NAMESPACE,
+      { template: 'flux' },
+      ['template', 'source', 'mode'],
+      { merge: true }
+    )
 
-    capturePreservedQuery(NAMESPACE, { source: 'custom' }, [
-      'template',
-      'source',
-      'mode'
-    ])
+    capturePreservedQuery(
+      NAMESPACE,
+      { source: 'custom' },
+      ['template', 'source', 'mode'],
+      { merge: true }
+    )
 
     const merged = mergePreservedQueryIntoQuery(NAMESPACE)
     expect(merged).toEqual({ template: 'flux', source: 'custom' })
+  })
+
+  it('replaces the whole payload on capture by default', () => {
+    capturePreservedQuery(NAMESPACE, { template: 'flux', source: 'custom' }, [
+      'template',
+      'source',
+      'mode'
+    ])
+
+    capturePreservedQuery(NAMESPACE, { template: 'sdxl' }, [
+      'template',
+      'source',
+      'mode'
+    ])
+
+    expect(mergePreservedQueryIntoQuery(NAMESPACE)).toEqual({
+      template: 'sdxl'
+    })
+  })
+
+  it('leaves the payload untouched when a default capture has no valid values', () => {
+    capturePreservedQuery(NAMESPACE, { template: 'flux' }, ['template'])
+
+    capturePreservedQuery(NAMESPACE, { template: '' }, ['template'])
+
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBe('flux')
   })
 
   it('captures the first non-empty string element of an array-valued param', () => {
@@ -68,13 +96,17 @@ describe('preservedQueryManager', () => {
     expect(mergePreservedQueryIntoQuery(NAMESPACE)).toBeUndefined()
   })
 
-  it('removes a preserved key when the route supplies an empty value', () => {
-    capturePreservedQuery(NAMESPACE, { template: 'flux', source: 'custom' }, [
-      'template',
-      'source'
-    ])
+  it('removes a preserved key on empty value when merge is set', () => {
+    capturePreservedQuery(
+      NAMESPACE,
+      { template: 'flux', source: 'custom' },
+      ['template', 'source'],
+      { merge: true }
+    )
 
-    capturePreservedQuery(NAMESPACE, { template: '' }, ['template', 'source'])
+    capturePreservedQuery(NAMESPACE, { template: '' }, ['template', 'source'], {
+      merge: true
+    })
 
     expect(getPreservedQueryParam(NAMESPACE, 'template')).toBeUndefined()
     expect(mergePreservedQueryIntoQuery(NAMESPACE)).toEqual({

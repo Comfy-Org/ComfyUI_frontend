@@ -65,6 +65,19 @@ describe('installPreservedQueryTracker', () => {
     expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_source')).toBe('beta')
   })
 
+  it('replaces a non-strip namespace stash on later captures', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [plainDefinition])
+
+    await router.push('/?plain_code=alpha&plain_source=beta')
+    await router.push('/?plain_code=gamma')
+
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('gamma')
+    expect(
+      getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_source')
+    ).toBeUndefined()
+  })
+
   it('navigates exactly once when no strip-marked keys are present', async () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, [strippedDefinition])
