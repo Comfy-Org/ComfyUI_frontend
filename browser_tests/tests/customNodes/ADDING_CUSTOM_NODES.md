@@ -168,18 +168,18 @@ to_node_id, to_slot, "TYPE"]`, plus the matching `link`/`links` ids on the
 
 Append one object to `browser_tests/fixtures/data/customNodeManifest.json`:
 
-| Field                | Meaning                                                                                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pack`               | The pack's directory name under `custom_nodes/` (what `git clone` creates).                                                                                                                        |
-| `repo`               | The GitHub URL CI clones. Required non-empty.                                                                                                                                                      |
-| `pin`                | Commit SHA or tag CI checks out after cloning; `""` = default branch head. Pin when a pack breaks often; `""` also means new upstream regressions surface here first.                              |
-| `tiers`              | Which tiers run: `load` (registers + renders in both renderers), `connectivity` (typed links + slot drags), `run` (executes the workflow). Use all three unless a tier is impossible for the pack. |
-| `workflow`           | Path relative to `browser_tests/` of the Step 4 file. `""` only while the pack has no `run` tier.                                                                                                  |
-| `expectedNodes`      | The Step 2/3 keys. The load tier mounts each in both renderers; the run tier asserts each executes.                                                                                                |
-| `requiresGpu`        | `true` only if execution genuinely needs CUDA. Such packs cannot use the `run` tier on the CPU gate.                                                                                               |
-| `requiresModels`     | Model files the workflow needs (`[]` for the packs onboarded so far - keep it that way whenever possible).                                                                                         |
-| `timeoutMs`          | Per-test budget. `30000` unless the workflow does real work (video decode uses `90000`).                                                                                                           |
-| `vueNodesCompatible` | Optional, default `true`. See the policy below. Only ever set `false`, and only with evidence.                                                                                                     |
+| Field                | Meaning                                                                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pack`               | The pack's directory name under `custom_nodes/` (what `git clone` creates).                                                                                                                                                                             |
+| `repo`               | The GitHub URL CI clones. Required non-empty.                                                                                                                                                                                                           |
+| `pin`                | REQUIRED in practice: the commit SHA you verified locally. CI checks it out after cloning, so the gate tests exactly what you tested - an unpinned pack lets any upstream push red the gate for every PR. Bump deliberately, re-verifying per this doc. |
+| `tiers`              | Which tiers run: `load` (registers + renders in both renderers), `connectivity` (typed links + slot drags), `run` (executes the workflow). Use all three unless a tier is impossible for the pack.                                                      |
+| `workflow`           | Path relative to `browser_tests/` of the Step 4 file. `""` only while the pack has no `run` tier.                                                                                                                                                       |
+| `expectedNodes`      | The Step 2/3 keys. The load tier mounts each in both renderers; the run tier asserts each executes.                                                                                                                                                     |
+| `requiresGpu`        | `true` only if execution genuinely needs CUDA. Such packs cannot use the `run` tier on the CPU gate.                                                                                                                                                    |
+| `requiresModels`     | Model files the workflow needs (`[]` for the packs onboarded so far - keep it that way whenever possible).                                                                                                                                              |
+| `timeoutMs`          | Per-test budget. `30000` unless the workflow does real work (video decode uses `90000`).                                                                                                                                                                |
+| `vueNodesCompatible` | Optional, default `true`. See the policy below. Only ever set `false`, and only with evidence.                                                                                                                                                          |
 
 `loadManifest()` (`browser_tests/fixtures/customNode/manifest.ts`) validates
 every row and fails loudly on a missing field, an empty `repo`, a misspelled
@@ -283,8 +283,8 @@ environment before changing anything - the first such failure looked like
 upstream drift but was actually pack frontend JS that never loads under
 the dev server. Only after 6b reproduces it, decide: adjust the suite's
 expectation honestly (the way widget-only instance slots became a recorded
-exclusion) or, for genuine upstream drift (`pin: ""` tracks the pack's
-default branch head), pin the pack to its last good commit. Never paper
+exclusion) or, for genuine upstream drift after a pin bump, re-pin the
+pack to its last good commit. Never paper
 over it with a skip.
 
 ## Vue Nodes 2.0 compatibility policy
