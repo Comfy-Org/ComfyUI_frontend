@@ -5,6 +5,7 @@
       :class="
         cn(
           'flex min-h-8 w-full items-center gap-1',
+          SELECTION_EMPHASIS_TRANSITION_CLASS,
           highlighted && SELECTION_EMPHASIS_CLASS
         )
       "
@@ -162,7 +163,10 @@
 import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { SELECTION_EMPHASIS_CLASS } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import {
+  SELECTION_EMPHASIS_CLASS,
+  SELECTION_EMPHASIS_TRANSITION_CLASS
+} from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'

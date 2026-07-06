@@ -54,30 +54,30 @@
           </div>
         </div>
 
-        <!-- Selection context strip -->
-        <TransitionCollapse>
-          <div
-            v-if="showSelectionStrip"
-            data-testid="selection-context-strip"
-            role="status"
-            class="flex items-center border-t border-secondary-background px-3 pt-3.5 pb-1.5"
+        <!-- Context strip: workflow summary, or the selection's errors -->
+        <div
+          data-testid="selection-context-strip"
+          role="status"
+          class="flex items-center border-t border-secondary-background px-3 pt-3.5 pb-1.5"
+        >
+          <i18n-t
+            :keypath="stripKeypath"
+            :plural="stripErrorCount"
+            tag="span"
+            :class="
+              cn(
+                'min-w-0 flex-1 truncate text-xs font-semibold transition-colors duration-200',
+                hasSelectionEmphasis
+                  ? 'text-primary-background-hover'
+                  : 'text-muted-foreground'
+              )
+            "
           >
-            <i18n-t
-              :keypath="
-                isSingleNodeSelection
-                  ? 'rightSidePanel.selectedNodeErrors'
-                  : 'rightSidePanel.selectedNodesErrors'
-              "
-              :plural="selectionErrorCount"
-              tag="span"
-              class="min-w-0 flex-1 truncate text-xs font-semibold text-primary-background-hover"
-            >
-              <template #node>{{ selectionStripNodeLabel }}</template>
-              <template #nodes>{{ selectedNodeCount }}</template>
-              <template #count>{{ selectionErrorCount }}</template>
-            </i18n-t>
-          </div>
-        </TransitionCollapse>
+            <template #node>{{ selectionStripNodeLabel }}</template>
+            <template #nodes>{{ stripNodeCount }}</template>
+            <template #count>{{ stripErrorCount }}</template>
+          </i18n-t>
+        </div>
 
         <!-- Group by Class Type -->
         <TransitionGroup tag="div" name="list-scale" class="relative">
@@ -212,6 +212,7 @@
                   :class="
                     cn(
                       'min-w-0',
+                      SELECTION_EMPHASIS_TRANSITION_CLASS,
                       isCardInSelection(item.cardId) && SELECTION_EMPHASIS_CLASS
                     )
                   "
@@ -287,6 +288,7 @@
                 :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
                 :class="
                   cn(
+                    SELECTION_EMPHASIS_TRANSITION_CLASS,
                     isCardInSelection(card.id) && [
                       SELECTION_EMPHASIS_CLASS,
                       'py-1'
@@ -350,7 +352,10 @@ import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
-import { SELECTION_EMPHASIS_CLASS } from './selectionEmphasis'
+import {
+  SELECTION_EMPHASIS_CLASS,
+  SELECTION_EMPHASIS_TRANSITION_CLASS
+} from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
 interface ExecutionItemListEntry {
@@ -443,19 +448,43 @@ const {
   selectionMatchedGroupKeys,
   selectionMatchedCardIds,
   selectionMatchedAssetNodeIds,
-  selectionErrorCount
+  selectionErrorCount,
+  errorNodeCount
 } = useErrorGroups(searchQuery)
 
 const totalErrorCount = computed(() =>
   filteredGroups.value.reduce((sum, group) => sum + group.count, 0)
 )
 
-const showSelectionStrip = computed(
+const hasSelectionEmphasis = computed(
   () => hasSelection.value && selectionErrorCount.value > 0
 )
-const isSingleNodeSelection = computed(() => selectedNodeCount.value === 1)
 const selectionStripNodeLabel = computed(
   () => selectedNodeTitle.value ?? t('g.untitled')
+)
+
+/**
+ * The strip always occupies its slot so toggling a selection never shifts
+ * the layout: it reads as a workflow summary by default and switches to
+ * the selection's errors while an emphasis is active.
+ */
+const stripKeypath = computed(() => {
+  if (hasSelectionEmphasis.value) {
+    return selectedNodeCount.value === 1
+      ? 'rightSidePanel.selectedNodeErrors'
+      : 'rightSidePanel.selectedNodesErrors'
+  }
+  return errorNodeCount.value === 1
+    ? 'rightSidePanel.errorNodeSummary'
+    : 'rightSidePanel.errorNodesSummary'
+})
+
+const stripNodeCount = computed(() =>
+  hasSelectionEmphasis.value ? selectedNodeCount.value : errorNodeCount.value
+)
+
+const stripErrorCount = computed(() =>
+  hasSelectionEmphasis.value ? selectionErrorCount.value : totalErrorCount.value
 )
 
 function isCardInSelection(cardId: string): boolean {

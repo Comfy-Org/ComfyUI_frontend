@@ -3885,6 +3885,8 @@
     "errorsDetected": "Error detected | Errors detected",
     "selectedNodeErrors": "{node} — {count} error | {node} — {count} errors",
     "selectedNodesErrors": "{nodes} nodes selected — {count} error | {nodes} nodes selected — {count} errors",
+    "errorNodeSummary": "{nodes} node — {count} error | {nodes} node — {count} errors",
+    "errorNodesSummary": "{nodes} nodes — {count} error | {nodes} nodes — {count} errors",
     "resolveBeforeRun": "Resolve before running the workflow",
     "expand": "Expand",
     "collapse": "Collapse",

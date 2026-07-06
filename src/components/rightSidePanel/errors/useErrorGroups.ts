@@ -877,6 +877,29 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     )
   })
 
+  /** Distinct nodes affected by any error (workflow-level summary). */
+  const errorNodeCount = computed(() => {
+    const ids = new Set<string>()
+    for (const group of allErrorGroups.value) {
+      if (group.type !== 'execution') continue
+      for (const card of group.cards) {
+        if (card.nodeId) ids.add(card.nodeId)
+      }
+    }
+    for (const candidate of missingModelStore.missingModelCandidates ?? []) {
+      if (candidate.nodeId != null) ids.add(String(candidate.nodeId))
+    }
+    for (const candidate of missingMediaStore.missingMediaCandidates ?? []) {
+      if (candidate.nodeId != null) ids.add(String(candidate.nodeId))
+    }
+    for (const nodeType of missingNodesStore.missingNodesError?.nodeTypes ??
+      []) {
+      if (typeof nodeType === 'string' || nodeType.nodeId == null) continue
+      ids.add(String(nodeType.nodeId))
+    }
+    return ids.size
+  })
+
   const filteredGroups = computed<ErrorGroup[]>(() => {
     const query = toValue(searchQuery).trim()
     return searchErrorGroups(allErrorGroups.value, query)
@@ -898,6 +921,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     selectionMatchedGroupKeys,
     selectionMatchedCardIds,
     selectionMatchedAssetNodeIds,
-    selectionErrorCount
+    selectionErrorCount,
+    errorNodeCount
   }
 }

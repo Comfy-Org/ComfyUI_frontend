@@ -317,7 +317,8 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(strip).toContainText('1 error')
 
       await comfyPage.canvas.click()
-      await expect(strip).toBeHidden()
+      // Deselecting swaps the always-visible strip back to the summary
+      await expect(strip).toContainText('2 nodes — 1 error')
       await expectReferenceBadge(missingModelGroup, 2)
     })
   })
@@ -423,7 +424,8 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
-      await expect(strip).toBeHidden()
+      // Deselecting swaps the always-visible strip back to the summary
+      await expect(strip).toContainText('2 nodes — 2 errors')
       await expect(mediaRows).toHaveCount(2)
     })
   })

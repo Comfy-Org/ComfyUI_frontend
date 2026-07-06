@@ -104,6 +104,10 @@ function renderList(pinia: TestingPinia) {
             '{node} — {count} error | {node} — {count} errors',
           selectedNodesErrors:
             '{nodes} nodes selected — {count} error | {nodes} nodes selected — {count} errors',
+          errorNodeSummary:
+            '{nodes} node — {count} error | {nodes} node — {count} errors',
+          errorNodesSummary:
+            '{nodes} nodes — {count} error | {nodes} nodes — {count} errors',
           resolveBeforeRun: 'Resolve before running the workflow',
           expand: 'Expand',
           collapse: 'Collapse',
@@ -219,9 +223,10 @@ describe('ErrorGroupList selection emphasis', () => {
       unknown
     >([{ id: '99', title: 'Unrelated' }])
     await waitFor(() => {
-      expect(
-        screen.queryByTestId('selection-context-strip')
-      ).not.toBeInTheDocument()
+      // No emphasis: the strip falls back to the workflow summary
+      expect(screen.getByTestId('selection-context-strip')).toHaveTextContent(
+        '2 nodes — 2 errors'
+      )
     })
     expect(isSectionExpanded(loaderSection)).toBe(false)
     expect(isSectionExpanded(getSectionByTitle('Missing connection'))).toBe(
@@ -229,19 +234,22 @@ describe('ErrorGroupList selection emphasis', () => {
     )
   })
 
-  it('shows the node title and error count in the context strip', async () => {
+  it('always shows the strip: workflow summary by default, selection while emphasized', async () => {
     const pinia = createPinia()
     seedTwoErrorGroups(pinia)
     renderList(pinia)
     const canvasStore = useCanvasStore(pinia)
 
+    const strip = screen.getByTestId('selection-context-strip')
+    expect(strip).toHaveTextContent('2 nodes — 2 errors')
+
     canvasStore.selectedItems = fromAny<
       typeof canvasStore.selectedItems,
       unknown
     >([SAMPLER_NODE])
-
-    const strip = await screen.findByTestId('selection-context-strip')
-    expect(strip).toHaveTextContent('SamplerNode — 1 error')
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('SamplerNode — 1 error')
+    })
 
     canvasStore.selectedItems = fromAny<
       typeof canvasStore.selectedItems,
@@ -249,6 +257,11 @@ describe('ErrorGroupList selection emphasis', () => {
     >([SAMPLER_NODE, LOADER_NODE])
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes selected — 2 errors')
+    })
+
+    canvasStore.selectedItems = []
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
   })
 })
