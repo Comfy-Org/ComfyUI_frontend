@@ -2246,6 +2246,9 @@
     "failedToToggleGizmo": "Failed to toggle gizmo",
     "failedToSetGizmoMode": "Failed to set gizmo mode"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "Partner Nodes x {count}"
+  },
   "nodeErrors": {
     "render": "Node Render Error",
     "content": "Node Content Error",

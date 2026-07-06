@@ -135,16 +135,16 @@ describe('computeBadges', () => {
     expect(rows.filter((b) => b.kind === 'credits')).toEqual([])
   })
 
-  function subgraphPricing(rowCount: number, singleLabel = '') {
+  function subgraphPricing(apiNodeCount: number, singleLabel = '') {
     return {
       isApiNode: false,
       showApiPricing: true,
       priceLabel: '',
-      subgraphCredits: { rowCount, singleLabel }
+      subgraphCredits: { apiNodeCount, singleLabel }
     }
   }
 
-  it('aggregates multiple inner credits rows into a partner count', () => {
+  it('aggregates multiple inner api nodes into a partner count', () => {
     const rows = computeBadges(sources({ pricing: subgraphPricing(5) }))
 
     expect(rows.at(-1)).toMatchObject({
@@ -154,7 +154,7 @@ describe('computeBadges', () => {
     })
   })
 
-  it('passes a single inner credits label through to the wrapper', () => {
+  it('passes a single inner api node label through to the wrapper', () => {
     const rows = computeBadges(
       sources({ pricing: subgraphPricing(1, '$0.05/Run') })
     )
@@ -163,7 +163,7 @@ describe('computeBadges', () => {
   })
 
   it.for([
-    { name: 'no inner credits rows', pricing: subgraphPricing(0) },
+    { name: 'no inner api nodes', pricing: subgraphPricing(0) },
     { name: 'a single empty label', pricing: subgraphPricing(1, '') }
   ])('projects no wrapper credits row given $name', ({ pricing }) => {
     const rows = computeBadges(sources({ pricing }))

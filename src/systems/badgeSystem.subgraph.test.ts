@@ -15,10 +15,13 @@ import { toNodeId } from '@/types/nodeId'
 
 import { startBadgeSystem } from './badgeSystem'
 
-const getNodeDisplayPrice = vi.fn(
-  (_node: LGraphNode, overrides?: ReadonlyMap<string, unknown>) =>
-    String(overrides?.get('prompt') ?? '$0.05/Run')
-)
+function defaultDisplayPrice(
+  _node: LGraphNode,
+  overrides?: ReadonlyMap<string, unknown>
+): string {
+  return String(overrides?.get('prompt') ?? '$0.05/Run')
+}
+const getNodeDisplayPrice = vi.fn(defaultDisplayPrice)
 
 vi.mock('@/composables/node/useNodePricing', () => ({
   useNodePricing: () => ({
@@ -45,6 +48,8 @@ class ApiNode extends LGraphNode {
 describe('badge system subgraph credits aggregation', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    getNodeDisplayPrice.mockReset()
+    getNodeDisplayPrice.mockImplementation(defaultDisplayPrice)
   })
 
   function setup() {
@@ -97,7 +102,18 @@ describe('badge system subgraph credits aggregation', () => {
     stop()
   })
 
-  it('counts partner nodes when several inner api nodes are priced', async () => {
+  it('counts partner nodes when several inner api nodes exist', async () => {
+    const { addInner, stop, wrapperCredits } = setup()
+    addInner(new ApiNode('api-1'), 11)
+    addInner(new ApiNode('api-2'), 12)
+    await nextTick()
+
+    expect(wrapperCredits()).toEqual(['Partner Nodes x 2'])
+    stop()
+  })
+
+  it('counts api nodes whose price has not resolved yet', async () => {
+    getNodeDisplayPrice.mockReturnValue('')
     const { addInner, stop, wrapperCredits } = setup()
     addInner(new ApiNode('api-1'), 11)
     addInner(new ApiNode('api-2'), 12)

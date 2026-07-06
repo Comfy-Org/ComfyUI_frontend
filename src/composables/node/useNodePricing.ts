@@ -469,12 +469,33 @@ const getNodeRevisionRef = (nodeId: NodeId): Ref<number> => {
 }
 
 // WeakMaps avoid memory leaks when nodes are removed.
-type CacheEntry = { sig: string; label: string }
 type InflightEntry = { sig: string; promise: Promise<void> }
 
-const cache = new WeakMap<LGraphNode, CacheEntry>()
-const desiredSig = new WeakMap<LGraphNode, string>()
+// Labels are cached per signature: a node can be read concurrently under
+// several signatures (its own widget values, and a SubgraphNode wrapper's
+// promoted overrides), and a single-slot cache would make those readers
+// evict each other's entry and re-schedule forever.
+const MAX_CACHED_SIGNATURES = 8
+const cache = new WeakMap<LGraphNode, Map<string, string>>()
 const inflight = new WeakMap<LGraphNode, InflightEntry>()
+
+function nodeSigCache(node: LGraphNode): Map<string, string> {
+  const existing = cache.get(node)
+  if (existing) return existing
+  const next = new Map<string, string>()
+  cache.set(node, next)
+  return next
+}
+
+function cacheLabel(node: LGraphNode, sig: string, label: string): void {
+  const sigCache = nodeSigCache(node)
+  sigCache.delete(sig)
+  sigCache.set(sig, label)
+  for (const oldest of sigCache.keys()) {
+    if (sigCache.size <= MAX_CACHED_SIGNATURES) break
+    sigCache.delete(oldest)
+  }
+}
 
 const scheduleEvaluation = (
   node: LGraphNode,
@@ -482,8 +503,6 @@ const scheduleEvaluation = (
   ctx: JsonataEvalContext,
   sig: string
 ) => {
-  desiredSig.set(node, sig)
-
   const running = inflight.get(node)
   if (running && running.sig === sig) return
 
@@ -491,19 +510,11 @@ const scheduleEvaluation = (
 
   const promise = Promise.resolve(rule._compiled.evaluate(ctx))
     .then((res) => {
-      const label = formatPricingResult(res)
-
-      // Ignore stale results: if the node changed while we were evaluating,
-      // desiredSig will no longer match.
-      if (desiredSig.get(node) !== sig) return
-
-      cache.set(node, { sig, label })
+      cacheLabel(node, sig, formatPricingResult(res))
     })
     .catch(() => {
       // Cache empty to avoid retry-spam for same signature
-      if (desiredSig.get(node) === sig) {
-        cache.set(node, { sig, label: '' })
-      }
+      cacheLabel(node, sig, '')
     })
     .finally(() => {
       const cur = inflight.get(node)
@@ -574,15 +585,15 @@ export const useNodePricing = () => {
     const ctx = buildJsonataContext(node, rule, widgetOverrides)
     const sig = buildSignature(ctx, rule)
 
-    const cached = cache.get(node)
-    if (cached && cached.sig === sig) {
-      return cached.label
-    }
+    const sigCache = cache.get(node)
+    const hit = sigCache?.get(sig)
+    if (hit !== undefined) return hit
 
     // Cache miss: start async evaluation.
-    // Return last-known label (if any) to avoid flicker; otherwise return empty.
+    // Return the last-known label (if any) to avoid flicker.
     scheduleEvaluation(node, rule, ctx, sig)
-    return cached?.label ?? ''
+    const labels = [...(sigCache?.values() ?? [])]
+    return labels.at(-1) ?? ''
   }
 
   /**

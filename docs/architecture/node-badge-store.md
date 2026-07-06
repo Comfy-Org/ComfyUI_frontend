@@ -137,12 +137,16 @@ Frame-budget parity per ADR 0008's render mitigations applies.
 
 ## Implementation notes (slice B)
 
-- Wrapper `SubgraphNode` credits rows are aggregated by the system from
-  the inner nodes' store rows: several priced inner (recursively
-  collected, non-wrapper) nodes collapse to `Partner Nodes x N`; exactly
-  one shows its price with the wrapper's promoted widget values
-  overriding the inner node's own. The aggregation tracks the inner
-  rows, the registered-node set, and a structure revision.
+- Wrapper `SubgraphNode` credits rows are aggregated by the system over
+  the inner (recursively collected, non-wrapper) api nodes — the same
+  count basis as the old unconditional per-api-node badges: several
+  collapse to `Partner Nodes x N` (localized), exactly one shows its
+  price with the wrapper's promoted widget values overriding the inner
+  node's own. The aggregation tracks the inner nodes' pricing
+  revisions, the registered-node set, and a structure revision.
+  `useNodePricing` caches labels per signature so a leaf's own read and
+  its wrapper's override read do not evict each other and re-schedule
+  forever.
 - Legacy `drawBadges` renders the store rows through a per-node
   memoized `LGraphBadge` cache (decision 5); `iconKey` resolves through
   a generic litegraph `badgeIconRegistry`, with the `credits` icon

@@ -2,6 +2,7 @@ import { effectScope, ref, watch, watchEffect } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import { t } from '@/i18n'
 import { registerBadgeIcon } from '@/lib/litegraph/src/badgeIconRegistry'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -47,10 +48,10 @@ export interface BadgeSources {
     priceLabel: string
     /**
      * Present on SubgraphNode wrappers: how many inner (recursively
-     * collected, non-wrapper) nodes carry credits rows, and — when
-     * exactly one does — the label the wrapper should display.
+     * collected, non-wrapper) api nodes exist, and — when exactly one
+     * does — the label the wrapper should display.
      */
-    subgraphCredits?: { rowCount: number; singleLabel: string }
+    subgraphCredits?: { apiNodeCount: number; singleLabel: string }
   }
 }
 
@@ -100,9 +101,12 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
 function computeCreditsText(pricing: BadgeSources['pricing']): string {
   const { subgraphCredits } = pricing
   if (subgraphCredits) {
-    if (subgraphCredits.rowCount > 1)
-      return `Partner Nodes x ${subgraphCredits.rowCount}`
-    return subgraphCredits.rowCount === 1 ? subgraphCredits.singleLabel : ''
+    if (subgraphCredits.apiNodeCount > 1) {
+      return t('nodeBadge.partnerNodesCount', {
+        count: subgraphCredits.apiNodeCount
+      })
+    }
+    return subgraphCredits.apiNodeCount === 1 ? subgraphCredits.singleLabel : ''
   }
   return pricing.isApiNode && pricing.showApiPricing ? pricing.priceLabel : ''
 }
@@ -186,19 +190,21 @@ function collectPromotedOverrides(
 
 /**
  * A wrapper's credits sources: the inner (recursively collected,
- * non-wrapper) nodes whose store rows include a credits row. Tracks the
- * inner rows, the registered-node set, and the structure revision, so the
- * wrapper recomputes when inner prices, membership, or structure change.
+ * non-wrapper) api nodes. Tracks their pricing revisions, the
+ * registered-node set, and the structure revision, so the wrapper
+ * recomputes when inner prices, membership, or structure change.
  */
 function gatherSubgraphCredits(
   graphId: UUID,
-  wrapper: SubgraphNode
-): { rowCount: number; singleLabel: string } {
+  wrapper: SubgraphNode,
+  showApiPricing: boolean
+): { apiNodeCount: number; singleLabel: string } {
   void subgraphCreditsRevision.value
-  const badgeStore = useNodeBadgeStore()
-  void badgeStore.registeredNodeIds(graphId)
+  void useNodeBadgeStore().registeredNodeIds(graphId)
+  if (!showApiPricing) return { apiNodeCount: 0, singleLabel: '' }
 
-  const creditLeaves: LGraphNode[] = []
+  const pricing = useNodePricing()
+  const apiLeaves: LGraphNode[] = []
   const visited = new Set<string>()
   function walk(nodes: LGraphNode[]): void {
     for (const inner of nodes) {
@@ -209,24 +215,23 @@ function gatherSubgraphCredits(
         walk(inner.subgraph.nodes)
         continue
       }
-      const hasCredits = badgeStore
-        .getBadges(graphId, inner.id)
-        .some((row) => row.kind === 'credits')
-      if (hasCredits) creditLeaves.push(inner)
+      if (!inner.constructor?.nodeData?.api_node) continue
+      void pricing.getNodeRevisionRef(inner.id).value
+      apiLeaves.push(inner)
     }
   }
   walk(wrapper.subgraph.nodes)
 
-  if (creditLeaves.length !== 1) {
-    return { rowCount: creditLeaves.length, singleLabel: '' }
+  if (apiLeaves.length !== 1) {
+    return { apiNodeCount: apiLeaves.length, singleLabel: '' }
   }
-  const leaf = creditLeaves[0]
+  const leaf = apiLeaves[0]
   const singleLabel =
-    useNodePricing().getNodeDisplayPrice(
+    pricing.getNodeDisplayPrice(
       leaf,
       collectPromotedOverrides(wrapper, leaf)
     ) ?? ''
-  return { rowCount: 1, singleLabel }
+  return { apiNodeCount: 1, singleLabel }
 }
 
 function gatherSources(
@@ -247,7 +252,7 @@ function gatherSources(
     priceLabel = useNodePricing().getNodeDisplayPrice(node) ?? ''
   }
   const subgraphCredits = node?.isSubgraphNode()
-    ? gatherSubgraphCredits(graphId, node)
+    ? gatherSubgraphCredits(graphId, node, showApiPricing)
     : undefined
 
   return {

@@ -173,6 +173,26 @@ describe('useNodePricing', () => {
       expect(price).toBe(creditsLabel(0.05))
     })
 
+    it('caches per signature so base and override reads both settle', async () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestSignatureNode',
+        priceBadge('{"type":"text","text": widgets.prompt}', [
+          { name: 'prompt', type: 'STRING' }
+        ]),
+        [{ name: 'prompt', value: 'inner' }]
+      )
+      const overrides = new Map([['prompt', 'outer']])
+
+      getNodeDisplayPrice(node)
+      getNodeDisplayPrice(node, overrides)
+      await new Promise((r) => setTimeout(r, 50))
+
+      expect(getNodeDisplayPrice(node)).toBe('inner')
+      expect(getNodeDisplayPrice(node, overrides)).toBe('outer')
+      expect(getNodeDisplayPrice(node)).toBe('inner')
+    })
+
     it('should handle FLOAT widget as number', async () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
