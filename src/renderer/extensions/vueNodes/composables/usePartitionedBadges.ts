@@ -9,10 +9,11 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { app } from '@/scripts/app'
+import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
 
@@ -26,6 +27,29 @@ type TrackableNode = {
   id: SerializedNodeId
   type: string
   inputs?: INodeInputSlot[]
+}
+
+/**
+ * Reads pricing-relevant slot connectivity from the link store so the
+ * calling computed re-runs when one of those inputs connects or disconnects.
+ */
+function touchPricingInputConnectivity(
+  graphId: string | undefined,
+  nodeId: NodeId,
+  inputs: INodeInputSlot[] | undefined,
+  inputNames: string[],
+  groupPrefixes: string[]
+): void {
+  if (!graphId || !inputs) return
+  if (inputNames.length === 0 && groupPrefixes.length === 0) return
+
+  const linkStore = useLinkStore()
+  inputs.forEach((inp, index) => {
+    const relevant =
+      (inp.name && inputNames.includes(inp.name)) ||
+      groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))
+    if (relevant) void linkStore.isInputSlotConnected(graphId, nodeId, index)
+  })
 }
 //TODO deduplicate reactivity tracking once more thoroughly tested
 export function trackNodePrice(node: TrackableNode) {
@@ -53,24 +77,14 @@ export function trackNodePrice(node: TrackableNode) {
       void widgetStore.getWidget(widgetId(graphId, nodeId, name))?.value
     }
   }
-  // Access input connections for regular inputs
-  const inputNames = getInputNames(node.type)
-  if (inputNames.length > 0) {
-    node?.inputs?.forEach((inp) => {
-      if (inp.name && inputNames.includes(inp.name)) {
-        void inp.link // Access link to create reactive dependency
-      }
-    })
-  }
-  // Access input connections for input_groups (e.g., autogrow inputs)
-  const groupPrefixes = getInputGroupPrefixes(node.type)
-  if (groupPrefixes.length > 0) {
-    node?.inputs?.forEach((inp) => {
-      if (groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))) {
-        void inp.link // Access link to create reactive dependency
-      }
-    })
-  }
+  // Access input connections that affect pricing (regular + input_groups)
+  touchPricingInputConnectivity(
+    graphId,
+    nodeId,
+    node.inputs,
+    getInputNames(node.type),
+    getInputGroupPrefixes(node.type)
+  )
 }
 
 /**
@@ -156,26 +170,14 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
               ?.value
           }
         }
-        // Access input connections for regular inputs
-        const inputNames = relevantInputNames.value
-        if (inputNames.length > 0) {
-          nodeData?.inputs?.forEach((inp) => {
-            if (inp.name && inputNames.includes(inp.name)) {
-              void inp.link // Access link to create reactive dependency
-            }
-          })
-        }
-        // Access input connections for input_groups (e.g., autogrow inputs)
-        const groupPrefixes = inputGroupPrefixes.value
-        if (groupPrefixes.length > 0) {
-          nodeData?.inputs?.forEach((inp) => {
-            if (
-              groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))
-            ) {
-              void inp.link // Access link to create reactive dependency
-            }
-          })
-        }
+        // Access input connections that affect pricing (regular + input_groups)
+        touchPricingInputConnectivity(
+          graphId,
+          nodeData.id,
+          nodeData?.inputs,
+          relevantInputNames.value,
+          inputGroupPrefixes.value
+        )
       }
     }
     return [...(nodeData?.badges ?? [])].map(toValue)

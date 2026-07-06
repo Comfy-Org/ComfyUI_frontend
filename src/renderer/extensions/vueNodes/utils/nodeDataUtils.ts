@@ -1,5 +1,6 @@
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { INodeInputSlot, INodeSlot } from '@/lib/litegraph/src/interfaces'
+import { useLinkStore } from '@/stores/linkStore'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
 function coerceINodeSlot(input: INodeInputSlot): INodeSlot {
@@ -26,11 +27,17 @@ export function nonWidgetedInputs(
 }
 
 export function linkedWidgetedInputs(
-  nodeData: VueNodeData | undefined
+  nodeData: VueNodeData | undefined,
+  graphId: string | undefined
 ): INodeSlot[] {
-  if (!nodeData?.inputs) return []
+  if (!nodeData?.inputs || graphId === undefined) return []
 
+  const linkStore = useLinkStore()
   return nodeData.inputs
-    .filter((input) => inputHasWidget(input) && !!input.link)
+    .filter(
+      (input, index) =>
+        inputHasWidget(input) &&
+        linkStore.isInputSlotConnected(graphId, nodeData.id, index)
+    )
     .map(coerceINodeSlot)
 }
