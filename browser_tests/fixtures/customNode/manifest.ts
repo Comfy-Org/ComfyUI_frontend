@@ -30,6 +30,13 @@ export interface CustomNodeManifestEntry {
   // applied to this pack: its tests still run and pass their LiteGraph-canvas
   // assertions, so the zero-skip gate is preserved.
   vueNodesCompatible?: boolean
+  // Per-node Vue Nodes 2.0 incompatibility ledger: node key -> reason with
+  // evidence (author statement or reproduced mount failure; a run failure
+  // alone is NOT evidence - it may be our own fixture error). Ledgered nodes
+  // keep every canvas assertion; only their Vue mount assertion is withheld.
+  // A key that stops existing on the backend fails the suite, so entries
+  // cannot silently rot.
+  vueIncompatibleNodes?: Record<string, string>
 }
 
 function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
@@ -67,6 +74,16 @@ function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
     typeof entry.vueNodesCompatible !== 'boolean'
   )
     missing.push('vueNodesCompatible')
+  if (
+    entry.vueIncompatibleNodes !== undefined &&
+    (typeof entry.vueIncompatibleNodes !== 'object' ||
+      entry.vueIncompatibleNodes === null ||
+      Array.isArray(entry.vueIncompatibleNodes) ||
+      Object.values(entry.vueIncompatibleNodes).some(
+        (reason) => typeof reason !== 'string' || reason.length === 0
+      ))
+  )
+    missing.push('vueIncompatibleNodes (node key -> non-empty reason string)')
   if (missing.length > 0)
     throw new Error(
       `custom-node manifest entry ${index} (${entry.pack ?? '?'}) missing: ${missing.join(', ')}`

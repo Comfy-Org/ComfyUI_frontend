@@ -94,7 +94,12 @@ export class LocalDesktopTarget {
 
     // Browser path: app.queuePrompt runs graphToPrompt internally. Do NOT call
     // app.api.queuePrompt, which submits an already-serialized (empty) prompt.
-    await page.evaluate(() => window.app!.queuePrompt(0))
+    // A backend validation reject emits NO events at all - without checking the
+    // queue result, every rejected prompt would burn the full wait and
+    // masquerade as TIMEOUT.
+    const queued = await page.evaluate(() => window.app!.queuePrompt(0))
+    if (queued === false)
+      return { outcome: 'VALIDATION_FAIL', executedNodes: [] }
 
     await page
       .waitForFunction(

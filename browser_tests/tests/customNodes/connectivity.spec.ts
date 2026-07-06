@@ -26,7 +26,32 @@ const CORE_PROOF_NODE_COUNT = 16
 // A node may legitimately veto a wiring via onConnectInput; committed
 // entries here must name the veto. Green means actual rejections are a
 // subset of this list.
-const CONNECT_REJECTED_ALLOWLIST: string[] = []
+const CONNECT_REJECTED_ALLOWLIST: string[] = [
+  // pysssss MathExpression only accepts INT/FLOAT-producing links into its
+  // expression variables; its JS vetoes text-list producers.
+  'AddTextPrefix.texts -> MathExpression|pysssss.expression'
+]
+// A pack's own serialize/configure hooks may drop inbound links it manages
+// itself; each committed entry must name the pack behavior. These reproduce
+// in manual use of those packs (wire, save, reload: the link is gone), so
+// they are pack behavior on record, not frontend regressions.
+const ROUNDTRIP_LOST_ALLOWLIST: string[] = [
+  // rgthree SDXL Power Prompt rebuilds its dimension widget-inputs during
+  // configure and drops inbound links to them.
+  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).target_width',
+  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).target_height',
+  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).crop_width',
+  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).crop_height',
+  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).target_width',
+  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).target_height',
+  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).crop_width',
+  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).crop_height',
+  // VHS_SelectLatest rebuilds its dynamic slots on configure, detaching
+  // links on both its inputs and outputs.
+  'AddTextPrefix.texts -> VHS_SelectLatest.filename_prefix',
+  'AddTextPrefix.texts -> VHS_SelectLatest.filename_postfix',
+  'VHS_SelectLatest.Filename -> AddLabel.font_color'
+]
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -76,7 +101,13 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   for (const entry of connectivityEntries)
     if (!installedEntries.includes(entry))
       console.log(`connectivity: ${entry.pack} not installed on this backend`)
-  const packTypes = installedEntries.flatMap((entry) => entry.expectedNodes)
+  // Sweep EVERY node the installed packs register, not just the curated
+  // expectedNodes sentinels - the corpus comes from the live backend, so a
+  // pack update is covered the moment it installs.
+  const installedPacks = new Set(installedEntries.map((entry) => entry.pack))
+  const packTypes = nodes
+    .filter((node) => installedPacks.has(node.pack))
+    .map((node) => node.type)
   const coreProof = nodes
     .filter(
       (node) =>
@@ -128,6 +159,10 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       !(
         result.outcome === ('CONNECT_REJECTED' satisfies ConnectivityOutcome) &&
         CONNECT_REJECTED_ALLOWLIST.includes(result.key)
+      ) &&
+      !(
+        result.outcome === ('ROUNDTRIP_LOST' satisfies ConnectivityOutcome) &&
+        ROUNDTRIP_LOST_ALLOWLIST.includes(result.key)
       )
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
