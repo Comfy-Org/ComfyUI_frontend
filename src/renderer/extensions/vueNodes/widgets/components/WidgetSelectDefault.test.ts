@@ -363,8 +363,13 @@ describe('WidgetSelectDefault', () => {
       const icon = screen.getByTestId('widget-select-trigger-icon')
       expect(icon).toHaveClass('animate-spin')
 
+      const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
+
       await user.keyboard('{Escape}')
       await nextTick()
+
+      expect(clearTimeoutSpy).toHaveBeenCalled()
+      clearTimeoutSpy.mockRestore()
 
       expect(
         screen.queryByTestId('widget-select-default-loading')
