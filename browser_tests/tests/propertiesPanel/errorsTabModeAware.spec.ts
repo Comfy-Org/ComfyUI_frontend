@@ -430,6 +430,49 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     })
   })
 
+  test.describe('Selection emphasis', () => {
+    test('Selecting a node collapses unrelated groups and highlights its rows', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_nodes_and_media'
+      )
+
+      const missingNodeCard = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingNodeCard
+      )
+      const mediaRow = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaRow
+      )
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(missingNodeCard).toBeVisible()
+      await expect(mediaRow).toBeVisible()
+      await expect(strip).toContainText('2 nodes — 2 errors')
+
+      const mediaNode = await comfyPage.nodeOps.getNodeRefById('10')
+      // The node sits near the canvas top where overlays intercept clicks
+      await mediaNode.centerOnNode()
+      await mediaNode.click('title')
+
+      // The unrelated missing-node group auto-collapses while the matched
+      // media row stays visible and is marked as part of the selection
+      await expect(missingNodeCard).toBeHidden()
+      await expect(mediaRow).toBeVisible()
+      await expect(mediaRow).toHaveAttribute('aria-current', 'true')
+      await expect(strip).toContainText('1 error')
+
+      await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
+      // Emphasis ends: the collapsed group re-expands and the strip
+      // returns to the workflow summary
+      await expect(missingNodeCard).toBeVisible()
+      await expect(mediaRow).not.toHaveAttribute('aria-current', 'true')
+      await expect(strip).toContainText('2 nodes — 2 errors')
+    })
+  })
+
   test.describe('Subgraph', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await cleanupFakeModel(comfyPage)
