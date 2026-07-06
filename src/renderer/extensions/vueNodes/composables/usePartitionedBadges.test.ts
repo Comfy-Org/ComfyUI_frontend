@@ -11,14 +11,14 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-const GRAPH_ID = 'graph-test'
+const GRAPH_ID = vi.hoisted(() => 'graph-test')
 
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
       graph: {
         rootGraph: {
-          id: 'graph-test'
+          id: GRAPH_ID
         }
       }
     }

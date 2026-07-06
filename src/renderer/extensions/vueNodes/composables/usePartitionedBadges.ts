@@ -16,6 +16,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
+import type { UUID } from '@/utils/uuid'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -34,13 +35,13 @@ type TrackableNode = {
  * calling computed re-runs when one of those inputs connects or disconnects.
  */
 function touchPricingInputConnectivity(
-  graphId: string | undefined,
+  graphId: UUID | undefined,
   nodeId: NodeId,
   inputs: INodeInputSlot[] | undefined,
   inputNames: string[],
   groupPrefixes: string[]
 ): void {
-  if (!graphId || !inputs) return
+  if (graphId === undefined || !inputs) return
   if (inputNames.length === 0 && groupPrefixes.length === 0) return
 
   const linkStore = useLinkStore()
@@ -77,7 +78,6 @@ export function trackNodePrice(node: TrackableNode) {
       void widgetStore.getWidget(widgetId(graphId, nodeId, name))?.value
     }
   }
-  // Access input connections that affect pricing (regular + input_groups)
   touchPricingInputConnectivity(
     graphId,
     nodeId,
@@ -170,7 +170,6 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
               ?.value
           }
         }
-        // Access input connections that affect pricing (regular + input_groups)
         touchPricingInputConnectivity(
           graphId,
           nodeData.id,

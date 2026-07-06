@@ -28,7 +28,7 @@ import {
 
 import NodeSlots from './NodeSlots.vue'
 
-const GRAPH_ID = 'graph-test'
+const GRAPH_ID = vi.hoisted(() => 'graph-test')
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -440,8 +440,10 @@ describe('NodeSlots.vue', () => {
   })
 
   describe('unified mode', () => {
-    function renderUnified(nodeData: VueNodeData) {
-      const pinia = createTestingPinia({ stubActions: false })
+    function renderUnified(
+      nodeData: VueNodeData,
+      pinia = createTestingPinia({ stubActions: false })
+    ) {
       setActivePinia(pinia)
       return render(NodeSlots, {
         global: {
@@ -482,10 +484,7 @@ describe('NodeSlots.vue', () => {
         id: toVueNodeId(node.id),
         inputs: node.inputs
       })
-      const { container } = render(NodeSlots, {
-        global: { plugins: [i18n, pinia], stubs: defaultSlotStubs },
-        props: { nodeData, unified: true }
-      })
+      const { container } = renderUnified(nodeData, pinia)
 
       expect(getRenderedSlotIndex(container, 'w')).toBe(1)
     })
@@ -511,10 +510,7 @@ describe('NodeSlots.vue', () => {
         id: toVueNodeId(node.id),
         inputs: node.inputs
       })
-      const { container } = render(NodeSlots, {
-        global: { plugins: [i18n, pinia], stubs: defaultSlotStubs },
-        props: { nodeData, unified: true }
-      })
+      const { container } = renderUnified(nodeData, pinia)
 
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('[data-name="w"]')).toBeNull()
