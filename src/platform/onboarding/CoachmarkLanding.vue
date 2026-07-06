@@ -11,7 +11,7 @@
       <DialogContent
         v-reka-z-index
         data-testid="coach-landing"
-        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border-default bg-secondary-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:min-h-98 md:flex-row"
+        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border-default bg-secondary-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:min-h-98 md:max-w-[800px] md:flex-row"
         @pointer-down-outside.prevent
         @open-auto-focus="onOpenAutoFocus"
       >
