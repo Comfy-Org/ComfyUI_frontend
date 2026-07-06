@@ -36,29 +36,27 @@ const card = computed(() =>
     data-testid="linear-welcome"
     class="flex size-full flex-col items-center justify-center p-8 text-center"
   >
-    <div class="flex w-full max-w-xl flex-col items-center gap-6">
+    <div class="flex w-full max-w-md flex-col items-center gap-6">
       <div
-        class="flex w-full flex-col gap-2.5 rounded-2xl bg-base-background p-8 text-left"
+        class="flex w-full flex-col gap-5 rounded-2xl border border-border-subtle bg-base-background p-5 text-left"
       >
         <div
           class="flex size-12 items-center justify-center rounded-xl bg-secondary-background-hover"
         >
           <i :class="cn(card.icon, 'size-6 text-base-foreground')" />
         </div>
-        <div class="flex flex-col gap-2">
-          <h2 class="text-3xl font-semibold text-base-foreground">
-            {{ card.title }}
-          </h2>
-          <p class="text-sm/relaxed text-base-foreground">
-            {{ card.description }}
-          </p>
-        </div>
+        <h2 class="m-0 p-0 text-xl font-semibold text-base-foreground">
+          {{ card.title }}
+        </h2>
+        <p class="m-0 p-0 text-sm/relaxed text-base-foreground">
+          {{ card.description }}
+        </p>
         <Button
           v-if="!hasOutputs"
           data-testid="linear-welcome-build-app"
           variant="inverted"
           size="lg"
-          class="mt-4 w-full"
+          class="w-full"
           @click="appModeStore.enterBuilder()"
         >
           <i class="icon-[lucide--hammer]" />
