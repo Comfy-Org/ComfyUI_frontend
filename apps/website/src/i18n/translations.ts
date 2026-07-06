@@ -1209,6 +1209,11 @@ const translations = {
     en: 'Educational savings – {pct}% off',
     'zh-CN': '教育优惠 – 立减 {pct}%'
   },
+  // Team-card education saving label; zh-CN drafted, pending native review.
+  'pricing.team.educationalSaving': {
+    en: 'Educational saving ~{pct}% ({amount})',
+    'zh-CN': '教育优惠 ~{pct}%（{amount}）'
+  },
   'pricing.team.videosEstimate': {
     en: 'Generates ~{count} 5s videos*',
     'zh-CN': '约可生成 {count} 个 5 秒视频*'

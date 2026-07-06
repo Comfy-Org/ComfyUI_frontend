@@ -3,6 +3,10 @@ export interface TeamCreditTier {
   basePrice: number
   monthlyPrice: number
   yearlyPrice: number
+  // Education prices off basePrice: monthly 5/7.5/10/12.5/15%,
+  // yearly 5/10/15/20/25% per tier.
+  eduMonthlyPrice: number
+  eduYearlyPrice: number
   videos: number
 }
 
@@ -12,6 +16,8 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     basePrice: 200,
     monthlyPrice: 200,
     yearlyPrice: 200,
+    eduMonthlyPrice: 190,
+    eduYearlyPrice: 190,
     videos: 3830
   },
   {
@@ -19,6 +25,8 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     basePrice: 400,
     monthlyPrice: 390,
     yearlyPrice: 380,
+    eduMonthlyPrice: 370,
+    eduYearlyPrice: 360,
     videos: 7660
   },
   {
@@ -26,6 +34,8 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     basePrice: 700,
     monthlyPrice: 665,
     yearlyPrice: 630,
+    eduMonthlyPrice: 630,
+    eduYearlyPrice: 595,
     videos: 13405
   },
   {
@@ -33,6 +43,8 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     basePrice: 1400,
     monthlyPrice: 1295,
     yearlyPrice: 1190,
+    eduMonthlyPrice: 1225,
+    eduYearlyPrice: 1120,
     videos: 26810
   },
   {
@@ -40,6 +52,8 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     basePrice: 2500,
     monthlyPrice: 2250,
     yearlyPrice: 2000,
+    eduMonthlyPrice: 2125,
+    eduYearlyPrice: 1875,
     videos: 47830
   }
 ]

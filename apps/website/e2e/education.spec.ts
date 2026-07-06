@@ -13,6 +13,10 @@ const MONTHLY_LABEL = t('pricing.period.monthly', 'en')
 const EDU_YEARLY_TOGGLE = t('pricing.period.yearly.edu', 'en')
 const eduSavings = (pct: number) =>
   t('pricing.educationalSavings', 'en').replace('{pct}', String(pct))
+const eduTeamSaving = (pct: number, amount: string) =>
+  t('pricing.team.educationalSaving', 'en')
+    .replace('{pct}', String(pct))
+    .replace('{amount}', amount)
 
 const pricingSection = (page: Page) =>
   page.locator('section').filter({
@@ -180,6 +184,57 @@ test.describe('Education pricing — desktop @smoke', () => {
 
     await expect(section.getByText(eduSavings(10)).first()).toBeVisible()
     await expect(section.getByText(eduSavings(25))).toHaveCount(0)
+  })
+})
+
+test.describe('Education pricing — team card @smoke', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('shows the team education price with basePrice struck and a saving label', async ({
+    page
+  }) => {
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    // Default: yearly, default tier (basePrice $700) → 15% off → $595.
+    await expect(section.getByText('$595', { exact: true })).toBeVisible()
+    await expect(
+      section.locator('span.line-through', { hasText: /^\$700$/ })
+    ).toBeVisible()
+    await expect(section.getByText(eduTeamSaving(15, '$105'))).toBeVisible()
+  })
+
+  test('slider tier change updates the team education price and saving', async ({
+    page
+  }) => {
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    const slider = section.getByRole('slider')
+    await slider.focus()
+    await page.keyboard.press('ArrowRight')
+
+    // Next tier (basePrice $1,400) yearly → 20% off → $1,120.
+    await expect(section.getByText('$1,120', { exact: true })).toBeVisible()
+    await expect(section.getByText(eduTeamSaving(20, '$280'))).toBeVisible()
+  })
+
+  test('billing toggle switches the team monthly/yearly education price', async ({
+    page
+  }) => {
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    await page.getByText(MONTHLY_LABEL, { exact: true }).click()
+
+    // Monthly, default tier (basePrice $700) → 10% off → $630.
+    await expect(section.getByText('$630', { exact: true })).toBeVisible()
+    await expect(
+      section.locator('span.line-through', { hasText: /^\$700$/ })
+    ).toBeVisible()
+    await expect(section.getByText(eduTeamSaving(10, '$70'))).toBeVisible()
   })
 })
 
