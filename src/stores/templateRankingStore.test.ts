@@ -89,21 +89,6 @@ describe('templateRankingStore', () => {
     })
   })
 
-  describe('computePopularScore', () => {
-    it('orders strictly by usage, ignoring date', () => {
-      const store = useTemplateRankingStore()
-      const higherUsage = store.computePopularScore(500)
-      const lowerUsage = store.computePopularScore(100)
-      expect(higherUsage).toBeGreaterThan(lowerUsage)
-    })
-
-    it('returns the raw usage value', () => {
-      const store = useTemplateRankingStore()
-      expect(store.computePopularScore(742)).toBe(742)
-      expect(store.computePopularScore()).toBe(0)
-    })
-  })
-
   describe('searchRank edge cases', () => {
     it('handles searchRank of 0 (should still work, treated as very low)', () => {
       const store = useTemplateRankingStore()

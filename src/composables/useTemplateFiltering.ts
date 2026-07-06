@@ -288,11 +288,7 @@ export function useTemplateFiltering(
           return scoreB - scoreA
         })
       case 'popular':
-        return templates.sort((a, b) => {
-          const scoreA = rankingStore.computePopularScore(a.usage)
-          const scoreB = rankingStore.computePopularScore(b.usage)
-          return scoreB - scoreA
-        })
+        return templates.sort((a, b) => (b.usage ?? 0) - (a.usage ?? 0))
       case 'alphabetical':
         return templates.sort(compareAlphabetical)
       case 'newest':

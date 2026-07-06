@@ -26,7 +26,6 @@ const defaultRankingStore = {
   computeDefaultScore: vi.fn(
     (_date?: string, _rank?: number, usage: number = 0) => usage
   ),
-  computePopularScore: vi.fn((usage: number = 0) => usage),
   computeFreshness: vi.fn(() => 0.5),
   largestUsageScore: 0
 }
@@ -274,10 +273,9 @@ describe('useTemplateFiltering', () => {
       'low'
     ])
     expect(defaultRankingStore.computeDefaultScore).toHaveBeenCalled()
-    expect(defaultRankingStore.computePopularScore).not.toHaveBeenCalled()
   })
 
-  it('ranks "popular" via computePopularScore', async () => {
+  it('ranks "popular" by raw usage without the recommended score', async () => {
     const { sortBy, filteredTemplates } = useTemplateFiltering(
       usageRankedTemplates()
     )
@@ -289,7 +287,6 @@ describe('useTemplateFiltering', () => {
       'high',
       'low'
     ])
-    expect(defaultRankingStore.computePopularScore).toHaveBeenCalled()
     expect(defaultRankingStore.computeDefaultScore).not.toHaveBeenCalled()
   })
 
