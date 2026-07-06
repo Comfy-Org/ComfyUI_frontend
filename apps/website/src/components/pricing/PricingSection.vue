@@ -19,15 +19,61 @@ import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
 import PricingTeamCard from './PricingTeamCard.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', education = false } = defineProps<{
+  locale?: Locale
+  education?: boolean
+}>()
 
 const billingPeriod = ref<BillingCycle>('yearly')
 
+// Education discount off the monthly list price: 10% monthly, 25% yearly.
+const EDU_MONTHLY_PCT = 10
+const EDU_YEARLY_PCT = 25
+
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
+  if (education) {
+    if (billingPeriod.value === 'yearly') {
+      return plan.eduYearlyPriceKey ?? plan.eduPriceKey
+    }
+    return plan.eduPriceKey
+  }
   if (billingPeriod.value === 'yearly' && plan.yearlyPriceKey) {
     return plan.yearlyPriceKey
   }
   return plan.priceKey
+}
+
+// In education mode the monthly list price is struck through in both cycles;
+// otherwise only the yearly view strikes the (monthly) list price.
+function originalPriceFor(plan: PricingPlan): string | undefined {
+  if (education) {
+    return plan.eduPriceKey && plan.priceKey
+      ? t(plan.priceKey, locale)
+      : undefined
+  }
+  return billingPeriod.value === 'yearly' &&
+    plan.yearlyPriceKey &&
+    plan.priceKey
+    ? t(plan.priceKey, locale)
+    : undefined
+}
+
+function yearlyTotalFor(plan: PricingPlan): string | undefined {
+  if (education) {
+    return plan.eduYearlyTotalKey
+      ? t(plan.eduYearlyTotalKey, locale)
+      : undefined
+  }
+  return plan.yearlyTotalKey ? t(plan.yearlyTotalKey, locale) : undefined
+}
+
+// Only individual education cards show the savings label, via PricingPrice's
+// discount slot; the percentage flips with the billing toggle.
+function eduSavingsFor(plan: PricingPlan): string | undefined {
+  if (!education || !plan.eduPriceKey) return undefined
+  const pct =
+    billingPeriod.value === 'yearly' ? EDU_YEARLY_PCT : EDU_MONTHLY_PCT
+  return t('pricing.educationalSavings', locale).replace('{pct}', String(pct))
 }
 </script>
 
@@ -53,7 +99,12 @@ function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
           {{ t('pricing.period.monthly', locale) }}
         </ToggleGroupItem>
         <ToggleGroupItem value="yearly" class="min-w-48">
-          {{ t('pricing.period.yearly', locale) }}
+          {{
+            t(
+              education ? 'pricing.period.yearly.edu' : 'pricing.period.yearly',
+              locale
+            )
+          }}
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
@@ -88,15 +139,10 @@ function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
           v-if="displayPriceKey(plan)"
           :price="t(displayPriceKey(plan)!, locale)"
           :period="t('pricing.plan.period', locale)"
-          :original-price="
-            billingPeriod === 'yearly' && plan.yearlyPriceKey && plan.priceKey
-              ? t(plan.priceKey, locale)
-              : undefined
-          "
+          :original-price="originalPriceFor(plan)"
+          :discount="eduSavingsFor(plan)"
           :billing-period="billingPeriod"
-          :yearly-total="
-            plan.yearlyTotalKey ? t(plan.yearlyTotalKey, locale) : undefined
-          "
+          :yearly-total="yearlyTotalFor(plan)"
           :locale
         />
 

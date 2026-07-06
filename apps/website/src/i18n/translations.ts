@@ -1190,6 +1190,11 @@ const translations = {
     en: 'Yearly (Up to 20% off)',
     'zh-CN': '按年（最高 20% 优惠）'
   },
+  // Education-only yearly toggle label; zh-CN drafted, pending native review.
+  'pricing.period.yearly.edu': {
+    en: 'Yearly (Up to 25% off)',
+    'zh-CN': '按年（最高 25% 优惠）'
+  },
   'pricing.period.billedMonthly': { en: 'Billed monthly', 'zh-CN': '按月计费' },
   'pricing.period.billedYearly': {
     en: '{total} billed yearly',
@@ -1198,6 +1203,11 @@ const translations = {
   'pricing.savePercent': {
     en: 'Save {pct}% ({amount})',
     'zh-CN': '节省 {pct}%（{amount}）'
+  },
+  // Individual-plan education savings label; zh-CN drafted, pending native review.
+  'pricing.educationalSavings': {
+    en: 'Educational savings – {pct}% off',
+    'zh-CN': '教育优惠 – 立减 {pct}%'
   },
   'pricing.team.videosEstimate': {
     en: 'Generates ~{count} 5s videos*',
@@ -1260,6 +1270,10 @@ const translations = {
   'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
   'pricing.plan.standard.yearlyPrice': { en: '$16', 'zh-CN': '$16' },
   'pricing.plan.standard.yearlyTotal': { en: '$192', 'zh-CN': '$192' },
+  // Education prices (10% off monthly, 25% off yearly, off the $20 list price).
+  'pricing.plan.standard.eduPrice': { en: '$18', 'zh-CN': '$18' },
+  'pricing.plan.standard.eduYearlyPrice': { en: '$15', 'zh-CN': '$15' },
+  'pricing.plan.standard.eduYearlyTotal': { en: '$180', 'zh-CN': '$180' },
   'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
   'pricing.plan.standard.estimate': {
     en: 'Generates ~380 5s videos*',
@@ -1274,6 +1288,10 @@ const translations = {
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
   'pricing.plan.creator.yearlyPrice': { en: '$28', 'zh-CN': '$28' },
   'pricing.plan.creator.yearlyTotal': { en: '$336', 'zh-CN': '$336' },
+  // Education prices (10% off monthly, 25% off yearly, off the $35 list price).
+  'pricing.plan.creator.eduPrice': { en: '$31.50', 'zh-CN': '$31.50' },
+  'pricing.plan.creator.eduYearlyPrice': { en: '$26.25', 'zh-CN': '$26.25' },
+  'pricing.plan.creator.eduYearlyTotal': { en: '$315', 'zh-CN': '$315' },
   'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
   'pricing.plan.creator.estimate': {
     en: 'Generates ~670 5s videos*',
@@ -1288,6 +1306,10 @@ const translations = {
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
   'pricing.plan.pro.yearlyPrice': { en: '$80', 'zh-CN': '$80' },
   'pricing.plan.pro.yearlyTotal': { en: '$960', 'zh-CN': '$960' },
+  // Education prices (10% off monthly, 25% off yearly, off the $100 list price).
+  'pricing.plan.pro.eduPrice': { en: '$90', 'zh-CN': '$90' },
+  'pricing.plan.pro.eduYearlyPrice': { en: '$75', 'zh-CN': '$75' },
+  'pricing.plan.pro.eduYearlyTotal': { en: '$900', 'zh-CN': '$900' },
   'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
   'pricing.plan.pro.estimate': {
     en: 'Generates ~1,915 5s videos*',

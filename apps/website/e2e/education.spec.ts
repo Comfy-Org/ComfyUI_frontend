@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { educationFaqs } from '../src/data/educationFaq'
 import { t } from '../src/i18n/translations'
@@ -7,6 +8,16 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH = '/edu'
 const LEARNING_PATH = '/learning'
 const PRICING_PATH = '/cloud/pricing'
+
+const MONTHLY_LABEL = t('pricing.period.monthly', 'en')
+const EDU_YEARLY_TOGGLE = t('pricing.period.yearly.edu', 'en')
+const eduSavings = (pct: number) =>
+  t('pricing.educationalSavings', 'en').replace('{pct}', String(pct))
+
+const pricingSection = (page: Page) =>
+  page.locator('section').filter({
+    has: page.getByRole('heading', { name: /Choose a plan/i })
+  })
 const FAQ_COUNT = educationFaqs.length
 const FIRST_FAQ = educationFaqs[0]
 const HERO_TITLE_TEXT = t('education.hero.title', 'en').replace(/\s+/g, ' ')
@@ -23,7 +34,7 @@ test.describe('Education landing — desktop @smoke', () => {
   })
 
   test('renders the hero badge and headline', async ({ page }) => {
-    await expect(page.getByText(HERO_BADGE_TEXT)).toBeVisible()
+    await expect(page.getByText(HERO_BADGE_TEXT, { exact: true })).toBeVisible()
     await expect(
       page.getByRole('heading', { level: 1, name: HERO_TITLE_TEXT })
     ).toBeVisible()
@@ -112,6 +123,63 @@ test.describe('Education landing — desktop interactions', () => {
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+  })
+})
+
+test.describe('Education pricing — desktop @smoke', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('shows yearly education prices with the monthly list price struck through', async ({
+    page
+  }) => {
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    // Default billing period is yearly: 25% off the monthly list price.
+    await expect(section.getByText('$15', { exact: true })).toBeVisible()
+    await expect(section.getByText('$26.25', { exact: true })).toBeVisible()
+    await expect(section.getByText('$75', { exact: true })).toBeVisible()
+
+    for (const listPrice of ['$20', '$35', '$100']) {
+      await expect(
+        section.locator('span.line-through', {
+          hasText: new RegExp(`^\\${listPrice}$`)
+        })
+      ).toBeVisible()
+    }
+
+    await expect(page.getByText(EDU_YEARLY_TOGGLE)).toBeVisible()
+  })
+
+  test('education savings label flips 25% ↔ 10% with the billing toggle', async ({
+    page
+  }) => {
+    const section = pricingSection(page)
+    await section.scrollIntoViewIfNeeded()
+
+    // Yearly (default): 25% off.
+    await expect(section.getByText(eduSavings(25)).first()).toBeVisible()
+
+    // Flip to monthly: 10% off the monthly list price.
+    await page.getByText(MONTHLY_LABEL, { exact: true }).click()
+
+    await expect(section.getByText('$18', { exact: true })).toBeVisible()
+    await expect(section.getByText('$31.50', { exact: true })).toBeVisible()
+    await expect(section.getByText('$90', { exact: true })).toBeVisible()
+
+    // Strikethrough remains the monthly list price in both cycles.
+    for (const listPrice of ['$20', '$35', '$100']) {
+      await expect(
+        section.locator('span.line-through', {
+          hasText: new RegExp(`^\\${listPrice}$`)
+        })
+      ).toBeVisible()
+    }
+
+    await expect(section.getByText(eduSavings(10)).first()).toBeVisible()
+    await expect(section.getByText(eduSavings(25))).toHaveCount(0)
   })
 })
 

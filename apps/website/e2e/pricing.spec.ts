@@ -34,6 +34,12 @@ test.describe('Pricing page @smoke', () => {
     )
     await expect(page.getByText(/Everything in Free, plus:/i)).toHaveCount(0)
   })
+
+  test('stays in standard (non-education) mode', async ({ page }) => {
+    await expect(page.getByText(/Yearly \(Up to 20% off\)/)).toBeVisible()
+    await expect(page.getByText(/Yearly \(Up to 25% off\)/)).toHaveCount(0)
+    await expect(page.getByText(/Educational savings/i)).toHaveCount(0)
+  })
 })
 
 test.describe('Cloud pricing teaser @smoke', () => {

@@ -23,6 +23,9 @@ export interface PricingPlan {
   priceKey?: TranslationKey
   yearlyPriceKey?: TranslationKey
   yearlyTotalKey?: TranslationKey
+  eduPriceKey?: TranslationKey
+  eduYearlyPriceKey?: TranslationKey
+  eduYearlyTotalKey?: TranslationKey
   creditsKey?: TranslationKey
   estimateKey?: TranslationKey
   ctaKey: TranslationKey
@@ -62,6 +65,9 @@ const standardPricingPlans: PricingPlan[] = [
     priceKey: 'pricing.plan.standard.price',
     yearlyPriceKey: 'pricing.plan.standard.yearlyPrice',
     yearlyTotalKey: 'pricing.plan.standard.yearlyTotal',
+    eduPriceKey: 'pricing.plan.standard.eduPrice',
+    eduYearlyPriceKey: 'pricing.plan.standard.eduYearlyPrice',
+    eduYearlyTotalKey: 'pricing.plan.standard.eduYearlyTotal',
     creditsKey: 'pricing.plan.standard.credits',
     estimateKey: 'pricing.plan.standard.estimate',
     ctaKey: 'pricing.plan.standard.cta',
@@ -79,6 +85,9 @@ const standardPricingPlans: PricingPlan[] = [
     priceKey: 'pricing.plan.creator.price',
     yearlyPriceKey: 'pricing.plan.creator.yearlyPrice',
     yearlyTotalKey: 'pricing.plan.creator.yearlyTotal',
+    eduPriceKey: 'pricing.plan.creator.eduPrice',
+    eduYearlyPriceKey: 'pricing.plan.creator.eduYearlyPrice',
+    eduYearlyTotalKey: 'pricing.plan.creator.eduYearlyTotal',
     creditsKey: 'pricing.plan.creator.credits',
     estimateKey: 'pricing.plan.creator.estimate',
     ctaKey: 'pricing.plan.creator.cta',
@@ -97,6 +106,9 @@ const standardPricingPlans: PricingPlan[] = [
     priceKey: 'pricing.plan.pro.price',
     yearlyPriceKey: 'pricing.plan.pro.yearlyPrice',
     yearlyTotalKey: 'pricing.plan.pro.yearlyTotal',
+    eduPriceKey: 'pricing.plan.pro.eduPrice',
+    eduYearlyPriceKey: 'pricing.plan.pro.eduYearlyPrice',
+    eduYearlyTotalKey: 'pricing.plan.pro.eduYearlyTotal',
     creditsKey: 'pricing.plan.pro.credits',
     estimateKey: 'pricing.plan.pro.estimate',
     ctaKey: 'pricing.plan.pro.cta',
