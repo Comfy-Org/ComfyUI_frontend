@@ -4,8 +4,8 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
+import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -90,38 +90,10 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
 }
 
 function renderList(pinia: TestingPinia) {
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: {
-      en: {
-        g: { untitled: 'Untitled' },
-        rightSidePanel: {
-          noErrors: 'No errors',
-          noneSearchDesc: 'No results found',
-          errorsDetected: 'Error detected | Errors detected',
-          selectedNodeErrors:
-            '{node} — {count} error | {node} — {count} errors',
-          selectedNodesErrors:
-            '{nodes} nodes selected — {count} error | {nodes} nodes selected — {count} errors',
-          errorNodeSummary:
-            '{nodes} node — {count} error | {nodes} node — {count} errors',
-          errorNodesSummary:
-            '{nodes} nodes — {count} error | {nodes} nodes — {count} errors',
-          resolveBeforeRun: 'Resolve before running the workflow',
-          expand: 'Expand',
-          collapse: 'Collapse',
-          infoFor: 'Info for {item}',
-          locateNodeFor: 'Locate {item}'
-        }
-      }
-    }
-  })
-
   const user = userEvent.setup()
   render(ErrorGroupList, {
     global: {
-      plugins: [PrimeVue, i18n, pinia],
+      plugins: [PrimeVue, testI18n, pinia],
       stubs: {
         AsyncSearchInput: {
           template: '<input />'

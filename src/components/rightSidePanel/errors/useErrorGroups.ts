@@ -727,6 +727,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   /** Model groups narrowed to the selection, for emphasis derivation only. */
   const missingModelGroupsForSelection = computed(() => {
+    if (!hasSelection.value) return []
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
     const matched = candidates.filter(
@@ -738,6 +739,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   /** Media groups narrowed to the selection, for emphasis derivation only. */
   const missingMediaGroupsForSelection = computed(() => {
+    if (!hasSelection.value) return []
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
     const matched = candidates.filter(

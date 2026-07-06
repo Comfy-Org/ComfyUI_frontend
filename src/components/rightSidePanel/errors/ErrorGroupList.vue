@@ -61,8 +61,8 @@
           class="flex items-center border-t border-secondary-background px-3 pt-3.5 pb-1.5"
         >
           <i18n-t
-            :keypath="stripKeypath"
-            :plural="stripErrorCount"
+            :keypath="strip.keypath"
+            :plural="strip.count"
             tag="span"
             :class="
               cn(
@@ -74,8 +74,8 @@
             "
           >
             <template #node>{{ selectionStripNodeLabel }}</template>
-            <template #nodes>{{ stripNodeCount }}</template>
-            <template #count>{{ stripErrorCount }}</template>
+            <template #nodes>{{ strip.nodes }}</template>
+            <template #count>{{ strip.count }}</template>
           </i18n-t>
         </div>
 
@@ -291,7 +291,7 @@
                     SELECTION_EMPHASIS_TRANSITION_CLASS,
                     isCardInSelection(card.id) && [
                       SELECTION_EMPHASIS_CLASS,
-                      'py-1'
+                      '-my-1 py-1'
                     ]
                   )
                 "
@@ -466,26 +466,37 @@ const selectionStripNodeLabel = computed(
 /**
  * The strip always occupies its slot so toggling a selection never shifts
  * the layout: it reads as a workflow summary by default and switches to
- * the selection's errors while an emphasis is active.
+ * the selection's errors while an emphasis is active. Summary numbers are
+ * workflow-wide (never search-filtered) — the strip is a status line, not
+ * a view of the current filter.
  */
-const stripKeypath = computed(() => {
+const workflowErrorCount = computed(() =>
+  allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
+)
+
+const strip = computed(() => {
   if (hasSelectionEmphasis.value) {
-    return selectedNodeCount.value === 1
-      ? 'rightSidePanel.selectedNodeErrors'
-      : 'rightSidePanel.selectedNodesErrors'
+    return {
+      keypath:
+        selectedNodeCount.value === 1
+          ? 'rightSidePanel.selectedNodeErrors'
+          : 'rightSidePanel.selectedNodesErrors',
+      nodes: selectedNodeCount.value,
+      count: selectionErrorCount.value
+    }
   }
-  return errorNodeCount.value === 1
-    ? 'rightSidePanel.errorNodeSummary'
-    : 'rightSidePanel.errorNodesSummary'
+  return {
+    keypath:
+      errorNodeCount.value === 0
+        ? // Node-less errors (e.g. prompt-level) would read as "0 nodes"
+          'rightSidePanel.errorsSummary'
+        : errorNodeCount.value === 1
+          ? 'rightSidePanel.errorNodeSummary'
+          : 'rightSidePanel.errorNodesSummary',
+    nodes: errorNodeCount.value,
+    count: workflowErrorCount.value
+  }
 })
-
-const stripNodeCount = computed(() =>
-  hasSelectionEmphasis.value ? selectedNodeCount.value : errorNodeCount.value
-)
-
-const stripErrorCount = computed(() =>
-  hasSelectionEmphasis.value ? selectionErrorCount.value : totalErrorCount.value
-)
 
 function isCardInSelection(cardId: string): boolean {
   return selectionMatchedCardIds.value.has(cardId)

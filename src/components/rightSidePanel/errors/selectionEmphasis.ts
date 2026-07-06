@@ -16,7 +16,7 @@ export const SELECTION_EMPHASIS_CLASS =
  * keeping text stationary while the background expands/contracts.
  */
 export const SELECTION_EMPHASIS_TRANSITION_CLASS =
-  'transition-[background-color,margin,padding] duration-200'
+  'transition-[background-color,margin,padding,border-radius] duration-200'
 
 /** True when any node type resolves to a node in the given id set. */
 export function someNodeTypeInSelection(

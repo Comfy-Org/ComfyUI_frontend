@@ -12,15 +12,20 @@
         :aria-current="
           highlightedNodeIds?.has(item.nodeId) ? 'true' : undefined
         "
-        :class="
-          cn(
-            'min-w-0',
-            SELECTION_EMPHASIS_TRANSITION_CLASS,
-            highlightedNodeIds?.has(item.nodeId) && SELECTION_EMPHASIS_CLASS
-          )
-        "
+        class="min-w-0"
       >
-        <div class="flex min-w-0 items-center gap-2">
+        <!-- Emphasis lives on an inner element: the li is a TransitionGroup
+             child, and the emphasis transition-property would override the
+             list-scale move/enter/leave transitions. -->
+        <div
+          :class="
+            cn(
+              'flex min-w-0 items-center gap-2',
+              SELECTION_EMPHASIS_TRANSITION_CLASS,
+              highlightedNodeIds?.has(item.nodeId) && SELECTION_EMPHASIS_CLASS
+            )
+          "
+        >
           <span class="flex min-w-0 flex-1">
             <button
               type="button"
