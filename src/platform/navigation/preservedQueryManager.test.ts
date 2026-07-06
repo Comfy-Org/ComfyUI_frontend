@@ -30,6 +30,27 @@ describe('preservedQueryManager', () => {
     expect(sessionStorage.getItem('Comfy.PreservedQuery.template')).toBeTruthy()
   })
 
+  it('captures the first non-empty string element of an array-valued param', () => {
+    capturePreservedQuery(NAMESPACE, { template: ['', 'flux', 'sdxl'] }, [
+      'template'
+    ])
+
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBe('flux')
+  })
+
+  it('does not stash empty, null, or all-junk array values', () => {
+    capturePreservedQuery(
+      NAMESPACE,
+      { template: '', source: null, mode: ['', null] },
+      ['template', 'source', 'mode']
+    )
+
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBeUndefined()
+    expect(getPreservedQueryParam(NAMESPACE, 'source')).toBeUndefined()
+    expect(getPreservedQueryParam(NAMESPACE, 'mode')).toBeUndefined()
+    expect(mergePreservedQueryIntoQuery(NAMESPACE)).toBeUndefined()
+  })
+
   it('reads a preserved query param by key', () => {
     capturePreservedQuery(NAMESPACE, { template: 'flux' }, ['template'])
 
@@ -76,6 +97,16 @@ describe('preservedQueryManager', () => {
     })
 
     expect(merged).toBeUndefined()
+  })
+
+  it('overwrites an array-valued live query key with the stashed string', () => {
+    capturePreservedQuery(NAMESPACE, { template: 'flux' }, ['template'])
+
+    const merged = mergePreservedQueryIntoQuery(NAMESPACE, {
+      template: ['existing', 'other']
+    })
+
+    expect(merged).toEqual({ template: 'flux' })
   })
 
   it('clears cached payload', () => {
