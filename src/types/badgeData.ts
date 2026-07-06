@@ -1,4 +1,4 @@
-/** Display order of badge kinds; see domain-glossary.md § Badges. */
+/** Display order of badge kinds. */
 export const BADGE_KIND_ORDER = ['core', 'credits', 'extension'] as const
 
 export type BadgeKind = (typeof BADGE_KIND_ORDER)[number]

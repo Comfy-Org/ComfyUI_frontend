@@ -29,9 +29,9 @@ interface NodeDefBadgeSources {
 }
 
 /**
- * The domain state a node's system-written badges are computed from; see
- * domain-glossary.md § Badges. Plain data so {@link computeBadges} stays
- * pure — the watch shell gathers these from the live stores.
+ * The domain state a node's system-written badges are computed from.
+ * Plain data so {@link computeBadges} stays pure — the watch shell
+ * gathers these from the live stores.
  */
 export interface BadgeSources {
   nodeId: NodeId
@@ -47,9 +47,8 @@ export interface BadgeSources {
     showApiPricing: boolean
     priceLabel: string
     /**
-     * Present on SubgraphNode wrappers: how many inner (recursively
-     * collected, non-wrapper) api nodes exist, and — when exactly one
-     * does — the label the wrapper should display.
+     * Present on SubgraphNode wrappers: the inner api-node count and,
+     * when exactly one exists, its display label.
      */
     subgraphCredits?: { apiNodeCount: number; singleLabel: string }
   }
@@ -193,10 +192,9 @@ function collectPromotedOverrides(
 }
 
 /**
- * A wrapper's credits sources: the inner (recursively collected,
- * non-wrapper) api nodes. Tracks their pricing revisions, the
- * registered-node set, and the structure revision, so the wrapper
- * recomputes when inner prices, membership, or structure change.
+ * Tracks the inner api nodes' pricing revisions, the registered-node
+ * set, and the structure revision so the wrapper recomputes when inner
+ * prices, membership, or structure change.
  */
 function gatherSubgraphCredits(
   graphId: UUID,

@@ -17,7 +17,7 @@ function kindRank(kind: BadgeKind): number {
  * buckets keyed by `NodeId`. Rows are plain {@link BadgeData}; reads are
  * ordered by kind (core, credits, extension), not insertion. The badge
  * system rewrites its kinds wholesale; extension rows are appended and
- * removed individually. See docs/architecture/node-badge-store.md.
+ * removed individually.
  */
 export const useNodeBadgeStore = defineStore('nodeBadge', () => {
   const buckets = ref(new Map<UUID, Map<NodeId, BadgeData[]>>())

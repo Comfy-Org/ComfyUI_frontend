@@ -17,11 +17,9 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
 }
 
 /**
- * Partitions a node's badge rows from {@link useNodeBadgeStore} for the
- * Vue renderer: core rows become chips (lifecycle text is bracket-trimmed
- * and a built-in node's source row is replaced by the Comfy logo chip),
- * credits rows become pricing entries, and badges pushed onto the raw
- * `node.badges` extension surface are appended as extension chips.
+ * Partitions a node's badge rows into the Vue renderer's chips: core
+ * rows, credits rows as pricing entries, and raw `node.badges`
+ * extension badges appended last.
  */
 export function usePartitionedBadges(nodeData: VueNodeData) {
   const settingStore = useSettingStore()

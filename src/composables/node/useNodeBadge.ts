@@ -13,12 +13,11 @@ import {
 import { resolveNode } from '@/utils/litegraphUtil'
 
 /**
- * Bootstraps the badge system (see docs/architecture/node-badge-store.md):
- * starts it against the live root graph, forwards the subgraph structure
- * events the system's store sources cannot observe, and keeps the legacy
- * canvas redrawing when badge sources change. Dynamic-pricing
- * recalculation wiring stays here because it drives price evaluation,
- * not badge storage.
+ * Bootstraps the badge system: starts it against the live root graph,
+ * forwards the subgraph structure events its store sources cannot
+ * observe, and keeps the legacy canvas redrawing when badge sources
+ * change. Dynamic-pricing recalculation wiring stays here because it
+ * drives price evaluation, not badge storage.
  */
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
@@ -54,7 +53,6 @@ export const useNodeBadge = () => {
     )
 
     function wirePricingRecalculation(node: LGraphNode): void {
-      // JSONata rules are dynamic if they depend on any widgets/inputs/input_groups
       const pricingConfig = nodePricing.getNodePricingConfig(node)
       const hasDynamicPricing =
         !!pricingConfig &&

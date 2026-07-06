@@ -51,8 +51,7 @@ const drawCache = new WeakMap<object, { key: string; badges: LGraphBadge[] }>()
 
 /**
  * The legacy canvas draw objects for a node's badge rows, rebuilt only
- * when the row content changes. Renderer-side state (the Reroute id-badge
- * pattern); the rows stay plain data.
+ * when the row content changes.
  */
 export function badgeDrawObjects(
   node: object,
