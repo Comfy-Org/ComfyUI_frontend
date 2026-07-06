@@ -1091,8 +1091,6 @@ export class LGraph
     node.graph = this
     this.incrementVersion()
 
-    useNodeBadgeStore().registerNode(this.rootGraph.id, node.id)
-
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
     if (node.widgets) {
@@ -1117,6 +1115,10 @@ export class LGraph
     if (!shouldSkipComputeOrder) this.updateExecutionOrder()
 
     this.onNodeAdded?.(node)
+
+    // After onNodeAdded: this write wakes a watcher, queueing Vue's flush
+    // microtask, which must not overtake onNodeAdded's paste-scan microtask.
+    useNodeBadgeStore().registerNode(this.rootGraph.id, node.id)
 
     this.setDirtyCanvas(true)
     this.change()

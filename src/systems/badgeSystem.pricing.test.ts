@@ -54,7 +54,7 @@ describe('badge system pricing input connectivity', () => {
 
     useNodeBadgeStore().registerNode(graphId, node.id)
     const stop = startBadgeSystem({
-      graphId,
+      resolveGraphId: () => graphId,
       resolveNode: (id) => (id === node.id ? node : undefined)
     })
     return { node, stop }

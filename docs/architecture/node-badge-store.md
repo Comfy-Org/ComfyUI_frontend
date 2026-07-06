@@ -110,11 +110,17 @@ Frame-budget parity per ADR 0008's render mitigations applies.
   `registeredNodeIds` to attach/detach per-node effect scopes. Litegraph
   never imports the system, so the pricing/nodeDef dependency graph
   (which runtime-imports the litegraph barrel) stays acyclic. The system
-  takes a `resolveNode` seam and is bootstrapped at the app layer by the
-  `Comfy.NodeBadge` extension (`useNodeBadge`), restarting per root
-  graph on `afterConfigureGraph`. Row writes are refused for
-  unregistered nodes so a late effect flush cannot resurrect a bucket
-  key the chokepoints deleted.
+  takes `resolveGraphId`/`resolveNode` seams and is bootstrapped once at
+  the app layer by the `Comfy.NodeBadge` extension (`useNodeBadge`).
+  The graph id is resolved live on every recompute because
+  `LGraph.clear()` and `configure()` reassign the root graph's id; a
+  captured id strands the system on a dead bucket. Row writes are
+  refused for unregistered nodes so a late effect flush cannot
+  resurrect a bucket key the chokepoints deleted. `LGraph.add`
+  registers the node only after `onNodeAdded`: the store write wakes
+  the system's watcher and queues Vue's flush microtask, which must not
+  overtake the paste-scan microtask `useErrorClearingHooks` enqueues
+  from `onNodeAdded`.
 - Two write paths: `setBadgesOfKind` is the system's bulk
   replace-one-kind recompute path (`@internal`); extension rows go
   through `registerBadge`/`deleteBadge` per row, identity-checked, so

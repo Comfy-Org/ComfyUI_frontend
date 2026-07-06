@@ -71,7 +71,7 @@ describe('badge system subgraph credits aggregation', () => {
     }
 
     const stop = startBadgeSystem({
-      graphId,
+      resolveGraphId: () => graphId,
       resolveNode: (id) => knownNodes.get(id)
     })
 

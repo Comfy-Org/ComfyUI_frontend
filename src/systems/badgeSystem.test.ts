@@ -208,7 +208,7 @@ describe('startBadgeSystem', () => {
     badgeStore.registerNode(graphId, node.id)
 
     const stop = startBadgeSystem({
-      graphId,
+      resolveGraphId: () => graphId,
       resolveNode: (id) => (id === node.id ? node : undefined)
     })
 
@@ -229,7 +229,7 @@ describe('startBadgeSystem', () => {
     const node = makeNode(3)
 
     const stop = startBadgeSystem({
-      graphId,
+      resolveGraphId: () => graphId,
       resolveNode: (id) => (id === node.id ? node : undefined)
     })
     expect(badgeStore.getBadges(graphId, node.id)).toEqual([])
@@ -249,7 +249,7 @@ describe('startBadgeSystem', () => {
     const node = makeNode(7)
     badgeStore.registerNode(graphId, node.id)
     const stop = startBadgeSystem({
-      graphId,
+      resolveGraphId: () => graphId,
       resolveNode: (id) => (id === node.id ? node : undefined)
     })
 
@@ -264,12 +264,38 @@ describe('startBadgeSystem', () => {
     stop()
   })
 
+  it('follows the root graph id across a workflow clear', async () => {
+    const badgeStore = useNodeBadgeStore()
+    const node = makeNode(9)
+    let liveGraphId: UUID = graphId
+    badgeStore.registerNode(graphId, node.id)
+
+    const stop = startBadgeSystem({
+      resolveGraphId: () => liveGraphId,
+      resolveNode: (id) => (id === node.id ? node : undefined)
+    })
+    expect(badgeStore.getBadges(graphId, node.id).map((b) => b.text)).toEqual([
+      '#9'
+    ])
+
+    badgeStore.clearGraph(graphId)
+    liveGraphId = 'graph-after-clear'
+    badgeStore.registerNode(liveGraphId, node.id)
+    await nextTick()
+
+    expect(
+      badgeStore.getBadges(liveGraphId, node.id).map((b) => b.text)
+    ).toEqual(['#9'])
+
+    stop()
+  })
+
   it('stops writing after the system itself is stopped', async () => {
     const badgeStore = useNodeBadgeStore()
     const node = makeNode(7)
     badgeStore.registerNode(graphId, node.id)
     const stop = startBadgeSystem({
-      graphId,
+      resolveGraphId: () => graphId,
       resolveNode: (id) => (id === node.id ? node : undefined)
     })
 

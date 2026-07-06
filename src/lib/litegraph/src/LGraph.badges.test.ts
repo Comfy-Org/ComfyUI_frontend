@@ -29,6 +29,24 @@ describe('LGraph node badge registration', () => {
     )
   })
 
+  it('registers only after onNodeAdded has fired', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('n')
+    let registeredDuringCallback: boolean | undefined
+    graph.onNodeAdded = () => {
+      registeredDuringCallback = useNodeBadgeStore()
+        .registeredNodeIds(graph.rootGraph.id)
+        .includes(node.id)
+    }
+
+    graph.add(node)
+
+    expect(registeredDuringCallback).toBe(false)
+    expect(useNodeBadgeStore().registeredNodeIds(graph.rootGraph.id)).toEqual([
+      node.id
+    ])
+  })
+
   it('clears the root bucket when the root graph is cleared', () => {
     const graph = new LGraph()
     graph.id = createUuidv4()
