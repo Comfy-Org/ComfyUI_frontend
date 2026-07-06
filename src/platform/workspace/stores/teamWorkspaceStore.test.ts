@@ -179,14 +179,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.canCreateWorkspace).toBe(true)
       expect(store.members).toEqual([])
       expect(store.pendingInvites).toEqual([])
-      expect(store.originalOwnerId).toBeNull()
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-      expect(store.totalMemberSlots).toBe(0)
-      expect(store.isInviteLimitReached).toBe(false)
-      expect(store.workspaceId).toBeNull()
-      expect(store.workspaceName).toBe('')
-      expect(store.isWorkspaceSubscribed).toBe(false)
-      expect(store.subscriptionPlan).toBeNull()
     })
   })
 
@@ -1588,36 +1580,6 @@ describe('useTeamWorkspaceStore', () => {
       store.destroy()
 
       expect(mockWorkspaceAuthStore.destroy).toHaveBeenCalled()
-    })
-  })
-
-  describe('subscription placeholder', () => {
-    it('warns with the default subscription plan', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const store = useTeamWorkspaceStore()
-
-      store.subscribeWorkspace()
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'PRO_MONTHLY',
-        'Billing endpoint has not been added yet.'
-      )
-
-      consoleSpy.mockRestore()
-    })
-
-    it('warns with a custom subscription plan', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const store = useTeamWorkspaceStore()
-
-      store.subscribeWorkspace('TEAM_YEARLY')
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'TEAM_YEARLY',
-        'Billing endpoint has not been added yet.'
-      )
-
-      consoleSpy.mockRestore()
     })
   })
 

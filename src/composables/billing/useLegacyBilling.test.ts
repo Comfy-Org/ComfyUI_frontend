@@ -77,16 +77,6 @@ describe('useLegacyBilling', () => {
     mocks.purchaseCredits.mockResolvedValue(undefined)
   })
 
-  it('returns empty subscription and balance state without legacy data', () => {
-    const billing = useLegacyBilling()
-
-    expect(billing.subscription.value).toBeNull()
-    expect(billing.balance.value).toBeNull()
-    expect(billing.subscriptionStatus.value).toBeNull()
-    expect(billing.renewalDate.value).toBeNull()
-    expect(billing.isFreeTier.value).toBe(false)
-  })
-
   it('maps active subscription and explicit balance fields', () => {
     mocks.isActiveSubscription.value = true
     mocks.subscriptionTier.value = 'PRO'

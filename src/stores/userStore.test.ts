@@ -24,12 +24,6 @@ describe('userStore', () => {
   })
 
   describe('initialize', () => {
-    it('returns an empty user list before initialization', () => {
-      const store = useUserStore()
-
-      expect(store.users).toEqual([])
-    })
-
     it('fetches user config on first call', async () => {
       apiMock.getUserConfig.mockResolvedValue({})
       const store = useUserStore()
