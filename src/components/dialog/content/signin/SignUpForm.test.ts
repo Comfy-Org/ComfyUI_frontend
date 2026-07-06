@@ -257,8 +257,8 @@ describe('SignUpForm', () => {
     })
   })
 
-  // Regression coverage for the BE-1345 shadow-mode race: previously submit was
-  // only gated in 'enforce' mode, so most real signups in 'shadow' mode raced
+  // Regression coverage for the shadow-mode race: previously submit was only
+  // gated in 'enforce' mode, so most real signups in 'shadow' mode raced
   // ahead of the async Cloudflare challenge and reached the backend with an
   // empty token. Gating now depends only on whether the widget is enabled
   // (shadow or enforce both render it), so both modes behave identically here.

@@ -262,10 +262,10 @@ describe('TurnstileWidget', () => {
     expect(api.remove).toHaveBeenCalledWith('widget-id')
   })
 
-  // Regression coverage for BE-1345: a widget that never resolves (broken
-  // script, ad-blocker, CDN outage, or a hung challenge) must eventually tell
-  // the parent it cannot be relied on, so submission can fall back instead of
-  // blocking a legitimate signup forever.
+  // A widget that never resolves (broken script, ad-blocker, CDN outage, or a
+  // hung challenge) must eventually tell the parent it cannot be relied on,
+  // so submission can fall back instead of blocking a legitimate signup
+  // forever.
   describe('unavailable fallback', () => {
     it('reports unavailable when the Turnstile script fails to load', async () => {
       mockLoadTurnstile.mockRejectedValue(new Error('script failed'))
