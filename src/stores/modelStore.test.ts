@@ -233,6 +233,35 @@ describe('useModelStore', () => {
     })
   })
 
+  describe('concurrent folder loads', () => {
+    it('does not let a stale folder response overwrite a fresher one', async () => {
+      enableMocks()
+      let resolveStale!: (value: { name: string; folders: string[] }[]) => void
+      vi.mocked(api.getModelFolders).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStale = resolve
+        })
+      )
+      store = useModelStore()
+      const staleLoad = store.loadModelFolders()
+
+      vi.mocked(api.getModelFolders).mockResolvedValueOnce([
+        { name: 'fresh-folder', folders: ['/fresh'] }
+      ])
+      await store.loadModelFolders()
+      expect(store.modelFolders.map((f) => f.directory)).toEqual([
+        'fresh-folder'
+      ])
+
+      resolveStale([{ name: 'stale-folder', folders: ['/stale'] }])
+      await staleLoad
+
+      expect(store.modelFolders.map((f) => f.directory)).toEqual([
+        'fresh-folder'
+      ])
+    })
+  })
+
   describe('scan fast-phase completion', () => {
     it('re-loads previously loaded folders when the event fires', async () => {
       enableMocks(true)
@@ -252,6 +281,27 @@ describe('useModelStore', () => {
 
       expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
       expect(assetService.seedModelAssets).not.toHaveBeenCalled()
+    })
+
+    it('logs instead of rejecting when the post-scan reload fails', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      enableMocks(true)
+      vi.mocked(api.getModelFolders).mockRejectedValue(
+        new Error('transient network failure')
+      )
+      store = useModelStore()
+      const fastCompleteHandler = vi
+        .mocked(api.addCustomEventListener)
+        .mock.calls.find(([type]) => type === 'assets.seed.fast_complete')?.[1]
+
+      await fastCompleteHandler!(new CustomEvent('assets.seed.fast_complete'))
+      await vi.waitFor(() => {
+        expect(error).toHaveBeenCalledWith(
+          expect.stringContaining('reload'),
+          expect.any(Error)
+        )
+      })
+      error.mockRestore()
     })
 
     it('logs when the scan discovered new files, stays quiet otherwise', async () => {

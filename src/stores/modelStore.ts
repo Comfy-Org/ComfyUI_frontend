@@ -265,15 +265,22 @@ export const useModelStore = defineStore('models', () => {
       : (folder) => api.getModels(folder)
   }
 
+  let modelFoldersRequestId = 0
+
   /**
    * Loads the model folders from the server.
    *
    * The folder list (and its registration order) always comes from
    * `/experiment/models`, the source of truth for which model folders exist;
    * only the per-folder contents differ between the asset API and legacy paths.
+   * Concurrent loads (manual refresh racing the scan-complete reload) commit
+   * only the newest request so a slow stale response cannot overwrite a
+   * fresher folder structure.
    */
   async function loadModelFolders() {
+    const requestId = ++modelFoldersRequestId
     const resData = await api.getModelFolders()
+    if (requestId !== modelFoldersRequestId) return
     modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
     const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
@@ -374,7 +381,9 @@ export const useModelStore = defineStore('models', () => {
       // oxlint-disable-next-line no-console
       console.log(`Model scan discovered ${created} new model file(s).`)
     }
-    void reloadModels()
+    void reloadModels().catch((error) => {
+      console.error('Failed to reload the model library after a scan', error)
+    })
   })
 
   return {
