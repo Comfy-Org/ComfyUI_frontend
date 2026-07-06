@@ -261,4 +261,88 @@ describe('TurnstileWidget', () => {
 
     expect(api.remove).toHaveBeenCalledWith('widget-id')
   })
+
+  // Regression coverage for BE-1345: a widget that never resolves (broken
+  // script, ad-blocker, CDN outage, or a hung challenge) must eventually tell
+  // the parent it cannot be relied on, so submission can fall back instead of
+  // blocking a legitimate signup forever.
+  describe('unavailable fallback', () => {
+    it('reports unavailable when the Turnstile script fails to load', async () => {
+      mockLoadTurnstile.mockRejectedValue(new Error('script failed'))
+
+      const { emitted } = renderWidget()
+      await flush()
+
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+    })
+
+    it('reports unavailable on a challenge error', async () => {
+      const { api, options } = fakeTurnstile()
+      mockLoadTurnstile.mockResolvedValue(api)
+
+      const { emitted } = renderWidget()
+      await flush()
+
+      options()!['error-callback']!()
+      await flush()
+
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+    })
+
+    it('clears the unavailable fallback once a token is solved', async () => {
+      const { api, options } = fakeTurnstile()
+      mockLoadTurnstile.mockResolvedValue(api)
+
+      const { emitted } = renderWidget()
+      await flush()
+
+      options()!['error-callback']!()
+      await flush()
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+
+      options()!.callback!('token-abc')
+      await flush()
+
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([false])
+    })
+
+    it('falls back once the widget fails to resolve within the load timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        const { api, options } = fakeTurnstile()
+        mockLoadTurnstile.mockResolvedValue(api)
+
+        const { emitted } = renderWidget()
+        // Let the onMounted hook's `await loadTurnstile()` microtask settle
+        // and render() run, without yet advancing to the timeout itself.
+        await vi.advanceTimersByTimeAsync(0)
+        expect(options()).toBeDefined()
+        expect(emitted()['update:unavailable']).toBeUndefined()
+
+        await vi.advanceTimersByTimeAsync(9_000)
+
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('does not fall back once a token arrives before the load timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        const { api, options } = fakeTurnstile()
+        mockLoadTurnstile.mockResolvedValue(api)
+
+        const { emitted } = renderWidget()
+        await vi.advanceTimersByTimeAsync(0)
+
+        options()!.callback!('token-abc')
+        await vi.advanceTimersByTimeAsync(9_000)
+
+        expect(emitted()['update:unavailable']).toBeUndefined()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
 })

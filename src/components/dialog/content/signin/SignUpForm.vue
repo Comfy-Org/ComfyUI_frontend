@@ -33,6 +33,7 @@
       v-if="turnstileEnabled"
       ref="turnstileWidget"
       v-model:token="turnstileToken"
+      v-model:unavailable="turnstileUnavailable"
     />
 
     <small
@@ -86,17 +87,31 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
-const { enabled: turnstileEnabled, enforced: turnstileEnforced } =
-  useTurnstile()
+const { enabled: turnstileEnabled } = useTurnstile()
 const turnstileToken = ref('')
+// Set by the widget when it cannot be relied on to ever produce a token (the
+// Cloudflare script failed to load, the challenge errored out, or it just
+// hasn't resolved in time). Submission falls back to proceeding without a
+// token rather than blocking a legitimate signup forever.
+const turnstileUnavailable = ref(false)
 const turnstileWidget =
   useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
+// Gate submit on the widget being enabled (rendering — shadow or enforce),
+// not on it being enforced: shadow mode still needs a real token most of the
+// time to actually measure the false-positive rate, so it can't let users
+// through before the widget has had a chance to resolve.
 const submitBlockedByTurnstile = computed(
-  () => turnstileEnforced.value && !turnstileToken.value
+  () =>
+    turnstileEnabled.value &&
+    !turnstileToken.value &&
+    !turnstileUnavailable.value
 )
 
 watch(turnstileEnabled, (on) => {
-  if (!on) turnstileToken.value = ''
+  if (!on) {
+    turnstileToken.value = ''
+    turnstileUnavailable.value = false
+  }
 })
 
 const emit = defineEmits<{
