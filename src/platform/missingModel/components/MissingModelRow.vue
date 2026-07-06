@@ -1,6 +1,13 @@
 <template>
   <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
-    <div class="flex min-h-8 w-full items-center gap-1">
+    <div
+      :class="
+        cn(
+          'flex min-h-8 w-full items-center gap-1',
+          highlighted && 'rounded-sm bg-primary-background/10'
+        )
+      "
+    >
       <Button
         v-if="hasMultipleReferences"
         data-testid="missing-model-expand"
@@ -217,12 +224,15 @@ const {
   model,
   directory,
   isAssetSupported,
-  canCloudImport = true
+  canCloudImport = true,
+  highlighted = false
 } = defineProps<{
   model: MissingModelViewModel
   directory: string | null
   isAssetSupported: boolean
   canCloudImport?: boolean
+  /** Emphasize the header row (model referenced by the canvas selection). */
+  highlighted?: boolean
 }>()
 
 const emit = defineEmits<{

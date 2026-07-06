@@ -62,28 +62,26 @@
         </div>
 
         <!-- Selection context strip -->
-        <div
-          v-if="selectionStripLabel"
-          data-testid="selection-context-strip"
-          :class="
-            cn(
-              'flex items-center gap-2 px-3 py-1.5',
-              carousel
-                ? 'mb-2 rounded-md border border-secondary-background bg-base-foreground/5'
-                : 'border-t border-secondary-background bg-base-foreground/5'
-            )
-          "
-        >
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--locate] size-3.5 shrink-0 text-muted-foreground"
-          />
-          <span
-            class="min-w-0 flex-1 truncate text-xs font-semibold text-base-foreground"
+        <TransitionCollapse>
+          <div
+            v-if="selectionStripLabel"
+            data-testid="selection-context-strip"
+            :class="
+              cn(
+                'flex items-center px-3 py-1.5',
+                carousel
+                  ? 'mb-2 rounded-md border border-secondary-background'
+                  : 'border-t border-secondary-background'
+              )
+            "
           >
-            {{ selectionStripLabel }}
-          </span>
-        </div>
+            <span
+              class="min-w-0 flex-1 truncate text-xs font-semibold text-primary-background"
+            >
+              {{ selectionStripLabel }}
+            </span>
+          </div>
+        </TransitionCollapse>
 
         <!-- Group by Class Type -->
         <div

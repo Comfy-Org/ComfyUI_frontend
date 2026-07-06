@@ -4,12 +4,7 @@
       v-for="group in swapNodeGroups"
       :key="group.type"
       :group="group"
-      :class="
-        cn(
-          isGroupHighlighted(group) &&
-            'rounded-md ring-1 ring-primary-background/60'
-        )
-      "
+      :highlighted="isGroupHighlighted(group)"
       @locate-node="emit('locate-node', $event)"
       @replace="emit('replace', $event)"
     />
@@ -17,8 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import SwapNodeGroupRow from '@/platform/nodeReplacement/components/SwapNodeGroupRow.vue'
 

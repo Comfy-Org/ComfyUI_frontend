@@ -12,7 +12,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="true"
-        :class="cn(isRowHighlighted(row) && ROW_HIGHLIGHT_CLASS)"
+        :highlighted="isRowHighlighted(row)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -37,7 +37,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="false"
-        :class="cn(isRowHighlighted(row) && ROW_HIGHLIGHT_CLASS)"
+        :highlighted="isRowHighlighted(row)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -64,7 +64,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
@@ -88,8 +87,6 @@ const MODEL_TYPE_SORT_ORDER = [
   'text_encoders',
   'diffusion_models'
 ] as const
-
-const ROW_HIGHLIGHT_CLASS = 'rounded-md ring-1 ring-primary-background/60'
 
 const { missingModelGroups, highlightedNodeIds } = defineProps<{
   missingModelGroups: MissingModelGroup[]

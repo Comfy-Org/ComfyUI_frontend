@@ -62,12 +62,7 @@
         :key="group.packId ?? '__unknown__'"
         :group="group"
         :show-info-button="showInfoButton"
-        :class="
-          cn(
-            isGroupHighlighted(group) &&
-              'rounded-md ring-1 ring-primary-background/60'
-          )
-        "
+        :highlighted="isGroupHighlighted(group)"
         @locate-node="emit('locateNode', $event)"
         @open-manager-info="emit('openManagerInfo', $event)"
       />
@@ -100,7 +95,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 import { compare, valid } from 'semver'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
