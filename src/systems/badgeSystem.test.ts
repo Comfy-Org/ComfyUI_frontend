@@ -33,11 +33,29 @@ function sources(overrides: Partial<BadgeSources> = {}): BadgeSources {
 }
 
 describe('computeBadges', () => {
-  it('projects lifecycle, id, and source core rows in that order', () => {
+  it('projects part-tagged core rows carrying raw source text', () => {
     expect(computeBadges(sources())).toEqual([
-      { kind: 'core', text: 'BETA', fgColor: '#fff', bgColor: '#0b8' },
-      { kind: 'core', text: '#5', fgColor: '#fff', bgColor: '#0b8' },
-      { kind: 'core', text: 'my-pack', fgColor: '#fff', bgColor: '#0b8' }
+      {
+        kind: 'core',
+        part: 'lifecycle',
+        text: '[BETA]',
+        fgColor: '#fff',
+        bgColor: '#0b8'
+      },
+      {
+        kind: 'core',
+        part: 'id',
+        text: '#5',
+        fgColor: '#fff',
+        bgColor: '#0b8'
+      },
+      {
+        kind: 'core',
+        part: 'source',
+        text: 'my-pack',
+        fgColor: '#fff',
+        bgColor: '#0b8'
+      }
     ])
   })
 
@@ -65,7 +83,7 @@ describe('computeBadges', () => {
       })
     )
 
-    expect(rows.map((b) => b.text)).toEqual(['BETA'])
+    expect(rows.map((b) => b.text)).toEqual(['[BETA]'])
   })
 
   it('projects only the id row without a node definition', () => {
@@ -165,7 +183,7 @@ describe('startBadgeSystem', () => {
     seedTestNodeDef()
     await nextTick()
 
-    expect(texts()).toEqual(['BETA', '#7', 'my_pack'])
+    expect(texts()).toEqual(['[BETA]', '#7', 'my_pack'])
 
     stop()
   })

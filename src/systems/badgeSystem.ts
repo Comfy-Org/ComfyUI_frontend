@@ -1,4 +1,3 @@
-import { trim } from 'es-toolkit'
 import { effectScope, watch, watchEffect } from 'vue'
 import type { EffectScope } from 'vue'
 
@@ -11,7 +10,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { BADGE_KIND_ORDER } from '@/types/badgeData'
-import type { BadgeData } from '@/types/badgeData'
+import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
 import type { NodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
@@ -55,19 +54,18 @@ function badgeTextVisible(
 /** Projects a node's core and credits badge rows from their sources. */
 export function computeBadges(sources: BadgeSources): BadgeData[] {
   const { nodeId, nodeDef, badgeModes, colors, pricing } = sources
-  const coreTexts = [
-    badgeTextVisible(nodeDef, badgeModes.lifecycle)
-      ? trim(nodeDef?.lifecycleText ?? '', ['[', ']'])
-      : '',
-    badgeTextVisible(nodeDef, badgeModes.id) ? `#${nodeId}` : '',
-    badgeTextVisible(nodeDef, badgeModes.source)
-      ? (nodeDef?.sourceText ?? '')
-      : ''
+  const coreParts: [CoreBadgePart, NodeBadgeMode, string][] = [
+    ['lifecycle', badgeModes.lifecycle, nodeDef?.lifecycleText ?? ''],
+    ['id', badgeModes.id, `#${nodeId}`],
+    ['source', badgeModes.source, nodeDef?.sourceText ?? '']
   ]
-  const rows: BadgeData[] = coreTexts
-    .filter((text) => text.length > 0)
-    .map((text) => ({
+  const rows: BadgeData[] = coreParts
+    .filter(
+      ([, mode, text]) => badgeTextVisible(nodeDef, mode) && text.length > 0
+    )
+    .map(([part, , text]) => ({
       kind: 'core',
+      part,
       text,
       fgColor: colors.fgColor,
       bgColor: colors.bgColor
