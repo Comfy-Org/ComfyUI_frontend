@@ -44,6 +44,17 @@ interface RedeemDesktopLoginCodePayload {
   code: string
 }
 
+// Percent-encoded spellings of the key (e.g. desktop%5Flogin%5Fcode) decode
+// to the same route.query entry, so they must be stripped too.
+function isDesktopLoginCodeParam(param: string): boolean {
+  const rawKey = param.split('=', 1)[0]
+  try {
+    return decodeURIComponent(rawKey) === DESKTOP_LOGIN_CODE_KEY
+  } catch {
+    return rawKey === DESKTOP_LOGIN_CODE_KEY
+  }
+}
+
 /**
  * Strips the desktop login code from an in-app full path (e.g. the
  * previousFullPath post-login redirect target) so the one-time code never
@@ -56,11 +67,7 @@ export function stripDesktopLoginCodeFromPath(fullPath: string): string {
   if (!match) return fullPath
   const [, path, query, hash = ''] = match
   const params = query.split('&')
-  const kept = params.filter(
-    (param) =>
-      param !== DESKTOP_LOGIN_CODE_KEY &&
-      !param.startsWith(`${DESKTOP_LOGIN_CODE_KEY}=`)
-  )
+  const kept = params.filter((param) => !isDesktopLoginCodeParam(param))
   if (kept.length === params.length) return fullPath
   return `${path}${kept.length ? `?${kept.join('&')}` : ''}${hash}`
 }
@@ -70,7 +77,7 @@ export function stripDesktopLoginCodeFromPath(fullPath: string): string {
 let completed = false
 let inFlight: Promise<void> | null = null
 let attempts = 0
-let userApproved = false
+let approvedCode: string | null = null
 
 /**
  * One-shot redemption of a desktop login code (`?desktop_login_code=dlc_...`).
@@ -95,12 +102,13 @@ function useDesktopLoginRedemptionInternal() {
   const dialogService = useDialogService()
 
   // Strip the raw code from the visible URL; the sessionStorage stash keeps
-  // it through auth redirects.
+  // it through auth redirects. Scrubs route.fullPath as a raw string so the
+  // surviving params keep their original encoding (see
+  // stripDesktopLoginCodeFromPath).
   const stripCodeFromUrl = () => {
-    if (route.query[DESKTOP_LOGIN_CODE_KEY] === undefined) return
-    const cleanQuery = { ...route.query }
-    delete cleanQuery[DESKTOP_LOGIN_CODE_KEY]
-    router.replace({ query: cleanQuery }).catch(() => {
+    const cleanPath = stripDesktopLoginCodeFromPath(route.fullPath)
+    if (cleanPath === route.fullPath) return
+    router.replace(cleanPath).catch(() => {
       console.warn('[DesktopLoginRedemption] Failed to clean URL params')
     })
   }
@@ -133,16 +141,17 @@ function useDesktopLoginRedemptionInternal() {
   }
 
   // A leaked link carrying a code must not silently bind the victim's session
-  // to an attacker's desktop app: redemption requires explicit approval,
-  // asked at most once per page load.
-  const confirmRedemption = async (): Promise<boolean> => {
-    if (userApproved) return true
+  // to an attacker's desktop app: redemption requires explicit approval.
+  // Approval is per code — retries of the same code reuse it, but a different
+  // code arriving later must be approved on its own.
+  const confirmRedemption = async (code: string): Promise<boolean> => {
+    if (approvedCode === code) return true
     const confirmed = await dialogService.confirm({
       title: t('desktopLogin.confirmSummary'),
       message: t('desktopLogin.confirmMessage')
     })
-    userApproved = confirmed === true
-    return userApproved
+    approvedCode = confirmed === true ? code : null
+    return confirmed === true
   }
 
   const redeemOnce = async (): Promise<void> => {
@@ -155,7 +164,7 @@ function useDesktopLoginRedemptionInternal() {
     const user = authStore.currentUser
     if (!user) return
 
-    if (!(await confirmRedemption())) {
+    if (!(await confirmRedemption(code))) {
       // Declined/dismissed: drop the code without an error.
       giveUp()
       return

@@ -16,6 +16,7 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+import { stripDesktopLoginCodeFromPath } from '@/platform/cloud/onboarding/composables/useDesktopLoginRedemption'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
@@ -197,10 +198,14 @@ if (isCloud) {
       return next()
     }
 
+    // The one-time desktop login code is already in the preserved-query stash
+    // (captured by the tracker guard above); it must not ride along inside
+    // previousFullPath on the login URL.
+    const redirectTarget = stripDesktopLoginCodeFromPath(to.fullPath)
     const query =
-      to.fullPath === '/'
+      redirectTarget === '/'
         ? undefined
-        : { previousFullPath: encodeURIComponent(to.fullPath) }
+        : { previousFullPath: encodeURIComponent(redirectTarget) }
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {

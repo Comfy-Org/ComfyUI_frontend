@@ -37,6 +37,11 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({
     get query() {
       return mockRouteQuery.value
+    },
+    get fullPath() {
+      const entries = Object.entries(mockRouteQuery.value)
+      if (!entries.length) return '/'
+      return `/?${entries.map(([key, value]) => `${key}=${value}`).join('&')}`
     }
   }),
   useRouter: () => ({
@@ -225,6 +230,29 @@ describe('useDesktopLoginRedemption', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
+  it('re-asks for approval when a different code arrives after a transient failure', async () => {
+    const secondCode = `dlc_${'B'.repeat(43)}`
+    mockRouteQuery.value = { desktop_login_code: VALID_CODE }
+    mockFetch
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: 'redeemed' }), { status: 200 })
+      )
+
+    const { redeemIfPresent } = await importComposable()
+    await redeemIfPresent()
+    expect(mockConfirm).toHaveBeenCalledTimes(1)
+
+    mockRouteQuery.value = { desktop_login_code: secondCode }
+    await redeemIfPresent()
+
+    expect(mockConfirm).toHaveBeenCalledTimes(2)
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      REDEEM_URL,
+      expect.objectContaining({ body: JSON.stringify({ code: secondCode }) })
+    )
+  })
+
   it('strips the code from the visible URL before redeeming', async () => {
     mockRouteQuery.value = { desktop_login_code: VALID_CODE, other: 'param' }
     mockFetch.mockResolvedValue(
@@ -234,9 +262,7 @@ describe('useDesktopLoginRedemption', () => {
     const { redeemIfPresent } = await importComposable()
     await redeemIfPresent()
 
-    expect(mockRouterReplace).toHaveBeenCalledWith({
-      query: { other: 'param' }
-    })
+    expect(mockRouterReplace).toHaveBeenCalledWith('/?other=param')
   })
 
   it('strips the URL param and clears the stash even after redemption completed', async () => {
@@ -256,7 +282,7 @@ describe('useDesktopLoginRedemption', () => {
     await redeemIfPresent()
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(mockRouterReplace).toHaveBeenCalledWith('/')
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'desktop_login'
     )
@@ -442,5 +468,15 @@ describe('stripDesktopLoginCodeFromPath', () => {
     expect(strip(`/p?name=My%20Flow&desktop_login_code=${VALID_CODE}`)).toBe(
       '/p?name=My%20Flow'
     )
+  })
+
+  it('removes percent-encoded spellings of the code key', async () => {
+    const strip = await importHelper()
+    expect(strip(`/p?desktop%5Flogin%5Fcode=${VALID_CODE}&x=1`)).toBe('/p?x=1')
+  })
+
+  it('leaves params with malformed percent-encoding untouched', async () => {
+    const strip = await importHelper()
+    expect(strip('/p?bad%E0%A4=1&x=2')).toBe('/p?bad%E0%A4=1&x=2')
   })
 })
