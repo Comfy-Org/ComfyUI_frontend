@@ -129,7 +129,7 @@ describe('DOMWidgetImpl', () => {
     expect(isComponentWidget(domWidget)).toBe(false)
   })
 
-  test('uses option-backed values, callbacks, and margins', () => {
+  test('uses option-backed values, callbacks, and margins over defaults', () => {
     const node = new LGraphNode('test-node')
     let value = 'initial'
     const setValue = vi.fn((next: string) => {
@@ -148,6 +148,13 @@ describe('DOMWidgetImpl', () => {
       }
     })
     widget.callback = callback
+    const defaultWidget = new DOMWidgetImpl({
+      node,
+      name: 'text-default',
+      type: 'text',
+      element: document.createElement('textarea'),
+      options: {}
+    })
 
     widget.value = 'next'
 
@@ -155,20 +162,8 @@ describe('DOMWidgetImpl', () => {
     expect(widget.margin).toBe(4)
     expect(setValue).toHaveBeenCalledWith('next')
     expect(callback).toHaveBeenCalledWith('next')
-  })
-
-  test('uses default value and margin when options do not provide them', () => {
-    const node = new LGraphNode('test-node')
-    const widget = new DOMWidgetImpl({
-      node,
-      name: 'text',
-      type: 'text',
-      element: document.createElement('textarea'),
-      options: {}
-    })
-
-    expect(widget.value).toBe('')
-    expect(widget.margin).toBe(10)
+    expect(defaultWidget.value).toBe('')
+    expect(defaultWidget.margin).toBe(10)
   })
 
   test('draws zoom placeholders and delegates visible draws', () => {
