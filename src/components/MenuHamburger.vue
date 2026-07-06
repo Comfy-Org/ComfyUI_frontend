@@ -1,6 +1,6 @@
 <template>
   <div
-    v-show="workspaceState.focusMode"
+    v-show="workspaceState.focusMode && !errorResolutionStore.isActive"
     class="no-drag fixed top-0 right-0 z-9999 flex flex-row"
   >
     <Button
@@ -24,10 +24,12 @@ import { watchEffect } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useErrorResolutionStore } from '@/stores/workspace/errorResolutionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
+const errorResolutionStore = useErrorResolutionStore()
 const settingStore = useSettingStore()
 const exitFocusMode = () => {
   workspaceState.focusMode = false
