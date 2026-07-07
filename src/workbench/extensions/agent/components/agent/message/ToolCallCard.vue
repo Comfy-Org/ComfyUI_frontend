@@ -1,0 +1,42 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import type { PartState } from '../../../services/agent/agentMessageParts'
+import { cn } from '@comfyorg/tailwind-utils'
+
+// One tool row (or a run of identical calls collapsed with a count). `ok` is undefined
+// while the call is still running.
+const {
+  name,
+  state,
+  ok,
+  count = 1
+} = defineProps<{
+  name: string
+  state: PartState
+  ok?: boolean
+  count?: number
+}>()
+
+const glyph = computed(() => {
+  if (state === 'streaming') return 'animate-spin icon-[lucide--loader-circle]'
+  return ok === false
+    ? 'icon-[lucide--circle-x]'
+    : 'icon-[lucide--circle-check]'
+})
+
+const glyphColor = computed(() => {
+  if (state === 'streaming') return 'text-agent-fg-subtle'
+  return ok === false ? 'text-agent-danger' : 'text-agent-success'
+})
+</script>
+
+<template>
+  <div class="text-agent-fg flex items-center gap-2 px-3 py-1.5 text-sm">
+    <span :class="cn('size-4 shrink-0', glyph, glyphColor)" />
+    <span class="truncate font-mono text-xs">{{ name }}</span>
+    <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
+      >×{{ count }}</span
+    >
+  </div>
+</template>

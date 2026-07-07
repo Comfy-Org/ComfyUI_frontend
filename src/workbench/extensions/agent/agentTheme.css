@@ -1,0 +1,70 @@
+/* In-App Agent panel (FE-1187) theme, owned by the feature (not the design-system
+   master). The agent components render on agent-* utility classes (bg-agent-surface,
+   text-agent-fg, border-agent-border, ...); this file routes those tokens onto host
+   semantic variables so the panel tracks host theme flips (light mode included)
+   automatically. @theme inline substitutes the var reference into the generated
+   utilities, which is what makes the flip work without touching any component.
+
+   The panel's Figma frames are dark-only; light-mode rendering follows the host theme
+   here, an intentional divergence deferred to the FE-1187 design-alignment pass. */
+@theme inline {
+  /* agent token            ->  host semantic token */
+  /* surface                ->  panel surface        */
+  --color-agent-surface: var(--color-interface-panel-surface);
+  /* surface-raised         ->  node component surface */
+  --color-agent-surface-raised: var(--color-node-component-surface);
+  /* surface-hover          ->  node component hovered surface */
+  --color-agent-surface-hover: var(--color-node-component-surface-hovered);
+  /* fg                     ->  primary text          */
+  --color-agent-fg: var(--color-text-primary);
+  /* fg-muted               ->  muted foreground      */
+  --color-agent-fg-muted: var(--color-muted-foreground);
+  /* fg-subtle              ->  secondary text        */
+  --color-agent-fg-subtle: var(--color-text-secondary);
+  /* border                 ->  subtle border         */
+  --color-agent-border: var(--color-border-subtle);
+  /* border-strong          ->  default (stronger) border */
+  --color-agent-border-strong: var(--color-border-default);
+  /* accent                 ->  primary background     */
+  --color-agent-accent: var(--color-primary-background);
+  /* accent-fg: text on the always-blue accent stays white in both themes; no host
+     on-primary token flips correctly here. Design-review item for FE-1187. */
+  --color-agent-accent-fg: #ffffff;
+  /* danger                 ->  destructive background */
+  --color-agent-danger: var(--color-destructive-background);
+  /* success                ->  success background     */
+  --color-agent-success: var(--color-success-background);
+  /* pill: subtle chip surface with no defensible host pairing distinct from
+     surface-raised; kept literal pending the FE-1187 design pass. */
+  --color-agent-pill: #303036;
+
+  /* Radius is not theme-flipped and the host exposes no matching --radius-* step, so
+     the agent radius stays a literal here. */
+  --radius-agent: 0.75rem;
+}
+
+/* Structural (theme-independent) collapsible animation tokens + their keyframes,
+   driven by the --reka-collapsible-content-height var Reka sets on the content
+   element. Used by the agent CollapsibleContent for reasoning/tool disclosures. */
+@theme {
+  --animate-collapsible-down: collapsible-down 200ms ease-out;
+  --animate-collapsible-up: collapsible-up 200ms ease-out;
+}
+
+@keyframes collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--reka-collapsible-content-height);
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--reka-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
