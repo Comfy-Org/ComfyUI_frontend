@@ -10,7 +10,7 @@ import { resolveRel } from '../utils/cta'
 // NOTE: on this static site, `startsAt`/`endsAt` are evaluated at BUILD time — the
 // window gates on the last deploy, not the visitor's exact clock.
 
-export interface BannerLinkConfig {
+interface BannerLinkConfig {
   readonly href: string
   readonly titleKey: TranslationKey
   readonly target?: boolean
@@ -31,7 +31,7 @@ export interface BannerConfig {
   readonly link?: BannerLinkConfig
 }
 
-export interface BannerLinkData {
+interface BannerLinkData {
   readonly href: string
   readonly title: string
   readonly target?: '_blank'

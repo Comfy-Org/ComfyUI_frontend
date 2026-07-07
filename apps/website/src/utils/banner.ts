@@ -43,7 +43,7 @@ export function evaluateBannerVisibility(
   return true
 }
 
-export interface BannerLinkContent {
+interface BannerLinkContent {
   href: string
   title: string
   target?: string
