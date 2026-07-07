@@ -18,10 +18,6 @@
     </div>
 
     <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.autoReload.dialog.subtitle') }}
-      </p>
-
       <div class="flex flex-col gap-2">
         <label class="text-sm text-muted-foreground">
           {{ $t('workspacePanel.autoReload.dialog.thresholdLabel') }}
@@ -70,60 +66,56 @@
           {{ reloadError }}
         </p>
       </div>
+    </div>
 
-      <div
-        class="flex flex-col gap-2 rounded-xl border border-interface-stroke/60 p-4"
-      >
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-medium text-base-foreground">
-            {{ $t('workspacePanel.autoReload.dialog.budgetToggleLabel') }}
-          </span>
-          <span class="flex items-center gap-2 text-sm text-muted-foreground">
-            {{
-              budgetEnabled
-                ? $t('workspacePanel.autoReload.enabled')
-                : $t('workspacePanel.autoReload.disabled')
-            }}
-            <Switch v-model="budgetEnabled" />
-          </span>
-        </div>
-        <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.autoReload.dialog.budgetToggleHint') }}
-        </p>
-        <div :class="cn(fieldClass, !budgetEnabled && 'opacity-50')">
-          <i
-            v-if="unit === 'credits'"
-            class="icon-[lucide--coins] size-4 shrink-0 text-credit"
-          />
-          <span v-else class="shrink-0 text-sm text-muted-foreground">$</span>
-          <input
-            v-model="budgetModel"
-            :disabled="!budgetEnabled"
-            inputmode="numeric"
-            :placeholder="budgetPlaceholder"
-            class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none disabled:cursor-not-allowed"
-          />
-          <span
-            v-if="budgetEnabled && budgetCents > 0"
-            class="flex shrink-0 items-center gap-1 text-sm text-muted-foreground tabular-nums"
-          >
-            <template v-if="unit === 'credits'"
-              >≈ {{ budgetUsdLabel }}</template
-            >
-            <template v-else>
-              ≈
-              <i class="icon-[lucide--coins] size-3.5 text-muted-foreground" />
-              {{ budgetCreditsLabel }}
-            </template>
-          </span>
-        </div>
-        <p
-          v-if="budgetEnabled && budgetCents > 0"
-          class="m-0 text-xs text-muted-foreground"
-        >
-          {{ allowsReloadsLabel }}
-        </p>
+    <div class="flex flex-col gap-2 border-t border-border-default p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-base-foreground">
+          {{ $t('workspacePanel.autoReload.dialog.budgetToggleLabel') }}
+        </span>
+        <span class="flex items-center gap-2 text-sm text-muted-foreground">
+          {{
+            budgetEnabled
+              ? $t('workspacePanel.autoReload.enabled')
+              : $t('workspacePanel.autoReload.disabled')
+          }}
+          <Switch v-model="budgetEnabled" />
+        </span>
       </div>
+      <p class="m-0 text-sm text-muted-foreground">
+        {{ $t('workspacePanel.autoReload.dialog.budgetToggleHint') }}
+      </p>
+      <div :class="cn(fieldClass, !budgetEnabled && 'opacity-50')">
+        <i
+          v-if="unit === 'credits'"
+          class="icon-[lucide--coins] size-4 shrink-0 text-credit"
+        />
+        <span v-else class="shrink-0 text-sm text-muted-foreground">$</span>
+        <input
+          v-model="budgetModel"
+          :disabled="!budgetEnabled"
+          inputmode="numeric"
+          :placeholder="budgetPlaceholder"
+          class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none disabled:cursor-not-allowed"
+        />
+        <span
+          v-if="budgetEnabled && budgetCents > 0"
+          class="flex shrink-0 items-center gap-1 text-sm text-muted-foreground tabular-nums"
+        >
+          <template v-if="unit === 'credits'">≈ {{ budgetUsdLabel }}</template>
+          <template v-else>
+            ≈
+            <i class="icon-[lucide--coins] size-3.5 text-muted-foreground" />
+            {{ budgetCreditsLabel }}
+          </template>
+        </span>
+      </div>
+      <p
+        v-if="budgetEnabled && budgetCents > 0"
+        class="m-0 text-xs text-muted-foreground"
+      >
+        {{ allowsReloadsLabel }}
+      </p>
     </div>
 
     <div
@@ -139,6 +131,7 @@
           v-for="option in unitOptions"
           :key="option"
           :value="option"
+          size="lg"
         >
           {{ $t(`workspacePanel.autoReload.dialog.${option}`) }}
         </ToggleGroupItem>
@@ -280,13 +273,11 @@ const reloadBelowMinimum = computed(
 )
 const reloadError = computed(() => {
   if (!reloadBelowMinimum.value) return ''
-  return unit.value === 'credits'
-    ? t('workspacePanel.autoReload.dialog.minReloadCredits', {
-        count: fmtInt(MIN_RELOAD_CREDITS)
-      })
-    : t('workspacePanel.autoReload.dialog.minReloadUsd', {
-        amount: fmtUsd(MIN_RELOAD_CENTS)
-      })
+  const amount =
+    unit.value === 'credits'
+      ? fmtInt(MIN_RELOAD_CREDITS)
+      : fmtUsd(MIN_RELOAD_CENTS)
+  return t('workspacePanel.autoReload.dialog.minReload', { amount })
 })
 
 const canUpdate = computed(
