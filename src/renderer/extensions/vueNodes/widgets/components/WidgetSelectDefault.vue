@@ -220,6 +220,8 @@ interface SelectOption {
   key: string
   label: string
   value: string
+  lowercaseLabel: string
+  lowercaseValue: string
 }
 
 type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
@@ -295,7 +297,6 @@ const searchInputContainerRef = ref<HTMLElement>()
 const { start: startResolveTimer, stop: stopResolveTimer } = useTimeoutFn(
   () => {
     isResolving.value = false
-    refreshOptions()
   },
   0,
   { immediate: false }
@@ -343,12 +344,17 @@ const knownOptionValues = computed(() => new Set(resolvedValues.value))
 const isFilterable = computed(() => resolvedValues.value.length > 4)
 
 const normalizedOptions = computed<SelectOption[]>(() => {
-  return resolvedValues.value.map((value, index) => ({
-    comboboxValue: toComboboxValue(value),
-    key: `${value}-${index}`,
-    label: getOptionLabel(value),
-    value
-  }))
+  return resolvedValues.value.map((value, index) => {
+    const label = getOptionLabel(value)
+    return {
+      comboboxValue: toComboboxValue(value),
+      key: `${value}-${index}`,
+      label,
+      value,
+      lowercaseLabel: String(label).toLocaleLowerCase(),
+      lowercaseValue: String(value).toLocaleLowerCase()
+    }
+  })
 })
 
 const filteredOptions = computed(() => {
@@ -361,8 +367,8 @@ const filteredOptions = computed(() => {
 
   return normalizedOptions.value.filter(
     (option) =>
-      option.value.toLocaleLowerCase().includes(query) ||
-      option.label.toLocaleLowerCase().includes(query)
+      option.lowercaseLabel.includes(query) ||
+      option.lowercaseValue.includes(query)
   )
 })
 
@@ -422,10 +428,9 @@ function handleOpenChange(open: boolean) {
   isOpen.value = open
 
   if (open) {
-    const values = widgetOptions.value?.values
-    if (!values || (Array.isArray(values) && values.length <= 100)) {
+    refreshOptions()
+    if (resolvedValues.value.length <= 100) {
       isResolving.value = false
-      refreshOptions()
     } else {
       isResolving.value = true
       startResolveTimer()

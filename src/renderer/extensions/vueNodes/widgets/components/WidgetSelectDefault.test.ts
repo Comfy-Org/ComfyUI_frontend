@@ -353,38 +353,50 @@ describe('WidgetSelectDefault', () => {
     })
 
     it('cancels the pending resolve timer when the dropdown is closed early', async () => {
-      const options = Array.from({ length: 101 }, (_, i) => `option-${i}`)
-      const { user } = renderComponent(createWidget(options))
+      vi.useFakeTimers()
+      try {
+        const options = Array.from({ length: 101 }, (_, i) => `option-${i}`)
+        renderComponent(createWidget(options))
 
-      // eslint-disable-next-line testing-library/prefer-user-event
-      await fireEvent.click(screen.getByTestId('widget-select-default-trigger'))
-      await nextTick()
+        // eslint-disable-next-line testing-library/prefer-user-event
+        await fireEvent.click(
+          screen.getByTestId('widget-select-default-trigger')
+        )
+        await nextTick()
 
-      const icon = screen.getByTestId('widget-select-trigger-icon')
-      expect(icon).toHaveClass('animate-spin')
+        const icon = screen.getByTestId('widget-select-trigger-icon')
+        expect(icon).toHaveClass('animate-spin')
 
-      const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
-      clearTimeoutSpy.mockClear()
+        const pendingTimersBeforeClose = vi.getTimerCount()
 
-      await user.keyboard('{Escape}')
-      await nextTick()
+        const overlay = screen.getByTestId('widget-select-default-overlay')
+        // eslint-disable-next-line testing-library/prefer-user-event
+        await fireEvent.keyDown(overlay, { key: 'Escape', code: 'Escape' })
+        await nextTick()
 
-      expect(clearTimeoutSpy).toHaveBeenCalledTimes(1)
-      clearTimeoutSpy.mockRestore()
+        const pendingTimersAfterClose = vi.getTimerCount()
+        expect(pendingTimersAfterClose).toBeLessThan(pendingTimersBeforeClose)
 
-      expect(
-        screen.queryByTestId('widget-select-default-loading')
-      ).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('widget-select-default-loading')
+        ).not.toBeInTheDocument()
 
-      await flushPromises()
-      await nextTick()
+        vi.advanceTimersByTime(0)
+        await nextTick()
 
-      // eslint-disable-next-line testing-library/prefer-user-event
-      await fireEvent.click(screen.getByTestId('widget-select-default-trigger'))
-      await nextTick()
+        // eslint-disable-next-line testing-library/prefer-user-event
+        await fireEvent.click(
+          screen.getByTestId('widget-select-default-trigger')
+        )
+        await nextTick()
 
-      expect(icon).toHaveClass('animate-spin')
-      expect(screen.getByTestId('widget-select-default-loading')).toBeVisible()
+        expect(icon).toHaveClass('animate-spin')
+        expect(
+          screen.getByTestId('widget-select-default-loading')
+        ).toBeVisible()
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

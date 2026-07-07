@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
  * Helper for interacting with widgets rendered in app mode (linear view).
@@ -60,6 +61,17 @@ export class AppModeWidgetHelper {
   async selectOption(key: string, optionName: string) {
     const widget = this.getWidgetItem(key)
     await widget.getByRole('combobox').click()
+
+    const overlay = this.page.getByTestId(TestIds.widgets.selectDefaultViewport)
+    await overlay.waitFor({ state: 'visible' })
+
+    const searchInput = this.page.getByTestId(
+      TestIds.widgets.selectDefaultSearchInput
+    )
+    if (await searchInput.isVisible()) {
+      await searchInput.fill(optionName)
+    }
+
     await this.page
       .getByRole('option', { name: optionName, exact: true })
       .click()
