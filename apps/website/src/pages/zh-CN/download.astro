@@ -8,7 +8,11 @@ import EcoSystemSection from '../../components/product/local/EcoSystemSection.vu
 import ProductCardsSection from '../../components/product/local/ProductCardsSection.vue'
 import FAQSection from '../../components/product/local/FAQSection.vue'
 import { t } from '../../i18n/translations'
-import { comfyUiApplicationNode, pageContext } from '../../utils/jsonLd'
+import {
+  comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  pageContext,
+} from '../../utils/jsonLd'
 
 const { siteUrl } = pageContext(
   Astro.site,
@@ -20,7 +24,7 @@ const { siteUrl } = pageContext(
 <BaseLayout
   title="下载 Comfy 桌面版 — 在您的硬件上运行 AI"
   description={t('download.hero.subtitle', 'zh-CN')}
-  mainEntityId={`${siteUrl}/#software`}
+  mainEntityId={comfyUiSoftwareId(siteUrl)}
   extraJsonLd={[comfyUiApplicationNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui desktop app', 'comfyui download', 'ComfyUI 下载', 'ComfyUI 桌面应用', 'ComfyUI 应用', 'ComfyUI Windows', 'ComfyUI macOS', 'ComfyUI Linux']}
 >

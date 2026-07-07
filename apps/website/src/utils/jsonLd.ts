@@ -233,10 +233,14 @@ function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
   }
 }
 
+export function comfyUiSoftwareId(siteUrl: string): string {
+  return `${siteUrl}/#software`
+}
+
 export function comfyUiApplicationNode(siteUrl: string): JsonLdNode {
   return softwareApplicationNode({
     siteUrl,
-    id: `${siteUrl}/#software`,
+    id: comfyUiSoftwareId(siteUrl),
     name: 'ComfyUI',
     url: siteUrl,
     firstParty: true,

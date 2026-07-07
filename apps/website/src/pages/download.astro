@@ -8,7 +8,11 @@ import EcoSystemSection from '../components/product/local/EcoSystemSection.vue'
 import ProductCardsSection from '../components/product/local/ProductCardsSection.vue'
 import FAQSection from '../components/product/local/FAQSection.vue'
 import { t } from '../i18n/translations'
-import { comfyUiApplicationNode, pageContext } from '../utils/jsonLd'
+import {
+  comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  pageContext,
+} from '../utils/jsonLd'
 
 const { siteUrl } = pageContext(
   Astro.site,
@@ -20,7 +24,7 @@ const { siteUrl } = pageContext(
 <BaseLayout
   title="Download Comfy Desktop — Run AI on Your Hardware"
   description={t('download.hero.subtitle', 'en')}
-  mainEntityId={`${siteUrl}/#software`}
+  mainEntityId={comfyUiSoftwareId(siteUrl)}
   extraJsonLd={[comfyUiApplicationNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui desktop app', 'comfyui desktop', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux']}
 >

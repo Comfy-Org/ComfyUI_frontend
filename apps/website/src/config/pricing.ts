@@ -34,8 +34,14 @@ export interface PricingOffer {
 
 export function pricingOffers(locale: Locale): PricingOffer[] {
   return tiers.flatMap((tier) => {
-    const match = /^\$(\d+(?:\.\d+)?)$/.exec(t(tier.priceKey, locale).trim())
-    if (!match) return []
+    const display = t(tier.priceKey, locale).trim()
+    const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
+    if (!match) {
+      console.warn(
+        `pricingOffers: skipping tier "${tier.slug}" (${locale}) — price "${display}" is not a plain USD amount`
+      )
+      return []
+    }
     return [
       {
         name: t(tier.labelKey, locale),

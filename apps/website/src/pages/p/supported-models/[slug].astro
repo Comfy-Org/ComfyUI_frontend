@@ -54,9 +54,10 @@ const { siteUrl, locale, url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
+const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
   siteUrl,
-  id: jsonLdId(url, 'software'),
+  id: softwareId,
   name: displayName,
   url,
   applicationCategory: 'MultimediaApplication',
@@ -105,7 +106,7 @@ const faqPage: JsonLdNode = {
   title={`${pageTitle} — Comfy`}
   description={pageDescription}
   ogImage={model.thumbnailUrl}
-  mainEntityId={jsonLdId(url, 'software')}
+  mainEntityId={softwareId}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     {

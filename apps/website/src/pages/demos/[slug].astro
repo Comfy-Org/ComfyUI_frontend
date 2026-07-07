@@ -38,9 +38,10 @@ const educationalLevel =
     : demo.difficulty === 'intermediate'
       ? 'Intermediate'
       : 'Advanced'
+const learningId = jsonLdId(url, 'learning')
 const learningResource: JsonLdNode = {
   '@type': 'LearningResource',
-  '@id': jsonLdId(url, 'learning'),
+  '@id': learningId,
   name: title,
   description,
   url,
@@ -60,7 +61,7 @@ const learningResource: JsonLdNode = {
   title={`${title} — Comfy`}
   description={description}
   ogImage={demo.ogImage}
-  mainEntityId={jsonLdId(url, 'learning')}
+  mainEntityId={learningId}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     {
