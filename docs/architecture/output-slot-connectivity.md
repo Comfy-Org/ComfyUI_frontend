@@ -57,8 +57,8 @@ membership is always derived and cannot drift from the topology.
 
 ```ts
 type OriginIndex = Map<
-  string /* `${originNodeId}:${originSlot}` */,
-  Set<LinkId>
+  OriginSlotKey /* `${originNodeId}:${originSlot}` */,
+  Set<LinkTopology>
 >
 
 const outputIndexes = new Map<UUID, ComputedRef<OriginIndex>>()
@@ -71,7 +71,9 @@ function outputIndex(graphId: UUID): ComputedRef<OriginIndex> {
     for (const t of graphTopologies(graphId)) {
       if (t.originNodeId === UNASSIGNED_NODE_ID) continue
       const key = originKey(t.originNodeId, t.originSlot)
-      ;(index.get(key) ?? index.set(key, new Set()).get(key)!).add(t.id)
+      const links = index.get(key) ?? new Set<LinkTopology>()
+      links.add(t)
+      index.set(key, links)
     }
     return index
   })
@@ -89,14 +91,18 @@ origin (one endpoint only) still reports its output as connected. A
 
 ```ts
 isOutputSlotConnected(graphId, nodeId, slot): boolean
-getOutputSlotLinks(graphId, nodeId, slot): ReadonlySet<LinkId>
+getOutputSlotLinks(graphId, nodeId, slot): ReadonlySet<LinkTopology>
 ```
 
 These match `isInputSlotConnected` / `getInputSlotLink` in name and shape.
 The input side returns a single `LinkTopology`, since at most one link
 targets an input; the output side returns a set, since an output fans out
-to many. Presence is all the renderer needs, and `getOutputSlotLinks`
-covers the readers that currently iterate `output.links`.
+to many. The set holds topologies rather than bare `LinkId`s: floating
+links draw their ids from a separate counter (`_lastFloatingLinkId`), so
+an id alone cannot be resolved safely through `graph.links` — a floating
+id can collide with an unrelated regular link. Topologies carry the
+endpoints most readers want and make floating links identifiable
+(`targetNodeId === UNASSIGNED_NODE_ID`) without resolution.
 
 ## Decision 4: Migrate readers incrementally, keep the mirror written by hand
 
@@ -108,10 +114,26 @@ chokepoints.
 sites, all in `LGraphNode`, `LGraph`, and the subgraph paths. Most of the
 reads are litegraph-internal graph algorithms such as traversal, dedup,
 and serialization. Those can keep reading the mirror indefinitely; they
-are not renderer policy and nothing blocks on them. This phase migrates
-only the reader that drives the payoff, the output dot's connected state,
-plus any renderer or pricing reader that needs mere presence. Migrating
-the rest is opportunistic follow-up rather than a gate.
+are not renderer policy and nothing blocks on them.
+
+Migrated readers: the output dot's connected state (`NodeSlots`), the
+minimap link extraction (`AbstractMinimapDataSource`), the drag-start
+disconnect check (`useSlotLinkInteraction`, where one store query replaces
+a mirror read plus a `slotFloatingLinks` scan), widget value propagation
+(`widgetValuePropagation`), and matchType link revalidation
+(`dynamicWidgets.changeOutputType`).
+
+Readers that stay on the mirror, deliberately:
+
+- `rerouteNode`, `widgetInputs` (PrimitiveNode), and `groupNode` read
+  `output.links` inside `onConnectionsChange` / `onConnectOutput`, where
+  their behavior depends on the mirror's mid-mutation staleness window
+  (during `disconnectOutput`, the store unregisters before the origin's
+  OUTPUT callback while the mirror still holds the ids). They are
+  litegraph-native legacy surfaces owned by the `SlotConnection` phase.
+- `linkFixer`, `migrateReroute`, and `proxyWidgetMigration` operate on
+  the serialized mirror itself — validating or repairing it is their job.
+- `useNodeReplacement` writes the mirror; write sites are out of scope.
 
 Because the mirror field stays written and readable, no extension breaks.
 Deleting `output.links[]` and `input.link` is an extension-visible change
@@ -162,11 +184,10 @@ Out of scope, each a piece of the deferred `SlotConnection` phase:
    fallback is an incrementally maintained `Map` updated in `place` and
    `displace`, which is more code and carries drift risk. Start with the
    derived version and measure before optimizing.
-2. **Return type of `getOutputSlotLinks`.** `ReadonlySet<LinkId>` is
-   cheap and gives presence plus ids; `LinkTopology[]` would match
-   `getInputSlotLink`, which returns topology. Ids suffice for every
-   reader found so far, so prefer the set unless a consumer needs
-   endpoints.
+2. **Return type of `getOutputSlotLinks`.** Resolved: a set of
+   `LinkTopology`, per Decision 3. Bare ids looked sufficient until the
+   reader migration surfaced both the endpoint needs (minimap, widget
+   value propagation) and the floating-id collision hazard.
 3. **Dot visual.** What "connected" looks like on the dot (fill, ring, or
    opacity) is a design-standards question rather than an architecture
    one. Check the Comfy Design Standards before implementing Decision 5.

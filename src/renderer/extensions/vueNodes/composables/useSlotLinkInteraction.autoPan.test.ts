@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 
@@ -59,6 +61,7 @@ vi.mock('@/scripts/app', () => ({
     canvas: {
       ds: mockDs,
       graph: {
+        rootGraph: { id: 'autopan-graph' },
         getNodeById: (id: string) => ({
           id,
           inputs: [],
@@ -235,6 +238,7 @@ function startDrag() {
 
 describe('useSlotLinkInteraction auto-pan', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {

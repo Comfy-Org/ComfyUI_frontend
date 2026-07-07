@@ -3,7 +3,6 @@ import { computed, reactive, ref, toRaw } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
-import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -35,9 +34,9 @@ function originKey(nodeId: NodeId, slot: number): OriginSlotKey {
 
 type TargetIndex = Map<UUID, Map<TargetSlotKey, LinkTopology>>
 type UnkeyedLinks = Map<UUID, Set<LinkTopology>>
-type OriginIndex = Map<OriginSlotKey, Set<LinkId>>
+type OriginIndex = Map<OriginSlotKey, Set<LinkTopology>>
 
-const EMPTY_LINKS: ReadonlySet<LinkId> = new Set()
+const EMPTY_LINKS: ReadonlySet<LinkTopology> = new Set()
 
 /**
  * A link is keyed by its target input slot only when that slot uniquely
@@ -160,8 +159,8 @@ export const useLinkStore = defineStore('link', () => {
     for (const topology of graphTopologies(graphId)) {
       if (topology.originNodeId === UNASSIGNED_NODE_ID) continue
       const key = originKey(topology.originNodeId, topology.originSlot)
-      const links = index.get(key) ?? new Set<LinkId>()
-      links.add(topology.id)
+      const links = index.get(key) ?? new Set<LinkTopology>()
+      links.add(topology)
       index.set(key, links)
     }
     return index
@@ -187,7 +186,7 @@ export const useLinkStore = defineStore('link', () => {
     graphId: UUID,
     nodeId: NodeId,
     slot: number
-  ): ReadonlySet<LinkId> {
+  ): ReadonlySet<LinkTopology> {
     return (
       outputIndex(graphId).value.get(originKey(nodeId, slot)) ?? EMPTY_LINKS
     )

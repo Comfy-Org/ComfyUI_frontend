@@ -2,11 +2,7 @@ import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type {
-  ISlotType,
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+import type { ISlotType, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -26,7 +22,9 @@ import {
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 const INLINE_INPUTS = false
@@ -267,16 +265,23 @@ function spliceInputs(
 
 function changeOutputType(
   node: LGraphNode,
-  output: INodeOutputSlot,
+  slot: number,
   combinedType: ISlotType
 ) {
+  const output = node.outputs[slot]
   if (output.type === combinedType) return
   output.type = combinedType
 
   //check and potentially remove links
   if (!node.graph) return
-  for (const link_id of output.links ?? []) {
-    const link = node.graph.links[link_id]
+  const topologies = useLinkStore().getOutputSlotLinks(
+    node.graph.rootGraph.id,
+    node.id,
+    slot
+  )
+  for (const topology of topologies) {
+    if (topology.targetNodeId === UNASSIGNED_NODE_ID) continue
+    const link = node.graph.links[topology.id]
     if (!link) continue
     const { input, inputNode, subgraphOutput } = link.resolve(node.graph)
     const inputType = (input ?? subgraphOutput)?.type
@@ -352,10 +357,10 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       })
       const outputType = commonType(...connectedTypes)
       if (!outputType) throw new Error('invalid connection')
-      this.outputs.forEach((output, idx) => {
+      this.outputs.forEach((_output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return
         this.outputs[idx] = shallowReactive(this.outputs[idx])
-        changeOutputType(this, output, outputType)
+        changeOutputType(this, idx, outputType)
       })
       app.canvas?.setDirty(true, true)
     }

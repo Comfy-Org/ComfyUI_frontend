@@ -3,17 +3,30 @@ import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { app } from '@/scripts/app'
+import { useLinkStore } from '@/stores/linkStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
-type SourceNode = Pick<LGraphNode, 'graph' | 'outputs' | 'widgets'>
+type SourceNode = Pick<LGraphNode, 'id' | 'graph' | 'widgets'>
+
+interface TargetEndpoint {
+  targetNodeId: NodeId
+  targetSlot: number
+}
 
 export function applyFirstWidgetValueToGraph(
   node: SourceNode,
   extraLinks: LLink[] = [],
   transformValue?: (value: WidgetValue) => WidgetValue
 ) {
-  const output = node.outputs[0]
-  if (!output?.links?.length || !node.graph) return
+  const { graph } = node
+  if (!graph) return
+
+  const linked = [
+    ...useLinkStore().getOutputSlotLinks(graph.rootGraph.id, node.id, 0)
+  ].filter((topology) => topology.targetNodeId !== UNASSIGNED_NODE_ID)
+  if (!linked.length) return
 
   const sourceWidget = node.widgets?.[0]
   if (!sourceWidget) return
@@ -25,18 +38,22 @@ export function applyFirstWidgetValueToGraph(
 
   const graphMouse: Point = app.canvas?.graph_mouse ?? [0, 0]
 
-  const links = [
-    ...output.links.map((linkId) => node.graph!.links[linkId]),
-    ...extraLinks
+  const endpoints: TargetEndpoint[] = [
+    ...linked.map(({ targetNodeId, targetSlot }) => ({
+      targetNodeId,
+      targetSlot
+    })),
+    ...extraLinks.map((link) => ({
+      targetNodeId: link.target_id,
+      targetSlot: link.target_slot
+    }))
   ]
 
-  for (const linkInfo of links) {
-    if (!linkInfo) continue
-
-    const targetNode = node.graph.getNodeById(linkInfo.target_id)
-    const input = targetNode?.inputs[linkInfo.target_slot]
+  for (const endpoint of endpoints) {
+    const targetNode = graph.getNodeById(endpoint.targetNodeId)
+    const input = targetNode?.inputs[endpoint.targetSlot]
     if (!targetNode || !input) {
-      console.warn('Unable to resolve node or input for link', linkInfo)
+      console.warn('Unable to resolve node or input for link', endpoint)
       continue
     }
 

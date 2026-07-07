@@ -199,7 +199,7 @@ describe('useLinkStore', () => {
 
     const links = store.getOutputSlotLinks(graphA, toNodeId(5), 0)
 
-    expect([...links].sort((a, b) => a - b)).toEqual([
+    expect([...links].map((l) => l.id).sort((a, b) => a - b)).toEqual([
       toLinkId(1),
       toLinkId(2),
       toLinkId(3)
@@ -225,9 +225,9 @@ describe('useLinkStore', () => {
     expect(store.registerLink(graphA, outputFloating)).toBeDefined()
 
     expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
-    expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0)).toContain(
-      toLinkId(1)
-    )
+    expect(
+      [...store.getOutputSlotLinks(graphA, toNodeId(5), 0)].map((l) => l.id)
+    ).toContain(toLinkId(1))
   })
 
   it('scopes output queries by graph', () => {
