@@ -51,11 +51,11 @@
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <CreditsTile class="border-0 p-4" />
+        <CreditsTile class="border-0" />
 
         <!-- Member snapshot tile -->
         <div
-          class="flex flex-col gap-3 rounded-xl bg-modal-panel-background p-4"
+          class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
         >
           <Tabs v-model="snapshotView">
             <TabsList>

@@ -160,15 +160,9 @@
       </Button>
       <Button
         v-else
-        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        :variant="isOutOfCredits ? 'inverted' : 'tertiary'"
         size="lg"
-        :class="
-          cn(
-            'w-full font-normal',
-            !isOutOfCredits &&
-              'bg-interface-menu-component-surface-selected text-text-primary'
-          )
-        "
+        class="w-full font-normal"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
