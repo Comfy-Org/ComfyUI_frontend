@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
   AgentEventTransport
@@ -137,6 +137,43 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
+    // Replace the in-memory conversation with a server transcript (B17 resume-on-reload).
+    // Rows pair by turn_id and order by seq; every hydrated turn arrives settled, so an
+    // in-flight turn would re-stream over the socket, never through here. tool/system rows
+    // carry no user-facing text in v1 and are skipped. A turn whose assistant row is
+    // missing (interrupted before the reply persisted) still gets a settled placeholder so
+    // its user prompt renders.
+    function hydrate(history: AgentMessages): void {
+      clearActive()
+      const texts = new Map<TurnId, string>()
+      const assistants = new Map<TurnId, AssistantMessage>()
+      const turnOrder: TurnId[] = []
+      for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
+        const turnId = row.turn_id as TurnId
+        if (!turnOrder.includes(turnId)) turnOrder.push(turnId)
+        const text =
+          typeof row.content?.text === 'string' ? row.content.text : ''
+        if (row.role === 'user') texts.set(turnId, text)
+        if (row.role === 'assistant') {
+          const message =
+            assistants.get(turnId) ?? createAssistantMessage(turnId)
+          message.streaming = false
+          if (text)
+            message.parts = [
+              ...message.parts,
+              { type: 'text', text, state: 'done' }
+            ]
+          assistants.set(turnId, message)
+        }
+      }
+      messages.value = turnOrder.map((turnId) => {
+        const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
+        message.streaming = false
+        return message
+      })
+      userTexts.value = texts
+    }
+
     // The ordered render list: each assistant turn preceded by its user prompt (when one
     // was recorded). Turns are strictly sequential, so pairing by turn id yields the true
     // chat order without a second index.
@@ -172,7 +209,8 @@ export const useAgentConversationStore = defineStore(
       startTurn,
       ingest,
       abortActiveTurn,
-      reset
+      reset,
+      hydrate
     }
   }
 )
