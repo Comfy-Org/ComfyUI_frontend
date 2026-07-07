@@ -51,7 +51,7 @@
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <CreditsTile class="border-0" />
+        <CreditsTile class="border-0 p-4" />
 
         <!-- Member snapshot tile -->
         <div
