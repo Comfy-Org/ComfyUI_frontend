@@ -21,7 +21,7 @@
             <Button
               variant="secondary"
               size="icon-lg"
-              class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+              class="rounded-lg"
               :aria-label="$t('workspacePanel.partnerNodes.filterByPartner')"
             >
               <i class="icon-[lucide--list-filter] size-4" />
