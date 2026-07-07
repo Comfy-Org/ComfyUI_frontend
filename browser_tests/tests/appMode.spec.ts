@@ -148,7 +148,7 @@ test.describe('App mode usage', () => {
     const { sideToolbar, nodeLibraryTab, assetsTab, appsTab } = comfyPage.menu
 
     await test.step('Graph mode shows the full toolbar', async () => {
-      await expect(sideToolbar).toBeVisible()
+      await expect(sideToolbar).toHaveCount(1)
       await expect(nodeLibraryTab.tabButton).toBeVisible()
     })
 
@@ -156,7 +156,9 @@ test.describe('App mode usage', () => {
       await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
       await expect(comfyPage.appMode.centerPanel).toBeVisible()
 
-      await expect(sideToolbar).toBeVisible()
+      // The same single instance is reused across the mode flip, not a second
+      // toolbar mounted alongside the first.
+      await expect(sideToolbar).toHaveCount(1)
       await expect(assetsTab.tabButton).toBeVisible()
       await expect(appsTab.tabButton).toBeVisible()
       await expect(nodeLibraryTab.tabButton).toBeHidden()
@@ -235,7 +237,7 @@ test.describe('App mode usage', () => {
 
     await comfyPage.appMode.footer.exitButton.click()
     // Exiting the builder lands in graph mode: the app-mode-only center panel
-    // stays hidden while the toggle's teleport host re-mounts and the toggle
+    // stays hidden while the graph-mode toggle host re-mounts and the toggle
     // re-appears.
     await expect(toggle).toBeVisible()
     await expect(comfyPage.appMode.centerPanel).toBeHidden()

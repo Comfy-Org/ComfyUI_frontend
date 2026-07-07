@@ -4,8 +4,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
  * The graph/app view-mode toggle and its workflow actions dropdown.
- * A single instance teleports between the subgraph breadcrumb (graph mode)
- * and the app-mode center panel as the mode flips.
+ * A separate instance mounts in each host - the subgraph breadcrumb (graph
+ * mode) and the app-mode center panel - and unmounts as the mode flips.
  */
 export class WorkflowActionsDropdown {
   /** The segmented graph/app toggle hosting the workflow actions trigger. */
@@ -33,7 +33,7 @@ export class WorkflowActionsDropdown {
     this.menu = page.getByRole('menu', { name: 'Workflow actions' })
   }
 
-  /** The trigger as rendered inside a specific teleport host. */
+  /** The trigger as rendered inside a specific mode's host. */
   triggerIn(host: Locator): Locator {
     return host.getByRole('button', { name: 'Workflow actions' })
   }
