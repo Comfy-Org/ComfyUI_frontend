@@ -17,7 +17,7 @@ interface Node {
 
 const canvasEl = ref<HTMLCanvasElement | null>(null)
 
-const dpr =
+let dpr =
   typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1
 
 const nodes: Node[] = Array.from({ length: 14 }, () => ({
@@ -28,13 +28,6 @@ const nodes: Node[] = Array.from({ length: 14 }, () => ({
 }))
 
 let ctx: CanvasRenderingContext2D | null = null
-
-function resize() {
-  const el = canvasEl.value
-  if (!el) return
-  el.width = el.offsetWidth * dpr
-  el.height = el.offsetHeight * dpr
-}
 
 function draw() {
   const el = canvasEl.value
@@ -85,6 +78,18 @@ function draw() {
   }
 }
 
+// Resizing clears the canvas bitmap, so repaint immediately afterwards to keep
+// the field visible even when the RAF loop is paused (off screen or
+// reduced-motion). Also refresh dpr in case the window moved to another display.
+function resize() {
+  const el = canvasEl.value
+  if (!el) return
+  dpr = Math.min(window.devicePixelRatio || 1, 2)
+  el.width = el.offsetWidth * dpr
+  el.height = el.offsetHeight * dpr
+  draw()
+}
+
 const { pause, resume } = useRafFn(draw, { immediate: false })
 
 // Only animate while the field is on screen, and honour reduced-motion by
@@ -100,7 +105,6 @@ useEventListener('resize', resize)
 onMounted(() => {
   ctx = canvasEl.value?.getContext('2d') ?? null
   resize()
-  draw()
 })
 </script>
 
