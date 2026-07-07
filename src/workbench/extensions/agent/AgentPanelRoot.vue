@@ -226,12 +226,14 @@ async function onFilesPicked(event: Event): Promise<void> {
       :user-name="userName"
       :streaming="isStreaming"
       :can-attach="true"
+      :is-maximized="agentPanelStore.isMaximized"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
       @feedback="onFeedback"
       @new-chat="onNewChat"
       @open-history="historyOpen = true"
+      @toggle-size="agentPanelStore.toggleMaximize()"
       @close="agentPanelStore.close()"
     />
     <ChatHistoryDrawer

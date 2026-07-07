@@ -8,22 +8,23 @@
    The panel's Figma frames are dark-only; light-mode rendering follows the host theme
    here, an intentional divergence deferred to the FE-1187 design-alignment pass. */
 @theme inline {
-  /* agent token            ->  host semantic token */
-  /* surface                ->  panel surface        */
-  --color-agent-surface: var(--color-interface-panel-surface);
-  /* surface-raised         ->  node component surface */
-  --color-agent-surface-raised: var(--color-node-component-surface);
-  /* surface-hover          ->  node component hovered surface */
-  --color-agent-surface-hover: var(--color-node-component-surface-hovered);
-  /* fg                     ->  primary text          */
-  --color-agent-fg: var(--color-text-primary);
+  /* agent token            ->  host semantic token
+     Aliases tuned to the design prototype's token choices (visual reference). */
+  /* surface                ->  base background (#171718 dark) */
+  --color-agent-surface: var(--color-base-background);
+  /* surface-raised         ->  secondary background (composer, chips, bubbles) */
+  --color-agent-surface-raised: var(--color-secondary-background);
+  /* surface-hover          ->  secondary background hover */
+  --color-agent-surface-hover: var(--color-secondary-background-hover);
+  /* fg                     ->  base foreground       */
+  --color-agent-fg: var(--color-base-foreground);
   /* fg-muted               ->  muted foreground      */
   --color-agent-fg-muted: var(--color-muted-foreground);
-  /* fg-subtle              ->  secondary text        */
-  --color-agent-fg-subtle: var(--color-text-secondary);
-  /* border                 ->  subtle border         */
-  --color-agent-border: var(--color-border-subtle);
-  /* border-strong          ->  default (stronger) border */
+  /* fg-subtle: the reference uses muted-foreground for every secondary text run */
+  --color-agent-fg-subtle: var(--color-muted-foreground);
+  /* border                 ->  node component border (header/session dividers) */
+  --color-agent-border: var(--color-component-node-border);
+  /* border-strong          ->  default border (composer resting border) */
   --color-agent-border-strong: var(--color-border-default);
   /* accent                 ->  primary background     */
   --color-agent-accent: var(--color-primary-background);

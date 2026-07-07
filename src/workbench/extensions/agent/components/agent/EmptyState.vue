@@ -16,7 +16,7 @@ const promptIcons = [
   'icon-[lucide--lightbulb]',
   'icon-[lucide--list]',
   'icon-[lucide--search]',
-  'icon-[lucide--message-circle-question]',
+  'icon-[lucide--message-circle-warning]',
   'icon-[lucide--workflow]'
 ]
 </script>
@@ -24,26 +24,26 @@ const promptIcons = [
 <template>
   <div class="flex h-full flex-col p-4">
     <div
-      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 text-center"
+      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 p-6 text-center"
     >
       <div
-        class="bg-agent-surface-raised flex size-14 items-center justify-center rounded-2xl"
+        class="mb-2 flex size-12 items-center justify-center rounded-xl border border-plum-600 bg-ink-700"
       >
         <span
-          class="icon-[comfy--comfy-c] size-8 text-brand-yellow drop-shadow-[0_0_12px_currentColor]"
+          class="icon-[comfy--comfy-c] size-6 text-brand-yellow drop-shadow-[0_0_12px_currentColor]"
           aria-hidden="true"
         />
       </div>
-      <div class="space-y-0.5">
-        <p class="text-agent-fg text-lg font-semibold">
+      <div class="text-agent-fg text-base font-semibold @min-[570px]:text-2xl">
+        <p class="my-0 leading-snug">
           {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
         </p>
-        <p class="text-agent-fg text-lg font-semibold">
+        <p class="my-0 leading-snug">
           {{ t('agent.greetingQuestion') }}
         </p>
       </div>
     </div>
-    <div class="flex shrink-0 flex-col gap-1.5 pt-2">
+    <div class="flex shrink-0 flex-wrap gap-2 @min-[460px]:justify-center">
       <SuggestedPromptChip
         v-for="(prompt, index) in prompts"
         :key="index"

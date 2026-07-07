@@ -2,7 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 // Click INSERTS the prompt into the composer (never sends) per the locked Figma decision.
-// Figma B5: each row is a light leading-icon + label, not a filled card.
+// Per the design reference: a rounded-full pill (leading icon + label) that stacks
+// full-width in narrow panels and wraps centered from 460px container width up.
 const { text, icon } = defineProps<{ text: string; icon: string }>()
 const emit = defineEmits<{ insert: [text: string] }>()
 </script>
@@ -10,13 +11,13 @@ const emit = defineEmits<{ insert: [text: string] }>()
 <template>
   <button
     type="button"
-    class="rounded-agent bg-agent-surface-raised text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+    class="bg-agent-surface-raised text-agent-fg hover:bg-agent-surface-hover focus-visible:ring-agent-accent flex h-8 w-full cursor-pointer items-center justify-start gap-2 rounded-full px-3 text-sm whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none @min-[460px]:w-auto"
     @click="emit('insert', text)"
   >
     <span
-      :class="cn('text-agent-fg-subtle size-4 shrink-0', icon)"
+      :class="cn('text-agent-fg-muted size-3 shrink-0', icon)"
       aria-hidden="true"
     />
-    <span>{{ text }}</span>
+    <span class="truncate">{{ text }}</span>
   </button>
 </template>

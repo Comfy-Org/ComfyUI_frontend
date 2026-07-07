@@ -1,40 +1,66 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '../ui/Button.vue'
 
-// Net-new vs the monolith (built to Figma B3): Comfy mark + title + neutral ALPHA badge,
-// new chat, explicit close. History is reached from the session bar (B4), not the header.
+// Header per the design reference: title + neutral ALPHA badge (no logo mark), then new
+// chat, width toggle (420 <-> 960 dock), close. History is reached from the session bar
+// (B4), not the header.
+const { isMaximized = false } = defineProps<{ isMaximized?: boolean }>()
+
 const emit = defineEmits<{
   newChat: []
+  toggleSize: []
   close: []
 }>()
 
 const { t } = useI18n()
+
+const sizeToggleIcon = computed(() =>
+  isMaximized ? 'icon-[lucide--minimize-2]' : 'icon-[lucide--maximize-2]'
+)
+const sizeToggleLabel = computed(() =>
+  isMaximized ? t('agent.minimize') : t('agent.maximize')
+)
 </script>
 
 <template>
   <header
-    class="border-agent-border flex items-center gap-2 border-b px-3 py-2"
+    class="border-agent-border flex h-12 shrink-0 items-center gap-2 border-b px-4"
   >
-    <span class="icon-[comfy--comfy-c] size-4 text-brand-yellow" />
-    <h1 class="text-sm font-semibold">{{ t('agent.title') }}</h1>
+    <h1 class="text-agent-fg my-0 text-sm font-normal">
+      {{ t('agent.title') }}
+    </h1>
     <span
-      class="border-agent-border text-agent-fg-subtle rounded-full border px-1.5 py-0.5 text-xs font-semibold tracking-wide uppercase"
+      class="border-agent-border-strong text-agent-fg-muted rounded-full border px-2 py-0.5 text-xs"
     >
       {{ t('agent.alpha') }}
     </span>
 
-    <div class="ml-auto flex items-center gap-0.5">
+    <div class="ml-auto flex items-center gap-1">
       <Button
+        v-tooltip.bottom="{ value: t('agent.newChat'), showDelay: 300 }"
         variant="ghost"
         size="icon"
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
-        <span class="icon-[lucide--message-square] size-4" />
+        <span class="icon-[lucide--message-circle-plus] size-4" />
       </Button>
       <Button
+        v-tooltip.bottom="{ value: sizeToggleLabel, showDelay: 300 }"
+        variant="ghost"
+        size="icon"
+        :aria-label="sizeToggleLabel"
+        @click="emit('toggleSize')"
+      >
+        <span :class="cn(sizeToggleIcon, 'size-4')" />
+      </Button>
+      <Button
+        v-tooltip.bottom="{ value: t('agent.close'), showDelay: 300 }"
         variant="ghost"
         size="icon"
         :aria-label="t('agent.close')"

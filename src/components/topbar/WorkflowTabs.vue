@@ -84,6 +84,23 @@
       data-testid="integrated-tab-bar-actions"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
+      <button
+        v-if="agentPanelEnabled"
+        type="button"
+        :class="
+          cn(
+            'no-drag flex h-6 shrink-0 cursor-pointer items-center gap-2 rounded-sm border px-2 text-xs text-base-foreground transition-colors',
+            isAgentPanelOpen
+              ? 'border-plum-500 bg-plum-600/20'
+              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
+          )
+        "
+        :aria-label="$t('agent.askComfyAgent')"
+        @click="agentPanelStore.toggle()"
+      >
+        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
+        <span>{{ $t('agent.askComfyAgent') }}</span>
+      </button>
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
@@ -106,7 +123,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
@@ -126,6 +145,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
@@ -145,6 +165,9 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
+const agentPanelStore = useAgentPanelStore()
+const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
+  storeToRefs(agentPanelStore)
 const { isLoggedIn } = useCurrentUser()
 
 // Dismiss a tab's terminal status badge once it has been viewed
