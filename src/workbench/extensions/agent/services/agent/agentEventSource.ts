@@ -3,9 +3,9 @@ import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 /**
  * agentEventSource: adapts the host's ComfyUI socket into the AgentEventSource the
  * session root consumes. The panel never owns the socket lifecycle - connect/reconnect
- * belong to the host. createWebSocketEventSource binds a single socket instance;
- * createReconnectingEventSource follows the host across reconnects (the host nulls and
- * replaces its socket on close/reopen), so the panel is not left deaf after a reconnect.
+ * belong to the host. createReconnectingEventSource follows the host across reconnects
+ * (the host nulls and replaces its socket on close/reopen), so the panel is not left deaf
+ * after a reconnect.
  */
 
 // The narrow event-target surface this adapter needs. Native WebSocket satisfies it.
@@ -24,31 +24,6 @@ export interface EventTargetSocket {
 }
 
 const OPEN = 1
-
-export function createWebSocketEventSource(
-  socket: EventTargetSocket
-): AgentEventSource {
-  return {
-    subscribe(listener) {
-      const onMessage = (event: { data: unknown }): void => listener(event.data)
-      socket.addEventListener('message', onMessage)
-      return () => socket.removeEventListener('message', onMessage)
-    },
-    onStatus(listener) {
-      const onOpen = (): void => listener(true)
-      const onClose = (): void => listener(false)
-      socket.addEventListener('open', onOpen)
-      socket.addEventListener('close', onClose)
-      // A socket that opened before this subscription must still report live once,
-      // or the session's open-triggered draft resync would never fire.
-      if (socket.readyState === OPEN) listener(true)
-      return () => {
-        socket.removeEventListener('open', onOpen)
-        socket.removeEventListener('close', onClose)
-      }
-    }
-  }
-}
 
 // The narrow host surface the reconnecting adapter needs: the CURRENT socket (nulled by
 // the host on close, replaced on reconnect) plus the host's own 'reconnected' event so the

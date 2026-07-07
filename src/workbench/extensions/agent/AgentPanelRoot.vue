@@ -18,6 +18,7 @@ import StartingPointModal from './components/agent/StartingPointModal.vue'
 import { useAttachment } from './composables/agent/useAttachment'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
+import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useDraftCanvasApply } from './composables/agent/useDraftCanvasApply'
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
@@ -46,11 +47,7 @@ const rest = createAgentRestClient({
 // /api/workflows model.
 const binding = createAgentWorkflowBinding({
   getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined,
-  // ISerialisedGraph is a concrete shape, not an index signature; the binding only forwards
-  // it as an opaque JSON body, so widen through unknown rather than restructure it.
-  serializeGraph: () =>
-    app.graph.serialize() as unknown as Record<string, unknown>,
-  workflowName: () => 'AI Agent session'
+  serializeGraph: () => app.graph.serialize()
 })
 
 // The host /ws carries the agent_* broadcasts; the panel filters them off the shared
@@ -104,7 +101,14 @@ useDraftCanvasApply((content) => {
 })
 
 start()
-onBeforeUnmount(stop)
+onBeforeUnmount(() => {
+  // A sidebar toggle unmounts this component. Cancel any in-flight turn so it does not keep
+  // generating and billing while the panel is closed (its events would be missed and leave a
+  // turn stuck streaming on reopen); the thread id is persisted, so a reopen resumes the
+  // conversation.
+  void stopTurn()
+  stop()
+})
 
 const history = useAgentChatHistoryStore()
 
@@ -118,9 +122,33 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   useTelemetry()?.trackAgentMessageFeedback({ message_id: turnId, vote })
 }
 
-// Copy-as-markdown (P1 B12). V0 limitation: only the current in-memory conversation has a
-// transcript; past sessions are not persisted yet, so a non-active session id has nothing to
-// serialize and gets an info toast instead.
+// V0 mirrors the single in-memory conversation as one "current" history row, keyed by its
+// first turn, so the drawer isn't empty mid-chat and copy-as-markdown has a target. The row
+// is replaced (not archived) on new-chat; persisting past sessions is a documented V0 limit.
+const currentPrompt = computed(
+  () =>
+    entries.value.find(
+      (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
+        entry.role === 'user'
+    ) ?? null
+)
+watch(
+  () => currentPrompt.value?.id ?? null,
+  (id, previousId) => {
+    if (previousId && id !== previousId) history.remove(previousId)
+    const prompt = currentPrompt.value
+    if (!prompt) return
+    history.setActive(prompt.id)
+    history.upsert({
+      id: prompt.id,
+      title: prompt.text.slice(0, 60) || t('agent.untitledChat'),
+      updatedAt: Date.now()
+    })
+  }
+)
+
+// Copy-as-markdown (B12). Only the current in-memory conversation has a transcript; a
+// non-active session id has nothing to serialize and gets an info toast instead.
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
@@ -142,10 +170,18 @@ const panelWidth = computed(() =>
   sizeMode.value === 'large' ? 'max-w-2xl' : 'max-w-md'
 )
 
+let draftsUnavailableWarned = false
+
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   void (async () => {
-    // Mint the session workflow before the first send so its ack already binds the draft.
-    await binding.ensure()
+    // Mint the session workflow before the first send so its ack already binds the draft. On
+    // mint failure the turn still sends (chat degrades to unbound), but no draft_patch will
+    // reach the canvas, so warn once rather than letting the draft loop fail silently.
+    const workflowId = await binding.ensure()
+    if (workflowId === undefined && !draftsUnavailableWarned) {
+      draftsUnavailableWarned = true
+      toast.add({ severity: 'warn', summary: t('agent.draftsUnavailable') })
+    }
     await sendMessage(
       text,
       attachments.map((attachment) => attachment.ref)
