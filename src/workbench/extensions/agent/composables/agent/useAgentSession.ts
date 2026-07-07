@@ -8,16 +8,6 @@ import type { AgentRestClient } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
-// Monotonic counter for LOCAL error-turn ids. These never go on the wire: a failed
-// send has no server-minted message_id, so recordFailedSend needs a unique local key
-// to slot the failed exchange into the conversation.
-let localErrorCount = 0
-
-function nextLocalErrorId(): TurnId {
-  // A LOCAL id, never sent to the wire; the cast brands a client-only key.
-  return `local-error-${++localErrorCount}` as TurnId
-}
-
 /**
  * useAgentSession - the v1 headless composition root of the In-App Agent panel.
  *
@@ -61,6 +51,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
   // Single-flight guard for sends: the POST 202 ack arrives before any socket frame, so
   // a second send fired in that window must not open a second wire turn.
   const sending = ref(false)
+
+  // Monotonic counter for LOCAL error-turn ids, scoped to this session so it resets with
+  // it. These never go on the wire: a failed send has no server-minted message_id, so
+  // recordFailedSend needs a unique local key to slot the failed exchange into the
+  // conversation.
+  let localErrorCount = 0
+  function nextLocalErrorId(): TurnId {
+    // A LOCAL id, never sent to the wire; the cast brands a client-only key.
+    return `local-error-${++localErrorCount}` as TurnId
+  }
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null

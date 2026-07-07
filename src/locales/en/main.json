@@ -4501,6 +4501,10 @@
   },
   "agent": {
     "title": "AI Agent",
+    "askComfyAgent": "Ask Comfy Agent",
+    "caption": "The agent edits your graph as a draft. Only you can run it.",
+    "latest": "Latest",
+    "copyUnavailable": "Only the current conversation can be copied in this version",
     "alpha": "ALPHA",
     "newChat": "New chat",
     "close": "Close",
@@ -4525,11 +4529,11 @@
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Ask the agent anything...",
     "suggestedPrompts": [
-      "Build a text-to-image workflow",
-      "Add an upscaler to my graph",
-      "Explain what this workflow does",
-      "Create an image-to-image pipeline",
-      "Fix the errors in my graph"
+      "Generate a yellow duck with a hockey mask",
+      "List my saved workflows",
+      "Find the best workflow for skin upscaling",
+      "Explain the selected node",
+      "Build a workflow for image to video with 3 models"
     ],
     "attach": "Attach a file",
     "send": "Send",

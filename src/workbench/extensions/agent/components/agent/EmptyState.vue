@@ -4,8 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import SuggestedPromptChip from './composer/SuggestedPromptChip.vue'
 
-// NOTE(figma): the five prompt strings are placeholders pending the exact Figma copy
-// (board 2141-8837); wording is a one-line locale change once confirmed.
 const { userName } = defineProps<{ userName?: string }>()
 const emit = defineEmits<{ insert: [text: string] }>()
 

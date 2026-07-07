@@ -2,6 +2,7 @@ import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
   AddCreditsClickMetadata,
+  AgentMessageFeedbackMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -281,6 +282,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

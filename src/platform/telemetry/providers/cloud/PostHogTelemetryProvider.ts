@@ -11,6 +11,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AddCreditsClickMetadata,
+  AgentMessageFeedbackMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -547,6 +548,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

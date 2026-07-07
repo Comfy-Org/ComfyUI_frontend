@@ -12,9 +12,8 @@ These surfaces are complete and covered by tests but are not wired into the ship
 yet; they are V0 tech-design surfaces awaiting host wiring:
 
 - `components/agent/ActiveTabStrip.vue` - tab context
-- `components/agent/composer/AssetTray.vue` - attachments
+- `components/agent/composer/AssetTray.vue` - cloud-asset @-tag tray
 - `components/agent/composer/SelectionActionChips.vue` - canvas selection
-- `composables/agent/useAttachment.ts` - attachments
 - `composables/agent/useCanvasSelection.ts` - canvas selection
 
 ## UI primitives

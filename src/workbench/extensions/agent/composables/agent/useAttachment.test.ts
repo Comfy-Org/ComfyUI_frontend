@@ -42,6 +42,17 @@ describe('useAttachment', () => {
     ])
   })
 
+  it('does not stage a file whose upload fails, and surfaces the error', async () => {
+    const upload = vi.fn().mockRejectedValue(new Error('network down'))
+    const onError = vi.fn()
+    const { addFiles } = useAttachment({ upload, onError })
+
+    const staged = await addFiles([fileOfSize('cat.png', 1024)])
+
+    expect(staged).toEqual([])
+    expect(onError).toHaveBeenCalledOnce()
+  })
+
   it('calls preventDefault before doing any work on drop', async () => {
     const upload = vi.fn().mockResolvedValue({ ref: 'r' })
     const { onDrop } = useAttachment({ upload })

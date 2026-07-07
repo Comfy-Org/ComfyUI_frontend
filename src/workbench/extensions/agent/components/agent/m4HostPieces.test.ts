@@ -31,12 +31,14 @@ describe('AssetTray', () => {
 })
 
 describe('ActiveTabStrip', () => {
-  it('shows the tab name, and nothing when there is no tab', () => {
+  it('shows the tab name, and nothing when there is no tab', async () => {
     const { rerender } = render(ActiveTabStrip, {
       props: { tab: { name: 'portrait.json' } }
     })
     expect(screen.getByText('portrait.json')).not.toBeNull()
-    void rerender({ tab: null })
+
+    await rerender({ tab: null })
+    expect(screen.queryByText('portrait.json')).toBeNull()
   })
 })
 

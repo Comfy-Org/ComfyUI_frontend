@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type {
@@ -55,6 +56,16 @@ const emit = defineEmits<{
 }>()
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+
+const { t } = useI18n()
+
+// The root wires the file picker + upload and stages the result back through here, so the
+// panel forwards a staged attachment down to the composer without owning the upload path.
+function addAttachment(attachment: ComposerAttachment): void {
+  composerRef.value?.addAttachment(attachment)
+}
+
+defineExpose({ addAttachment })
 </script>
 
 <template>
@@ -106,6 +117,12 @@ const composerRef = ref<InstanceType<typeof Composer>>()
         @stop="emit('stop')"
         @attach="emit('attach')"
       />
+      <!-- Copy derives from the approved agent-writes / user-runs decision; the original
+      doc caption predates draft-writing and is stale. PENDING design sign-off - a one-line
+      locale swap if the wording changes. -->
+      <p class="text-agent-fg-subtle pt-1 text-center text-xs">
+        {{ t('agent.caption') }}
+      </p>
     </footer>
 
     <ConflictDialog

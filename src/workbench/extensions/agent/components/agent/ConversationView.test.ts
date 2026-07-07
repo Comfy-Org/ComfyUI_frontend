@@ -1,7 +1,27 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type * as VueUse from '@vueuse/core'
+
+// Capture the IntersectionObserver callback useIntersectionObserver registers so the test
+// can drive the "at bottom" signal directly — happy-dom has no real observer, and the pill
+// only shows once the sentinel scrolls out of view.
+const intersectionCallbacks = vi.hoisted(
+  () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
+)
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
+  useIntersectionObserver: (
+    _target: unknown,
+    callback: (entries: { isIntersecting: boolean }[]) => void
+  ) => {
+    intersectionCallbacks.push(callback)
+    return { stop: () => {} }
+  }
+}))
 
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
@@ -58,7 +78,10 @@ function mountHarness() {
 }
 
 describe('ConversationView', () => {
-  beforeEach(() => setActivePinia(createPinia()))
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    intersectionCallbacks.length = 0
+  })
 
   it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, tool group', async () => {
     const { store } = mountHarness()
@@ -115,5 +138,33 @@ describe('ConversationView', () => {
 
     expect(await screen.findByText('Reasoning')).toBeInTheDocument()
     expect(screen.getByRole('img')).toHaveAttribute('src', 'https://x/cat.png')
+  })
+
+  it('shows a scroll-to-latest pill when scrolled up and returns to bottom on click', async () => {
+    const assistant: AssistantMessage = {
+      id: 'msg-1' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'hello', state: 'done' }],
+      tokens: 0,
+      streaming: false,
+      thinking: false
+    }
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    render(ConversationView, {
+      props: { entries: [assistant], userName: 'Ada' },
+      global: { plugins: [i18n] }
+    })
+
+    // At bottom initially: no pill.
+    expect(screen.queryByText('Latest')).not.toBeInTheDocument()
+
+    // Drive the sentinel out of view -> the pill appears.
+    for (const cb of intersectionCallbacks) cb([{ isIntersecting: false }])
+    const pill = await screen.findByRole('button', { name: 'Latest' })
+
+    await userEvent.click(pill)
+    expect(scrollIntoView).toHaveBeenCalled()
   })
 })
