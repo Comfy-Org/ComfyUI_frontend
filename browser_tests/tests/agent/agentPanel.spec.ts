@@ -104,8 +104,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
 
-    // Empty state: greeting + question and the five suggested-prompt chips.
-    await expect(panel.getByText('Hello there,')).toBeVisible()
+    // Empty state: greeting + question and the five suggested-prompt chips. The greeting
+    // personalizes to the account's first name, so match the stable prefix, not a fixed name.
+    await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
     // Sourced from the bundled locale so the spec cannot drift from the rendered prompts.
     const firstPrompt = enMessages.agent.suggestedPrompts[0]

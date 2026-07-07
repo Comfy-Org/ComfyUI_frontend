@@ -95,7 +95,8 @@ describe('AgentPanel extension flag gate', () => {
     expect(registerSidebarTab).toHaveBeenCalledTimes(1)
     expect(registerSidebarTab.mock.calls[0][0]).toMatchObject({
       id: 'agent-panel',
-      type: 'vue'
+      type: 'vue',
+      icon: 'icon-[comfy--comfy-c]'
     })
   })
 
@@ -146,7 +147,7 @@ describe('AgentPanel top-bar button', () => {
 
     const [button] = capturedAgentExtension().actionBarButtons ?? []
     expect(button).toBeDefined()
-    expect(button.icon).toBe('icon-[lucide--sparkles]')
+    expect(button.icon).toBe('icon-[comfy--comfy-c]')
     expect(button.label).toBe('agent.askComfyAgent')
   })
 
