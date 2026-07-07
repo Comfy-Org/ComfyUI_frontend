@@ -66,7 +66,7 @@ export function pageContext(
   }
 }
 
-function organizationId(siteUrl: string): string {
+export function organizationId(siteUrl: string): string {
   return `${siteUrl}/#organization`
 }
 
