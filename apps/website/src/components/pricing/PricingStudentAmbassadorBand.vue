@@ -14,10 +14,8 @@ const { locale = 'en' } = defineProps<{
 </script>
 
 <template>
-  <PricingCard class="col-span-full py-3">
-    <div
-      class="inline-flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-8"
-    >
+  <PricingCard class="col-span-full max-lg:mx-auto max-lg:max-w-lg lg:py-3">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-8">
       <span
         class="text-primary-warm-gray inline-flex shrink-0 items-center gap-2 text-base tracking-wider uppercase"
       >
