@@ -24,7 +24,7 @@ const {
       :side-offset="sideOffset"
       :class="
         cn(
-          'rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg z-50 min-w-40 overflow-hidden border p-1 shadow-xl focus:outline-none',
+          'agent-scope rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg z-50 min-w-40 overflow-hidden border p-1 shadow-xl focus:outline-none',
           cls
         )
       "
