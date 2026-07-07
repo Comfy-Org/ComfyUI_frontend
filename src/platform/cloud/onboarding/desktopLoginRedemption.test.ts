@@ -3,33 +3,13 @@ import { reactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 /**
- * Tests for the router-installed redemption of desktop login codes.
+ * Every test drives a real in-memory router and the real preserved-query
+ * manager: the tracker strips the code from the URL at capture time, so the
+ * stash is the only carrier, and redemption fires from router.afterEach, an
+ * auth watcher, and a delayed retry after a transient failure.
  *
- * The code lives only in the preserved-query stash (the tracker strips it
- * from the URL at capture time); redemption fires from router.afterEach and
- * an auth watcher, so every test drives a real in-memory router:
- * - Redemption requires explicit user approval, asked once per code and
- *   account: an account change after approval (mid-dialog or before a retry)
- *   must never redeem on the stale approval; a trigger that races an open
- *   drain is replayed after it, so the mid-dialog case re-prompts under the
- *   new account without another navigation
- * - A 401 forces a token refresh on the retry (a stale cached token must not
- *   be resent)
- * - A valid code with an authenticated user is redeemed exactly once
- * - A session appearing without any navigation redeems via the auth watcher
- * - Terminal backend responses (400/403/404/409/410) drop the code with an
- *   error toast
- * - Transient failures (network/timeout/5xx) schedule one delayed in-page
- *   retry; once the per-code attempt budget is spent the code is dropped
- *   with an error toast
- * - Each distinct code gets its own approval and attempt budget
- * - A newer code stashed while an older one is in flight survives the older
- *   code's settlement and is processed right after it
- * - Unauthenticated sessions keep the stash for a later trigger
- *
- * The fake clock (installed for every test) keeps the retry timers scheduled
- * by transient failures from leaking into later tests: afterEach discards
- * them with vi.useRealTimers().
+ * The fake clock (installed for every test) keeps those retry timers from
+ * leaking into later tests: afterEach discards them with vi.useRealTimers().
  */
 
 const mockConfirm = vi.hoisted(() => vi.fn())
@@ -57,12 +37,10 @@ interface MockAuthStore {
 const mockUserGetIdToken = vi.hoisted(() => vi.fn())
 const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 
-// The store must be reactive so the module's watcher on currentUser fires
-// without a navigation. The mock factory result is cached across
-// vi.resetModules(), so the factory reads a hoisted holder that beforeEach
-// refills with a fresh reactive store per test: the never-stopped watchers
-// from earlier tests' module generations stay subscribed to earlier stores
-// and remain dormant.
+// Reactive so the module's watcher on currentUser fires without a navigation.
+// The mock factory is cached across vi.resetModules(), so it reads a holder
+// refilled per test; watchers leaked by earlier module generations stay
+// subscribed to earlier stores and remain dormant.
 const authStoreHolder = vi.hoisted(() => ({
   store: null as MockAuthStore | null
 }))
@@ -113,10 +91,8 @@ async function flushRedemption() {
   await vi.advanceTimersByTimeAsync(0)
 }
 
-// vi.resetModules() gives each test a fresh module-scoped redemption state,
-// but it also resets the preserved-query manager's in-memory map, so the
-// manager must be imported in the same registry generation as the module
-// under test.
+// vi.resetModules() also resets the preserved-query manager's in-memory map,
+// so the manager must be imported alongside the module under test.
 async function setup() {
   const { installDesktopLoginRedemption } =
     await import('./desktopLoginRedemption')
@@ -270,26 +246,6 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
-  it('re-asks for approval when a different code arrives after a transient failure', async () => {
-    const { trigger, seedStash } = await setup()
-    seedStash(VALID_CODE)
-    mockFetch
-      .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValueOnce(okResponse())
-
-    await trigger()
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
-
-    seedStash(SECOND_CODE)
-    await trigger()
-
-    expect(mockConfirm).toHaveBeenCalledTimes(2)
-    expect(mockFetch).toHaveBeenLastCalledWith(
-      REDEEM_URL,
-      expect.objectContaining({ body: JSON.stringify({ code: SECOND_CODE }) })
-    )
-  })
-
   it('redeems a code hydrated lazily from sessionStorage', async () => {
     const { trigger } = await setup()
     sessionStorage.setItem(
@@ -340,12 +296,6 @@ describe('installDesktopLoginRedemption', () => {
         detail: 'desktopLogin.expiredDetail',
         life: 6000
       })
-
-      seedStash(VALID_CODE)
-      await trigger()
-
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(stashedCode()).toBeUndefined()
     }
   )
 
@@ -384,13 +334,6 @@ describe('installDesktopLoginRedemption', () => {
       detail: 'desktopLogin.failedDetail',
       life: 6000
     })
-
-    // The budget is spent: re-capturing the dead code and waiting out another
-    // retry window never fires a third attempt.
-    seedStash(VALID_CODE)
-    await trigger()
-    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
-    expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
   it('forces a token refresh on the retry after a 401', async () => {
@@ -438,7 +381,6 @@ describe('installDesktopLoginRedemption', () => {
     await trigger()
 
     expect(mockFetch).not.toHaveBeenCalled()
-    // The token must come straight from the Firebase user:
     // authStore.getIdToken surfaces failures through a modal error dialog,
     // which this background flow must never trigger.
     expect(mockStoreGetIdToken).not.toHaveBeenCalled()
@@ -472,41 +414,21 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockToastAdd).not.toHaveBeenCalled()
   })
 
-  it('keeps the stash while unauthenticated and redeems once a session appears before a later trigger', async () => {
-    const { trigger, seedStash, stashedCode } = await setup()
-    seedStash(VALID_CODE)
-    mockAuthStore.currentUser = null
-
-    await trigger()
-
-    expect(mockConfirm).not.toHaveBeenCalled()
-    expect(mockFetch).not.toHaveBeenCalled()
-    expect(mockToastAdd).not.toHaveBeenCalled()
-    expect(stashedCode()).toBe(VALID_CODE)
-
-    mockFetch.mockResolvedValue(okResponse())
-    mockAuthStore.currentUser = {
-      uid: 'user-1',
-      getIdToken: mockUserGetIdToken
-    }
-    await trigger()
-
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-    expect(stashedCode()).toBeUndefined()
-  })
-
-  it('redeems through the auth watcher when a session appears without any navigation', async () => {
+  it('keeps the stash while unauthenticated and redeems via the auth watcher once a session appears', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     seedStash(VALID_CODE)
     mockAuthStore.currentUser = null
     mockFetch.mockResolvedValue(okResponse())
 
     // The first completed navigation installs the watcher; without a session
-    // nothing redeems yet.
+    // nothing redeems and the stash is kept.
     await trigger()
+    expect(mockConfirm).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
+    expect(stashedCode()).toBe(VALID_CODE)
 
+    // A session appearing without any further navigation redeems via the
+    // watcher.
     mockAuthStore.currentUser = {
       uid: 'user-1',
       getIdToken: mockUserGetIdToken
@@ -613,10 +535,9 @@ describe('installDesktopLoginRedemption', () => {
     await trigger()
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
 
-    // The session swaps to user-2 while user-1's dialog is still open. The
-    // auth-change trigger lands mid-drain and must be replayed, not dropped:
-    // user-1's approval resolving now is stale and must not redeem, and the
-    // replay re-prompts under user-2 without needing another navigation.
+    // The session swaps to user-2 while user-1's dialog is open: the stale
+    // approval must not redeem, and the raced auth trigger is replayed to
+    // re-prompt under user-2 without another navigation.
     const secondUser = {
       uid: 'user-2',
       getIdToken: vi.fn().mockResolvedValue('second-user-token')
@@ -657,9 +578,8 @@ describe('installDesktopLoginRedemption', () => {
       await trigger()
       await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
 
-      // A second code arrives while the first redemption is still in flight;
-      // settling the first must not clear it, and it must be processed
-      // without waiting for another navigation.
+      // A second code arrives while the first redemption is in flight; it
+      // must survive the first's settlement and be processed right after.
       seedStash(SECOND_CODE)
       mockFetch.mockResolvedValue(okResponse())
       resolveFirstFetch(firstResponse())

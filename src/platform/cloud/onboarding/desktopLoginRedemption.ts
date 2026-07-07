@@ -19,17 +19,13 @@ const DESKTOP_LOGIN_CODE_KEY = 'desktop_login_code'
 // backend stays the authority on exact code length.
 const DESKTOP_LOGIN_CODE_PATTERN = /^dlc_[A-Za-z0-9_-]{20,256}$/
 
-// Rejected (400/403), unknown/expired (404/410), or redeemed by a different
-// user (409) means the desktop app must start a fresh sign-in, so the code is
-// dropped. 401 stays transient: the session may still be settling post-login,
-// and the retry mints a fresh token instead of resending the same one.
+// Statuses that mean the desktop app must start a fresh sign-in, so the code
+// is dropped. 401 stays transient: the session may still be settling.
 const TERMINAL_REDEEM_STATUSES = new Set([400, 403, 404, 409, 410])
 
-// Allows one transient-failure retry without ever looping within a page load.
+// One delayed in-page retry, so an approved sign-in always reaches a success
+// or failure toast without ever looping within a page load.
 const MAX_REDEEM_ATTEMPTS = 2
-
-// One bounded in-page retry so an approved sign-in always reaches success or
-// the failure toast without needing another navigation or auth change.
 const RETRY_DELAY_MS = 5_000
 
 // Abort the redeem request if the backend hangs; treated as transient.
@@ -46,10 +42,9 @@ interface CodeRedemptionState {
 // attempt budget, while retries of the same code reuse both.
 const codeStates = new Map<string, CodeRedemptionState>()
 
-// Coalesces concurrent triggers (afterEach can burst) into one drain. A
-// trigger arriving mid-drain — e.g. the auth watcher firing while the
-// approval dialog is open — is not dropped: it is replayed as one more pass
-// once the current drain finishes.
+// Coalesces concurrent triggers into one drain; a trigger arriving mid-drain
+// (e.g. the auth watcher firing while the dialog is open) is replayed as one
+// more pass instead of being dropped.
 let draining = false
 let retriggerRequested = false
 
@@ -95,9 +90,7 @@ function handleTransientFailure(
     }, RETRY_DELAY_MS)
     return
   }
-  // The budget is spent on a sign-in the user explicitly approved: drop the
-  // stash so reloads never retry a dead code, and tell the user instead of
-  // failing silently.
+  // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
   useToastStore().add({
     severity: 'error',
@@ -107,11 +100,9 @@ function handleTransientFailure(
   })
 }
 
-// A leaked link carrying a code must not silently bind the victim's session
-// to an attacker's desktop app: redemption requires explicit approval.
-// Approval is per code *and* account — retries of the same code under the
-// same account reuse it, but a different code, or the same code under a
-// different account, must be approved on its own.
+// Explicit approval defeats device-code phishing: a lured click on a leaked
+// link must not bind the victim's session to an attacker's desktop app.
+// Approval is per code *and* account.
 async function confirmRedemption(
   state: CodeRedemptionState,
   uid: string
@@ -145,19 +136,16 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
-  // The session can change while the dialog is open or between a transient
-  // failure and its retry: approval binds the code to one account, so redeem
-  // only while that exact account is still active. On mismatch the code stays
-  // stashed; the auth-change trigger (replayed if it raced this drain)
-  // re-prompts under the now-current account.
+  // Approval binds the code to one account: if the session changed while the
+  // dialog was open, keep the code stashed and let the (replayed) auth-change
+  // trigger re-prompt under the now-current account.
   const approvedUser = useAuthStore().currentUser
   if (!approvedUser || approvedUser.uid !== state.approvedUserUid) return
 
   state.attempts++
 
-  // Fetch the token straight from the Firebase user: authStore.getIdToken()
-  // surfaces failures through a modal error dialog, which this background
-  // flow must not trigger.
+  // Token comes straight from the Firebase user: authStore.getIdToken()
+  // surfaces failures through a modal dialog this background flow must avoid.
   let idToken: string
   try {
     idToken = await approvedUser.getIdToken(state.forceTokenRefresh)
@@ -212,16 +200,13 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
-  // A 401 with a live session usually means the cached id token went stale;
-  // mint a fresh one on the retry instead of resending the same token.
+  // A 401 usually means a stale cached id token; mint a fresh one on retry.
   if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
-// A newer code can replace the stashed one while an older redemption is
-// mid-flight, so after each redemption process whatever the stash holds now.
-// A pass that leaves its own code stashed — a transient failure awaiting its
-// retry timer, or an account mismatch awaiting a re-prompt — ends the pass.
+// Re-reads the stash after each redemption (a newer code can replace the
+// stashed one mid-flight); a pass that leaves its own code stashed ends.
 async function drainStash(): Promise<void> {
   let processedCode: string | undefined
   for (;;) {
@@ -237,8 +222,7 @@ async function drainStash(): Promise<void> {
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
-  // Never rejects: the triggers fire-and-forget this and must not be derailed
-  // by a redemption failure.
+  // Never rejects: the triggers fire-and-forget this.
   if (draining) {
     retriggerRequested = true
     return
@@ -259,10 +243,8 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
 function installAuthWatcherOnce(): void {
   if (authWatcherInstalled) return
   authWatcherInstalled = true
-  // A session can appear without a navigation (the OAuth-resume error branch
-  // parks the user on the login view with a live session; dialog-based
-  // sign-in), so navigations alone would miss it. Installed on the first
-  // afterEach because pinia is not yet active when router.ts evaluates.
+  // A session can appear without a navigation (e.g. dialog-based sign-in).
+  // Installed lazily because pinia is not active when router.ts evaluates.
   watch(
     () => useAuthStore().currentUser,
     () => {
@@ -272,17 +254,15 @@ function installAuthWatcherOnce(): void {
 }
 
 /**
- * Redemption of desktop login codes (`?desktop_login_code=dlc_...`).
+ * Redemption of desktop login codes (`?desktop_login_code=dlc_...`, GTM-93).
  *
  * The desktop app opens the browser with an opaque one-time code; once a
- * Firebase session exists the user is asked to approve the sign-in, and the
- * code is redeemed against the cloud backend, which releases a one-time
- * custom token to the polling desktop app (GTM-93). The preserved-query
- * tracker strips the code from the URL at capture time, so the stash is the
- * only place it lives. Redemption is attempted after every completed
- * navigation, whenever the auth session changes, and once more on a delayed
- * retry after a transient failure; a code with no session yet stays stashed
- * until one of those triggers finds a signed-in user.
+ * Firebase session exists and the user approves, the code is redeemed against
+ * the cloud backend, which releases a one-time custom token to the polling
+ * desktop app. The tracker strips the code from the URL at capture time, so
+ * the preserved-query stash is the only place it lives. Triggers: every
+ * completed navigation, every auth session change, and one delayed retry
+ * after a transient failure; a code with no session yet stays stashed.
  */
 export function installDesktopLoginRedemption(router: Router): void {
   router.afterEach(() => {
