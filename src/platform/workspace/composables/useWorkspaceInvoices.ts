@@ -8,7 +8,7 @@ export interface Invoice {
   amountCents: number
 }
 
-const ITEMS_PER_PAGE = 8
+const ITEMS_PER_PAGE = 12
 
 // Prototype mock: there is no billing-history endpoint yet, so the invoice
 // list is generated client-side and paginated in the browser.
@@ -25,7 +25,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const BASE = new Date('2026-02-20T18:30:00').getTime()
 
 function mockInvoices(): Invoice[] {
-  return Array.from({ length: 26 }, (_, i) => {
+  return Array.from({ length: 44 }, (_, i) => {
     const [eventType, amountCents] = INVOICE_KINDS[i % INVOICE_KINDS.length]
     return {
       id: `inv-${i}`,

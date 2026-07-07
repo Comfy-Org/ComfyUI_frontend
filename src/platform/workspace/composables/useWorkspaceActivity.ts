@@ -15,7 +15,7 @@ export interface UserSummary {
   lastActivity: Date
 }
 
-const ITEMS_PER_PAGE = 8
+const ITEMS_PER_PAGE = 12
 
 // Prototype mock: there is no usage-activity endpoint yet, so the event list is
 // generated client-side and paginated in the browser.
@@ -28,7 +28,7 @@ const HOUR_MS = 60 * 60 * 1000
 const BASE = new Date('2026-02-25T18:30:00').getTime()
 
 function mockActivity(): ActivityEvent[] {
-  return Array.from({ length: 26 }, (_, i) => ({
+  return Array.from({ length: 44 }, (_, i) => ({
     id: `act-${i}`,
     date: new Date(BASE - i * 7 * HOUR_MS),
     userName: USERS[i % USERS.length],
