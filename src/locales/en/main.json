@@ -2847,6 +2847,18 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingStatus": {
+      "warning": {
+        "title": "Payment declined",
+        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated."
+      },
+      "paused": {
+        "title": "Subscription paused",
+        "body": "This workspace's subscription is paused. Update payment to resume.",
+        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+      },
+      "updatePayment": "Update payment"
+    },
     "charactersLeft": "{count} character left | {count} characters left",
     "doubleClickToRename": "Double-click to rename",
     "editWorkspaceImage": "Edit workspace image",

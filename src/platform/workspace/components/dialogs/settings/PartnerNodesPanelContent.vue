@@ -1,5 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
+    <BillingStatusBanner />
     <div class="flex w-full items-center gap-9">
       <span class="min-w-0 flex-1 text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.description') }}
@@ -183,6 +184,7 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import PartnerBadge from '@/platform/workspace/components/dialogs/settings/PartnerBadge.vue'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
 import { cn } from '@comfyorg/tailwind-utils'

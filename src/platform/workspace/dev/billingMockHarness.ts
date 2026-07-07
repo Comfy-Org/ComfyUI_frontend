@@ -40,7 +40,13 @@ function currentUserEmail(): string {
   }
 }
 type Tier = 'free' | 'standard' | 'creator' | 'pro'
-type State = 'active' | 'cancelled' | 'inactive' | 'changing'
+type State =
+  | 'active'
+  | 'cancelled'
+  | 'inactive'
+  | 'changing'
+  | 'past_due'
+  | 'paused'
 // 'full' = fresh cycle, monthly credits reset, nobody has used anything (all
 // member usage is 0); 'partial' = members have used some of the monthly allotment.
 type Balance = 'full' | 'partial' | 'low' | 'empty'
@@ -95,7 +101,7 @@ const OPTIONS: Record<
   ws: ['personal', 'team'],
   role: ['owner', 'admin', 'member'],
   tier: ['free', 'standard', 'creator', 'pro'],
-  state: ['active', 'cancelled', 'inactive', 'changing'],
+  state: ['active', 'cancelled', 'inactive', 'changing', 'past_due', 'paused'],
   balance: ['full', 'partial', 'low', 'empty'],
   roleChange: ['200', '500'],
   autoReload: ['notset', 'nobudget', 'healthy', 'nearlimit', 'paused', 'off']
@@ -210,19 +216,26 @@ const subStatus = () =>
     active: 'active',
     cancelled: 'canceled',
     inactive: 'ended',
-    changing: 'scheduled'
+    changing: 'scheduled',
+    past_due: 'active',
+    paused: 'paused'
   })[cfg.state]
 
 // TEAM — /api/billing/status (has_funds, cancel_at)
 function billingStatus(): unknown {
   return {
     is_active: cfg.state !== 'inactive',
-    has_funds: cfg.balance !== 'empty',
+    has_funds: cfg.balance !== 'empty' && cfg.state !== 'paused',
     subscription_status: subStatus(),
     subscription_tier: TIER[cfg.tier],
     subscription_duration: 'MONTHLY',
     plan_slug: slug(cfg.tier),
-    billing_status: cfg.state === 'inactive' ? 'inactive' : 'paid',
+    billing_status:
+      cfg.state === 'inactive'
+        ? 'inactive'
+        : cfg.state === 'past_due' || cfg.state === 'paused'
+          ? 'payment_failed'
+          : 'paid',
     renewal_date: FUTURE,
     cancel_at: cfg.state === 'cancelled' ? CANCEL_AT : undefined,
     // Presence marks a new credit-slider team plan (vs. legacy) and gives the
@@ -250,7 +263,9 @@ function legacyStatus(): unknown {
 
 function balance(): unknown {
   const [monthlyCredits, prepaidCredits] =
-    BALANCE_CREDITS[cfg.balance] || BALANCE_CREDITS.full
+    cfg.state === 'paused'
+      ? [0, 0]
+      : BALANCE_CREDITS[cfg.balance] || BALANCE_CREDITS.full
   const cloud = creditsToCents(monthlyCredits)
   const prepaid = creditsToCents(prepaidCredits)
   const total = cloud + prepaid
