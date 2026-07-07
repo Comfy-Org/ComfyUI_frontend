@@ -84,7 +84,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.verdict).toBe('AUTO_RUNNABLE')
   })
 
-  test('planAutoRuns maps keys and batchAutoRunnable chunks only runnables', async () => {
+  test('planAutoRuns maps keys and batchAutoRunnable chunks only runnables', () => {
     const defs = {
       A: {
         input: { required: { v: ['INT', {}] } },
@@ -109,7 +109,7 @@ test.describe('autoRun classifier', () => {
       'AUTO_RUNNABLE'
     ])
     const batches = batchAutoRunnable(verdicts, 1)
-    await expect(batches).toHaveLength(2)
+    expect(batches).toHaveLength(2)
     expect(batches[0][0].key).toBe('A')
   })
 })
