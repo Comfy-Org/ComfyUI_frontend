@@ -4,6 +4,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
+import enMessages from '@/locales/en/main.json'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
@@ -106,7 +107,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     // Empty state: greeting + question and the five suggested-prompt chips.
     await expect(panel.getByText('Hello there,')).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
-    const firstPrompt = 'Build a text-to-image workflow'
+    // Sourced from the bundled locale so the spec cannot drift from the rendered prompts.
+    const firstPrompt = enMessages.agent.suggestedPrompts[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 

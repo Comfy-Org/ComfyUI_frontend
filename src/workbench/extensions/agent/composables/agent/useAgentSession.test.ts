@@ -169,6 +169,31 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(postMessage.mock.calls[1][0]).toBe('th-9')
   })
 
+  it('(b2) a remounted session continues the persisted thread, not a new one', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-9', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-9', message_id: 'msg-2' })
+    const rest = fakeRest({ postMessage })
+
+    // First mount adopts the thread, then unmounts (the panel closes).
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    await first.sendMessage('first')
+    first.stop()
+
+    // A remount is a fresh composable over the same pinia: it must read the persisted thread
+    // and post there, not split the transcript across a second 'new' thread.
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+    await second.sendMessage('second')
+
+    expect(postMessage.mock.calls[0][0]).toBe('new')
+    expect(postMessage.mock.calls[1][0]).toBe('th-9')
+  })
+
   it('(c) a postMessage AgentApiError pushes an error notice and opens no live turn', async () => {
     const postMessage = vi
       .fn<

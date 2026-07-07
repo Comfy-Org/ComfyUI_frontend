@@ -41,6 +41,11 @@ export const useAgentConversationStore = defineStore(
   () => {
     const messages = ref<AssistantMessage[]>([])
     const activeTurnId = ref<TurnId | null>(null)
+    // The server thread this conversation belongs to; null until the first send's ack adopts
+    // one. Held here, not in the session composable, so it survives a panel remount - a
+    // reopened panel with a null thread would post to 'new' and split the persisted
+    // transcript across two server threads.
+    const threadId = ref<string | null>(null)
     // User prompt text keyed by turn id. The transport only produces assistant messages,
     // so the send path records the user's text here and the UI interleaves it before the
     // matching assistant turn.
@@ -61,6 +66,10 @@ export const useAgentConversationStore = defineStore(
     // reply. Called by the send path just before startTurn.
     function recordUser(turnId: TurnId, text: string): void {
       userTexts.value.set(turnId, text)
+    }
+
+    function setThreadId(id: string | null): void {
+      threadId.value = id
     }
 
     // Record a send that never reached the wire: keep the user's text and push a SETTLED
@@ -124,6 +133,7 @@ export const useAgentConversationStore = defineStore(
     function reset(): void {
       messages.value = []
       userTexts.value = new Map()
+      threadId.value = null
       clearActive()
     }
 
@@ -153,9 +163,11 @@ export const useAgentConversationStore = defineStore(
       messages,
       entries,
       activeTurnId,
+      threadId,
       isStreaming,
       status,
       recordUser,
+      setThreadId,
       recordFailedSend,
       startTurn,
       ingest,

@@ -194,4 +194,12 @@ describe('useAgentConversationStore', () => {
     expect(store.activeTurnId).toBeNull()
     expect(store.isStreaming).toBe(false)
   })
+
+  it('holds the thread id and clears it on reset', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th-7')
+    expect(store.threadId).toBe('th-7')
+    store.reset()
+    expect(store.threadId).toBeNull()
+  })
 })

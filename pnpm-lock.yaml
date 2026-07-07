@@ -558,9 +558,6 @@ importers:
       chart.js:
         specifier: ^4.5.0
         version: 4.5.0
-      class-variance-authority:
-        specifier: 'catalog:'
-        version: 0.7.1
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@5.9.3)

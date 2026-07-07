@@ -10,14 +10,14 @@ import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
  * handle so the host can tear down with its mount.
  */
 export function useDraftCanvasApply(
-  apply: (content: Record<string, unknown>, version: number) => void
+  apply: (content: Record<string, unknown>) => void
 ): () => void {
   const draftStore = useAgentDraftStore()
   return watch(
     () => draftStore.version,
     (version) => {
       if (version === null || draftStore.content === null) return
-      apply(draftStore.content, version)
+      apply(draftStore.content)
     }
   )
 }

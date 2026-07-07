@@ -66,8 +66,7 @@ describe('createAgentWorkflowBinding', () => {
     const binding = createAgentWorkflowBinding({
       getAuthToken: () => 'secret-token',
       fetchImpl: fetchImpl as unknown as typeof fetch,
-      serializeGraph: () => ({ nodes: [] }),
-      workflowName: () => 'My session'
+      serializeGraph: () => ({ nodes: [] })
     })
 
     await binding.ensure()
@@ -79,26 +78,8 @@ describe('createAgentWorkflowBinding', () => {
       'Bearer secret-token'
     )
     expect(JSON.parse(String(init.body))).toEqual({
-      name: 'My session',
+      name: 'AI Agent session',
       workflow_json: { nodes: [] }
     })
-  })
-
-  it('forgets the bound id on reset() so the next ensure() re-mints', async () => {
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValueOnce(okResponse('wf-5'))
-      .mockResolvedValueOnce(okResponse('wf-6'))
-    const binding = createAgentWorkflowBinding({
-      getAuthToken: () => undefined,
-      fetchImpl: fetchImpl as unknown as typeof fetch,
-      serializeGraph: () => ({})
-    })
-
-    expect(await binding.ensure()).toBe('wf-5')
-    binding.reset()
-    expect(binding.current()).toBeUndefined()
-    expect(await binding.ensure()).toBe('wf-6')
-    expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 })

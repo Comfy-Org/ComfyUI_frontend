@@ -19,8 +19,7 @@ const zWorkflowCreated = z.object({ id: z.string() }).passthrough()
 export interface AgentWorkflowBindingDeps {
   getAuthToken: () => string | undefined | Promise<string | undefined>
   fetchImpl?: typeof fetch
-  serializeGraph: () => Record<string, unknown>
-  workflowName?: () => string
+  serializeGraph: () => unknown
 }
 
 export interface AgentWorkflowBinding {
@@ -28,19 +27,12 @@ export interface AgentWorkflowBinding {
   ensure: () => Promise<string | undefined>
   // The currently bound id, or undefined before a successful ensure().
   current: () => string | undefined
-  // Forget the bound id so the next ensure() mints a fresh workflow (new session).
-  reset: () => void
 }
 
 export function createAgentWorkflowBinding(
   deps: AgentWorkflowBindingDeps
 ): AgentWorkflowBinding {
-  const {
-    getAuthToken,
-    fetchImpl = globalThis.fetch,
-    serializeGraph,
-    workflowName
-  } = deps
+  const { getAuthToken, fetchImpl = globalThis.fetch, serializeGraph } = deps
 
   let workflowId: string | undefined
   // Single-flight: overlapping ensure() calls (e.g. the connect baseline and the first
@@ -57,7 +49,7 @@ export function createAgentWorkflowBinding(
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          name: workflowName?.() ?? 'AI Agent session',
+          name: 'AI Agent session',
           workflow_json: serializeGraph()
         })
       })
@@ -84,9 +76,6 @@ export function createAgentWorkflowBinding(
 
   return {
     ensure,
-    current: () => workflowId,
-    reset: () => {
-      workflowId = undefined
-    }
+    current: () => workflowId
   }
 }

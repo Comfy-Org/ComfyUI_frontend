@@ -4552,15 +4552,11 @@
     "you": "You",
     "sessionOptions": "Chat options",
     "takeControl": "Take control",
-    "askToSpend": "Ask to spend",
     "approve": "Approve",
     "deny": "Deny",
     "revert": "Revert",
-    "noResponse": "(no response)",
     "approvalTitle": "Approval needed",
     "waiting": "Waiting for approval...",
-    "modeAuto": "Auto-run",
-    "modeAsk": "Ask first",
     "agentEditing": "Comfy Agent is editing the canvas",
     "conflictTitle": "You edited while the agent was working",
     "conflictBody": "Choose whose changes to keep.",
@@ -4571,6 +4567,7 @@
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachTitle": "Meet the agent",
-    "coachBody": "Ask it to build or edit graphs."
+    "coachBody": "Ask it to build or edit graphs.",
+    "draftsUnavailable": "Draft edits are unavailable this session. The agent can still chat, but its graph changes won't appear on the canvas."
   }
 }
