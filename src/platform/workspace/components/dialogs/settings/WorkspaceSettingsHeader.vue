@@ -40,12 +40,7 @@
           ? { value: $t('workspacePanel.doubleClickToRename'), showDelay: 300 }
           : undefined
       "
-      :class="
-        cn(
-          'truncate text-2xl font-semibold text-base-foreground',
-          canEdit && 'cursor-text'
-        )
-      "
+      class="truncate text-2xl font-semibold text-base-foreground"
       @dblclick="startEditing"
     >
       {{ workspaceName }}
@@ -68,7 +63,6 @@ import { useI18n } from 'vue-i18n'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const toast = useToast()
