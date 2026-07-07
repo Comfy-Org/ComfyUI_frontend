@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DropdownMenuContent, DropdownMenuPortal } from 'reka-ui'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../utils/cn'
 
 const {
   side = 'bottom',

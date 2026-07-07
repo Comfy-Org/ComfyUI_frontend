@@ -3,7 +3,7 @@ import { useClipboard } from '@vueuse/core'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../../utils/cn'
 
 const { code, lang = 'text' } = defineProps<{
   code: string

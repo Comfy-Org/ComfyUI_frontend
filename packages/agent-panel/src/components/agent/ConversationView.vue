@@ -2,8 +2,8 @@
 import { useIntersectionObserver } from '@vueuse/core'
 import { nextTick, ref, watch } from 'vue'
 
-import ScrollArea from '@/components/ui/ScrollArea.vue'
-import type { ConversationEntry } from '@/stores/agent/agentConversationStore'
+import ScrollArea from '../ui/ScrollArea.vue'
+import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'

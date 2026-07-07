@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import { i18n } from '@/i18n'
-import type { ApprovalCard as ApprovalCardModel } from '@/components/agent/safety/safetyTypes'
+import { i18n } from '../../../i18n'
+import type { ApprovalCard as ApprovalCardModel } from './safetyTypes'
 
 import ApprovalCard from './ApprovalCard.vue'
 

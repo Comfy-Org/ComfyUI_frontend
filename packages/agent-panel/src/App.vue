@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 
-import AgentPanel from '@/components/agent/AgentPanel.vue'
-import ChatHistoryDrawer from '@/components/agent/ChatHistoryDrawer.vue'
-import OnboardingCoach from '@/components/agent/OnboardingCoach.vue'
-import StartingPointModal from '@/components/agent/StartingPointModal.vue'
-import MinimizedBall from '@/components/agent/dock/MinimizedBall.vue'
-import type { CoachStep } from '@/composables/agent/useOnboarding'
-import type { ComposerAttachment } from '@/composables/agent/useComposer'
-import { useAgentSession } from '@/composables/agent/useAgentSession'
-import type { AgentEventSource } from '@/composables/agent/useAgentSession'
-import { useAgentFeatureGate } from '@/composables/agent/useAgentFeatureGate'
-import type { AgentFlagSource } from '@/composables/agent/useAgentFeatureGate'
-import { zAgentWsEvent } from '@/schemas/agentApiSchema'
+import AgentPanel from './components/agent/AgentPanel.vue'
+import ChatHistoryDrawer from './components/agent/ChatHistoryDrawer.vue'
+import OnboardingCoach from './components/agent/OnboardingCoach.vue'
+import StartingPointModal from './components/agent/StartingPointModal.vue'
+import MinimizedBall from './components/agent/dock/MinimizedBall.vue'
+import type { CoachStep } from './composables/agent/useOnboarding'
+import type { ComposerAttachment } from './composables/agent/useComposer'
+import { useAgentSession } from './composables/agent/useAgentSession'
+import type { AgentEventSource } from './composables/agent/useAgentSession'
+import { useAgentFeatureGate } from './composables/agent/useAgentFeatureGate'
+import type { AgentFlagSource } from './composables/agent/useAgentFeatureGate'
+import { zAgentWsEvent } from './schemas/agentApiSchema'
 import type {
   AgentCancelAccepted,
   AgentDraftSnapshot,
@@ -21,12 +21,12 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent,
   UploadImageResult
-} from '@/schemas/agentApiSchema'
-import type { AgentRestClient } from '@/services/agent/agentRestClient'
-import { createAgentRestClient } from '@/services/agent/agentRestClient'
-import { createWebSocketEventSource } from '@/services/agent/agentEventSource'
-import { cn } from '@/utils/cn'
-import { useAgentChatHistoryStore } from '@/stores/agent/agentChatHistoryStore'
+} from './schemas/agentApiSchema'
+import type { AgentRestClient } from './services/agent/agentRestClient'
+import { createAgentRestClient } from './services/agent/agentRestClient'
+import { createWebSocketEventSource } from './services/agent/agentEventSource'
+import { cn } from './utils/cn'
+import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 
 // Dev harness, two modes. Default: an inline fake REST client mints incrementing message
 // ids and an inline scripted event source plays one turn's worth of frames per send, so

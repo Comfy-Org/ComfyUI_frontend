@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/Button.vue'
-import type { LockState } from '@/components/agent/safety/safetyTypes'
+import Button from '../../ui/Button.vue'
+import type { LockState } from './safetyTypes'
 
 // Shows while the agent holds (or is claiming) the canvas lock. Take control is always
 // offered here — the always-visible reclaim button is one of the five lock failsafes.

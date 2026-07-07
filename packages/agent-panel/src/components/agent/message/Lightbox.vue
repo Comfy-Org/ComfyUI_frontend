@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DialogRoot, DialogTitle } from 'reka-ui'
 
-import DialogContent from '@/components/ui/DialogContent.vue'
+import DialogContent from '../../ui/DialogContent.vue'
 
 const {
   url,

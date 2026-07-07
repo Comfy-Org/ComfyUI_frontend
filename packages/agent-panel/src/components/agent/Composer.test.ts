@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import { i18n } from '@/i18n'
+import { i18n } from '../../i18n'
 
 import Composer from './Composer.vue'
 
