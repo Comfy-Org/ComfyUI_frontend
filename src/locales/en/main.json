@@ -2842,7 +2842,7 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
-    "charactersLeft": "{count} left",
+    "charactersLeft": "{count} character left | {count} characters left",
     "doubleClickToRename": "Double-click to rename",
     "editWorkspaceImage": "Edit workspace image",
     "invite": "Invite",
