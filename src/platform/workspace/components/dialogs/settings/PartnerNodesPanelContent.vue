@@ -1,14 +1,9 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
-    <div class="flex w-full items-start gap-9">
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <span class="text-base font-normal text-base-foreground">
-          {{ $t('workspacePanel.partnerNodes.title') }}
-        </span>
-        <span class="text-sm text-muted-foreground">
-          {{ $t('workspacePanel.partnerNodes.description') }}
-        </span>
-      </div>
+    <div class="flex w-full items-center gap-9">
+      <span class="min-w-0 flex-1 text-sm text-muted-foreground">
+        {{ $t('workspacePanel.partnerNodes.description') }}
+      </span>
       <SearchInput
         v-model="searchQuery"
         :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
