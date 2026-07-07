@@ -36,76 +36,85 @@
           </div>
         </div>
 
-        <!-- Table header -->
-        <div
-          class="grid grid-cols-[24px_1fr_160px_160px_56px] items-center gap-3 border-b border-interface-stroke px-2 pb-2 text-sm text-muted-foreground"
+        <Table>
+          <TableHeader>
+            <TableRow class="hover:bg-transparent">
+              <TableHead class="w-6">
+                <input
+                  type="checkbox"
+                  class="size-4 cursor-pointer align-middle"
+                  :checked="allFilteredSelected"
+                  :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
+                  @change="toggleSelectAll"
+                />
+              </TableHead>
+              <TableHead>
+                <button :class="sortHeaderClass" @click="toggleSort('name')">
+                  {{ $t('workspacePanel.partnerNodes.columns.name') }}
+                  <i :class="sortIcon('name')" />
+                </button>
+              </TableHead>
+              <TableHead class="w-40">
+                <button :class="sortHeaderClass" @click="toggleSort('partner')">
+                  {{ $t('workspacePanel.partnerNodes.columns.partner') }}
+                  <i :class="sortIcon('partner')" />
+                </button>
+              </TableHead>
+              <TableHead class="w-40">
+                <button
+                  :class="sortHeaderClass"
+                  @click="toggleSort('lastModified')"
+                >
+                  {{ $t('workspacePanel.partnerNodes.columns.lastModified') }}
+                  <i :class="sortIcon('lastModified')" />
+                </button>
+              </TableHead>
+              <TableHead class="w-14" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow
+              v-for="node in filteredNodes"
+              :key="node.id"
+              :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
+              :class="cn('cursor-pointer', !node.enabled && 'opacity-55')"
+              @click="toggleSelection(node.id)"
+            >
+              <TableCell>
+                <input
+                  type="checkbox"
+                  class="size-4 cursor-pointer align-middle"
+                  :checked="selectedIds.has(node.id)"
+                  :aria-label="node.name"
+                  @click.stop
+                  @change="toggleSelection(node.id)"
+                />
+              </TableCell>
+              <TableCell class="text-base-foreground">
+                {{ node.name }}
+              </TableCell>
+              <TableCell class="text-muted-foreground">
+                {{ node.partner }}
+              </TableCell>
+              <TableCell class="text-muted-foreground">
+                {{ formatLastModified(node.last_modified) }}
+              </TableCell>
+              <TableCell class="text-right" @click.stop>
+                <Switch
+                  :model-value="node.enabled"
+                  @update:model-value="(v: boolean) => setEnabled(node, v)"
+                />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+
+        <p
+          v-if="filteredNodes.length === 0"
+          class="px-2 py-6 text-center text-sm text-muted-foreground"
         >
-          <input
-            type="checkbox"
-            class="size-4 cursor-pointer"
-            :checked="allFilteredSelected"
-            :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
-            @change="toggleSelectAll"
-          />
-          <button :class="sortHeaderClass" @click="toggleSort('name')">
-            {{ $t('workspacePanel.partnerNodes.columns.name') }}
-            <i :class="sortIcon('name')" />
-          </button>
-          <button :class="sortHeaderClass" @click="toggleSort('partner')">
-            {{ $t('workspacePanel.partnerNodes.columns.partner') }}
-            <i :class="sortIcon('partner')" />
-          </button>
-          <button :class="sortHeaderClass" @click="toggleSort('lastModified')">
-            {{ $t('workspacePanel.partnerNodes.columns.lastModified') }}
-            <i :class="sortIcon('lastModified')" />
-          </button>
-          <span />
-        </div>
-
-        <!-- Rows -->
-        <div class="flex flex-col">
-          <div
-            v-for="node in filteredNodes"
-            :key="node.id"
-            :class="
-              cn(
-                'grid grid-cols-[24px_1fr_160px_160px_56px] items-center gap-3 rounded-lg px-2 py-2.5',
-                !node.enabled && 'opacity-55',
-                selectedIds.has(node.id) && 'bg-secondary-background/50'
-              )
-            "
-          >
-            <input
-              type="checkbox"
-              class="size-4 cursor-pointer"
-              :checked="selectedIds.has(node.id)"
-              :aria-label="node.name"
-              @change="toggleSelection(node.id)"
-            />
-            <span class="truncate text-sm text-base-foreground">
-              {{ node.name }}
-            </span>
-            <span class="truncate text-sm text-muted-foreground">
-              {{ node.partner }}
-            </span>
-            <span class="text-sm text-muted-foreground">
-              {{ formatLastModified(node.last_modified) }}
-            </span>
-            <div class="flex justify-end">
-              <Switch
-                :model-value="node.enabled"
-                @update:model-value="(v: boolean) => setEnabled(node, v)"
-              />
-            </div>
-          </div>
-
-          <p
-            v-if="filteredNodes.length === 0"
-            class="px-2 py-6 text-center text-sm text-muted-foreground"
-          >
-            {{ $t('workspacePanel.partnerNodes.empty') }}
-          </p>
-        </div>
+          {{ $t('workspacePanel.partnerNodes.empty') }}
+        </p>
 
         <!-- Footer default -->
         <div
@@ -160,6 +169,12 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableCell from '@/components/ui/table/TableCell.vue'
+import TableHead from '@/components/ui/table/TableHead.vue'
+import TableHeader from '@/components/ui/table/TableHeader.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
 import { cn } from '@comfyorg/tailwind-utils'
 
