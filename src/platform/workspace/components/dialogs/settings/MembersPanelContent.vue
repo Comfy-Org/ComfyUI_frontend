@@ -1,63 +1,64 @@
 <template>
-  <div class="grow overflow-auto pt-6">
-    <div
-      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke/60 p-6"
-    >
-      <!-- Section Header -->
-      <div class="flex w-full items-center gap-9">
-        <div class="flex min-w-0 flex-1 items-baseline gap-2">
-          <span class="text-base font-semibold text-base-foreground">
-            <template v-if="activeView === 'active'">
-              <template v-if="isOnTeamPlan && !isPersonalWorkspace">
-                {{
-                  $t('workspacePanel.members.membersCount', {
-                    count: members.length,
-                    maxSeats: maxSeats
-                  })
-                }}
-              </template>
-              <template v-else>
-                {{ $t('workspacePanel.members.header') }}
-              </template>
-            </template>
-            <template v-else-if="permissions.canViewPendingInvites">
+  <div class="flex min-h-0 flex-1 flex-col gap-4">
+    <!-- Section Header: above the card -->
+    <div class="flex w-full items-center gap-9">
+      <div class="flex min-w-0 flex-1 items-baseline gap-2">
+        <span class="text-base font-semibold text-base-foreground">
+          <template v-if="activeView === 'active'">
+            <template v-if="isOnTeamPlan && !isPersonalWorkspace">
               {{
-                $t(
-                  'workspacePanel.members.pendingInvitesCount',
-                  pendingInvites.length
-                )
+                $t('workspacePanel.members.membersCount', {
+                  count: members.length,
+                  maxSeats: maxSeats
+                })
               }}
             </template>
-          </span>
-        </div>
-        <div class="flex items-center gap-2">
-          <SearchInput
-            v-if="showSearch"
-            v-model="searchQuery"
-            :placeholder="$t('workspacePanel.members.searchPlaceholder')"
-            size="lg"
-            class="w-64"
-          />
-          <Button
-            v-if="showInviteButton"
-            v-tooltip="
-              inviteTooltip
-                ? { value: inviteTooltip, showDelay: 0 }
-                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
-            "
-            variant="secondary"
-            size="lg"
-            :disabled="isInviteDisabled"
-            :aria-label="$t('workspacePanel.inviteMember')"
-            @click="handleInviteMember"
-          >
-            {{ $t('workspacePanel.invite') }}
-            <i class="pi pi-plus text-sm" />
-          </Button>
-          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
-        </div>
+            <template v-else>
+              {{ $t('workspacePanel.members.header') }}
+            </template>
+          </template>
+          <template v-else-if="permissions.canViewPendingInvites">
+            {{
+              $t(
+                'workspacePanel.members.pendingInvitesCount',
+                pendingInvites.length
+              )
+            }}
+          </template>
+        </span>
       </div>
+      <div class="flex items-center gap-2">
+        <SearchInput
+          v-if="showSearch"
+          v-model="searchQuery"
+          :placeholder="$t('workspacePanel.members.searchPlaceholder')"
+          size="lg"
+          class="w-64"
+        />
+        <Button
+          v-if="showInviteButton"
+          v-tooltip="
+            inviteTooltip
+              ? { value: inviteTooltip, showDelay: 0 }
+              : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+          "
+          variant="secondary"
+          size="lg"
+          :disabled="isInviteDisabled"
+          :aria-label="$t('workspacePanel.inviteMember')"
+          @click="handleInviteMember"
+        >
+          {{ $t('workspacePanel.invite') }}
+          <i class="pi pi-plus text-sm" />
+        </Button>
+        <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
+      </div>
+    </div>
 
+    <!-- Card: fills height, list scrolls inside -->
+    <div
+      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60 p-6"
+    >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
         <!-- Table Header with Tab Buttons and Column Headers -->
