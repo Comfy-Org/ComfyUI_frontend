@@ -7,7 +7,7 @@ import { t } from '../../../i18n/translations'
 import type { JsonLdNode } from '../../../utils/jsonLd'
 import {
   absoluteUrl,
-  buildPageGraph,
+  jsonLdId,
   pageContext,
   softwareApplicationNode,
 } from '../../../utils/jsonLd'
@@ -54,12 +54,17 @@ const { siteUrl, locale, url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const softwareId = `${url}#software`
-// FAQPage no longer yields a rich result but stays valid, machine-readable
-// markup for the Q&A that reflects the visible page content.
+const software = softwareApplicationNode({
+  siteUrl,
+  id: jsonLdId(url, 'software'),
+  name: displayName,
+  url,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Any',
+})
 const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
-  '@id': `${url}#faq`,
+  '@id': jsonLdId(url, 'faq'),
   mainEntity: [
     {
       '@type': 'Question',
@@ -94,43 +99,22 @@ const faqPage: JsonLdNode = {
     },
   ],
 }
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: pageTitle,
-    description: pageDescription,
-    imageUrl: model.thumbnailUrl,
-    mainEntityId: softwareId,
-    crumbs: [
-      {
-        name: t('models.breadcrumb.home'),
-        url: absoluteUrl(Astro.site, '/'),
-      },
-      {
-        name: t('models.breadcrumb.models'),
-        url: absoluteUrl(Astro.site, '/p/supported-models'),
-      },
-      { name: displayName },
-    ],
-  },
-  softwareApplicationNode({
-    siteUrl,
-    id: softwareId,
-    name: displayName,
-    url,
-    applicationCategory: 'MultimediaApplication',
-    operatingSystem: 'Any',
-  }),
-  faqPage,
-)
 ---
 
 <BaseLayout
   title={`${pageTitle} — Comfy`}
   description={pageDescription}
   ogImage={model.thumbnailUrl}
-  jsonLd={jsonLd}
+  mainEntityId={jsonLdId(url, 'software')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('models.breadcrumb.models', locale),
+      url: absoluteUrl(Astro.site, '/p/supported-models'),
+    },
+    { name: displayName },
+  ]}
+  extraJsonLd={[software, faqPage]}
 >
 
   <ModelHeroSection

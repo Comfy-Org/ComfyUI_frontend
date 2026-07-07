@@ -10,8 +10,8 @@ import { reportAshbyOutcome } from '../../utils/ashby.ci'
 import { t } from '../../i18n/translations'
 import {
   absoluteUrl,
-  buildPageGraph,
   itemListNode,
+  jsonLdId,
   pageContext,
 } from '../../utils/jsonLd'
 
@@ -27,35 +27,34 @@ if (outcome.status === 'failed') {
 
 const departments = outcome.snapshot.departments
 
-const title = '招聘 — Comfy'
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const listId = `${url}#itemlist`
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: title,
-    type: 'CollectionPage',
-    mainEntityId: listId,
-    crumbs: [
-      { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-      { name: '招聘' },
-    ],
-  },
-  itemListNode(
-    url,
-    departments.flatMap((department) =>
-      department.roles.map((role) => ({ name: role.title, url: role.jobUrl })),
-    ),
+const roles = itemListNode(
+  url,
+  t('breadcrumb.careers', locale),
+  departments.flatMap((department) =>
+    department.roles.map((role) => ({ name: role.title, url: role.jobUrl })),
   ),
 )
 ---
 
-<BaseLayout title={title} description="加入构建生成式 AI 操作系统的团队。工程、设计、市场营销等岗位开放招聘中。" jsonLd={jsonLd}>
+<BaseLayout
+  title="招聘 — Comfy"
+  description="加入构建生成式 AI 操作系统的团队。工程、设计、市场营销等岗位开放招聘中。"
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN'),
+    },
+    { name: t('breadcrumb.careers', locale) },
+  ]}
+  extraJsonLd={[roles]}
+>
   <HeroSection locale="zh-CN" />
   <RolesSection locale="zh-CN" departments={departments} client:visible />
   <WhyJoinSection locale="zh-CN" client:visible />

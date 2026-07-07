@@ -9,7 +9,7 @@ import { t } from '../../../i18n/translations'
 import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
 import {
   absoluteUrl,
-  buildPageGraph,
+  jsonLdId,
   pageContext,
   softwareApplicationNode,
 } from '../../../utils/jsonLd'
@@ -39,49 +39,39 @@ const { siteUrl, locale, url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const softwareId = `${url}#software`
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: pack.displayName,
-    description,
-    imageUrl: pack.bannerUrl || pack.iconUrl,
-    mainEntityId: softwareId,
-    crumbs: [
-      { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-      { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
-      {
-        name: 'Supported Nodes',
-        url: absoluteUrl(Astro.site, '/cloud/supported-nodes'),
-      },
-      { name: pack.displayName },
-    ],
-  },
-  softwareApplicationNode({
-    siteUrl,
-    id: softwareId,
-    name: pack.displayName,
-    url,
-    applicationCategory: 'DeveloperApplication',
-    applicationSubCategory: 'ComfyUI custom-node pack',
-    operatingSystem: 'Comfy Cloud (managed)',
-    description: pack.description || undefined,
-    image: pack.bannerUrl || pack.iconUrl,
-    softwareVersion: pack.latestVersion,
-    license: pack.license,
-    codeRepository: pack.repoUrl,
-    authorName: pack.publisher?.name,
-    isFree: true,
-  }),
-)
+const software = softwareApplicationNode({
+  siteUrl,
+  id: jsonLdId(url, 'software'),
+  name: pack.displayName,
+  url,
+  applicationCategory: 'DeveloperApplication',
+  applicationSubCategory: 'ComfyUI custom-node pack',
+  operatingSystem: 'Comfy Cloud (managed)',
+  description: pack.description || undefined,
+  image: pack.bannerUrl || pack.iconUrl,
+  softwareVersion: pack.latestVersion,
+  license: pack.license,
+  codeRepository: pack.repoUrl,
+  authorName: pack.publisher?.name,
+  isFree: true,
+})
 ---
 
 <BaseLayout
   title={title}
   description={metaDescription}
   ogImage={pack.bannerUrl}
-  jsonLd={jsonLd}
+  mainEntityId={jsonLdId(url, 'software')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    {
+      name: t('breadcrumb.supportedNodes', locale),
+      url: absoluteUrl(Astro.site, '/cloud/supported-nodes'),
+    },
+    { name: pack.displayName },
+  ]}
+  extraJsonLd={[software]}
 >
   <PackDetail pack={pack} />
 </BaseLayout>

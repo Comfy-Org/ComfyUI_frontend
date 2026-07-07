@@ -1,10 +1,6 @@
 import { externalLinks } from '../config/routes'
 import type { Locale } from '../i18n/translations'
 
-// Shared schema.org JSON-LD builders for the whole site. Pure data transforms
-// (no `astro:content` or Astro globals) so they are node-testable and stay
-// reusable when content moves from TS data files to a CMS.
-
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
 export interface JsonLdGraph {
@@ -28,8 +24,6 @@ export interface Crumb {
   url?: string
 }
 
-// Owner-controlled social profiles, single-sourced from the footer links so
-// `sameAs` can never drift from the real accounts.
 const sameAs = [
   externalLinks.github,
   externalLinks.x,
@@ -40,20 +34,15 @@ const sameAs = [
   externalLinks.linkedin
 ]
 
-// Normalizes Astro.site (a trailing-slash URL, or undefined) to a bare origin
-// the `@id`/URL builders can append paths to.
-export function siteUrlFrom(site: URL | undefined): string {
+function siteUrlFrom(site: URL | undefined): string {
   return (site?.href ?? 'https://comfy.org/').replace(/\/$/, '')
 }
 
-// Resolves a route path against the site origin so every page derives its
-// canonical URL and `@id`s from the same source.
 export function absoluteUrl(site: URL | undefined, path: string): string {
-  return new URL(path, site ?? 'https://comfy.org').href
+  const resolved = new URL(path, site ?? 'https://comfy.org').href
+  return resolved.endsWith('/') ? resolved : `${resolved}/`
 }
 
-// Adapts the Astro globals a page has on hand into the context the builders
-// need, so every page derives siteUrl, locale and canonical URL identically.
 export function pageContext(
   site: URL | undefined,
   pathname: string,
@@ -66,6 +55,10 @@ export function pageContext(
   }
 }
 
+export function jsonLdId(pageUrl: string, fragment: string): string {
+  return `${pageUrl}#${fragment}`
+}
+
 export function organizationId(siteUrl: string): string {
   return `${siteUrl}/#organization`
 }
@@ -74,31 +67,19 @@ function websiteId(siteUrl: string): string {
   return `${siteUrl}/#website`
 }
 
-function breadcrumbId(pageUrl: string): string {
-  return `${pageUrl}#breadcrumb`
-}
-
-function webPageId(pageUrl: string): string {
-  return `${pageUrl}#webpage`
-}
-
-export function buildGraph(
-  ...nodes: (JsonLdNode | null | undefined)[]
-): JsonLdGraph {
+function buildGraph(...nodes: (JsonLdNode | null | undefined)[]): JsonLdGraph {
   return {
     '@context': 'https://schema.org',
     '@graph': nodes.filter((node): node is JsonLdNode => Boolean(node))
   }
 }
 
-export function organizationNode(siteUrl: string): JsonLdNode {
+function organizationNode(siteUrl: string): JsonLdNode {
   return {
     '@type': 'Organization',
     '@id': organizationId(siteUrl),
     name: 'Comfy Org',
     url: siteUrl,
-    // Google Images does not index SVG for the logo property, so point at the
-    // raster app-manifest icon.
     logo: {
       '@type': 'ImageObject',
       url: `${siteUrl}/web-app-manifest-512x512.png`,
@@ -109,24 +90,21 @@ export function organizationNode(siteUrl: string): JsonLdNode {
   }
 }
 
-export function websiteNode(siteUrl: string, locale: Locale): JsonLdNode {
+function websiteNode(siteUrl: string): JsonLdNode {
   return {
     '@type': 'WebSite',
     '@id': websiteId(siteUrl),
     name: 'Comfy',
     url: siteUrl,
-    publisher: { '@id': organizationId(siteUrl) },
-    inLanguage: locale
+    publisher: { '@id': organizationId(siteUrl) }
   }
 }
 
-export function breadcrumbNode(pageUrl: string, crumbs: Crumb[]): JsonLdNode {
+function breadcrumbNode(pageUrl: string, crumbs: Crumb[]): JsonLdNode {
   return {
     '@type': 'BreadcrumbList',
-    '@id': breadcrumbId(pageUrl),
+    '@id': jsonLdId(pageUrl, 'breadcrumb'),
     itemListElement: crumbs.map((crumb, index) => {
-      // Google reads the current page URL for the final crumb, so its `item`
-      // is intentionally omitted.
       const isLast = index === crumbs.length - 1
       return isLast || !crumb.url
         ? { '@type': 'ListItem', position: index + 1, name: crumb.name }
@@ -142,21 +120,24 @@ export function breadcrumbNode(pageUrl: string, crumbs: Crumb[]): JsonLdNode {
 
 export function itemListNode(
   pageUrl: string,
-  items: { url: string; name: string }[]
+  name: string,
+  items: { url: string; name?: string }[]
 ): JsonLdNode {
   return {
     '@type': 'ItemList',
-    '@id': `${pageUrl}#itemlist`,
+    '@id': jsonLdId(pageUrl, 'itemlist'),
+    name,
+    numberOfItems: items.length,
     itemListElement: items.map((item, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       url: item.url,
-      name: item.name
+      ...(item.name ? { name: item.name } : {})
     }))
   }
 }
 
-export interface WebPageInput {
+interface WebPageInput {
   siteUrl: string
   locale: Locale
   url: string
@@ -167,14 +148,11 @@ export interface WebPageInput {
   mainEntityId?: string
 }
 
-export function webPageNode(
-  input: WebPageInput,
-  type: WebPageType = 'WebPage'
-): JsonLdNode {
+function webPageNode(input: WebPageInput, type: WebPageType): JsonLdNode {
   const hasCrumbs = Boolean(input.crumbs && input.crumbs.length > 0)
   return {
     '@type': type,
-    '@id': webPageId(input.url),
+    '@id': jsonLdId(input.url, 'webpage'),
     url: input.url,
     name: input.name,
     description: input.description,
@@ -182,7 +160,9 @@ export function webPageNode(
     primaryImageOfPage: input.imageUrl
       ? { '@type': 'ImageObject', url: input.imageUrl }
       : undefined,
-    breadcrumb: hasCrumbs ? { '@id': breadcrumbId(input.url) } : undefined,
+    breadcrumb: hasCrumbs
+      ? { '@id': jsonLdId(input.url, 'breadcrumb') }
+      : undefined,
     mainEntity: input.mainEntityId ? { '@id': input.mainEntityId } : undefined,
     inLanguage: input.locale
   }
@@ -194,8 +174,6 @@ export interface SoftwareAppInput {
   name: string
   url: string
   applicationCategory: string
-  // Set only for Comfy Org's own software (ComfyUI). Third-party packs and
-  // listed models must not claim Comfy Org as author or publisher.
   firstParty?: boolean
   applicationSubCategory?: string
   description?: string
@@ -230,32 +208,52 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     codeRepository: input.codeRepository,
     author,
     publisher: input.firstParty ? orgRef : undefined,
-    // Free/open-source is a true offer, unlike a fabricated price.
     offers: input.isFree
       ? { '@type': 'Offer', price: 0, priceCurrency: 'USD' }
       : undefined
   }
 }
 
-export interface SourceCodeInput {
+interface SourceCodeInput {
   siteUrl: string
   id: string
   name: string
   codeRepository: string
   programmingLanguage?: string
-  runtimePlatform?: string
 }
 
-export function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
+function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
   return {
     '@type': 'SoftwareSourceCode',
     '@id': input.id,
     name: input.name,
     codeRepository: input.codeRepository,
     programmingLanguage: input.programmingLanguage,
-    runtimePlatform: input.runtimePlatform,
     author: { '@id': organizationId(input.siteUrl) }
   }
+}
+
+export function comfyUiApplicationNode(siteUrl: string): JsonLdNode {
+  return softwareApplicationNode({
+    siteUrl,
+    id: `${siteUrl}/#software`,
+    name: 'ComfyUI',
+    url: siteUrl,
+    firstParty: true,
+    applicationCategory: 'MultimediaApplication',
+    operatingSystem: 'Windows, macOS, Linux',
+    isFree: true
+  })
+}
+
+export function comfyUiSourceCodeNode(siteUrl: string): JsonLdNode {
+  return softwareSourceCodeNode({
+    siteUrl,
+    id: `${siteUrl}/#sourcecode`,
+    name: 'ComfyUI',
+    codeRepository: externalLinks.github,
+    programmingLanguage: 'Python'
+  })
 }
 
 interface OfferInput {
@@ -269,7 +267,6 @@ export interface ProductInput {
   id: string
   name: string
   url: string
-  description?: string
   offers: OfferInput[]
 }
 
@@ -279,7 +276,6 @@ export function productNode(input: ProductInput): JsonLdNode {
     '@id': input.id,
     name: input.name,
     url: input.url,
-    description: input.description,
     brand: { '@id': organizationId(input.siteUrl) },
     offers: input.offers.map((offer) => ({
       '@type': 'Offer',
@@ -297,12 +293,19 @@ export function productNode(input: ProductInput): JsonLdNode {
   }
 }
 
-// The DRY entry point every page uses: prepends the site-wide Organization and
-// WebSite, adds the page's primary WebPage entity plus an optional breadcrumb,
-// then layers on any page-specific nodes (Article, Product, VideoObject, ...).
+export interface PageGraphInput {
+  url: string
+  name: string
+  type?: WebPageType
+  description?: string
+  imageUrl?: string
+  crumbs?: Crumb[]
+  mainEntityId?: string
+}
+
 export function buildPageGraph(
   ctx: PageContext,
-  page: Omit<WebPageInput, 'siteUrl' | 'locale'> & { type?: WebPageType },
+  page: PageGraphInput,
   ...extraNodes: (JsonLdNode | null | undefined)[]
 ): JsonLdGraph {
   const { type = 'WebPage', ...rest } = page
@@ -314,9 +317,34 @@ export function buildPageGraph(
   const hasCrumbs = Boolean(page.crumbs && page.crumbs.length > 0)
   return buildGraph(
     organizationNode(ctx.siteUrl),
-    websiteNode(ctx.siteUrl, ctx.locale),
+    websiteNode(ctx.siteUrl),
     webPageNode(input, type),
     hasCrumbs ? breadcrumbNode(page.url, page.crumbs!) : undefined,
     ...extraNodes
   )
+}
+
+export function collectGraphIds(value: unknown): {
+  defined: Set<string>
+  references: string[]
+} {
+  const defined = new Set<string>()
+  const references: string[] = []
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(walk)
+      return
+    }
+    if (node && typeof node === 'object') {
+      const record = node as Record<string, unknown>
+      const id = record['@id']
+      if (typeof id === 'string') {
+        if (Object.keys(record).length === 1) references.push(id)
+        else defined.add(id)
+      }
+      Object.values(record).forEach(walk)
+    }
+  }
+  walk(value)
+  return { defined, references }
 }

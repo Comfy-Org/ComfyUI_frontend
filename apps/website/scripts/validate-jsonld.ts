@@ -1,19 +1,7 @@
-/**
- * Structural validator for the JSON-LD embedded in the built site.
- *
- * Runs over `dist/` after `astro build` and fails the build when structured
- * data is malformed or dishonest, so a broken `@id` graph or a fabricated
- * rating can never ship unnoticed. Checks:
- *   1. Every `application/ld+json` block is valid JSON.
- *   2. Every bare `{ "@id": ... }` reference resolves to a node that defines
- *      that `@id` on the same page.
- *   3. No `Review` / `AggregateRating` (self-serving ratings are a Google
- *      structured-data policy violation).
- *   4. Every `Offer` carries a `priceCurrency` and a concrete `price` (a real
- *      offer, never a fabricated or empty one).
- */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+
+import { collectGraphIds } from '../src/utils/jsonLd'
 
 const DIST_DIR = join(process.cwd(), 'dist')
 const JSON_LD_BLOCK =
@@ -34,29 +22,55 @@ function htmlFiles(dir: string): string[] {
 function typesOf(node: Record<string, unknown>): string[] {
   const type = node['@type']
   if (typeof type === 'string') return [type]
-  if (Array.isArray(type))
+  if (Array.isArray(type)) {
     return type.filter((t): t is string => typeof t === 'string')
+  }
   return []
 }
 
-function isReference(node: Record<string, unknown>): boolean {
-  const keys = Object.keys(node)
-  return keys.length === 1 && keys[0] === '@id'
+function hasValidPrice(node: Record<string, unknown>): boolean {
+  const price = node.price
+  const priceStr = price == null ? '' : String(price).trim()
+  return priceStr !== '' && !Number.isNaN(Number(priceStr))
 }
 
-function walkObjects(
+function checkHonesty(
   value: unknown,
-  visit: (node: Record<string, unknown>) => void
+  file: string,
+  violations: Violation[]
 ): void {
-  if (Array.isArray(value)) {
-    value.forEach((item) => walkObjects(item, visit))
-    return
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(walk)
+      return
+    }
+    if (!node || typeof node !== 'object') return
+    const record = node as Record<string, unknown>
+    const types = typesOf(record)
+    if (types.includes('Review') || types.includes('AggregateRating')) {
+      violations.push({
+        file,
+        message: `dishonest node type ${types.join('/')}`
+      })
+    }
+    if ('aggregateRating' in record || 'review' in record) {
+      violations.push({
+        file,
+        message: 'node carries a review/aggregateRating'
+      })
+    }
+    if (
+      types.includes('Offer') &&
+      (!hasValidPrice(record) || !record.priceCurrency)
+    ) {
+      violations.push({
+        file,
+        message: 'Offer missing priceCurrency or a concrete price'
+      })
+    }
+    Object.values(record).forEach(walk)
   }
-  if (value && typeof value === 'object') {
-    const node = value as Record<string, unknown>
-    visit(node)
-    Object.values(node).forEach((child) => walkObjects(child, visit))
-  }
+  walk(value)
 }
 
 function validateFile(file: string): Violation[] {
@@ -73,37 +87,10 @@ function validateFile(file: string): Violation[] {
       violations.push({ file, message: `invalid JSON-LD: ${String(error)}` })
       continue
     }
-
-    walkObjects(parsed, (node) => {
-      const id = node['@id']
-      if (typeof id === 'string') {
-        if (isReference(node)) referencedIds.push(id)
-        else definedIds.add(id)
-      }
-
-      const types = typesOf(node)
-      if (types.includes('Review') || types.includes('AggregateRating')) {
-        violations.push({
-          file,
-          message: `dishonest node type ${types.join('/')}`
-        })
-      }
-      if ('aggregateRating' in node || 'review' in node) {
-        violations.push({
-          file,
-          message: 'node carries a review/aggregateRating'
-        })
-      }
-      if (types.includes('Offer')) {
-        const hasPrice = node.price !== undefined && node.price !== null
-        if (!hasPrice || !node.priceCurrency) {
-          violations.push({
-            file,
-            message: 'Offer missing price or priceCurrency'
-          })
-        }
-      }
-    })
+    checkHonesty(parsed, file, violations)
+    const { defined, references } = collectGraphIds(parsed)
+    defined.forEach((id) => definedIds.add(id))
+    referencedIds.push(...references)
   }
 
   for (const id of referencedIds) {
@@ -117,8 +104,15 @@ function validateFile(file: string): Violation[] {
 
 function main(): void {
   const files = htmlFiles(DIST_DIR)
-  const violations = files.flatMap(validateFile)
 
+  if (files.length === 0) {
+    console.error(
+      `JSON-LD validation found no HTML in ${DIST_DIR} — build first.`
+    )
+    process.exit(1)
+  }
+
+  const violations = files.flatMap(validateFile)
   if (violations.length > 0) {
     console.error(`JSON-LD validation failed (${violations.length} issue(s)):`)
     for (const { file, message } of violations) {

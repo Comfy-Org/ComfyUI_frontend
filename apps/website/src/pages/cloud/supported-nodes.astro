@@ -6,8 +6,8 @@ import { t } from '../../i18n/translations'
 import { loadPacksForBuild } from '../../utils/cloudNodes.build'
 import {
   absoluteUrl,
-  buildPageGraph,
   itemListNode,
+  jsonLdId,
   pageContext,
 } from '../../utils/jsonLd'
 
@@ -15,37 +15,33 @@ const packs = await loadPacksForBuild()
 
 const title = t('cloudNodes.meta.title', 'en')
 const description = t('cloudNodes.meta.description', 'en')
-const { siteUrl, locale, url } = pageContext(
+const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const listId = `${url}#itemlist`
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: title,
-    description,
-    type: 'CollectionPage',
-    mainEntityId: listId,
-    crumbs: [
-      { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-      { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
-      { name: 'Supported Nodes' },
-    ],
-  },
-  itemListNode(
-    url,
-    packs.map((pack) => ({
-      name: pack.displayName,
-      url: absoluteUrl(Astro.site, `/cloud/supported-nodes/${pack.id}`),
-    })),
-  ),
+const packList = itemListNode(
+  url,
+  title,
+  packs.map((pack) => ({
+    name: pack.displayName,
+    url: absoluteUrl(Astro.site, `/cloud/supported-nodes/${pack.id}`),
+  })),
 )
 ---
 
-<BaseLayout title={title} description={description} jsonLd={jsonLd}>
+<BaseLayout
+  title={title}
+  description={description}
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    { name: t('breadcrumb.supportedNodes', locale) },
+  ]}
+  extraJsonLd={[packList]}
+>
   <HeroSection client:visible />
   <PackGridSection packs={packs} client:visible />
 </BaseLayout>

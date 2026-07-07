@@ -3,35 +3,24 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import FormSection from '../components/contact/FormSection.vue'
 import SocialProofBarSection from '../components/common/SocialProofBarSection.vue'
 import { t } from '../i18n/translations'
-import {
-  absoluteUrl,
-  buildPageGraph,
-  organizationId,
-  pageContext,
-} from '../utils/jsonLd'
+import { absoluteUrl, organizationId, pageContext } from '../utils/jsonLd'
 
-const title = 'Contact — Comfy'
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: title,
-    type: 'ContactPage',
-    mainEntityId: organizationId(siteUrl),
-    crumbs: [
-      { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-      { name: 'Contact' },
-    ],
-  },
-)
 ---
 
-<BaseLayout title={title} jsonLd={jsonLd}>
+<BaseLayout
+  title="Contact — Comfy"
+  pageType="ContactPage"
+  mainEntityId={organizationId(siteUrl)}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.contact', locale) },
+  ]}
+>
   <FormSection client:load />
   <SocialProofBarSection />
 </BaseLayout>

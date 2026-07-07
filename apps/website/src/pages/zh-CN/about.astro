@@ -6,35 +6,28 @@ import OurValuesSection from '../../components/about/OurValuesSection.vue'
 import ValuesSection from '../../components/about/ValuesSection.vue'
 import CareersSection from '../../components/about/CareersSection.vue'
 import { t } from '../../i18n/translations'
-import {
-  absoluteUrl,
-  buildPageGraph,
-  organizationId,
-  pageContext,
-} from '../../utils/jsonLd'
+import { absoluteUrl, organizationId, pageContext } from '../../utils/jsonLd'
 
-const title = '关于我们 — Comfy'
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: title,
-    type: 'AboutPage',
-    mainEntityId: organizationId(siteUrl),
-    crumbs: [
-      { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-      { name: '关于我们' },
-    ],
-  },
-)
 ---
 
-<BaseLayout title={title} description="了解 ComfyUI 背后的团队和使命——开源的生成式 AI 平台。" jsonLd={jsonLd}>
+<BaseLayout
+  title="关于我们 — Comfy"
+  description="了解 ComfyUI 背后的团队和使命——开源的生成式 AI 平台。"
+  pageType="AboutPage"
+  mainEntityId={organizationId(siteUrl)}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN'),
+    },
+    { name: t('breadcrumb.about', locale) },
+  ]}
+>
   <HeroSection locale="zh-CN" client:load />
   <StorySection locale="zh-CN" />
   <OurValuesSection locale="zh-CN" />

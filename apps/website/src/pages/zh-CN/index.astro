@@ -9,49 +9,24 @@ import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightS
 import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import BuildWhatSection from '../../components/home/BuildWhatSection.vue'
 import { t } from '../../i18n/translations'
-import { externalLinks } from '../../config/routes'
 import {
-  buildPageGraph,
+  comfyUiApplicationNode,
+  comfyUiSourceCodeNode,
   pageContext,
-  softwareApplicationNode,
-  softwareSourceCodeNode,
 } from '../../utils/jsonLd'
 
-const title = 'Comfy — 视觉 AI 的最强可控性'
-const description = t('hero.subtitle', 'zh-CN')
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  { url, name: title, description },
-  softwareApplicationNode({
-    siteUrl,
-    id: `${siteUrl}/#software`,
-    name: 'ComfyUI',
-    url: siteUrl,
-    firstParty: true,
-    applicationCategory: 'MultimediaApplication',
-    operatingSystem: 'Windows, macOS, Linux',
-    description,
-    isFree: true,
-  }),
-  softwareSourceCodeNode({
-    siteUrl,
-    id: `${siteUrl}/#sourcecode`,
-    name: 'ComfyUI',
-    codeRepository: externalLinks.github,
-    programmingLanguage: 'Python',
-  }),
-)
 ---
 
 <BaseLayout
-  title={title}
-  description={description}
-  jsonLd={jsonLd}
+  title="Comfy — 视觉 AI 的最强可控性"
+  description={t('hero.subtitle', 'zh-CN')}
+  mainEntityId={`${siteUrl}/#software`}
+  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
 >
   <HeroSection locale="zh-CN" client:load />

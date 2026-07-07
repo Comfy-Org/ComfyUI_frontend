@@ -10,7 +10,7 @@ import { t } from '../../../i18n/translations'
 import type { JsonLdNode } from '../../../utils/jsonLd'
 import {
   absoluteUrl,
-  buildPageGraph,
+  jsonLdId,
   organizationId,
   pageContext,
 } from '../../../utils/jsonLd'
@@ -38,52 +38,41 @@ const educationalLevel =
     : demo.difficulty === 'intermediate'
       ? 'Intermediate'
       : 'Advanced'
-// The demos are interactive Arcade walkthroughs, so LearningResource models
-// them more honestly than the (now retired) HowTo rich result.
 const learningResource: JsonLdNode = {
   '@type': 'LearningResource',
-  '@id': `${url}#learning`,
+  '@id': jsonLdId(url, 'learning'),
   name: title,
   description,
   url,
+  image: new URL(demo.ogImage, Astro.site).href,
   learningResourceType: 'interactive tutorial',
   interactivityType: 'active',
   educationalLevel,
   timeRequired: demo.durationIso,
   datePublished: demo.publishedDate,
   dateModified: demo.modifiedDate,
-  isPartOf: { '@id': `${url}#webpage` },
+  isPartOf: { '@id': jsonLdId(url, 'webpage') },
   author: { '@id': organizationId(siteUrl) },
 }
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: title,
-    description,
-    imageUrl: absoluteUrl(Astro.site, demo.ogImage),
-    mainEntityId: `${url}#learning`,
-    crumbs: [
-      {
-        name: t('demos.breadcrumb.home', 'zh-CN'),
-        url: absoluteUrl(Astro.site, '/zh-CN'),
-      },
-      {
-        name: t('demos.breadcrumb.demos', 'zh-CN'),
-        url: absoluteUrl(Astro.site, '/zh-CN/demos'),
-      },
-      { name: title },
-    ],
-  },
-  learningResource,
-)
 ---
 
 <BaseLayout
   title={`${title} — Comfy`}
   description={description}
   ogImage={demo.ogImage}
-  jsonLd={jsonLd}
+  mainEntityId={jsonLdId(url, 'learning')}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN'),
+    },
+    {
+      name: t('demos.breadcrumb.demos', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN/demos'),
+    },
+    { name: title },
+  ]}
+  extraJsonLd={[learningResource]}
 >
   <Fragment slot="head">
     <meta property="article:published_time" content={demo.publishedDate} />

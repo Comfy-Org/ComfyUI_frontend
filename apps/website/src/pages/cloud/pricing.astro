@@ -2,53 +2,41 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import PriceSection from '../../components/pricing/PriceSection.vue'
 import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
-import { externalLinks } from '../../config/routes'
+import { pricingOffers } from '../../config/pricing'
 import { t } from '../../i18n/translations'
 import {
   absoluteUrl,
-  buildPageGraph,
+  jsonLdId,
   pageContext,
   productNode,
 } from '../../utils/jsonLd'
 
-const title = 'Pricing — Comfy Cloud'
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
-
-// Only the tiers actually rendered on the page (the free tier is flag-hidden),
-// single-sourced from the same translations the cards display.
-const tiers = [
-  { slug: 'standard', label: 'pricing.plan.standard.label', price: 'pricing.plan.standard.price' },
-  { slug: 'creator', label: 'pricing.plan.creator.label', price: 'pricing.plan.creator.price' },
-  { slug: 'pro', label: 'pricing.plan.pro.label', price: 'pricing.plan.pro.price' },
-] as const
-const offers = tiers.map((tier) => ({
-  name: t(tier.label, locale),
-  price: t(tier.price, locale).replace(/[^0-9.]/g, ''),
-  url: `${externalLinks.cloud}/cloud/subscribe?tier=${tier.slug}&cycle=monthly`,
-}))
-
-const productId = `${url}#product`
-const jsonLd = buildPageGraph(
-  { siteUrl, locale },
-  {
-    url,
-    name: title,
-    mainEntityId: productId,
-    crumbs: [
-      { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-      { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
-      { name: 'Pricing' },
-    ],
-  },
-  productNode({ siteUrl, id: productId, name: 'Comfy Cloud', url, offers }),
-)
+const productId = jsonLdId(url, 'product')
 ---
 
-<BaseLayout title={title} jsonLd={jsonLd}>
+<BaseLayout
+  title="Pricing — Comfy Cloud"
+  mainEntityId={productId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    { name: t('breadcrumb.pricing', locale) },
+  ]}
+  extraJsonLd={[
+    productNode({
+      siteUrl,
+      id: productId,
+      name: 'Comfy Cloud',
+      url,
+      offers: pricingOffers(locale),
+    }),
+  ]}
+>
   <PriceSection client:load />
   <WhatsIncludedSection />
 </BaseLayout>

@@ -6,8 +6,8 @@ import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
-import { buildPageGraph, siteUrlFrom } from '../utils/jsonLd'
-import type { JsonLdGraph as JsonLdGraphData } from '../utils/jsonLd'
+import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
@@ -16,8 +16,10 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   noindex?: boolean
-  includeDefaultJsonLd?: boolean
-  jsonLd?: JsonLdGraphData
+  pageType?: WebPageType
+  breadcrumbs?: Crumb[]
+  mainEntityId?: string
+  extraJsonLd?: (JsonLdNode | null | undefined)[]
 }
 
 const {
@@ -26,40 +28,42 @@ const {
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
-  // Set false only on pages that should emit no structured data at all.
-  includeDefaultJsonLd = true,
-  // Pages with a richer primary entity pass their own connected @graph, built
-  // from the shared jsonLd helpers, to override the baseline WebPage graph.
-  jsonLd,
+  pageType,
+  breadcrumbs,
+  mainEntityId,
+  extraJsonLd,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
-const siteBase = Astro.site ?? 'https://comfy.org'
-const canonicalURL = new URL(Astro.url.pathname, siteBase)
-const ogImageURL = new URL(ogImage, siteBase)
-const rawLocale = Astro.currentLocale ?? 'en'
-const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const canonicalURL = new URL(url)
+const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
-const siteUrl = siteUrlFrom(Astro.site)
-// Every page gets a baseline Organization + WebSite + WebPage graph unless it
-// supplies its own via the jsonLd prop.
-const structuredData =
-  jsonLd ??
-  buildPageGraph(
-    { siteUrl, locale },
-    {
-      url: canonicalURL.href,
-      name: title,
-      description,
-      imageUrl: ogImageURL.href,
-    },
-  )
+const structuredData = noindex
+  ? undefined
+  : buildPageGraph(
+      { siteUrl, locale },
+      {
+        url,
+        name: title,
+        description,
+        imageUrl: ogImageURL.href,
+        type: pageType,
+        crumbs: breadcrumbs,
+        mainEntityId,
+      },
+      ...(extraJsonLd ?? []),
+    )
 ---
 
 <!doctype html>
@@ -101,7 +105,7 @@ const structuredData =
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    {includeDefaultJsonLd && <JsonLdGraph graph={structuredData} />}
+    {structuredData && <JsonLdGraph graph={structuredData} />}
     <slot name="head" />
 
     <!-- Google Tag Manager -->
