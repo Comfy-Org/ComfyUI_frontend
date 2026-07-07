@@ -2843,6 +2843,7 @@
   },
   "workspacePanel": {
     "doubleClickToRename": "Double-click to rename",
+    "editWorkspaceImage": "Edit workspace image",
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",

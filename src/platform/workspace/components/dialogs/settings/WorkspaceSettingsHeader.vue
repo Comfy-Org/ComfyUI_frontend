@@ -1,9 +1,28 @@
 <template>
   <div class="flex min-w-0 items-center gap-4">
-    <WorkspaceProfilePic
-      class="size-12 rounded-lg text-2xl"
-      :workspace-name="workspaceName"
-    />
+    <div class="group relative size-12 shrink-0">
+      <WorkspaceProfilePic
+        class="size-12 rounded-lg text-2xl"
+        :workspace-name="workspaceName"
+        :image-url="imageUrl ?? undefined"
+      />
+      <button
+        v-if="canEdit"
+        type="button"
+        class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg border-none bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+        :aria-label="$t('workspacePanel.editWorkspaceImage')"
+        @click="pickImage"
+      >
+        <i class="icon-[lucide--pencil] size-4 text-white" />
+      </button>
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        @change="onFileChange"
+      />
+    </div>
     <input
       v-if="isEditing"
       ref="inputRef"
@@ -58,6 +77,27 @@ const canEdit = computed(() => uiConfig.value.showEditWorkspaceMenuItem)
 const isEditing = ref(false)
 const draftName = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
+
+// Client-side only preview (prototype): the picked image is held locally, not
+// uploaded or persisted. Resets on reload.
+const imageUrl = ref<string | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
+function pickImage() {
+  fileInputRef.value?.click()
+}
+
+function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    imageUrl.value = reader.result as string
+  }
+  reader.readAsDataURL(file)
+}
 
 function startEditing() {
   if (!canEdit.value) return

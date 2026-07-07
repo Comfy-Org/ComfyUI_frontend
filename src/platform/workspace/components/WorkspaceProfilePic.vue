@@ -2,16 +2,19 @@
   <div
     :class="
       cn(
-        'flex aspect-square size-8 items-center justify-center rounded-md text-base font-semibold text-white',
+        'flex aspect-square size-8 items-center justify-center overflow-hidden rounded-md text-base font-semibold text-white',
         $attrs.class as string
       )
     "
-    :style="{
-      background: gradient,
-      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
-    }"
+    :style="imageUrl ? undefined : { background: gradient, textShadow }"
   >
-    {{ letter }}
+    <img
+      v-if="imageUrl"
+      :src="imageUrl"
+      alt=""
+      class="size-full object-cover"
+    />
+    <template v-else>{{ letter }}</template>
   </div>
 </template>
 
@@ -22,9 +25,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
 
-const { workspaceName } = defineProps<{
+const { workspaceName, imageUrl } = defineProps<{
   workspaceName: string
+  imageUrl?: string
 }>()
+
+const textShadow = '0 1px 2px rgba(0, 0, 0, 0.2)'
 
 const letter = computed(() => workspaceName?.charAt(0)?.toUpperCase() ?? '?')
 
