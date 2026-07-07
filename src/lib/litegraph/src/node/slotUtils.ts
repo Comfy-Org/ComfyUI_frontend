@@ -1,3 +1,4 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IWidgetInputSlot,
   SharedIntersection
@@ -8,6 +9,7 @@ import type {
   INodeSlot,
   IWidget
 } from '@/lib/litegraph/src/litegraph'
+import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput
@@ -63,18 +65,21 @@ export function inputAsSerialisable(
 }
 
 export function outputAsSerialisable(
-  slot: INodeOutputSlot & { widget?: IWidget }
+  slot: INodeOutputSlot & { widget?: IWidget },
+  node: LGraphNode,
+  slotIndex: number
 ): ISerialisableNodeOutput {
-  const { pos, slot_index, links, widget } = slot
+  const { pos, slot_index, widget } = slot
   // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
   const outputWidget = widget ? { widget: { name: widget.name } } : null
+  const ids = node.graph ? outputLinkIds(node.graph, node.id, slotIndex) : []
 
   return {
     ...shallowCloneCommonProps(slot),
     ...outputWidget,
     pos,
     slot_index,
-    links: links ? [...links] : links
+    links: ids.length ? ids : null
   }
 }
 

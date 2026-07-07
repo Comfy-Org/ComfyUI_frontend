@@ -33,6 +33,7 @@ import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink, slotFloatingLinks } from './LLink'
+import { outputHasLinks, outputLinks } from './node/slotLinks'
 import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
@@ -918,10 +919,11 @@ export class LGraphNode
       toClass(NodeOutputSlot, output, this)
     )
     for (const [i, output] of this.outputs.entries()) {
-      if (!output.links) continue
+      const serialisedLinks = info.outputs?.[i]?.links
+      if (!serialisedLinks) continue
 
-      for (const linkId of output.links) {
-        const link = this.graph ? this.graph._links.get(linkId) : null
+      for (const linkId of serialisedLinks) {
+        const link = this.graph ? this.graph._links.get(toLinkId(linkId)) : null
         this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
       }
       this.onOutputAdded?.(output)
@@ -993,8 +995,10 @@ export class LGraphNode
     if (this.inputs)
       o.inputs = this.inputs.map((input) => inputAsSerialisable(input))
     if (this.outputs)
-      // @ts-expect-error - Output serialization type mismatch
-      o.outputs = this.outputs.map((output) => outputAsSerialisable(output))
+      o.outputs = this.outputs.map((output, i) =>
+        // @ts-expect-error - Output serialization type mismatch
+        outputAsSerialisable(output, this, i)
+      )
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
 
@@ -1334,9 +1338,9 @@ export class LGraphNode
    * tells you if there is a connection in one output slot
    */
   isOutputConnected(slot: number): boolean {
-    if (!this.outputs) return false
+    if (!this.outputs || !this.graph) return false
     return (
-      slot < this.outputs.length && Number(this.outputs[slot].links?.length) > 0
+      slot < this.outputs.length && outputHasLinks(this.graph, this.id, slot)
     )
   }
 
@@ -1344,13 +1348,10 @@ export class LGraphNode
    * tells you if there is any connection in the output slots
    */
   isAnyOutputConnected(): boolean {
-    const { outputs } = this
-    if (!outputs) return false
+    const { outputs, graph } = this
+    if (!outputs || !graph) return false
 
-    for (const output of outputs) {
-      if (output.links?.length) return true
-    }
-    return false
+    return outputs.some((_, slot) => outputHasLinks(graph, this.id, slot))
   }
 
   /**
@@ -1361,19 +1362,16 @@ export class LGraphNode
     if (!outputs || outputs.length == 0) return null
 
     if (slot >= outputs.length) return null
+    if (!this.graph) return null
 
-    const { links } = outputs[slot]
-    if (!links || links.length == 0) return null
-    if (!this.graph) throw new NullGraphError()
+    const links = outputLinks(this.graph, this.id, slot)
+    if (links.length == 0) return null
 
     const r: LGraphNode[] = []
-    for (const id of links) {
-      const link = this.graph._links.get(id)
-      if (link) {
-        const target_node = this.graph.getNodeById(link.target_id)
-        if (target_node) {
-          r.push(target_node)
-        }
+    for (const link of links) {
+      const target_node = this.graph.getNodeById(link.target_id)
+      if (target_node) {
+        r.push(target_node)
       }
     }
     return r
@@ -1552,20 +1550,16 @@ export class LGraphNode
     const output = this.outputs[slot]
     if (!output) return
 
-    const links = output.links
-    if (!links || !links.length) return
-
     if (!this.graph) throw new NullGraphError()
+    const links = outputLinks(this.graph, this.id, slot)
+    if (!links.length) return
+
     this.graph._last_trigger_time = LiteGraph.getTime()
 
     // for every link attached here
-    for (const id of links) {
+    for (const link_info of links) {
       // to skip links
-      if (link_id != null && link_id != id) continue
-
-      const link_info = this.graph._links.get(id)
-      // not connected
-      if (!link_info) continue
+      if (link_id != null && link_id != link_info.id) continue
 
       link_info._last_time = LiteGraph.getTime()
       const node = this.graph.getNodeById(link_info.target_id)
@@ -1600,19 +1594,12 @@ export class LGraphNode
     const output = this.outputs[slot]
     if (!output) return
 
-    const links = output.links
-    if (!links || !links.length) return
-
     if (!this.graph) throw new NullGraphError()
 
     // for every link attached here
-    for (const id of links) {
+    for (const link_info of outputLinks(this.graph, this.id, slot)) {
       // to skip links
-      if (link_id != null && link_id != id) continue
-
-      const link_info = this.graph._links.get(id)
-      // not connected
-      if (!link_info) continue
+      if (link_id != null && link_id != link_info.id) continue
 
       link_info._last_time = 0
     }
@@ -1696,15 +1683,12 @@ export class LGraphNode
     const { outputs } = this
     outputs.splice(slot, 1)
 
-    for (let i = slot; i < outputs.length; ++i) {
-      const output = outputs[i]
-      if (!output || !output.links) continue
-
-      // Only update link indices if node is part of a graph
-      if (this.graph) {
-        for (const linkId of output.links) {
-          const link = this.graph._links.get(linkId)
-          if (link) link.origin_slot--
+    // Only update link indices if node is part of a graph. Ascending order:
+    // each decrement re-keys the link to an already-processed slot index.
+    if (this.graph) {
+      for (let oldSlot = slot + 1; oldSlot <= outputs.length; ++oldSlot) {
+        for (const link of outputLinks(this.graph, this.id, oldSlot)) {
+          link.origin_slot--
         }
       }
     }
@@ -2455,12 +2439,17 @@ export class LGraphNode
     if (!(length > 0)) return -1
 
     for (let i = 0; i < length; ++i) {
-      const slot: TSlot & IGenericLinkOrLinks = slots[i]
-      if (!slot || slot.link || slot.links?.length) continue
+      const slot: TSlot = slots[i]
+      if (!slot || this.#slotIsConnected(slot, i)) continue
       if (opts.typesNotAccepted?.includes?.(slot.type)) continue
       return !opts.returnObj ? i : slot
     }
     return -1
+  }
+
+  #slotIsConnected(slot: INodeInputSlot | INodeOutputSlot, index: number) {
+    if ('link' in slot) return slot.link != null
+    return this.graph ? outputHasLinks(this.graph, this.id, index) : false
   }
 
   /**
@@ -2619,7 +2608,7 @@ export class LGraphNode
           const dest = destType == '_event_' ? LiteGraph.EVENT : destType
 
           if (source == dest || source === '*' || dest === '*') {
-            if (preferFreeSlot && (slot.links?.length || slot.link != null)) {
+            if (preferFreeSlot && this.#slotIsConnected(slot, i)) {
               // In case we can't find a free slot.
               occupiedSlot ??= returnObj ? slot : i
               continue
@@ -2715,7 +2704,8 @@ export class LGraphNode
     return findFreeSlotOfType(
       this.outputs,
       type,
-      (output) => !output.links?.length
+      (_output, index) =>
+        !this.graph || !outputHasLinks(this.graph, this.id, index)
     )
   }
 
@@ -2913,7 +2903,7 @@ export class LGraphNode
 
     if (!output) return null
 
-    if (output.links?.length) {
+    if (outputHasLinks(graph, this.id, slot)) {
       if (
         output.type === LiteGraph.EVENT &&
         !LiteGraph.allow_multi_output_for_events
@@ -3130,12 +3120,9 @@ export class LGraphNode
       }
     }
 
-    if (!output.links || output.links.length == 0) return false
-    const { links } = output
-
-    // one of the output links in this slot
     const graph = this.graph
-    if (!graph) throw new NullGraphError()
+    if (!graph) return false
+    if (!outputHasLinks(graph, this.id, slot)) return false
 
     if (target_node) {
       const target =
@@ -3144,13 +3131,13 @@ export class LGraphNode
           : target_node
       if (!target) throw 'Target Node not found'
 
-      for (const [i, link_id] of links.entries()) {
-        const link_info = graph._links.get(link_id)
-        if (link_info?.target_id != target.id) continue
+      for (const link_info of outputLinks(graph, this.id, slot)) {
+        if (link_info.target_id != target.id) continue
 
         // is the link we are searching for...
         // remove here
-        links.splice(i, 1)
+        const mirrorIndex = output.links?.indexOf(link_info.id) ?? -1
+        if (mirrorIndex !== -1) output.links!.splice(mirrorIndex, 1)
         const input = target.inputs[link_info.target_slot]
         // remove there
         input.link = null
@@ -3179,9 +3166,7 @@ export class LGraphNode
       }
     } else {
       // all the links in this output slot
-      for (const link_id of links) {
-        const link_info = graph._links.get(link_id)
-        if (!link_info) continue
+      for (const link_info of outputLinks(graph, this.id, slot)) {
         if (
           link_info.target_id === SUBGRAPH_OUTPUT_ID &&
           graph instanceof Subgraph
@@ -3296,19 +3281,14 @@ export class LGraphNode
         }
 
         const output = target_node.outputs[link_info.origin_slot]
-        if (!output?.links?.length) {
+        if (!output) {
           // Output not found - may have been removed
           return false
         }
 
-        // search in the inputs list for this link
-        let i = 0
-        for (const l = output.links.length; i < l; i++) {
-          if (output.links[i] == link_id) {
-            output.links.splice(i, 1)
-            break
-          }
-        }
+        // remove the mirror entry on the origin output
+        const mirrorIndex = output.links?.indexOf(link_id) ?? -1
+        if (mirrorIndex !== -1) output.links!.splice(mirrorIndex, 1)
 
         link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
         if (graph) graph.incrementVersion()
@@ -3322,7 +3302,7 @@ export class LGraphNode
         )
         target_node.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
-          i,
+          link_info.origin_slot,
           false,
           link_info,
           output
@@ -3857,6 +3837,7 @@ export class LGraphNode
     if (!graph) throw new NullGraphError()
 
     const { _links } = graph
+    const nodeId = this.id
     let madeAnyConnections = false
 
     // First pass: only match exactly index-to-index
@@ -3872,7 +3853,7 @@ export class LGraphNode
       const inNode = graph.getNodeById(inLink?.origin_id)
       if (!inNode) continue
 
-      bypassAllLinks(output, inNode, inLink, graph)
+      bypassAllLinks(index, inNode, inLink, graph)
     }
     // Configured to only use index-to-index matching
     if (!(this.flags.keepAllLinksOnBypass ?? LGraphNode.keepAllLinksOnBypass))
@@ -3887,25 +3868,23 @@ export class LGraphNode
       const inNode = graph.getNodeById(inLink?.origin_id)
       if (!inNode) continue
 
-      for (const output of outputs) {
+      for (const [outIndex, output] of outputs.entries()) {
         if (!LiteGraph.isValidConnection(input.type, output.type)) continue
 
-        bypassAllLinks(output, inNode, inLink, graph)
+        bypassAllLinks(outIndex, inNode, inLink, graph)
         break
       }
     }
     return madeAnyConnections
 
     function bypassAllLinks(
-      output: INodeOutputSlot,
+      outputIndex: number,
       inNode: LGraphNode,
       inLink: LLink,
       graph: LGraph
     ) {
-      const outLinks = output.links
-        ?.map((x) => _links.get(x))
-        .filter((x) => !!x)
-      if (!outLinks?.length) return
+      const outLinks = outputLinks(graph, nodeId, outputIndex)
+      if (!outLinks.length) return
 
       for (const outLink of outLinks) {
         const outNode = graph.getNodeById(outLink.target_id)
@@ -4008,7 +3987,7 @@ export class LGraphNode
       }
     }
     for (const slot of this._concreteOutputs) {
-      if (slot.links?.length) {
+      if (slot.isConnected) {
         slot.drawCollapsed(ctx)
         break
       }

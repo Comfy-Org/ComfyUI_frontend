@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  IWidget
 } from '@/lib/litegraph/src/litegraph'
 import {
+  LGraphNode,
   inputAsSerialisable,
   outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
@@ -22,8 +24,12 @@ describe('NodeSlot', () => {
         links: [],
         boundingRect
       }
-      // @ts-expect-error Argument type mismatch for test
-      const serialized = outputAsSerialisable(slot)
+      const node = new LGraphNode('test')
+      const serialized = outputAsSerialisable(
+        slot as INodeOutputSlot & { widget?: IWidget },
+        node,
+        0
+      )
       expect(serialized).not.toHaveProperty('_data')
     })
 

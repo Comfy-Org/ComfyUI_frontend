@@ -175,9 +175,8 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(toLinkId(1), slotType, 1, 0, 2, 0)
-      network.links.set(link.id, link)
-      sourceNode.outputs[0].links = [link.id]
+      const link = sourceNode.connect(0, targetNode, 0)!
+      expect(link).toBeTruthy()
 
       connector.moveOutputLink(network, sourceNode, sourceNode.outputs[0])
 

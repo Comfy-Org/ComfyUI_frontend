@@ -10,6 +10,10 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
+import {
+  outputHasLinks,
+  outputLinkIds
+} from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -55,7 +59,13 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override get isConnected(): boolean {
-    return this.links != null && this.links.length > 0
+    const { graph } = this._node
+    if (!graph) return false
+    return outputHasLinks(
+      graph,
+      this._node.id,
+      this._node.outputs.indexOf(this)
+    )
   }
 
   override draw(
@@ -77,9 +87,13 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override toJSON(): INodeOutputSlot {
+    const { graph } = this._node
+    const ids = graph
+      ? outputLinkIds(graph, this._node.id, this._node.outputs.indexOf(this))
+      : []
     return {
       ...super.toJSON(),
-      links: this.links,
+      links: ids.length ? ids : null,
       slot_index: this.slot_index
     }
   }
