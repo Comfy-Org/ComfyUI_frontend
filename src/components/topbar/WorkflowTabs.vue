@@ -86,7 +86,7 @@
     >
       <motion.button
         type="button"
-        class="no-drag relative flex h-6 shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-sm border px-2 text-xs text-base-foreground transition-colors"
+        class="agent-ask-button no-drag relative flex h-6 shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-sm border px-2 text-xs text-base-foreground transition-colors"
         :class="
           cn(
             isAgentPanelOpen
@@ -101,6 +101,12 @@
         @click="agentPanelStore.toggle()"
       >
         <AgentShaderBackground />
+        <span
+          v-if="!agentReducedMotion"
+          aria-hidden="true"
+          class="agent-ask-button-shimmer pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300"
+          :style="agentShimmerStyle"
+        />
         <i
           class="relative z-10 icon-[comfy--comfy-c] size-3 text-brand-yellow"
         />
@@ -191,6 +197,12 @@ const {
   agentPersonality.idle,
   agentReducedMotion
 )
+
+const agentShimmerStyle = computed(() => ({
+  '--shimmer-duration': `${agentPersonality.shimmer.speed}s`,
+  '--shimmer-spread': `${agentPersonality.shimmer.spread}%`,
+  '--shimmer-opacity': agentPersonality.shimmer.opacity
+}))
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
@@ -460,5 +472,25 @@ onUpdated(() => {
   /* If we are using custom titlebar, then we need to add a gap for the user to drag the window */
   --window-actions-spacer-width: min(75px, env(titlebar-area-width, 0) * 9999);
   min-width: var(--window-actions-spacer-width);
+}
+
+.agent-ask-button-shimmer {
+  padding: 1px;
+  background-image: linear-gradient(
+    90deg,
+    transparent calc(50% - var(--shimmer-spread)),
+    var(--color-brand-yellow),
+    transparent calc(50% + var(--shimmer-spread))
+  );
+  background-size: 250% 100%;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: shimmer-sweep var(--shimmer-duration) linear infinite;
+}
+
+.agent-ask-button:hover .agent-ask-button-shimmer {
+  opacity: var(--shimmer-opacity);
 }
 </style>

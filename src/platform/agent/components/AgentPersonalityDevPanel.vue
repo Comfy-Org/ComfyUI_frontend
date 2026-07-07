@@ -26,6 +26,11 @@ const params = useDialKit(
     idle: {
       amplitude: [0.015, 0, 0.1, 0.001],
       period: [4, 1, 12, 0.1]
+    },
+    shimmer: {
+      speed: [1.8, 0.5, 5, 0.1],
+      spread: [20, 5, 50, 1],
+      opacity: [0.9, 0, 1, 0.01]
     }
   },
   { id: 'agent-personality', persist: true }
