@@ -51,114 +51,22 @@
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <!-- Credits tile -->
-        <div
-          class="flex flex-col gap-4 rounded-xl bg-modal-panel-background p-4"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-muted-foreground">
-              {{ $t('workspacePanel.overview.totalCredits') }}
-            </span>
-            <i class="icon-[lucide--refresh-cw] size-4 text-muted-foreground" />
-          </div>
-          <div class="flex items-baseline gap-2">
-            <i class="icon-[lucide--coins] size-5 text-warning-background" />
-            <span
-              class="text-3xl font-semibold text-base-foreground tabular-nums"
-            >
-              {{ credits.remaining.toLocaleString() }}
-            </span>
-            <span class="text-sm text-muted-foreground">
-              {{ $t('workspacePanel.overview.remaining') }}
-            </span>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-muted-foreground">
-                {{ $t('workspacePanel.overview.monthly') }}
-              </span>
-              <span class="text-muted-foreground">
-                {{
-                  $t('workspacePanel.overview.refills', {
-                    date: credits.refillLabel
-                  })
-                }}
-              </span>
-            </div>
-            <ProgressBar :value="monthlyProgress" />
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-muted-foreground tabular-nums">
-                {{
-                  $t('workspacePanel.overview.used', {
-                    count: credits.monthlyUsed.toLocaleString()
-                  })
-                }}
-              </span>
-              <span
-                class="flex items-center gap-1 text-base-foreground tabular-nums"
-              >
-                <i
-                  class="icon-[lucide--coins] size-4 text-warning-background"
-                />
-                {{
-                  $t('workspacePanel.overview.leftOf', {
-                    left: monthlyLeft.toLocaleString(),
-                    total: credits.monthlyTotal.toLocaleString()
-                  })
-                }}
-              </span>
-            </div>
-          </div>
-
-          <div class="h-px w-full bg-interface-stroke/60" />
-
-          <div class="flex items-start justify-between">
-            <div class="flex flex-col gap-0.5">
-              <span
-                class="flex items-center gap-1 text-sm text-muted-foreground"
-              >
-                {{ $t('workspacePanel.overview.additionalCredits') }}
-                <i class="icon-[lucide--info] size-3.5" />
-              </span>
-              <span class="text-sm text-muted-foreground">
-                {{ $t('workspacePanel.overview.usedAfterMonthly') }}
-              </span>
-            </div>
-            <span
-              class="flex items-center gap-1 text-sm text-base-foreground tabular-nums"
-            >
-              <i class="icon-[lucide--coins] size-4 text-warning-background" />
-              {{ credits.additional.toLocaleString() }}
-            </span>
-          </div>
-
-          <Button variant="secondary" size="lg" class="w-full">
-            {{ $t('workspacePanel.overview.addCredits') }}
-          </Button>
-        </div>
+        <CreditsTile class="border-0" />
 
         <!-- Member snapshot tile -->
         <div
           class="flex flex-col gap-3 rounded-xl bg-modal-panel-background p-4"
         >
-          <div class="flex items-center gap-4">
-            <button
-              v-for="tab in snapshotTabs"
-              :key="tab.key"
-              :class="
-                cn(
-                  'border-none bg-transparent p-0 text-sm',
-                  snapshotView === tab.key
-                    ? 'text-base-foreground'
-                    : 'cursor-pointer text-muted-foreground'
-                )
-              "
-              @click="snapshotView = tab.key"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
+          <Tabs v-model="snapshotView">
+            <TabsList>
+              <TabsTrigger value="top">
+                {{ $t('workspacePanel.overview.snapshot.topSpenders') }}
+              </TabsTrigger>
+              <TabsTrigger value="recent">
+                {{ $t('workspacePanel.overview.snapshot.recentActivity') }}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <div
             class="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 text-sm text-muted-foreground"
@@ -256,12 +164,14 @@ import type { MenuItem } from 'primevue/menuitem'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tabs from '@/components/ui/tabs/Tabs.vue'
+import TabsList from '@/components/ui/tabs/TabsList.vue'
+import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import ProgressBar from '@/platform/workspace/components/dialogs/settings/ProgressBar.vue'
+import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const emit = defineEmits<{ navigate: [view: 'activity' | 'invoices'] }>()
 
@@ -296,28 +206,10 @@ const planMenuEntries = computed<MenuItem[]>(() =>
     : []
 )
 
-const {
-  plan,
-  credits,
-  monthlyLeft,
-  monthlyProgress,
-  nextInvoiceCents,
-  topSpenders,
-  recentActivity
-} = useWorkspaceOverview()
+const { plan, nextInvoiceCents, topSpenders, recentActivity } =
+  useWorkspaceOverview()
 
-type SnapshotView = 'top' | 'recent'
-const snapshotView = ref<SnapshotView>('top')
-const snapshotTabs = computed(() => [
-  {
-    key: 'top' as const,
-    label: t('workspacePanel.overview.snapshot.topSpenders')
-  },
-  {
-    key: 'recent' as const,
-    label: t('workspacePanel.overview.snapshot.recentActivity')
-  }
-])
+const snapshotView = ref('top')
 const snapshotRows = computed(() =>
   snapshotView.value === 'top' ? topSpenders : recentActivity
 )

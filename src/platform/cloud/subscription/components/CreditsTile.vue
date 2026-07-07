@@ -1,6 +1,11 @@
 <template>
   <div
-    class="@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
+    :class="
+      cn(
+        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
+        customClass
+      )
+    "
   >
     <Button
       variant="muted-textonly"
@@ -19,7 +24,7 @@
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
-        <i class="icon-[lucide--component] size-4 self-center text-credit" />
+        <i class="icon-[lucide--coins] size-4 self-center text-credit" />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -81,7 +86,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
@@ -133,7 +138,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -177,6 +182,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
@@ -196,9 +202,10 @@ import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false } = defineProps<{
+const { zeroState = false, class: customClass } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
+  class?: HTMLAttributes['class']
 }>()
 
 const { locale, t } = useI18n()

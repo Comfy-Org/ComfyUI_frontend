@@ -1,5 +1,3 @@
-import { computed } from 'vue'
-
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 
 // Prototype mock for the Plan & Credits > Overview tab. There is no single
@@ -42,19 +40,6 @@ export function useWorkspaceOverview() {
     renewalLabel: 'Jan 20, 2026'
   }
 
-  const credits = {
-    remaining: 49450,
-    monthlyUsed: 7450,
-    monthlyTotal: 56900,
-    refillLabel: 'Feb 20',
-    additional: 0
-  }
-
-  const monthlyLeft = computed(() => credits.monthlyTotal - credits.monthlyUsed)
-  const monthlyProgress = computed(
-    () => credits.monthlyUsed / credits.monthlyTotal
-  )
-
   const nextInvoiceCents = 32000
 
   const topSpenders = toRows(TOP_SPENDERS)
@@ -62,9 +47,6 @@ export function useWorkspaceOverview() {
 
   return {
     plan,
-    credits,
-    monthlyLeft,
-    monthlyProgress,
     nextInvoiceCents,
     topSpenders,
     recentActivity
