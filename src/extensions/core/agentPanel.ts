@@ -51,7 +51,10 @@ useExtensionService().registerExtension({
       const posthog = (await import('posthog-js')).default
       const source = createPostHogFlagSource(posthog)
       const sync = (): void => {
-        const enabled = source.isEnabled()
+        // The dev server shows the panel without the PostHog flag (which is scoped to a cloud
+        // project the dev build may not read); test and production builds still gate on it.
+        const forceInDev = import.meta.env.MODE === 'development'
+        const enabled = forceInDev || source.isEnabled()
         if (enabled && !tabRegistered.value) {
           sidebarTabStore.registerSidebarTab({
             id: TAB_ID,
