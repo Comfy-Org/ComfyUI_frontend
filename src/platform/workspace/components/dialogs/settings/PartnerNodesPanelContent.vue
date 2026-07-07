@@ -1,7 +1,5 @@
 <template>
   <div class="flex size-full flex-col">
-    <WorkspaceSettingsHeader />
-
     <div class="grow overflow-auto">
       <div
         class="flex size-full flex-col gap-4 rounded-2xl border border-interface-stroke p-6"
@@ -162,7 +160,6 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
-import WorkspaceSettingsHeader from '@/platform/workspace/components/dialogs/settings/WorkspaceSettingsHeader.vue'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
 import { cn } from '@comfyorg/tailwind-utils'
 

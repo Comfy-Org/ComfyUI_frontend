@@ -48,6 +48,7 @@
         id="keybinding-panel-header"
         class="flex-1"
       />
+      <WorkspaceSettingsHeader v-else-if="isWorkspacePanel" />
     </template>
 
     <template #header-right-area>
@@ -93,6 +94,7 @@ import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
+import WorkspaceSettingsHeader from '@/platform/workspace/components/dialogs/settings/WorkspaceSettingsHeader.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
@@ -171,6 +173,17 @@ const activePanel = computed(() => {
   if (!activeCategoryKey.value) return null
   return findPanelByKey(activeCategoryKey.value)
 })
+
+const WORKSPACE_PANEL_KEYS = [
+  'workspace',
+  'workspace-members',
+  'workspace-partner-nodes'
+]
+const isWorkspacePanel = computed(
+  () =>
+    !!activeCategoryKey.value &&
+    WORKSPACE_PANEL_KEYS.includes(activeCategoryKey.value)
+)
 
 const getGroupSortOrder = (group: SettingTreeNode): number =>
   Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))
