@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-1 flex-col gap-4">
     <div class="flex w-full items-start gap-9">
       <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <span class="text-base font-semibold text-base-foreground">
+        <span class="text-base font-normal text-base-foreground">
           {{ $t('workspacePanel.partnerNodes.title') }}
         </span>
         <span class="text-sm text-muted-foreground">
@@ -37,7 +37,7 @@
       <Table class="min-h-0 flex-1 px-4">
         <TableHeader class="sticky top-0 z-10 bg-base-background">
           <TableRow
-            class="hover:bg-transparent [&>th]:border-b [&>th]:border-interface-stroke/60"
+            class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
           >
             <TableHead class="w-6">
               <Checkbox

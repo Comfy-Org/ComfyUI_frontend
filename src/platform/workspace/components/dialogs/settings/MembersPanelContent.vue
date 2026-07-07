@@ -3,7 +3,7 @@
     <!-- Section Header: above the card -->
     <div class="flex w-full items-center gap-9">
       <div class="flex min-w-0 flex-1 items-baseline gap-2">
-        <span class="text-base font-semibold text-base-foreground">
+        <span class="text-base font-normal text-base-foreground">
           <template v-if="activeView === 'active'">
             <template v-if="isOnTeamPlan && !isPersonalWorkspace">
               {{

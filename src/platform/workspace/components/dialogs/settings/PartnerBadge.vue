@@ -14,13 +14,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { partner } = defineProps<{ partner: string }>()
 
-// The comfy provider icons are monochrome (currentColor), so tint them with the
-// provider's brand color: a solid color via `color`, a gradient painted over the
-// icon mask via `background-image` (e.g. Anthropic coral, Kling teal gradient).
+// Monotone provider glyphs (Anthropic, BFL, …) render in currentColor, so tint
+// them with the brand color. Multi-color brands (ByteDance, Kling, Gemini, …)
+// ship full-color icons — identified by a gradient brand color — and must be
+// left untouched or the tint replaces their artwork.
 const iconStyle = computed(() => {
   const style = getProviderBorderStyle(partner)
-  return style.includes('gradient')
-    ? { backgroundImage: style }
-    : { color: style }
+  return style.includes('gradient') ? undefined : { color: style }
 })
 </script>
