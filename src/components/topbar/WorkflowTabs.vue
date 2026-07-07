@@ -100,7 +100,6 @@
         :aria-label="$t('agent.ask')"
         @click="agentPanelStore.toggle()"
       >
-        <AgentShaderBackground />
         <span
           v-if="!agentReducedMotion"
           aria-hidden="true"
@@ -155,7 +154,6 @@ import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import AgentShaderBackground from '@/platform/agent/components/AgentShaderBackground.vue'
 import { useAgentPersonality } from '@/platform/agent/composables/agentPersonalityState'
 import { useAgentHoverMotion } from '@/platform/agent/composables/useAgentHoverMotion'
 import { useAgentPanelStore } from '@/platform/agent/stores/agentPanelStore'
