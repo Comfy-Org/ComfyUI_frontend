@@ -12,12 +12,9 @@
             {{ inviteInitial }}
           </span>
         </span>
-        <div class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-sm text-base-foreground">{{ inviteName }}</span>
-          <span class="truncate text-sm text-muted-foreground">
-            {{ invite.email }}
-          </span>
-        </div>
+        <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+          {{ invite.email }}
+        </span>
       </div>
     </TableCell>
     <TableCell class="text-sm text-muted-foreground">
@@ -67,7 +64,6 @@ const emit = defineEmits<{
 
 const { t, d } = useI18n()
 
-const inviteName = computed(() => invite.email.split('@')[0])
 const inviteInitial = computed(() => invite.email.charAt(0).toUpperCase())
 
 const menuItems = computed<MenuItem[]>(() => [
