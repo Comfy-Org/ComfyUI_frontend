@@ -2,7 +2,7 @@
   <div class="flex size-full flex-col">
     <div class="grow overflow-auto">
       <div
-        class="flex size-full flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-6"
+        class="flex w-full flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-6"
       >
         <div class="flex w-full items-start gap-9">
           <div class="flex min-w-0 flex-1 flex-col gap-1">
@@ -115,21 +115,21 @@
         >
           {{ $t('workspacePanel.partnerNodes.empty') }}
         </p>
-
-        <!-- Footer default -->
-        <div
-          class="mt-auto flex items-center justify-end gap-2 border-t border-interface-stroke/60 pt-4 text-sm text-muted-foreground"
-        >
-          <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
-          <span class="text-base-foreground">
-            {{ $t('workspacePanel.partnerNodes.autoEnabled') }}
-          </span>
-          <Switch
-            :model-value="autoEnableNew"
-            @update:model-value="setAutoEnableNew"
-          />
-        </div>
       </div>
+    </div>
+
+    <!-- Auto-enable default: outside the card, pinned to the panel bottom -->
+    <div
+      class="flex items-center justify-end gap-2 pt-4 text-sm text-muted-foreground"
+    >
+      <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
+      <span class="text-base-foreground">
+        {{ $t('workspacePanel.partnerNodes.autoEnabled') }}
+      </span>
+      <Switch
+        :model-value="autoEnableNew"
+        @update:model-value="setAutoEnableNew"
+      />
     </div>
 
     <!-- Bulk selection toolbar -->

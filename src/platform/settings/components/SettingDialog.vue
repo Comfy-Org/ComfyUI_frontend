@@ -3,7 +3,7 @@
     content-title=""
     data-testid="settings-dialog"
     size="full"
-    :header-height-class="isWorkspacePanel ? 'h-24' : 'h-18'"
+    header-height-class="h-22"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
