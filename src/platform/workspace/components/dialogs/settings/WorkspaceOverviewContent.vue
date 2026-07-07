@@ -176,7 +176,7 @@
 
     <!-- Footer links -->
     <div
-      class="flex h-8 shrink-0 items-center gap-6 text-sm text-muted-foreground"
+      class="flex h-8 shrink-0 items-center justify-between text-sm text-muted-foreground"
     >
       <a
         :href="learnMoreUrl"
