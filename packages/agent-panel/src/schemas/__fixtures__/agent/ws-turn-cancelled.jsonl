@@ -1,0 +1,3 @@
+{"capturedAt":1783367145226,"frame":{"data":{"delta":"Let me pull the current node list and every settable widget value so I can walk through them precisely.","message_id":"5d7c81a9-31f5-42f8-81c0-7525473da046","thread_id":"d4c016c4-3b8c-44cf-97de-1ae27e43e718"},"type":"agent_thinking"}}
+{"capturedAt":1783367145346,"frame":{"data":{"delta":"Stopped at your request.","message_id":"5d7c81a9-31f5-42f8-81c0-7525473da046","thread_id":"d4c016c4-3b8c-44cf-97de-1ae27e43e718"},"type":"agent_message_delta"}}
+{"capturedAt":1783367145351,"frame":{"data":{"message_id":"5d7c81a9-31f5-42f8-81c0-7525473da046","thread_id":"d4c016c4-3b8c-44cf-97de-1ae27e43e718","usage":null},"type":"agent_message_done"}}
