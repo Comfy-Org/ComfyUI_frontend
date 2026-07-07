@@ -5,7 +5,7 @@ import { creditsToCents } from '@/base/credits/comfyCredits'
 // Prototype: there is no auto-reload API yet, so the config is a client-side
 // singleton. The initial scenario is seeded from a dev-harness key; the dialog
 // and the header toggle mutate it live.
-export type AutoReloadScenario =
+type AutoReloadScenario =
   | 'notset'
   | 'nobudget'
   | 'healthy'
