@@ -48,6 +48,7 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'environment-variable execution: rejected at validation locally, clean on Linux CI',
     Screencap_mss:
       'captures the screen; no X display on CI runners, real display locally',
+    ImageGrabPIL: 'grabs the screen via PIL; OSError on headless CI runners',
     LoadAndResizeImage:
       'image-combo default follows input dir contents; a non-image media file (our staged video) makes PIL error - content-variable',
     PointsEditor:
@@ -70,11 +71,12 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'downloads MiDaS weights via torch hub at execution; same non-interruptible download class as BLIP',
     'True Random.org Number Generator':
       'fetches entropy from random.org at validation/execution; network-dependent',
+    'Create Video from Path':
+      'invokes ffmpeg on a filesystem path; FileNotFoundError on CI runners, environment-variable',
     'Create Grid Image':
       'scans the input dir for images; ValueError when only non-image media is present - content-variable',
     'Random Number':
       'environment-variable execution: TypeError locally, clean on Linux CI',
-    ImageGrabPIL: 'grabs the screen via PIL; OSError on headless CI runners',
     'Image History Loader':
       'reads WAS run history; state-dependent (KeyError on a fresh CI backend)'
   },
@@ -342,8 +344,13 @@ for (const entry of loadManifest()) {
       ).toBe(0)
 
       const excluded = AUTO_RUN_EXCLUDE[entry.pack] ?? {}
-      for (const [key, reason] of Object.entries(excluded))
+      for (const [key, reason] of Object.entries(excluded)) {
+        expect(
+          keys,
+          `stale AUTO_RUN_EXCLUDE entry: ${key} is not registered by ${entry.pack}`
+        ).toContain(key)
         console.log(`${entry.pack}: ${key} excluded from auto-run (${reason})`)
+      }
       const verdicts = planAutoRuns(
         defs,
         keys.filter((key) => !(key in excluded))
