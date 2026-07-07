@@ -80,13 +80,15 @@
                 <i :class="sortIcon('email')" />
               </button>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead
+              :class="permissions.canManageMembers ? 'w-40' : undefined"
+            >
               <button :class="sortHeaderClass" @click="toggleSort('role')">
                 {{ $t('workspacePanel.members.columns.role') }}
                 <i :class="sortIcon('role')" />
               </button>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead v-if="permissions.canManageMembers" class="w-40">
               <button
                 :class="sortHeaderClass"
                 @click="toggleSort('lastActivity')"
@@ -95,7 +97,7 @@
                 <i :class="sortIcon('lastActivity')" />
               </button>
             </TableHead>
-            <TableHead class="w-64">
+            <TableHead v-if="permissions.canManageMembers" class="w-64">
               <button
                 :class="cn(sortHeaderClass, 'ml-auto')"
                 @click="toggleSort('credits')"
@@ -105,7 +107,7 @@
                 <i :class="sortIcon('credits')" />
               </button>
             </TableHead>
-            <TableHead class="w-12" />
+            <TableHead v-if="permissions.canManageMembers" class="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -156,7 +158,7 @@
                 <i :class="sortIcon('expiryDate')" />
               </button>
             </TableHead>
-            <TableHead class="w-12" />
+            <TableHead v-if="permissions.canManageInvites" class="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -164,6 +166,7 @@
             v-for="invite in filteredPendingInvites"
             :key="invite.id"
             :invite="invite"
+            :can-manage="permissions.canManageInvites"
             @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
@@ -172,7 +175,7 @@
             class="hover:bg-transparent"
           >
             <TableCell
-              :colspan="4"
+              :colspan="permissions.canManageInvites ? 4 : 3"
               class="py-6 text-center text-sm text-muted-foreground"
             >
               {{ $t('workspacePanel.members.noInvites') }}
@@ -198,9 +201,12 @@
             max: maxSeats
           })
         }}
-        {{ $t('workspacePanel.members.needMoreMembers') }}
+        <template v-if="permissions.canInviteMembers">
+          {{ $t('workspacePanel.members.needMoreMembers') }}
+        </template>
       </p>
       <Button
+        v-if="permissions.canInviteMembers"
         variant="muted-textonly"
         size="md"
         class="text-sm text-base-foreground"
@@ -279,7 +285,7 @@ function sortIcon(field: string) {
 }
 
 function handleContactUs() {
-  window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+  window.open(staticUrls.teamPlanRequests, '_blank', 'noopener,noreferrer')
 }
 
 onMounted(() => {

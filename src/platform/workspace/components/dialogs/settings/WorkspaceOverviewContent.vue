@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex min-h-0 scrollbar-hide flex-1 flex-col gap-4 overflow-y-auto"
+    class="flex min-h-0 scrollbar-hide flex-1 flex-col gap-4 overflow-y-auto pb-10"
   >
     <!-- Plan + credits + member snapshot -->
     <div
@@ -9,7 +9,10 @@
       <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">{{ plan.name }}</span>
-          <p class="m-0 text-2xl font-semibold text-base-foreground">
+          <p
+            v-if="canManageBilling"
+            class="m-0 text-2xl font-semibold text-base-foreground"
+          >
             {{ formatPrice(plan.priceCents) }}
             <span class="text-base font-normal text-muted-foreground">
               / {{ $t('workspacePanel.overview.perMonth') }}
@@ -23,7 +26,7 @@
             }}
           </span>
         </div>
-        <div class="flex shrink-0 items-center gap-2">
+        <div v-if="canManageBilling" class="flex shrink-0 items-center gap-2">
           <Button variant="secondary" size="lg">
             {{ $t('workspacePanel.overview.managePayment') }}
           </Button>
@@ -55,6 +58,7 @@
 
         <!-- Member snapshot tile -->
         <div
+          v-if="canManageBilling"
           class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
         >
           <Tabs v-model="snapshotView">
@@ -144,6 +148,7 @@
 
     <!-- Next month invoice -->
     <div
+      v-if="canManageBilling"
       class="flex items-center justify-between gap-4 rounded-2xl border border-interface-stroke/60 p-6"
     >
       <div class="flex flex-col gap-1">
@@ -167,7 +172,7 @@
     </div>
 
     <!-- Credit auto-reload -->
-    <AutoReloadSection />
+    <AutoReloadSection v-if="canManageBilling" />
 
     <!-- Footer links -->
     <div
@@ -237,8 +242,16 @@ const { t } = useI18n()
 
 // Plan lifecycle actions are for the workspace creator (Owner) only; Admins and
 // Members don't see Change plan or the overflow menu.
-const { isOriginalOwner, isActiveSubscription, isTeamPlanCancelled } =
-  useWorkspaceUI()
+const {
+  isOriginalOwner,
+  isActiveSubscription,
+  isTeamPlanCancelled,
+  permissions
+} = useWorkspaceUI()
+
+// Members can't manage or view billing details — only the credit balance. Gates
+// the plan price, payment/plan actions, snapshot, next invoice, and auto-reload.
+const canManageBilling = computed(() => permissions.value.canManageSubscription)
 const { isFreeTier, subscription } = useBillingContext()
 const { showCancelSubscriptionDialog } = useDialogService()
 

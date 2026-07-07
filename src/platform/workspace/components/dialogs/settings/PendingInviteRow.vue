@@ -24,7 +24,7 @@
     <TableCell class="text-sm text-muted-foreground">
       {{ formatDate(invite.expiryDate) }}
     </TableCell>
-    <TableCell class="text-right" @click.stop>
+    <TableCell v-if="canManage" class="text-right" @click.stop>
       <DropdownMenu
         :entries="menuItems"
         :modal="false"
@@ -57,7 +57,10 @@ import TableRow from '@/components/ui/table/TableRow.vue'
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 
-const { invite } = defineProps<{ invite: PendingInvite }>()
+const { invite, canManage } = defineProps<{
+  invite: PendingInvite
+  canManage: boolean
+}>()
 
 const emit = defineEmits<{
   resend: [invite: PendingInvite]

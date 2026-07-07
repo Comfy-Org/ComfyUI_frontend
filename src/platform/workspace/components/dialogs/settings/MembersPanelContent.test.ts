@@ -64,6 +64,7 @@ const {
     mockPermissions: ref({
       canViewPendingInvites: true,
       canInviteMembers: true,
+      canManageInvites: true,
       canManageMembers: true
     }),
     mockUiConfig: ref({
@@ -218,6 +219,7 @@ describe('MembersPanelContent', () => {
     mockPermissions.value = {
       canViewPendingInvites: true,
       canInviteMembers: true,
+      canManageInvites: true,
       canManageMembers: true
     }
     mockUiConfig.value = {
@@ -440,19 +442,20 @@ describe('MembersPanelContent', () => {
   describe('member role', () => {
     beforeEach(() => {
       mockPermissions.value = {
-        canViewPendingInvites: false,
+        canViewPendingInvites: true,
         canInviteMembers: false,
+        canManageInvites: false,
         canManageMembers: false
       }
-      mockUiConfig.value.showPendingTab = false
+      mockUiConfig.value.showPendingTab = true
     })
 
-    it('hides the pending tab button', () => {
+    it('shows the pending tab button (view-only)', () => {
       mockPendingInvites.value = [createInvite()]
       renderComponent()
       expect(
-        screen.queryByText(/workspacePanel\.members\.tabs\.pendingCount/)
-      ).toBeNull()
+        screen.getByText(/workspacePanel\.members\.tabs\.pendingCount/)
+      ).toBeTruthy()
     })
 
     it('shows no action menus on member rows', () => {
@@ -500,7 +503,7 @@ describe('MembersPanelContent', () => {
   })
 
   describe('contact us footer', () => {
-    it('opens discord in a new tab for team workspaces on a team plan', async () => {
+    it('opens the team-plan request form in a new tab for team workspaces on a team plan', async () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
       expect(screen.getByText(/needMoreMembers/)).toBeTruthy()
@@ -508,7 +511,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://www.comfy.org/discord',
+        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )

@@ -83,7 +83,9 @@ function getPermissions(
   // member role
   return {
     canViewOtherMembers: true,
-    canViewPendingInvites: false,
+    // Members can see who's been invited (view-only); they still can't
+    // resend/revoke (canManageInvites) or invite (canInviteMembers).
+    canViewPendingInvites: true,
     canInviteMembers: false,
     canManageInvites: false,
     canManageMembers: false,
@@ -134,7 +136,7 @@ function getUIConfig(
   // member role
   return {
     showMembersList: true,
-    showPendingTab: false,
+    showPendingTab: true,
     showSearch: true,
     showRoleColumn: true,
     membersGridCols: 'grid-cols-[1fr_auto]',

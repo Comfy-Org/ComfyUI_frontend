@@ -45,7 +45,8 @@ export type ActivitySortField =
 
 export function useWorkspaceActivity(
   search: MaybeRefOrGetter<string>,
-  pageSize: MaybeRefOrGetter<number>
+  pageSize: MaybeRefOrGetter<number>,
+  selfName: MaybeRefOrGetter<string | null> = null
 ) {
   const all = mockActivity()
   const page = ref(1)
@@ -53,10 +54,17 @@ export function useWorkspaceActivity(
   const sortField = ref<ActivitySortField>('date')
   const sortDirection = ref<'asc' | 'desc'>('desc')
 
+  // Members only see their own usage. There's no per-user endpoint in this
+  // prototype, so present the mock events as the member's own history.
+  const base = computed<ActivityEvent[]>(() => {
+    const self = toValue(selfName)
+    return self ? all.map((event) => ({ ...event, userName: self })) : all
+  })
+
   const filtered = computed(() => {
     const q = toValue(search).trim().toLowerCase()
-    if (!q) return all
-    return all.filter(
+    if (!q) return base.value
+    return base.value.filter(
       (event) =>
         event.userName.toLowerCase().includes(q) ||
         event.eventType.toLowerCase().includes(q)
@@ -102,7 +110,7 @@ export function useWorkspaceActivity(
   // recent event, aggregated across the whole (unpaged) list.
   const userSummaries = computed(() => {
     const map = new Map<string, UserSummary>()
-    for (const event of all) {
+    for (const event of base.value) {
       const existing = map.get(event.userName)
       if (!existing) {
         map.set(event.userName, {

@@ -31,13 +31,16 @@
     <TableCell class="text-sm text-muted-foreground">
       {{ $t(roleLabelKey(member.role, isOriginalOwner)) }}
     </TableCell>
-    <TableCell class="text-sm text-muted-foreground">
+    <TableCell v-if="canManageMembers" class="text-sm text-muted-foreground">
       {{ lastActivityLabel }}
     </TableCell>
-    <TableCell class="text-right text-sm text-muted-foreground tabular-nums">
+    <TableCell
+      v-if="canManageMembers"
+      class="text-right text-sm text-muted-foreground tabular-nums"
+    >
       {{ creditsLabel }}
     </TableCell>
-    <TableCell class="text-right" @click.stop>
+    <TableCell v-if="canManageMembers" class="text-right" @click.stop>
       <DropdownMenu
         v-if="showMenu"
         :entries="menuItems"

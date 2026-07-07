@@ -125,8 +125,8 @@
       </Table>
     </div>
 
-    <div class="flex h-8 items-center justify-between">
-      <div class="flex items-center gap-6">
+    <div class="flex h-8 items-center">
+      <div v-if="canViewTeamUsage" class="flex items-center gap-6">
         <a
           :href="fullActivityUrl"
           target="_blank"
@@ -153,13 +153,14 @@
         v-model:page="page"
         :total="total"
         :items-per-page="itemsPerPage"
+        class="ml-auto"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
@@ -172,12 +173,14 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
 import type { ActivitySortField } from '@/platform/workspace/composables/useWorkspaceActivity'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -188,6 +191,17 @@ const { t, d } = useI18n()
 
 const tableContainer = ref<HTMLElement | null>(null)
 const { pageSize } = useAutoPageSize(tableContainer)
+
+// Owners/admins see team-wide activity + the per-user footer; members see only
+// their own usage, scoped to their name.
+const { permissions } = useWorkspaceUI()
+const { userDisplayName, userEmail } = useCurrentUser()
+const canViewTeamUsage = computed(() => permissions.value.canManageSubscription)
+const selfName = computed(() =>
+  canViewTeamUsage.value
+    ? null
+    : userDisplayName.value || userEmail.value || t('g.you')
+)
 
 const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
 
@@ -207,7 +221,7 @@ const {
   sortDirection,
   toggleSort,
   userSummaries
-} = useWorkspaceActivity(() => search, pageSize)
+} = useWorkspaceActivity(() => search, pageSize, selfName)
 
 function summaryFor(userName: string) {
   return (
