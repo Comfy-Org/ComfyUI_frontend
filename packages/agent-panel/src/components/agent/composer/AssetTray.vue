@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CloudAsset } from '@/composables/agent/useCloudAssets'
+import type { CloudAsset } from '../../../composables/agent/useCloudAssets'
 
 // The user's recent cloud assets; clicking one @-tags it into the message.
 const { assets } = defineProps<{ assets: CloudAsset[] }>()

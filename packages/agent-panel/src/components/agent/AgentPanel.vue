@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { ComposerAttachment } from '@/composables/agent/useComposer'
+import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type {
   ApprovalCard,
   ConflictChoice,
   LockState
-} from '@/components/agent/safety/safetyTypes'
-import type { ConversationEntry } from '@/stores/agent/agentConversationStore'
+} from './safety/safetyTypes'
+import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'

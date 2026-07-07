@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 
-import { useAgentDraftStore } from '@/stores/agent/agentDraftStore'
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
 /**
  * useDraftCanvasApply: the canvas half of the draft pipeline. Whenever a newer draft

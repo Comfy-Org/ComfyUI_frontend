@@ -9,14 +9,14 @@ import type {
   AgentTurnAccepted,
   TokenUsage,
   UploadImageResult
-} from '@/schemas/agentApiSchema'
-import { zAgentWsEvent } from '@/schemas/agentApiSchema'
-import { AgentApiError } from '@/services/agent/agentRestClient'
+} from '../../schemas/agentApiSchema'
+import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
-} from '@/services/agent/agentRestClient'
-import { useAgentDraftStore } from '@/stores/agent/agentDraftStore'
+} from '../../services/agent/agentRestClient'
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
 import type { AgentEventSource } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'

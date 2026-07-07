@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { TurnId } from '@/schemas/agentApiSchema'
+import type { TurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
   AgentEventTransport
-} from '@/services/agent/agentEventTransport'
-import { createAgentEventTransport } from '@/services/agent/agentEventTransport'
-import type { AssistantMessage } from '@/services/agent/agentMessageParts'
-import { createAssistantMessage } from '@/services/agent/agentMessageParts'
+} from '../../services/agent/agentEventTransport'
+import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
+import type { AssistantMessage } from '../../services/agent/agentMessageParts'
+import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 

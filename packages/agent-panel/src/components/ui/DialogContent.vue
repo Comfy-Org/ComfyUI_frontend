@@ -7,7 +7,7 @@ import {
 } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../utils/cn'
 
 const { class: cls, showClose = true } = defineProps<{
   class?: string

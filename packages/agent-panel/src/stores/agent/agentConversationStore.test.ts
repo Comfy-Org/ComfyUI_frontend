@@ -2,9 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import type { TurnId, TokenUsage } from '@/schemas/agentApiSchema'
-import { zAgentWsEvent } from '@/schemas/agentApiSchema'
-import type { AgentChatEvent } from '@/services/agent/agentEventTransport'
+import type { TurnId, TokenUsage } from '../../schemas/agentApiSchema'
+import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
 

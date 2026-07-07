@@ -2,8 +2,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDraggableBall } from '@/composables/agent/useDraggableBall'
-import { cn } from '@/utils/cn'
+import { useDraggableBall } from '../../../composables/agent/useDraggableBall'
+import { cn } from '../../../utils/cn'
 
 const emit = defineEmits<{ open: [] }>()
 

@@ -6,7 +6,7 @@ import {
   ScrollAreaViewport
 } from 'reka-ui'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../utils/cn'
 
 const { class: cls, viewportClass } = defineProps<{
   class?: string

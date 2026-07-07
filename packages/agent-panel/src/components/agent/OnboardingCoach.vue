@@ -3,9 +3,9 @@ import { useWindowSize } from '@vueuse/core'
 import { ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/Button.vue'
-import type { CoachStep } from '@/composables/agent/useOnboarding'
-import { useOnboarding } from '@/composables/agent/useOnboarding'
+import Button from '../ui/Button.vue'
+import type { CoachStep } from '../../composables/agent/useOnboarding'
+import { useOnboarding } from '../../composables/agent/useOnboarding'
 
 // Host-DOM anchored: each step points at a host selector (e.g. '#graph-canvas'). Where the
 // anchor is absent (the standalone harness) the coach simply shows nothing — it must NOT

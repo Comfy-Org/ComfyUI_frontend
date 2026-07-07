@@ -5,7 +5,7 @@ import type {
   AgentDraftSnapshot,
   DraftPatchData,
   DraftVersionData
-} from '@/schemas/agentApiSchema'
+} from '../../schemas/agentApiSchema'
 
 import { useAgentDraftStore } from './agentDraftStore'
 

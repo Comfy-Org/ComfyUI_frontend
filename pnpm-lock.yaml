@@ -438,6 +438,9 @@ importers:
       '@atlaskit/pragmatic-drag-and-drop':
         specifier: ^1.3.1
         version: 1.3.1
+      '@comfyorg/agent-panel':
+        specifier: workspace:*
+        version: link:packages/agent-panel
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: workspace:*
         version: link:packages/comfyui-desktop-bridge-types

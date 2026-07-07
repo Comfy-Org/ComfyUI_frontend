@@ -1,4 +1,4 @@
-import type { TurnId } from '@/schemas/agentApiSchema'
+import type { TurnId } from '../../schemas/agentApiSchema'
 
 /**
  * agentMessageParts: the shared assistant-message part model.

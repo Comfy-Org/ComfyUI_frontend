@@ -37,6 +37,7 @@ if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
+  await import('./agentPanel')
 }
 
 // Feedback button for cloud and nightly builds

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { cn } from '@/utils/cn'
-import { renderMarkdownToHtml } from '@/utils/agent/renderMarkdownToHtml'
+import { cn } from '../../../utils/cn'
+import { renderMarkdownToHtml } from '../../../utils/agent/renderMarkdownToHtml'
 
 import CodeBlock from './CodeBlock.vue'
 

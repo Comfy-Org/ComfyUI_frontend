@@ -8,7 +8,7 @@ import {
   zAgentThreadCreated,
   zAgentTurnAccepted,
   zUploadImageResult
-} from '@/schemas/agentApiSchema'
+} from '../../schemas/agentApiSchema'
 import type {
   AgentCancelAccepted,
   AgentDraftSnapshot,
@@ -16,7 +16,7 @@ import type {
   AgentThreadCreated,
   AgentTurnAccepted,
   UploadImageResult
-} from '@/schemas/agentApiSchema'
+} from '../../schemas/agentApiSchema'
 
 /**
  * agentRestClient: the ONE place the agent's REST surface is spoken. Every

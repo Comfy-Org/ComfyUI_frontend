@@ -3,17 +3,17 @@ import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { i18n } from '@/i18n'
-import type { TurnId } from '@/schemas/agentApiSchema'
-import { zAgentWsEvent } from '@/schemas/agentApiSchema'
-import type { AgentChatEvent } from '@/services/agent/agentEventTransport'
+import { i18n } from '../../i18n'
+import type { TurnId } from '../../schemas/agentApiSchema'
+import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type {
   AssistantMessage,
   FilePart,
   ReasoningPart
-} from '@/services/agent/agentMessageParts'
-import type { ConversationEntry } from '@/stores/agent/agentConversationStore'
-import { useAgentConversationStore } from '@/stores/agent/agentConversationStore'
+} from '../../services/agent/agentMessageParts'
+import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 
 import ConversationView from './ConversationView.vue'
 

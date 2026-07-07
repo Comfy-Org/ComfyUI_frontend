@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/Button.vue'
+import Button from '../../ui/Button.vue'
 
 const { canRevert } = defineProps<{ canRevert: boolean }>()
 const emit = defineEmits<{ revert: [] }>()

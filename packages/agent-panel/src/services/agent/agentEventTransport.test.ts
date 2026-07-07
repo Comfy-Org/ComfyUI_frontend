@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentWsEvent, TokenUsage, TurnId } from '@/schemas/agentApiSchema'
-import { zAgentWsEvent } from '@/schemas/agentApiSchema'
+import type {
+  AgentWsEvent,
+  TokenUsage,
+  TurnId
+} from '../../schemas/agentApiSchema'
+import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'

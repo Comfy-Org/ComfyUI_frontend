@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ToggleGroupItem } from 'reka-ui'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../utils/cn'
 
 const { value, class: cls } = defineProps<{
   value: string

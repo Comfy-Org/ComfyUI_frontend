@@ -886,6 +886,7 @@
     "nodes": "Nodes",
     "workflows": "Workflows",
     "templates": "Templates",
+    "agentPanel": "AI Agent",
     "assets": "Assets",
     "mediaAssets": {
       "title": "Media Assets",
@@ -910,6 +911,7 @@
       "queue": "Queue",
       "nodes": "Nodes",
       "models": "Models",
+      "agentPanel": "AI Agent",
       "assets": "Assets",
       "workflows": "Work­flows",
       "templates": "Tem­plates",

@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { DraftPatchData } from '@/schemas/agentApiSchema'
-import { useAgentDraftStore } from '@/stores/agent/agentDraftStore'
+import type { DraftPatchData } from '../../schemas/agentApiSchema'
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
 import { useDraftCanvasApply } from './useDraftCanvasApply'
 

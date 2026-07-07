@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ActiveTab } from '@/composables/agent/useCanvasContext'
+import type { ActiveTab } from '../../composables/agent/useCanvasContext'
 
 // Shows which workflow the agent is acting on. Hidden when there is no active tab.
 const { tab } = defineProps<{ tab: ActiveTab | null }>()

@@ -10,10 +10,7 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": ["src", "vite-env.d.ts", "vite.config.ts"]
 }

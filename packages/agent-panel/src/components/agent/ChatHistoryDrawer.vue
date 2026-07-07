@@ -12,12 +12,12 @@ import {
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DropdownMenuContent from '@/components/ui/DropdownMenuContent.vue'
-import DropdownMenuItem from '@/components/ui/DropdownMenuItem.vue'
+import DropdownMenuContent from '../ui/DropdownMenuContent.vue'
+import DropdownMenuItem from '../ui/DropdownMenuItem.vue'
 import type {
   ChatSession,
   HistoryGroups
-} from '@/stores/agent/agentChatHistoryStore'
+} from '../../stores/agent/agentChatHistoryStore'
 
 const { groups } = defineProps<{ groups: HistoryGroups }>()
 const emit = defineEmits<{

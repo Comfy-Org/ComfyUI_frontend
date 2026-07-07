@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/Button.vue'
-import { cn } from '@/utils/cn'
+import Button from '../ui/Button.vue'
+import { cn } from '../../utils/cn'
 
 // Net-new vs the monolith (built to Figma B3): title + ALPHA badge, chat history, new
 // chat, size toggle, explicit close.

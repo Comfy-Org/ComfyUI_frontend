@@ -9,8 +9,8 @@ import type {
   ReasoningPart,
   TextPart,
   ToolPart
-} from '@/services/agent/agentMessageParts'
-import { cn } from '@/utils/cn'
+} from '../../../services/agent/agentMessageParts'
+import { cn } from '../../../utils/cn'
 
 import AssetGrid from './AssetGrid.vue'
 import MarkdownStream from './MarkdownStream.vue'
