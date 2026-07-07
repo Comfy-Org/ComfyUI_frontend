@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -118,6 +118,22 @@ describe('downloadUtil', () => {
       expect(mockLink.href).toBe(invalidUrl)
       expect(mockLink.download).toBe('download.png')
       expect(mockLink.click).toHaveBeenCalled()
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
+    })
+
+    it('throws for an empty URL', () => {
+      expect(() => downloadFile('')).toThrow(
+        'Invalid URL provided for download'
+      )
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
+    })
+
+    it('throws for a whitespace URL', () => {
+      expect(() => downloadFile('   ')).toThrow(
+        'Invalid URL provided for download'
+      )
       expect(fetchMock).not.toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
@@ -339,7 +355,7 @@ describe('downloadUtil', () => {
       const testUrl = 'https://storage.googleapis.com/bucket/image.png'
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
-      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      windowOpenSpy.mockReturnValue(fromPartial<Window>(mockTab))
       fetchMock.mockResolvedValue(
         fromPartial<Response>({
           ok: true,
@@ -359,7 +375,7 @@ describe('downloadUtil', () => {
       mockIsCloud.value = true
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
-      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      windowOpenSpy.mockReturnValue(fromPartial<Window>(mockTab))
       fetchMock.mockResolvedValue(
         fromPartial<Response>({
           ok: true,
@@ -379,7 +395,7 @@ describe('downloadUtil', () => {
       const testUrl = 'https://storage.googleapis.com/bucket/missing.png'
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
-      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      windowOpenSpy.mockReturnValue(fromPartial<Window>(mockTab))
       fetchMock.mockResolvedValue(
         fromPartial<Response>({ ok: false, status: 404 })
       )
@@ -395,7 +411,7 @@ describe('downloadUtil', () => {
       mockIsCloud.value = true
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: true, close: vi.fn() }
-      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      windowOpenSpy.mockReturnValue(fromPartial<Window>(mockTab))
       fetchMock.mockResolvedValue(
         fromPartial<Response>({
           ok: true,

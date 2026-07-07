@@ -188,6 +188,17 @@ describe('ComfyApp', () => {
     )
   })
 
+  describe('graph (deprecated getter)', () => {
+    it('returns undefined until the root graph is initialized', () => {
+      expect(app.graph).toBeUndefined()
+
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+
+      expect(app.graph).toBe(graph)
+    })
+  })
+
   describe('queuePrompt', () => {
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()

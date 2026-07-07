@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAudioService } from '@/services/audioService'
@@ -36,6 +37,12 @@ describe('useAudioService', () => {
   const mockBlob = new Blob(['test audio data'], { type: 'audio/wav' })
   const mockUploadResponse = {
     name: 'test-audio-123.wav'
+  }
+
+  async function freshService() {
+    vi.resetModules()
+    const audioServiceModule = await import('@/services/audioService')
+    return audioServiceModule.useAudioService()
   }
 
   beforeEach(() => {
@@ -96,15 +103,44 @@ describe('useAudioService', () => {
       expect(mockRegister).toHaveBeenCalledTimes(0)
       expect(console.error).not.toHaveBeenCalled()
     })
+
+    it('should log encoder registration errors', async () => {
+      const error = new Error('Encoder failed')
+      mockRegister.mockReset()
+      mockRegister.mockRejectedValueOnce(error)
+
+      const isolatedService = await freshService()
+      await isolatedService.registerWavEncoder()
+
+      expect(console.error).toHaveBeenCalledWith(
+        'Audio Service Error (encoder):',
+        'Failed to register WAV encoder',
+        error
+      )
+    })
+
+    it('should log non-Error encoder registration failures', async () => {
+      mockRegister.mockReset()
+      mockRegister.mockRejectedValueOnce('Encoder failed')
+
+      const isolatedService = await freshService()
+      await isolatedService.registerWavEncoder()
+
+      expect(console.error).toHaveBeenCalledWith(
+        'Audio Service Error (encoder):',
+        'Failed to register WAV encoder',
+        'Encoder failed'
+      )
+    })
   })
 
   describe('stopAllTracks', () => {
     it('should stop all tracks in a stream', () => {
       const mockTrack1 = { stop: vi.fn() }
       const mockTrack2 = { stop: vi.fn() }
-      const mockStream = {
+      const mockStream = fromPartial<MediaStream>({
         getTracks: vi.fn().mockReturnValue([mockTrack1, mockTrack2])
-      } as Partial<MediaStream> as MediaStream
+      })
 
       service.stopAllTracks(mockStream)
 
@@ -118,9 +154,9 @@ describe('useAudioService', () => {
     })
 
     it('should handle stream with no tracks', () => {
-      const mockStream = {
+      const mockStream = fromPartial<MediaStream>({
         getTracks: vi.fn().mockReturnValue([])
-      } as Partial<MediaStream> as MediaStream
+      })
 
       expect(() => service.stopAllTracks(mockStream)).not.toThrow()
       expect(mockStream.getTracks).toHaveBeenCalledTimes(1)
@@ -133,9 +169,9 @@ describe('useAudioService', () => {
           throw new Error('Stop failed')
         })
       }
-      const mockStream = {
+      const mockStream = fromPartial<MediaStream>({
         getTracks: vi.fn().mockReturnValue([mockTrack1, mockTrack2])
-      } as Partial<MediaStream> as MediaStream
+      })
 
       expect(() => service.stopAllTracks(mockStream)).toThrow()
       expect(mockTrack1.stop).toHaveBeenCalledTimes(1)
