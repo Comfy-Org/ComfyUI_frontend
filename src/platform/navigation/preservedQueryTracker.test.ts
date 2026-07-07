@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Router } from 'vue-router'
+import type { Router, RouterHistory } from 'vue-router'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import {
@@ -23,9 +23,11 @@ const plainDefinition = {
   keys: ['plain_code', 'plain_source']
 }
 
-function createTestRouter(): Router {
+function createTestRouter(
+  history: RouterHistory = createMemoryHistory()
+): Router {
   return createRouter({
-    history: createMemoryHistory(),
+    history,
     routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
   })
 }
@@ -63,6 +65,19 @@ describe('installPreservedQueryTracker', () => {
     expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_source')).toBe('beta')
   })
 
+  it('replaces a non-strip namespace stash on later captures', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [plainDefinition])
+
+    await router.push('/?plain_code=alpha&plain_source=beta')
+    await router.push('/?plain_code=gamma')
+
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('gamma')
+    expect(
+      getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_source')
+    ).toBeUndefined()
+  })
+
   it('navigates exactly once when no strip-marked keys are present', async () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, [strippedDefinition])
@@ -88,6 +103,23 @@ describe('installPreservedQueryTracker', () => {
     ).toBeUndefined()
 
     await router.push('/?one_time_code')
+    expect(router.currentRoute.value.fullPath).toBe('/')
+    expect(
+      getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')
+    ).toBeUndefined()
+  })
+
+  it('clears a stale stripped value when the URL supplies an empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [strippedDefinition])
+
+    await router.push('/?one_time_code=otc_abc123')
+    expect(getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')).toBe(
+      'otc_abc123'
+    )
+
+    await router.push('/?one_time_code=')
+
     expect(router.currentRoute.value.fullPath).toBe('/')
     expect(
       getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')
@@ -146,5 +178,19 @@ describe('installPreservedQueryTracker', () => {
     await vi.waitFor(() =>
       expect(router.currentRoute.value.fullPath).toBe('/start')
     )
+  })
+
+  it('keeps replace navigation from adding a back target', async () => {
+    const history = createMemoryHistory()
+    const router = createTestRouter(history)
+    installPreservedQueryTracker(router, [strippedDefinition])
+
+    await router.push('/start')
+    await router.replace('/?one_time_code=otc_abc123')
+    expect(router.currentRoute.value.fullPath).toBe('/')
+
+    router.go(-1)
+
+    expect(history.location).toBe('/')
   })
 })
