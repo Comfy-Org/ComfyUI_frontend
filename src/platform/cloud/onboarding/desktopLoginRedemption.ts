@@ -254,15 +254,14 @@ function installAuthWatcherOnce(): void {
 }
 
 /**
- * Redemption of desktop login codes (`?desktop_login_code=dlc_...`, GTM-93).
+ * Redeems desktop login codes (`?desktop_login_code=dlc_...`).
  *
- * The desktop app opens the browser with an opaque one-time code; once a
- * Firebase session exists and the user approves, the code is redeemed against
- * the cloud backend, which releases a one-time custom token to the polling
- * desktop app. The tracker strips the code from the URL at capture time, so
- * the preserved-query stash is the only place it lives. Triggers: every
- * completed navigation, every auth session change, and one delayed retry
- * after a transient failure; a code with no session yet stays stashed.
+ * The desktop app opens the browser with an opaque one-time code and polls
+ * the cloud backend; redeeming the code from a signed-in browser session,
+ * with the user's approval, releases a one-time custom token to that poll
+ * and signs the desktop app in. The preserved-query tracker (configured in
+ * router.ts) strips the code from the URL at capture time, so the stash is
+ * the only place it lives.
  */
 export function installDesktopLoginRedemption(router: Router): void {
   router.afterEach(() => {
