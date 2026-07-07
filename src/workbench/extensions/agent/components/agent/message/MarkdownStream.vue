@@ -53,13 +53,23 @@ const segments = computed<Segment[]>(() => {
   return out
 })
 
+// Prose styles matched to the design reference (values read from the deployed prototype's
+// .agent-markdown rules): p 14px/1.625, h1 24/600, h2 16/600, decimal/disc lists,
+// primary-underlined links, 3px muted blockquote, bordered secondary-surface tables, and
+// bordered inline code.
 const proseClass = cn(
   'text-agent-fg text-sm/relaxed',
-  '[&_a]:text-agent-accent [&_a]:underline [&_p]:my-1.5',
-  '[&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5',
-  '[&_:not(pre)>code]:bg-agent-surface [&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-xs',
-  '[&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:font-semibold [&_h3]:mt-2 [&_h3]:font-semibold',
-  '[&_blockquote]:border-agent-border [&_blockquote]:text-agent-fg-muted [&_blockquote]:border-l-2 [&_blockquote]:pl-3'
+  '[&_a]:text-agent-accent [&_a]:cursor-pointer [&_a]:underline',
+  '[&_p]:my-0 [&_p]:pt-1 [&_strong]:font-semibold',
+  '[&_h1]:mt-0 [&_h1]:pt-4 [&_h1]:pb-2 [&_h1]:text-2xl [&_h1]:font-semibold',
+  '[&_h2]:pt-3.5 [&_h2]:pb-1.5 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:pt-2 [&_h3]:font-semibold',
+  '[&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pt-1 [&_ol]:pb-2 [&_ol]:pl-5',
+  '[&_ul]:my-0 [&_ul]:list-disc [&_ul]:pt-1 [&_ul]:pb-2 [&_ul]:pl-5',
+  '[&_:not(pre)>code]:bg-agent-surface-hover [&_:not(pre)>code]:border-agent-border-strong [&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:border [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]',
+  '[&_blockquote]:border-agent-border-strong [&_blockquote]:text-agent-fg-muted [&_blockquote]:my-2 [&_blockquote]:border-l-[3px] [&_blockquote]:py-1.5 [&_blockquote]:pl-3.5',
+  '[&_table]:bg-agent-surface-raised [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg',
+  '[&_th]:border-agent-border-strong [&_th]:bg-agent-surface-hover [&_th]:border-b [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:font-semibold',
+  '[&_td]:border-agent-border-strong [&_td]:border-b [&_td]:px-4 [&_td]:py-2.5'
 )
 </script>
 

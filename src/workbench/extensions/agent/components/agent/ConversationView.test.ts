@@ -132,7 +132,7 @@ describe('ConversationView', () => {
     const entries: ConversationEntry[] = [assistant]
 
     render(ConversationView, {
-      props: { entries, userName: 'Ada' },
+      props: { entries },
       global: { plugins: [i18n] }
     })
 
@@ -153,7 +153,7 @@ describe('ConversationView', () => {
     Element.prototype.scrollIntoView = scrollIntoView
 
     render(ConversationView, {
-      props: { entries: [assistant], userName: 'Ada' },
+      props: { entries: [assistant] },
       global: { plugins: [i18n] }
     })
 

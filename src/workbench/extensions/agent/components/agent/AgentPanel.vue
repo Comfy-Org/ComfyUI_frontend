@@ -103,7 +103,6 @@ defineExpose({ addAttachment })
       <ConversationView
         v-else
         :entries="entries"
-        :user-name="userName"
         @feedback="(id, vote) => emit('feedback', id, vote)"
       />
     </div>

@@ -60,34 +60,28 @@ watch(
 </script>
 
 <template>
-  <CollapsibleRoot
-    v-model:open="open"
-    class="rounded-agent border-agent-border bg-agent-surface border"
-  >
+  <CollapsibleRoot v-model:open="open">
     <CollapsibleTrigger
-      class="group text-agent-fg-muted hover:text-agent-fg flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors"
+      class="group text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex h-8 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-sm transition-colors"
     >
       <span
-        class="icon-[lucide--chevron-right] size-3.5 transition-transform group-data-[state=open]:rotate-90"
-      />
-      <span
         v-if="running"
-        class="text-agent-fg-subtle icon-[lucide--loader-circle] size-3.5 animate-spin"
+        class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 animate-spin"
       />
       <span
         v-else-if="failed"
-        class="text-agent-danger icon-[lucide--circle-x] size-3.5"
+        class="text-agent-danger icon-[lucide--circle-x] size-4 shrink-0"
       />
+      <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
+      <span class="flex-1 text-left">{{
+        t('agent.ranToolCalls', tools.length)
+      }}</span>
       <span
-        v-else
-        class="text-agent-success icon-[lucide--circle-check] size-3.5"
+        class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />
-      <span>{{ t('agent.ranToolCalls', tools.length) }}</span>
     </CollapsibleTrigger>
     <CollapsibleContent>
-      <div
-        :class="cn('divide-agent-border border-agent-border divide-y border-t')"
-      >
+      <div :class="cn('flex flex-col gap-0.5 pt-1 pl-2')">
         <ToolCallCard
           v-for="(row, index) in rows"
           :key="index"
