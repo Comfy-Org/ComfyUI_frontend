@@ -35,7 +35,7 @@
           :class="
             sidebarLocation === 'left'
               ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
                   sidebarPanelVisible && 'min-w-78'
                 )
               : 'pointer-events-auto bg-comfy-menu-bg'
@@ -95,7 +95,7 @@
           :class="
             sidebarLocation === 'right'
               ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
                   sidebarPanelVisible && 'min-w-78'
                 )
               : 'pointer-events-auto bg-comfy-menu-bg'
