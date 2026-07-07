@@ -257,13 +257,17 @@ const opStatus = () => ({
 })
 
 function members(): unknown {
+  const hoursAgo = (h: number) =>
+    new Date(Date.now() - h * 60 * 60 * 1000).toISOString()
   const creator = {
     id: 'user-creator',
     name: 'You (creator)',
     email: 'you@comfy.org',
     joined_at: '2026-01-01T00:00:00Z',
     role: 'owner',
-    is_original_owner: true
+    is_original_owner: true,
+    last_active_at: hoursAgo(2),
+    credits_used_this_month: 6532
   }
   const m1 = {
     id: 'user-42',
@@ -271,7 +275,9 @@ function members(): unknown {
     email: 'alice@example.com',
     joined_at: '2026-02-15T00:00:00Z',
     role: 'member',
-    is_original_owner: false
+    is_original_owner: false,
+    last_active_at: hoursAgo(23),
+    credits_used_this_month: 140
   }
   const m2 = {
     id: 'user-43',
@@ -279,7 +285,9 @@ function members(): unknown {
     email: 'bob@example.com',
     joined_at: '2026-03-20T00:00:00Z',
     role: 'owner',
-    is_original_owner: false
+    is_original_owner: false,
+    last_active_at: hoursAgo(24),
+    credits_used_this_month: 1025
   }
   const list = cfg.ws === 'team' ? [creator, m1, m2] : [creator]
   return {

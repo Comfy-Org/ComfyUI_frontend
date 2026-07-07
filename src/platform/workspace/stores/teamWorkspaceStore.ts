@@ -23,6 +23,8 @@ export interface WorkspaceMember {
   joinDate: Date
   role: 'owner' | 'member'
   isOriginalOwner: boolean
+  lastActivity?: Date | null
+  creditsUsedThisMonth?: number
 }
 
 export interface PendingInvite {
@@ -51,7 +53,11 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     email: member.email,
     joinDate: new Date(member.joined_at),
     role: member.role,
-    isOriginalOwner: member.is_original_owner ?? false
+    isOriginalOwner: member.is_original_owner ?? false,
+    lastActivity: member.last_active_at
+      ? new Date(member.last_active_at)
+      : null,
+    creditsUsedThisMonth: member.credits_used_this_month ?? 0
   }
 }
 
