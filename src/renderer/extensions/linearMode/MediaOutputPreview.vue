@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, useAttrs } from 'vue'
+import { computed, defineAsyncComponent, useAttrs, useTemplateRef } from 'vue'
 
+import { useReleaseMediaOnUnmount } from '@/composables/useReleaseMediaOnUnmount'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
@@ -23,6 +24,8 @@ const mediaType = computed(() => getMediaType(output))
 const outputLabel = computed(
   () => output.display_name?.trim() || output.filename
 )
+
+useReleaseMediaOnUnmount(useTemplateRef('audioRef'))
 </script>
 <template>
   <template v-if="mediaType === 'images' || mediaType === 'video'">
@@ -48,6 +51,7 @@ const outputLabel = computed(
   <template v-else>
     <audio
       v-if="mediaType === 'audio'"
+      ref="audioRef"
       :class="cn('m-auto w-full', attrs.class as string)"
       controls
       :src="output.url"

@@ -1,13 +1,14 @@
 <template>
-  <video controls class="max-h-[90vh] max-w-[90vw]">
+  <video ref="videoRef" controls class="max-h-[90vh] max-w-[90vw]">
     <source :src="url" :type="htmlVideoType" />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
+import { useReleaseMediaOnUnmount } from '@/composables/useReleaseMediaOnUnmount'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
@@ -36,4 +37,6 @@ const url = computed(() =>
 const htmlVideoType = computed(() =>
   vhsAdvancedPreviews.value ? 'video/webm' : props.result.htmlVideoType
 )
+
+useReleaseMediaOnUnmount(useTemplateRef('videoRef'))
 </script>
