@@ -109,6 +109,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'combo follows WAS text-file history; state-dependent (validation-fails on a fresh backend, may pass on a used one)',
     'MiDaS Depth Approximation':
       'loads MiDaS via torch.hub inside execute when no model is wired; downloads on a networked runner - same non-interruptible download class as the MiDaS loader',
+    'MiDaS Mask Image':
+      'loads MiDaS via torch.hub inside execute when no model is wired; downloads non-interruptibly on a networked runner (hung CI), runs clean only where the hub cache is warm',
     CLIPSEG2:
       'calls transformers from_pretrained(CIDAS/clipseg-rd64-refined) inside execute when no model is wired; downloads from HuggingFace on a networked runner - same class as BLIP/SAM',
     'Image Analyze':
@@ -185,7 +187,9 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
     SplineEditor:
       'editor JSON widgets initialize their state on configure; a fresh create serializes empty strings',
     Ideogram4PromptBuilderKJ:
-      'pack JS validates and resets its aspect/format text widgets on configure'
+      'pack JS validates and resets its aspect/format text widgets on configure',
+    ImageTransformKJ:
+      'pack JS initializes its fill-options JSON widget on configure; a fresh create serializes an empty string'
   },
   'rgthree-comfy': {
     'Power Primitive (rgthree)':

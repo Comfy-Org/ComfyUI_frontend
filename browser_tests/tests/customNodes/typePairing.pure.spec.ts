@@ -148,6 +148,33 @@ test.describe('typePairing', () => {
     expect(plan.combos).toEqual([])
   })
 
+  test('COMBO vocabulary matching ignores option order', () => {
+    // A wired input bypasses its own widget, so menu order and the
+    // options[0] default are not part of the wire contract - membership is.
+    const nodes = normalizeNodeDefs({
+      ShuffledSource: {
+        input: { required: {} },
+        output: [['ddim', 'euler']],
+        output_name: [['ddim', 'euler'] as unknown as string],
+        python_module: 'nodes'
+      },
+      SamplerNameSink: {
+        input: { required: { sampler_name: [['euler', 'ddim'], {}] } },
+        output: [],
+        python_module: 'nodes'
+      },
+      ...DEFS
+    })
+    const plan = planPairs(nodes, ['ShuffledSource', 'SamplerNameSink'])
+    expect(
+      plan.pairs.map(
+        (p) =>
+          `${p.producer.nodeType}.${p.producer.slotName}->${p.consumer.nodeType}.${p.consumer.slotName}`
+      )
+    ).toEqual(['ShuffledSource.COMBO->SamplerNameSink.sampler_name'])
+    expect(plan.combos).toEqual([])
+  })
+
   test('wildcard slots are excluded, orphan types recorded not failed', () => {
     const nodes = normalizeNodeDefs(DEFS)
     const plan = planPairs(nodes, ['WildcardNode', 'OrphanNode'])

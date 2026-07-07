@@ -90,14 +90,23 @@ function inputSlots(
     const specArray = Array.isArray(spec) ? spec : [spec]
     const type = slotTypeOf(specArray[0])
     if (type === null) continue
-    const opts = specArray[1] as { socketless?: boolean } | undefined
+    const opts = specArray[1] as
+      | { socketless?: boolean; options?: unknown }
+      | undefined
     // socketless = widget only, no slot: not connectable, out of the matrix.
     if (opts?.socketless) continue
-    slots.push(
-      type === 'COMBO'
-        ? { name, type, comboOptions: specArray[0] as unknown[] }
-        : { name, type }
-    )
+    if (type === 'COMBO') {
+      // Raw defs carry the option list as the type literal; the frontend's
+      // transformed defs use the string 'COMBO' with options in the opts.
+      const options = Array.isArray(specArray[0])
+        ? (specArray[0] as unknown[])
+        : Array.isArray(opts?.options)
+          ? opts.options
+          : undefined
+      slots.push({ name, type, comboOptions: options })
+      continue
+    }
+    slots.push({ name, type })
   }
   return slots
 }
@@ -173,18 +182,29 @@ export function planPairs(
   )
   // COMBO slots pair only on an identical option vocabulary; the string type
   // alone would let a checkpoint dropdown "connect" to a scheduler dropdown.
-  // Deliberately order-sensitive: option order defines the default
-  // (options[0]) and the rendered menu, so same-set-different-order combos
-  // are treated as different contracts and stay excluded.
-  const vocabOf = (slot: NormalizedSlot) => JSON.stringify(slot.comboOptions)
+  // Vocabulary equality is a SET comparison: a wired input bypasses its own
+  // widget, so menu order and the options[0] default do not participate in
+  // the wire contract - only membership does (backend validation checks
+  // "value in options"). Values still compare as exact strings.
+  const vocabOf = (slot: NormalizedSlot) =>
+    JSON.stringify(
+      (slot.comboOptions ?? []).map((option) => JSON.stringify(option)).sort()
+    )
+  // A combo whose option list is unknown (transformed defs without an
+  // options array) must never pair - a blind match would wire dropdowns
+  // with no vocabulary evidence at all.
   const comboProducers = sorted.flatMap((node) =>
     node.outputs
-      .filter((slot) => slot.type === 'COMBO')
+      .filter(
+        (slot) => slot.type === 'COMBO' && Array.isArray(slot.comboOptions)
+      )
       .map((slot) => ({ ref: slotRef(node, slot), vocab: vocabOf(slot) }))
   )
   const comboConsumers = sorted.flatMap((node) =>
     node.inputs
-      .filter((slot) => slot.type === 'COMBO')
+      .filter(
+        (slot) => slot.type === 'COMBO' && Array.isArray(slot.comboOptions)
+      )
       .map((slot) => ({ ref: slotRef(node, slot), vocab: vocabOf(slot) }))
   )
 
@@ -210,9 +230,11 @@ export function planPairs(
         continue
       }
       if (slot.type === 'COMBO') {
-        const producer = comboProducers.find(
-          (candidate) => candidate.vocab === JSON.stringify(slot.comboOptions)
-        )
+        const producer = Array.isArray(slot.comboOptions)
+          ? comboProducers.find(
+              (candidate) => candidate.vocab === vocabOf(slot)
+            )
+          : undefined
         if (producer) addPair(producer.ref, slotRef(node, slot))
         else plan.combos.push({ ...slotRef(node, slot), dir: 'in' })
         continue
@@ -229,9 +251,11 @@ export function planPairs(
         continue
       }
       if (slot.type === 'COMBO') {
-        const consumer = comboConsumers.find(
-          (candidate) => candidate.vocab === JSON.stringify(slot.comboOptions)
-        )
+        const consumer = Array.isArray(slot.comboOptions)
+          ? comboConsumers.find(
+              (candidate) => candidate.vocab === vocabOf(slot)
+            )
+          : undefined
         if (consumer) addPair(slotRef(node, slot), consumer.ref)
         else plan.combos.push({ ...slotRef(node, slot), dir: 'out' })
         continue

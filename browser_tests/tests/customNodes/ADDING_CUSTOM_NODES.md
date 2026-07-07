@@ -25,8 +25,10 @@ Adding the one row enrolls the pack in two kinds of coverage:
   every node through save/reload (every widget
   is first written with a non-default value that must stick, and the
   serialized `widgets_values` must survive configure unchanged), plans typed
-  connections for all its concrete slots (COMBO slots pair when their option
-  vocabularies match exactly), and executes it for real when it can run:
+  connections for all its concrete slots (COMBO slots pair when they offer
+  the same option SET - order-insensitive, since a wired input bypasses its
+  own widget and only membership matters), and executes it for real when it
+  can run:
   either self-sufficient (every required input is a widget with a valid
   default) or `CHAINABLE` - every required socket type has a model-free
   producer (`EmptyImage`, `EmptyLatentImage`, `SolidMask`, `Primitive*`,
