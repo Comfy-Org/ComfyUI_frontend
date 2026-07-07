@@ -5,8 +5,14 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
-import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import {
+  buildGraph,
+  organizationNode,
+  siteUrlFrom,
+  websiteNode,
+} from '../utils/jsonLd'
+import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
@@ -14,6 +20,7 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   noindex?: boolean
+  includeDefaultJsonLd?: boolean
 }
 
 const {
@@ -22,6 +29,9 @@ const {
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
+  // Pages that emit their own connected @graph opt out so the site-wide
+  // Organization/WebSite are not duplicated on the page.
+  includeDefaultJsonLd = true,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -37,28 +47,11 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Comfy Org',
-  url: 'https://comfy.org',
-  logo: 'https://comfy.org/icons/logomark.svg',
-  sameAs: [
-    'https://github.com/comfyanonymous/ComfyUI',
-    'https://discord.gg/comfyorg',
-    'https://x.com/comaboratory',
-    'https://reddit.com/r/comfyui',
-    'https://linkedin.com/company/comfyorg',
-    'https://instagram.com/comfyorg',
-  ],
-}
-
-const websiteJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Comfy',
-  url: 'https://comfy.org',
-}
+const siteUrl = siteUrlFrom(Astro.site)
+const defaultJsonLd = buildGraph(
+  organizationNode(siteUrl),
+  websiteNode(siteUrl, locale),
+)
 ---
 
 <!doctype html>
@@ -100,10 +93,7 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(organizationJsonLd)} />
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
-    <slot name="head" />
-
+    {includeDefaultJsonLd && <JsonLdGraph graph={defaultJsonLd} />}
     <slot name="head" />
 
     <!-- Google Tag Manager -->
@@ -123,7 +113,6 @@ const websiteJsonLd = {
     )}
 
     <ClientRouter />
-    <slot name="head" />
   </head>
   <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (

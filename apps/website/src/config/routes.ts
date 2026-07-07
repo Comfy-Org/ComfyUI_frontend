@@ -66,6 +66,7 @@ export const externalLinks = {
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
   instagram: 'https://www.instagram.com/comfyui/',
+  linkedin: 'https://www.linkedin.com/company/comfyui',
   mcpServer: 'https://cloud.comfy.org/mcp',
   mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
