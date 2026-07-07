@@ -119,8 +119,8 @@ describe('useViewErrorsInGraph', () => {
 
     expect(
       settingsMock.set,
-      'the minimap collapses on entry'
-    ).toHaveBeenCalledWith('Comfy.Minimap.Visible', false)
+      'entering the view must not mutate persisted settings'
+    ).not.toHaveBeenCalled()
     await vi.waitFor(() => {
       expect(
         executeCommandMock,

@@ -264,19 +264,31 @@ describe('ErrorGroupList selection emphasis', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Expand')).not.toBeInTheDocument()
 
+    const sections = screen.getAllByTestId('error-group-execution')
+    const matchedIndex = 1
+    const nodeInSecondSlide = within(sections[matchedIndex]).queryByText(
+      'Missing connection'
+    )
+      ? SAMPLER_NODE
+      : LOADER_NODE
+
     canvasStore.selectedItems = fromAny<
       typeof canvasStore.selectedItems,
       unknown
-    >([SAMPLER_NODE])
+    >([nodeInSecondSlide])
     await waitFor(() => {
       expect(
         scrollTo,
-        'selection snaps to the matched slide'
-      ).toHaveBeenCalled()
+        'selection snaps to the matched slide, not slide 0'
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ left: matchedIndex * 8 })
+      )
     })
     expect(
       within(getSectionByTitle('Validation failed')).getByText('LoaderNode'),
-      'unmatched slides stay expanded instead of collapsing'
+      'slides stay expanded instead of collapsing'
     ).toBeInTheDocument()
+
+    scrollTo.mockRestore()
   })
 })

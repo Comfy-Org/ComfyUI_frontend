@@ -4,7 +4,7 @@ import { nextTick, ref } from 'vue'
 
 import { useErrorResolutionStore } from '@/stores/workspace/errorResolutionStore'
 
-const activeWorkflow = ref<{ key: string } | null>(null)
+const activeWorkflow = ref<{ key: string; activeMode?: string } | null>(null)
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
@@ -59,5 +59,16 @@ describe('errorResolutionStore', () => {
     await nextTick()
 
     expect(store.isActive).toBe(true)
+  })
+
+  it('exits when the workflow switches back to app mode', async () => {
+    activeWorkflow.value = { key: 'workflow-a', activeMode: 'graph' }
+    const store = useErrorResolutionStore()
+    store.enter()
+
+    activeWorkflow.value = { key: 'workflow-a', activeMode: 'app' }
+    await nextTick()
+
+    expect(store.isActive).toBe(false)
   })
 })

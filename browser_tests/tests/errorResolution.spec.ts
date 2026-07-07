@@ -33,9 +33,6 @@ function buildSaveImageRequiredInputError(): NodeError {
 test.describe('Error resolution view', { tag: ['@ui', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await enableErrorsOverlay(comfyPage)
-    // Pre-collapsed minimap exercises the racy entry path: without the
-    // async minimap-setting write, FitView runs closest to the canvas
-    // re-measure (see waitForCanvasResize in useViewErrorsInGraph)
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.workflow.loadWorkflow('linear-validation-warning')
     await comfyPage.appMode.toggleAppMode()
@@ -61,8 +58,6 @@ test.describe('Error resolution view', { tag: ['@ui', '@workflow'] }, () => {
       comfyPage.page.getByTestId(TestIds.errorResolution.back)
     ).toBeVisible()
     await expect(comfyPage.menu.sideToolbar).toBeHidden()
-    // The minimap stays collapsed in the error resolution view
-    await expect(comfyPage.page.getByTestId('minimap-container')).toBeHidden()
 
     // FitView on entry must wait for the canvas to be re-measured; fitting
     // a zero-sized canvas corrupts the view transform (scale 0 / NaN)

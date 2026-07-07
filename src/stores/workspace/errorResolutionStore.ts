@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
 
 /**
  * Store for the focused error-resolution view entered from App Mode.
@@ -25,10 +26,17 @@ export const useErrorResolutionStore = defineStore('errorResolution', () => {
   // is per-workflow, so leaving the workflow must end the view.
   watch(
     () => workflowStore.activeWorkflow?.key,
-    (next, prev) => {
-      if (isActive.value && next !== prev) {
-        exit()
-      }
+    () => {
+      if (isActive.value) exit()
+    }
+  )
+
+  // Returning to app mode by any path (including the Toggle App Mode
+  // command while chrome is hidden) must also end the view.
+  watch(
+    () => isAppModeValue(getWorkflowMode(workflowStore.activeWorkflow)),
+    (inAppMode) => {
+      if (inAppMode && isActive.value) exit()
     }
   )
 

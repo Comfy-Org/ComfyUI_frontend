@@ -1,7 +1,6 @@
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -14,7 +13,6 @@ export function useViewErrorsInGraph() {
   const executionErrorStore = useExecutionErrorStore()
   const errorResolutionStore = useErrorResolutionStore()
   const rightSidePanelStore = useRightSidePanelStore()
-  const settingStore = useSettingStore()
   const { isAppMode } = useAppMode()
 
   /**
@@ -36,13 +34,12 @@ export function useViewErrorsInGraph() {
     return canvasElement.width > 0 && canvasElement.height > 0
   }
 
-  /** Collapse the minimap and fit the whole graph into the visible canvas. */
+  /** Fit the whole graph into the now-visible canvas. */
   async function prepareErrorResolutionCanvas() {
-    if (settingStore.get('Comfy.Minimap.Visible')) {
-      await settingStore.set('Comfy.Minimap.Visible', false)
-    }
     await nextTick()
     if (!(await waitForCanvasResize())) return
+    // The resize wait spans frames; the user may have already left the view
+    if (!errorResolutionStore.isActive) return
     await commandStore.execute('Comfy.Canvas.FitView')
   }
 

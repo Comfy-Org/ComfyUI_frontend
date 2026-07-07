@@ -91,7 +91,11 @@ describe('ErrorResolutionPanel.vue', () => {
   it('shows the resolved state with a back button when no errors exist', async () => {
     const { user, emitted } = renderComponent()
 
-    expect(screen.getByText('All errors resolved')).toBeInTheDocument()
+    expect(
+      screen.getByRole('status'),
+      'the resolved transition is announced via the persistent live region'
+    ).toHaveTextContent('All errors resolved')
+    expect(screen.getAllByText('All errors resolved')).not.toHaveLength(0)
     expect(screen.queryByTestId('errors-summary-hero')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Back to App Mode/i }))

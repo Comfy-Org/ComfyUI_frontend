@@ -585,8 +585,12 @@ const activeSlide = computed(() => {
 })
 
 function scrollToSlide(index: number) {
-  carouselRef.value?.scrollTo({
-    left: index * (carouselWidth.value + CAROUSEL_SLIDE_GAP_PX),
+  const track = carouselRef.value
+  if (!track) return
+  // clientWidth, not the ResizeObserver-driven carouselWidth: on the
+  // immediate-watch mount path the observer has not delivered yet
+  track.scrollTo({
+    left: index * (track.clientWidth + CAROUSEL_SLIDE_GAP_PX),
     behavior: 'smooth'
   })
 }

@@ -18,6 +18,10 @@
     "
     :aria-label="t('errorResolution.title')"
   >
+    <!-- Persistent live region: one inserted with its content is not announced -->
+    <span role="status" class="sr-only">
+      {{ isResolved ? t('errorResolution.allResolved') : '' }}
+    </span>
     <div
       v-if="isNarrow"
       class="flex min-w-0 shrink-0 items-center gap-2 bg-base-foreground/5 p-2"
@@ -95,7 +99,6 @@
           class="flex min-h-0 flex-1 flex-col bg-interface-panel-surface p-3"
         >
           <div
-            role="status"
             class="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-secondary-background px-6 py-8 text-center"
           >
             <i
