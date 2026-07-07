@@ -63,3 +63,19 @@ reviews:
           Pass if none of these patterns are found in the diff.
 
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
+
+  path_instructions:
+    - path: '**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed Vitest test file.
+        Flag missing behavioral coverage for changed behavior, change-detector tests, mock-heavy tests, snapshot abuse, fragile assertions, missing edge cases, unclear setup, and unrestored global mutations.
+        Prefer colocated behavioral tests named after the source file.
+        Build partial mocks with fromPartial<T>() from @total-typescript/shoehorn; flag `as unknown as` double assertions and fromAny().
+        Mock only at seams (Pinia stores, settings, third-party libs); flag mocked type guards or sibling composables.
+        Use a real createI18n instance rather than vi.mock('vue-i18n').
+        Flag bare expect(fn).not.toThrow() as a sole assertion, assertions that echo stub return values, and .mock.results assertions.
+        Use @testing-library/vue for component tests, not @vue/test-utils.
+        For platform-owned types (Response, CustomEvent, DOM events), require real instances (new Response(), Response.json(), new CustomEvent()) instead of fromPartial or casts.
+        When a fixture cast hides a too-wide production signature, suggest narrowing the production type instead of casting the fixture.
+        Flag process-level listeners (process.on('unhandledRejection')) in tests; assert the rejected promise directly.
+        Tests should import the module under test from its public entrypoint, not deep internal paths.
