@@ -28,23 +28,13 @@ type Role = 'owner' | 'member'
 type Tier = 'free' | 'standard' | 'creator' | 'pro'
 type State = 'active' | 'cancelled' | 'inactive' | 'changing'
 type Balance = 'funded' | 'low' | 'empty'
-type SubscribeOutcome =
-  | 'subscribed'
-  | 'needs_payment_method'
-  | 'pending_payment'
-type TopupOutcome = 'completed' | 'pending' | 'failed'
-type OpOutcome = 'succeeded' | 'failed'
 
 interface MockCfg {
-  enabled: boolean
   ws: Workspace
   role: Role
   tier: Tier
   state: State
   balance: Balance
-  subscribe: SubscribeOutcome
-  topup: TopupOutcome
-  op: OpOutcome
   roleChange: '200' | '500'
   multiWs: boolean
 }
@@ -56,15 +46,11 @@ interface UiState {
 }
 
 const DEFAULTS: MockCfg = {
-  enabled: true,
   ws: 'team',
   role: 'owner',
   tier: 'creator',
   state: 'active',
   balance: 'funded',
-  subscribe: 'subscribed',
-  topup: 'completed',
-  op: 'succeeded',
   roleChange: '200',
   multiWs: false
 }
@@ -259,17 +245,13 @@ function preview(): unknown {
 function subscribeResp(): unknown {
   return {
     billing_op_id: 'op-1',
-    status: cfg.subscribe,
-    payment_method_url:
-      cfg.subscribe === 'needs_payment_method'
-        ? 'https://example.com/stripe-portal'
-        : undefined
+    status: 'subscribed'
   }
 }
 
 const opStatus = () => ({
   id: 'op-1',
-  status: cfg.op,
+  status: 'succeeded',
   started_at: '2026-01-01T00:00:00Z',
   completed_at: '2026-01-01T00:01:00Z'
 })
@@ -369,7 +351,7 @@ const ROUTES: Route[] = [
     () => ({
       billing_op_id: 'op-1',
       topup_id: 't1',
-      status: cfg.topup,
+      status: 'completed',
       amount_cents: 5000
     })
   ],
@@ -407,7 +389,6 @@ interface Hit {
 }
 
 function lookup(method: string, url: string): Hit | null {
-  if (!cfg.enabled) return null
   for (const r of ROUTES) {
     if (r[0] === method && r[1].test(url)) {
       return { body: r[2](), status: r[3] ? r[3]() : 200 }
@@ -491,7 +472,7 @@ function installFetchPatch(): void {
 
     // Flag merge: pass the real response through, add only the team flag, and
     // bail to the untouched response on any problem (keeps firebase_config).
-    if (cfg.enabled && FEATURES_RE.test(url)) {
+    if (FEATURES_RE.test(url)) {
       const real = await ORIG(input, init)
       if (!real.ok) return real
       let json: unknown
@@ -547,7 +528,6 @@ function buildPanel(): void {
   wrap.innerHTML =
     `<div id="cbm-head" title="drag to move" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;cursor:move;user-select:none"><b style="color:#8ab4ff">Billing Mock</b>` +
     `<span style="display:flex;align-items:center;gap:8px"><span id="cbm-collapse" title="collapse" style="cursor:pointer;opacity:.7;padding:0 4px;border:1px solid #3a3d46;border-radius:4px;line-height:1.4">${ui.collapsed ? '+' : '–'}</span>` +
-    `<label style="font-size:11px"><input type="checkbox" id="cbm-enabled"${cfg.enabled ? ' checked' : ''}/> on</label>` +
     `<span id="cbm-close" title="turn off the harness" style="cursor:pointer;opacity:.7;padding:0 4px">✕</span></span></div>` +
     `<div id="cbm-body"${ui.collapsed ? ' style="display:none"' : ''}>` +
     row('workspace', 'ws', ['personal', 'team']) +
@@ -556,13 +536,6 @@ function buildPanel(): void {
     row('state', 'state', ['active', 'cancelled', 'inactive', 'changing']) +
     row('balance', 'balance', ['funded', 'low', 'empty']) +
     `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
-    row('subscribe', 'subscribe', [
-      'subscribed',
-      'needs_payment_method',
-      'pending_payment'
-    ]) +
-    row('topup', 'topup', ['completed', 'pending', 'failed']) +
-    row('op-poll', 'op', ['succeeded', 'failed']) +
     row('roleChange', 'roleChange', ['200', '500']) +
     `<label style="display:flex;gap:6px;margin:4px 0"><input type="checkbox" id="cbm-multiWs"${cfg.multiWs ? ' checked' : ''}/><span style="opacity:.7">2nd workspace (switcher)</span></label>` +
     `<div style="font-size:10px;opacity:.55;margin-top:4px">change → saves + reloads · personal=/customers · team=/api/billing</div>` +
@@ -579,12 +552,6 @@ function buildPanel(): void {
       ;(cfg as unknown as Record<string, string>)[k] = s.value
       apply()
     })
-  })
-  ;(
-    document.getElementById('cbm-enabled') as HTMLInputElement
-  ).addEventListener('change', (e) => {
-    cfg.enabled = (e.target as HTMLInputElement).checked
-    apply()
   })
   ;(
     document.getElementById('cbm-multiWs') as HTMLInputElement
