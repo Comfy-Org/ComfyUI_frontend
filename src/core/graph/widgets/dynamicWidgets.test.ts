@@ -1,6 +1,5 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, test, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -129,15 +128,13 @@ describe('Dynamic Combos', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
     node.size[1] = 800
-    fromAny<{ configuringGraphLevel: number }, unknown>(
-      app
-    ).configuringGraphLevel = 1
+    const configuringGraphSpy = vi
+      .spyOn(app, 'configuringGraph', 'get')
+      .mockReturnValue(true)
     try {
       node.widgets[0].value = '1'
     } finally {
-      fromAny<{ configuringGraphLevel: number }, unknown>(
-        app
-      ).configuringGraphLevel = 0
+      configuringGraphSpy.mockRestore()
     }
     expect(node.widgets.length).toBe(3)
     expect(node.size[1]).toBe(800)
