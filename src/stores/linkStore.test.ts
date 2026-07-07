@@ -215,7 +215,7 @@ describe('useLinkStore', () => {
     expect(links.size).toBe(0)
   })
 
-  it('reports an output connected when its target endpoint is floating', () => {
+  it('never returns floating links from output queries', () => {
     const store = useLinkStore()
     const outputFloating: LinkTopology = {
       ...link(1, 5, 0, 9, 2),
@@ -224,10 +224,8 @@ describe('useLinkStore', () => {
     }
     expect(store.registerLink(graphA, outputFloating)).toBeDefined()
 
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
-    expect(
-      [...store.getOutputSlotLinks(graphA, toNodeId(5), 0)].map((l) => l.id)
-    ).toContain(toLinkId(1))
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
+    expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0).size).toBe(0)
   })
 
   it('scopes output queries by graph', () => {

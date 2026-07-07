@@ -638,11 +638,12 @@ export function useSlotLinkInteraction({
 
     const hasExistingOutputLink =
       isOutputSlot &&
-      useLinkStore().isOutputSlotConnected(
+      (useLinkStore().isOutputSlotConnected(
         graph.rootGraph.id,
         localNodeId,
         index
-      )
+      ) ||
+        slotFloatingLinks(graph, 'output', localNodeId, index).length > 0)
 
     const shouldBreakExistingInputLink =
       isInputSlot &&

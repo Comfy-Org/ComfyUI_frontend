@@ -4,6 +4,7 @@ import type { ComputedRef } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LinkTopology } from '@/types/linkTopology'
+import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -150,14 +151,14 @@ export const useLinkStore = defineStore('link', () => {
 
   /**
    * Reverse index over origin endpoints, keyed `${originNodeId}:${originSlot}`.
-   * Spans both collections `graphTopologies` yields, so a link whose target is
-   * floating still indexes its assigned origin. Links with an unassigned origin
-   * have no output slot to report and are skipped.
+   * Spans both collections `graphTopologies` yields. Floating links are
+   * skipped: link queries return fully-assigned links only, matching the
+   * `output.links` mirror this index replaces.
    */
   function buildOutputIndex(graphId: UUID): OriginIndex {
     const index: OriginIndex = new Map()
     for (const topology of graphTopologies(graphId)) {
-      if (topology.originNodeId === UNASSIGNED_NODE_ID) continue
+      if (isFloatingTopology(topology)) continue
       const key = originKey(topology.originNodeId, topology.originSlot)
       const links = index.get(key) ?? new Set<LinkTopology>()
       links.add(topology)

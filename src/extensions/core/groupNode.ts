@@ -2,6 +2,7 @@ import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
@@ -936,14 +937,10 @@ export class GroupNodeHandler {
         groupOutputId < node.outputs?.length;
         groupOutputId++
       ) {
-        const output = node.outputs[groupOutputId]
-        if (!output.links) continue
-        const links = [...output.links]
-        for (const l of links) {
+        const links = outputLinks(app.rootGraph, node.id, groupOutputId)
+        for (const link of links) {
           const slot = newToOldOutputMap[groupOutputId]
           if (!slot) continue
-          const link = app.rootGraph.links[l]
-          if (!link) continue
           const targetNode = app.rootGraph.getNodeById(link.target_id)
           const selectedId = parseNodeId(selectedIds[slot.node.index ?? 0])
           const newNode = selectedId

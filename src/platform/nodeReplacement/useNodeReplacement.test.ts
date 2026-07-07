@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
@@ -75,15 +79,29 @@ function createMockLink(
   }
 }
 
+const GRAPH_ID: UUID = 'node-replacement-graph'
+
 function createMockGraph(
   nodes: LGraphNode[],
   links: ReturnType<typeof createMockLink>[] = []
 ): LGraph {
   const linksMap = new Map(links.map((l) => [l.id, l]))
+  for (const l of links) {
+    useLinkStore().registerLink(GRAPH_ID, {
+      id: toLinkId(l.id),
+      originNodeId: toNodeId(l.origin_id),
+      originSlot: l.origin_slot,
+      targetNodeId: toNodeId(l.target_id),
+      targetSlot: l.target_slot,
+      type: l.type
+    })
+  }
   return fromAny<LGraph, unknown>({
     _nodes: nodes,
     _nodes_by_id: Object.fromEntries(nodes.map((n) => [n.id, n])),
     links: linksMap,
+    getLink: (id: number) => linksMap.get(id),
+    rootGraph: { id: GRAPH_ID },
     updateExecutionOrder: vi.fn(),
     setDirtyCanvas: vi.fn()
   })
@@ -596,6 +614,7 @@ describe('useNodeReplacement', () => {
 
     it('should transfer ConditioningAverage widget value with real workflow data', () => {
       const link = createMockLink(4, 7, 0, 13, 0)
+      const outLink = createMockLink(6, 13, 0, 20, 0)
       // sanitizeNodeName doesn't strip spaces, so placeholder keeps trailing space
       const placeholder = createPlaceholderNode(
         13,
@@ -608,7 +627,7 @@ describe('useNodeReplacement', () => {
       )
       placeholder.last_serialization!.widgets_values = [0.75]
 
-      const graph = createMockGraph([placeholder], [link])
+      const graph = createMockGraph([placeholder], [link, outLink])
       placeholder.graph = graph
       Object.assign(app, { rootGraph: graph })
 

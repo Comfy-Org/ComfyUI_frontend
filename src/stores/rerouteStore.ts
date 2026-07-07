@@ -4,7 +4,7 @@ import type { ComputedRef } from 'vue'
 
 import { useLinkStore } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { isFloatingTopology } from '@/types/linkTopology'
 import type { RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -55,9 +55,7 @@ export const useRerouteStore = defineStore('reroute', () => {
       { linkIds: Set<LinkId>; floatingLinkIds: Set<LinkId> }
     >()
     for (const topology of useLinkStore().graphTopologies(graphId)) {
-      const floating =
-        topology.originNodeId === UNASSIGNED_NODE_ID ||
-        topology.targetNodeId === UNASSIGNED_NODE_ID
+      const floating = isFloatingTopology(topology)
       const visited = new Set<RerouteId>()
       let rerouteId = topology.parentId
       while (rerouteId !== undefined && !visited.has(rerouteId)) {

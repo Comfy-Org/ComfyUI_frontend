@@ -24,7 +24,6 @@ import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 const INLINE_INPUTS = false
@@ -280,7 +279,6 @@ function changeOutputType(
     slot
   )
   for (const topology of topologies) {
-    if (topology.targetNodeId === UNASSIGNED_NODE_ID) continue
     const link = node.graph.links[topology.id]
     if (!link) continue
     const { input, inputNode, subgraphOutput } = link.resolve(node.graph)
