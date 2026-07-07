@@ -54,18 +54,58 @@
               {{ formatDate(event.date) }}
             </TableCell>
             <TableCell>
-              <div class="flex items-center gap-3">
-                <span
-                  class="flex size-5 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+              <HoverCard :open-delay="150" :close-delay="0">
+                <HoverCardTrigger
+                  as="div"
+                  class="flex w-fit cursor-default items-center gap-3"
                 >
-                  <span class="text-xs font-bold text-base-foreground">
-                    {{ event.userName.charAt(0).toUpperCase() }}
+                  <span
+                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+                  >
+                    <span class="text-xs font-bold text-base-foreground">
+                      {{ event.userName.charAt(0).toUpperCase() }}
+                    </span>
                   </span>
-                </span>
-                <span class="truncate text-sm text-base-foreground">
-                  {{ event.userName }}
-                </span>
-              </div>
+                  <span class="truncate text-sm text-base-foreground">
+                    {{ event.userName }}
+                  </span>
+                </HoverCardTrigger>
+                <HoverCardContent class="w-64">
+                  <div class="flex w-full flex-col gap-2">
+                    <div class="flex h-5 items-center justify-between">
+                      <span class="text-sm text-muted-foreground">
+                        {{
+                          $t(
+                            'workspacePanel.activity.hoverCard.totalCreditsUsed'
+                          )
+                        }}
+                      </span>
+                      <span class="flex items-center gap-1">
+                        <i
+                          class="icon-[lucide--coins] size-4 text-muted-foreground"
+                        />
+                        <span class="text-sm text-base-foreground tabular-nums">
+                          {{
+                            summaryFor(
+                              event.userName
+                            ).totalCredits.toLocaleString()
+                          }}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="flex h-5 items-center justify-between">
+                      <span class="text-sm text-muted-foreground">
+                        {{
+                          $t('workspacePanel.activity.hoverCard.lastActivity')
+                        }}
+                      </span>
+                      <span class="text-sm text-base-foreground">
+                        {{ lastActivityLabel(event.userName) }}
+                      </span>
+                    </div>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground">
               {{ event.eventType }}
@@ -99,6 +139,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
+import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
+import HoverCardTrigger from '@/components/ui/hover-card/HoverCardTrigger.vue'
 import Pagination from '@/components/ui/pagination/Pagination.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
@@ -108,11 +151,12 @@ import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
 import type { ActivitySortField } from '@/platform/workspace/composables/useWorkspaceActivity'
+import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { search } = defineProps<{ search: string }>()
 
-const { d } = useI18n()
+const { t, d } = useI18n()
 
 const {
   page,
@@ -121,8 +165,27 @@ const {
   pagedItems,
   sortField,
   sortDirection,
-  toggleSort
+  toggleSort,
+  userSummaries
 } = useWorkspaceActivity(() => search)
+
+function summaryFor(userName: string) {
+  return (
+    userSummaries.value.get(userName) ?? {
+      totalCredits: 0,
+      lastActivity: new Date()
+    }
+  )
+}
+
+function lastActivityLabel(userName: string): string {
+  return formatRelativeTime(summaryFor(userName).lastActivity, new Date(), {
+    justNow: t('workspacePanel.members.activity.justNow'),
+    minutesAgo: (n) => t('workspacePanel.members.activity.minutesAgo', { n }),
+    hoursAgo: (n) => t('workspacePanel.members.activity.hoursAgo', { n }),
+    daysAgo: (n) => t('workspacePanel.members.activity.daysAgo', n)
+  })
+}
 
 const sortHeaderClass =
   'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left font-[inherit] text-sm text-muted-foreground'

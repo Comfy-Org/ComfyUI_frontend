@@ -2951,6 +2951,10 @@
         "eventDetails": "Event details",
         "creditsUsed": "Credits used"
       },
+      "hoverCard": {
+        "totalCreditsUsed": "Total credits used",
+        "lastActivity": "Last activity"
+      },
       "perUserHint": "Looking for total usage per user?"
     },
     "invoices": {

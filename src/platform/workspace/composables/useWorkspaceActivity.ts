@@ -10,6 +10,11 @@ export interface ActivityEvent {
   credits: number
 }
 
+export interface UserSummary {
+  totalCredits: number
+  lastActivity: Date
+}
+
 const ITEMS_PER_PAGE = 8
 
 // Prototype mock: there is no usage-activity endpoint yet, so the event list is
@@ -91,6 +96,26 @@ export function useWorkspaceActivity(search: MaybeRefOrGetter<string>) {
     if (page.value > lastPage) page.value = lastPage
   })
 
+  // Per-user rollups behind the User hover card: lifetime credits and the most
+  // recent event, aggregated across the whole (unpaged) list.
+  const userSummaries = computed(() => {
+    const map = new Map<string, UserSummary>()
+    for (const event of all) {
+      const existing = map.get(event.userName)
+      if (!existing) {
+        map.set(event.userName, {
+          totalCredits: event.credits,
+          lastActivity: event.date
+        })
+      } else {
+        existing.totalCredits += event.credits
+        if (event.date > existing.lastActivity)
+          existing.lastActivity = event.date
+      }
+    }
+    return map
+  })
+
   return {
     page,
     total,
@@ -98,6 +123,7 @@ export function useWorkspaceActivity(search: MaybeRefOrGetter<string>) {
     pagedItems,
     sortField,
     sortDirection,
-    toggleSort
+    toggleSort,
+    userSummaries
   }
 }
