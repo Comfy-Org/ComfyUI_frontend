@@ -43,11 +43,11 @@ defineExpose({
 
 <template>
   <div
-    class="rounded-agent border-agent-border bg-agent-surface-raised focus-within:border-agent-border-strong flex flex-col gap-2 border p-2"
+    class="border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted flex flex-col rounded-2xl border transition-colors"
   >
     <div
       v-if="composer.attachments.value.length"
-      class="flex flex-wrap gap-1.5"
+      class="flex flex-wrap gap-1.5 px-4 pt-3"
     >
       <AttachmentChip
         v-for="item in composer.attachments.value"
@@ -62,17 +62,17 @@ defineExpose({
       v-model="composer.draft.value"
       :placeholder="t('agent.placeholder')"
       rows="1"
-      class="max-h-40 min-h-9"
+      class="max-h-48 min-h-20 px-4 py-3"
       @keydown.enter="onEnter"
     />
 
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-0.5">
+    <div class="flex items-center justify-between px-3 py-2">
+      <div class="flex items-center gap-1">
         <button
           v-if="canAttach"
           type="button"
           :aria-label="t('agent.attach')"
-          class="rounded-agent text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 items-center justify-center transition-colors"
+          class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
           @click="emit('attach')"
         >
           <span class="icon-[lucide--paperclip] size-4" />
@@ -80,29 +80,32 @@ defineExpose({
         <button
           type="button"
           :aria-label="t('agent.mention')"
-          class="rounded-agent text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 items-center justify-center transition-colors"
+          class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
           @click="composer.insert('@')"
         >
           <span class="icon-[lucide--at-sign] size-4" />
         </button>
       </div>
 
-      <div class="flex items-center gap-2">
-        <span class="text-agent-fg-subtle text-xs">{{
-          t('agent.modelAuto')
-        }}</span>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
+          :aria-label="t('agent.modelAuto')"
+        >
+          <span>{{ t('agent.modelAuto') }}</span>
+          <span class="icon-[lucide--chevron-down] size-3" />
+        </button>
         <button
           type="button"
           :aria-label="streaming ? t('agent.stop') : t('agent.send')"
           :disabled="!streaming && !composer.canSend.value"
           :class="
             cn(
-              'rounded-agent flex size-8 items-center justify-center transition-colors',
+              'flex size-8 items-center justify-center rounded-xl transition-colors',
               streaming
-                ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border'
-                : composer.canSend.value
-                  ? 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90'
-                  : 'bg-agent-surface-hover text-agent-fg-subtle cursor-not-allowed'
+                ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border cursor-pointer'
+                : 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
             )
           "
           @click="composer.submit"
