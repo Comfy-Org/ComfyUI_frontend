@@ -143,6 +143,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               before_send: createPostHogBeforeSend()
             })
             this.isInitialized = true
+            // Before flushEventQueue so pre-init events also carry the
+            // platform super properties.
+            this.registerPlatformProps()
             this.flushEventQueue()
             this.registerDesktopEntryProps()
 
@@ -283,6 +286,32 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         return isValid
       })
     )
+  }
+
+  /**
+   * Cross-surface analytics axes shared with the desktop main process and
+   * CLI (MAR-51): `client` = which surface emitted the event
+   * (desktop | web | cli), `deployment` = which backend runs the work
+   * (cloud | local | remote). This provider only ships in cloud builds, so
+   * `deployment` is pinned to 'cloud'. The desktop-embedded view is
+   * detected via the desktop preload bridge (window.__comfyDesktop2),
+   * which Electron injects before any page script runs — deterministic,
+   * unlike user-agent sniffing or the utm-based `source_app` attribution
+   * below (which only covers sessions that ENTERED via a desktop link and
+   * sticks to persisted storage afterwards). register() persists to
+   * localStorage, but these are re-registered on every init so they always
+   * reflect the current context.
+   */
+  private registerPlatformProps(): void {
+    if (!this.posthog) return
+    try {
+      this.posthog.register({
+        client: window.__comfyDesktop2 ? 'desktop' : 'web',
+        deployment: 'cloud'
+      })
+    } catch (error) {
+      console.error('Failed to register platform props:', error)
+    }
   }
 
   private registerDesktopEntryProps(): void {
