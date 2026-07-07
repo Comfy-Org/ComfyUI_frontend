@@ -82,7 +82,9 @@ vi.mock('@/composables/graph/useNodeMenuOptions', () => ({
       action: openNodeInfo
     }),
     getNodeVisualOptions: () => nodeMenu.visualOptions.value,
-    getPinOption: () => ({ label: 'Pin' }),
+    getPinOption: (states: { pinned: boolean }) => ({
+      label: states.pinned ? 'Unpin' : 'Pin'
+    }),
     getBypassOption: () => ({ label: 'Bypass' }),
     getRunBranchOption: () => ({ label: 'Run Branch' })
   })
@@ -179,14 +181,22 @@ describe('useMoreOptionsMenu', () => {
     expect(menuLabels).toContain('Align')
   })
 
-  it('recomputes menu flags after a manual bump', () => {
+  it('recomputes menu options after a manual bump reflects new selection flags', () => {
+    selectionState.computeSelectionFlags.mockReturnValue({
+      collapsed: false,
+      pinned: false
+    })
     const { bump, menuOptions } = useMoreOptionsMenu()
-    void menuOptions.value
-    expect(selectionState.computeSelectionFlags).toHaveBeenCalledTimes(1)
+    expect(menuOptions.value.map((o) => o.label)).toContain('Pin')
 
+    selectionState.computeSelectionFlags.mockReturnValue({
+      collapsed: false,
+      pinned: true
+    })
     bump()
-    void menuOptions.value
-    expect(selectionState.computeSelectionFlags).toHaveBeenCalledTimes(2)
+    const labelsAfterBump = menuOptions.value.map((o) => o.label)
+    expect(labelsAfterBump).toContain('Unpin')
+    expect(labelsAfterBump).not.toContain('Pin')
   })
 
   it('assembles group-context options for a single selected group', () => {

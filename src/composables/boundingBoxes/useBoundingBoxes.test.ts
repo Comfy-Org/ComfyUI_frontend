@@ -302,7 +302,32 @@ describe('useBoundingBoxes drawing', () => {
     expect(c.modelValue.value).toHaveLength(0)
   })
 
-  it('redraws active text regions with fallback palette color', async () => {
+  it('redraws active text regions with the fallback palette color', async () => {
+    const fillStyles: string[] = []
+    const fillText = vi.fn()
+    const recordingCtx: unknown = {
+      measureText: (s: string) => ({ width: s.length * 7 }),
+      setTransform: () => {},
+      clearRect: () => {},
+      fillRect: () => {},
+      strokeRect: () => {},
+      fillText,
+      drawImage: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      rect: () => {},
+      clip: () => {},
+      font: '',
+      strokeStyle: '',
+      lineWidth: 0,
+      set fillStyle(value: string) {
+        fillStyles.push(value)
+      },
+      get fillStyle() {
+        return fillStyles.at(-1) ?? ''
+      }
+    }
     const c = setup([
       box({
         x: 10,
@@ -317,12 +342,16 @@ describe('useBoundingBoxes drawing', () => {
         }
       })
     ])
+    c.canvasEl.value = makeCanvas({
+      context: recordingCtx as CanvasRenderingContext2D
+    })
 
     c.focused.value = true
     c.syncState()
     await flush()
 
-    expect(c.modelValue.value).toHaveLength(1)
+    expect(fillText).toHaveBeenCalled()
+    expect(fillStyles.some((s) => s.includes('#8c8c8c'))).toBe(true)
   })
 
   it('draws safely when the canvas context is unavailable', async () => {
