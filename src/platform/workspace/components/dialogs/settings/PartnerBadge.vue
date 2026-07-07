@@ -1,5 +1,9 @@
 <template>
-  <i :class="cn(getProviderIcon(partner), 'size-5 shrink-0 rounded-full')" />
+  <span
+    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-secondary-background-hover"
+  >
+    <i :class="cn(getProviderIcon(partner), 'size-3')" />
+  </span>
 </template>
 
 <script setup lang="ts">

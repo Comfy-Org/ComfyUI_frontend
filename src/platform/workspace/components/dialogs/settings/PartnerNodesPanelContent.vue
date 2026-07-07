@@ -34,7 +34,7 @@
     <div
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
-      <div class="min-h-0 flex-1 overflow-auto px-6">
+      <div class="min-h-0 flex-1 overflow-auto px-4">
         <Table>
           <TableHeader class="sticky top-0 z-10 bg-base-background">
             <TableRow class="hover:bg-transparent">
