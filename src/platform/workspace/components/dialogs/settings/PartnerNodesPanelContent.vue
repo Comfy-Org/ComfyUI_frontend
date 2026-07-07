@@ -76,7 +76,7 @@
             v-for="node in filteredNodes"
             :key="node.id"
             :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
-            :class="cn('group cursor-pointer', !node.enabled && 'opacity-55')"
+            class="group cursor-pointer"
             @click="toggleSelection(node.id)"
           >
             <TableCell>
@@ -92,10 +92,18 @@
                 "
               />
             </TableCell>
-            <TableCell class="text-base-foreground">
+            <TableCell
+              :class="
+                cn('text-muted-foreground', !node.enabled && 'opacity-30')
+              "
+            >
               {{ node.name }}
             </TableCell>
-            <TableCell class="text-muted-foreground">
+            <TableCell
+              :class="
+                cn('text-muted-foreground', !node.enabled && 'opacity-30')
+              "
+            >
               <div class="flex items-center gap-2">
                 <PartnerBadge :partner="node.partner" />
                 <span>{{ node.partner }}</span>
