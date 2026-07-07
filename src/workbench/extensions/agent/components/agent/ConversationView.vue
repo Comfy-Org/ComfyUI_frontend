@@ -9,9 +9,8 @@ import type { ConversationEntry } from '../../stores/agent/agentConversationStor
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
 
-const { entries, userName } = defineProps<{
+const { entries } = defineProps<{
   entries: ConversationEntry[]
-  userName?: string
 }>()
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
@@ -46,14 +45,10 @@ watch(
 
 <template>
   <div class="relative h-full">
-    <ScrollArea class="h-full" viewport-class="px-4 py-3">
+    <ScrollArea class="h-full" viewport-class="mx-auto max-w-[640px] p-4">
       <div class="flex flex-col gap-4">
         <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
-          <UserMessage
-            v-if="entry.role === 'user'"
-            :text="entry.text"
-            :name="userName"
-          />
+          <UserMessage v-if="entry.role === 'user'" :text="entry.text" />
           <AgentMessage
             v-else
             :message="entry"
