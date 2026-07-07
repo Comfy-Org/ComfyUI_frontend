@@ -6,7 +6,10 @@
     <TableCell>
       <div class="flex items-center gap-3">
         <span
-          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full"
+          :style="{
+            backgroundColor: userBadgeColor(member.name || member.email)
+          }"
         >
           <span class="text-sm font-bold text-base-foreground">
             {{ initial }}
@@ -66,6 +69,7 @@ import Button from '@/components/ui/button/Button.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 import { roleLabelKey } from '@/platform/workspace/utils/roleLabels'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 

@@ -6,7 +6,8 @@
     <TableCell>
       <div class="flex items-center gap-3">
         <span
-          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full"
+          :style="{ backgroundColor: userBadgeColor(invite.email) }"
         >
           <span class="text-sm font-bold text-base-foreground">
             {{ inviteInitial }}
@@ -54,6 +55,7 @@ import Button from '@/components/ui/button/Button.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 
 const { invite } = defineProps<{ invite: PendingInvite }>()
 

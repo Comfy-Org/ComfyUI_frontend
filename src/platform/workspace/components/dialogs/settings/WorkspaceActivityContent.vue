@@ -60,7 +60,8 @@
                   class="flex w-fit cursor-default items-center gap-3"
                 >
                   <span
-                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+                    class="flex size-5 shrink-0 items-center justify-center rounded-full"
+                    :style="{ backgroundColor: userBadgeColor(event.userName) }"
                   >
                     <span class="text-2xs font-bold text-base-foreground">
                       {{ event.userName.charAt(0).toUpperCase() }}
@@ -151,6 +152,7 @@ import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
 import type { ActivitySortField } from '@/platform/workspace/composables/useWorkspaceActivity'
+import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 import { cn } from '@comfyorg/tailwind-utils'
 
