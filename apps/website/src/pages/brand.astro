@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import BrandBackground from '../templates/brand/BrandBackground.vue'
 import BrandHeroSection from '../templates/brand/BrandHeroSection.vue'
 import BrandLogosSection from '../templates/brand/BrandLogosSection.vue'
 import BrandColorSection from '../templates/brand/BrandColorSection.vue'
@@ -15,10 +16,13 @@ const locale = 'en' as const
   title={t('brand.page.title', locale)}
   description={t('brand.page.description', locale)}
 >
-  <BrandHeroSection />
-  <BrandLogosSection />
-  <BrandColorSection />
-  <BrandVoiceSection />
-  <BrandTrademarkSection />
-  <BrandQuestionsSection />
+  <div class="relative">
+    <BrandBackground client:idle />
+    <BrandHeroSection />
+    <BrandLogosSection />
+    <BrandColorSection />
+    <BrandVoiceSection />
+    <BrandTrademarkSection />
+    <BrandQuestionsSection />
+  </div>
 </BaseLayout>

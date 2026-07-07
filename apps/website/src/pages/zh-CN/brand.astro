@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import BrandBackground from '../../templates/brand/BrandBackground.vue'
 import BrandHeroSection from '../../templates/brand/BrandHeroSection.vue'
 import BrandLogosSection from '../../templates/brand/BrandLogosSection.vue'
 import BrandColorSection from '../../templates/brand/BrandColorSection.vue'
@@ -13,10 +14,13 @@ import { t } from '../../i18n/translations'
   title={t('brand.page.title', 'zh-CN')}
   description={t('brand.page.description', 'zh-CN')}
 >
-  <BrandHeroSection locale="zh-CN" />
-  <BrandLogosSection locale="zh-CN" />
-  <BrandColorSection locale="zh-CN" />
-  <BrandVoiceSection locale="zh-CN" />
-  <BrandTrademarkSection locale="zh-CN" />
-  <BrandQuestionsSection locale="zh-CN" />
+  <div class="relative">
+    <BrandBackground client:idle />
+    <BrandHeroSection locale="zh-CN" />
+    <BrandLogosSection locale="zh-CN" />
+    <BrandColorSection locale="zh-CN" />
+    <BrandVoiceSection locale="zh-CN" />
+    <BrandTrademarkSection locale="zh-CN" />
+    <BrandQuestionsSection locale="zh-CN" />
+  </div>
 </BaseLayout>
