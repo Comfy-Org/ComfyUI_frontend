@@ -269,27 +269,26 @@ function members(): unknown {
     last_active_at: hoursAgo(2),
     credits_used_this_month: 6532
   }
-  const m1 = {
-    id: 'user-42',
-    name: 'Alice',
-    email: 'alice@example.com',
+  // role 'owner' (non-creator) renders as "Admin"; 'member' as "Member".
+  const team = [
+    ['Jane Doe', 'janedoe@comfy.ai', 'owner', 7, 15],
+    ['Rob Johnson', 'robjohnson@comfy.ai', 'owner', 24, 1025],
+    ['Min Lee', 'minlee@comfy.ai', 'member', 23, 140],
+    ['Yuta Tanaka', 'yutatanaka@comfy.ai', 'member', 0.1, 2586],
+    ['Alice', 'alice@example.com', 'member', 72, 320],
+    ['Bob', 'bob@example.com', 'owner', 120, 88],
+    ['Priya Nair', 'priya@studio.com', 'member', 5, 1740]
+  ].map(([name, email, role, hrs, credits], i) => ({
+    id: `user-${100 + i}`,
+    name,
+    email,
     joined_at: '2026-02-15T00:00:00Z',
-    role: 'member',
+    role,
     is_original_owner: false,
-    last_active_at: hoursAgo(23),
-    credits_used_this_month: 140
-  }
-  const m2 = {
-    id: 'user-43',
-    name: 'Bob',
-    email: 'bob@example.com',
-    joined_at: '2026-03-20T00:00:00Z',
-    role: 'owner',
-    is_original_owner: false,
-    last_active_at: hoursAgo(24),
-    credits_used_this_month: 1025
-  }
-  const list = cfg.ws === 'team' ? [creator, m1, m2] : [creator]
+    last_active_at: hoursAgo(hrs as number),
+    credits_used_this_month: credits
+  }))
+  const list = cfg.ws === 'team' ? [creator, ...team] : [creator]
   return {
     members: list,
     pagination: { offset: 0, limit: 10, total: list.length }
