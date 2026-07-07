@@ -1,0 +1,34 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { name, previewUrl } = defineProps<{
+  name: string
+  previewUrl?: string
+}>()
+const emit = defineEmits<{ remove: [] }>()
+
+const { t } = useI18n()
+</script>
+
+<template>
+  <span
+    class="rounded-agent bg-agent-pill text-agent-fg inline-flex items-center gap-1.5 py-1 pr-2 pl-1 text-xs"
+  >
+    <img
+      v-if="previewUrl"
+      :src="previewUrl"
+      :alt="name"
+      class="size-5 rounded-sm object-cover"
+    />
+    <span v-else class="text-agent-fg-subtle icon-[lucide--paperclip] size-4" />
+    <span class="max-w-32 truncate">{{ name }}</span>
+    <button
+      type="button"
+      :aria-label="t('agent.remove')"
+      class="text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-4 items-center justify-center rounded-full transition-colors"
+      @click="emit('remove')"
+    >
+      <span class="icon-[lucide--x] size-3" />
+    </button>
+  </span>
+</template>
