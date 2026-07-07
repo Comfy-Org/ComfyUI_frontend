@@ -288,15 +288,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  /**
-   * Cross-surface analytics axes (MAR-51): `client` = surface that emitted
-   * the event, `deployment` = backend that runs the work. The cloud bundle
-   * always talks to the cloud backend — even embedded in Comfy Desktop —
-   * so `deployment` is pinned; the embedding is what `client` captures,
-   * via the desktop preload bridge (present before any page script runs).
-   * Events the desktop host telemetry intercepts instead of this provider
-   * are tagged equivalently main-side (Comfy-Desktop#1229).
-   */
   private registerPlatformProps(): void {
     if (!this.posthog) return
     try {
