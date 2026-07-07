@@ -174,9 +174,11 @@
     <!-- Credit auto-reload -->
     <AutoReloadSection v-if="canManageBilling" />
 
-    <!-- Footer links -->
+    <!-- Footer links: mt-auto floats them to the bottom when the content is
+    short (e.g. a member's near-empty tab); when content overflows, mt-auto
+    collapses and they scroll below it. -->
     <div
-      class="flex h-8 shrink-0 items-center gap-2 text-sm text-muted-foreground"
+      class="mt-auto flex h-8 shrink-0 items-center gap-2 text-sm text-muted-foreground"
     >
       <a
         :href="learnMoreUrl"
