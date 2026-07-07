@@ -132,7 +132,7 @@ describe('aboutPanelStore', () => {
       {
         aboutPageBadges: [{ label: 'My Ext', url: 'https://ext', icon: 'pi' }]
       },
-      {} // extension without aboutPageBadges -> ?? [] branch
+      {}
     ]
     const store = useAboutPanelStore()
 
