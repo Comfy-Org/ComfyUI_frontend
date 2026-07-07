@@ -44,8 +44,9 @@
         <template #button>
           <Button
             v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            variant="muted-textonly"
+            variant="secondary"
             size="icon"
+            class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
             :aria-label="$t('g.moreOptions')"
           >
             <i class="pi pi-ellipsis-h" />

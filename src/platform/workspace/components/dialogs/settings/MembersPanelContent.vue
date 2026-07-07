@@ -1,7 +1,7 @@
 <template>
   <div class="grow overflow-auto pt-6">
     <div
-      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke/60 p-6"
     >
       <!-- Section Header -->
       <div class="flex w-full items-center gap-9">

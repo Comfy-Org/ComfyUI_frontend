@@ -2,7 +2,7 @@
   <div class="flex size-full flex-col">
     <div class="grow overflow-auto">
       <div
-        class="flex size-full flex-col gap-4 rounded-2xl border border-interface-stroke p-6"
+        class="flex size-full flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-6"
       >
         <div class="flex w-full items-start gap-9">
           <div class="flex min-w-0 flex-1 flex-col gap-1">
@@ -118,7 +118,7 @@
 
         <!-- Footer default -->
         <div
-          class="mt-auto flex items-center justify-end gap-2 border-t border-interface-stroke pt-4 text-sm text-muted-foreground"
+          class="mt-auto flex items-center justify-end gap-2 border-t border-interface-stroke/60 pt-4 text-sm text-muted-foreground"
         >
           <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
           <span class="text-base-foreground">
@@ -141,7 +141,7 @@
     >
       <div
         v-if="selectedCount > 0"
-        class="fixed bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-full border border-interface-stroke bg-base-background px-4 py-2 shadow-lg"
+        class="fixed bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-full border border-interface-stroke/60 bg-base-background px-4 py-2 shadow-lg"
       >
         <Button
           variant="muted-textonly"
