@@ -32,12 +32,11 @@ export interface SessionNotice {
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
-  workflowId?: () => string | undefined
   selection?: () => Record<string, unknown> | undefined
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, workflowId, selection } = deps
+  const { rest, events, selection } = deps
 
   const conversationStore = useAgentConversationStore()
   const draftStore = useAgentDraftStore()
@@ -94,12 +93,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
-    const id = workflowId?.()
-    if (id !== undefined) {
-      draftStore.bind(id)
-      // Baseline the draft on connect so a reconnect recovers versions missed offline.
-      void resyncDraft()
-    }
   }
 
   function stop(): void {
@@ -125,17 +118,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return false
     }
-    const id = workflowId?.()
-    if (id !== undefined) draftStore.bind(id)
     sending.value = true
     try {
       const ack = await rest.postMessage(conversationStore.threadId ?? 'new', {
         content: text,
-        workflowId: id,
         selection: selection?.(),
         attachments
       })
       conversationStore.setThreadId(ack.thread_id)
+      // The server owns the workflow and returns its id in the ack; bind the draft store to it
+      // so the draft_patch events that follow this turn resolve to the canvas. bind() is a
+      // no-op when the id is unchanged, so re-binding on every ack keeps the draft intact.
+      if (ack.workflow_id !== undefined) draftStore.bind(ack.workflow_id)
       // The ONE branding seam: the server-minted assistant message_id becomes the TurnId
       // that addresses this turn everywhere downstream.
       const turnId = ack.message_id as TurnId

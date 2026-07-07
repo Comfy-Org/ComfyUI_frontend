@@ -38,7 +38,8 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     postMessage: vi.fn(
       async (): Promise<AgentTurnAccepted> => ({
         thread_id: 'th-1',
-        message_id: 'msg-1'
+        message_id: 'msg-1',
+        workflow_id: 'wf-1'
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
@@ -129,7 +130,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'make me a cat',
-      workflowId: undefined,
       selection: undefined,
       attachments: undefined
     })
@@ -274,13 +274,10 @@ describe('useAgentSession (v1 composition root)', () => {
   it('(e) foreign chat events are ignored, but a mid-turn draft_patch still adopts', async () => {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()
-    const session = useAgentSession({
-      rest,
-      events: source,
-      workflowId: () => 'wf-1'
-    })
+    const session = useAgentSession({ rest, events: source })
     session.start()
 
+    // The send's ack binds the draft store to the server's workflow (wf-1).
     await session.sendMessage('hi')
     emit(delta('msg-1', 'kept'))
     // A chat event for a different turn is dropped.
@@ -309,25 +306,19 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     const rest = fakeRest({ getDraft })
     const { source, emit } = fakeEvents()
-    const session = useAgentSession({
-      rest,
-      events: source,
-      workflowId: () => 'wf-1'
-    })
+    const session = useAgentSession({ rest, events: source })
     session.start()
-    // start() baselines the draft, so drain that first fetch before testing heartbeats.
-    expect(getDraft).toHaveBeenCalledTimes(1)
-    resolveDraft?.({ content: {}, version: 2 })
-    await Promise.resolve()
+    // The server-owned workflow id is adopted from a message ack; simulate that binding.
+    const draft = useAgentDraftStore()
+    draft.bind('wf-1')
 
     // Two 'behind' heartbeats before the fetch resolves collapse to ONE getDraft.
     emit(draftVersion('wf-1', 9))
     emit(draftVersion('wf-1', 10))
-    expect(getDraft).toHaveBeenCalledTimes(2)
+    expect(getDraft).toHaveBeenCalledTimes(1)
 
     resolveDraft?.({ content: { adopted: true }, version: 10 })
     await Promise.resolve()
-    const draft = useAgentDraftStore()
     expect(draft.version).toBe(10)
     expect(draft.content).toEqual({ adopted: true })
   })
@@ -335,17 +326,14 @@ describe('useAgentSession (v1 composition root)', () => {
   it('(g) onStatus(false) aborts the active turn; onStatus(true) resyncs the draft', async () => {
     const rest = fakeRest()
     const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({
-      rest,
-      events: source,
-      workflowId: () => 'wf-1'
-    })
+    const session = useAgentSession({ rest, events: source })
     session.start()
-    ;(rest.getDraft as ReturnType<typeof vi.fn>).mockClear()
 
+    // The send's ack binds the draft store; no resync fires until a reconnect.
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
     expect(session.isStreaming.value).toBe(true)
+    expect(rest.getDraft).not.toHaveBeenCalled()
 
     status(false)
     expect(session.isStreaming.value).toBe(false)
@@ -364,7 +352,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'with files',
-      workflowId: undefined,
       selection: undefined,
       attachments: ['upload_a.png', 'upload_b.png']
     })
@@ -379,16 +366,17 @@ describe('useAgentSession (v1 composition root)', () => {
         })
     )
     const rest = fakeRest({ getDraft })
-    const session = useAgentSession({
-      rest,
-      events: fakeEvents().source,
-      workflowId: () => 'wf-1'
-    })
+    const { source, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
     session.start()
+
+    // Bind wf-1 (as a message ack would) and let a reconnect start its resync.
+    const draft = useAgentDraftStore()
+    draft.bind('wf-1')
+    status(true)
     expect(getDraft).toHaveBeenCalledWith('wf-1')
 
     // The bound workflow changes before the in-flight fetch resolves.
-    const draft = useAgentDraftStore()
     draft.bind('wf-2')
 
     // The stale snapshot for wf-1 arrives; it must NOT be adopted onto wf-2.
@@ -490,19 +478,22 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(n) a getDraft rejecting with a network TypeError surfaces a notice, not an unhandled rejection', async () => {
-    // start() voids resyncDraft(), so a non-AgentApiError rethrow would escape as an
+    // onStatus(true) voids resyncDraft(), so a non-AgentApiError rethrow would escape as an
     // unhandled rejection. The catch must instead pushError. The notice is the proof:
     // the old rethrow path pushed NO notice (the error escaped), so its presence pins
     // both the surfacing and the absence of an escaping rejection.
     const getDraft = vi
       .fn<(workflowId: string) => Promise<AgentDraftSnapshot>>()
       .mockRejectedValue(new TypeError('fetch failed'))
+    const { source, status } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ getDraft }),
-      events: fakeEvents().source,
-      workflowId: () => 'wf-1'
+      events: source
     })
     session.start()
+
+    useAgentDraftStore().bind('wf-1')
+    status(true)
     await Promise.resolve()
     await Promise.resolve()
 
@@ -530,28 +521,33 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
-  it('(i) a 404 getDraft on start is benign; a 403 pushes an error notice', async () => {
+  it('(i) a 404 draft resync is benign; a 403 pushes an error notice', async () => {
+    const draft = useAgentDraftStore()
+
     const getDraft404 = vi
       .fn<(workflowId: string) => Promise<AgentDraftSnapshot>>()
       .mockRejectedValue(new AgentApiError('not found', 404, undefined))
+    const events404 = fakeEvents()
     const session404 = useAgentSession({
       rest: fakeRest({ getDraft: getDraft404 }),
-      events: fakeEvents().source,
-      workflowId: () => 'wf-1'
+      events: events404.source
     })
     session404.start()
+    draft.bind('wf-1')
+    events404.status(true)
     await Promise.resolve()
     expect(session404.notices.value).toHaveLength(0)
 
     const getDraft403 = vi
       .fn<(workflowId: string) => Promise<AgentDraftSnapshot>>()
       .mockRejectedValue(new AgentApiError('forbidden', 403, undefined))
+    const events403 = fakeEvents()
     const session403 = useAgentSession({
       rest: fakeRest({ getDraft: getDraft403 }),
-      events: fakeEvents().source,
-      workflowId: () => 'wf-1'
+      events: events403.source
     })
     session403.start()
+    events403.status(true)
     await Promise.resolve()
     expect(session403.notices.value).toEqual([
       { level: 'error', text: 'forbidden' }

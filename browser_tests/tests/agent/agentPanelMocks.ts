@@ -246,23 +246,11 @@ export async function mockAgentBoot(
     )
   )
 
-  // The panel mints a session workflow (POST /api/workflows -> {id}) before the
-  // first send so agent drafts have a workflow_id to bind to; the draft store then
-  // only adopts draft_patch events whose workflow_id matches this id.
-  await page.route('**/api/workflows', (route: Route) => {
-    if (route.request().method() === 'POST') {
-      return route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({ id: WORKFLOW_ID })
-      })
-    }
-    return route.fulfill(jsonRoute({ workflows: [] }))
-  })
-
-  // POST /api/agent/threads/new/messages -> 202 {thread_id, message_id}. Record the
-  // body so the spec can assert the composed text was sent, not just that a request
-  // fired. GET on the same path (history hydration) returns an empty thread.
+  // POST /api/agent/threads/new/messages -> 202 {thread_id, message_id, workflow_id}.
+  // The server owns the workflow and returns its id in this ack; the panel binds the
+  // draft store to it and then only adopts draft_patch events whose workflow_id
+  // matches. Record the body so the spec can assert the composed text was sent, not
+  // just that a request fired. GET on the same path (history hydration) is empty.
   await page.route('**/api/agent/threads/*/messages', (route: Route) => {
     const request = route.request()
     if (request.method() === 'POST') {

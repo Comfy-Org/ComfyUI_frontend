@@ -4567,7 +4567,6 @@
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachTitle": "Meet the agent",
-    "coachBody": "Ask it to build or edit graphs.",
-    "draftsUnavailable": "Draft edits are unavailable this session. The agent can still chat, but its graph changes won't appear on the canvas."
+    "coachBody": "Ask it to build or edit graphs."
   }
 }

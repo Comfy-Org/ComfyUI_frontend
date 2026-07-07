@@ -24,7 +24,6 @@ import { useDraftCanvasApply } from './composables/agent/useDraftCanvasApply'
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { createReconnectingEventSource } from './services/agent/agentEventSource'
-import { createAgentWorkflowBinding } from './services/agent/agentWorkflowBinding'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 
 // The in-source agent panel root: the sidebar tab renders this directly (type 'vue'),
@@ -38,16 +37,6 @@ const workspaceAuthStore = useWorkspaceAuthStore()
 
 const rest = createAgentRestClient({
   getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined
-})
-
-// The FE has no uuid surface for the open workflow today (workflow classes are path-keyed;
-// /api/workflows is unused in src), so mint a session workflow that mirrors the backend's
-// own flow: drafts then bind to its id and draft_patch drives the canvas.
-// TODO(FE-1187): replace with the host's real cloud workflow id when the FE adopts the
-// /api/workflows model.
-const binding = createAgentWorkflowBinding({
-  getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined,
-  serializeGraph: () => app.graph.serialize()
 })
 
 // The host /ws carries the agent_* broadcasts; the panel filters them off the shared
@@ -66,7 +55,7 @@ const {
   entries,
   isStreaming,
   notices
-} = useAgentSession({ rest, events, workflowId: () => binding.current() })
+} = useAgentSession({ rest, events })
 
 // Session notices (cancel-failure, draft-resync errors) have no inline conversation row,
 // so surface each newly appended one through the host toast. New-entries-only: the watch
@@ -170,23 +159,11 @@ const panelWidth = computed(() =>
   sizeMode.value === 'large' ? 'max-w-2xl' : 'max-w-md'
 )
 
-let draftsUnavailableWarned = false
-
 function onSend(text: string, attachments: ComposerAttachment[]): void {
-  void (async () => {
-    // Mint the session workflow before the first send so its ack already binds the draft. On
-    // mint failure the turn still sends (chat degrades to unbound), but no draft_patch will
-    // reach the canvas, so warn once rather than letting the draft loop fail silently.
-    const workflowId = await binding.ensure()
-    if (workflowId === undefined && !draftsUnavailableWarned) {
-      draftsUnavailableWarned = true
-      toast.add({ severity: 'warn', summary: t('agent.draftsUnavailable') })
-    }
-    await sendMessage(
-      text,
-      attachments.map((attachment) => attachment.ref)
-    )
-  })()
+  void sendMessage(
+    text,
+    attachments.map((attachment) => attachment.ref)
+  )
 }
 
 function onStop(): void {
