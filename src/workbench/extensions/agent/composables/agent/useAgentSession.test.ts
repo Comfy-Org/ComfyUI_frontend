@@ -16,6 +16,7 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
 import type { AgentEventSource } from './useAgentSession'
@@ -118,6 +119,7 @@ const draftVersion = (workflowId: string, version: number) =>
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -552,5 +554,102 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session403.notices.value).toEqual([
       { level: 'error', text: 'forbidden' }
     ])
+  })
+})
+describe('thread resume (B17)', () => {
+  const HISTORY: AgentMessages = [
+    {
+      id: 'row-1',
+      thread_id: 'th-9',
+      seq: 0,
+      role: 'user',
+      status: 'complete',
+      turn_id: 'turn-1',
+      content: { text: 'build a duck' }
+    },
+    {
+      id: 'row-2',
+      thread_id: 'th-9',
+      seq: 1,
+      role: 'assistant',
+      status: 'complete',
+      turn_id: 'turn-1',
+      content: { text: 'Duck workflow ready.' }
+    }
+  ]
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  it('restores the persisted thread and hydrates its transcript on start', async () => {
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-9'))
+    await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
+
+    const [user, assistant] = session.entries.value
+    expect(user).toMatchObject({ role: 'user', text: 'build a duck' })
+    expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
+    expect(session.threadId.value).toBe('th-9')
+    // The resumed transcript is settled: nothing streams.
+    expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-gone')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => {
+      throw new AgentApiError('not found', 404, null)
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await vi.waitFor(() =>
+      expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    )
+    expect(session.threadId.value).toBeNull()
+    expect(session.entries.value).toHaveLength(0)
+    expect(session.notices.value).toHaveLength(0)
+  })
+
+  it('persists the thread on send and clears it on newChat', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('hello')
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+
+    session.newChat()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(useAgentConversationStore().threadId).toBeNull()
+  })
+
+  it('does not clobber an in-memory conversation on panel reopen', async () => {
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const rest = fakeRest({ getMessages })
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    await first.sendMessage('live message')
+    first.stop()
+
+    // Reopen within the same page session: the store still holds the live conversation.
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(
+      second.entries.value.some(
+        (entry) => entry.role === 'user' && entry.text === 'live message'
+      )
+    ).toBe(true)
   })
 })

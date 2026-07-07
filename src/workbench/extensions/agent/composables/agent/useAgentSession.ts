@@ -35,6 +35,11 @@ export interface AgentSessionDeps {
   selection?: () => Record<string, unknown> | undefined
 }
 
+// localStorage key for the active server thread (B17 resume). The thread is workspace-
+// scoped server-side; a stale id (expired, deleted, or another workspace's) answers 404 on
+// hydrate and is forgotten.
+const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, selection } = deps
 
@@ -93,6 +98,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    // B17 resume: restore the persisted thread and hydrate its transcript on a fresh
+    // page session. A panel reopen within the same page already has the conversation in
+    // the store, so it is left untouched.
+    if (
+      conversationStore.threadId === null &&
+      conversationStore.messages.length === 0
+    ) {
+      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
+      if (stored !== null) {
+        conversationStore.setThreadId(stored)
+        void hydrateFromServer(stored)
+      }
+    }
+  }
+
+  // Fetch the persisted thread's transcript and adopt it. A 404 means the thread expired
+  // or was deleted server-side: forget the stale id silently (an empty panel is the
+  // correct result, not an error).
+  async function hydrateFromServer(threadId: string): Promise<void> {
+    try {
+      const history = await rest.getMessages(threadId)
+      // newChat may have replaced the thread while the fetch was in flight.
+      if (conversationStore.threadId === threadId)
+        conversationStore.hydrate(history)
+    } catch (error) {
+      if (error instanceof AgentApiError && error.status === 404) {
+        if (conversationStore.threadId === threadId)
+          conversationStore.setThreadId(null)
+        localStorage.removeItem(THREAD_STORAGE_KEY)
+        return
+      }
+      pushError(error instanceof Error ? error.message : String(error))
+    }
   }
 
   function stop(): void {
@@ -126,6 +164,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments
       })
       conversationStore.setThreadId(ack.thread_id)
+      // Persist the thread so a browser reopen resumes this conversation (B17).
+      localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       // The server owns the workflow and returns its id in the ack; bind the draft store to it
       // so the draft_patch events that follow this turn resolve to the canvas. bind() is a
       // no-op when the id is unchanged, so re-binding on every ack keeps the draft intact.
@@ -185,6 +225,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // stored thread id, so the next send opens a fresh thread.
     void stopTurn()
     conversationStore.reset()
+    localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
   function onRaw(raw: unknown): void {
