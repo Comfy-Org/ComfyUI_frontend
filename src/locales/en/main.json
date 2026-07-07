@@ -4959,129 +4959,72 @@
     "processingVideo": "Processing video…",
     "running": "Running…"
   },
-  "gettingStarted": {
-    "title": "Let's make something",
-    "subtitle": "Pick a ready-made workflow to start from, or begin with a blank canvas.",
-    "tabsLabel": "Getting started options",
-    "startBlank": "Start with a blank canvas",
-    "retry": "Try again",
-    "loadFailed": "We couldn't load the templates.",
-    "templateFailed": "We couldn't open this template.",
-    "retryTemplate": "Retry {title}",
-    "tabs": {
-      "templates": "Templates",
-      "tutorials": "Tutorials"
-    },
-    "tutorials": {
-      "interfaceOverview": "Interface overview",
-      "textToImage": "Text to image",
-      "imageToImage": "Image to image",
-      "inpaint": "Inpainting"
-    }
-  },
-  "onboardingCoachmarks": {
-    "stepLabel": "Step {current} of {total}",
-    "skip": "Skip",
-    "next": "Next",
-    "back": "Back",
-    "done": "Done",
-    "loadError": "Something went wrong showing this tour",
-    "appMode": {
-      "replay": "Take a tour of App Mode",
-      "landing": {
-        "title": "Welcome to Apps",
-        "body": "A quick tour of the essentials, in about a minute. We'll show you where to add inputs, run your app, and find your results.",
-        "primary": "Start tutorial"
-      },
-      "inputs": {
-        "title": "Add your inputs",
-        "body": "Add what you want to work with. Your inputs are what the app turns into results."
-      },
-      "run": {
-        "title": "Run your app",
-        "body": "Happy with your inputs? Hit Run and your result appears in the center the moment it's ready."
-      },
-      "outputs": {
-        "title": "Get your results",
-        "body": "Your finished results show up here in the center. Download them, or tweak an input and run again."
-      },
-      "assets": {
-        "title": "Find all your assets",
-        "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
-      }
-    },
-    "firstRun": {
-      "upload": {
-        "i2v": {
-          "title": "Start with an image",
-          "body": "This picture is your first frame. Swap in your own whenever you like."
-        },
-        "image-edit": {
-          "title": "Start with an image",
-          "body": "This is the picture you'll edit. Swap in your own whenever you like."
-        },
-        "other": {
-          "title": "Start with an image",
-          "body": "This image feeds the workflow. Swap in your own whenever you like."
-        }
-      },
-      "prompt": {
-        "t2i": {
-          "title": "Describe what you want",
-          "body": "Your image gets built from this description. Try anything you like."
-        },
-        "i2v": {
-          "title": "Describe how it should move",
-          "body": "The image sets the scene. This tells it what happens next."
-        },
-        "image-edit": {
-          "title": "Say what to change",
-          "body": "Your image stays as it is. Describe what you want different."
-        },
-        "other": {
-          "title": "Tell it what to make",
-          "body": "This is your prompt. Change it to change your result."
-        }
-      },
-      "run": {
-        "title": "Run your workflow",
-        "body": "Press Run to start generating your result."
-      },
-      "result": {
-        "generating": {
-          "title": "Hang tight",
-          "body": "Your result lands right here the moment it's ready."
-        },
-        "failed": {
-          "title": "That run didn't finish",
-          "body": "Nothing landed here. Close the tour and try running again."
-        },
-        "image": {
-          "title": "And there it is",
-          "body": "Your new image lands right here — ready to download or share."
-        },
-        "video": {
-          "title": "And there it is",
-          "body": "Your new video lands right here — ready to download or share."
-        }
-      },
-      "nudge": {
-        "ran": {
-          "title": "That was one of hundreds",
-          "body": "You just made your first. Explore what else you can build."
-        },
-        "noTour": {
-          "title": "Hundreds more where that came from",
-          "body": "Browse the templates and pick something to build."
-        },
-        "dismiss": "Not now",
-        "explore": "Explore templates"
-      }
-    }
-  },
   "agent": {
-    "askComfyAgent": "Ask Comfy Agent",
-    "title": "Comfy Agent",
-    "loadFailed": "The agent panel failed to load."
+    "title": "AI Agent",
+    "alpha": "ALPHA",
+    "newChat": "New chat",
+    "close": "Close",
+    "history": "Chat history",
+    "expand": "Expand panel",
+    "collapse": "Collapse panel",
+    "historyCurrent": "Current",
+    "historyToday": "Today",
+    "historyYesterday": "Yesterday",
+    "historyEarlier": "Earlier",
+    "historyEmpty": "No conversations yet",
+    "copyMarkdown": "Copy as markdown",
+    "delete": "Delete",
+    "untitledChat": "New conversation",
+    "next": "Next",
+    "skip": "Skip",
+    "gotIt": "Got it",
+    "startingPointTitle": "How do you want to start?",
+    "startFromScratch": "Start from scratch",
+    "browseTemplates": "Browse templates",
+    "greeting": "Hello {name},",
+    "greetingQuestion": "What do you want to make?",
+    "placeholder": "Ask the agent anything...",
+    "suggestedPrompts": [
+      "Build a text-to-image workflow",
+      "Add an upscaler to my graph",
+      "Explain what this workflow does",
+      "Create an image-to-image pipeline",
+      "Fix the errors in my graph"
+    ],
+    "attach": "Attach a file",
+    "send": "Send",
+    "stop": "Stop",
+    "thinking": "Thinking...",
+    "reasoning": "Reasoning",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "toggleRaw": "Toggle raw markdown",
+    "ranToolCalls": "Ran {count} tool call | Ran {count} tool calls",
+    "savedToAssets": "Saved to your Assets",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "remove": "Remove",
+    "friend": "there",
+    "you": "You",
+    "sessionOptions": "Chat options",
+    "takeControl": "Take control",
+    "askToSpend": "Ask to spend",
+    "approve": "Approve",
+    "deny": "Deny",
+    "revert": "Revert",
+    "noResponse": "(no response)",
+    "approvalTitle": "Approval needed",
+    "waiting": "Waiting for approval...",
+    "modeAuto": "Auto-run",
+    "modeAsk": "Ask first",
+    "agentEditing": "Comfy Agent is editing the canvas",
+    "conflictTitle": "You edited while the agent was working",
+    "conflictBody": "Choose whose changes to keep.",
+    "keepMine": "Keep my changes",
+    "letAgentContinue": "Let the agent continue",
+    "openNewTab": "Open in a new tab",
+    "sendFailed": "Message failed to send",
+    "sendBusy": "A message is already being sent",
+    "malformedEvent": "The agent sent an event this panel could not read"
   }
 }
