@@ -124,7 +124,7 @@
             variant="tertiary"
             size="lg"
             class="mt-auto w-full"
-            @click="emit('navigate', 'activity')"
+            @click="handleSeeMore"
           >
             {{ $t('workspacePanel.overview.seeMore') }}
           </Button>
@@ -194,7 +194,9 @@ import Tabs from '@/components/ui/tabs/Tabs.vue'
 import TabsList from '@/components/ui/tabs/TabsList.vue'
 import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
@@ -235,10 +237,23 @@ const planMenuEntries = computed<MenuItem[]>(() =>
 const { plan, nextInvoiceCents, topSpenders, recentActivity } =
   useWorkspaceOverview()
 
+const { navigateToPanel } = useSettingsNavigation()
+
 const snapshotView = ref('top')
 const snapshotRows = computed(() =>
-  snapshotView.value === 'top' ? topSpenders : recentActivity
+  snapshotView.value === 'top' ? topSpenders.value : recentActivity.value
 )
+
+// Top spenders → the Members panel pre-sorted by credit usage; Recent activity
+// → the Activity tab.
+function handleSeeMore() {
+  if (snapshotView.value === 'recent') {
+    emit('navigate', 'activity')
+    return
+  }
+  requestMembersSort('credits')
+  navigateToPanel('workspace-members')
+}
 
 function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString('en-US', {

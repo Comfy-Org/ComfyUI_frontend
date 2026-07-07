@@ -1,7 +1,11 @@
-import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-// Prototype mock for the Plan & Credits > Overview tab. There is no single
-// endpoint for this rollup yet, so the shape is assembled client-side.
+import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
+import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 
 export interface SnapshotRow {
   userName: string
@@ -10,30 +14,13 @@ export interface SnapshotRow {
   credits: number
 }
 
-const TOP_SPENDERS: Array<[string, string, number]> = [
-  ['Yuta', '3 hr ago', 1280],
-  ['Jane', '7 hr ago', 124],
-  ['Rob', '9 hr ago', 513],
-  ['Min', '1 day ago', 124]
-]
-
-const RECENT_ACTIVITY: Array<[string, string, number]> = [
-  ['Rob', '9 hr ago', 513],
-  ['Yuta', '3 hr ago', 1280],
-  ['Min', '1 day ago', 124],
-  ['Jane', '7 hr ago', 124]
-]
-
-function toRows(raw: Array<[string, string, number]>): SnapshotRow[] {
-  return raw.map(([userName, lastActivity, credits]) => ({
-    userName,
-    color: userBadgeColor(userName),
-    lastActivity,
-    credits
-  }))
-}
+const SNAPSHOT_SIZE = 4
 
 export function useWorkspaceOverview() {
+  const { t } = useI18n()
+  const store = useTeamWorkspaceStore()
+  const { members } = storeToRefs(store)
+
   const plan = {
     name: 'Team',
     priceCents: 32000,
@@ -42,13 +29,44 @@ export function useWorkspaceOverview() {
 
   const nextInvoiceCents = 32000
 
-  const topSpenders = toRows(TOP_SPENDERS)
-  const recentActivity = toRows(RECENT_ACTIVITY)
-
-  return {
-    plan,
-    nextInvoiceCents,
-    topSpenders,
-    recentActivity
+  function activityLabel(member: WorkspaceMember): string {
+    if (!member.lastActivity) return '—'
+    return formatRelativeTime(member.lastActivity, new Date(), {
+      justNow: t('workspacePanel.members.activity.justNow'),
+      minutesAgo: (n) => t('workspacePanel.members.activity.minutesAgo', { n }),
+      hoursAgo: (n) => t('workspacePanel.members.activity.hoursAgo', { n }),
+      daysAgo: (n) => t('workspacePanel.members.activity.daysAgo', n)
+    })
   }
+
+  function toRow(member: WorkspaceMember): SnapshotRow {
+    return {
+      userName: member.name,
+      color: userBadgeColor(member.name || member.email),
+      lastActivity: activityLabel(member),
+      credits: member.creditsUsedThisMonth ?? 0
+    }
+  }
+
+  const topSpenders = computed(() =>
+    [...members.value]
+      .sort(
+        (a, b) => (b.creditsUsedThisMonth ?? 0) - (a.creditsUsedThisMonth ?? 0)
+      )
+      .slice(0, SNAPSHOT_SIZE)
+      .map(toRow)
+  )
+
+  const recentActivity = computed(() =>
+    [...members.value]
+      .filter((member) => member.lastActivity)
+      .sort(
+        (a, b) =>
+          (b.lastActivity?.getTime() ?? 0) - (a.lastActivity?.getTime() ?? 0)
+      )
+      .slice(0, SNAPSHOT_SIZE)
+      .map(toRow)
+  )
+
+  return { plan, nextInvoiceCents, topSpenders, recentActivity }
 }

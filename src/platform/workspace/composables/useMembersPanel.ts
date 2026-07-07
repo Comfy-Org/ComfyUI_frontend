@@ -30,6 +30,13 @@ type SortField =
   | 'expiryDate'
 type SortDirection = 'asc' | 'desc'
 
+// One-shot sort applied the next time the Members panel mounts, so other panels
+// can deep-link in with a preset ordering (e.g. Overview "Top spenders").
+const pendingSort = ref<SortField | null>(null)
+export function requestMembersSort(field: 'credits' | 'lastActivity') {
+  pendingSort.value = field
+}
+
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
@@ -227,8 +234,9 @@ export function useMembersPanel() {
 
   const searchQuery = ref('')
   const activeView = ref<ActiveView>('active')
-  const sortField = ref<SortField>('inviteDate')
+  const sortField = ref<SortField>(pendingSort.value ?? 'inviteDate')
   const sortDirection = ref<SortDirection>('desc')
+  pendingSort.value = null
 
   function roleMenuItem(
     member: WorkspaceMember,

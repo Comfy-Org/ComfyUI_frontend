@@ -104,6 +104,7 @@ import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/setting
 import WorkspaceSettingsHeader from '@/platform/workspace/components/dialogs/settings/WorkspaceSettingsHeader.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
+import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
@@ -143,6 +144,14 @@ const { fetchBalance } = useBillingContext()
 
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
+
+// Let panels deep-link into a sibling panel (e.g. Overview → Members).
+const { requestedPanelKey } = useSettingsNavigation()
+watch(requestedPanelKey, (key) => {
+  if (!key) return
+  activeCategoryKey.value = key
+  requestedPanelKey.value = null
+})
 
 const searchableNavItems = computed(() =>
   navGroups.value.flatMap((g) =>
