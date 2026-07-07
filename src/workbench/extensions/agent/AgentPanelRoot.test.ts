@@ -57,6 +57,10 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => ({ workspaceToken: undefined })
 }))
 
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+}))
+
 const trackAgentMessageFeedback = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackAgentMessageFeedback })
@@ -328,5 +332,23 @@ describe('AgentPanelRoot lifecycle', () => {
     await vi.waitFor(() =>
       expect(urls.some((url) => url.endsWith('/cancel'))).toBe(true)
     )
+  })
+})
+
+describe('AgentPanelRoot greeting', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    socket.clear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('personalizes the empty-state greeting with the account first name', async () => {
+    // useCurrentUser is mocked to "Jo Rivera"; the greeting shows the first name only.
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText('Hello Jo,')).toBeInTheDocument()
   })
 })

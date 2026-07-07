@@ -4,6 +4,7 @@ import { useClipboard } from '@vueuse/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
@@ -34,6 +35,12 @@ import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 const { t } = useI18n()
 const toast = useToastStore()
 const workspaceAuthStore = useWorkspaceAuthStore()
+
+// Personalize the greeting with the logged-in user's first name (design A / B5: "Hello Jo,").
+const { userDisplayName } = useCurrentUser()
+const userName = computed(
+  () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
+)
 
 const rest = createAgentRestClient({
   getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined
@@ -220,6 +227,7 @@ async function onFilesPicked(event: Event): Promise<void> {
     <AgentPanel
       ref="panelRef"
       :entries
+      :user-name="userName"
       :streaming="isStreaming"
       :size-mode="sizeMode"
       :can-attach="true"

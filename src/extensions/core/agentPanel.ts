@@ -25,10 +25,9 @@ const TAB_ID = 'agent-panel'
 // ref re-derives the button list.
 const tabRegistered = ref(false)
 
-// icon 'icon-[lucide--sparkles]' stands in for the Comfy mark, deferred to a design pass.
 const buttons: ActionBarButton[] = [
   {
-    icon: 'icon-[lucide--sparkles]',
+    icon: 'icon-[comfy--comfy-c]',
     label: t('agent.askComfyAgent'),
     tooltip: t('agent.askComfyAgent'),
     onClick: () => {
@@ -58,7 +57,7 @@ useExtensionService().registerExtension({
             id: TAB_ID,
             type: 'vue',
             component: markRaw(AgentPanelRoot),
-            icon: 'icon-[lucide--sparkles]',
+            icon: 'icon-[comfy--comfy-c]',
             title: 'sideToolbar.agentPanel',
             tooltip: 'sideToolbar.agentPanel',
             label: 'sideToolbar.labels.agentPanel'
