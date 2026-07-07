@@ -200,11 +200,15 @@ export interface SoftwareAppInput {
   image?: string
   softwareVersion?: string
   license?: string
+  codeRepository?: string
   authorName?: string
   isFree?: boolean
 }
 
 export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
+  // A third-party author (e.g. a community node pack) is not published by Comfy
+  // Org, so only first-party apps claim Comfy Org as author and publisher.
+  const isFirstParty = !input.authorName
   return {
     '@type': 'SoftwareApplication',
     '@id': input.id,
@@ -217,10 +221,13 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     image: input.image,
     softwareVersion: input.softwareVersion,
     license: input.license,
-    author: input.authorName
-      ? { '@type': 'Person', name: input.authorName }
-      : { '@id': organizationId(input.siteUrl) },
-    publisher: { '@id': organizationId(input.siteUrl) },
+    codeRepository: input.codeRepository,
+    author: isFirstParty
+      ? { '@id': organizationId(input.siteUrl) }
+      : { '@type': 'Person', name: input.authorName },
+    publisher: isFirstParty
+      ? { '@id': organizationId(input.siteUrl) }
+      : undefined,
     // Free/open-source is a true offer, unlike a fabricated price.
     offers: input.isFree
       ? { '@type': 'Offer', price: 0, priceCurrency: 'USD' }

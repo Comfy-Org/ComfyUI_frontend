@@ -4,39 +4,51 @@ import HeroSection from '../../../components/cloud-nodes/HeroSection.vue'
 import PackGridSection from '../../../components/cloud-nodes/PackGridSection.vue'
 import { t } from '../../../i18n/translations'
 import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
-import { escapeJsonLd } from '../../../utils/escapeJsonLd'
+import {
+  absoluteUrl,
+  buildPageGraph,
+  itemListNode,
+  pageContext,
+} from '../../../utils/jsonLd'
 
 const packs = await loadPacksForBuild()
 
-const siteBase = Astro.site ?? new URL('https://comfy.org')
-const pageUrl = new URL('/zh-CN/cloud/supported-nodes', siteBase).href
-
-const itemListJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'ItemList',
-  name: 'Comfy Cloud 支持的自定义节点包',
-  url: pageUrl,
-  numberOfItems: packs.length,
-  itemListElement: packs.map((pack, index) => ({
-    '@type': 'ListItem',
-    position: index + 1,
-    url: new URL(`/zh-CN/cloud/supported-nodes/${pack.id}`, siteBase).href,
-    name: pack.displayName,
-    image: pack.bannerUrl || pack.iconUrl
-  }))
-}
+const title = t('cloudNodes.meta.title', 'zh-CN')
+const description = t('cloudNodes.meta.description', 'zh-CN')
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const listId = `${url}#itemlist`
+const jsonLd = buildPageGraph(
+  { siteUrl, locale },
+  {
+    url,
+    name: title,
+    description,
+    type: 'CollectionPage',
+    mainEntityId: listId,
+    crumbs: [
+      {
+        name: t('breadcrumb.home', locale),
+        url: absoluteUrl(Astro.site, '/zh-CN'),
+      },
+      { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
+      { name: '支持的节点' },
+    ],
+  },
+  itemListNode(
+    url,
+    packs.map((pack) => ({
+      name: pack.displayName,
+      url: absoluteUrl(Astro.site, `/zh-CN/cloud/supported-nodes/${pack.id}`),
+    })),
+  ),
+)
 ---
 
-<BaseLayout
-  title={t('cloudNodes.meta.title', 'zh-CN')}
-  description={t('cloudNodes.meta.description', 'zh-CN')}
->
-  <script
-    is:inline
-    slot="head"
-    type="application/ld+json"
-    set:html={escapeJsonLd(itemListJsonLd)}
-  />
+<BaseLayout title={title} description={description} jsonLd={jsonLd}>
   <HeroSection locale="zh-CN" client:visible />
   <PackGridSection locale="zh-CN" packs={packs} client:visible />
 </BaseLayout>
