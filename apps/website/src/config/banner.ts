@@ -2,7 +2,6 @@ import type { ButtonVariants } from '../components/ui/button'
 import type { Locale, TranslationKey } from '../i18n/translations'
 
 import { t } from '../i18n/translations'
-import { livestream } from '../templates/drops/livestream'
 import { resolveRel } from '../utils/cta'
 
 // The banner "CMS": a single typed config resolved through i18n at build time.
@@ -52,9 +51,8 @@ export const bannerConfig: BannerConfig = {
   targetSections: ['sitewide'],
   titleKey: 'launches.banner.text',
   link: {
-    href: `https://www.youtube.com/watch?v=${livestream.youtubeVideoId}`,
+    href: '/mcp',
     titleKey: 'launches.banner.cta',
-    target: true,
     buttonVariant: 'underlineLink'
   }
 }
