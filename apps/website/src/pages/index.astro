@@ -9,11 +9,48 @@ import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSect
 import GetStartedSection from "../components/home/GetStartedSection.vue";
 import BuildWhatSection from "../components/home/BuildWhatSection.vue";
 import { t } from "../i18n/translations";
+import { externalLinks } from "../config/routes";
+import {
+  buildPageGraph,
+  pageContext,
+  softwareApplicationNode,
+  softwareSourceCodeNode,
+} from "../utils/jsonLd";
+
+const title = "Comfy — Professional Control of Visual AI";
+const description = t("hero.subtitle", "en");
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+);
+const jsonLd = buildPageGraph(
+  { siteUrl, locale },
+  { url, name: title, description },
+  softwareApplicationNode({
+    siteUrl,
+    id: `${siteUrl}/#software`,
+    name: "ComfyUI",
+    url: siteUrl,
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "Windows, macOS, Linux",
+    description,
+    isFree: true,
+  }),
+  softwareSourceCodeNode({
+    siteUrl,
+    id: `${siteUrl}/#sourcecode`,
+    name: "ComfyUI",
+    codeRepository: externalLinks.github,
+    programmingLanguage: "Python",
+  }),
+);
 ---
 
 <BaseLayout
-  title="Comfy — Professional Control of Visual AI"
-  description={t("hero.subtitle", "en")}
+  title={title}
+  description={description}
+  jsonLd={jsonLd}
   keywords={[
     "comfyui app",
     "comfyui web app",

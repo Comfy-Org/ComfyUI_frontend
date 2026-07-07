@@ -52,6 +52,20 @@ export function absoluteUrl(site: URL | undefined, path: string): string {
   return new URL(path, site ?? 'https://comfy.org').href
 }
 
+// Adapts the Astro globals a page has on hand into the context the builders
+// need, so every page derives siteUrl, locale and canonical URL identically.
+export function pageContext(
+  site: URL | undefined,
+  pathname: string,
+  currentLocale: string | undefined
+): PageContext & { url: string } {
+  return {
+    siteUrl: siteUrlFrom(site),
+    locale: currentLocale === 'zh-CN' ? 'zh-CN' : 'en',
+    url: absoluteUrl(site, pathname)
+  }
+}
+
 function organizationId(siteUrl: string): string {
   return `${siteUrl}/#organization`
 }
