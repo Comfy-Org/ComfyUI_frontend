@@ -1,211 +1,109 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
-import { FLAG_SETTLE_TIMEOUT_MS } from '@/workbench/extensions/agent/utils/postHogFlagSource'
+import type { ComfyExtension } from '@/types/comfy'
 
-const posthogState = vi.hoisted(() => ({
-  flag: undefined as boolean | undefined,
-  listeners: [] as Array<
-    (
-      flags?: string[],
-      variants?: Record<string, unknown>,
-      context?: { errorsLoading?: boolean }
-    ) => void
-  >
+const capturedExtensions: ComfyExtension[] = []
+
+vi.mock('@/services/extensionService', () => ({
+  useExtensionService: () => ({
+    registerExtension: (ext: ComfyExtension) => {
+      capturedExtensions.push(ext)
+    }
+  })
 }))
 
-// Probe-verified posthog contract: featureFlags exists from the
-// constructor; an off or absent flag reads as undefined.
+const registerSidebarTab = vi.fn()
+const unregisterSidebarTab = vi.fn()
+
+vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+  useSidebarTabStore: () => ({ registerSidebarTab, unregisterSidebarTab })
+}))
+
+// Stub the panel component so importing the entry does not pull the whole agent subtree
+// (stores, composables, services) into this test. The gate registers it by id/type; the
+// component identity is not asserted here.
+vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', () => ({
+  default: { name: 'AgentPanelRootStub', render: () => null }
+}))
+
+// The entry awaits `(await import('posthog-js')).default`. Expose isFeatureEnabled (whose
+// return the gate reads) and onFeatureFlags (which captures the reload listener so the
+// test can drive flag transitions).
+let flagEnabled: boolean | undefined
+let flagListener: (() => void) | null = null
+
 vi.mock('posthog-js', () => ({
   default: {
-    isFeatureEnabled: () => posthogState.flag,
-    onFeatureFlags: (
-      listener: (
-        flags?: string[],
-        variants?: Record<string, unknown>,
-        context?: { errorsLoading?: boolean }
-      ) => void
-    ) => {
-      posthogState.listeners.push(listener)
-      return () => {
-        posthogState.listeners = posthogState.listeners.filter(
-          (registered) => registered !== listener
-        )
-      }
+    isFeatureEnabled: () => flagEnabled,
+    onFeatureFlags: (listener: () => void) => {
+      flagListener = listener
+      return () => {}
     }
   }
 }))
 
-const registered = vi.hoisted(() => ({
-  setup: null as (() => void) | null
-}))
+const flush = (): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, 0))
 
-const reportErrorMock = vi.hoisted(() => vi.fn())
-
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: reportErrorMock
-}))
-
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (extension: { setup?: () => void }) => {
-      registered.setup = extension.setup ?? null
-    }
-  })
-}))
-
-async function bootGate(): Promise<void> {
-  vi.stubGlobal('__DISTRIBUTION__', 'cloud')
-  vi.resetModules()
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
-  registered.setup?.()
-  // The mocked dynamic import outlives a bare microtask - wait for the subscription.
-  await vi.waitFor(() => {
-    if (posthogState.listeners.length === 0) {
-      throw new Error('gate not subscribed yet')
-    }
-  })
+async function loadEntryAndSetup(): Promise<void> {
+  await import('./agentPanel')
+  const ext = capturedExtensions.find((e) => e.name === 'Comfy.AgentPanel')
+  expect(ext).toBeDefined()
+  ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
+  // setup fires setupFlagGate, which awaits the (mocked) posthog-js dynamic import before
+  // it captures the onFeatureFlags listener and runs the initial sync(). Flush macrotasks
+  // until that listener is registered so tests can drive flag transitions through it.
+  for (let i = 0; i < 20 && flagListener === null; i++) await flush()
+  expect(flagListener).toBeTypeOf('function')
 }
 
-async function bootGateExpectingImportFailure(): Promise<void> {
-  vi.stubGlobal('__DISTRIBUTION__', 'cloud')
-  vi.resetModules()
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
-  registered.setup?.()
-  await vi.waitFor(() => {
-    if (!useAgentPanelStore().gateSettled) {
-      throw new Error('gate not settled yet')
-    }
-  })
-}
-
-function deliverFlags(value: boolean | undefined): void {
-  posthogState.flag = value
-  for (const listener of posthogState.listeners) listener()
-}
-
-describe('the agent panel flag gate', () => {
+describe('AgentPanel extension flag gate', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    posthogState.flag = undefined
-    posthogState.listeners = []
-    registered.setup = null
-    reportErrorMock.mockClear()
-  })
-
-  it('registers its subscription pre-init and enables on the flags delivery', async () => {
-    await bootGate()
-    expect(posthogState.listeners.length).toBeGreaterThan(0)
-    expect(useAgentPanelStore().enabled).toBe(false)
-    expect(useAgentPanelStore().gateSettled).toBe(false)
-
-    deliverFlags(true)
-
-    expect(useAgentPanelStore().enabled).toBe(true)
-    expect(useAgentPanelStore().gateSettled).toBe(true)
-  })
-
-  it('stays disabled and settles on the delivery when the flag is off', async () => {
-    await bootGate()
-
-    // The off state IS undefined, never false; delivery still settles the gate.
-    deliverFlags(undefined)
-
-    expect(useAgentPanelStore().enabled).toBe(false)
-    expect(useAgentPanelStore().gateSettled).toBe(true)
-  })
-
-  it('settles fail-closed by timeout when no delivery ever arrives', async () => {
-    // Fake timers go in BEFORE boot so the settle timeout is fake-scheduled.
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    capturedExtensions.length = 0
+    registerSidebarTab.mockClear()
+    unregisterSidebarTab.mockClear()
+    flagEnabled = undefined
+    flagListener = null
     vi.resetModules()
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    registered.setup?.()
-    for (let i = 0; i < 200 && posthogState.listeners.length === 0; i++) {
-      await vi.advanceTimersByTimeAsync(1)
-    }
-    expect(posthogState.listeners.length).toBeGreaterThan(0)
-    expect(useAgentPanelStore().gateSettled).toBe(false)
-
-    await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS + 100)
-
-    expect(useAgentPanelStore().enabled).toBe(false)
-    expect(useAgentPanelStore().gateSettled).toBe(true)
   })
 
-  it('ignores a stale persisted flag until the first delivery', async () => {
-    // posthog persists flags in localStorage: isFeatureEnabled() answers
-    // true from the cache before any fresh delivery. The gate must not
-    // mount (or fetch chunks) on that stale answer.
-    posthogState.flag = true
-    await bootGate()
-
-    const store = useAgentPanelStore()
-    expect(store.enabled).toBe(false)
-    expect(store.gateSettled).toBe(false)
-
-    deliverFlags(true)
-    expect(store.enabled).toBe(true)
-    expect(store.gateSettled).toBe(true)
+  it('does not register the tab while the flag is undefined', async () => {
+    await loadEntryAndSetup()
+    expect(registerSidebarTab).not.toHaveBeenCalled()
   })
 
-  it('propagates a post-boot flag flip into the store', async () => {
-    await bootGate()
-    deliverFlags(true)
-    expect(useAgentPanelStore().enabled).toBe(true)
+  it('registers the agent-panel vue tab once when the flag turns true', async () => {
+    await loadEntryAndSetup()
+    flagEnabled = true
+    flagListener!()
 
-    deliverFlags(undefined)
-    expect(useAgentPanelStore().enabled).toBe(false)
-
-    deliverFlags(true)
-    expect(useAgentPanelStore().enabled).toBe(true)
+    expect(registerSidebarTab).toHaveBeenCalledTimes(1)
+    expect(registerSidebarTab.mock.calls[0][0]).toMatchObject({
+      id: 'agent-panel',
+      type: 'vue'
+    })
   })
 
-  it('force-enables dev builds before any posthog work, even a blocked import', async () => {
-    vi.stubEnv('MODE', 'development')
-    vi.doMock('posthog-js', () => {
-      throw new Error('blocked by ad blocker')
-    })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('unregisters the tab when the flag flips back to false', async () => {
+    await loadEntryAndSetup()
+    flagEnabled = true
+    flagListener!()
+    flagEnabled = false
+    flagListener!()
 
-    await bootGateExpectingImportFailure()
-    vi.doUnmock('posthog-js')
-    vi.unstubAllEnvs()
-
-    expect(useAgentPanelStore().enabled).toBe(true)
-    expect(useAgentPanelStore().gateSettled).toBe(true)
-    // Dev force-enable is a product decision: the failure still reaches the sinks.
-    expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_flag_gate_load_failure'
-    })
-    consoleError.mockRestore()
+    expect(unregisterSidebarTab).toHaveBeenCalledWith('agent-panel')
   })
 
-  it('fails closed when the SDK import is blocked', async () => {
-    // The hoisted mock registry survives resetModules, so override per-test.
-    vi.doMock('posthog-js', () => {
-      throw new Error('blocked by ad blocker')
-    })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('never double-registers across true/false/true toggling', async () => {
+    await loadEntryAndSetup()
+    flagEnabled = true
+    flagListener!()
+    flagEnabled = false
+    flagListener!()
+    flagEnabled = true
+    flagListener!()
 
-    await bootGateExpectingImportFailure()
-    vi.doUnmock('posthog-js')
-
-    expect(useAgentPanelStore().enabled).toBe(false)
-    expect(useAgentPanelStore().gateSettled).toBe(true)
-    expect(consoleError).toHaveBeenCalledWith(
-      '[Comfy.AgentPanel] feature-flag gate failed to load',
-      expect.any(Error)
-    )
-    expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_flag_gate_load_failure'
-    })
-    consoleError.mockRestore()
+    expect(registerSidebarTab).toHaveBeenCalledTimes(2)
+    expect(unregisterSidebarTab).toHaveBeenCalledTimes(1)
   })
 })

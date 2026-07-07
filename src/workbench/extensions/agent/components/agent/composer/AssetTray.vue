@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Staged for FE-1187 host wiring (attachments are a V0 tech-design surface); built and tested, not yet wired into the shipped panel.
 import type { CloudAsset } from '../../../composables/agent/useCloudAssets'
 
 // The user's recent cloud assets; clicking one @-tags it into the message.

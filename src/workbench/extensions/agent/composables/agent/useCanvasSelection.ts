@@ -1,3 +1,4 @@
+// Staged for FE-1187 host wiring (canvas selection is a V0 tech-design surface); built and tested, not yet wired into the shipped panel.
 import { ref, toValue, watch } from 'vue'
 
 import type { MaybeRefOrGetter } from 'vue'
