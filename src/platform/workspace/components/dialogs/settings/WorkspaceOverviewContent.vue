@@ -44,7 +44,7 @@
       <div class="grid grid-cols-2 gap-4">
         <!-- Credits tile -->
         <div
-          class="flex flex-col gap-4 rounded-xl border border-interface-stroke/60 bg-secondary-background/30 p-4"
+          class="flex flex-col gap-4 rounded-xl bg-modal-panel-background p-4"
         >
           <div class="flex items-center justify-between">
             <span class="text-sm text-muted-foreground">
@@ -131,7 +131,7 @@
 
         <!-- Member snapshot tile -->
         <div
-          class="flex flex-col gap-3 rounded-xl border border-interface-stroke/60 bg-secondary-background/30 p-4"
+          class="flex flex-col gap-3 rounded-xl bg-modal-panel-background p-4"
         >
           <div class="flex items-center gap-4">
             <button
