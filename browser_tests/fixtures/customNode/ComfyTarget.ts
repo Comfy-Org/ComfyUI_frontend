@@ -113,17 +113,34 @@ export class LocalDesktopTarget {
     // app.queuePrompt (NOT api.queuePrompt: that submits an empty prompt).
     // false = validation reject (emits no events), but pack JS hooking the
     // queue can refuse transiently - retry once; real rejects fail twice.
-    let queued = await page.evaluate(() => window.app!.queuePrompt(0))
-    if (queued === false) {
+    // Pack JS can also THROW mid-graphToPrompt on a graph shape it does not
+    // expect; catch in-page so one bad node classifies as VALIDATION_FAIL
+    // (with the exception text) instead of aborting the whole tier.
+    const queueOnce = () =>
+      page.evaluate(async () => {
+        try {
+          return await window.app!.queuePrompt(0)
+        } catch (error) {
+          return { __cnThrew: String(error) }
+        }
+      })
+    const refused = (
+      result: unknown
+    ): result is false | { __cnThrew: string } =>
+      result === false ||
+      (typeof result === 'object' && result !== null && '__cnThrew' in result)
+    let queued = await queueOnce()
+    if (refused(queued)) {
       await page.evaluate(
         () => new Promise((resolve) => setTimeout(resolve, 250))
       )
-      queued = await page.evaluate(() => window.app!.queuePrompt(0))
-      if (queued === false)
+      queued = await queueOnce()
+      if (refused(queued))
         return {
           outcome: 'VALIDATION_FAIL',
           executedNodes: [],
-          outputsByNode: {}
+          outputsByNode: {},
+          clientError: typeof queued === 'object' ? queued.__cnThrew : undefined
         }
     }
 

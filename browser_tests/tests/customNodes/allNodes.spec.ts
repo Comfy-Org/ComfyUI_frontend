@@ -78,7 +78,9 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
     VHS_AudioToVHSAudio:
       'list-expanded execution emits no per-node executing event on some runs, so the executed-set signal flip-flops between PASS and PARTIAL (same class as essentials TransitionMask+)',
     VHS_BatchManager:
-      'iteration-coordinator node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)'
+      'iteration-coordinator node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)',
+    VHS_SelectLatest:
+      'pack JS applyToGraph copies latest_file into downstream widget inputs and throws TypeError when its output feeds a pure socket (our PreviewAny sink) while the input dir has matching files - content-variable, crashes graphToPrompt; upstream-report candidate'
   },
   'was-node-suite-comfyui': {
     'BLIP Model Loader':
@@ -184,6 +186,14 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
       'editor JSON widgets initialize their state on configure; a fresh create serializes empty strings',
     Ideogram4PromptBuilderKJ:
       'pack JS validates and resets its aspect/format text widgets on configure'
+  },
+  'rgthree-comfy': {
+    'Power Primitive (rgthree)':
+      'pack JS rebuilds and normalizes its value widget on configure (a written string comes back as the typed default)'
+  },
+  'ComfyUI-Custom-Scripts': {
+    'LoadText|pysssss':
+      'file combo re-resolves against backend contents on configure; state-dependent (same class as its auto-run exclusion)'
   }
 }
 
@@ -215,6 +225,18 @@ const CONSOLE_ERROR_ALLOWLIST: Record<
       pattern:
         /Failed to load resource.*404.*(example\.png|plain_video\.mp4|file\.txt)/,
       reason: 'media widget previews its value via a root-relative URL'
+    },
+    {
+      // PreviewBridge widgets fetch their internal preview id on configure;
+      // a bare backend has no image behind it.
+      pattern: /Failed to load resource.*400.*api\/impact\/get\/pb_id_image/,
+      reason: 'PreviewBridge fetches its preview id on configure'
+    },
+    {
+      // The save/reload tier writes `<value>_cn` probe values; media widgets
+      // preview them as URLs and 404.
+      pattern: /Failed to load resource.*404.*_cn/,
+      reason: 'set-and-stick probe value previewed by a media widget'
     }
   ],
   'ComfyUI-KJNodes': [
@@ -252,6 +274,15 @@ async function expectNoVisibleErrors(
 declare global {
   interface Window {
     __cnIdBase?: number
+    // Save/reload comparison rig; parked on the window so its stages can
+    // run as separate evaluates with frame yields between them.
+    __cnRt?: {
+      problems: string[]
+      snapshotAndConfigure: () => void
+      compare: (label: string, strict: boolean) => void
+      setAndStick: () => void
+      finish: () => string[]
+    }
   }
 }
 
@@ -545,13 +576,12 @@ for (const entry of loadManifest()) {
     test('every registered node survives save/reload', async ({
       comfyPage
     }) => {
-      test.setTimeout(240_000)
+      test.setTimeout(480_000)
       const { keys } = await packNodeKeys(comfyPage.page, entry.pack)
       test.skip(
         keys.length === 0,
         `${entry.pack} not installed on this backend`
       )
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
       const allowedWidgets = WIDGET_SET_ALLOWLIST[entry.pack] ?? {}
       for (const ledgered of Object.keys(allowedWidgets))
@@ -565,193 +595,264 @@ for (const entry of loadManifest()) {
           keys,
           `stale ROUNDTRIP_VALUE_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
         ).toContain(ledgered)
-      const mismatches: string[] = []
-      for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
-        const chunk = keys.slice(offset, offset + BATCH_SIZE)
-        const chunkMismatches = await comfyPage.page.evaluate(
-          ([types, packManaged, valueDriftNodes]) => {
-            window.app!.graph.clear()
-            window.app!.graph.last_node_id = window.__cnIdBase ?? 0
-            const created = new Map<
-              string,
-              { type: string; widgetCount: number }
-            >()
-            for (const type of types) {
-              const node = window.LiteGraph!.createNode(type)
-              if (!node) continue
-              window.app!.graph.add(node)
-              created.set(String(node.id), {
-                type,
-                widgetCount: (node.widgets ?? []).length
-              })
-            }
-            window.__cnIdBase = window.app!.graph.last_node_id
-            const problems: string[] = []
-            // Serialized widgets_values can be an array or a named object;
-            // reload may legitimately APPEND entries (control_after_generate
-            // materializes, packs add value-driven dynamic widgets) but must
-            // never lose or change what was saved.
-            const preserves = (before: unknown, after: unknown): boolean => {
-              const beforeNormalized =
-                Array.isArray(before) && before.length === 0 ? null : before
-              const afterNormalized =
-                Array.isArray(after) && after.length === 0 ? null : after
-              if (beforeNormalized === null) return true
-              if (Array.isArray(beforeNormalized))
-                return (
-                  Array.isArray(afterNormalized) &&
-                  afterNormalized.length >= beforeNormalized.length &&
-                  beforeNormalized.every(
-                    (value, index) =>
-                      JSON.stringify(value) ===
-                      JSON.stringify(afterNormalized[index])
-                  )
-                )
-              if (typeof beforeNormalized === 'object')
-                return (
-                  typeof afterNormalized === 'object' &&
-                  afterNormalized !== null &&
-                  Object.entries(beforeNormalized).every(
-                    ([key, value]) =>
-                      JSON.stringify(value) ===
-                      JSON.stringify(
-                        (afterNormalized as Record<string, unknown>)[key]
-                      )
-                  )
-                )
-              return (
-                JSON.stringify(beforeNormalized) ===
-                JSON.stringify(afterNormalized)
-              )
-            }
-            const widgetNamesById = () =>
-              new Map(
-                window.app!.graph.nodes.map((node) => [
-                  String(node.id),
-                  (node.widgets ?? []).map((widget) => widget.name).join(',')
-                ])
-              )
-            // strict = pristine pass: reload may add dynamic widgets but must
-            // never shrink a node (the "widgets disappear after save/reload"
-            // bug class) and must preserve every value. The set-values pass
-            // is not strict: a changed combo/toggle legitimately rebuilds a
-            // dynamic node's widget set, so values are only compared where
-            // the widget topology stayed identical.
-            const compareRoundtrip = (label: string, strict: boolean) => {
-              const namesBefore = widgetNamesById()
-              const firstPass = window.app!.graph.serialize()
-              window.app!.graph.configure(firstPass)
-              const secondPass = window.app!.graph.serialize()
-              const namesAfter = widgetNamesById()
-              const byId = (pass: typeof firstPass) =>
-                new Map(
-                  (pass.nodes ?? []).map((node) => [String(node.id), node])
-                )
-              const beforeNodes = byId(firstPass)
-              const afterNodes = byId(secondPass)
-              for (const [id, expected] of created) {
-                const before = beforeNodes.get(id)
-                const after = afterNodes.get(id)
-                const restored = window.app!.graph.nodes.find(
-                  (node) => String(node.id) === id
-                )
-                if (!before || !after || !restored) {
-                  problems.push(`${expected.type}: lost on ${label} reload`)
-                  continue
-                }
-                if (after.type !== before.type)
-                  problems.push(
-                    `${expected.type}: type became ${String(after.type)} on ${label} reload`
-                  )
-                const widgets = (restored.widgets ?? []).length
-                if (strict && widgets < expected.widgetCount)
-                  problems.push(
-                    `${expected.type}: widgets ${expected.widgetCount} -> ${widgets} on ${label} reload`
-                  )
-                if (!strict && namesBefore.get(id) !== namesAfter.get(id))
-                  continue
-                if (valueDriftNodes.includes(expected.type)) continue
-                if (!preserves(before.widgets_values, after.widgets_values))
-                  problems.push(
-                    `${expected.type}: widgets_values ${JSON.stringify(before.widgets_values ?? null)} -> ${JSON.stringify(after.widgets_values ?? null)} on ${label} reload`
-                  )
-              }
-            }
-            // Pass 1 - pristine round-trip: defaults must survive untouched.
-            compareRoundtrip('pristine', true)
-            // Pass 2 - set-and-stick: every plain widget must hold a
-            // programmatic non-default write, and the written values must
-            // survive a second reload. Widget types owned by pack JS
-            // (editors, previews, annotated controls) are skipped: their
-            // values are not a user-writable contract.
-            const SETTABLE = new Set([
-              'number',
-              'slider',
-              'toggle',
-              'text',
-              'string',
-              'customtext',
-              'combo'
-            ])
-            for (const node of window.app!.graph.nodes) {
-              const nodeType = created.get(String(node.id))?.type
-              if (!nodeType) continue
-              for (const widget of node.widgets ?? []) {
-                if (!SETTABLE.has(String(widget.type))) continue
-                if (`${nodeType}.${widget.name}` in packManaged) continue
-                const target = ((): unknown => {
-                  const options = (
-                    widget as {
-                      options?: {
-                        values?: unknown
-                        min?: number
-                        max?: number
-                        step2?: number
-                      }
-                    }
-                  ).options
-                  if (typeof widget.value === 'boolean') return !widget.value
-                  if (typeof widget.value === 'number') {
-                    const step = options?.step2 || 1
-                    const up = widget.value + step
-                    if (options?.max === undefined || up <= options.max)
-                      return up
-                    const down = widget.value - step
-                    if (options?.min === undefined || down >= options.min)
-                      return down
-                    return undefined
-                  }
-                  if (typeof widget.value === 'string') {
-                    if (widget.type === 'combo')
-                      return Array.isArray(options?.values)
-                        ? options.values.find(
-                            (option: unknown) => option !== widget.value
-                          )
-                        : undefined
-                    return `${widget.value}_cn`
-                  }
-                  return undefined
-                })()
-                if (target === undefined || target === null) continue
-                widget.value = target as typeof widget.value
-                if (widget.value !== target)
-                  problems.push(
-                    `${nodeType}.${widget.name}: set ${JSON.stringify(target)} but widget kept ${JSON.stringify(widget.value)}`
-                  )
-              }
-            }
-            compareRoundtrip('set-values', false)
-            window.app!.graph.clear()
-            return problems
-          },
-          [chunk, allowedWidgets, Object.keys(allowedValueDrift)] as const
+      // Widget values flow through the same store in both renderers, but
+      // only the Vue pass runs component mount/configure effects that can
+      // write back into that store - so the round-trip must hold under
+      // both. Each stage yields a frame so those effects actually flush
+      // before the next serialize (a single evaluate would serialize before
+      // any Vue component reacted).
+      for (const vueNodesEnabled of [false, true]) {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
         )
-        mismatches.push(...chunkMismatches)
+        const consoleErrors = collectConsoleErrors(comfyPage.page)
+        const mismatches: string[] = []
+        for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
+          const chunk = keys.slice(offset, offset + BATCH_SIZE)
+          // Stage 1 - create the chunk and park the comparison rig on the
+          // window; its closures carry state across the staged evaluates.
+          await comfyPage.page.evaluate(
+            ([types, packManaged, valueDriftNodes]) => {
+              window.app!.graph.clear()
+              window.app!.graph.last_node_id = window.__cnIdBase ?? 0
+              const created = new Map<
+                string,
+                { type: string; widgetCount: number }
+              >()
+              for (const type of types) {
+                const node = window.LiteGraph!.createNode(type)
+                if (!node) continue
+                window.app!.graph.add(node)
+                created.set(String(node.id), {
+                  type,
+                  widgetCount: (node.widgets ?? []).length
+                })
+              }
+              window.__cnIdBase = window.app!.graph.last_node_id
+              const problems: string[] = []
+              // Serialized widgets_values can be an array or a named object;
+              // reload may legitimately APPEND entries (control_after_generate
+              // materializes, packs add value-driven dynamic widgets) but must
+              // never lose or change what was saved.
+              const preserves = (before: unknown, after: unknown): boolean => {
+                const beforeNormalized =
+                  Array.isArray(before) && before.length === 0 ? null : before
+                const afterNormalized =
+                  Array.isArray(after) && after.length === 0 ? null : after
+                if (beforeNormalized === null) return true
+                if (Array.isArray(beforeNormalized))
+                  return (
+                    Array.isArray(afterNormalized) &&
+                    afterNormalized.length >= beforeNormalized.length &&
+                    beforeNormalized.every(
+                      (value, index) =>
+                        JSON.stringify(value) ===
+                        JSON.stringify(afterNormalized[index])
+                    )
+                  )
+                if (typeof beforeNormalized === 'object')
+                  return (
+                    typeof afterNormalized === 'object' &&
+                    afterNormalized !== null &&
+                    Object.entries(beforeNormalized).every(
+                      ([key, value]) =>
+                        JSON.stringify(value) ===
+                        JSON.stringify(
+                          (afterNormalized as Record<string, unknown>)[key]
+                        )
+                    )
+                  )
+                return (
+                  JSON.stringify(beforeNormalized) ===
+                  JSON.stringify(afterNormalized)
+                )
+              }
+              const widgetNamesById = () =>
+                new Map(
+                  window.app!.graph.nodes.map((node) => [
+                    String(node.id),
+                    (node.widgets ?? []).map((widget) => widget.name).join(',')
+                  ])
+                )
+              let namesBefore = new Map<string, string>()
+              let firstPass: ReturnType<
+                NonNullable<typeof window.app>['graph']['serialize']
+              > | null = null
+              window.__cnRt = {
+                problems,
+                snapshotAndConfigure() {
+                  namesBefore = widgetNamesById()
+                  firstPass = window.app!.graph.serialize()
+                  window.app!.graph.configure(firstPass)
+                },
+                // strict = pristine pass: reload may add dynamic widgets but
+                // must never shrink a node (the "widgets disappear after
+                // save/reload" bug class) and must preserve every value. The
+                // set-values pass is not strict: a changed combo/toggle
+                // legitimately rebuilds a dynamic node's widget set, so
+                // values are only compared where the topology stayed put.
+                compare(label: string, strict: boolean) {
+                  const secondPass = window.app!.graph.serialize()
+                  const namesAfter = widgetNamesById()
+                  const byId = (pass: NonNullable<typeof firstPass>) =>
+                    new Map(
+                      (pass.nodes ?? []).map((node) => [String(node.id), node])
+                    )
+                  const beforeNodes = byId(firstPass!)
+                  const afterNodes = byId(secondPass)
+                  for (const [id, expected] of created) {
+                    const before = beforeNodes.get(id)
+                    const after = afterNodes.get(id)
+                    const restored = window.app!.graph.nodes.find(
+                      (node) => String(node.id) === id
+                    )
+                    if (!before || !after || !restored) {
+                      problems.push(`${expected.type}: lost on ${label} reload`)
+                      continue
+                    }
+                    if (after.type !== before.type)
+                      problems.push(
+                        `${expected.type}: type became ${String(after.type)} on ${label} reload`
+                      )
+                    const widgets = (restored.widgets ?? []).length
+                    if (strict && widgets < expected.widgetCount)
+                      problems.push(
+                        `${expected.type}: widgets ${expected.widgetCount} -> ${widgets} on ${label} reload`
+                      )
+                    if (!strict && namesBefore.get(id) !== namesAfter.get(id))
+                      continue
+                    if (valueDriftNodes.includes(expected.type)) continue
+                    if (!preserves(before.widgets_values, after.widgets_values))
+                      problems.push(
+                        `${expected.type}: widgets_values ${JSON.stringify(before.widgets_values ?? null)} -> ${JSON.stringify(after.widgets_values ?? null)} on ${label} reload`
+                      )
+                  }
+                },
+                // Set-and-stick: every plain widget must hold a programmatic
+                // non-default write. Widget types owned by pack JS (editors,
+                // previews, annotated controls) are skipped: their values are
+                // not a user-writable contract.
+                setAndStick() {
+                  const SETTABLE = new Set([
+                    'number',
+                    'slider',
+                    'toggle',
+                    'text',
+                    'string',
+                    'customtext',
+                    'combo'
+                  ])
+                  for (const node of window.app!.graph.nodes) {
+                    const nodeType = created.get(String(node.id))?.type
+                    if (!nodeType) continue
+                    // Value-drift-ledgered nodes own their values wholesale;
+                    // writing probe values into them just makes pack JS choke
+                    // on our markers (e.g. editors parsing `..._cn` as JSON).
+                    if (valueDriftNodes.includes(nodeType)) continue
+                    for (const widget of node.widgets ?? []) {
+                      if (!SETTABLE.has(String(widget.type))) continue
+                      if (`${nodeType}.${widget.name}` in packManaged) continue
+                      const target = ((): unknown => {
+                        const options = (
+                          widget as {
+                            options?: {
+                              values?: unknown
+                              min?: number
+                              max?: number
+                              step2?: number
+                            }
+                          }
+                        ).options
+                        if (typeof widget.value === 'boolean')
+                          return !widget.value
+                        if (typeof widget.value === 'number') {
+                          const step = options?.step2 || 1
+                          const up = widget.value + step
+                          if (options?.max === undefined || up <= options.max)
+                            return up
+                          const down = widget.value - step
+                          if (options?.min === undefined || down >= options.min)
+                            return down
+                          return undefined
+                        }
+                        if (typeof widget.value === 'string') {
+                          if (widget.type === 'combo')
+                            return Array.isArray(options?.values)
+                              ? options.values.find(
+                                  (option: unknown) => option !== widget.value
+                                )
+                              : undefined
+                          return `${widget.value}_cn`
+                        }
+                        return undefined
+                      })()
+                      if (target === undefined || target === null) continue
+                      widget.value = target as typeof widget.value
+                      if (widget.value !== target)
+                        problems.push(
+                          `${nodeType}.${widget.name}: set ${JSON.stringify(target)} but widget kept ${JSON.stringify(widget.value)}`
+                        )
+                    }
+                  }
+                },
+                finish() {
+                  const out = [...problems]
+                  window.app!.graph.clear()
+                  return out
+                }
+              }
+            },
+            [chunk, allowedWidgets, Object.keys(allowedValueDrift)] as const
+          )
+          await comfyPage.nextFrame()
+          // Stage 2 - pristine snapshot + reload.
+          await comfyPage.page.evaluate(() =>
+            window.__cnRt!.snapshotAndConfigure()
+          )
+          await comfyPage.nextFrame()
+          // Stage 3 - pristine verdict, then write non-default values.
+          await comfyPage.page.evaluate(() => {
+            window.__cnRt!.compare('pristine', true)
+            window.__cnRt!.setAndStick()
+          })
+          await comfyPage.nextFrame()
+          // Stage 4 - reload again with the written values.
+          await comfyPage.page.evaluate(() =>
+            window.__cnRt!.snapshotAndConfigure()
+          )
+          await comfyPage.nextFrame()
+          // Stage 5 - set-values verdict; collect and reset.
+          mismatches.push(
+            ...(await comfyPage.page.evaluate(() => {
+              window.__cnRt!.compare('set-values', false)
+              return window.__cnRt!.finish()
+            }))
+          )
+        }
+        consoleErrors.stop()
+        const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
+        expect(
+          consoleErrors.errors.filter(
+            (error) => !allowlist.some((rule) => rule.pattern.test(error))
+          ),
+          `console errors during save/reload with VueNodes=${vueNodesEnabled}`
+        ).toEqual([])
+        expect(
+          mismatches,
+          `VueNodes=${vueNodesEnabled}: ${JSON.stringify(mismatches, null, 1)}`
+        ).toEqual([])
       }
-      expect(mismatches, JSON.stringify(mismatches, null, 1)).toEqual([])
       await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
     })
 
+    // Runs under one renderer by design: execution is a backend contract,
+    // and graphToPrompt reads widget values through the same store in both
+    // renderers - Vue-specific value effects are covered by the save/reload
+    // tier's Vue pass. Also deliberately NOT asserted here: zero visible
+    // errors - this tier provokes real execution failures (baselined
+    // cannotRunAlone nodes), and the app surfaces those as toasts/dialogs
+    // by design.
     test('every auto-runnable node executes without error', async ({
       comfyPage
     }) => {
@@ -947,5 +1048,7 @@ async function runBatch(
       return `NO_OUTPUT (PreviewAny sink emitted no payload for: ${silent.join(', ')})`
     return 'PASS'
   }
+  if (result.outcome === 'VALIDATION_FAIL' && result.clientError)
+    return `VALIDATION_FAIL (client threw: ${result.clientError.slice(0, 200)})`
   return `${result.outcome}${result.error?.nodeType ? ` (${result.error.nodeType}: ${result.error.exceptionType ?? ''})` : ''}`
 }

@@ -35,8 +35,7 @@
       "VHS_LoadImages",
       "VHS_LoadImagesPath",
       "VHS_LoadVideoFFmpegPath",
-      "VHS_LoadVideoPath",
-      "VHS_SelectLatest"
+      "VHS_LoadVideoPath"
     ]
   },
   {

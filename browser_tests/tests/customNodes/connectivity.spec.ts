@@ -132,6 +132,11 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     ).toBe(true)
   }
 
+  // The breadth sweep runs under one renderer by design: it exercises
+  // graph-API link creation, the real isValidConnection veto, and
+  // serialize/configure survival - all renderer-independent paths (widget
+  // values and links flow through the same stores in both renderers). The
+  // curated drag test below covers real pointer wiring under BOTH renderers.
   const consoleErrors = collectConsoleErrors(comfyPage.page)
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   consoleErrors.stop()

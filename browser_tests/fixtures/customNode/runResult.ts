@@ -30,6 +30,10 @@ export interface RunResult {
   // reached each output node, not just that execution finished.
   outputsByNode: Record<string, unknown>
   error?: ExecutionError
+  // Set when queuePrompt THREW client-side (pack JS hooking the queue can
+  // crash on a graph shape it does not expect); carries the exception text
+  // so the failing node self-identifies in the report.
+  clientError?: string
 }
 
 // `executing` with a non-null node is the only cache-safe "this node actually ran"

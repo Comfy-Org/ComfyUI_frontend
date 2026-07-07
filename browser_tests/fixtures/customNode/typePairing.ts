@@ -173,6 +173,9 @@ export function planPairs(
   )
   // COMBO slots pair only on an identical option vocabulary; the string type
   // alone would let a checkpoint dropdown "connect" to a scheduler dropdown.
+  // Deliberately order-sensitive: option order defines the default
+  // (options[0]) and the rendered menu, so same-set-different-order combos
+  // are treated as different contracts and stay excluded.
   const vocabOf = (slot: NormalizedSlot) => JSON.stringify(slot.comboOptions)
   const comboProducers = sorted.flatMap((node) =>
     node.outputs
