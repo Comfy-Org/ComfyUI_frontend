@@ -15,7 +15,7 @@
     <div
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
-      <Table class="min-h-0 scrollbar-hide flex-1 px-4">
+      <Table class="min-h-0 flex-1 scrollbar-gutter-stable px-4">
         <TableHeader class="sticky top-0 z-10 bg-base-background">
           <TableRow
             class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
@@ -113,11 +113,12 @@
       </Table>
     </div>
 
-    <!-- Auto-enable default: outside the card, pinned to the panel bottom. The
-    right padding lines the toggle up with the in-table row toggles (table px-4
-    + cell px-2), per the Figma. -->
+    <!-- Auto-enable default: outside the card, pinned to the panel bottom. pr-6
+    lines the toggle up with the in-table row toggles (table px-4 + cell px-2);
+    the reserved scrollbar gutter mirrors the table's so the two stay aligned
+    whether or not the list is scrolling. -->
     <div
-      class="flex h-8 items-center justify-end gap-2 pr-6 text-sm text-muted-foreground"
+      class="flex h-8 scrollbar-gutter-stable items-center justify-end gap-2 overflow-y-auto pr-6 text-sm text-muted-foreground"
     >
       <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
       <!-- Both strings occupy the same grid cell so its width is fixed to the
