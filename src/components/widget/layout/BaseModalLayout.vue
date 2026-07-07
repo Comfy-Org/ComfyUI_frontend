@@ -14,7 +14,12 @@
       >
         <header
           data-component-id="LeftPanelHeader"
-          class="flex h-18 w-full shrink-0 items-center-safe gap-2 pr-3 pl-6"
+          :class="
+            cn(
+              'flex h-18 w-full shrink-0 items-center-safe gap-2 pr-3 pl-6',
+              headerHeightClass
+            )
+          "
         >
           <slot name="leftPanelHeaderTitle" />
           <Button
@@ -33,7 +38,12 @@
       <div class="flex flex-col overflow-hidden bg-base-background">
         <header
           v-if="$slots.header"
-          class="flex h-18 w-full items-center justify-between gap-2 px-6"
+          :class="
+            cn(
+              'flex h-18 w-full items-center justify-between gap-2 px-6',
+              headerHeightClass
+            )
+          "
         >
           <div class="flex min-w-0 flex-1 gap-2">
             <Button
@@ -158,13 +168,15 @@ const {
   rightPanelTitle,
   size = 'lg',
   leftPanelWidth = '14rem',
-  contentPadding = 'default'
+  contentPadding = 'default',
+  headerHeightClass = 'h-18'
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  headerHeightClass?: string
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
