@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { computed } from 'vue'
 
 import { getRoutes } from '../../config/routes'
@@ -8,19 +8,13 @@ import Button from '../ui/button/Button.vue'
 import PricingCard from './PricingCard.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 
-const { locale = 'en', education = false } = defineProps<{
+const { locale = 'en' } = defineProps<{
+  labelKey: TranslationKey
+  descriptionKey: TranslationKey
   locale?: Locale
-  education?: boolean
 }>()
 
 const ctaHref = computed(() => getRoutes(locale).contact)
-
-const labelKey = education
-  ? 'pricing.creativeCampus.label'
-  : 'pricing.enterprise.label'
-const descriptionKey = education
-  ? 'pricing.creativeCampus.description'
-  : 'pricing.enterprise.description'
 </script>
 
 <template>

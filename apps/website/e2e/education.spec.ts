@@ -13,8 +13,6 @@ const STUDENT_AMBASSADOR_FORM = externalLinks.studentAmbassadorForm
 
 const MONTHLY_LABEL = t('pricing.period.monthly', 'en')
 const EDU_YEARLY_TOGGLE = t('pricing.period.yearly.edu', 'en')
-const eduSavings = (pct: number) =>
-  t('pricing.educationalSavings', 'en').replace('{pct}', String(pct))
 const eduTeamSaving = (pct: number, amount: string) =>
   t('pricing.team.educationalSaving', 'en')
     .replace('{pct}', String(pct))
@@ -171,14 +169,9 @@ test.describe('Education pricing — desktop @smoke', () => {
     await expect(page.getByText(EDU_YEARLY_TOGGLE)).toBeVisible()
   })
 
-  test('education savings label flips 25% ↔ 10% with the billing toggle', async ({
-    page
-  }) => {
+  test('education prices flip with the billing toggle', async ({ page }) => {
     const section = pricingSection(page)
     await section.scrollIntoViewIfNeeded()
-
-    // Yearly (default): 25% off.
-    await expect(section.getByText(eduSavings(25)).first()).toBeVisible()
 
     // Flip to monthly: 10% off the monthly list price.
     await switchToMonthly(page, section.getByText('$18', { exact: true }))
@@ -194,9 +187,6 @@ test.describe('Education pricing — desktop @smoke', () => {
         })
       ).toBeVisible()
     }
-
-    await expect(section.getByText(eduSavings(10)).first()).toBeVisible()
-    await expect(section.getByText(eduSavings(25))).toHaveCount(0)
   })
 })
 

@@ -12,8 +12,8 @@ import Button from '../ui/button/Button.vue'
 import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '../ui/toggle-group/ToggleGroupItem.vue'
 import PricingCard from './PricingCard.vue'
+import PricingContactBand from './PricingContactBand.vue'
 import PricingCredits from './PricingCredits.vue'
-import PricingEnterpriseBand from './PricingEnterpriseBand.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
@@ -29,10 +29,11 @@ const billingPeriod = ref<BillingCycle>('yearly')
 
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
   if (education) {
+    // Plans without education pricing (e.g. free) fall back to the list price.
     if (billingPeriod.value === 'yearly') {
-      return plan.eduYearlyPriceKey ?? plan.eduPriceKey
+      return plan.eduYearlyPriceKey ?? plan.eduPriceKey ?? plan.priceKey
     }
-    return plan.eduPriceKey
+    return plan.eduPriceKey ?? plan.priceKey
   }
   if (billingPeriod.value === 'yearly' && plan.yearlyPriceKey) {
     return plan.yearlyPriceKey
@@ -164,7 +165,19 @@ function yearlyTotalFor(plan: PricingPlan): string | undefined {
 
       <PricingTeamCard :billing-period="billingPeriod" :education :locale />
 
-      <PricingEnterpriseBand :education :locale />
+      <PricingContactBand
+        :label-key="
+          education
+            ? 'pricing.creativeCampus.label'
+            : 'pricing.enterprise.label'
+        "
+        :description-key="
+          education
+            ? 'pricing.creativeCampus.description'
+            : 'pricing.enterprise.description'
+        "
+        :locale
+      />
     </div>
     <PricingStudentAmbassadorBand v-if="education" :locale />
 
