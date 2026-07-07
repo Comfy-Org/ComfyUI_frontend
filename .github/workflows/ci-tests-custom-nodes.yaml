@@ -34,10 +34,11 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  # Deliberately NOT sharded yet: the suite is ~5.5 min but every shard would
+  # Deliberately NOT sharded yet: the suite is ~8 min but every shard would
   # pay the full ~4.5 min setup (clone + pip-install every pack + boot the
-  # backend), so 2 shards buy ~2 min of wall time for double the runner cost
-  # and 4 shards are worse. Sharding pays once test time dwarfs setup time -
+  # backend), so 2 shards buy ~4 min of wall time for double the runner cost,
+  # with diminishing returns beyond that. Sharding pays once test time dwarfs
+  # setup time -
   # first cut setup with a prebuilt image of the pinned packs, then shard if
   # the job exceeds ~12 minutes.
   custom-nodes-e2e:
