@@ -11,6 +11,8 @@ import { classifyRun } from '@e2e/fixtures/customNode/runResult'
 interface RawEvent {
   type: string
   node?: string | null
+  prompt_id?: string
+  output?: unknown
   exception_type?: string
   node_id?: string
   node_type?: string
@@ -26,6 +28,8 @@ const TERMINAL = [
 function toPromptEvent(raw: RawEvent): PromptEvent {
   if (raw.type === 'executing')
     return { type: 'executing', node: raw.node ?? null }
+  if (raw.type === 'executed')
+    return { type: 'executed', node: raw.node ?? null, output: raw.output }
   if (raw.type === 'execution_error' || raw.type === 'execution_interrupted') {
     const error: ExecutionError = {
       exceptionType: raw.exception_type,
@@ -62,16 +66,29 @@ export class LocalDesktopTarget {
 
   async runWorkflow(
     page: Page,
-    opts: { expectedNodeIds: string[]; timeoutMs: number }
+    opts: {
+      expectedNodeIds: string[]
+      graphNodeIds?: string[]
+      timeoutMs: number
+    }
   ): Promise<RunResult> {
-    await page.evaluate(
+    // A prior run's terminal event can arrive after its sink was read (late
+    // websocket delivery, or a timed-out prompt finishing during this run).
+    // Remember every prompt id already observed and ignore its events here,
+    // so one node's failure is never attributed to the next node tested.
+    const seenPromptIds = await page.evaluate(
       (types) => {
         const sink = window as unknown as {
           __cnEvents: RawEvent[]
+          __cnSeenPromptIds?: string[]
           __cnTapInstalled?: boolean
         }
+        const seen = new Set(sink.__cnSeenPromptIds ?? [])
+        for (const event of sink.__cnEvents ?? [])
+          if (event.prompt_id) seen.add(event.prompt_id)
+        sink.__cnSeenPromptIds = [...seen]
         sink.__cnEvents = []
-        if (sink.__cnTapInstalled) return
+        if (sink.__cnTapInstalled) return sink.__cnSeenPromptIds
         sink.__cnTapInstalled = true
         for (const type of types)
           (window.app!.api as EventTarget).addEventListener(
@@ -88,8 +105,9 @@ export class LocalDesktopTarget {
               )
             }
           )
+        return sink.__cnSeenPromptIds
       },
-      ['execution_start', ...TERMINAL, 'executing']
+      ['execution_start', ...TERMINAL, 'executing', 'executed']
     )
 
     // app.queuePrompt (NOT api.queuePrompt: that submits an empty prompt).
@@ -102,18 +120,36 @@ export class LocalDesktopTarget {
       )
       queued = await page.evaluate(() => window.app!.queuePrompt(0))
       if (queued === false)
-        return { outcome: 'VALIDATION_FAIL', executedNodes: [] }
+        return {
+          outcome: 'VALIDATION_FAIL',
+          executedNodes: [],
+          outputsByNode: {}
+        }
     }
 
     await page
       .waitForFunction(
-        (terminal) => {
+        ([terminal, seen, graphIds]) => {
           const events =
-            (window as unknown as { __cnEvents?: { type: string }[] })
-              .__cnEvents ?? []
-          return events.some((event) => terminal.includes(event.type))
+            (
+              window as unknown as {
+                __cnEvents?: {
+                  type: string
+                  prompt_id?: string
+                  node_id?: string
+                }[]
+              }
+            ).__cnEvents ?? []
+          return events.some(
+            (event) =>
+              terminal.includes(event.type) &&
+              !(event.prompt_id && seen.includes(event.prompt_id)) &&
+              (graphIds === null ||
+                event.node_id === undefined ||
+                graphIds.includes(event.node_id))
+          )
         },
-        TERMINAL,
+        [TERMINAL, seenPromptIds ?? [], opts.graphNodeIds ?? null] as const,
         { timeout: opts.timeoutMs }
       )
       .catch((error: unknown) => {
@@ -123,13 +159,20 @@ export class LocalDesktopTarget {
         throw error
       })
 
-    const raw = await page.evaluate(
-      () => (window as unknown as { __cnEvents?: RawEvent[] }).__cnEvents ?? []
+    const raw = (
+      await page.evaluate(
+        () =>
+          (window as unknown as { __cnEvents?: RawEvent[] }).__cnEvents ?? []
+      )
+    ).filter(
+      (event) =>
+        !(event.prompt_id && (seenPromptIds ?? []).includes(event.prompt_id))
     )
     const timedOut = !raw.some((event) => TERMINAL.includes(event.type))
     return classifyRun({
       events: raw.map(toPromptEvent),
       expectedNodeIds: opts.expectedNodeIds,
+      graphNodeIds: opts.graphNodeIds,
       timedOut
     })
   }

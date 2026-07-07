@@ -16,15 +16,25 @@ Adding the one row enrolls the pack in two kinds of coverage:
 
 - **Every-node tiers (automatic, zero configuration).** The suite reads the
   pack's FULL node list from the live backend and, for every registered
-  node: mounts it in both renderers, round-trips it through save/reload,
-  plans typed connections for all its concrete slots, and executes it for
-  real when it is self-sufficient (every required input is a widget with a
-  valid default; output wired to `PreviewAny` or the node is its own
-  terminus). Nodes that cannot run alone are classified and logged, never
-  silently dropped: `NEEDS_WIRES` (required socket inputs), `NEEDS_MODELS`
-  (empty model/file combo on the bare backend), `NO_OBSERVABLE_OUTPUT` (nothing
-  observable to queue), or "rejected at validation on defaults" (needs a
-  curated fixture).
+  node: mounts it in both renderers (the Vue mount also asserts the DOM
+  renders at least the instance's widget and slot counts - a mount with
+  missing controls fails), round-trips it through save/reload (every widget
+  is first written with a non-default value that must stick, and the
+  serialized `widgets_values` must survive configure unchanged), plans typed
+  connections for all its concrete slots (COMBO slots pair when their option
+  vocabularies match exactly), and executes it for real when it can run:
+  either self-sufficient (every required input is a widget with a valid
+  default) or `CHAINABLE` - every required socket type has a model-free
+  producer (`EmptyImage`, `EmptyLatentImage`, `SolidMask`, `Primitive*`,
+  `EmptyAudio`, ...) that the runner synthesizes and wires automatically.
+  Executed nodes must observably produce: the `PreviewAny` sink wired to the
+  node's first output must emit a ui payload, or the node is its own
+  terminus (`OUTPUT_NODE`). Nodes that cannot run are classified and
+  logged, never silently dropped: `NEEDS_WIRES` (a required socket type has
+  no model-free producer - MODEL, SEGS, CONDITIONING...), `NEEDS_MODELS`
+  (empty model/file combo on the bare backend), `NO_OBSERVABLE_OUTPUT`
+  (nothing observable to queue), or "rejected at validation on defaults"
+  (needs a curated fixture).
 - **Curated tiers (the row's fields).** `expectedNodes` + `workflow` drive
   the hand-authored run-tier chain (Step 4) proving a real multi-node
   wiring executes end to end, and serve as must-exist sentinels.
@@ -231,24 +241,37 @@ means discovering that class of problem one CI round at a time.
   cannot execute model-free. Fix the workflow or drop the node for a
   simpler one.
 - **Connectivity reports zero planned pairs**: the pack's slots are all
-  wildcard or combo typed (both are excluded from pairing by design because
-  they bypass the real type compare). The pack still gets load/run coverage.
+  wildcard typed, or combo typed with no same-vocabulary partner (wildcards
+  bypass the real type compare; combos pair only when their option lists
+  match exactly). The pack still gets load/run coverage.
 - **Connectivity logs `widget-only on instance` exclusions**: the pack's own
   frontend JS rebuilt a declared input as a widget-only control (rgthree's
   Seed does this to `seed`), so there is no socket to wire. Recorded and
   excluded, like wildcards - pack design, not a regression.
 - **Auto-run reports a node "not in cannotRunAlone"**: the node failed to
-  execute on pure defaults (validation reject, or a real exception from
-  degenerate defaults - empty expression, empty folder, no webcam). If the
+  execute on pure defaults or synthesized chain inputs (validation reject,
+  or a real exception from degenerate inputs - empty expression, empty
+  coordinate JSON, single-frame batch, missing optional python dep). If the
   node USED to run clean this is a regression; otherwise add it to the
   row's `cannotRunAlone` baseline with the run log in the PR. The check is
   two-way: a listed node that starts running clean fails the suite until
-  the stale entry is removed.
+  the stale entry is removed. Confidence note: a chain failure proves the
+  node cannot run on synthesized inputs, not that it is broken - the inputs
+  may be semantically insufficient (e.g. a coordinates STRING fed an empty
+  string).
+- **Auto-run reports `NO_OUTPUT`**: the node executed but its `PreviewAny`
+  sink emitted no ui payload - data never actually flowed out of the node.
+  Treat like any other cannot-run failure: regression or baseline entry.
 - **Auto-run fails with `HUNG_BACKEND`**: a node blocked forever during
-  execution (the canonical case downloads a model at runtime and hangs
-  without network). The failure names the suspects and the remedy: add the
-  offender to `AUTO_RUN_EXCLUDE` in `allNodes.spec.ts` with its mechanism,
-  and restart the test backend (the hang is non-interruptible).
+  execution. Observed mechanism classes so far: model downloads at execute
+  (BLIP/SAM/MiDaS/rembg/CLIPSeg `from_pretrained`), runtime
+  `pip install` inside execute (WAS lazy-install), minutes-long pure-Python
+  per-pixel loops, and an infinite `while` on empty-string defaults. The
+  failure names the suspects and the remedy: add the offender to
+  `AUTO_RUN_EXCLUDE` in `allNodes.spec.ts` with its mechanism, and restart
+  the test backend (the hang is non-interruptible). Everything queued
+  behind the offender reports `HUNG_BACKEND` too - identify the true
+  offender (backend log, `/queue`) before excluding victims.
 - **Mount test fails on console errors**: a pack's JS logged real errors
   while its nodes mounted. If it is pack-attributed noise with no visible
   error surface (KJNodes' loader previews fetching `filename=undefined`),
@@ -260,14 +283,17 @@ means discovering that class of problem one CI round at a time.
 Every escape hatch is a reviewed list whose entries carry the mechanism, so
 the gate stays honest and none can grow silently:
 
-| Ledger                       | Lives in               | Covers                                                                                     |
-| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `vueIncompatibleNodes`       | manifest row           | node cannot mount under Vue Nodes 2.0 (evidence rule below)                                |
-| `cannotRunAlone`             | manifest row           | node cannot execute standalone on a bare backend; asserted both ways so entries cannot rot |
-| `AUTO_RUN_EXCLUDE`           | `allNodes.spec.ts`     | executing the node is unsafe on a bare backend (runtime downloads, hangs)                  |
-| `CONSOLE_ERROR_ALLOWLIST`    | `allNodes.spec.ts`     | pack-attributed console noise with no visible error surface                                |
-| `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts` | pack JS legitimately vetoes a planned wiring                                               |
-| `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts` | pack's own serialize/configure drops links it manages itself                               |
+| Ledger                       | Lives in               | Covers                                                                                                                                                                                 |
+| ---------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vueIncompatibleNodes`       | manifest row           | node cannot mount under Vue Nodes 2.0 (evidence rule below)                                                                                                                            |
+| `cannotRunAlone`             | manifest row           | node cannot execute standalone on a bare backend; asserted both ways so entries cannot rot                                                                                             |
+| `AUTO_RUN_EXCLUDE`           | `allNodes.spec.ts`     | executing the node is unsafe or unstable (runtime downloads/pip installs, infinite loops, non-interruptible hangs, environment/state-variable results, flip-flopping executed signals) |
+| `WIDGET_SET_ALLOWLIST`       | `allNodes.spec.ts`     | plain-typed widget whose value is owned by pack JS (menu-action combos, canonicalized refs) - set-and-stick does not apply                                                             |
+| `ROUNDTRIP_VALUE_ALLOWLIST`  | `allNodes.spec.ts`     | node whose serialized widgets_values legitimately change on reload (pack JS initializes or rebuilds them); the widget-shrink check still applies                                       |
+| `MOUNT_WIDGET_ALLOWLIST`     | `allNodes.spec.ts`     | node whose pack JS renders custom editor/preview widgets outside the node-widget rows; slot fidelity still applies                                                                     |
+| `CONSOLE_ERROR_ALLOWLIST`    | `allNodes.spec.ts`     | pack-attributed console noise with no visible error surface                                                                                                                            |
+| `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts` | pack JS legitimately vetoes a planned wiring                                                                                                                                           |
+| `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts` | pack's own serialize/configure drops links it manages itself                                                                                                                           |
 
 ## Step 7 - push and watch CI
 

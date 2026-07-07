@@ -10,11 +10,14 @@
     "requiresModels": [],
     "timeoutMs": 30000,
     "cannotRunAlone": [
+      "AnyPipeToBasic",
       "CLIPSegDetectorProvider",
+      "ImageReceiver",
       "ImpactMakeImageBatch",
       "ImpactMakeMaskBatch",
+      "LatentSender",
       "MasksToMaskList",
-      "NoiseInjectionDetailerHookProvider"
+      "PreviewBridgeLatent"
     ]
   },
   {
@@ -60,14 +63,14 @@
     "requiresModels": [],
     "timeoutMs": 30000,
     "cannotRunAlone": [
+      "ImageApplyLUT+",
+      "ImageUntile+",
       "MaskFromList+",
+      "PixelOEPixelize+",
+      "SimpleCondition+",
       "SimpleMath+",
-      "SimpleMathDual+",
-      "SimpleMathFloat+",
-      "SimpleMathInt+",
-      "SimpleMathPercent+",
-      "SimpleMathSlider+",
-      "SimpleMathSliderLowRes+"
+      "SimpleMathCondition+",
+      "SimpleMathDual+"
     ]
   },
   {
@@ -83,12 +86,32 @@
     "cannotRunAlone": [
       "CameraPoseVisualizer",
       "CreateAudioMask",
+      "CreateGradientFromCoords",
+      "CreateInstanceDiffusionTracking",
+      "CreateShapeImageOnPath",
+      "CreateShapeMaskOnPath",
+      "CreateTextOnPath",
+      "CrossFadeImages",
+      "CrossFadeImagesMulti",
+      "CustomControlNetWeightsFluxFromList",
+      "CutAndDragOnPath",
+      "EndRecordCUDAMemoryHistory",
+      "FloatToMask",
+      "GetImagesFromBatchIndexed",
+      "GetLatentsFromBatchIndexed",
       "ImageAndMaskPreview",
+      "ImageGridtoBatch",
+      "ImagePadForOutpaintTargetSize",
+      "InterpolateCoords",
       "LoadImagesFromFolderKJ",
       "LoadVideosFromFolder",
-      "MaskOrImageToWeight",
+      "PlotCoordinates",
+      "StartRecordCUDAMemoryHistory",
+      "Superprompt",
       "VisualizeCUDAMemoryHistory",
       "WebcamCaptureCV2",
+      "WeightScheduleConvert",
+      "WeightScheduleExtend",
       "WidgetToString"
     ]
   },
@@ -102,7 +125,7 @@
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 30000,
-    "cannotRunAlone": ["LoadText|pysssss", "MathExpression|pysssss"]
+    "cannotRunAlone": ["MathExpression|pysssss"]
   },
   {
     "pack": "was-node-suite-comfyui",
@@ -117,12 +140,16 @@
     "cannotRunAlone": [
       "Bus Node",
       "Diffusers Hub Model Down-Loader",
+      "Image Analyze",
       "Image Aspect Ratio",
       "Image Batch",
+      "Image Send HTTP",
       "Latent Batch",
       "Mask Batch",
-      "Mask Rect Area",
-      "Number Counter"
+      "Samples Passthrough (Stat System)",
+      "Text Dictionary Convert",
+      "Text Parse A1111 Embeddings",
+      "Text to Number"
     ]
   }
 ]

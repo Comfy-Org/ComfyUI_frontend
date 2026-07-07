@@ -18,6 +18,7 @@ export interface ExecutionError {
 export type PromptEvent =
   | { type: 'execution_start' }
   | { type: 'executing'; node: string | null }
+  | { type: 'executed'; node: string | null; output?: unknown }
   | { type: 'execution_success' }
   | { type: 'execution_error'; error: ExecutionError }
   | { type: 'execution_interrupted'; error?: ExecutionError }
@@ -25,6 +26,9 @@ export type PromptEvent =
 export interface RunResult {
   outcome: CustomNodeOutcome
   executedNodes: string[]
+  // ui payloads from `executed` events, keyed by node id - proof that data
+  // reached each output node, not just that execution finished.
+  outputsByNode: Record<string, unknown>
   error?: ExecutionError
 }
 
@@ -40,15 +44,29 @@ function executedNodesFrom(events: PromptEvent[]): string[] {
   return [...executed]
 }
 
+function outputsFrom(events: PromptEvent[]): Record<string, unknown> {
+  const outputs: Record<string, unknown> = {}
+  for (const event of events) {
+    if (event.type === 'executed' && event.node !== null)
+      outputs[event.node] = event.output
+  }
+  return outputs
+}
+
 export function classifyRun(input: {
   events: PromptEvent[]
   expectedNodeIds: string[]
+  // All node ids in the queued graph. An error naming a node outside it is a
+  // stray from another prompt (late websocket delivery, or a duplicate queue
+  // from the client-flap retry) and must not be pinned on this run.
+  graphNodeIds?: string[]
   timedOut?: boolean
 }): RunResult {
-  const { events, expectedNodeIds, timedOut = false } = input
+  const { events, expectedNodeIds, graphNodeIds, timedOut = false } = input
   const executedNodes = executedNodesFrom(events)
+  const outputsByNode = outputsFrom(events)
 
-  if (timedOut) return { outcome: 'TIMEOUT', executedNodes }
+  if (timedOut) return { outcome: 'TIMEOUT', executedNodes, outputsByNode }
 
   const failure = events.find(
     (
@@ -57,16 +75,29 @@ export function classifyRun(input: {
       PromptEvent,
       { type: 'execution_error' | 'execution_interrupted' }
     > =>
-      event.type === 'execution_error' || event.type === 'execution_interrupted'
+      (event.type === 'execution_error' ||
+        event.type === 'execution_interrupted') &&
+      (graphNodeIds === undefined ||
+        event.error?.nodeId === undefined ||
+        graphNodeIds.includes(event.error.nodeId))
   )
   if (failure)
-    return { outcome: 'EXECUTION_ERROR', executedNodes, error: failure.error }
+    return {
+      outcome: 'EXECUTION_ERROR',
+      executedNodes,
+      outputsByNode,
+      error: failure.error
+    }
 
   if (!events.some((event) => event.type === 'execution_success'))
-    return { outcome: 'TIMEOUT', executedNodes }
+    return { outcome: 'TIMEOUT', executedNodes, outputsByNode }
 
   const ranEveryExpected = expectedNodeIds.every((node) =>
     executedNodes.includes(node)
   )
-  return { outcome: ranEveryExpected ? 'PASS' : 'PARTIAL', executedNodes }
+  return {
+    outcome: ranEveryExpected ? 'PASS' : 'PARTIAL',
+    executedNodes,
+    outputsByNode
+  }
 }

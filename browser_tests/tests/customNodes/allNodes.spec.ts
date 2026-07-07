@@ -9,9 +9,11 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { RequiredSocket } from '@e2e/fixtures/customNode/autoRun'
 import {
   batchAutoRunnable,
-  planAutoRuns
+  planAutoRuns,
+  SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
@@ -33,6 +35,10 @@ const GRID_SPACING = { x: 420, y: 360 }
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
+  'ComfyUI-Impact-Pack': {
+    ImpactRemoteBoolean:
+      'remote-control widget node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)'
+  },
   'rgthree-comfy': {
     'Power Primitive (rgthree)':
       'requires its pack JS to build the primitive value at queue time; raw defaults KeyError. Whether a page applies pack JS varies by serving setup, so excluded unconditionally - curated-workflow candidate',
@@ -60,7 +66,11 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   },
   'ComfyUI-VideoHelperSuite': {
     VHS_LoadAudioUpload:
-      'environment-variable execution: upload combo state differs between hosts (clean locally, Exception on CI)'
+      'environment-variable execution: upload combo state differs between hosts (clean locally, Exception on CI)',
+    VHS_AudioToVHSAudio:
+      'list-expanded execution emits no per-node executing event on some runs, so the executed-set signal flip-flops between PASS and PARTIAL (same class as essentials TransitionMask+)',
+    VHS_BatchManager:
+      'iteration-coordinator node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)'
   },
   'was-node-suite-comfyui': {
     'BLIP Model Loader':
@@ -78,7 +88,19 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
     'Random Number':
       'environment-variable execution: TypeError locally, clean on Linux CI',
     'Image History Loader':
-      'reads WAS run history; state-dependent (KeyError on a fresh CI backend)'
+      'reads WAS run history; state-dependent (KeyError on a fresh CI backend)',
+    'Image Nova Filter':
+      'pure-Python per-pixel loop takes minutes on a 512x512 input and does not respond to interrupt; observed jamming the queue for 20+ minutes',
+    'Image Rembg (Remove Background)':
+      'runs `pip install rembg` inside execute when the package is missing (WAS lazy-install); the silent network install blocks the executor non-interruptibly - observed deadlocking the queue',
+    'Text Find and Replace Input':
+      'infinite `while find in text` loop when find is an empty string (every empty-default run); non-interruptible pure-Python spin - upstream-report candidate',
+    'Text File History Loader':
+      'combo follows WAS text-file history; state-dependent (validation-fails on a fresh backend, may pass on a used one)',
+    'MiDaS Depth Approximation':
+      'loads MiDaS via torch.hub inside execute when no model is wired; downloads on a networked runner - same non-interruptible download class as the MiDaS loader',
+    CLIPSEG2:
+      'calls transformers from_pretrained(CIDAS/clipseg-rd64-refined) inside execute when no model is wired; downloads from HuggingFace on a networked runner - same class as BLIP/SAM'
   },
   ComfyUI_essentials: {
     'RemBGSession+':
@@ -90,6 +112,79 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   }
 }
 
+// Plain-typed widgets whose value is owned by pack JS: a programmatic write
+// is legitimately rewritten, so set-and-stick does not apply. Keyed
+// `NodeType.widgetName`; every entry names the mechanism.
+const WIDGET_SET_ALLOWLIST: Record<string, Record<string, string>> = {
+  'ComfyUI-Impact-Pack': {
+    'BasicPipeToDetailerPipe.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard and resets the combo to its label',
+    'BasicPipeToDetailerPipeSDXL.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard and resets the combo to its label',
+    'ImpactWildcardEncode.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard to the text widget and resets the combo to its label',
+    'ImpactWildcardProcessor.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard and resets the combo to its label',
+    'ToDetailerPipe.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard and resets the combo to its label',
+    'ToDetailerPipeSDXL.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard and resets the combo to its label',
+    'EditDetailerPipe.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard and resets the combo to its label',
+    'EditDetailerPipeSDXL.Select to add Wildcard':
+      'menu-action combo: pack JS applies the chosen wildcard and resets the combo to its label',
+    'PreviewBridge.image':
+      'pack JS canonicalizes the value to its internal $nodeId-slot reference on every write',
+    'PreviewBridgeLatent.image':
+      'pack JS canonicalizes the value to its internal $nodeId-slot reference on every write'
+  }
+}
+
+// Nodes whose serialized widgets_values legitimately change across
+// serialize -> configure because pack JS owns them. The shrink check still
+// applies; only the value comparison is skipped. Every entry names the
+// mechanism.
+const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
+  'ComfyUI-VideoHelperSuite': {
+    VHS_LoadVideo:
+      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
+    VHS_LoadVideoFFmpeg:
+      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
+    VHS_LoadImages:
+      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
+    VHS_LoadAudioUpload:
+      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
+    VHS_VAEDecodeBatched:
+      'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate',
+    VHS_VAEEncodeBatched:
+      'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate'
+  },
+  'ComfyUI-KJNodes': {
+    PointsEditor:
+      'editor JSON widgets initialize their state on configure; a fresh create serializes empty strings',
+    SplineEditor:
+      'editor JSON widgets initialize their state on configure; a fresh create serializes empty strings',
+    Ideogram4PromptBuilderKJ:
+      'pack JS validates and resets its aspect/format text widgets on configure'
+  }
+}
+
+// Nodes whose pack JS renders custom editor/preview widgets outside the
+// [data-testid="node-widget"] rows, so the DOM widget count legitimately
+// undershoots the instance count. Slot fidelity still applies.
+const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
+  'ComfyUI-KJNodes': {
+    ContextWindowsVisualizerKJ:
+      'visualizer widgets render as a custom canvas overlay, not node-widget rows',
+    LoadAndResizeImage:
+      'image preview widget renders as a custom element, not a node-widget row',
+    PointsEditor:
+      'points editor renders as a custom canvas overlay, not node-widget rows',
+    SplineEditor:
+      'spline editor renders as a custom canvas overlay, not node-widget rows'
+  }
+}
+
 // Pack-attributed console noise with no visible error surface.
 const CONSOLE_ERROR_ALLOWLIST: Record<
   string,
@@ -97,9 +192,10 @@ const CONSOLE_ERROR_ALLOWLIST: Record<
 > = {
   'ComfyUI-Impact-Pack': [
     {
-      // Media widgets preview their value via root-relative URLs at
+      // Media/text widgets preview their value via root-relative URLs at
       // creation; 404s on a backend whose root does not serve the file.
-      pattern: /Failed to load resource.*404.*(example\.png|plain_video\.mp4)/,
+      pattern:
+        /Failed to load resource.*404.*(example\.png|plain_video\.mp4|file\.txt)/,
       reason: 'media widget previews its value via a root-relative URL'
     }
   ],
@@ -130,11 +226,23 @@ async function expectNoVisibleErrors(
     await expect(locator, `${context}: ${surface}`).toHaveCount(0)
 }
 
+// The widgetValueStore keys state by node id and survives graph.clear(), so
+// a recreated node that reuses an id inherits the previous node's same-named
+// widget values (core bug, upstream-report candidate). Every in-page builder
+// below restores a monotonic id base after clear() so ids are never reused
+// within a page. Inlined per evaluate - page callbacks cannot share helpers.
+declare global {
+  interface Window {
+    __cnIdBase?: number
+  }
+}
+
 // null id = createNode failed for that type.
 function addChunk(page: Page, types: string[]): Promise<Array<string | null>> {
   return page.evaluate(
     ([chunk, spacingX, spacingY]) => {
       window.app!.graph.clear()
+      window.app!.graph.last_node_id = window.__cnIdBase ?? 0
       const cols = Math.ceil(Math.sqrt(chunk.length))
       const ids: Array<string | null> = []
       for (const [index, type] of chunk.entries()) {
@@ -150,6 +258,7 @@ function addChunk(page: Page, types: string[]): Promise<Array<string | null>> {
         window.app!.graph.add(node)
         ids.push(String(node.id))
       }
+      window.__cnIdBase = window.app!.graph.last_node_id
       const canvas = window.app!.canvas
       const rect = canvas.canvas.getBoundingClientRect()
       const width = cols * (spacingX as number)
@@ -199,6 +308,13 @@ for (const entry of loadManifest()) {
           keys,
           `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
         ).toContain(ledgered)
+      for (const ledgered of Object.keys(
+        MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {}
+      ))
+        expect(
+          keys,
+          `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
+        ).toContain(ledgered)
 
       for (const vueNodesEnabled of [false, true]) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
@@ -230,6 +346,70 @@ for (const entry of loadManifest()) {
               .catch(() => false)
             if (!visible) failures.push(`${key}: no Vue mount`)
           }
+          // A mount with missing widgets or slots is a broken node, not a
+          // pass. Extra DOM elements are tolerated; missing ones fail.
+          if (vueNodesEnabled)
+            failures.push(
+              ...(await comfyPage.page.evaluate(
+                ([chunkIds, ledgered, customWidgetNodes]) => {
+                  const problems: string[] = []
+                  for (const id of chunkIds) {
+                    if (id === null) continue
+                    const node = window.app!.graph.nodes.find(
+                      (candidate) => String(candidate.id) === id
+                    )
+                    const root = document.querySelector(
+                      `[data-node-id="${id}"]`
+                    )
+                    if (!node || !root || ledgered.includes(node.type!))
+                      continue
+                    const widgets = (
+                      (node.widgets ?? []) as Array<{
+                        advanced?: boolean
+                        hidden?: boolean
+                        name?: string
+                        type?: string
+                      }>
+                    ).filter(
+                      (widget) =>
+                        !widget.advanced &&
+                        !widget.hidden &&
+                        widget.type !== 'converted-widget' &&
+                        // Vue renders the seed-control combo inside its
+                        // parent widget row, not as its own row.
+                        widget.name !== 'control_after_generate'
+                    ).length
+                    const domWidgets = root.querySelectorAll(
+                      '[data-testid="node-widget"]'
+                    ).length
+                    if (
+                      domWidgets < widgets &&
+                      !customWidgetNodes.includes(node.type!)
+                    )
+                      problems.push(
+                        `${node.type}: Vue mounts ${domWidgets} of ${widgets} widgets`
+                      )
+                    const slots =
+                      (node.inputs ?? []).filter(
+                        (input) => !(input as { widget?: unknown }).widget
+                      ).length + (node.outputs ?? []).length
+                    const domSlots = root.querySelectorAll(
+                      '[data-testid="slot-connection-dot"]'
+                    ).length
+                    if (domSlots < slots)
+                      problems.push(
+                        `${node.type}: Vue mounts ${domSlots} of ${slots} slots`
+                      )
+                  }
+                  return problems
+                },
+                [
+                  ids,
+                  Object.keys(ledger),
+                  Object.keys(MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {})
+                ] as const
+              ))
+            )
         }
         if (vueNodesEnabled && Object.keys(ledger).length > 0)
           console.log(
@@ -272,48 +452,199 @@ for (const entry of loadManifest()) {
       )
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
+      const allowedWidgets = WIDGET_SET_ALLOWLIST[entry.pack] ?? {}
+      for (const ledgered of Object.keys(allowedWidgets))
+        expect(
+          keys,
+          `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} names a node not registered by ${entry.pack}`
+        ).toContain(ledgered.slice(0, ledgered.indexOf('.')))
+      const allowedValueDrift = ROUNDTRIP_VALUE_ALLOWLIST[entry.pack] ?? {}
+      for (const ledgered of Object.keys(allowedValueDrift))
+        expect(
+          keys,
+          `stale ROUNDTRIP_VALUE_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
+        ).toContain(ledgered)
       const mismatches: string[] = []
       for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
         const chunk = keys.slice(offset, offset + BATCH_SIZE)
-        const chunkMismatches = await comfyPage.page.evaluate((types) => {
-          window.app!.graph.clear()
-          const before = new Map<
-            string,
-            { type: string; widgetValues: number }
-          >()
-          for (const type of types) {
-            const node = window.LiteGraph!.createNode(type)
-            if (!node) continue
-            window.app!.graph.add(node)
-            before.set(String(node.id), {
-              type,
-              widgetValues: (node.widgets ?? []).length
-            })
-          }
-          const serialized = window.app!.graph.serialize()
-          window.app!.graph.configure(serialized)
-          const problems: string[] = []
-          for (const [id, expected] of before) {
-            const restored = window.app!.graph.nodes.find(
-              (node) => String(node.id) === id
-            )
-            if (!restored) {
-              problems.push(`${expected.type}: lost on reload`)
-              continue
+        const chunkMismatches = await comfyPage.page.evaluate(
+          ([types, packManaged, valueDriftNodes]) => {
+            window.app!.graph.clear()
+            window.app!.graph.last_node_id = window.__cnIdBase ?? 0
+            const created = new Map<
+              string,
+              { type: string; widgetCount: number }
+            >()
+            for (const type of types) {
+              const node = window.LiteGraph!.createNode(type)
+              if (!node) continue
+              window.app!.graph.add(node)
+              created.set(String(node.id), {
+                type,
+                widgetCount: (node.widgets ?? []).length
+              })
             }
-            if (restored.type !== expected.type)
-              problems.push(
-                `${expected.type}: type became ${String(restored.type)}`
+            window.__cnIdBase = window.app!.graph.last_node_id
+            const problems: string[] = []
+            // Serialized widgets_values can be an array or a named object;
+            // reload may legitimately APPEND entries (control_after_generate
+            // materializes, packs add value-driven dynamic widgets) but must
+            // never lose or change what was saved.
+            const preserves = (before: unknown, after: unknown): boolean => {
+              const beforeNormalized =
+                Array.isArray(before) && before.length === 0 ? null : before
+              const afterNormalized =
+                Array.isArray(after) && after.length === 0 ? null : after
+              if (beforeNormalized === null) return true
+              if (Array.isArray(beforeNormalized))
+                return (
+                  Array.isArray(afterNormalized) &&
+                  afterNormalized.length >= beforeNormalized.length &&
+                  beforeNormalized.every(
+                    (value, index) =>
+                      JSON.stringify(value) ===
+                      JSON.stringify(afterNormalized[index])
+                  )
+                )
+              if (typeof beforeNormalized === 'object')
+                return (
+                  typeof afterNormalized === 'object' &&
+                  afterNormalized !== null &&
+                  Object.entries(beforeNormalized).every(
+                    ([key, value]) =>
+                      JSON.stringify(value) ===
+                      JSON.stringify(
+                        (afterNormalized as Record<string, unknown>)[key]
+                      )
+                  )
+                )
+              return (
+                JSON.stringify(beforeNormalized) ===
+                JSON.stringify(afterNormalized)
               )
-            const widgets = (restored.widgets ?? []).length
-            if (widgets !== expected.widgetValues)
-              problems.push(
-                `${expected.type}: widgets ${expected.widgetValues} -> ${widgets}`
+            }
+            const widgetNamesById = () =>
+              new Map(
+                window.app!.graph.nodes.map((node) => [
+                  String(node.id),
+                  (node.widgets ?? []).map((widget) => widget.name).join(',')
+                ])
               )
-          }
-          window.app!.graph.clear()
-          return problems
-        }, chunk)
+            // strict = pristine pass: reload may add dynamic widgets but must
+            // never shrink a node (the "widgets disappear after save/reload"
+            // bug class) and must preserve every value. The set-values pass
+            // is not strict: a changed combo/toggle legitimately rebuilds a
+            // dynamic node's widget set, so values are only compared where
+            // the widget topology stayed identical.
+            const compareRoundtrip = (label: string, strict: boolean) => {
+              const namesBefore = widgetNamesById()
+              const firstPass = window.app!.graph.serialize()
+              window.app!.graph.configure(firstPass)
+              const secondPass = window.app!.graph.serialize()
+              const namesAfter = widgetNamesById()
+              const byId = (pass: typeof firstPass) =>
+                new Map(
+                  (pass.nodes ?? []).map((node) => [String(node.id), node])
+                )
+              const beforeNodes = byId(firstPass)
+              const afterNodes = byId(secondPass)
+              for (const [id, expected] of created) {
+                const before = beforeNodes.get(id)
+                const after = afterNodes.get(id)
+                const restored = window.app!.graph.nodes.find(
+                  (node) => String(node.id) === id
+                )
+                if (!before || !after || !restored) {
+                  problems.push(`${expected.type}: lost on ${label} reload`)
+                  continue
+                }
+                if (after.type !== before.type)
+                  problems.push(
+                    `${expected.type}: type became ${String(after.type)} on ${label} reload`
+                  )
+                const widgets = (restored.widgets ?? []).length
+                if (strict && widgets < expected.widgetCount)
+                  problems.push(
+                    `${expected.type}: widgets ${expected.widgetCount} -> ${widgets} on ${label} reload`
+                  )
+                if (!strict && namesBefore.get(id) !== namesAfter.get(id))
+                  continue
+                if (valueDriftNodes.includes(expected.type)) continue
+                if (!preserves(before.widgets_values, after.widgets_values))
+                  problems.push(
+                    `${expected.type}: widgets_values ${JSON.stringify(before.widgets_values ?? null)} -> ${JSON.stringify(after.widgets_values ?? null)} on ${label} reload`
+                  )
+              }
+            }
+            // Pass 1 - pristine round-trip: defaults must survive untouched.
+            compareRoundtrip('pristine', true)
+            // Pass 2 - set-and-stick: every plain widget must hold a
+            // programmatic non-default write, and the written values must
+            // survive a second reload. Widget types owned by pack JS
+            // (editors, previews, annotated controls) are skipped: their
+            // values are not a user-writable contract.
+            const SETTABLE = new Set([
+              'number',
+              'slider',
+              'toggle',
+              'text',
+              'string',
+              'customtext',
+              'combo'
+            ])
+            for (const node of window.app!.graph.nodes) {
+              const nodeType = created.get(String(node.id))?.type
+              if (!nodeType) continue
+              for (const widget of node.widgets ?? []) {
+                if (!SETTABLE.has(String(widget.type))) continue
+                if (`${nodeType}.${widget.name}` in packManaged) continue
+                const target = ((): unknown => {
+                  const options = (
+                    widget as {
+                      options?: {
+                        values?: unknown
+                        min?: number
+                        max?: number
+                        step2?: number
+                      }
+                    }
+                  ).options
+                  if (typeof widget.value === 'boolean') return !widget.value
+                  if (typeof widget.value === 'number') {
+                    const step = options?.step2 || 1
+                    const up = widget.value + step
+                    if (options?.max === undefined || up <= options.max)
+                      return up
+                    const down = widget.value - step
+                    if (options?.min === undefined || down >= options.min)
+                      return down
+                    return undefined
+                  }
+                  if (typeof widget.value === 'string') {
+                    if (widget.type === 'combo')
+                      return Array.isArray(options?.values)
+                        ? options.values.find(
+                            (option: unknown) => option !== widget.value
+                          )
+                        : undefined
+                    return `${widget.value}_cn`
+                  }
+                  return undefined
+                })()
+                if (target === undefined || target === null) continue
+                widget.value = target as typeof widget.value
+                if (widget.value !== target)
+                  problems.push(
+                    `${nodeType}.${widget.name}: set ${JSON.stringify(target)} but widget kept ${JSON.stringify(widget.value)}`
+                  )
+              }
+            }
+            compareRoundtrip('set-values', false)
+            window.app!.graph.clear()
+            return problems
+          },
+          [chunk, allowedWidgets, Object.keys(allowedValueDrift)] as const
+        )
         mismatches.push(...chunkMismatches)
       }
       expect(mismatches, JSON.stringify(mismatches, null, 1)).toEqual([])
@@ -424,32 +755,64 @@ for (const entry of loadManifest()) {
 
 async function runBatch(
   page: Page,
-  batch: Array<{ key: string; needsPreviewSink?: boolean }>
+  batch: Array<{
+    key: string
+    needsPreviewSink?: boolean
+    requiredSockets?: RequiredSocket[]
+  }>
 ): Promise<string> {
-  const ids = await page.evaluate(
-    ([nodes, spacingY]) => {
+  const { ids, allIds, sinkIdByKey } = await page.evaluate(
+    ([nodes, producers, spacingY]) => {
       window.app!.graph.clear()
+      window.app!.graph.last_node_id = window.__cnIdBase ?? 0
       const ids: string[] = []
+      const allIds: string[] = []
+      const sinkIdByKey: Record<string, string> = {}
       for (const [index, spec] of nodes.entries()) {
         const node = window.LiteGraph!.createNode(spec.key)
         if (!node) continue
         node.pos = [0, index * (spacingY as number)]
         window.app!.graph.add(node)
         ids.push(String(node.id))
+        allIds.push(String(node.id))
+        for (const [socketIndex, socket] of (
+          spec.requiredSockets ?? []
+        ).entries()) {
+          const inputIndex = node.inputs.findIndex(
+            (input) => input.name === socket.name
+          )
+          // Pack JS may have rebuilt the socket as widget-only; the widget
+          // default then applies and no wire is needed.
+          if (inputIndex < 0) continue
+          const producer = producers[socket.type]
+          const producerNode = window.LiteGraph!.createNode(producer.nodeType)
+          if (!producerNode) continue
+          producerNode.pos = [
+            -420 - socketIndex * 40,
+            index * (spacingY as number) + socketIndex * 90
+          ]
+          window.app!.graph.add(producerNode)
+          allIds.push(String(producerNode.id))
+          producerNode.connect(producer.outputIndex, node, inputIndex)
+        }
         if (spec.needsPreviewSink) {
           const sink = window.LiteGraph!.createNode('PreviewAny')!
           sink.pos = [460, index * (spacingY as number)]
           window.app!.graph.add(sink)
           node.connect(0, sink, 0)
+          sinkIdByKey[spec.key] = String(sink.id)
+          allIds.push(String(sink.id))
         }
       }
-      return ids
+      window.__cnIdBase = window.app!.graph.last_node_id
+      return { ids, allIds, sinkIdByKey }
     },
-    [batch, GRID_SPACING.y] as const
+    [batch, SYNTH_PRODUCERS, GRID_SPACING.y] as const
   )
   // Widget-only CPU nodes: not finished in 20s = hung.
   const result = await target.runWorkflow(page, {
     expectedNodeIds: ids,
+    graphNodeIds: allIds,
     timeoutMs: 20_000
   })
   if (result.outcome === 'TIMEOUT') {
@@ -469,7 +832,19 @@ async function runBatch(
     if (!drained)
       return 'HUNG_BACKEND (non-interruptible execution; backend restart required)'
   }
-  return result.outcome === 'PASS'
-    ? 'PASS'
-    : `${result.outcome}${result.error?.nodeType ? ` (${result.error.nodeType}: ${result.error.exceptionType ?? ''})` : ''}`
+  if (result.outcome === 'PASS') {
+    // Executing-event coverage proves the node ran; the sink payload proves
+    // its output actually flowed. OUTPUT_NODE targets are their own terminus
+    // and promise no ui payload, so only PreviewAny sinks are asserted.
+    const silent = batch
+      .filter((spec) => {
+        const sinkId = sinkIdByKey[spec.key]
+        return sinkId !== undefined && result.outputsByNode[sinkId] == null
+      })
+      .map((spec) => spec.key)
+    if (silent.length > 0)
+      return `NO_OUTPUT (PreviewAny sink emitted no payload for: ${silent.join(', ')})`
+    return 'PASS'
+  }
+  return `${result.outcome}${result.error?.nodeType ? ` (${result.error.nodeType}: ${result.error.exceptionType ?? ''})` : ''}`
 }

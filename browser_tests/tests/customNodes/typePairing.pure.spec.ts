@@ -80,7 +80,9 @@ test.describe('typePairing', () => {
   test('normalize maps COMBO literals and drops socketless inputs', () => {
     const nodes = normalizeNodeDefs(DEFS)
     const combo = nodes.find((n) => n.type === 'ComboNode')!
-    expect(combo.inputs).toEqual([{ name: 'choice', type: 'COMBO' }])
+    expect(combo.inputs).toEqual([
+      { name: 'choice', type: 'COMBO', comboOptions: ['a', 'b'] }
+    ])
     const socketless = nodes.find((n) => n.type === 'SocketlessNode')!
     expect(socketless.inputs).toEqual([])
   })
@@ -98,7 +100,7 @@ test.describe('typePairing', () => {
     expect(again.pairs).toEqual(plan.pairs)
   })
 
-  test('COMBO literals are excluded from pairing with names coerced to strings', () => {
+  test('COMBO slots with different vocabularies stay excluded', () => {
     const nodes = normalizeNodeDefs({
       ComboSource: {
         input: { required: {} },
@@ -109,13 +111,41 @@ test.describe('typePairing', () => {
       ...DEFS
     })
     const source = nodes.find((n) => n.type === 'ComboSource')!
-    expect(source.outputs).toEqual([{ name: 'COMBO', type: 'COMBO' }])
+    expect(source.outputs).toEqual([
+      { name: 'COMBO', type: 'COMBO', comboOptions: ['A', 'B', 'C'] }
+    ])
+    // ComboNode.choice offers [a, b] - not the same vocabulary as [A, B, C].
     const plan = planPairs(nodes, ['ComboSource', 'ComboNode'])
     expect(plan.pairs).toEqual([])
     expect(plan.combos.map((s) => `${s.nodeType}.${s.slotName}`)).toEqual([
       'ComboSource.COMBO',
       'ComboNode.choice'
     ])
+  })
+
+  test('COMBO slots with an identical vocabulary pair up', () => {
+    const nodes = normalizeNodeDefs({
+      SamplerNameSource: {
+        input: { required: {} },
+        output: [['euler', 'ddim']],
+        output_name: [['euler', 'ddim'] as unknown as string],
+        python_module: 'nodes'
+      },
+      SamplerNameSink: {
+        input: { required: { sampler_name: [['euler', 'ddim'], {}] } },
+        output: [],
+        python_module: 'nodes'
+      },
+      ...DEFS
+    })
+    const plan = planPairs(nodes, ['SamplerNameSource', 'SamplerNameSink'])
+    expect(
+      plan.pairs.map(
+        (p) =>
+          `${p.producer.nodeType}.${p.producer.slotName}->${p.consumer.nodeType}.${p.consumer.slotName}`
+      )
+    ).toEqual(['SamplerNameSource.COMBO->SamplerNameSink.sampler_name'])
+    expect(plan.combos).toEqual([])
   })
 
   test('wildcard slots are excluded, orphan types recorded not failed', () => {

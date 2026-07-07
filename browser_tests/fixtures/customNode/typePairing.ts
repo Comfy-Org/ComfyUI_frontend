@@ -16,6 +16,8 @@ export interface RawNodeDef {
 interface NormalizedSlot {
   name: string
   type: string
+  // COMBO slots: the literal option list, for same-vocabulary pairing.
+  comboOptions?: unknown[]
 }
 
 export interface NormalizedNode {
@@ -43,10 +45,11 @@ export interface PairingPlan {
   orphans: Array<SlotRef & { dir: 'in' | 'out' }>
   // `*` / empty-typed slots, excluded by design (false confidence).
   wildcards: Array<SlotRef & { dir: 'in' | 'out' }>
-  // COMBO-literal slots, excluded by design: isValidConnection only compares
-  // the string COMBO while each slot carries its own option set, so a
-  // type-level pairing proves nothing (a checkpoint dropdown would "connect"
-  // to a scheduler dropdown). Targeted fixtures cover combo behavior.
+  // COMBO slots with no same-vocabulary partner in the corpus, excluded:
+  // isValidConnection only compares the string COMBO while each slot carries
+  // its own option set, so pairing across different vocabularies proves
+  // nothing (a checkpoint dropdown would "connect" to a scheduler dropdown).
+  // Combos whose option lists match exactly ARE paired like any other type.
   combos: Array<SlotRef & { dir: 'in' | 'out' }>
 }
 
@@ -90,7 +93,11 @@ function inputSlots(
     const opts = specArray[1] as { socketless?: boolean } | undefined
     // socketless = widget only, no slot: not connectable, out of the matrix.
     if (opts?.socketless) continue
-    slots.push({ name, type })
+    slots.push(
+      type === 'COMBO'
+        ? { name, type, comboOptions: specArray[0] as unknown[] }
+        : { name, type }
+    )
   }
   return slots
 }
@@ -111,12 +118,12 @@ export function normalizeNodeDefs(
       // output_name entries can be non-strings (COMBO literals repeat the
       // option array); the slot name must stay a string.
       const rawName = def.output_name?.[index]
-      return [
-        {
-          name: typeof rawName === 'string' ? rawName : slotType,
-          type: slotType
-        }
-      ]
+      const slot: NormalizedSlot = {
+        name: typeof rawName === 'string' ? rawName : slotType,
+        type: slotType
+      }
+      if (slotType === 'COMBO') slot.comboOptions = rawType as unknown[]
+      return [slot]
     })
   }))
 }
@@ -164,6 +171,19 @@ export function planPairs(
   const consumers: Array<SlotRef> = sorted.flatMap((node) =>
     node.inputs.filter(pairable).map((slot) => slotRef(node, slot))
   )
+  // COMBO slots pair only on an identical option vocabulary; the string type
+  // alone would let a checkpoint dropdown "connect" to a scheduler dropdown.
+  const vocabOf = (slot: NormalizedSlot) => JSON.stringify(slot.comboOptions)
+  const comboProducers = sorted.flatMap((node) =>
+    node.outputs
+      .filter((slot) => slot.type === 'COMBO')
+      .map((slot) => ({ ref: slotRef(node, slot), vocab: vocabOf(slot) }))
+  )
+  const comboConsumers = sorted.flatMap((node) =>
+    node.inputs
+      .filter((slot) => slot.type === 'COMBO')
+      .map((slot) => ({ ref: slotRef(node, slot), vocab: vocabOf(slot) }))
+  )
 
   const plan: PairingPlan = {
     pairs: [],
@@ -187,7 +207,11 @@ export function planPairs(
         continue
       }
       if (slot.type === 'COMBO') {
-        plan.combos.push({ ...slotRef(node, slot), dir: 'in' })
+        const producer = comboProducers.find(
+          (candidate) => candidate.vocab === JSON.stringify(slot.comboOptions)
+        )
+        if (producer) addPair(producer.ref, slotRef(node, slot))
+        else plan.combos.push({ ...slotRef(node, slot), dir: 'in' })
         continue
       }
       const producer = producers.find((candidate) =>
@@ -202,7 +226,11 @@ export function planPairs(
         continue
       }
       if (slot.type === 'COMBO') {
-        plan.combos.push({ ...slotRef(node, slot), dir: 'out' })
+        const consumer = comboConsumers.find(
+          (candidate) => candidate.vocab === JSON.stringify(slot.comboOptions)
+        )
+        if (consumer) addPair(slotRef(node, slot), consumer.ref)
+        else plan.combos.push({ ...slotRef(node, slot), dir: 'out' })
         continue
       }
       const consumer = consumers.find((candidate) =>

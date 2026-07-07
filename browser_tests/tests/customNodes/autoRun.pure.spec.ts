@@ -8,83 +8,148 @@ import {
   planAutoRuns
 } from '@e2e/fixtures/customNode/autoRun'
 
+const SYNTH = new Set([
+  'IMAGE',
+  'LATENT',
+  'MASK',
+  'INT',
+  'FLOAT',
+  'STRING',
+  'BOOLEAN',
+  '*'
+])
+
 test.describe('autoRun classifier', () => {
   test('widget-only node with outputs is runnable via a PreviewAny sink', () => {
-    const verdict = classifyAutoRunnable('IntConstant', {
-      input: { required: { value: ['INT', { default: 0 }] } },
-      output: ['INT'],
-      output_node: false
-    })
+    const verdict = classifyAutoRunnable(
+      'IntConstant',
+      {
+        input: { required: { value: ['INT', { default: 0 }] } },
+        output: ['INT'],
+        output_node: false
+      },
+      SYNTH
+    )
     expect(verdict.verdict).toBe('AUTO_RUNNABLE')
     expect(verdict.needsPreviewSink).toBe(true)
   })
 
   test('widget-only OUTPUT_NODE runs standalone', () => {
-    const verdict = classifyAutoRunnable('ShowValue', {
-      input: {
-        required: {
-          text: ['STRING', {}],
-          mode: [['raw value', 'tensor shape']]
-        }
+    const verdict = classifyAutoRunnable(
+      'ShowValue',
+      {
+        input: {
+          required: {
+            text: ['STRING', {}],
+            mode: [['raw value', 'tensor shape']]
+          }
+        },
+        output: [],
+        output_node: true
       },
-      output: [],
-      output_node: true
-    })
+      SYNTH
+    )
     expect(verdict.verdict).toBe('AUTO_RUNNABLE')
     expect(verdict.needsPreviewSink).toBe(false)
   })
 
-  test('a required socket input means NEEDS_WIRES', () => {
-    const verdict = classifyAutoRunnable('VaeDecode', {
-      input: { required: { samples: ['LATENT'], vae: ['VAE'] } },
-      output: ['IMAGE'],
-      output_node: false
-    })
-    expect(verdict.verdict).toBe('NEEDS_WIRES')
-    expect(verdict.reason).toContain('samples')
+  test('synthesizable sockets make a node CHAINABLE with its socket list', () => {
+    const verdict = classifyAutoRunnable(
+      'MaskComposite',
+      {
+        input: {
+          required: {
+            destination: ['MASK'],
+            source: ['MASK'],
+            x: ['INT', { default: 0 }],
+            operation: [['multiply', 'add']]
+          }
+        },
+        output: ['MASK'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(verdict.verdict).toBe('CHAINABLE')
+    expect(verdict.requiredSockets).toEqual([
+      { name: 'destination', type: 'MASK' },
+      { name: 'source', type: 'MASK' }
+    ])
+    expect(verdict.needsPreviewSink).toBe(true)
   })
 
-  test('forceInput STRING is a socket, not a widget', () => {
-    const verdict = classifyAutoRunnable('TextSink', {
-      input: { required: { text: ['STRING', { forceInput: true }] } },
-      output: ['STRING'],
-      output_node: true
-    })
+  test('a socket with no model-free producer means NEEDS_WIRES', () => {
+    const verdict = classifyAutoRunnable(
+      'VaeDecode',
+      {
+        input: { required: { samples: ['LATENT'], vae: ['VAE'] } },
+        output: ['IMAGE'],
+        output_node: false
+      },
+      SYNTH
+    )
     expect(verdict.verdict).toBe('NEEDS_WIRES')
+    expect(verdict.reason).toContain('vae')
+  })
+
+  test('forceInput STRING is a socket but STRING is synthesizable', () => {
+    const verdict = classifyAutoRunnable(
+      'TextSink',
+      {
+        input: { required: { text: ['STRING', { forceInput: true }] } },
+        output: ['STRING'],
+        output_node: true
+      },
+      SYNTH
+    )
+    expect(verdict.verdict).toBe('CHAINABLE')
+    expect(verdict.requiredSockets).toEqual([{ name: 'text', type: 'STRING' }])
   })
 
   test('an empty required combo means NEEDS_MODELS', () => {
-    const verdict = classifyAutoRunnable('CheckpointLoader', {
-      input: { required: { ckpt_name: [[]] } },
-      output: ['MODEL'],
-      output_node: false
-    })
+    const verdict = classifyAutoRunnable(
+      'CheckpointLoader',
+      {
+        input: { required: { ckpt_name: [[]] } },
+        output: ['MODEL'],
+        output_node: false
+      },
+      SYNTH
+    )
     expect(verdict.verdict).toBe('NEEDS_MODELS')
     expect(verdict.reason).toContain('ckpt_name')
   })
 
   test('no outputs and not an OUTPUT_NODE means NO_OBSERVABLE_OUTPUT', () => {
-    const verdict = classifyAutoRunnable('SideEffectOnly', {
-      input: { required: { value: ['INT', {}] } },
-      output: [],
-      output_node: false
-    })
+    const verdict = classifyAutoRunnable(
+      'SideEffectOnly',
+      {
+        input: { required: { value: ['INT', {}] } },
+        output: [],
+        output_node: false
+      },
+      SYNTH
+    )
     expect(verdict.verdict).toBe('NO_OBSERVABLE_OUTPUT')
   })
 
   test('optional socket inputs do not block auto-running', () => {
-    const verdict = classifyAutoRunnable('MathWithOptionalAny', {
-      input: {
-        required: { expression: ['STRING', {}] },
-        optional: { a: ['*'] }
+    const verdict = classifyAutoRunnable(
+      'MathWithOptionalAny',
+      {
+        input: {
+          required: { expression: ['STRING', {}] },
+          optional: { a: ['*'] }
+        },
+        output: ['INT', 'FLOAT'],
+        output_node: true
       },
-      output: ['INT', 'FLOAT'],
-      output_node: true
-    })
+      SYNTH
+    )
     expect(verdict.verdict).toBe('AUTO_RUNNABLE')
   })
 
-  test('planAutoRuns maps keys and batchAutoRunnable chunks only runnables', () => {
+  test('planAutoRuns validates producers against defs and batches runnables', () => {
     const defs = {
       A: {
         input: { required: { v: ['INT', {}] } },
@@ -92,24 +157,24 @@ test.describe('autoRun classifier', () => {
         output_node: false
       },
       B: {
-        input: { required: { x: ['LATENT'] } },
-        output: ['LATENT'],
+        input: { required: { x: ['SEGS'] } },
+        output: ['SEGS'],
         output_node: false
       },
       C: {
-        input: { required: { v: ['FLOAT', {}] } },
-        output: ['FLOAT'],
+        input: { required: { img: ['IMAGE'] } },
+        output: ['IMAGE'],
         output_node: false
-      }
+      },
+      EmptyImage: { input: { required: {} }, output: ['IMAGE'] }
     }
     const verdicts = planAutoRuns(defs, ['A', 'B', 'C'])
     expect(verdicts.map((verdict) => verdict.verdict)).toEqual([
       'AUTO_RUNNABLE',
       'NEEDS_WIRES',
-      'AUTO_RUNNABLE'
+      'CHAINABLE'
     ])
     const batches = batchAutoRunnable(verdicts, 1)
-    expect(batches).toHaveLength(2)
-    expect(batches[0][0].key).toBe('A')
+    expect(batches.map((batch) => batch[0].key)).toEqual(['A', 'C'])
   })
 })
