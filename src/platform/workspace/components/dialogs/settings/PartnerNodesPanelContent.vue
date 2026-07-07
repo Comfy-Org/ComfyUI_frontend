@@ -1,44 +1,42 @@
 <template>
-  <div class="flex size-full flex-col">
-    <div class="grow overflow-auto">
-      <div
-        class="flex w-full flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-6"
-      >
-        <div class="flex w-full items-start gap-9">
-          <div class="flex min-w-0 flex-1 flex-col gap-1">
-            <span class="text-base font-semibold text-base-foreground">
-              {{ $t('workspacePanel.partnerNodes.title') }}
-            </span>
-            <span class="text-sm text-muted-foreground">
-              {{ $t('workspacePanel.partnerNodes.description') }}
-            </span>
-          </div>
-          <div class="flex items-center gap-2">
-            <SearchInput
-              v-model="searchQuery"
-              :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
-              size="lg"
-              class="w-64"
-            />
-            <DropdownMenu :entries="filterEntries">
-              <template #button>
-                <Button
-                  variant="secondary"
-                  size="icon-lg"
-                  class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                  :aria-label="
-                    $t('workspacePanel.partnerNodes.filterByPartner')
-                  "
-                >
-                  <i class="icon-[lucide--list-filter] size-4" />
-                </Button>
-              </template>
-            </DropdownMenu>
-          </div>
-        </div>
+  <div class="flex min-h-0 flex-1 flex-col gap-4">
+    <div class="flex w-full items-start gap-9">
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
+        <span class="text-base font-semibold text-base-foreground">
+          {{ $t('workspacePanel.partnerNodes.title') }}
+        </span>
+        <span class="text-sm text-muted-foreground">
+          {{ $t('workspacePanel.partnerNodes.description') }}
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <SearchInput
+          v-model="searchQuery"
+          :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
+          size="lg"
+          class="w-64"
+        />
+        <DropdownMenu :entries="filterEntries">
+          <template #button>
+            <Button
+              variant="secondary"
+              size="icon-lg"
+              class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+              :aria-label="$t('workspacePanel.partnerNodes.filterByPartner')"
+            >
+              <i class="icon-[lucide--list-filter] size-4" />
+            </Button>
+          </template>
+        </DropdownMenu>
+      </div>
+    </div>
 
+    <div
+      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
+    >
+      <div class="min-h-0 flex-1 overflow-auto px-6">
         <Table>
-          <TableHeader>
+          <TableHeader class="sticky top-0 z-10 bg-base-background">
             <TableRow class="hover:bg-transparent">
               <TableHead class="w-6">
                 <Checkbox

@@ -1552,7 +1552,7 @@
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
     "Members": "Members",
-    "PartnerNodes": "Partner Nodes",
+    "PartnerNodes": "Partner nodes",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -2854,7 +2854,7 @@
       "placeholder": "Dashboard workspace settings"
     },
     "partnerNodes": {
-      "title": "Partner Nodes",
+      "title": "Partner nodes",
       "description": "Choose which partner nodes your team can use. Workflows with disabled nodes cannot be run.",
       "searchPlaceholder": "Search partner nodes",
       "filterByPartner": "Filter by partner",
