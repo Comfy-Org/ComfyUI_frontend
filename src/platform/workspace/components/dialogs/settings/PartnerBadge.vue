@@ -1,13 +1,10 @@
 <template>
-  <BadgePill
-    :icon="getProviderIcon(partner)"
-    :border-style="getProviderBorderStyle(partner)"
-  />
+  <i :class="cn(getProviderIcon(partner), 'size-5 shrink-0 rounded-full')" />
 </template>
 
 <script setup lang="ts">
-import BadgePill from '@/components/common/BadgePill.vue'
-import { getProviderBorderStyle, getProviderIcon } from '@/utils/categoryUtil'
+import { getProviderIcon } from '@/utils/categoryUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { partner } = defineProps<{ partner: string }>()
 </script>
