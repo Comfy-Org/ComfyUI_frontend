@@ -94,6 +94,12 @@
   initial-value: 0deg;
 }
 
+/* Pre-hydration hide for a dismissed announcement banner (set by an inline
+   script in BaseLayout head) — prevents any flash before Vue hydrates. */
+[data-banner-dismissed] [data-slot='announcement-banner'] {
+  display: none;
+}
+
 @keyframes border-angle-spin {
   to {
     --border-angle: 360deg;

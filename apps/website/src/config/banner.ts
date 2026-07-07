@@ -1,0 +1,83 @@
+import type { ButtonVariants } from '../components/ui/button'
+import type { Locale, TranslationKey } from '../i18n/translations'
+
+import { t } from '../i18n/translations'
+import { livestream } from '../templates/drops/livestream'
+import { resolveRel } from '../utils/cta'
+
+// The banner "CMS": a single typed config resolved through i18n at build time.
+// `isActive` is the master on/off switch (supersedes the old SHOW_ANNOUNCEMENT_BANNER).
+// NOTE: on this static site, `startsAt`/`endsAt` are evaluated at BUILD time — the
+// window gates on the last deploy, not the visitor's exact clock.
+
+export interface BannerLinkConfig {
+  readonly href: string
+  readonly titleKey: TranslationKey
+  readonly target?: boolean
+  readonly buttonVariant?: NonNullable<ButtonVariants['variant']>
+}
+
+export interface BannerConfig {
+  readonly id: string
+  readonly isActive: boolean
+  readonly startsAt?: string
+  readonly endsAt?: string
+  /** Empty/undefined = all locales. */
+  readonly targetLocales?: readonly Locale[]
+  /** v1 only supports 'sitewide'. */
+  readonly targetSections?: readonly string[]
+  readonly titleKey: TranslationKey
+  readonly descriptionKey?: TranslationKey
+  readonly link?: BannerLinkConfig
+}
+
+export interface BannerLinkData {
+  readonly href: string
+  readonly title: string
+  readonly target?: '_blank'
+  readonly rel?: string
+  readonly buttonVariant?: NonNullable<ButtonVariants['variant']>
+}
+
+export interface BannerData {
+  readonly id: string
+  readonly title: string
+  readonly description?: string
+  readonly link?: BannerLinkData
+}
+
+export const bannerConfig: BannerConfig = {
+  id: 'announcement',
+  isActive: true,
+  targetSections: ['sitewide'],
+  titleKey: 'launches.banner.text',
+  link: {
+    href: `https://www.youtube.com/watch?v=${livestream.youtubeVideoId}`,
+    titleKey: 'launches.banner.cta',
+    target: true,
+    buttonVariant: 'underlineLink'
+  }
+}
+
+/** Resolve a config's i18n keys into display strings for the given locale. */
+export function getBannerData(
+  config: BannerConfig,
+  locale: Locale
+): BannerData {
+  return {
+    id: config.id,
+    title: t(config.titleKey, locale),
+    description: config.descriptionKey
+      ? t(config.descriptionKey, locale)
+      : undefined,
+    link: config.link
+      ? {
+          href: config.link.href,
+          title: t(config.link.titleKey, locale),
+          target: config.link.target ? '_blank' : undefined,
+          rel: resolveRel({ target: config.link.target ? '_blank' : '_self' }),
+          buttonVariant: config.link.buttonVariant
+        }
+      : undefined
+  }
+}
