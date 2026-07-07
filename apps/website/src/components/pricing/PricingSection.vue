@@ -2,7 +2,7 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
@@ -64,6 +64,17 @@ function yearlyTotalFor(plan: PricingPlan): string | undefined {
   }
   return plan.yearlyTotalKey ? t(plan.yearlyTotalKey, locale) : undefined
 }
+
+// Derive each plan's display values once so the template doesn't call the
+// helpers twice (and avoids the non-null assertion on the price key).
+const planCards = computed(() =>
+  pricingPlans.map((plan) => ({
+    plan,
+    priceKey: displayPriceKey(plan),
+    originalPrice: originalPriceFor(plan),
+    yearlyTotal: yearlyTotalFor(plan)
+  }))
+)
 </script>
 
 <template>
@@ -108,7 +119,7 @@ function yearlyTotalFor(plan: PricingPlan): string | undefined {
       "
     >
       <PricingCard
-        v-for="plan in pricingPlans"
+        v-for="{ plan, priceKey, originalPrice, yearlyTotal } in planCards"
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
       >
@@ -125,12 +136,12 @@ function yearlyTotalFor(plan: PricingPlan): string | undefined {
 
         <!-- Price -->
         <PricingPrice
-          v-if="displayPriceKey(plan)"
-          :price="t(displayPriceKey(plan)!, locale)"
+          v-if="priceKey"
+          :price="t(priceKey, locale)"
           :period="t('pricing.plan.period', locale)"
-          :original-price="originalPriceFor(plan)"
+          :original-price="originalPrice"
           :billing-period="billingPeriod"
-          :yearly-total="yearlyTotalFor(plan)"
+          :yearly-total="yearlyTotal"
           :locale
         />
 

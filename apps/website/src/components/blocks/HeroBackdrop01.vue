@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
 
 type Backdrop =
@@ -29,6 +31,10 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
+// Respect prefers-reduced-motion: don't autoplay the looping backdrop video
+// (WCAG 2.2.2). The paused video falls back to its poster/first frame.
+const reduceMotion = computed(() => prefersReducedMotion())
+
 const scrimShape = 'farthest-side at 50% 50%'
 const scrimStyle = {
   background: `radial-gradient(${scrimShape}, color-mix(in srgb, var(--color-primary-warm-white) 80%, transparent) 0%, transparent 80%)`,
@@ -48,7 +54,7 @@ const scrimStyle = {
           :src="backdrop.src"
           :poster="backdrop.poster"
           :aria-label="backdrop.alt"
-          autoplay
+          :autoplay="!reduceMotion"
           loop
           muted
           playsinline

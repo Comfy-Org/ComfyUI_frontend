@@ -39,7 +39,14 @@ function tickValue(i: number): number {
 }
 
 function isTickActive(i: number): boolean {
-  return modelValue != null && tickValue(i) === modelValue[0]
+  const value = modelValue?.[0]
+  if (value == null || ticks == null || ticks <= 1) return false
+  // Map the current value to its nearest tick index and compare as integers,
+  // avoiding floating-point equality on the divide-then-multiply tick value
+  // (e.g. for 7 ticks, tickValue(2) === 0.9999999999999999, not 1).
+  const activeIndex =
+    max === min ? 0 : Math.round(((value - min) / (max - min)) * (ticks - 1))
+  return i - 1 === activeIndex
 }
 
 function isTickFilled(

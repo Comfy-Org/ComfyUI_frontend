@@ -4,6 +4,7 @@ import { useScroll } from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 
+import { t } from '../../../i18n/translations'
 import type { Locale } from '../../../i18n/translations'
 
 // Generic horizontal snap-scroll carousel: a scrollable track (default slot) with
@@ -58,8 +59,8 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
     <!-- Controls -->
     <div class="mt-10 flex items-center gap-4">
-      <!-- Progress bar -->
-      <div class="h-1 flex-1 rounded-full bg-white/20">
+      <!-- Progress bar (decorative; navigation is via the buttons + scrollable track) -->
+      <div class="h-1 flex-1 rounded-full bg-white/20" aria-hidden="true">
         <div
           class="bg-primary-comfy-yellow h-full rounded-full"
           :style="{ width: progressPercent }"
@@ -68,8 +69,9 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
       <!-- Prev -->
       <button
+        type="button"
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="locale === 'zh-CN' ? '上一条' : 'Previous'"
+        :aria-label="t('carousel.previous', locale)"
         @click="scroll(-1)"
       >
         <img
@@ -81,8 +83,9 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
       <!-- Next -->
       <button
+        type="button"
         class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full transition-opacity hover:opacity-90"
-        :aria-label="locale === 'zh-CN' ? '下一条' : 'Next'"
+        :aria-label="t('carousel.next', locale)"
         @click="scroll(1)"
       >
         <img src="/icons/arrow-right.svg" alt="" class="size-3" />

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import GlassCard from '../common/GlassCard.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 
@@ -29,6 +31,10 @@ const {
 function stepNumber(index: number) {
   return String(index + 1).padStart(2, '0')
 }
+
+// Respect prefers-reduced-motion: don't autoplay the looping media video
+// (WCAG 2.2.2). The paused video falls back to its poster/first frame.
+const reduceMotion = computed(() => prefersReducedMotion())
 </script>
 
 <template>
@@ -69,7 +75,7 @@ function stepNumber(index: number) {
               :src="media.src"
               :poster="media.poster"
               :aria-label="media.alt"
-              autoplay
+              :autoplay="!reduceMotion"
               loop
               muted
               playsinline

@@ -80,6 +80,8 @@ test.describe('Education landing — desktop @smoke', () => {
     })
     await expect(choosePlan).toBeVisible()
     await expect(choosePlan).toHaveAttribute('href', '#plans')
+    // The href is only useful if it resolves to a real target on the page.
+    await expect(page.locator('#plans')).toBeAttached()
 
     const startLearning = ctaSection.getByRole('link', {
       name: CTA_START_LEARNING_LABEL
