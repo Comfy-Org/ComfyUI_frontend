@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -150,7 +149,6 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const sizeMode = ref<'medium' | 'large'>('medium')
 const historyOpen = ref(false)
 const startingOpen = ref(false)
 
@@ -161,10 +159,6 @@ const coachSteps: CoachStep[] = [
     body: t('agent.coachBody')
   }
 ]
-
-const panelWidth = computed(() =>
-  sizeMode.value === 'large' ? 'max-w-2xl' : 'max-w-md'
-)
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   void sendMessage(
@@ -214,7 +208,7 @@ async function onFilesPicked(event: Event): Promise<void> {
 </script>
 
 <template>
-  <div id="agent-panel-root" :class="cn('mx-auto size-full', panelWidth)">
+  <div id="agent-panel-root" class="size-full">
     <input
       ref="fileInput"
       type="file"
@@ -229,7 +223,6 @@ async function onFilesPicked(event: Event): Promise<void> {
       :entries
       :user-name="userName"
       :streaming="isStreaming"
-      :size-mode="sizeMode"
       :can-attach="true"
       @send="onSend"
       @stop="onStop"
@@ -237,7 +230,6 @@ async function onFilesPicked(event: Event): Promise<void> {
       @feedback="onFeedback"
       @new-chat="onNewChat"
       @open-history="historyOpen = true"
-      @toggle-size="sizeMode = sizeMode === 'large' ? 'medium' : 'large'"
     />
     <ChatHistoryDrawer
       v-model:open="historyOpen"

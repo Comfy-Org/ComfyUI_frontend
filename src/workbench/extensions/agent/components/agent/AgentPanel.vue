@@ -23,7 +23,6 @@ const {
   entries,
   userName,
   streaming = false,
-  sizeMode = 'medium',
   approvalCards = [],
   lockState = 'UNLOCKED',
   conflictOpen = false,
@@ -33,7 +32,6 @@ const {
   entries: ConversationEntry[]
   userName?: string
   streaming?: boolean
-  sizeMode?: 'medium' | 'large'
   approvalCards?: ApprovalCard[]
   lockState?: LockState
   conflictOpen?: boolean
@@ -51,7 +49,6 @@ const emit = defineEmits<{
   revert: []
   newChat: []
   close: []
-  toggleSize: []
   openHistory: []
 }>()
 
@@ -73,10 +70,8 @@ defineExpose({ addAttachment })
     class="bg-agent-surface text-agent-fg flex h-full flex-col overflow-hidden"
   >
     <PanelHeader
-      :size-mode="sizeMode"
       @new-chat="emit('newChat')"
       @close="emit('close')"
-      @toggle-size="emit('toggleSize')"
       @open-history="emit('openHistory')"
     />
 
