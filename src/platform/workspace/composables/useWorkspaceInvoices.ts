@@ -8,7 +8,7 @@ export interface Invoice {
   amountCents: number
 }
 
-const ITEMS_PER_PAGE = 10
+const ITEMS_PER_PAGE = 11
 
 // Prototype mock: there is no billing-history endpoint yet, so the invoice
 // list is generated client-side and paginated in the browser.

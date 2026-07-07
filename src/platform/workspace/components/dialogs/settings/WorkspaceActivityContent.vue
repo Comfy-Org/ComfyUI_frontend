@@ -48,9 +48,9 @@
           <TableRow
             v-for="event in pagedItems"
             :key="event.id"
-            class="hover:bg-transparent"
+            class="even:bg-secondary-background/25 hover:bg-transparent"
           >
-            <TableCell class="text-sm text-muted-foreground">
+            <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ formatDate(event.date) }}
             </TableCell>
             <TableCell>

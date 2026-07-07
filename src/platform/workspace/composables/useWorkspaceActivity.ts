@@ -15,7 +15,7 @@ export interface UserSummary {
   lastActivity: Date
 }
 
-const ITEMS_PER_PAGE = 10
+const ITEMS_PER_PAGE = 11
 
 // Prototype mock: there is no usage-activity endpoint yet, so the event list is
 // generated client-side and paginated in the browser.
