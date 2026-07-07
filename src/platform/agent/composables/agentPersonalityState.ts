@@ -20,7 +20,7 @@ export interface AgentIdleParams {
   period: number
 }
 
-export interface AgentBorderShimmerParams {
+interface AgentBorderShimmerParams {
   speed: number
   spread: number
   opacity: number
