@@ -43,9 +43,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const draftStore = useAgentDraftStore()
 
   const notices = ref<SessionNotice[]>([])
-  // The active thread; null until the first send's ack adopts one. A next send with null
-  // posts to 'new', which opens a thread as part of posting the first message.
-  const threadIdRef = ref<string | null>(null)
   // Single-flight guard so overlapping draft_version heartbeats collapse to one GET.
   let resyncing = false
   // Single-flight guard for sends: the POST 202 ack arrives before any socket frame, so
@@ -132,13 +129,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (id !== undefined) draftStore.bind(id)
     sending.value = true
     try {
-      const ack = await rest.postMessage(threadIdRef.value ?? 'new', {
+      const ack = await rest.postMessage(conversationStore.threadId ?? 'new', {
         content: text,
         workflowId: id,
         selection: selection?.(),
         attachments
       })
-      threadIdRef.value = ack.thread_id
+      conversationStore.setThreadId(ack.thread_id)
       // The ONE branding seam: the server-minted assistant message_id becomes the TurnId
       // that addresses this turn everywhere downstream.
       const turnId = ack.message_id as TurnId
@@ -167,7 +164,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function stopTurn(): Promise<void> {
-    const threadId = threadIdRef.value
+    const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) return
     try {
@@ -190,10 +187,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function newChat(): void {
     // Cancel any in-flight turn first: an abandoned turn keeps generating and billing
     // server-side unless cancelled. stopTurn captures threadId + activeTurnId
-    // synchronously at entry, so the reset below cannot race the read.
+    // synchronously at entry, so the reset below cannot race the read. reset() clears the
+    // stored thread id, so the next send opens a fresh thread.
     void stopTurn()
     conversationStore.reset()
-    threadIdRef.value = null
   }
 
   function onRaw(raw: unknown): void {
@@ -255,7 +252,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
     notices: computed(() => notices.value),
-    threadId: computed(() => threadIdRef.value)
+    threadId: computed(() => conversationStore.threadId)
   }
 }
 

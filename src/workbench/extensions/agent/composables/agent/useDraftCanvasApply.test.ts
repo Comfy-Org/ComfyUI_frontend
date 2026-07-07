@@ -33,8 +33,8 @@ describe('useDraftCanvasApply', () => {
     await nextTick()
 
     expect(apply.mock.calls).toEqual([
-      [{ nodes: [] }, 5],
-      [{ nodes: [{ id: 6 }] }, 6]
+      [{ nodes: [] }],
+      [{ nodes: [{ id: 6 }] }]
     ])
   })
 

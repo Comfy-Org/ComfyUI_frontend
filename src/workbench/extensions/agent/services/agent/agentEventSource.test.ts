@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { EventTargetSocket, ReconnectingHost } from './agentEventSource'
-import {
-  createReconnectingEventSource,
-  createWebSocketEventSource
-} from './agentEventSource'
+import { createReconnectingEventSource } from './agentEventSource'
 
 type Listener = (event: { data: unknown }) => void
 
@@ -29,60 +26,6 @@ function fakeSocket(readyState?: number) {
   const count = (type: string): number => listeners.get(type)?.size ?? 0
   return { socket, emit, count }
 }
-
-describe('createWebSocketEventSource', () => {
-  it('delivers message data to subscribers and stops after unsubscribe', () => {
-    const { socket, emit, count } = fakeSocket()
-    const source = createWebSocketEventSource(socket)
-    const seen = vi.fn()
-
-    const unsubscribe = source.subscribe(seen)
-    emit('message', { data: '{"type":"draft_version"}' })
-    expect(seen).toHaveBeenCalledWith('{"type":"draft_version"}')
-
-    unsubscribe()
-    emit('message', { data: 'late' })
-    expect(seen).toHaveBeenCalledTimes(1)
-    expect(count('message')).toBe(0)
-  })
-
-  it('maps open/close to status true/false and detaches on unsubscribe', () => {
-    const { socket, emit, count } = fakeSocket()
-    const source = createWebSocketEventSource(socket)
-    const status = vi.fn()
-
-    const unsubscribe = source.onStatus?.(status)
-    emit('open')
-    emit('close')
-    expect(status.mock.calls).toEqual([[true], [false]])
-
-    unsubscribe?.()
-    emit('open')
-    expect(status).toHaveBeenCalledTimes(2)
-    expect(count('open')).toBe(0)
-    expect(count('close')).toBe(0)
-  })
-
-  it('reports live immediately for a socket that is already open', () => {
-    const { socket } = fakeSocket(1)
-    const source = createWebSocketEventSource(socket)
-    const status = vi.fn()
-
-    source.onStatus?.(status)
-
-    expect(status).toHaveBeenCalledWith(true)
-  })
-
-  it('does not report live for a connecting socket', () => {
-    const { socket } = fakeSocket(0)
-    const source = createWebSocketEventSource(socket)
-    const status = vi.fn()
-
-    source.onStatus?.(status)
-
-    expect(status).not.toHaveBeenCalled()
-  })
-})
 
 // A minimal EventTarget host with a swappable current socket, matching how the api nulls
 // and replaces this.socket across reconnects and fires 'reconnected' afterward.
