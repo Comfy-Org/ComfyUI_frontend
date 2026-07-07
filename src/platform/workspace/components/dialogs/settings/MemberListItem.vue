@@ -31,11 +31,7 @@
       v-if="showRoleColumn && !isSingleSeatPlan"
       class="text-right text-sm text-muted-foreground"
     >
-      {{
-        member.role === 'owner'
-          ? $t('workspaceSwitcher.roleOwner')
-          : $t('workspaceSwitcher.roleMember')
-      }}
+      {{ $t(roleLabelKey(member.role, isOriginalOwner)) }}
     </span>
     <div
       v-if="canManageMembers && !isSingleSeatPlan"
@@ -67,6 +63,7 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { roleLabelKey } from '@/platform/workspace/utils/roleLabels'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {

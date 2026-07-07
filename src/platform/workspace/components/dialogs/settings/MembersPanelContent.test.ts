@@ -285,8 +285,24 @@ describe('MembersPanelContent', () => {
       expect(
         screen.getByText('workspacePanel.members.columns.role')
       ).toBeTruthy()
-      expect(screen.getByText('workspaceSwitcher.roleOwner')).toBeTruthy()
+      expect(screen.getByText('workspaceSwitcher.roleAdmin')).toBeTruthy()
       expect(screen.getByText('workspaceSwitcher.roleMember')).toBeTruthy()
+    })
+
+    it('labels the original owner as Owner and other owners as Admin', () => {
+      mockOriginalOwnerId.value = 'creator-1'
+      mockFilteredMembers.value = [
+        createMember({
+          id: 'creator-1',
+          email: 'creator@test.com',
+          role: 'owner',
+          isOriginalOwner: true
+        }),
+        createMember({ id: '2', email: 'admin@test.com', role: 'owner' })
+      ]
+      renderComponent()
+      expect(screen.getByText('workspaceSwitcher.roleOwner')).toBeTruthy()
+      expect(screen.getByText('workspaceSwitcher.roleAdmin')).toBeTruthy()
     })
 
     it('renders filtered members', () => {
