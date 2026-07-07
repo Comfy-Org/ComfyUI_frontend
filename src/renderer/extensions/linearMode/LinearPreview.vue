@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -101,69 +100,64 @@ async function rerun(e: Event) {
       ]"
     >
       <template #button>
-        <Tooltip :text="t('g.moreOptions')">
-          <Button
-            variant="base"
-            size="icon"
-            :disabled="!selectedItem"
-            :aria-label="t('g.moreOptions')"
-          >
-            <i class="icon-[lucide--ellipsis]" />
-          </Button>
-        </Tooltip>
+        <Button
+          v-tooltip.top="t('g.moreOptions')"
+          variant="base"
+          size="icon"
+          :disabled="!selectedItem"
+          :aria-label="t('g.moreOptions')"
+        >
+          <i class="icon-[lucide--ellipsis]" />
+        </Button>
       </template>
     </Popover>
-    <Tooltip :text="t('linearMode.rerun')">
-      <Button
-        variant="base"
-        size="icon"
-        :disabled="!selectedItem"
-        :aria-label="t('linearMode.rerun')"
-        @click="rerun"
-      >
-        <i class="icon-[lucide--refresh-cw]" />
-      </Button>
-    </Tooltip>
-    <Tooltip :text="t('linearMode.reuseParameters')">
-      <Button
-        variant="base"
-        size="icon"
-        :disabled="!selectedItem"
-        :aria-label="t('linearMode.reuseParameters')"
-        @click="() => loadWorkflow(selectedItem)"
-      >
-        <i class="icon-[lucide--list-restart]" />
-      </Button>
-    </Tooltip>
-    <Tooltip :text="t('actionbar.shareTooltip')">
-      <Button
-        variant="base"
-        size="icon"
-        class="border border-solid border-border-default"
-        :aria-label="t('actionbar.shareTooltip')"
-        @click="
-          () => openShareDialog().catch(useErrorHandling().toastErrorHandler)
-        "
-        @pointerenter="prefetchShareDialog"
-      >
-        <i class="icon-[comfy--send]" />
-      </Button>
-    </Tooltip>
-    <Tooltip :text="t('g.download')">
-      <Button
-        variant="inverted"
-        size="icon"
-        :disabled="!selectedOutput?.url"
-        :aria-label="t('g.download')"
-        @click="
-          () => {
-            if (selectedOutput?.url) downloadFile(selectedOutput.url)
-          }
-        "
-      >
-        <i class="icon-[lucide--download]" />
-      </Button>
-    </Tooltip>
+    <Button
+      v-tooltip.top="t('linearMode.rerun')"
+      variant="base"
+      size="icon"
+      :disabled="!selectedItem"
+      :aria-label="t('linearMode.rerun')"
+      @click="rerun"
+    >
+      <i class="icon-[lucide--refresh-cw]" />
+    </Button>
+    <Button
+      v-tooltip.top="t('linearMode.reuseParameters')"
+      variant="base"
+      size="icon"
+      :disabled="!selectedItem"
+      :aria-label="t('linearMode.reuseParameters')"
+      @click="() => loadWorkflow(selectedItem)"
+    >
+      <i class="icon-[lucide--list-restart]" />
+    </Button>
+    <Button
+      v-tooltip.top="t('actionbar.shareTooltip')"
+      variant="base"
+      size="icon"
+      class="border border-solid border-border-default"
+      :aria-label="t('actionbar.shareTooltip')"
+      @click="
+        () => openShareDialog().catch(useErrorHandling().toastErrorHandler)
+      "
+      @pointerenter="prefetchShareDialog"
+    >
+      <i class="icon-[comfy--send]" />
+    </Button>
+    <Button
+      v-tooltip.top="t('g.download')"
+      variant="inverted"
+      size="icon"
+      :disabled="!selectedOutput?.url"
+      :aria-label="t('g.download')"
+      @click="
+        () => {
+          if (selectedOutput?.url) downloadFile(selectedOutput.url)
+        }
+      "
+    >
+      <i class="icon-[lucide--download]" />
+    </Button>
   </section>
   <GeneratingScreen
     v-if="isWorkflowActive"
