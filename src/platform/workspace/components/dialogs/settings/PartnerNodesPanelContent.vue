@@ -124,7 +124,7 @@
     right padding lines the toggle up with the in-table row toggles (table px-4
     + cell px-2), per the Figma. -->
     <div
-      class="flex items-center justify-end gap-2 pt-4 pr-6 text-sm text-muted-foreground"
+      class="flex h-8 items-center justify-end gap-2 pr-6 text-sm text-muted-foreground"
     >
       <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
       <span class="text-base-foreground">
