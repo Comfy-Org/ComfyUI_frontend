@@ -2149,6 +2149,26 @@ function buildPanel(): void {
     `</div>`
   document.body.appendChild(wrap)
 
+  // A position saved on a larger display can land the panel off-screen, leaving
+  // no header to grab. Pull any persisted position back into the viewport.
+  if (typeof ui.left === 'number' && typeof ui.top === 'number') {
+    const left = Math.min(
+      Math.max(0, ui.left),
+      Math.max(0, window.innerWidth - wrap.offsetWidth)
+    )
+    const top = Math.min(
+      Math.max(0, ui.top),
+      Math.max(0, window.innerHeight - wrap.offsetHeight)
+    )
+    if (left !== ui.left || top !== ui.top) {
+      wrap.style.left = `${left}px`
+      wrap.style.top = `${top}px`
+      ui.left = left
+      ui.top = top
+      saveUi(ui)
+    }
+  }
+
   // Keep the (non-modal) settings dialog open while using the panel: reka
   // dismisses on a bubble-phase document 'pointerdown'/'focusin' outside its
   // content, so stop those from bubbling out of the panel.
