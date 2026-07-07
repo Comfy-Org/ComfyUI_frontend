@@ -40,7 +40,7 @@ const contentStyle = computed(() => {
       :style="contentStyle"
       :class="
         cn(
-          'z-1700 rounded-lg border border-white/10 bg-secondary-background p-2.5 shadow-md outline-none',
+          'z-1700 rounded-lg border border-border-subtle bg-secondary-background p-2.5 shadow-md outline-none',
           className
         )
       "
