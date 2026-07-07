@@ -73,19 +73,17 @@
                 "
               />
             </TableCell>
-            <TableCell
-              :class="
-                cn('text-muted-foreground', !node.enabled && 'opacity-30')
-              "
-            >
-              {{ node.name }}
+            <TableCell class="text-muted-foreground">
+              <span :class="cn(!node.enabled && 'opacity-30')">
+                {{ node.name }}
+              </span>
             </TableCell>
-            <TableCell
-              :class="
-                cn('text-muted-foreground', !node.enabled && 'opacity-30')
-              "
-            >
-              <div class="flex items-center gap-2">
+            <TableCell class="text-muted-foreground">
+              <div
+                :class="
+                  cn('flex items-center gap-2', !node.enabled && 'opacity-30')
+                "
+              >
                 <PartnerBadge :partner="node.partner" />
                 <span>{{ node.partner }}</span>
               </div>
@@ -122,8 +120,19 @@
       class="flex h-8 items-center justify-end gap-2 pr-6 text-sm text-muted-foreground"
     >
       <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
-      <span class="text-base-foreground">
-        {{ $t('workspacePanel.partnerNodes.autoEnabled') }}
+      <!-- Both strings occupy the same grid cell so its width is fixed to the
+      longer one; only the active label is visible, so the row never reflows. -->
+      <span class="grid justify-items-end text-base-foreground">
+        <span
+          :class="cn('col-start-1 row-start-1', !autoEnableNew && 'invisible')"
+        >
+          {{ $t('workspacePanel.partnerNodes.autoEnabled') }}
+        </span>
+        <span
+          :class="cn('col-start-1 row-start-1', autoEnableNew && 'invisible')"
+        >
+          {{ $t('workspacePanel.partnerNodes.autoDisabled') }}
+        </span>
       </span>
       <Switch
         :model-value="autoEnableNew"

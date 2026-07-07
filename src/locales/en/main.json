@@ -2876,6 +2876,7 @@
       "clearSelection": "Clear selection",
       "autoEnableLabel": "When a new partner node is added, it should be:",
       "autoEnabled": "auto-enabled",
+      "autoDisabled": "auto-disabled",
       "loadError": "Failed to load partner nodes",
       "updateError": "Failed to update partner nodes"
     },
