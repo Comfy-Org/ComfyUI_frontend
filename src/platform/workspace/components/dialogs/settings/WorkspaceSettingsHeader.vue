@@ -27,8 +27,8 @@
       v-if="isEditing"
       ref="inputRef"
       v-model="draftName"
-      maxlength="50"
-      class="min-w-0 flex-1 bg-transparent text-2xl font-semibold text-base-foreground outline-none"
+      :maxlength="MAX_NAME_LENGTH"
+      class="min-w-0 flex-1 appearance-none border-none bg-transparent p-0 text-2xl font-semibold text-base-foreground outline-none"
       @keydown.enter="commit"
       @keydown.esc="cancel"
       @blur="commit"
@@ -69,6 +69,8 @@ const toast = useToast()
 const store = useTeamWorkspaceStore()
 const { workspaceName } = storeToRefs(store)
 const { uiConfig } = useWorkspaceUI()
+
+const MAX_NAME_LENGTH = 50
 
 // Renaming is gated to Owner + Admins (and the sole owner of a personal
 // workspace); Members never see the affordance.

@@ -51,7 +51,6 @@
           {{ $t('workspacePanel.invite') }}
           <i class="pi pi-plus text-sm" />
         </Button>
-        <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
       </div>
     </div>
 
@@ -220,7 +219,6 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
-import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 

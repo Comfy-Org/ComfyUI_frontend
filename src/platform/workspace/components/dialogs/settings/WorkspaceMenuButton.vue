@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenu :entries="menuItems">
+  <DropdownMenu v-if="menuItems.length > 0" :entries="menuItems">
     <template #button>
       <Button
         v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
@@ -27,11 +27,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()
-const {
-  showLeaveWorkspaceDialog,
-  showDeleteWorkspaceDialog,
-  showEditWorkspaceDialog
-} = useDialogService()
+const { showLeaveWorkspaceDialog, showDeleteWorkspaceDialog } =
+  useDialogService()
 const { isWorkspaceSubscribed, isCurrentUserOriginalOwner } = storeToRefs(
   useTeamWorkspaceStore()
 )
@@ -53,14 +50,6 @@ const deleteTooltip = computed(() => {
 
 const menuItems = computed<MenuItem[]>(() => {
   const items: MenuItem[] = []
-
-  if (uiConfig.value.showEditWorkspaceMenuItem) {
-    items.push({
-      label: t('workspacePanel.menu.editWorkspace'),
-      icon: 'pi pi-pencil',
-      command: () => showEditWorkspaceDialog()
-    })
-  }
 
   const action = uiConfig.value.workspaceMenuAction
   if (action === 'delete') {

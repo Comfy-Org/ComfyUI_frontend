@@ -61,6 +61,7 @@
         v-if="activeCategoryKey === 'keybinding'"
         id="keybinding-panel-actions"
       />
+      <WorkspaceMenuButton v-else-if="isWorkspacePanel" />
     </template>
 
     <template #content>
@@ -99,6 +100,7 @@ import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
+import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import WorkspaceSettingsHeader from '@/platform/workspace/components/dialogs/settings/WorkspaceSettingsHeader.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
