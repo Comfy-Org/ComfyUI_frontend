@@ -1,5 +1,10 @@
 <template>
-  <DropdownMenu v-if="menuItems.length > 0" :entries="menuItems" :modal="false">
+  <DropdownMenu
+    v-if="menuItems.length > 0"
+    :entries="menuItems"
+    :modal="false"
+    @close-auto-focus="onMenuCloseAutoFocus"
+  >
     <template #button>
       <Button
         v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
@@ -36,6 +41,22 @@ const { isWorkspaceSubscribed, isCurrentUserOriginalOwner } = storeToRefs(
 const { uiConfig } = useWorkspaceUI()
 const { startRenaming } = useWorkspaceRename()
 
+// Reka returns focus to the trigger when the menu closes, which would blur (and
+// so tear down) the rename input we're about to focus. Suppress that focus
+// restoration for the one close that kicks off a rename.
+let renameStarting = false
+
+function beginRename() {
+  renameStarting = true
+  startRenaming()
+}
+
+function onMenuCloseAutoFocus(event: Event) {
+  if (!renameStarting) return
+  renameStarting = false
+  event.preventDefault()
+}
+
 // Disable delete when the workspace has an active subscription (prevents
 // accidental deletion); uses the workspace's own status, not the global one.
 const isDeleteDisabled = computed(
@@ -55,7 +76,7 @@ const menuItems = computed<MenuItem[]>(() => {
     ? [
         {
           label: t('workspacePanel.menu.renameWorkspace'),
-          command: () => startRenaming()
+          command: beginRename
         }
       ]
     : []
