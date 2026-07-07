@@ -6,7 +6,7 @@
         <template v-if="showViewTabs">
           <Button
             :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
-            size="md"
+            size="lg"
             @click="activeView = 'active'"
           >
             {{ $t('workspacePanel.members.tabs.membersCount', memberCount) }}
@@ -14,7 +14,7 @@
           <Button
             v-if="uiConfig.showPendingTab"
             :variant="activeView === 'pending' ? 'secondary' : 'muted-textonly'"
-            size="md"
+            size="lg"
             @click="activeView = 'pending'"
           >
             {{
