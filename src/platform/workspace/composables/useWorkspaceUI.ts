@@ -23,6 +23,9 @@ interface WorkspacePermissions {
   // commit); only the original owner gets `canManageSubscriptionLifecycle`.
   canManageSubscriptionLifecycle: boolean
   canTopUp: boolean
+  // Partner-node governance is workspace-wide and gated to Owner + Admins
+  // (both hold the backend 'owner' role); Members never see the tab.
+  canManagePartnerNodes: boolean
 }
 
 /** UI configuration for workspace role */
@@ -56,7 +59,8 @@ function getPermissions(
       canManageSubscription: true,
       // Personal workspace is single-member: the user is the sole owner/creator.
       canManageSubscriptionLifecycle: true,
-      canTopUp: true
+      canTopUp: true,
+      canManagePartnerNodes: false
     }
   }
 
@@ -71,7 +75,8 @@ function getPermissions(
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: isOriginalOwner,
-      canTopUp: true
+      canTopUp: true,
+      canManagePartnerNodes: true
     }
   }
 
@@ -86,7 +91,8 @@ function getPermissions(
     canAccessWorkspaceMenu: true,
     canManageSubscription: false,
     canManageSubscriptionLifecycle: false,
-    canTopUp: false
+    canTopUp: false,
+    canManagePartnerNodes: false
   }
 }
 

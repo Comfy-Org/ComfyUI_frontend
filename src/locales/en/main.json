@@ -1551,6 +1551,8 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Members": "Members",
+    "PartnerNodes": "Partner Nodes",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -2850,6 +2852,27 @@
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
+    },
+    "partnerNodes": {
+      "title": "Partner Nodes",
+      "description": "Choose which partner nodes your team can use. Workflows with disabled nodes cannot be run.",
+      "searchPlaceholder": "Search partner nodes",
+      "filterByPartner": "Filter by partner",
+      "allPartners": "All partners",
+      "selectAll": "Select all partner nodes",
+      "columns": {
+        "name": "Partner Node",
+        "partner": "Partner",
+        "lastModified": "Last modified"
+      },
+      "neverModified": "—",
+      "empty": "No partner nodes match your search.",
+      "selectedCount": "{count} node selected | {count} nodes selected",
+      "clearSelection": "Clear selection",
+      "autoEnableLabel": "When a new partner node is added, it should be:",
+      "autoEnabled": "auto-enabled",
+      "loadError": "Failed to load partner nodes",
+      "updateError": "Failed to update partner nodes"
     },
     "members": {
       "header": "Members",

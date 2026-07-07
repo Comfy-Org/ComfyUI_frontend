@@ -314,6 +314,35 @@ const createInvite = () => ({
   expires_at: '2026-06-08T00:00:00Z'
 })
 
+// Partner node governance (V1). Canned list; toggles are optimistic client-side
+// so they hold within a session but reset on reload.
+function partnerNodes(): unknown {
+  const node = (
+    id: string,
+    name: string,
+    partner: string,
+    enabled: boolean,
+    last_modified: string | null
+  ) => ({ id, name, partner, enabled, last_modified })
+  return {
+    auto_enable_new: true,
+    partner_nodes: [
+      node('pn-1', 'Anthropic Claude', 'Anthropic', true, '2026-07-31'),
+      node('pn-2', 'Flux 1.1 [pro] Ultra Image', 'BFL', true, null),
+      node('pn-3', 'Flux.1 Kontext [pro] Image', 'BFL', true, null),
+      node('pn-4', 'Flux.1 Kontext [max] Image', 'BFL', false, '2026-08-01'),
+      node('pn-5', 'Flux.1 Expand Image', 'BFL', true, null),
+      node('pn-6', 'Flux.1 Fill Image', 'BFL', false, '2026-08-08'),
+      node('pn-7', 'Flux Erase Image', 'BFL', true, null),
+      node('pn-8', 'Kling Start-End Frame to Video', 'Kling', true, null),
+      node('pn-9', 'Kling Image to Video', 'Kling', true, null),
+      node('pn-10', 'Veo 3 Text to Video', 'Google', true, null),
+      node('pn-11', 'Ideogram V3', 'Ideogram', true, null),
+      node('pn-12', 'Grok Image', 'Grok', false, '2026-07-20')
+    ]
+  }
+}
+
 // ---- route table -----------------------------------------------------------
 type Route = [string, RegExp, () => unknown, (() => number)?]
 
@@ -362,6 +391,11 @@ const ROUTES: Route[] = [
   ['GET', /\/api\/workspace\/invites/, () => ({ invites: [] })],
   ['POST', /\/api\/workspace\/invites/, createInvite],
   ['DELETE', /\/api\/workspace\/invites\//, () => ({}), () => 204],
+  // Partner node governance (V1)
+  ['GET', /\/api\/workspace\/partner-nodes(\?|$)/, partnerNodes],
+  ['PUT', /\/api\/workspace\/partner-nodes\/settings/, () => ({})],
+  ['PATCH', /\/api\/workspace\/partner-nodes\/[^/]+$/, () => ({})],
+  ['PATCH', /\/api\/workspace\/partner-nodes(\?|$)/, () => ({})],
   // PERSONAL legacy
   ['GET', /\/customers\/cloud-subscription-status/, legacyStatus],
   ['GET', /\/customers\/balance/, balance]

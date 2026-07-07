@@ -13,6 +13,7 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -27,7 +28,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   keybinding: 'icon-[lucide--keyboard]',
   LiteGraph: 'icon-[lucide--workflow]',
   'Mask Editor': 'icon-[lucide--pen-tool]',
+  Members: 'icon-[lucide--users]',
   Other: 'icon-[lucide--ellipsis]',
+  PartnerNodes: 'icon-[lucide--plug]',
   PlanCredits: 'icon-[lucide--credit-card]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
@@ -54,6 +57,7 @@ export function useSettingUI(
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription, type: billingType } = useBillingContext()
+  const { permissions } = useWorkspaceUI()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -175,21 +179,53 @@ export function useSettingUI(
     )
   }
 
-  // Workspace panel: only available on cloud with team workspaces enabled
-  const workspacePanel: SettingPanelItem = {
+  // Workspace panels: only available on cloud with team workspaces enabled.
+  // The old single "Workspace" panel is split into three sidebar entries; the
+  // Plan & Credits entry keeps the 'workspace' key so existing deep links land.
+  const planCreditsPanel: SettingPanelItem = {
     node: {
       key: 'workspace',
-      label: 'Workspace',
+      label: 'PlanCredits',
       children: []
     },
     component: defineAsyncComponent(
       () =>
-        import('@/platform/workspace/components/dialogs/settings/WorkspacePanelContent.vue')
+        import('@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue')
+    )
+  }
+
+  const membersPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-members',
+      label: 'Members',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue')
+    )
+  }
+
+  const partnerNodesPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-partner-nodes',
+      label: 'PartnerNodes',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/PartnerNodesPanelContent.vue')
     )
   }
 
   const shouldShowWorkspacePanel = computed(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
+  )
+
+  // Partner-node governance is Owner/Admin-only; Members never see the tab.
+  const shouldShowPartnerNodesPanel = computed(
+    () =>
+      shouldShowWorkspacePanel.value && permissions.value.canManagePartnerNodes
   )
 
   const secretsPanel: SettingPanelItem = {
@@ -245,7 +281,10 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
+      ...(shouldShowWorkspacePanel.value
+        ? [planCreditsPanel, membersPanel]
+        : []),
+      ...(shouldShowPartnerNodesPanel.value ? [partnerNodesPanel] : []),
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
@@ -295,7 +334,10 @@ export function useSettingUI(
       key: 'workspace',
       label: 'Workspace',
       children: [
-        ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
+        ...(shouldShowWorkspacePanel.value
+          ? [planCreditsPanel.node, membersPanel.node]
+          : []),
+        ...(shouldShowPartnerNodesPanel.value ? [partnerNodesPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
