@@ -69,6 +69,41 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
     })
   })
 
+  test.describe('spotlight focus', () => {
+    test('focuses the primary action, traps Tab in the card, and re-focuses per step', async ({
+      comfyPage,
+      onboarding
+    }) => {
+      const coach = onboarding
+      await comfyPage.page.emulateMedia({ reducedMotion: 'reduce' })
+      await comfyPage.appMode.enterAppModeWithInputs([])
+
+      await coach.startTour('appMode')
+      await expect(coach.landing).toBeVisible()
+      await coach.landingStartButton.click()
+
+      const step1 = coach.cardForStep(1)
+      await expect(step1).toBeVisible()
+      // FocusScope's mount-auto-focus is suppressed so focus lands on the
+      // primary action rather than the first focusable (Skip).
+      await expect(coach.cardNextButton).toBeFocused()
+
+      // Tab more times than the card has controls; the looped trap must keep
+      // focus inside the card, never escaping to the app behind the overlay.
+      for (let i = 0; i < 4; i++) {
+        await comfyPage.page.keyboard.press('Tab')
+        await expect(step1.locator(':focus')).toBeVisible()
+      }
+      await comfyPage.page.keyboard.press('Shift+Tab')
+      await expect(step1.locator(':focus')).toBeVisible()
+
+      // Advancing to the next step moves focus onto its primary action.
+      await coach.cardNextButton.click()
+      await expect(coach.cardForStep(2)).toBeVisible()
+      await expect(coach.cardNextButton).toBeFocused()
+    })
+  })
+
   test.describe('spotlight placement', () => {
     test('every spotlight card stays fully within the viewport and Done completes the tour', async ({
       comfyPage,

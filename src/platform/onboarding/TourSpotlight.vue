@@ -14,70 +14,87 @@
       class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
       :style="spotlightStyle"
     />
-    <div
-      ref="cardRef"
-      role="dialog"
-      aria-modal="true"
-      :aria-labelledby="titleId"
-      :aria-describedby="`${subtitleId} ${bodyId}`"
-      class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
-      :style="cardStyle"
+    <FocusScope
+      as-child
+      :trapped="!waitingForTarget"
+      loop
+      @mount-auto-focus.prevent
     >
-      <CoachmarkCard
-        :subtitle="
-          t('onboardingCoachmarks.stepLabel', {
-            current: countedStepIdx + 1,
-            total: countedStepsTotal
-          })
-        "
-        :subtitle-id="subtitleId"
-        :title
-        :title-id="titleId"
-        :message="body"
-        :message-id="bodyId"
-        :image="step.image"
+      <div
+        ref="cardRef"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="titleId"
+        :aria-describedby="`${subtitleId} ${bodyId}`"
+        class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
+        :style="cardStyle"
       >
-        <template #actions>
-          <Button
-            v-if="showSkip"
-            variant="textonly"
-            size="md"
-            @click="emit('skip')"
-          >
-            {{ skipLabel }}
-          </Button>
-          <div class="ml-auto flex items-center gap-3">
+        <CoachmarkCard
+          :subtitle="
+            t('onboardingCoachmarks.stepLabel', {
+              current: countedStepIdx + 1,
+              total: countedStepsTotal
+            })
+          "
+          :subtitle-id="subtitleId"
+          :title
+          :title-id="titleId"
+          :message="body"
+          :message-id="bodyId"
+          :image="step.image"
+        >
+          <template #actions>
             <Button
-              v-if="canGoBack"
-              variant="secondary"
+              v-if="showSkip"
+              variant="textonly"
               size="md"
-              class="border border-solid border-border-default"
-              @click="emit('back')"
+              @click="emit('skip')"
             >
-              <i class="icon-[lucide--arrow-left]" />
-              {{ backLabel }}
+              {{ skipLabel }}
             </Button>
-            <Button
-              variant="inverted"
-              size="md"
-              :disabled="waitingForTarget"
-              @click="emit('advance')"
-            >
-              {{ primaryLabel }}
-              <i v-if="!isLast" class="icon-[lucide--arrow-right]" />
-            </Button>
-          </div>
-        </template>
-      </CoachmarkCard>
-    </div>
+            <div class="ml-auto flex items-center gap-3">
+              <Button
+                v-if="canGoBack"
+                variant="secondary"
+                size="md"
+                class="border border-solid border-border-default"
+                @click="emit('back')"
+              >
+                <i class="icon-[lucide--arrow-left]" />
+                {{ backLabel }}
+              </Button>
+              <Button
+                ref="primaryButton"
+                variant="inverted"
+                size="md"
+                :disabled="waitingForTarget"
+                @click="emit('advance')"
+              >
+                {{ primaryLabel }}
+                <i v-if="!isLast" class="icon-[lucide--arrow-right]" />
+              </Button>
+            </div>
+          </template>
+        </CoachmarkCard>
+      </div>
+    </FocusScope>
   </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useWindowSize } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { ZIndex } from '@primeuix/utils/zindex'
-import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { FocusScope } from 'reka-ui'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useId,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
@@ -92,7 +109,6 @@ import {
   noTargetCardLeft
 } from './coachmarkLayout'
 import type { CoachStep } from './onboardingTours'
-import { useCoachmarkFocusTrap } from './useCoachmarkFocusTrap'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
 const {
@@ -142,13 +158,26 @@ const { targetRect, targetEl, floatingStyles, isPositioned } =
 // Last step's "Done" already dismisses, so hide Skip there.
 const showSkip = computed(() => !isLast)
 
-// The blocker is fully modal, so no external target ever joins the focus cycle.
-const focusTrap = useCoachmarkFocusTrap({
-  cardRef,
-  getTarget: () => null,
-  isSuspended: () => waitingForTarget,
-  onEscape: () => emit('skip')
-})
+const primaryButton =
+  useTemplateRef<InstanceType<typeof Button>>('primaryButton')
+
+async function focusPrimary() {
+  await nextTick()
+  const el = primaryButton.value?.$el as HTMLElement | undefined
+  el?.focus()
+}
+
+useEventListener(
+  document,
+  'keydown',
+  (e: KeyboardEvent) => {
+    if (e.key !== 'Escape') return
+    e.preventDefault()
+    e.stopPropagation()
+    emit('skip')
+  },
+  { capture: true }
+)
 
 async function raiseOverlay() {
   await nextTick()
@@ -160,13 +189,16 @@ async function raiseOverlay() {
   ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
 }
 
-// A deferred dialog may have registered above the overlay; reclaim the stack
-// top on every step.
 watch(
   () => step,
+  () => void raiseOverlay(),
+  { immediate: true }
+)
+
+watch(
+  [() => step, () => waitingForTarget],
   () => {
-    void raiseOverlay()
-    void focusTrap.focusCard()
+    if (!waitingForTarget) void focusPrimary()
   },
   { immediate: true }
 )

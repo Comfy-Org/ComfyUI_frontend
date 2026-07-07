@@ -7,9 +7,9 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
+import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
-import type { CoachId, CoachStep } from './onboardingTours'
+import type { CoachStep } from './onboardingTours'
 
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
@@ -47,15 +47,6 @@ function renderSpotlight(
     props: { step: spotlightStep(), ...baseProps, ...props },
     global: { plugins: [i18n] }
   })
-}
-
-/** Register a laid-out target for an id so the spotlight resolves its rect. */
-function mountTarget(id: CoachId): HTMLElement {
-  const el = document.createElement('button')
-  el.getBoundingClientRect = () => new DOMRect(10, 10, 80, 30)
-  document.body.appendChild(el)
-  registerCoachmark(id, el)
-  return el
 }
 
 describe('TourSpotlight', () => {
@@ -142,19 +133,6 @@ describe('TourSpotlight', () => {
 
     await user.keyboard('{Escape}')
     expect(emitted().skip).toHaveLength(1)
-  })
-
-  it('pulls stray focus back to the card', async () => {
-    const target = mountTarget('app-run-button')
-    renderSpotlight({ step: spotlightStep({ coachId: 'app-run-button' }) })
-    await nextTick()
-
-    target.focus()
-    target.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
-    await nextTick()
-    await nextTick()
-
-    expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
   })
 
   it('disables the primary button while waiting for a deferred target', () => {
