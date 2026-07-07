@@ -1,5 +1,6 @@
 import type {
   AddCreditsClickMetadata,
+  AgentMessageFeedbackMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -324,6 +325,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
