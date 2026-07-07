@@ -86,7 +86,7 @@ const menuItems = computed<MenuItem[]>(() => {
   if (action === 'delete') {
     destructiveItems.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
-      class: isDeleteDisabled.value ? 'text-danger/50' : 'text-danger',
+      class: isDeleteDisabled.value ? undefined : 'text-danger',
       disabled: isDeleteDisabled.value,
       tooltip: deleteTooltip.value,
       command: isDeleteDisabled.value
@@ -101,7 +101,6 @@ const menuItems = computed<MenuItem[]>(() => {
       isCurrentUserOriginalOwner.value
         ? {
             label: t('workspacePanel.menu.leaveWorkspace'),
-            class: 'opacity-50',
             disabled: true,
             tooltip: t('workspacePanel.menu.creatorCannotLeave')
           }
