@@ -7,6 +7,13 @@ import TeamPhotosSection from '../components/careers/TeamPhotosSection.vue'
 import FAQSection from '../components/common/FAQSection.vue'
 import { fetchRolesForBuild } from '../utils/ashby'
 import { reportAshbyOutcome } from '../utils/ashby.ci'
+import { t } from '../i18n/translations'
+import {
+  absoluteUrl,
+  buildPageGraph,
+  itemListNode,
+  pageContext,
+} from '../utils/jsonLd'
 
 const outcome = await fetchRolesForBuild()
 reportAshbyOutcome(outcome)
@@ -19,12 +26,36 @@ if (outcome.status === 'failed') {
 }
 
 const departments = outcome.snapshot.departments
+
+const title = 'Careers — Comfy'
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const listId = `${url}#itemlist`
+const jsonLd = buildPageGraph(
+  { siteUrl, locale },
+  {
+    url,
+    name: title,
+    type: 'CollectionPage',
+    mainEntityId: listId,
+    crumbs: [
+      { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+      { name: 'Careers' },
+    ],
+  },
+  itemListNode(
+    url,
+    departments.flatMap((department) =>
+      department.roles.map((role) => ({ name: role.title, url: role.jobUrl })),
+    ),
+  ),
+)
 ---
 
-<BaseLayout
-  title="Careers — Comfy"
-  description="Join the team building the operating system for generative AI. Open roles in engineering, design, marketing, and more."
->
+<BaseLayout title={title} description="Join the team building the operating system for generative AI. Open roles in engineering, design, marketing, and more." jsonLd={jsonLd}>
   <HeroSection />
   <RolesSection departments={departments} client:visible />
   <WhyJoinSection client:visible />
