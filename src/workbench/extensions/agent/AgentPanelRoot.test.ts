@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 // A controllable stand-in for the host api: an EventTarget with a swappable socket, the
@@ -45,7 +46,11 @@ vi.mock('@/scripts/api', () => {
 })
 
 vi.mock('@/scripts/app', () => ({
-  app: { loadGraphData: vi.fn(), graph: { serialize: () => ({ nodes: [] }) } }
+  app: { loadGraphData: vi.fn() }
+}))
+
+vi.mock('@/platform/workflow/validation/schemas/workflowSchema', () => ({
+  validateComfyWorkflow: vi.fn(async (content: unknown) => content)
 }))
 
 vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
@@ -121,12 +126,6 @@ describe('AgentPanelRoot attach flow', () => {
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      if (url.endsWith('/api/workflows')) {
-        return new Response(JSON.stringify({ id: 'wf-1' }), {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        })
-      }
       // The messages POST that carries the send payload.
       messageBodies.push(JSON.parse(String(init?.body)))
       return new Response(
@@ -156,7 +155,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 })
 
-describe('AgentPanelRoot workflow binding', () => {
+describe('AgentPanelRoot draft binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     socket.clear()
@@ -167,84 +166,53 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.unstubAllGlobals()
   })
 
-  it('mints the session workflow before the first message and binds it', async () => {
-    const urls: string[] = []
-    let messageBody: Record<string, unknown> | undefined
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      urls.push(url)
-      if (url.endsWith('/api/workflows')) {
-        return new Response(JSON.stringify({ id: 'wf-42' }), {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        })
+  it('binds the draft to the workflow id from the message ack and reloads the canvas on a patch', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      // The server owns the workflow and returns its id in the message ack.
+      if (url.includes('/messages')) {
+        return new Response(
+          JSON.stringify({
+            thread_id: 'th-1',
+            message_id: 'm-1',
+            workflow_id: 'wf-42'
+          }),
+          { status: 202, headers: { 'Content-Type': 'application/json' } }
+        )
       }
-      messageBody = JSON.parse(String(init?.body))
-      return new Response(
-        JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }),
-        { status: 202, headers: { 'Content-Type': 'application/json' } }
-      )
+      return new Response('{}', { status: 200 })
     })
     vi.stubGlobal('fetch', fetchMock)
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    await userEvent.type(screen.getByRole('textbox'), 'hello agent')
+    await userEvent.type(screen.getByRole('textbox'), 'build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-
-    // The workflow POST precedes the message POST, and the message carries its id.
-    const workflowIndex = urls.findIndex((u) => u.endsWith('/api/workflows'))
-    const messageIndex = urls.findIndex((u) => u.includes('/messages'))
-    expect(workflowIndex).toBeGreaterThanOrEqual(0)
-    expect(messageIndex).toBeGreaterThan(workflowIndex)
-    expect(messageBody).toMatchObject({
-      content: 'hello agent',
-      workflow_id: 'wf-42'
-    })
-  })
-
-  it('warns once on mint failure but still sends every message', async () => {
-    const messageBodies: Record<string, unknown>[] = []
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url.endsWith('/api/workflows')) {
-        return new Response('nope', { status: 500 })
-      }
-      messageBodies.push(JSON.parse(String(init?.body)))
-      return new Response(
-        JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }),
-        { status: 202, headers: { 'Content-Type': 'application/json' } }
-      )
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const toast = useToastStore()
-    const draftWarnings = () =>
-      toast.messagesToAdd.filter(
-        (message) =>
-          message.summary === i18n.global.t('agent.draftsUnavailable')
-      )
-
-    // First send: minting 500s, so the user is warned and the message still posts unbound.
-    await userEvent.type(screen.getByRole('textbox'), 'hi')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await vi.waitFor(() => expect(messageBodies).toHaveLength(1))
-    expect(messageBodies[0]).toMatchObject({ content: 'hi' })
-    expect(draftWarnings()).toHaveLength(1)
-
-    // Settle the turn so the composer returns to Send, then send again: it still posts, but
-    // the drafts-unavailable warning is not repeated.
     await screen.findByRole('button', { name: 'Stop' })
+
+    // A draft_patch carrying the ack's workflow id now drives the canvas; a foreign one does not.
+    const graph = { version: 0.4, nodes: [{ id: 1 }] }
     socket.emit('message', {
       data: JSON.stringify({
-        type: 'agent_message_done',
-        data: { message_id: 'm-1', thread_id: 'th-1', usage: null }
+        type: 'draft_patch',
+        data: { workflow_id: 'other', base_version: 0, version: 1, content: {} }
       })
     })
-    await userEvent.type(await screen.findByRole('textbox'), 'again')
-    await userEvent.click(await screen.findByRole('button', { name: 'Send' }))
-    await vi.waitFor(() => expect(messageBodies).toHaveLength(2))
-    expect(draftWarnings()).toHaveLength(1)
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'draft_patch',
+        data: {
+          workflow_id: 'wf-42',
+          base_version: 0,
+          version: 1,
+          content: graph
+        }
+      })
+    })
+
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph)
+    )
+    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -340,12 +308,6 @@ describe('AgentPanelRoot lifecycle', () => {
     const urls: string[] = []
     const fetchMock = vi.fn(async (url: string) => {
       urls.push(url)
-      if (url.endsWith('/api/workflows')) {
-        return new Response(JSON.stringify({ id: 'wf-1' }), {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        })
-      }
       return new Response(
         JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }),
         { status: 202, headers: { 'Content-Type': 'application/json' } }
