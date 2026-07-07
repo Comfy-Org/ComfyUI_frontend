@@ -256,7 +256,7 @@ export function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
   }
 }
 
-export interface OfferInput {
+interface OfferInput {
   name: string
   price: string | number
   url?: string
