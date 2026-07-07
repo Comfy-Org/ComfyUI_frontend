@@ -162,12 +162,13 @@ describe('webPageNode', () => {
 })
 
 describe('softwareApplicationNode', () => {
-  it('claims Comfy Org as author and publisher for first-party apps', () => {
+  it('claims Comfy Org as author and publisher only when marked first-party', () => {
     const node = softwareApplicationNode({
       siteUrl,
       id: `${siteUrl}/#software`,
       name: 'ComfyUI',
       url: siteUrl,
+      firstParty: true,
       applicationCategory: 'MultimediaApplication',
       isFree: true
     })
@@ -181,7 +182,7 @@ describe('softwareApplicationNode', () => {
     })
   })
 
-  it('credits a third-party pack author without claiming to publish it', () => {
+  it('credits a known third-party author without claiming to publish it', () => {
     const node = softwareApplicationNode({
       siteUrl,
       id: `${siteUrl}/cloud/supported-nodes/foo#software`,
@@ -191,6 +192,18 @@ describe('softwareApplicationNode', () => {
       authorName: 'Jane Dev'
     })
     expect(node.author).toEqual({ '@type': 'Person', name: 'Jane Dev' })
+    expect(node.publisher).toBeUndefined()
+  })
+
+  it('claims no author or publisher for third-party software with no known author', () => {
+    const node = softwareApplicationNode({
+      siteUrl,
+      id: `${siteUrl}/p/supported-models/foo#software`,
+      name: 'Foo Model',
+      url: `${siteUrl}/p/supported-models/foo`,
+      applicationCategory: 'MultimediaApplication'
+    })
+    expect(node.author).toBeUndefined()
     expect(node.publisher).toBeUndefined()
   })
 })

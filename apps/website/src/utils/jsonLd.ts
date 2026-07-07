@@ -194,6 +194,9 @@ export interface SoftwareAppInput {
   name: string
   url: string
   applicationCategory: string
+  // Set only for Comfy Org's own software (ComfyUI). Third-party packs and
+  // listed models must not claim Comfy Org as author or publisher.
+  firstParty?: boolean
   applicationSubCategory?: string
   description?: string
   operatingSystem?: string
@@ -206,9 +209,12 @@ export interface SoftwareAppInput {
 }
 
 export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
-  // A third-party author (e.g. a community node pack) is not published by Comfy
-  // Org, so only first-party apps claim Comfy Org as author and publisher.
-  const isFirstParty = !input.authorName
+  const orgRef = { '@id': organizationId(input.siteUrl) }
+  const author = input.firstParty
+    ? orgRef
+    : input.authorName
+      ? { '@type': 'Person', name: input.authorName }
+      : undefined
   return {
     '@type': 'SoftwareApplication',
     '@id': input.id,
@@ -222,12 +228,8 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     softwareVersion: input.softwareVersion,
     license: input.license,
     codeRepository: input.codeRepository,
-    author: isFirstParty
-      ? { '@id': organizationId(input.siteUrl) }
-      : { '@type': 'Person', name: input.authorName },
-    publisher: isFirstParty
-      ? { '@id': organizationId(input.siteUrl) }
-      : undefined,
+    author,
+    publisher: input.firstParty ? orgRef : undefined,
     // Free/open-source is a true offer, unlike a fabricated price.
     offers: input.isFree
       ? { '@type': 'Offer', price: 0, priceCurrency: 'USD' }

@@ -8,11 +8,42 @@ import EcoSystemSection from '../../components/product/local/EcoSystemSection.vu
 import ProductCardsSection from '../../components/product/local/ProductCardsSection.vue'
 import FAQSection from '../../components/product/local/FAQSection.vue'
 import { t } from '../../i18n/translations'
+import {
+  buildPageGraph,
+  pageContext,
+  softwareApplicationNode,
+} from '../../utils/jsonLd'
+
+const title = '下载 Comfy 桌面版 — 在您的硬件上运行 AI'
+const description = t('download.hero.subtitle', 'zh-CN')
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+// The download page's primary entity is the ComfyUI desktop app itself, the
+// same first-party #software entity the home page describes.
+const jsonLd = buildPageGraph(
+  { siteUrl, locale },
+  { url, name: title, description, mainEntityId: `${siteUrl}/#software` },
+  softwareApplicationNode({
+    siteUrl,
+    id: `${siteUrl}/#software`,
+    name: 'ComfyUI',
+    url: siteUrl,
+    firstParty: true,
+    applicationCategory: 'MultimediaApplication',
+    operatingSystem: 'Windows, macOS, Linux',
+    description,
+    isFree: true,
+  }),
+)
 ---
 
 <BaseLayout
-  title="下载 Comfy 桌面版 — 在您的硬件上运行 AI"
-  description={t('download.hero.subtitle', 'zh-CN')}
+  title={title}
+  description={description}
+  jsonLd={jsonLd}
   keywords={['comfyui app', 'comfyui desktop app', 'comfyui download', 'ComfyUI 下载', 'ComfyUI 桌面应用', 'ComfyUI 应用', 'ComfyUI Windows', 'ComfyUI macOS', 'ComfyUI Linux']}
 >
   <CloudBannerSection locale="zh-CN" />
