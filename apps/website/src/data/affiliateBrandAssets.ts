@@ -7,8 +7,14 @@ interface AffiliateBrandAsset {
   preview: string
 }
 
-const BRAND_ASSETS_ZIP =
+export const BRAND_ASSETS_ZIP =
   'https://media.comfy.org/website/comfy-org-brand-assets.zip'
+
+// Downloadable brand guidelines PDF served from the media bucket with a
+// Content-Disposition: attachment header so the link downloads rather than
+// opening inline.
+export const BRAND_GUIDELINES_PDF =
+  'https://media.comfy.org/website/Comfy_Brand_guideline_2026.pdf'
 
 export const affiliateBrandAssets: readonly AffiliateBrandAsset[] = [
   {

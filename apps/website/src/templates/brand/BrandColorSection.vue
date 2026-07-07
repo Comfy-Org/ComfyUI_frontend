@@ -1,0 +1,52 @@
+<script setup lang="ts">
+import type { Locale } from '../../i18n/translations'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import SectionHeader from '../../components/common/SectionHeader.vue'
+import { brandColors } from '../../data/brandColors'
+import { t } from '../../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const specRows = ['hex', 'rgb', 'hsl', 'cmyk'] as const
+</script>
+
+<template>
+  <section class="max-w-9xl mx-auto px-6 py-10 lg:px-20 lg:py-12">
+    <SectionHeader align="start" max-width="xl">
+      {{ t('brand.colors.heading', locale) }}
+      <template #subtitle>
+        <p class="text-primary-warm-gray mt-4 max-w-2xl text-sm leading-[1.45]">
+          {{ t('brand.colors.subheading', locale) }}
+        </p>
+      </template>
+    </SectionHeader>
+
+    <ul class="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <li
+        v-for="color in brandColors"
+        :key="color.hex"
+        :class="
+          cn(
+            'flex min-h-[123px] flex-col rounded-[30px] p-6',
+            color.swatchClass,
+            color.textClass,
+            color.wide && 'lg:col-span-2',
+            color.border && 'border-primary-warm-gray border-[0.783px]'
+          )
+        "
+      >
+        <span class="text-xs font-semibold">{{ color.name }}</span>
+        <dl
+          class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 text-xs leading-[1.4]"
+        >
+          <template v-for="row in specRows" :key="row">
+            <dt class="uppercase opacity-50">{{ row }}</dt>
+            <dd>{{ color[row] }}</dd>
+          </template>
+        </dl>
+      </li>
+    </ul>
+  </section>
+</template>
