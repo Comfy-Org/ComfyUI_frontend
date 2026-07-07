@@ -10,6 +10,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -582,6 +583,44 @@ export const useDialogService = () => {
     })
   }
 
+  async function showMemberLimitDialog(maxSeats: number) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/RequestMoreDialogContent.vue')
+    const { staticUrls } = useExternalLink()
+    return dialogStore.showDialog({
+      key: 'member-limit',
+      component,
+      props: {
+        dialogKey: 'member-limit',
+        title: t('workspacePanel.memberLimitDialog.title'),
+        message: t('workspacePanel.memberLimitDialog.message', {
+          count: maxSeats
+        }),
+        onRequestMore: () =>
+          window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+      },
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
+  async function showWorkflowQueuedDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/RequestMoreDialogContent.vue')
+    const { staticUrls } = useExternalLink()
+    return dialogStore.showDialog({
+      key: 'workflow-queued',
+      component,
+      props: {
+        dialogKey: 'workflow-queued',
+        title: t('workspacePanel.workflowQueuedDialog.title'),
+        message: t('workspacePanel.workflowQueuedDialog.message'),
+        onRequestMore: () =>
+          window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+      },
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
@@ -732,6 +771,8 @@ export const useDialogService = () => {
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
+    showMemberLimitDialog,
+    showWorkflowQueuedDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showDowngradeToPersonalDialog

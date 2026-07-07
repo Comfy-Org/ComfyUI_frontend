@@ -1215,6 +1215,8 @@ function buildPanel(): void {
     `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
     row('roleChange', 'roleChange', ['200', '500']) +
     `<label style="display:flex;gap:6px;margin:4px 0"><input type="checkbox" id="cbm-multiWs"${cfg.multiWs ? ' checked' : ''}/><span style="opacity:.7">2nd workspace (switcher)</span></label>` +
+    `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
+    `<button id="cbm-queued" style="width:100%;background:#0d0e11;color:#e6e6e6;border:1px solid #3a3d46;border-radius:4px;padding:3px;cursor:pointer">preview: workflow queued</button>` +
     `<div style="font-size:10px;opacity:.55;margin-top:4px">change → saves + reloads · personal=/customers · team=/api/billing</div>` +
     `</div>`
   document.body.appendChild(wrap)
@@ -1235,6 +1237,12 @@ function buildPanel(): void {
   ).addEventListener('change', (e) => {
     cfg.multiWs = (e.target as HTMLInputElement).checked
     apply()
+  })
+
+  document.getElementById('cbm-queued')?.addEventListener('click', () => {
+    void import('@/services/dialogService').then(({ useDialogService }) =>
+      useDialogService().showWorkflowQueuedDialog()
+    )
   })
 
   // turn the harness fully off (back to the real preview)

@@ -254,6 +254,7 @@ const mockShowChangeMemberRoleDialog = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
+const mockShowMemberLimitDialog = vi.fn()
 
 const {
   mockMembers,
@@ -366,6 +367,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: mockIsActiveSubscription,
     subscription: mockSubscription,
+    balance: { value: null },
+    renewalDate: { value: null },
+    fetchBalance: vi.fn(),
     getMaxSeats: (tierKey: string) => {
       const seats: Record<string, number> = {
         free: 1,
@@ -391,7 +395,8 @@ vi.mock('@/services/dialogService', () => ({
     showRevokeInviteDialog: mockShowRevokeInviteDialog,
     showChangeMemberRoleDialog: mockShowChangeMemberRoleDialog,
     showInviteMemberDialog: mockShowInviteMemberDialog,
-    showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog
+    showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog,
+    showMemberLimitDialog: mockShowMemberLimitDialog
   })
 }))
 
@@ -706,14 +711,15 @@ describe('useMembersPanel', () => {
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
     })
 
-    it('disables the invite button at the member cap (30)', async () => {
+    it('opens the member-limit dialog at the member cap (30)', async () => {
       mockTotalMemberSlots.value = 30
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.isInviteDisabled.value).toBe(false)
       expect(panel.inviteTooltip.value).toBe(
         'workspacePanel.inviteLimitReached'
       )
       panel.handleInviteMember()
+      expect(mockShowMemberLimitDialog).toHaveBeenCalled()
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
     })
 
@@ -724,10 +730,12 @@ describe('useMembersPanel', () => {
       expect(panel.inviteTooltip.value).toBeNull()
     })
 
-    it('disables the invite button at the flat backend member cap', async () => {
+    it('opens the member-limit dialog at the flat backend member cap', async () => {
       mockIsInviteLimitReached.value = true
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.isInviteDisabled.value).toBe(false)
+      panel.handleInviteMember()
+      expect(mockShowMemberLimitDialog).toHaveBeenCalled()
     })
 
     it('disables the invite button when not on a team plan', async () => {

@@ -120,7 +120,8 @@ export function useMembersPanel() {
     showRevokeInviteDialog,
     showChangeMemberRoleDialog,
     showInviteMemberDialog,
-    showInviteMemberUpsellDialog
+    showInviteMemberUpsellDialog,
+    showMemberLimitDialog
   } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const {
@@ -190,10 +191,10 @@ export function useMembersPanel() {
     () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
   )
 
-  // Invite is allowed only on an active (non-cancelled) team plan that is under
-  // the member cap.
+  // Invite stays enabled at the seat cap so the button can surface the
+  // "at the member limit" dialog; only an inactive/cancelled plan disables it.
   const isInviteDisabled = computed(
-    () => !isOnTeamPlan.value || isCancelled.value || isMemberLimitReached.value
+    () => !isOnTeamPlan.value || isCancelled.value
   )
 
   const inviteTooltip = computed(() => {
@@ -207,7 +208,11 @@ export function useMembersPanel() {
       void showInviteMemberUpsellDialog()
       return
     }
-    if (isCancelled.value || isMemberLimitReached.value) return
+    if (isCancelled.value) return
+    if (isMemberLimitReached.value) {
+      void showMemberLimitDialog(maxSeats.value)
+      return
+    }
     void showInviteMemberDialog()
   }
 
