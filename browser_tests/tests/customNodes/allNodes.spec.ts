@@ -40,12 +40,31 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'requires its pack JS to compile the expression at queue time; raw defaults KeyError. Excluded unconditionally - curated-workflow candidate'
   },
   'ComfyUI-KJNodes': {
+    CreateMagicMask:
+      'environment-variable execution: RuntimeError on the macOS CPU stack, clean on Linux CI',
+    CreateVoronoiMask:
+      'environment-variable execution: RuntimeError on the macOS CPU stack, clean on Linux CI',
+    GenerateNoise:
+      'environment-variable execution: rejected at validation locally, clean on Linux CI',
+    Screencap_mss:
+      'captures the screen; no X display on CI runners, real display locally',
     PointsEditor:
       'requires its pack JS to inject the points JSON at queue time; raw defaults JSONDecodeError. Excluded unconditionally - curated-workflow candidate',
     SplineEditor:
       'requires its pack JS to inject the spline JSON at queue time; raw defaults JSONDecodeError. Excluded unconditionally - curated-workflow candidate',
     StringToFloatList:
       'requires its pack JS to normalize the list string at queue time; raw defaults ValueError. Excluded unconditionally - curated-workflow candidate'
+  },
+  'ComfyUI-VideoHelperSuite': {
+    VHS_LoadAudioUpload:
+      'environment-variable execution: upload combo state differs between hosts (clean locally, Exception on CI)'
+  },
+  'was-node-suite-comfyui': {
+    'Random Number':
+      'environment-variable execution: TypeError locally, clean on Linux CI',
+    ImageGrabPIL: 'grabs the screen via PIL; OSError on headless CI runners',
+    'Image History Loader':
+      'reads WAS run history; state-dependent (KeyError on a fresh CI backend)'
   },
   ComfyUI_essentials: {
     'RemBGSession+':
@@ -62,6 +81,14 @@ const CONSOLE_ERROR_ALLOWLIST: Record<
   string,
   Array<{ pattern: RegExp; reason: string }>
 > = {
+  'ComfyUI-Impact-Pack': [
+    {
+      // Image widgets preview a hardcoded example.png fallback at creation;
+      // 404s on a backend whose root does not serve it.
+      pattern: /Failed to load resource.*404.*example\.png/,
+      reason: 'image widget previews a hardcoded example.png fallback'
+    }
+  ],
   'ComfyUI-KJNodes': [
     {
       // Image/video loader previews fetch their combo value at creation;
@@ -253,7 +280,9 @@ for (const entry of loadManifest()) {
           window.app!.graph.configure(serialized)
           const problems: string[] = []
           for (const [id, expected] of before) {
-            const restored = window.app!.graph.getNodeById(Number(id))
+            const restored = window.app!.graph.nodes.find(
+              (node) => String(node.id) === id
+            )
             if (!restored) {
               problems.push(`${expected.type}: lost on reload`)
               continue
@@ -408,7 +437,7 @@ async function runBatch(
     // Interrupt and verify the queue drained; a non-interruptible hang can
     // only be cleared by a backend restart, so name it.
     const drained = await page.evaluate(async () => {
-      await window.app!.api.interrupt()
+      await window.app!.api.interrupt(null)
       for (let attempt = 0; attempt < 10; attempt++) {
         await new Promise((resolve) => setTimeout(resolve, 500))
         const queue = (await window.app!.api.getQueue()) as {

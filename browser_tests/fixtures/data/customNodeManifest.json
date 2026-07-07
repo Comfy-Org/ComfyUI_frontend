@@ -83,9 +83,6 @@
     "cannotRunAlone": [
       "CameraPoseVisualizer",
       "CreateAudioMask",
-      "CreateMagicMask",
-      "CreateVoronoiMask",
-      "GenerateNoise",
       "ImageAndMaskPreview",
       "LoadImagesFromFolderKJ",
       "LoadVideosFromFolder",
@@ -125,8 +122,7 @@
       "Latent Batch",
       "Mask Batch",
       "Mask Rect Area",
-      "Number Counter",
-      "Random Number"
+      "Number Counter"
     ]
   }
 ]

@@ -25,10 +25,7 @@ const WIDGET_TYPES = new Set(['INT', 'FLOAT', 'STRING', 'BOOLEAN'])
 
 type InputSpec = [unknown, Record<string, unknown>?] | unknown
 
-function classifyInput(
-  name: string,
-  spec: InputSpec
-): 'widget' | 'socket' | 'empty-combo' {
+function classifyInput(spec: InputSpec): 'widget' | 'socket' | 'empty-combo' {
   const specArray = Array.isArray(spec) ? spec : [spec]
   const rawType = specArray[0]
   const options = specArray[1] as { forceInput?: boolean } | undefined
@@ -44,7 +41,7 @@ export function classifyAutoRunnable(
   def: RawNodeDef & { output_node?: boolean }
 ): AutoRunVerdict {
   for (const [name, spec] of Object.entries(def.input?.required ?? {})) {
-    const kind = classifyInput(name, spec)
+    const kind = classifyInput(spec)
     if (kind === 'socket')
       return {
         key,
