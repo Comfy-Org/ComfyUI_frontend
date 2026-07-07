@@ -12,25 +12,25 @@ const params = useDialKit(
   {
     shader: {
       hueBase: [45, 0, 360, 1],
-      hueRange: [40, 0, 180, 1],
-      speed: [0.6, 0, 2, 0.01],
-      scale: [3, 0.5, 10, 0.1],
-      intensity: [0.8, 0, 1, 0.01],
-      glow: [0.5, 0, 1, 0.01]
+      hueRange: [22, 0, 180, 1],
+      speed: [1.61, 0, 2, 0.01],
+      scale: [2.8, 0.5, 10, 0.1],
+      intensity: [0.47, 0, 1, 0.01],
+      glow: [0.12, 0, 1, 0.01]
     },
     hover: {
-      scale: [1.06, 1, 1.5, 0.01],
-      stiffness: [260, 50, 600, 1],
-      damping: [20, 1, 60, 1]
+      scale: [1, 1, 1.5, 0.01],
+      stiffness: [50, 50, 600, 1],
+      damping: [1, 1, 60, 1]
     },
     idle: {
-      amplitude: [0.015, 0, 0.1, 0.001],
-      period: [4, 1, 12, 0.1]
+      amplitude: [0, 0, 0.1, 0.001],
+      period: [1, 1, 12, 0.1]
     },
     shimmer: {
-      speed: [1.8, 0.5, 5, 0.1],
-      spread: [20, 5, 50, 1],
-      opacity: [0.9, 0, 1, 0.01]
+      speed: [2.7, 0.5, 5, 0.1],
+      spread: [10, 5, 50, 1],
+      opacity: [0.24, 0, 1, 0.01]
     }
   },
   { id: 'agent-personality', persist: true }
