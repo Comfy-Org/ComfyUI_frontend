@@ -7,8 +7,11 @@ import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
  * @returns An object listing the furthest node (edge) in all four directions.
  * `null` if no nodes were supplied or the first node was falsy.
  */
-export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
-  const valid = nodes?.find((x) => x)
+export function getBoundaryNodes(
+  nodes: Array<LGraphNode | null | undefined> | undefined
+): IBoundaryNodes | null {
+  if (!nodes) return null
+  const valid = nodes.find((x) => x)
   if (!valid) return null
 
   let top = valid
@@ -41,11 +44,11 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
  * @param horizontal If true, distributes along the horizontal plane.  Otherwise, the vertical plane.
  */
 export function distributeNodes(
-  nodes: LGraphNode[],
+  nodes: LGraphNode[] | undefined,
   horizontal?: boolean
 ): NewNodePosition[] {
-  const nodeCount = nodes?.length
-  if (!(nodeCount > 1)) return []
+  if (!nodes || nodes.length <= 1) return []
+  const nodeCount = nodes.length
 
   const index = horizontal ? 0 : 1
 
@@ -87,7 +90,7 @@ export function distributeNodes(
  * @param align_to The node to align all other nodes to.  If undefined, the farthest node will be used.
  */
 export function alignNodes(
-  nodes: LGraphNode[],
+  nodes: LGraphNode[] | undefined,
   direction: Direction,
   align_to?: LGraphNode
 ): NewNodePosition[] {

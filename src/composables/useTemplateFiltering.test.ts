@@ -248,6 +248,158 @@ describe('useTemplateFiltering', () => {
     ])
   })
 
+  it('accepts plain template arrays and treats invalid ref values as empty', () => {
+    const plain = useTemplateFiltering([
+      {
+        name: 'plain-template',
+        description: 'Plain template',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      }
+    ])
+
+    expect(
+      plain.filteredTemplates.value.map((template) => template.name)
+    ).toEqual(['plain-template'])
+
+    const notAnArrayRef: unknown = ref('not-an-array')
+    const invalid = useTemplateFiltering(
+      notAnArrayRef as Parameters<typeof useTemplateFiltering>[0]
+    )
+
+    expect(invalid.filteredTemplates.value).toEqual([])
+    expect(invalid.totalCount.value).toBe(0)
+  })
+
+  it('ignores malformed models and tags while applying active filters', () => {
+    const fluxString: unknown = 'Flux'
+    const videoString: unknown = 'Video'
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'model-template',
+        description: 'Model template',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['Flux'],
+        tags: ['Video']
+      },
+      {
+        name: 'missing-models',
+        description: 'Missing models',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: fluxString as string[],
+        tags: videoString as string[]
+      }
+    ])
+
+    const {
+      availableModels,
+      availableUseCases,
+      selectedModels,
+      selectedUseCases,
+      filteredTemplates
+    } = useTemplateFiltering(templates)
+
+    expect(availableModels.value).toEqual(['Flux'])
+    expect(availableUseCases.value).toEqual(['Video'])
+
+    selectedModels.value = ['Flux']
+    selectedUseCases.value = ['Video']
+
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'model-template'
+    ])
+  })
+
+  it('returns no templates for unknown runs-on filters', () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'template',
+        description: 'Template',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      }
+    ])
+
+    const { selectedRunsOn, filteredTemplates } =
+      useTemplateFiltering(templates)
+
+    selectedRunsOn.value = ['Unknown target']
+
+    expect(filteredTemplates.value).toEqual([])
+  })
+
+  it('supports recommended and popular score sorting', async () => {
+    defaultRankingStore.computeDefaultScore.mockImplementation(
+      (_date?: string, rank?: number) => rank ?? 0
+    )
+    defaultRankingStore.computePopularScore.mockImplementation(
+      (_date?: string, usage?: number) => usage ?? 0
+    )
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'low',
+        description: 'Low score',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        searchRank: 1,
+        usage: 10
+      },
+      {
+        name: 'high',
+        description: 'High score',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        searchRank: 9,
+        usage: 1
+      }
+    ])
+
+    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
+
+    sortBy.value = 'recommended'
+    await nextTick()
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'high',
+      'low'
+    ])
+
+    sortBy.value = 'popular'
+    await nextTick()
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'low',
+      'high'
+    ])
+  })
+
+  it('keeps equal and missing model sizes stable for size sorting', async () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'first',
+        description: 'First',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      },
+      {
+        name: 'second',
+        description: 'Second',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      }
+    ])
+
+    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
+
+    sortBy.value = 'model-size-low-to-high'
+    await nextTick()
+
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'first',
+      'second'
+    ])
+  })
+
   describe('loadFuseOptions', () => {
     it('updates fuseOptions when getFuseOptions returns valid options', async () => {
       const templates = ref<TemplateInfo[]>([

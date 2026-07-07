@@ -13,8 +13,8 @@ export class ModelNodeProvider {
   /** The node input key for where to insert the model name. */
   public key: string
 
-  constructor(nodeDef: ComfyNodeDefImpl, key: string) {
-    this.nodeDef = nodeDef
+  constructor(nodeDef: ComfyNodeDefImpl | undefined, key: string) {
+    this.nodeDef = nodeDef!
     this.key = key
   }
 }

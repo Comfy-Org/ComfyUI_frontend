@@ -12,6 +12,7 @@ import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
+const mockGetCategoryForNodeType = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -33,7 +34,7 @@ vi.mock('@/stores/modelToNodeStore', () => {
   return {
     useModelToNodeStore: vi.fn(() => ({
       getRegisteredNodeTypes: () => registeredNodeTypes,
-      getCategoryForNodeType: vi.fn()
+      getCategoryForNodeType: mockGetCategoryForNodeType
     }))
   }
 })
@@ -60,11 +61,9 @@ function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
 ): Response {
-  return {
-    ok: init.ok ?? true,
-    status: init.status ?? 200,
-    json: vi.fn().mockResolvedValue(body)
-  } as unknown as Response
+  return new Response(body == null ? null : JSON.stringify(body), {
+    status: init.status ?? 200
+  })
 }
 
 function buildAssetListResponse(
@@ -172,6 +171,26 @@ describe(assetService.getAssetMetadata, () => {
     ).rejects.toThrow('File too large')
   })
 
+  it('falls back to the unknown localized message for unrecognized error codes', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({ code: 'NOT_A_REAL_CODE' }, { ok: false, status: 400 })
+    )
+
+    await expect(
+      assetService.getAssetMetadata('https://example.com/model.safetensors')
+    ).rejects.toThrow('Unknown error')
+  })
+
+  it('falls back to unknown when error JSON cannot be parsed', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      new Response('not valid json', { status: 400 })
+    )
+
+    await expect(
+      assetService.getAssetMetadata('https://example.com/model.safetensors')
+    ).rejects.toThrow('Unknown error')
+  })
+
   it('throws a localized message when validation reports is_valid=false', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({
@@ -187,6 +206,20 @@ describe(assetService.getAssetMetadata, () => {
     await expect(
       assetService.getAssetMetadata('https://example.com/model.safetensors')
     ).rejects.toThrow('Unsafe virus scan')
+  })
+
+  it('falls back to unknown when validation errors are absent', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({
+        content_length: 100,
+        final_url: 'https://example.com/model.safetensors',
+        validation: { is_valid: false }
+      })
+    )
+
+    await expect(
+      assetService.getAssetMetadata('https://example.com/model.safetensors')
+    ).rejects.toThrow('Unknown error')
   })
 
   it('encodes the URL in the query string', async () => {
@@ -208,10 +241,113 @@ describe(assetService.getAssetMetadata, () => {
   })
 })
 
+describe(assetService.getAssetsForNodeType, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetCategoryForNodeType.mockReset()
+  })
+
+  it('returns an empty list for invalid node types without fetching', async () => {
+    await expect(assetService.getAssetsForNodeType('')).resolves.toEqual([])
+
+    expect(fetchApiMock).not.toHaveBeenCalled()
+  })
+
+  it('returns an empty list when the node type has no asset category', async () => {
+    mockGetCategoryForNodeType.mockReturnValue(undefined)
+
+    await expect(
+      assetService.getAssetsForNodeType('UnknownNode')
+    ).resolves.toEqual([])
+
+    expect(fetchApiMock).not.toHaveBeenCalled()
+  })
+
+  it('fetches category assets with default pagination', async () => {
+    mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+    const assets = [
+      validAsset({ id: 'ckpt-1', tags: ['models', 'checkpoints'] })
+    ]
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse(assets))
+
+    await expect(
+      assetService.getAssetsForNodeType('CheckpointLoaderSimple')
+    ).resolves.toEqual(assets)
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models,checkpoints')
+    expect(params.get('limit')).toBe('500')
+    expect(params.has('offset')).toBe(false)
+  })
+
+  it('passes positive offsets for category asset pagination', async () => {
+    mockGetCategoryForNodeType.mockReturnValue('loras')
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([]))
+
+    await assetService.getAssetsForNodeType('LoraLoader', {
+      limit: 25,
+      offset: 50
+    })
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models,loras')
+    expect(params.get('limit')).toBe('25')
+    expect(params.get('offset')).toBe('50')
+  })
+})
+
+describe(assetService.getAssetDetails, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('throws when the details response is not ok', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({}, { ok: false, status: 404 })
+    )
+
+    await expect(assetService.getAssetDetails('missing')).rejects.toThrow(
+      'Unable to load asset details for missing: Server returned 404'
+    )
+  })
+
+  it('throws when the details response is invalid', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'asset-1' }))
+
+    await expect(assetService.getAssetDetails('asset-1')).rejects.toThrow(
+      /Invalid asset response/
+    )
+  })
+
+  it('returns validated asset details', async () => {
+    const asset = validAsset({ id: 'asset-details' })
+    fetchApiMock.mockResolvedValueOnce(buildResponse(asset))
+
+    await expect(
+      assetService.getAssetDetails('asset-details')
+    ).resolves.toEqual(asset)
+  })
+})
+
 describe(assetService.uploadAssetFromUrl, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('throws when URL upload returns a non-ok response', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 500 })
+    )
+
+    await expect(
+      assetService.uploadAssetFromUrl({
+        url: 'https://example.com/input.png',
+        name: 'input.png'
+      })
+    ).rejects.toThrow('Failed to upload asset')
   })
 
   it('does not invalidate cached input assets when the upload response is invalid', async () => {
@@ -294,6 +430,61 @@ describe(assetService.uploadAssetFromBase64, () => {
     expect(fetchApiMock).not.toHaveBeenCalled()
   })
 
+  it('throws when base64 upload returns a non-ok response', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('hello'))
+    try {
+      fetchApiMock.mockResolvedValueOnce(
+        buildResponse(null, { ok: false, status: 507 })
+      )
+
+      await expect(
+        assetService.uploadAssetFromBase64({
+          data: 'data:text/plain;base64,aGVsbG8=',
+          name: 'input.txt'
+        })
+      ).rejects.toThrow('Failed to upload asset from base64: 507')
+    } finally {
+      fetchSpy.mockRestore()
+    }
+  })
+
+  it('posts base64 uploads with tags and user metadata', async () => {
+    const uploadedAsset = {
+      ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
+      created_new: false
+    }
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('hello'))
+    try {
+      fetchApiMock.mockResolvedValueOnce(buildResponse(uploadedAsset))
+
+      const result = await assetService.uploadAssetFromBase64({
+        data: 'data:text/plain;base64,aGVsbG8=',
+        name: 'input.txt',
+        tags: ['input', 'mask'],
+        user_metadata: { source: 'paste' }
+      })
+
+      expect(result).toEqual(uploadedAsset)
+      const request = fetchApiMock.mock.calls[0]?.[1]
+      expect(request).toEqual(expect.objectContaining({ method: 'POST' }))
+      expect(request?.body).toBeInstanceOf(FormData)
+      const formData = request?.body
+      if (!(formData instanceof FormData)) {
+        throw new Error('Expected base64 upload body to be FormData')
+      }
+      expect(formData.get('tags')).toBe(JSON.stringify(['input', 'mask']))
+      expect(formData.get('user_metadata')).toBe(
+        JSON.stringify({ source: 'paste' })
+      )
+    } finally {
+      fetchSpy.mockRestore()
+    }
+  })
+
   it('does not invalidate cached input assets when the upload response is invalid', async () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -355,6 +546,7 @@ describe(assetService.uploadAssetFromBase64, () => {
 describe(assetService.uploadAssetAsync, () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    assetService.invalidateInputAssetsIncludingPublic()
   })
 
   it('returns an async result when the server responds 202', async () => {
@@ -389,6 +581,64 @@ describe(assetService.uploadAssetAsync, () => {
       asset: expect.objectContaining({ id: 'asset-2' })
     })
   })
+
+  it('throws when the async upload response is not ok', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 502 })
+    )
+
+    await expect(
+      assetService.uploadAssetAsync({
+        source_url: 'https://example.com/model.safetensors'
+      })
+    ).rejects.toThrow('Failed to upload asset')
+  })
+
+  it('throws when an async upload task response is invalid', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({ task_id: 'task-1', status: 'waiting' }, { status: 202 })
+    )
+
+    await expect(
+      assetService.uploadAssetAsync({
+        source_url: 'https://example.com/model.safetensors'
+      })
+    ).rejects.toThrow('Failed to parse async upload response')
+  })
+
+  it('throws when a sync upload asset response is invalid', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'asset-2' }))
+
+    await expect(
+      assetService.uploadAssetAsync({
+        source_url: 'https://example.com/model.safetensors'
+      })
+    ).rejects.toThrow('Failed to parse sync upload response')
+  })
+
+  it('invalidates cached input assets for completed async input uploads', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
+    fetchApiMock
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
+      .mockResolvedValueOnce(
+        buildResponse(
+          { task_id: 'task-1', status: 'completed' },
+          { ok: true, status: 202 }
+        )
+      )
+      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
+
+    await assetService.getInputAssetsIncludingPublic()
+    await assetService.uploadAssetAsync({
+      source_url: 'https://example.com/input.png',
+      tags: ['input']
+    })
+    const refreshed = await assetService.getInputAssetsIncludingPublic()
+
+    expect(refreshed).toEqual(freshAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(3)
+  })
 })
 
 describe(assetService.deleteAsset, () => {
@@ -413,6 +663,94 @@ describe(assetService.deleteAsset, () => {
       '/assets/asset-1',
       expect.objectContaining({ method: 'DELETE' })
     )
+  })
+})
+
+describe(assetService.addAssetTags, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('posts tags and returns the parsed tag operation result', async () => {
+    const result = { total_tags: ['input', 'mask'], added: ['mask'] }
+    fetchApiMock.mockResolvedValueOnce(buildResponse(result))
+
+    await expect(
+      assetService.addAssetTags('asset-1', ['mask'])
+    ).resolves.toEqual(result)
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/asset-1/tags',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ tags: ['mask'] })
+      })
+    )
+  })
+
+  it('throws when adding tags fails', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 403 })
+    )
+
+    await expect(
+      assetService.addAssetTags('asset-1', ['mask'])
+    ).rejects.toThrow(
+      'Unable to add tags to asset asset-1: Server returned 403'
+    )
+  })
+
+  it('throws when the add-tags response is invalid', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse({ added: ['mask'] }))
+
+    await expect(
+      assetService.addAssetTags('asset-1', ['mask'])
+    ).rejects.toThrow()
+  })
+})
+
+describe(assetService.removeAssetTags, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('deletes tags and returns the parsed tag operation result', async () => {
+    const result = { total_tags: ['input'], removed: ['mask'] }
+    fetchApiMock.mockResolvedValueOnce(buildResponse(result))
+
+    await expect(
+      assetService.removeAssetTags('asset-1', ['mask'])
+    ).resolves.toEqual(result)
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/asset-1/tags',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ tags: ['mask'] })
+      })
+    )
+  })
+
+  it('throws when removing tags fails', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 404 })
+    )
+
+    await expect(
+      assetService.removeAssetTags('asset-1', ['mask'])
+    ).rejects.toThrow(
+      'Unable to remove tags from asset asset-1: Server returned 404'
+    )
+  })
+
+  it('throws when the remove-tags response is invalid', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse({ removed: ['mask'] }))
+
+    await expect(
+      assetService.removeAssetTags('asset-1', ['mask'])
+    ).rejects.toThrow()
   })
 })
 
@@ -481,6 +819,16 @@ describe(assetService.updateAsset, () => {
       })
     )
   })
+
+  it('throws when the update response is not ok', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 409 })
+    )
+
+    await expect(
+      assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
+    ).rejects.toThrow('Unable to update asset asset-1: Server returned 409')
+  })
 })
 
 describe(assetService.getAssetsByTag, () => {
@@ -514,6 +862,21 @@ describe(assetService.getAssetsByTag, () => {
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('input')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+  })
+
+  it('forwards explicit public filtering and offset pagination', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([]))
+
+    await assetService.getAssetsByTag('input', false, {
+      limit: 30,
+      offset: 60
+    })
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_public')).toBe('false')
+    expect(params.get('limit')).toBe('30')
+    expect(params.get('offset')).toBe('60')
   })
 })
 
@@ -560,6 +923,31 @@ describe(assetService.getAllAssetsByTag, () => {
     // Subsequent pages resume from the prior response's next_cursor, never offset.
     expect(secondParams.get('after')).toBe('cursor-page-2')
     expect(secondParams.has('offset')).toBe(false)
+  })
+
+  it('uses the default page size when limit is not positive', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([]))
+
+    await expect(
+      assetService.getAllAssetsByTag('input', true, { limit: 0 })
+    ).resolves.toEqual([])
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('limit')).toBe('500')
+  })
+
+  it('throws before fetching when the pagination signal is already aborted', async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(
+      assetService.getAllAssetsByTag('input', true, {
+        signal: controller.signal
+      })
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    expect(fetchApiMock).not.toHaveBeenCalled()
   })
 
   it('honors has_more when walking tagged asset pages', async () => {
@@ -703,6 +1091,75 @@ describe(assetService.getAllAssetsByTag, () => {
   })
 })
 
+describe(assetService.createAssetExport, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('posts export options and returns the export task', async () => {
+    const task = { task_id: 'export-1', status: 'created', message: 'queued' }
+    fetchApiMock.mockResolvedValueOnce(buildResponse(task))
+
+    await expect(
+      assetService.createAssetExport({
+        asset_ids: ['asset-1'],
+        include_previews: true
+      })
+    ).resolves.toEqual(task)
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/export',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          asset_ids: ['asset-1'],
+          include_previews: true
+        })
+      })
+    )
+  })
+
+  it('throws when creating an export fails', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 503 })
+    )
+
+    await expect(
+      assetService.createAssetExport({ asset_ids: ['asset-1'] })
+    ).rejects.toThrow('Failed to create asset export: 503')
+  })
+})
+
+describe(assetService.getExportDownloadUrl, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns the export download URL', async () => {
+    const download = {
+      url: 'https://example.com/export.zip',
+      expires_at: '2026-07-01T00:00:00Z'
+    }
+    fetchApiMock.mockResolvedValueOnce(buildResponse(download))
+
+    await expect(
+      assetService.getExportDownloadUrl('export.zip')
+    ).resolves.toEqual(download)
+
+    expect(fetchApiMock).toHaveBeenCalledWith('/assets/exports/export.zip')
+  })
+
+  it('throws when export download URL lookup fails', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 404 })
+    )
+
+    await expect(
+      assetService.getExportDownloadUrl('missing.zip')
+    ).rejects.toThrow('Failed to get export download URL: 404')
+  })
+})
+
 describe(assetService.getInputAssetsIncludingPublic, () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -727,6 +1184,17 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_public')).toBe('true')
     expect(params.get('limit')).toBe('500')
+  })
+
+  it('throws before starting a shared request when the caller signal is already aborted', async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(
+      assetService.getInputAssetsIncludingPublic(controller.signal)
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    expect(fetchApiMock).not.toHaveBeenCalled()
   })
 
   it('fetches fresh input assets after explicit invalidation', async () => {

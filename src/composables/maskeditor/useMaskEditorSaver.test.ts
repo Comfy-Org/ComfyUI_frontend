@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -97,7 +98,7 @@ describe('useMaskEditorSaver', () => {
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
 
-    mockNode = fromAny<LGraphNode, unknown>({
+    const nodeObj: unknown = {
       id: 42,
       type: 'LoadImage',
       images: [],
@@ -108,7 +109,8 @@ describe('useMaskEditorSaver', () => {
       widgets_values: ['original.png [input]'],
       properties: { image: 'original.png [input]' },
       graph: { setDirtyCanvas: vi.fn() }
-    })
+    }
+    mockNode = nodeObj as LGraphNode
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -135,8 +137,7 @@ describe('useMaskEditorSaver', () => {
 
     vi.spyOn(document, 'createElement').mockImplementation(
       (tagName: string, options?: ElementCreationOptions) => {
-        if (tagName === 'canvas')
-          return fromAny<HTMLCanvasElement, unknown>(createMockCanvas())
+        if (tagName === 'canvas') return createMockCanvas()
         return originalCreateElement(tagName, options)
       }
     )
@@ -200,5 +201,113 @@ describe('useMaskEditorSaver', () => {
     expect(body).toBeInstanceOf(FormData)
     expect(body.get('type')).toBe('input')
     expect(body.get('subfolder')).toBeNull()
+  })
+
+  it('throws before saving when the source node is missing', async () => {
+    mockDataStore.sourceNode = null
+
+    const { save } = useMaskEditorSaver()
+
+    await expect(save()).rejects.toThrow('No source node or input data')
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
+  it('throws before saving when the input data is missing', async () => {
+    mockDataStore.inputData = null
+
+    const { save } = useMaskEditorSaver()
+
+    await expect(save()).rejects.toThrow('No source node or input data')
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
+  it('fails when canvases are not initialized', async () => {
+    mockEditorStore.maskCanvas = null
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { save } = useMaskEditorSaver()
+
+    await expect(save()).rejects.toThrow('Canvas not initialized')
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[MaskEditorSaver] Save failed:',
+      expect.any(Error)
+    )
+  })
+
+  it('reports upload failures with the response body', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: false,
+      status: 413,
+      text: () => Promise.resolve('too large')
+    } as Response)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { save } = useMaskEditorSaver()
+
+    await expect(save()).rejects.toThrow(
+      /Failed to upload clipspace-mask-.*: too large/
+    )
+  })
+
+  it('reports upload failures when the response body cannot be read', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: () => Promise.reject(new Error('body unavailable'))
+    } as Response)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { save } = useMaskEditorSaver()
+
+    await expect(save()).rejects.toThrow(/Failed to upload .+ \(500\)/)
+  })
+
+  it('reports invalid upload JSON responses', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: true,
+      json: () => Promise.reject(new Error('bad json'))
+    } as Response)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { save } = useMaskEditorSaver()
+
+    await expect(save()).rejects.toThrow(/Invalid upload response.*bad json/)
+  })
+
+  it('reports upload responses without a name', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ subfolder: 'clipspace', type: 'input' })
+    } as Response)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { save } = useMaskEditorSaver()
+
+    await expect(save()).rejects.toThrow(
+      "Upload response missing 'name' for clipspace-mask-"
+    )
+  })
+
+  it('defaults missing upload ref fields and skips missing image widget state', async () => {
+    mockNode.widgets = [
+      fromPartial<IBaseWidget>({ name: 'other', value: 'unchanged' })
+    ]
+    mockNode.widgets_values = ['unchanged']
+    const noProperties: unknown = undefined
+    const noGraph: unknown = undefined
+    mockNode.properties = noProperties as LGraphNode['properties']
+    mockNode.graph = noGraph as LGraphNode['graph']
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ name: 'uploaded.png' })
+    } as Response)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    expect(mockNode.images).toEqual([
+      { filename: 'uploaded.png', subfolder: '', type: 'input' }
+    ])
+    expect(mockNode.widgets_values).toEqual(['unchanged'])
   })
 })

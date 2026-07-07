@@ -79,12 +79,10 @@ describe(useQueueNotificationBanners, () => {
       isImage?: boolean
     } = {}
   ): MockTask => {
-    const {
-      state = 'Completed',
-      ts = Date.now(),
-      previewUrl,
-      isImage = true
-    } = options
+    const { state = 'Completed', previewUrl, isImage = true } = options
+    // Only default the timestamp when the caller omitted the key, so an
+    // explicit `ts: undefined` really produces a task without a timestamp.
+    const ts = 'ts' in options ? options.ts : Date.now()
 
     const task: MockTask = {
       displayStatus: state,
@@ -180,6 +178,75 @@ describe(useQueueNotificationBanners, () => {
         type: 'queued',
         count: 2,
         requestId: 1
+      })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('converts a queued-pending notification waiting behind the active one', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueued', {
+          detail: { requestId: 1, batchCount: 1 }
+        })
+      )
+      await nextTick()
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { requestId: 2, batchCount: 3 }
+        })
+      )
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueued', {
+          detail: { requestId: 2, batchCount: 5 }
+        })
+      )
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'queued',
+        count: 1,
+        requestId: 1
+      })
+
+      await vi.advanceTimersByTimeAsync(4000)
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'queued',
+        count: 5,
+        requestId: 2
+      })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('converts queued-pending notifications without request ids', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { batchCount: 2 }
+        })
+      )
+      await nextTick()
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueued', {
+          detail: { batchCount: 3 }
+        })
+      )
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'queued',
+        count: 3
       })
     } finally {
       unmount()
@@ -301,6 +368,64 @@ describe(useQueueNotificationBanners, () => {
         type: 'failed',
         count: 1
       })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('shows failed notifications for failed-only batches', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      await runBatch({
+        start: 5_000,
+        finish: 5_200,
+        tasks: [createTask({ state: 'Failed', ts: 5_050 })]
+      })
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'failed',
+        count: 1
+      })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('does not notify for old or unfinished history entries', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      await runBatch({
+        start: 6_000,
+        finish: 6_200,
+        tasks: [
+          createTask({ ts: 5_999 }),
+          createTask({ state: 'Running', ts: 6_050 }),
+          createTask({ state: 'Pending', ts: undefined })
+        ]
+      })
+
+      expect(composable.currentNotification.value).toBeNull()
+    } finally {
+      unmount()
+    }
+  })
+
+  it('keeps no notification visible when an idle window has no finished tasks', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      vi.setSystemTime(7_000)
+      executionStore().isIdle = false
+      await nextTick()
+
+      vi.setSystemTime(7_100)
+      executionStore().isIdle = true
+      queueStore().historyTasks = []
+      await nextTick()
+
+      expect(composable.currentNotification.value).toBeNull()
     } finally {
       unmount()
     }

@@ -126,6 +126,19 @@ describe('useAssetDownloadStore', () => {
       })
     })
 
+    it('keeps the first placeholder when the same task is tracked twice', () => {
+      const store = useAssetDownloadStore()
+
+      store.trackDownload('task-123', 'checkpoints', 'first.safetensors')
+      store.trackDownload('task-123', 'loras', 'second.safetensors')
+
+      expect(store.downloadList).toHaveLength(1)
+      expect(store.downloadList[0]).toMatchObject({
+        modelType: 'checkpoints',
+        assetName: 'first.safetensors'
+      })
+    })
+
     it('handles out-of-order messages where completed arrives before progress', () => {
       const store = useAssetDownloadStore()
 
@@ -143,6 +156,9 @@ describe('useAssetDownloadStore', () => {
   })
 
   describe('stale download polling', () => {
+    // Mirrors POLL_INTERVAL_MS in assetDownloadStore.ts
+    const POLL_INTERVAL_MS = 10_000
+
     function createTaskResponse(
       overrides: Partial<TaskResponse> = {}
     ): TaskResponse {
@@ -177,6 +193,19 @@ describe('useAssetDownloadStore', () => {
       expect(taskService.getTask).toHaveBeenCalledWith('task-123')
       expect(store.activeDownloads).toHaveLength(0)
       expect(store.finishedDownloads[0].status).toBe('completed')
+    })
+
+    it('skips polling when active downloads have fresh progress', async () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS - 1)
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(taskService.getTask).not.toHaveBeenCalled()
+      expect(store.activeDownloads).toHaveLength(1)
+      expect(store.activeDownloads[0].progress).toBe(75)
     })
 
     it('polls and marks failed downloads', async () => {
@@ -310,6 +339,23 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.sessionDownloadCount).toBe(0)
       expect(store.isDownloadedThisSession('asset-456')).toBe(false)
+    })
+
+    it('does not acknowledge unrelated completed downloads', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(
+        createDownloadMessage({
+          status: 'completed',
+          progress: 100,
+          asset_id: 'asset-456'
+        })
+      )
+
+      store.acknowledgeAsset('other-asset')
+
+      expect(store.sessionDownloadCount).toBe(1)
+      expect(store.isDownloadedThisSession('asset-456')).toBe(true)
     })
   })
 })

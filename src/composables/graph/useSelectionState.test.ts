@@ -8,7 +8,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
+import {
+  isImageNode,
+  isLGraphGroup,
+  isLGraphNode,
+  isLoad3dNode
+} from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   createMockLGraphNode,
@@ -17,7 +22,9 @@ import {
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(),
-  isImageNode: vi.fn()
+  isImageNode: vi.fn(),
+  isLGraphGroup: vi.fn(),
+  isLoad3dNode: vi.fn()
 }))
 
 vi.mock('@/utils/nodeFilterUtil', () => ({
@@ -96,6 +103,14 @@ describe('useSelectionState', () => {
       const typedNode = node as { type?: string }
       return typedNode?.type === 'ImageNode'
     })
+    vi.mocked(isLGraphGroup).mockImplementation((item: unknown) => {
+      const typedItem = item as { isGroup?: boolean }
+      return typedItem?.isGroup === true
+    })
+    vi.mocked(isLoad3dNode).mockImplementation((node: unknown) => {
+      const typedNode = node as { type?: string }
+      return typedNode?.type === 'Load3D'
+    })
     vi.mocked(filterOutputNodes).mockImplementation((nodes) =>
       nodes.filter((n) => n.type === 'OutputNode')
     )
@@ -134,6 +149,21 @@ describe('useSelectionState', () => {
 
       const { hasMultipleSelection } = useSelectionState()
       expect(hasMultipleSelection.value).toBe(false)
+    })
+
+    test('hasGroupedNodesSelection should detect a group containing nodes', () => {
+      const canvasStore = useCanvasStore()
+      const graphNode = createMockLGraphNode({ id: 2 })
+      const group = createMockPositionable({ id: 2000 })
+      Object.assign(group, {
+        isGroup: true,
+        isNode: false,
+        children: new Set([graphNode])
+      })
+      canvasStore.$state.selectedItems = [group]
+
+      const { hasGroupedNodesSelection } = useSelectionState()
+      expect(hasGroupedNodesSelection.value).toBe(true)
     })
   })
 
@@ -214,6 +244,13 @@ describe('useSelectionState', () => {
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
       expect(newIsPinned).toBe(false)
+    })
+
+    test('should compute default flags for an empty node selection', () => {
+      expect(useSelectionState().computeSelectionFlags()).toEqual({
+        collapsed: false,
+        pinned: false
+      })
     })
   })
 

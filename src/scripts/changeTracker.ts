@@ -439,7 +439,7 @@ export class ChangeTracker {
     return false
   }
 
-  static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+  static graphEqual(a: ComfyWorkflowJSON | null, b: ComfyWorkflowJSON | null) {
     if (a === b) return true
 
     if (typeof a == 'object' && a && typeof b == 'object' && b) {

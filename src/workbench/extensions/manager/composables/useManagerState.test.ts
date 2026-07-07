@@ -9,6 +9,7 @@ import {
   __resetIncompatibleToastGuard,
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Mock dependencies that are not stores
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
@@ -31,22 +32,36 @@ vi.mock('@/composables/useFeatureFlags', () => {
   }
 })
 
+const {
+  commandExecuteMock,
+  managerDialogHideMock,
+  managerDialogShowMock,
+  settingsHideMock,
+  settingsShowAboutMock,
+  settingsShowMock,
+  toastAddMock
+} = vi.hoisted(() => ({
+  commandExecuteMock: vi.fn(),
+  managerDialogHideMock: vi.fn(),
+  managerDialogShowMock: vi.fn(),
+  settingsHideMock: vi.fn(),
+  settingsShowAboutMock: vi.fn(),
+  settingsShowMock: vi.fn(),
+  toastAddMock: vi.fn()
+}))
+
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: vi.fn(() => ({
-    show: vi.fn(),
-    hide: vi.fn(),
-    showAbout: vi.fn()
+    show: settingsShowMock,
+    hide: settingsHideMock,
+    showAbout: settingsShowAboutMock
   }))
 }))
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: vi.fn(() => ({
-    execute: vi.fn()
+    execute: commandExecuteMock
   }))
-}))
-
-const { toastAddMock } = vi.hoisted(() => ({
-  toastAddMock: vi.fn()
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -56,12 +71,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 vi.mock('@/workbench/extensions/manager/composables/useManagerDialog', () => {
-  const show = vi.fn()
-  const hide = vi.fn()
   return {
     useManagerDialog: vi.fn(() => ({
-      show,
-      hide
+      show: managerDialogShowMock,
+      hide: managerDialogHideMock
     }))
   }
 })
@@ -83,6 +96,17 @@ const systemStatsFixture = (argv: string[]) => ({
   },
   devices: []
 })
+
+const enabledManagerStats = () =>
+  systemStatsFixture(['python', 'main.py', '--enable-manager'])
+
+const legacyManagerStats = () =>
+  systemStatsFixture([
+    'python',
+    'main.py',
+    '--enable-manager',
+    '--enable-manager-legacy-ui'
+  ])
 
 /**
  * Mocks the two server feature flags queried by useManagerState.
@@ -138,12 +162,7 @@ describe('useManagerState', () => {
 
     it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
       systemStatsStore.$patch({
-        systemStats: systemStatsFixture([
-          'python',
-          'main.py',
-          '--enable-manager',
-          '--enable-manager-legacy-ui'
-        ]),
+        systemStats: legacyManagerStats(),
         isInitialized: true
       })
 
@@ -237,12 +256,28 @@ describe('useManagerState', () => {
       const managerState = useManagerState()
       expect(managerState.managerUIState.value).toBe(ManagerUIState.DISABLED)
     })
+
+    it('should disable manager for unexpected server support flag values', () => {
+      systemStatsStore.$patch({
+        systemStats: systemStatsFixture([
+          'python',
+          'main.py',
+          '--enable-manager'
+        ]),
+        isInitialized: true
+      })
+      vi.mocked(api.getServerFeature).mockImplementation((name: string) => {
+        if (name === 'extension.manager.supports_v4') return 'unexpected'
+        if (name === 'extension.manager.supports_csrf_post') return true
+        return undefined
+      })
+
+      const managerState = useManagerState()
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.DISABLED)
+    })
   })
 
   describe('INCOMPATIBLE state (missing supports_csrf_post)', () => {
-    const enabledManagerStats = () =>
-      systemStatsFixture(['python', 'main.py', '--enable-manager'])
-
     it('returns INCOMPATIBLE when server supports v4 but csrf_post is false', () => {
       systemStatsStore.$patch({
         systemStats: enabledManagerStats(),
@@ -369,9 +404,6 @@ describe('useManagerState', () => {
   })
 
   describe('helper properties', () => {
-    const enabledManagerStats = () =>
-      systemStatsFixture(['python', 'main.py', '--enable-manager'])
-
     it('isManagerEnabled should return true when state is not DISABLED / INCOMPATIBLE', () => {
       systemStatsStore.$patch({
         systemStats: enabledManagerStats(),
@@ -412,12 +444,7 @@ describe('useManagerState', () => {
 
     it('isLegacyManagerUI should return true when state is LEGACY_UI', () => {
       systemStatsStore.$patch({
-        systemStats: systemStatsFixture([
-          'python',
-          'main.py',
-          '--enable-manager',
-          '--enable-manager-legacy-ui'
-        ]),
+        systemStats: legacyManagerStats(),
         isInitialized: true
       })
 
@@ -451,6 +478,121 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
       expect(managerState.shouldShowManagerButtons.value).toBe(true)
+    })
+  })
+
+  describe('openManager', () => {
+    it('opens extension settings when manager is disabled', async () => {
+      systemStatsStore.$patch({
+        systemStats: systemStatsFixture(['python', 'main.py']),
+        isInitialized: true
+      })
+
+      const managerState = useManagerState()
+      await managerState.openManager()
+
+      expect(settingsShowMock).toHaveBeenCalledWith('extension')
+    })
+
+    it('executes the default legacy manager command', async () => {
+      systemStatsStore.$patch({
+        systemStats: legacyManagerStats(),
+        isInitialized: true
+      })
+
+      const managerState = useManagerState()
+      await managerState.openManager()
+
+      expect(commandExecuteMock).toHaveBeenCalledWith(
+        'Comfy.Manager.Menu.ToggleVisibility'
+      )
+    })
+
+    it('executes a custom legacy manager command', async () => {
+      systemStatsStore.$patch({
+        systemStats: legacyManagerStats(),
+        isInitialized: true
+      })
+
+      const managerState = useManagerState()
+      await managerState.openManager({ legacyCommand: 'Custom.Manager.Open' })
+
+      expect(commandExecuteMock).toHaveBeenCalledWith('Custom.Manager.Open')
+    })
+
+    it('shows a toast when the legacy manager command is unavailable', async () => {
+      commandExecuteMock.mockRejectedValueOnce(new Error('missing command'))
+      systemStatsStore.$patch({
+        systemStats: legacyManagerStats(),
+        isInitialized: true
+      })
+
+      const managerState = useManagerState()
+      await managerState.openManager()
+
+      expect(toastAddMock).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'manager.legacyMenuNotAvailable'
+      })
+      expect(settingsShowMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to extension settings when legacy errors suppress the toast', async () => {
+      commandExecuteMock.mockRejectedValueOnce(new Error('missing command'))
+      systemStatsStore.$patch({
+        systemStats: legacyManagerStats(),
+        isInitialized: true
+      })
+
+      const managerState = useManagerState()
+      await managerState.openManager({ showToastOnLegacyError: false })
+
+      expect(toastAddMock).not.toHaveBeenCalled()
+      expect(settingsShowMock).toHaveBeenCalledWith('extension')
+    })
+
+    it('opens the new manager dialog with initial routing options', async () => {
+      systemStatsStore.$patch({
+        systemStats: enabledManagerStats(),
+        isInitialized: true
+      })
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+      const managerState = useManagerState()
+      await managerState.openManager({
+        initialTab: ManagerTab.AllInstalled,
+        initialPackId: 'pack-1'
+      })
+
+      expect(managerDialogShowMock).toHaveBeenCalledWith(
+        ManagerTab.AllInstalled,
+        'pack-1'
+      )
+    })
+
+    it('shows a legacy-only error instead of opening the new manager', async () => {
+      systemStatsStore.$patch({
+        systemStats: enabledManagerStats(),
+        isInitialized: true
+      })
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+      const managerState = useManagerState()
+      await managerState.openManager({ isLegacyOnly: true })
+
+      expect(toastAddMock).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'manager.legacyMenuNotAvailable'
+      })
+      expect(managerDialogShowMock).not.toHaveBeenCalled()
     })
   })
 })

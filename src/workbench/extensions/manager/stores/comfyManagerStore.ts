@@ -329,7 +329,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     await enqueueTaskWithLogs(task, t('g.enabling', { id: params.id }))
   }
 
-  const getInstalledPackVersion = (packId: NodePackId) => {
+  const getInstalledPackVersion = (packId: NodePackId): string | undefined => {
     const pack = installedPacks.value[packId]
     return pack?.ver
   }
