@@ -8,11 +8,6 @@ import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 const { t } = useI18n()
 </script>
 <template>
-  <!-- Both halves use an opaque color-mix tint (not a translucent alpha), so
-  where the label tucks under the coin (-ml) the overlap stays one colour instead
-  of doubling. The mix base defaults to the run button's fill and can be
-  overridden per host (e.g. the yellow subscribe button) via --credits-pill-base.
-  The coin is a full circle so it collapses to a round badge. -->
   <span
     class="flex h-5 min-w-0 flex-wrap content-start items-center justify-end overflow-hidden text-xs font-medium [--pill-fill:color-mix(in_srgb,currentColor_15%,var(--credits-pill-base,var(--color-base-foreground)))]"
   >
