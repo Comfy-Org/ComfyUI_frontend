@@ -2,7 +2,7 @@
 // rest are recorded with the reason, never silently dropped.
 import type { RawNodeDef } from './typePairing'
 
-export type AutoRunClass =
+type AutoRunClass =
   // Widgets cover every required input and a terminus exists.
   | 'AUTO_RUNNABLE'
   // A required input is a socket; needs wiring (curated workflows).
