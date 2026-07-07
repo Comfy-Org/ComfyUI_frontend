@@ -220,7 +220,9 @@
     </div>
 
     <!-- Footer links -->
-    <div class="flex items-center gap-6 text-sm text-muted-foreground">
+    <div
+      class="flex h-8 shrink-0 items-center gap-6 text-sm text-muted-foreground"
+    >
       <span class="flex items-center gap-1">
         <i class="icon-[lucide--circle-help] size-4" />
         {{ $t('workspacePanel.overview.learnMore') }}
