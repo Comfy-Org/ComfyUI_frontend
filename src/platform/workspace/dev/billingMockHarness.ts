@@ -41,7 +41,9 @@ function currentUserEmail(): string {
 }
 type Tier = 'free' | 'standard' | 'creator' | 'pro'
 type State = 'active' | 'cancelled' | 'inactive' | 'changing'
-type Balance = 'funded' | 'low' | 'empty'
+// 'funded' = full monthly, nobody has used anything (all member usage is 0);
+// 'partial' = members have used some of the monthly allotment.
+type Balance = 'funded' | 'partial' | 'low' | 'empty'
 
 interface MockCfg {
   ws: Workspace
@@ -64,7 +66,7 @@ const DEFAULTS: MockCfg = {
   role: 'owner',
   tier: 'creator',
   state: 'active',
-  balance: 'funded',
+  balance: 'partial',
   roleChange: '200',
   multiWs: false
 }
@@ -109,6 +111,7 @@ const PRICING: Record<Tier, [number, number]> = {
 const BALANCES: Record<Balance, [number, number, number]> = {
   // [amount_micros, cloud_credit (monthly), prepaid (additional)]
   funded: [5000000, 2000000, 3000000],
+  partial: [3500000, 1000000, 2500000],
   low: [1000000, 0, 1000000],
   empty: [0, 0, 0]
 }
@@ -274,6 +277,8 @@ function members(): unknown {
   const hoursAgo = (h: number) =>
     new Date(Date.now() - h * 60 * 60 * 1000).toISOString()
   const me = currentUserEmail()
+  // Nobody has spent anything in the fully-funded state, so member usage is 0.
+  const usage = (n: number) => (cfg.balance === 'funded' ? 0 : n)
   // 'owner' → the current user IS the creator; otherwise the creator is someone
   // else and the current user is injected as a non-original owner/member below.
   const creator = {
@@ -284,7 +289,7 @@ function members(): unknown {
     role: 'owner',
     is_original_owner: true,
     last_active_at: hoursAgo(2),
-    credits_used_this_month: 6532
+    credits_used_this_month: usage(6532)
   }
   const selfRow =
     cfg.role === 'owner'
@@ -298,7 +303,7 @@ function members(): unknown {
             role: cfg.role === 'admin' ? 'owner' : 'member',
             is_original_owner: false,
             last_active_at: hoursAgo(1),
-            credits_used_this_month: 1234
+            credits_used_this_month: usage(1234)
           }
         ]
   // A long roster so the table overflows and scrolls under its sticky header.
@@ -340,8 +345,9 @@ function members(): unknown {
     role: i % 3 === 0 ? 'owner' : 'member',
     is_original_owner: false,
     last_active_at: hoursAgo([0.1, 2, 7, 23, 24, 72, 120][i % 7]),
-    credits_used_this_month:
+    credits_used_this_month: usage(
       [15, 140, 320, 1025, 2586, 88, 1740, 6][i % 7] * (i + 1)
+    )
   }))
   const list = cfg.ws === 'team' ? [creator, ...selfRow, ...team] : [creator]
   return {
@@ -1289,7 +1295,7 @@ function buildPanel(): void {
     row('role', 'role', ['owner', 'admin', 'member']) +
     row('tier', 'tier', ['free', 'standard', 'creator', 'pro']) +
     row('state', 'state', ['active', 'cancelled', 'inactive', 'changing']) +
-    row('balance', 'balance', ['funded', 'low', 'empty']) +
+    row('balance', 'balance', ['funded', 'partial', 'low', 'empty']) +
     `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
     row('roleChange', 'roleChange', ['200', '500']) +
     `<label style="display:flex;gap:6px;margin:4px 0"><input type="checkbox" id="cbm-multiWs"${cfg.multiWs ? ' checked' : ''}/><span style="opacity:.7">2nd workspace (switcher)</span></label>` +
