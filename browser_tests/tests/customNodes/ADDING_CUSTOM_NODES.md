@@ -16,9 +16,13 @@ Adding the one row enrolls the pack in two kinds of coverage:
 
 - **Every-node tiers (automatic, zero configuration).** The suite reads the
   pack's FULL node list from the live backend and, for every registered
-  node: mounts it in both renderers (the Vue mount also asserts the DOM
-  renders at least the instance's widget and slot counts - a mount with
-  missing controls fails), round-trips it through save/reload (every widget
+  node: mounts it in both renderers and asserts under EACH renderer that the
+  instance materializes everything its def declares - every non-socketless
+  input exists as a widget or a socket (autogrow templates count via their
+  expansion slots) and every declared output exists; the Vue pass
+  additionally asserts the DOM renders at least the instance's widget and
+  slot counts - a mount with missing controls fails. It then round-trips
+  every node through save/reload (every widget
   is first written with a non-default value that must stick, and the
   serialized `widgets_values` must survive configure unchanged), plans typed
   connections for all its concrete slots (COMBO slots pair when their option

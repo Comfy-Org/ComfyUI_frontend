@@ -12,7 +12,6 @@
     "cannotRunAlone": [
       "AnyPipeToBasic",
       "CLIPSegDetectorProvider",
-      "ImageReceiver",
       "ImpactMakeImageBatch",
       "ImpactMakeMaskBatch",
       "LatentSender",
@@ -140,7 +139,6 @@
     "cannotRunAlone": [
       "Bus Node",
       "Diffusers Hub Model Down-Loader",
-      "Image Analyze",
       "Image Aspect Ratio",
       "Image Batch",
       "Image Send HTTP",
@@ -148,7 +146,6 @@
       "Mask Batch",
       "Samples Passthrough (Stat System)",
       "Text Dictionary Convert",
-      "Text Parse A1111 Embeddings",
       "Text to Number"
     ]
   }

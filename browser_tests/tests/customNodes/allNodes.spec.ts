@@ -37,7 +37,15 @@ const GRID_SPACING = { x: 420, y: 360 }
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   'ComfyUI-Impact-Pack': {
     ImpactRemoteBoolean:
-      'remote-control widget node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)'
+      'remote-control widget node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)',
+    ImpactRemoteInt:
+      'remote-control widget node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as ImpactRemoteBoolean)',
+    ImpactSchedulerAdapter:
+      'executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)',
+    ImpactQueueTriggerCountdown:
+      'pack JS hooks the queue at submit time; client-side queuePrompt transiently refuses even through the retry, flip-flopping between PASS and VALIDATION_FAIL',
+    ImageReceiver:
+      'environment-variable execution: av.error.InvalidDataError decoding its default image on macOS, clean on Linux CI'
   },
   'rgthree-comfy': {
     'Power Primitive (rgthree)':
@@ -100,7 +108,17 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
     'MiDaS Depth Approximation':
       'loads MiDaS via torch.hub inside execute when no model is wired; downloads on a networked runner - same non-interruptible download class as the MiDaS loader',
     CLIPSEG2:
-      'calls transformers from_pretrained(CIDAS/clipseg-rd64-refined) inside execute when no model is wired; downloads from HuggingFace on a networked runner - same class as BLIP/SAM'
+      'calls transformers from_pretrained(CIDAS/clipseg-rd64-refined) inside execute when no model is wired; downloads from HuggingFace on a networked runner - same class as BLIP/SAM',
+    'Image Analyze':
+      'environment-variable execution: RuntimeError on the macOS CPU stack, clean on Linux CI',
+    'Image Crop Face':
+      'environment-variable execution: clean on macOS, AttributeError on Linux CI (OpenCV cascade lookup differs)',
+    'Text Parse A1111 Embeddings':
+      'environment-variable execution: FileNotFoundError on macOS, clean on Linux CI (embeddings dir handling differs)'
+  },
+  'ComfyUI-Custom-Scripts': {
+    'LoadText|pysssss':
+      'reads a text file chosen by a state-dependent combo; flips between clean and ValueError with backend content state (same class as WAS Text File History Loader)'
   },
   ComfyUI_essentials: {
     'RemBGSession+':
@@ -237,18 +255,34 @@ declare global {
   }
 }
 
-// null id = createNode failed for that type.
-function addChunk(page: Page, types: string[]): Promise<Array<string | null>> {
+interface MountedShape {
+  id: string
+  widgetNames: string[]
+  inputNames: string[]
+  outputCount: number
+}
+
+// null entry = createNode failed for that type. The shape feeds the
+// def-vs-instance fidelity check, which is renderer-independent.
+function addChunk(
+  page: Page,
+  types: string[]
+): Promise<Array<MountedShape | null>> {
   return page.evaluate(
     ([chunk, spacingX, spacingY]) => {
       window.app!.graph.clear()
       window.app!.graph.last_node_id = window.__cnIdBase ?? 0
       const cols = Math.ceil(Math.sqrt(chunk.length))
-      const ids: Array<string | null> = []
+      const shapes: Array<{
+        id: string
+        widgetNames: string[]
+        inputNames: string[]
+        outputCount: number
+      } | null> = []
       for (const [index, type] of chunk.entries()) {
         const node = window.LiteGraph!.createNode(type)
         if (!node) {
-          ids.push(null)
+          shapes.push(null)
           continue
         }
         node.pos = [
@@ -256,7 +290,12 @@ function addChunk(page: Page, types: string[]): Promise<Array<string | null>> {
           Math.floor(index / cols) * (spacingY as number)
         ]
         window.app!.graph.add(node)
-        ids.push(String(node.id))
+        shapes.push({
+          id: String(node.id),
+          widgetNames: (node.widgets ?? []).map((widget) => widget.name),
+          inputNames: (node.inputs ?? []).map((input) => input.name),
+          outputCount: (node.outputs ?? []).length
+        })
       }
       window.__cnIdBase = window.app!.graph.last_node_id
       const canvas = window.app!.canvas
@@ -271,10 +310,46 @@ function addChunk(page: Page, types: string[]): Promise<Array<string | null>> {
       canvas.ds.scale = scale
       canvas.ds.offset = [60 / scale, 60 / scale]
       canvas.setDirty(true, true)
-      return ids
+      return shapes
     },
     [types, GRID_SPACING.x, GRID_SPACING.y] as const
   )
+}
+
+// What the def promises the instance must materialize, in any renderer:
+// every non-socketless declared input (as a widget or a socket - pack JS may
+// legally convert between the two) and every declared output. Autogrow
+// template inputs (COMFY_AUTOGROW_*) materialize either as the container or
+// as their first `min` expansion slots, and renderers differ on which.
+function declaredShape(def: RawNodeDef): {
+  inputNames: string[]
+  autogrow: Array<{ container: string; expansion: string[] }>
+  outputCount: number
+} {
+  const inputNames: string[] = []
+  const autogrow: Array<{ container: string; expansion: string[] }> = []
+  for (const section of [def.input?.required, def.input?.optional])
+    for (const [name, spec] of Object.entries(section ?? {})) {
+      const opts = (Array.isArray(spec) ? spec[1] : undefined) as
+        | {
+            socketless?: boolean
+            template?: { names?: string[]; min?: number }
+          }
+        | undefined
+      if (opts?.socketless) continue
+      if (opts?.template) {
+        // Expansion slots materialize dot-qualified: `container.slotName`.
+        autogrow.push({
+          container: name,
+          expansion: (opts.template.names ?? [])
+            .slice(0, opts.template.min ?? 0)
+            .map((slotName) => `${name}.${slotName}`)
+        })
+        continue
+      }
+      inputNames.push(name)
+    }
+  return { inputNames, autogrow, outputCount: (def.output ?? []).length }
 }
 
 async function packNodeKeys(
@@ -297,10 +372,13 @@ for (const entry of loadManifest()) {
       comfyPage
     }) => {
       test.setTimeout(240_000)
-      const { keys } = await packNodeKeys(comfyPage.page, entry.pack)
+      const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
       test.skip(
         keys.length === 0,
         `${entry.pack} not installed on this backend`
+      )
+      const declaredByKey = new Map(
+        keys.map((key) => [key, declaredShape(defs[key])])
       )
       const ledger = entry.vueIncompatibleNodes ?? {}
       for (const ledgered of Object.keys(ledger))
@@ -323,25 +401,48 @@ for (const entry of loadManifest()) {
           vueNodesEnabled
         )
         const failures: string[] = []
+        const renderer = vueNodesEnabled ? 'vue' : 'litegraph'
         for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
           const chunk = keys.slice(offset, offset + BATCH_SIZE)
-          const ids = await addChunk(comfyPage.page, chunk)
+          const shapes = await addChunk(comfyPage.page, chunk)
           await comfyPage.nextFrame()
           const count = await comfyPage.nodeOps.getGraphNodesCount()
           if (count !== chunk.length)
             failures.push(
               `chunk@${offset}: graph has ${count} of ${chunk.length} nodes`
             )
-          for (const [index, id] of ids.entries()) {
+          for (const [index, shape] of shapes.entries()) {
             const key = chunk[index]
-            if (id === null) {
+            if (shape === null) {
               failures.push(`${key}: createNode returned null`)
               continue
             }
+            // Renderer-independent fidelity: the instance must materialize
+            // everything the def declares. Pack JS converting a widget to a
+            // socket (or back) is legal; dropping the input entirely is not.
+            const declared = declaredByKey.get(key)!
+            const present = new Set([...shape.widgetNames, ...shape.inputNames])
+            for (const name of declared.inputNames)
+              if (!present.has(name))
+                failures.push(
+                  `${key}: instance is missing declared input "${name}" (${renderer})`
+                )
+            for (const { container, expansion } of declared.autogrow)
+              if (
+                !present.has(container) &&
+                !expansion.every((name) => present.has(name))
+              )
+                failures.push(
+                  `${key}: autogrow input "${container}" materialized neither its container nor its first ${expansion.length} slot(s) (${renderer})`
+                )
+            if (shape.outputCount < declared.outputCount)
+              failures.push(
+                `${key}: instance has ${shape.outputCount} of ${declared.outputCount} declared outputs (${renderer})`
+              )
             if (!vueNodesEnabled) continue
             if (key in ledger) continue
             const visible = await comfyPage.page
-              .locator(`[data-node-id="${id}"]`)
+              .locator(`[data-node-id="${shape.id}"]`)
               .isVisible({ timeout: 2_000 })
               .catch(() => false)
             if (!visible) failures.push(`${key}: no Vue mount`)
@@ -404,7 +505,7 @@ for (const entry of loadManifest()) {
                   return problems
                 },
                 [
-                  ids,
+                  shapes.map((shape) => shape?.id ?? null),
                   Object.keys(ledger),
                   Object.keys(MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {})
                 ] as const
