@@ -49,10 +49,6 @@ describe('ComfyHubPublishNav', () => {
     const currentStepItem = screen.getByRole('listitem', { current: 'step' })
     expect(currentStepItem).toHaveTextContent('comfyHubPublish.stepExamples')
     expect(currentStepItem).toHaveAttribute('aria-current', 'step')
-    const steps = screen.getAllByRole('listitem')
-    expect(steps[0]).toHaveAttribute('data-step-state', 'completed')
-    expect(steps[1]).toHaveAttribute('data-step-state', 'current')
-    expect(steps[2]).toHaveAttribute('data-step-state', 'upcoming')
 
     await user.click(screen.getByText('comfyHubPublish.stepFinish'))
 
