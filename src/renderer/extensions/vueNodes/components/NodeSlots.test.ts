@@ -58,7 +58,8 @@ const STUB_SLOT_PROPS = {
   nodeId: { type: String, required: false, default: '' },
   hasError: { type: Boolean, required: false, default: false },
   index: { type: Number, required: true },
-  readonly: { type: Boolean, required: false, default: false }
+  readonly: { type: Boolean, required: false, default: false },
+  connected: { type: Boolean, required: false, default: false }
 } as const
 
 const InputSlotStub = defineComponent({
@@ -73,6 +74,7 @@ const InputSlotStub = defineComponent({
       :data-node-id="nodeId"
       :data-has-error="hasError ? 'true' : 'false'"
       :data-readonly="readonly ? 'true' : 'false'"
+      :data-connected="connected ? 'true' : 'false'"
     />
   `
 })
@@ -88,6 +90,7 @@ const OutputSlotStub = defineComponent({
       :data-type="slotData && slotData.type ? slotData.type : ''"
       :data-node-id="nodeId"
       :data-readonly="readonly ? 'true' : 'false'"
+      :data-connected="connected ? 'true' : 'false'"
     />
   `
 })
@@ -132,15 +135,38 @@ function createTrackingStub(
 
 function renderSlots(
   nodeData: VueNodeData,
-  stubs: SlotComponentStubs = defaultSlotStubs
+  stubs: SlotComponentStubs = defaultSlotStubs,
+  pinia = createTestingPinia({ stubActions: false })
 ) {
   return render(NodeSlots, {
     global: {
-      plugins: [i18n, createTestingPinia({ stubActions: false })],
+      plugins: [i18n, pinia],
       stubs
     },
     props: { nodeData }
   })
+}
+
+function createConnectedGraph() {
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
+
+  const graph = new LGraph()
+  useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
+
+  const upstream = new LGraphNode('Upstream')
+  upstream.id = toNodeId(1)
+  upstream.addOutput('out', 'FAKE')
+  graph.add(upstream)
+
+  const node = new LGraphNode('Target')
+  node.id = toNodeId(2)
+  node.addInput('plain', 'FAKE')
+  node.addInput('w', 'FAKE')
+  node.inputs[1].widget = { name: 'w' }
+  graph.add(node)
+
+  return { pinia, upstream, node }
 }
 
 function renderSlotsWithTracking(
@@ -277,6 +303,52 @@ describe('NodeSlots.vue', () => {
         readonly: false
       }
     ])
+  })
+
+  it('marks an output connected only while a link leaves it', async () => {
+    const { pinia, upstream, node } = createConnectedGraph()
+    upstream.addOutput('spare', 'FAKE')
+    upstream.connect(0, node, 0)
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(upstream.id),
+      outputs: upstream.outputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(getRenderedSlotElement(container, 'out')).toHaveAttribute(
+      'data-connected',
+      'true'
+    )
+    expect(getRenderedSlotElement(container, 'spare')).toHaveAttribute(
+      'data-connected',
+      'false'
+    )
+
+    node.disconnectInput(0)
+    await nextTick()
+    expect(getRenderedSlotElement(container, 'out')).toHaveAttribute(
+      'data-connected',
+      'false'
+    )
+  })
+
+  it('marks an input connected from the link store', async () => {
+    const { pinia, upstream, node } = createConnectedGraph()
+    upstream.connect(0, node, 0)
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(node.id),
+      inputs: node.inputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(getRenderedSlotElement(container, 'plain')).toHaveAttribute(
+      'data-connected',
+      'true'
+    )
   })
 
   it('passes validation error state to matching input slots', async () => {
@@ -441,28 +513,6 @@ describe('NodeSlots.vue', () => {
         },
         props: { nodeData, unified: true }
       })
-    }
-
-    function createConnectedGraph() {
-      const pinia = createTestingPinia({ stubActions: false })
-      setActivePinia(pinia)
-
-      const graph = new LGraph()
-      useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
-
-      const upstream = new LGraphNode('Upstream')
-      upstream.id = toNodeId(1)
-      upstream.addOutput('out', 'FAKE')
-      graph.add(upstream)
-
-      const node = new LGraphNode('Target')
-      node.id = toNodeId(2)
-      node.addInput('plain', 'FAKE')
-      node.addInput('w', 'FAKE')
-      node.inputs[1].widget = { name: 'w' }
-      graph.add(node)
-
-      return { pinia, upstream, node }
     }
 
     it('reacts to connect and disconnect without a reprojection event', async () => {

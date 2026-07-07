@@ -182,4 +182,72 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
     expect(store.isInputSlotConnected(graphB, toNodeId(9), 2)).toBe(false)
   })
+
+  it('reports an output slot connected only where a link leaves it', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 1)).toBe(false)
+  })
+
+  it('returns every link fanning out of an output slot', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    store.registerLink(graphA, link(2, 5, 0, 8, 1))
+    store.registerLink(graphA, link(3, 5, 0, 7, 0))
+
+    const links = store.getOutputSlotLinks(graphA, toNodeId(5), 0)
+
+    expect([...links].sort((a, b) => a - b)).toEqual([
+      toLinkId(1),
+      toLinkId(2),
+      toLinkId(3)
+    ])
+  })
+
+  it('returns an empty set, never undefined, for an unconnected output', () => {
+    const store = useLinkStore()
+
+    const links = store.getOutputSlotLinks(graphA, toNodeId(5), 0)
+
+    expect(links).toBeInstanceOf(Set)
+    expect(links.size).toBe(0)
+  })
+
+  it('reports an output connected when its target endpoint is floating', () => {
+    const store = useLinkStore()
+    const outputFloating: LinkTopology = {
+      ...link(1, 5, 0, 9, 2),
+      targetNodeId: UNASSIGNED_NODE_ID,
+      targetSlot: -1
+    }
+    expect(store.registerLink(graphA, outputFloating)).toBeDefined()
+
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
+    expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0)).toContain(
+      toLinkId(1)
+    )
+  })
+
+  it('scopes output queries by graph', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
+    expect(store.isOutputSlotConnected(graphB, toNodeId(5), 0)).toBe(false)
+  })
+
+  it('re-derives the output index across register and delete', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
+
+    store.registerLink(graphA, topology)
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
+
+    store.deleteLink(graphA, topology)
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
+  })
 })

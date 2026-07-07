@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
-import { reactive, ref, toRaw } from 'vue'
+import { computed, reactive, ref, toRaw } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-
+import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 export type EndpointPatch = Partial<
@@ -15,13 +16,28 @@ export type EndpointPatch = Partial<
   >
 >
 
-type TargetIndex = Map<UUID, Map<string, LinkTopology>>
-type UnkeyedLinks = Map<UUID, Set<LinkTopology>>
+/**
+ * Endpoint slot keys are `${nodeId}:${slot}`; slot is numeric so the
+ * separator is unambiguous for any node id. Target (input side) and origin
+ * (output side) keys are branded separately so a key built for one index
+ * cannot be looked up in the other.
+ */
+type TargetSlotKey = string & { readonly __brand: 'TargetSlotKey' }
+type OriginSlotKey = string & { readonly __brand: 'OriginSlotKey' }
 
-/** Slot is numeric so the last separator is unambiguous for any node id. */
-function targetKey(nodeId: NodeId, slot: number): string {
-  return `${nodeId}:${slot}`
+function targetKey(nodeId: NodeId, slot: number): TargetSlotKey {
+  return `${nodeId}:${slot}` as TargetSlotKey
 }
+
+function originKey(nodeId: NodeId, slot: number): OriginSlotKey {
+  return `${nodeId}:${slot}` as OriginSlotKey
+}
+
+type TargetIndex = Map<UUID, Map<TargetSlotKey, LinkTopology>>
+type UnkeyedLinks = Map<UUID, Set<LinkTopology>>
+type OriginIndex = Map<OriginSlotKey, Set<LinkId>>
+
+const EMPTY_LINKS: ReadonlySet<LinkId> = new Set()
 
 /**
  * A link is keyed by its target input slot only when that slot uniquely
@@ -47,11 +63,12 @@ function hasUniqueTarget(topology: LinkTopology): boolean {
 export const useLinkStore = defineStore('link', () => {
   const targetIndex = ref<TargetIndex>(new Map())
   const unkeyedLinks = ref<UnkeyedLinks>(new Map())
+  const outputIndexes = new Map<UUID, ComputedRef<OriginIndex>>()
 
-  function graphTargets(graphId: UUID): Map<string, LinkTopology> {
+  function graphTargets(graphId: UUID): Map<TargetSlotKey, LinkTopology> {
     const existing = targetIndex.value.get(graphId)
     if (existing) return existing
-    const next = reactive(new Map<string, LinkTopology>())
+    const next = reactive(new Map<TargetSlotKey, LinkTopology>())
     targetIndex.value.set(graphId, next)
     return next
   }
@@ -132,6 +149,50 @@ export const useLinkStore = defineStore('link', () => {
     return targetIndex.value.get(graphId)?.get(targetKey(nodeId, slot))
   }
 
+  /**
+   * Reverse index over origin endpoints, keyed `${originNodeId}:${originSlot}`.
+   * Spans both collections `graphTopologies` yields, so a link whose target is
+   * floating still indexes its assigned origin. Links with an unassigned origin
+   * have no output slot to report and are skipped.
+   */
+  function buildOutputIndex(graphId: UUID): OriginIndex {
+    const index: OriginIndex = new Map()
+    for (const topology of graphTopologies(graphId)) {
+      if (topology.originNodeId === UNASSIGNED_NODE_ID) continue
+      const key = originKey(topology.originNodeId, topology.originSlot)
+      const links = index.get(key) ?? new Set<LinkId>()
+      links.add(topology.id)
+      index.set(key, links)
+    }
+    return index
+  }
+
+  function outputIndex(graphId: UUID): ComputedRef<OriginIndex> {
+    const existing = outputIndexes.get(graphId)
+    if (existing) return existing
+    const next = computed(() => buildOutputIndex(graphId))
+    outputIndexes.set(graphId, next)
+    return next
+  }
+
+  function isOutputSlotConnected(
+    graphId: UUID,
+    nodeId: NodeId,
+    slot: number
+  ): boolean {
+    return outputIndex(graphId).value.has(originKey(nodeId, slot))
+  }
+
+  function getOutputSlotLinks(
+    graphId: UUID,
+    nodeId: NodeId,
+    slot: number
+  ): ReadonlySet<LinkId> {
+    return (
+      outputIndex(graphId).value.get(originKey(nodeId, slot)) ?? EMPTY_LINKS
+    )
+  }
+
   /** Iterates every registered topology in a graph's bucket. */
   function* graphTopologies(graphId: UUID): Generator<LinkTopology> {
     const targets = targetIndex.value.get(graphId)
@@ -143,6 +204,7 @@ export const useLinkStore = defineStore('link', () => {
   function clearGraph(graphId: UUID): void {
     targetIndex.value.delete(graphId)
     unkeyedLinks.value.delete(graphId)
+    outputIndexes.delete(graphId)
   }
 
   return {
@@ -151,6 +213,8 @@ export const useLinkStore = defineStore('link', () => {
     deleteLink: displace,
     isInputSlotConnected,
     getInputSlotLink,
+    isOutputSlotConnected,
+    getOutputSlotLinks,
     graphTopologies,
     clearGraph
   }
