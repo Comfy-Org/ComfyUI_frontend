@@ -21,9 +21,10 @@
       />
     </div>
 
-    <div v-if="activeView === 'overview'" class="flex min-h-0 flex-1 flex-col">
-      <SubscriptionPanelContentWorkspace />
-    </div>
+    <WorkspaceOverviewContent
+      v-if="activeView === 'overview'"
+      @navigate="setView"
+    />
     <WorkspaceActivityContent
       v-else-if="activeView === 'activity'"
       :search="searchQuery"
@@ -38,8 +39,8 @@ import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
+import WorkspaceOverviewContent from '@/platform/workspace/components/dialogs/settings/WorkspaceOverviewContent.vue'
 import WorkspaceInvoicesContent from '@/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue'
 
 type View = 'overview' | 'activity' | 'invoices'

@@ -2943,6 +2943,34 @@
         "invoices": "Invoices"
       }
     },
+    "overview": {
+      "perMonth": "mo",
+      "renewsOn": "Renews on {date}",
+      "managePayment": "Manage payment",
+      "changePlan": "Change plan",
+      "totalCredits": "Total credits",
+      "remaining": "remaining",
+      "monthly": "Monthly",
+      "refills": "Refills {date}",
+      "used": "{count} used",
+      "leftOf": "{left} left of {total}",
+      "additionalCredits": "Additional credits",
+      "usedAfterMonthly": "Used after monthly runs out",
+      "usd": "USD",
+      "addCredits": "Add credits",
+      "nextInvoice": "Next month invoice",
+      "seeMore": "See more",
+      "learnMore": "Learn more",
+      "pricingTable": "Partner Nodes pricing table",
+      "messageSupport": "Message support",
+      "snapshot": {
+        "user": "User",
+        "lastActivity": "Last activity",
+        "creditsUsed": "Credits used",
+        "topSpenders": "Top spenders",
+        "recentActivity": "Recent activity"
+      }
+    },
     "activity": {
       "columns": {
         "date": "Date",
