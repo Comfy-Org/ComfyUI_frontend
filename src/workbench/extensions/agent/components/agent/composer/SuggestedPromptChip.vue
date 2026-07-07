@@ -10,7 +10,7 @@ const emit = defineEmits<{ insert: [text: string] }>()
 <template>
   <button
     type="button"
-    class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+    class="rounded-agent bg-agent-surface-raised text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
     @click="emit('insert', text)"
   >
     <span
