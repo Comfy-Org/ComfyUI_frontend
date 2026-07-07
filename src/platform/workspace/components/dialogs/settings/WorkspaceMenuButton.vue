@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenu v-if="menuItems.length > 0" :entries="menuItems">
+  <DropdownMenu v-if="menuItems.length > 0" :entries="menuItems" :modal="false">
     <template #button>
       <Button
         v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
@@ -22,6 +22,7 @@ import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkspaceRename } from '@/platform/workspace/composables/useWorkspaceRename'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -33,6 +34,7 @@ const { isWorkspaceSubscribed, isCurrentUserOriginalOwner } = storeToRefs(
   useTeamWorkspaceStore()
 )
 const { uiConfig } = useWorkspaceUI()
+const { startRenaming } = useWorkspaceRename()
 
 // Disable delete when the workspace has an active subscription (prevents
 // accidental deletion); uses the workspace's own status, not the global one.
@@ -49,13 +51,20 @@ const deleteTooltip = computed(() => {
 })
 
 const menuItems = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = []
+  const renameItems: MenuItem[] = uiConfig.value.showEditWorkspaceMenuItem
+    ? [
+        {
+          label: t('workspacePanel.menu.renameWorkspace'),
+          command: () => startRenaming()
+        }
+      ]
+    : []
 
+  const destructiveItems: MenuItem[] = []
   const action = uiConfig.value.workspaceMenuAction
   if (action === 'delete') {
-    items.push({
+    destructiveItems.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
-      icon: 'pi pi-trash',
       class: isDeleteDisabled.value ? 'text-danger/50' : 'text-danger',
       disabled: isDeleteDisabled.value,
       tooltip: deleteTooltip.value,
@@ -67,23 +76,24 @@ const menuItems = computed<MenuItem[]>(() => {
 
   // Members and non-creator owners can leave; the creator sees it disabled.
   if (action === 'leave' || action === 'delete') {
-    items.push(
+    destructiveItems.push(
       isCurrentUserOriginalOwner.value
         ? {
             label: t('workspacePanel.menu.leaveWorkspace'),
-            icon: 'pi pi-sign-out',
             class: 'opacity-50',
             disabled: true,
             tooltip: t('workspacePanel.menu.creatorCannotLeave')
           }
         : {
             label: t('workspacePanel.menu.leaveWorkspace'),
-            icon: 'pi pi-sign-out',
             command: () => showLeaveWorkspaceDialog()
           }
     )
   }
 
-  return items
+  const divider: MenuItem[] =
+    renameItems.length && destructiveItems.length ? [{ separator: true }] : []
+
+  return [...renameItems, ...divider, ...destructiveItems]
 })
 </script>

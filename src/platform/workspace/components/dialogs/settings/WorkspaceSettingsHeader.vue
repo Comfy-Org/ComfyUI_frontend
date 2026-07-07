@@ -24,7 +24,7 @@
       />
     </div>
     <input
-      v-if="isEditing"
+      v-if="isRenaming"
       ref="inputRef"
       v-model="draftName"
       :maxlength="MAX_NAME_LENGTH"
@@ -41,12 +41,12 @@
           : undefined
       "
       class="truncate text-2xl font-semibold text-base-foreground"
-      @dblclick="startEditing"
+      @dblclick="beginRename"
     >
       {{ workspaceName }}
     </h1>
     <span
-      v-if="isEditing && remaining <= 10"
+      v-if="isRenaming && remaining <= 10"
       class="shrink-0 text-sm text-muted-foreground tabular-nums"
     >
       {{ $t('workspacePanel.charactersLeft', remaining) }}
@@ -57,10 +57,11 @@
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import { useWorkspaceRename } from '@/platform/workspace/composables/useWorkspaceRename'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_NAME_MAX_LENGTH } from '@/platform/workspace/workspaceConstants'
@@ -77,9 +78,20 @@ const MAX_NAME_LENGTH = WORKSPACE_NAME_MAX_LENGTH
 // workspace); Members never see the affordance.
 const canEdit = computed(() => uiConfig.value.showEditWorkspaceMenuItem)
 
-const isEditing = ref(false)
+const { isRenaming, startRenaming, stopRenaming } = useWorkspaceRename()
 const draftName = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
+
+// A single entry point (double-click here or the "Rename" menu item) flips
+// `isRenaming`; seed the draft and focus the field once the input mounts.
+watch(isRenaming, (renaming) => {
+  if (!renaming) return
+  draftName.value = workspaceName.value
+  void nextTick(() => {
+    inputRef.value?.focus()
+    inputRef.value?.select()
+  })
+})
 
 // Surface the limit only as the user approaches it, to keep the header quiet.
 const remaining = computed(() => MAX_NAME_LENGTH - draftName.value.length)
@@ -105,19 +117,14 @@ function onFileChange(event: Event) {
   reader.readAsDataURL(file)
 }
 
-function startEditing() {
+function beginRename() {
   if (!canEdit.value) return
-  draftName.value = workspaceName.value
-  isEditing.value = true
-  void nextTick(() => {
-    inputRef.value?.focus()
-    inputRef.value?.select()
-  })
+  startRenaming()
 }
 
 async function commit() {
-  if (!isEditing.value) return
-  isEditing.value = false
+  if (!isRenaming.value) return
+  stopRenaming()
   const name = draftName.value.trim()
   if (!name || name === workspaceName.value) return
   try {
@@ -131,6 +138,6 @@ async function commit() {
 }
 
 function cancel() {
-  isEditing.value = false
+  stopRenaming()
 }
 </script>

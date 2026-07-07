@@ -2906,6 +2906,7 @@
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
+      "renameWorkspace": "Rename Workspace",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
