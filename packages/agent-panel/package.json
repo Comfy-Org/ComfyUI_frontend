@@ -1,0 +1,49 @@
+{
+  "name": "@comfyorg/agent-panel",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@iconify/vue": "^5.0.1",
+    "@vueuse/core": "^14.3.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dompurify": "^3.4.11",
+    "marked": "^18.0.5",
+    "pinia": "^3.0.4",
+    "reka-ui": "^2.10.1",
+    "shiki": "^4.3.0",
+    "tailwind-merge": "^3.6.0",
+    "vue": "^3.5.34",
+    "vue-i18n": "^11.4.6",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.115",
+    "@iconify/tailwind4": "^1.2.3",
+    "@tailwindcss/vite": "^4.3.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@testing-library/vue": "^8.1.0",
+    "@types/dompurify": "^3.2.0",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "happy-dom": "^20.10.6",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.13",
+    "vitest": "^4.1.0",
+    "vue-tsc": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
