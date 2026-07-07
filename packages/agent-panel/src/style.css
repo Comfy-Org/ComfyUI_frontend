@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+@plugin '@iconify/tailwind4';
+
+/* Semantic design tokens the panel components consume (via bg-agent-*, text-agent-*,
+   border-agent-*). Defined for the app's dark theme directly - no `dark:` variant. At
+   host integration these map onto the host's own node-component surface tokens; keeping
+   components on tokens (never raw hex) makes that remap a one-file change. */
+@theme {
+  --color-agent-surface: #1b1b1f;
+  --color-agent-surface-raised: #26262b;
+  --color-agent-surface-hover: #303036;
+  --color-agent-fg: #e6e6e9;
+  --color-agent-fg-muted: #9a9aa2;
+  --color-agent-fg-subtle: #6d6d75;
+  --color-agent-border: #34343b;
+  --color-agent-border-strong: #45454e;
+  --color-agent-accent: #5b8cff;
+  --color-agent-accent-fg: #ffffff;
+  --color-agent-danger: #ef4444;
+  --color-agent-success: #22c55e;
+  --color-agent-pill: #303036;
+
+  --radius-agent: 0.75rem;
+
+  /* Reka collapsible open/close, driven by the --reka-collapsible-content-height var
+     Reka sets on the content element. Used by CollapsibleContent for reasoning/tool
+     disclosures. */
+  --animate-collapsible-down: collapsible-down 200ms ease-out;
+  --animate-collapsible-up: collapsible-up 200ms ease-out;
+}
+
+@keyframes collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--reka-collapsible-content-height);
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--reka-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
