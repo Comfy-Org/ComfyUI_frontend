@@ -105,7 +105,8 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-vi.mock('@/base/credits/comfyCredits', () => ({
+vi.mock('@/base/credits/comfyCredits', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
