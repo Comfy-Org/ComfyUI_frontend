@@ -304,6 +304,30 @@ const createInvite = () => ({
   expires_at: '2026-06-08T00:00:00Z'
 })
 
+function pendingInvites(): unknown {
+  if (cfg.ws !== 'team') return { invites: [] }
+  const daysFromNow = (d: number) =>
+    new Date(Date.now() + d * 24 * 60 * 60 * 1000).toISOString()
+  return {
+    invites: [
+      {
+        id: 'inv-1',
+        email: 'newhire@example.com',
+        token: 'tok-1',
+        invited_at: daysFromNow(-2),
+        expires_at: daysFromNow(5)
+      },
+      {
+        id: 'inv-2',
+        email: 'contractor@studio.com',
+        token: 'tok-2',
+        invited_at: daysFromNow(-5),
+        expires_at: daysFromNow(2)
+      }
+    ]
+  }
+}
+
 // Partner node governance (V1). Canned list; toggles are optimistic client-side
 // so they hold within a session but reset on reload.
 function partnerNodes(): unknown {
@@ -1045,7 +1069,7 @@ const ROUTES: Route[] = [
     () => (cfg.roleChange === '500' ? { error: 'mock failure' } : {}),
     () => parseInt(cfg.roleChange, 10)
   ],
-  ['GET', /\/api\/workspace\/invites/, () => ({ invites: [] })],
+  ['GET', /\/api\/workspace\/invites/, pendingInvites],
   ['POST', /\/api\/workspace\/invites/, createInvite],
   ['DELETE', /\/api\/workspace\/invites\//, () => ({}), () => 204],
   // Partner node governance (V1)

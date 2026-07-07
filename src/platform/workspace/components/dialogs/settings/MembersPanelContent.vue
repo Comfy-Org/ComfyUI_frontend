@@ -18,10 +18,12 @@
             @click="activeView = 'pending'"
           >
             {{
-              $t(
-                'workspacePanel.members.tabs.pendingCount',
-                pendingInvites.length
-              )
+              pendingInvites.length > 0
+                ? $t(
+                    'workspacePanel.members.tabs.pendingCount',
+                    pendingInvites.length
+                  )
+                : $t('workspacePanel.members.tabs.pending')
             }}
           </Button>
         </template>

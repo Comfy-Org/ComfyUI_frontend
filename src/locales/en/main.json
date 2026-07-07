@@ -2881,6 +2881,7 @@
       "tabs": {
         "active": "Active",
         "membersCount": "Members ({count})",
+        "pending": "Pending",
         "pendingCount": "Pending ({count})"
       },
       "membersUsage": "{count} of {max} total members.",
