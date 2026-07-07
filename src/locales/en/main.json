@@ -4500,7 +4500,7 @@
     "running": "Running…"
   },
   "agent": {
-    "title": "AI Agent",
+    "title": "Comfy Agent",
     "askComfyAgent": "Ask Comfy Agent",
     "caption": "The agent edits your graph as a draft. Only you can run it.",
     "latest": "Latest",
