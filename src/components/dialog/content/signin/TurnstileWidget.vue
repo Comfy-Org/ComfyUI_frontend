@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import { useTimeoutFn } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -38,14 +39,13 @@ let widgetId: string | undefined
 
 /** How long to wait for the widget to resolve before falling back. */
 const TURNSTILE_LOAD_TIMEOUT_MS = 9_000
-let timeoutId: ReturnType<typeof setTimeout> | undefined
-
-const armTimeout = () => {
-  clearTimeout(timeoutId)
-  timeoutId = setTimeout(() => {
+const { start: armTimeout, stop: clearLoadTimeout } = useTimeoutFn(
+  () => {
     unavailable.value = true
-  }, TURNSTILE_LOAD_TIMEOUT_MS)
-}
+  },
+  TURNSTILE_LOAD_TIMEOUT_MS,
+  { immediate: false }
+)
 
 const clearToken = () => {
   token.value = ''
@@ -89,7 +89,7 @@ onMounted(async () => {
       sitekey: getTurnstileSiteKey(),
       theme,
       callback: (newToken: string) => {
-        clearTimeout(timeoutId)
+        clearLoadTimeout()
         errorMessage.value = ''
         unavailable.value = false
         token.value = newToken
@@ -108,7 +108,7 @@ onMounted(async () => {
       },
       'error-callback': () => {
         clearToken()
-        clearTimeout(timeoutId)
+        clearLoadTimeout()
         console.warn('Turnstile challenge failed')
         errorMessage.value = t('auth.turnstile.failed')
         unavailable.value = true
@@ -116,7 +116,7 @@ onMounted(async () => {
       }
     })
   } catch (error) {
-    clearTimeout(timeoutId)
+    clearLoadTimeout()
     console.warn('Turnstile failed to load', error)
     errorMessage.value = t('auth.turnstile.failed')
     unavailable.value = true
@@ -124,7 +124,6 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  clearTimeout(timeoutId)
   if (widgetId && window.turnstile) {
     window.turnstile.remove(widgetId)
   }
