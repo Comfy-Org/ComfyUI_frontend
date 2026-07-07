@@ -33,28 +33,18 @@ export function usePartnerNodes() {
   const isLoading = ref(false)
 
   const searchQuery = ref('')
-  const partnerFilter = ref<string | null>(null)
   const sortField = ref<SortField>('name')
   const sortDirection = ref<SortDirection>('asc')
   const selectedIds = ref<Set<string>>(new Set())
 
-  const partners = computed(() =>
-    [...new Set(nodes.value.map((n) => n.partner))].sort((a, b) =>
-      a.localeCompare(b)
-    )
-  )
-
   const filteredNodes = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
-    const filtered = nodes.value.filter((n) => {
-      const matchesSearch =
+    const filtered = nodes.value.filter(
+      (n) =>
         !q ||
         n.name.toLowerCase().includes(q) ||
         n.partner.toLowerCase().includes(q)
-      const matchesPartner =
-        !partnerFilter.value || n.partner === partnerFilter.value
-      return matchesSearch && matchesPartner
-    })
+    )
     return filtered.sort((a, b) =>
       compareNodes(a, b, sortField.value, sortDirection.value)
     )
@@ -171,8 +161,6 @@ export function usePartnerNodes() {
     autoEnableNew,
     isLoading,
     searchQuery,
-    partnerFilter,
-    partners,
     sortField,
     sortDirection,
     selectedIds,

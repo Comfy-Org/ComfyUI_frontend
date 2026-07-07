@@ -9,26 +9,12 @@
           {{ $t('workspacePanel.partnerNodes.description') }}
         </span>
       </div>
-      <div class="flex items-center gap-2">
-        <SearchInput
-          v-model="searchQuery"
-          :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
-          size="lg"
-          class="w-64"
-        />
-        <DropdownMenu :entries="filterEntries">
-          <template #button>
-            <Button
-              variant="secondary"
-              size="icon-lg"
-              class="rounded-lg"
-              :aria-label="$t('workspacePanel.partnerNodes.filterByPartner')"
-            >
-              <i class="icon-[lucide--list-filter] size-4" />
-            </Button>
-          </template>
-        </DropdownMenu>
-      </div>
+      <SearchInput
+        v-model="searchQuery"
+        :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
+        size="lg"
+        class="w-64"
+      />
     </div>
 
     <div
@@ -169,7 +155,7 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
-        <span class="text-sm text-base-foreground">
+        <span class="text-sm text-base-foreground tabular-nums">
           {{ $t('workspacePanel.partnerNodes.selectedCount', selectedCount) }}
         </span>
         <Switch :model-value="bulkEnabled" @update:model-value="applyBulk" />
@@ -179,11 +165,9 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -202,8 +186,6 @@ const { t } = useI18n()
 const {
   autoEnableNew,
   searchQuery,
-  partnerFilter,
-  partners,
   sortField,
   sortDirection,
   selectedIds,
@@ -231,17 +213,6 @@ function sortIcon(field: 'name' | 'partner' | 'lastModified') {
     ? 'icon-[lucide--chevron-up] size-3'
     : 'icon-[lucide--chevron-down] size-3'
 }
-
-const filterEntries = computed<MenuItem[]>(() => [
-  {
-    label: t('workspacePanel.partnerNodes.allPartners'),
-    command: () => (partnerFilter.value = null)
-  },
-  ...partners.value.map((p) => ({
-    label: p,
-    command: () => (partnerFilter.value = p)
-  }))
-])
 
 // When every selected node is enabled the bulk switch reads "on", so a toggle
 // disables the whole selection; otherwise it enables them.

@@ -81,12 +81,6 @@ describe('usePartnerNodes', () => {
     expect(pn.filteredNodes.value.map((n) => n.id)).toEqual(['b'])
   })
 
-  it('filters by partner', async () => {
-    const pn = await setupLoaded()
-    pn.partnerFilter.value = 'BFL'
-    expect(pn.filteredNodes.value.map((n) => n.id).sort()).toEqual(['a', 'c'])
-  })
-
   it('optimistically toggles a node and calls the api', async () => {
     const pn = await setupLoaded()
     const target = pn.nodes.value.find((n) => n.id === 'b')!
@@ -120,7 +114,7 @@ describe('usePartnerNodes', () => {
 
   it('select-all reflects the filtered set', async () => {
     const pn = await setupLoaded()
-    pn.partnerFilter.value = 'BFL'
+    pn.searchQuery.value = 'BFL'
     pn.toggleSelectAll()
     expect(pn.selectedCount.value).toBe(2)
     expect(pn.allFilteredSelected.value).toBe(true)
