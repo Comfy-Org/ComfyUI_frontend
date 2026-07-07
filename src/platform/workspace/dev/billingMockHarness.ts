@@ -299,28 +299,681 @@ const createInvite = () => ({
 // Partner node governance (V1). Canned list; toggles are optimistic client-side
 // so they hold within a session but reset on reload.
 function partnerNodes(): unknown {
-  const node = (
-    id: string,
-    name: string,
-    partner: string,
-    enabled: boolean,
-    last_modified: string | null
-  ) => ({ id, name, partner, enabled, last_modified })
   return {
     auto_enable_new: true,
     partner_nodes: [
-      node('pn-1', 'Anthropic Claude', 'Anthropic', true, '2026-07-31'),
-      node('pn-2', 'Flux 1.1 [pro] Ultra Image', 'BFL', true, null),
-      node('pn-3', 'Flux.1 Kontext [pro] Image', 'BFL', true, null),
-      node('pn-4', 'Flux.1 Kontext [max] Image', 'BFL', false, '2026-08-01'),
-      node('pn-5', 'Flux.1 Expand Image', 'BFL', true, null),
-      node('pn-6', 'Flux.1 Fill Image', 'BFL', false, '2026-08-08'),
-      node('pn-7', 'Flux Erase Image', 'BFL', true, null),
-      node('pn-8', 'Kling Start-End Frame to Video', 'Kling', true, null),
-      node('pn-9', 'Kling Image to Video', 'Kling', true, null),
-      node('pn-10', 'Veo 3 Text to Video', 'Google', true, null),
-      node('pn-11', 'Ideogram V3', 'Ideogram', true, null),
-      node('pn-12', 'Grok Image', 'Grok', false, '2026-07-20')
+      {
+        id: 'pn-1',
+        name: 'Anthropic Claude',
+        partner: 'Anthropic',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-2',
+        name: 'Beeble SwitchX Image Edit',
+        partner: 'Beeble',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-3',
+        name: 'Beeble SwitchX Video Edit',
+        partner: 'Beeble',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-4',
+        name: 'Bria FIBO Image Edit',
+        partner: 'Bria',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-5',
+        name: 'Bria Remove Image Background',
+        partner: 'Bria',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-6',
+        name: 'Bria Remove Video Background (Transparent)',
+        partner: 'Bria',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-7',
+        name: 'Bria Remove Video Background',
+        partner: 'Bria',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-8',
+        name: 'Bria Video Green Screen',
+        partner: 'Bria',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-9',
+        name: 'Bria Video Replace Background',
+        partner: 'Bria',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-10',
+        name: 'ByteDance First-Last-Frame to Video',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-11',
+        name: 'ByteDance Image to Video',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-12',
+        name: 'ByteDance Image',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-13',
+        name: 'ByteDance Reference Images to Video',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-14',
+        name: 'ByteDance Seedance 2.0 First-Last-Frame to Video',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-15',
+        name: 'ByteDance Seedance 2.0 Reference to Video',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-16',
+        name: 'ByteDance Seedance 2.0 Text to Video',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-17',
+        name: 'ByteDance Seedream 4.5 & 5.0',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-18',
+        name: 'ByteDance Seed',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-19',
+        name: 'ByteDance Text to Video',
+        partner: 'ByteDance',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-20',
+        name: 'ElevenLabs Instant Voice Clone',
+        partner: 'ElevenLabs',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-21',
+        name: 'ElevenLabs Speech to Speech',
+        partner: 'ElevenLabs',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-22',
+        name: 'ElevenLabs Speech to Text',
+        partner: 'ElevenLabs',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-23',
+        name: 'ElevenLabs Text to Dialogue',
+        partner: 'ElevenLabs',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-24',
+        name: 'ElevenLabs Text to Sound Effects',
+        partner: 'ElevenLabs',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-25',
+        name: 'ElevenLabs Text to Speech',
+        partner: 'ElevenLabs',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-26',
+        name: 'ElevenLabs Voice Isolation',
+        partner: 'ElevenLabs',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-27',
+        name: 'Flux 1.1 [pro] Ultra Image',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-28',
+        name: 'Flux Erase Image',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-29',
+        name: 'Flux Virtual Try-On',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-30',
+        name: 'Flux.1 Expand Image',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-31',
+        name: 'Flux.1 Fill Image',
+        partner: 'BFL',
+        enabled: false,
+        last_modified: '2026-08-08'
+      },
+      {
+        id: 'pn-32',
+        name: 'Flux.1 Kontext [max] Image',
+        partner: 'BFL',
+        enabled: false,
+        last_modified: '2026-08-01'
+      },
+      {
+        id: 'pn-33',
+        name: 'Flux.1 Kontext [pro] Image',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-34',
+        name: 'Flux.2 Image',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-35',
+        name: 'Flux.2 [max] Image',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-36',
+        name: 'Flux.2 [pro] Image',
+        partner: 'BFL',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-37',
+        name: 'Google Gemini Omni (Video)',
+        partner: 'Gemini',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-38',
+        name: 'Google Gemini',
+        partner: 'Gemini',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-39',
+        name: 'Grok Image Edit',
+        partner: 'Grok',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-40',
+        name: 'Grok Image',
+        partner: 'Grok',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-41',
+        name: 'Grok Reference-to-Video',
+        partner: 'Grok',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-42',
+        name: 'Grok Video Edit',
+        partner: 'Grok',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-43',
+        name: 'Grok Video Extend',
+        partner: 'Grok',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-44',
+        name: 'Grok Video',
+        partner: 'Grok',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-45',
+        name: 'HitPaw General Image Enhance',
+        partner: 'HitPaw',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-46',
+        name: 'HitPaw Video Enhance',
+        partner: 'HitPaw',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-47',
+        name: 'Hunyuan3D: 3D Part',
+        partner: 'Tencent',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-48',
+        name: 'Hunyuan3D: 3D Texture Edit',
+        partner: 'Tencent',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-49',
+        name: 'Hunyuan3D: Image(s) to Model',
+        partner: 'Tencent',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-50',
+        name: 'Hunyuan3D: Model to UV',
+        partner: 'Tencent',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-51',
+        name: 'Hunyuan3D: Smart Topology',
+        partner: 'Tencent',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-52',
+        name: 'Hunyuan3D: Text to Model',
+        partner: 'Tencent',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-53',
+        name: 'Ideogram V1',
+        partner: 'Ideogram',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-54',
+        name: 'Ideogram V2',
+        partner: 'Ideogram',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-55',
+        name: 'Ideogram V3',
+        partner: 'Ideogram',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-56',
+        name: 'Ideogram V4',
+        partner: 'Ideogram',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-57',
+        name: 'Kling 2.6 Image(First Frame) to Video with Audio',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-58',
+        name: 'Kling 2.6 Text to Video with Audio',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-59',
+        name: 'Kling 3.0 First-Last-Frame to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-60',
+        name: 'Kling 3.0 Image',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-61',
+        name: 'Kling 3.0 Omni Edit Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-62',
+        name: 'Kling 3.0 Omni First-Last-Frame to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-63',
+        name: 'Kling 3.0 Omni Image to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-64',
+        name: 'Kling 3.0 Omni Image',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-65',
+        name: 'Kling 3.0 Omni Text to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-66',
+        name: 'Kling 3.0 Omni Video to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-67',
+        name: 'Kling 3.0 Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-68',
+        name: 'Kling Avatar 2.0',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-69',
+        name: 'Kling Dual Character Video Effects',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-70',
+        name: 'Kling Image to Video (Camera Control)',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-71',
+        name: 'Kling Image(First Frame) to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-72',
+        name: 'Kling Lip Sync Video with Audio',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-73',
+        name: 'Kling Lip Sync Video with Text',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-74',
+        name: 'Kling Motion Control',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-75',
+        name: 'Kling Start-End Frame to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-76',
+        name: 'Kling Text to Video (Camera Control)',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-77',
+        name: 'Kling Text to Video',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-78',
+        name: 'Kling Video Effects',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-79',
+        name: 'Kling Video Extend',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-80',
+        name: 'Kling Virtual Try On',
+        partner: 'Kling',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-81',
+        name: 'Krea 2 Image',
+        partner: 'Krea',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-82',
+        name: 'LTXV Image To Video',
+        partner: 'LTXV',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-83',
+        name: 'LTXV Text To Video',
+        partner: 'LTXV',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-84',
+        name: 'Luma Image to Image',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-85',
+        name: 'Luma Image to Video',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-86',
+        name: 'Luma Ray 3.2 Image to Video',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-87',
+        name: 'Luma Ray 3.2 Keyframes to Video',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-88',
+        name: 'Luma Ray 3.2 Text to Video',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-89',
+        name: 'Luma Ray 3.2 Video Edit',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-90',
+        name: 'Luma Text to Image',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-91',
+        name: 'Luma Text to Video',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-92',
+        name: 'Luma UNI-1 Image Edit',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-93',
+        name: 'Luma UNI-1 Image',
+        partner: 'Luma',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-94',
+        name: 'Nano Banana (Google Gemini Image)',
+        partner: 'Gemini',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-95',
+        name: 'Nano Banana 2',
+        partner: 'Gemini',
+        enabled: true,
+        last_modified: null
+      },
+      {
+        id: 'pn-96',
+        name: 'Nano Banana Pro (Google Gemini Image)',
+        partner: 'Gemini',
+        enabled: true,
+        last_modified: null
+      }
     ]
   }
 }

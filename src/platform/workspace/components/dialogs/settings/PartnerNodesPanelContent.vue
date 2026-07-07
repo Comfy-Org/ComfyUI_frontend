@@ -23,8 +23,9 @@
             <DropdownMenu :entries="filterEntries">
               <template #button>
                 <Button
-                  variant="muted-textonly"
-                  size="icon"
+                  variant="secondary"
+                  size="icon-lg"
+                  class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
                   :aria-label="
                     $t('workspacePanel.partnerNodes.filterByPartner')
                   "
@@ -40,12 +41,11 @@
           <TableHeader>
             <TableRow class="hover:bg-transparent">
               <TableHead class="w-6">
-                <input
-                  type="checkbox"
-                  class="size-4 cursor-pointer align-middle"
-                  :checked="allFilteredSelected"
+                <Checkbox
+                  v-if="hasSelection"
+                  :model-value="allFilteredSelected"
                   :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
-                  @change="toggleSelectAll"
+                  @update:model-value="toggleSelectAll"
                 />
               </TableHead>
               <TableHead>
@@ -77,24 +77,30 @@
               v-for="node in filteredNodes"
               :key="node.id"
               :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
-              :class="cn('cursor-pointer', !node.enabled && 'opacity-55')"
+              :class="cn('group cursor-pointer', !node.enabled && 'opacity-55')"
               @click="toggleSelection(node.id)"
             >
               <TableCell>
-                <input
-                  type="checkbox"
-                  class="size-4 cursor-pointer align-middle"
-                  :checked="selectedIds.has(node.id)"
+                <Checkbox
+                  :model-value="selectedIds.has(node.id)"
                   :aria-label="node.name"
-                  @click.stop
-                  @change="toggleSelection(node.id)"
+                  :class="
+                    cn(
+                      'pointer-events-none',
+                      !hasSelection &&
+                        'opacity-0 transition-opacity group-hover:opacity-100'
+                    )
+                  "
                 />
               </TableCell>
               <TableCell class="text-base-foreground">
                 {{ node.name }}
               </TableCell>
               <TableCell class="text-muted-foreground">
-                {{ node.partner }}
+                <div class="flex items-center gap-2">
+                  <PartnerBadge :partner="node.partner" />
+                  <span>{{ node.partner }}</span>
+                </div>
               </TableCell>
               <TableCell class="text-muted-foreground">
                 {{ formatLastModified(node.last_modified) }}
@@ -167,6 +173,7 @@ import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
@@ -175,6 +182,7 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import PartnerBadge from '@/platform/workspace/components/dialogs/settings/PartnerBadge.vue'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -199,6 +207,8 @@ const {
   toggleSelectAll,
   clearSelection
 } = usePartnerNodes()
+
+const hasSelection = computed(() => selectedCount.value > 0)
 
 const sortHeaderClass =
   'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left text-sm text-muted-foreground'
