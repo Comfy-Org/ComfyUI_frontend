@@ -2,8 +2,9 @@
 
 The authoritative, step-by-step process for onboarding a new pack. Written to
 be followable by a human or an agent with no prior context. The suite itself
-(what it asserts, how to run it) is documented in [README.md](README.md);
-this file is only about adding coverage for a new pack.
+(what it asserts, how to run it) is documented in [README.md](README.md),
+and its system design in [ARCHITECTURE.md](ARCHITECTURE.md); this file is
+only about adding coverage for a new pack.
 
 The short version: install the pack on a local test backend, read the pack's
 real node keys out of `/object_info`, author one small model-free workflow,

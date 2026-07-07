@@ -5,6 +5,10 @@ renderers: nodes register, render under LiteGraph (canvas) AND Vue Nodes 2.0
 (DOM), and execute real workflows end to end. Manifest-driven: adding a pack
 is one JSON row, no new test code.
 
+System design, data flow, and the reasoning behind every invariant:
+[ARCHITECTURE.md](ARCHITECTURE.md). Onboarding a new pack:
+[ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md).
+
 ## Prerequisites
 
 1. A ComfyUI backend on `127.0.0.1:8288` with every manifest pack (the
