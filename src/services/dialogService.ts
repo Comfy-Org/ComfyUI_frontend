@@ -313,7 +313,9 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => {
+          // onRemoved (not onClose) so the promise also settles when the
+          // dialog is cap-evicted rather than closed by the user.
+          onRemoved: () => {
             resolve(null)
           }
         }
@@ -351,7 +353,9 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => resolve(null)
+          // onRemoved (not onClose) so the promise also settles when the
+          // dialog is cap-evicted rather than closed by the user.
+          onRemoved: () => resolve(null)
         }
       }
 

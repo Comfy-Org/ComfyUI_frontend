@@ -130,7 +130,6 @@ describe('dialogService Reka renderer opt-in', () => {
     args.dialogComponentProps?.onRemoved?.()
     await expect(result).resolves.toBeNull()
   })
-  })
 
   it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
     useDialogService().showBillingComingSoonDialog()

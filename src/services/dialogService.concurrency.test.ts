@@ -138,4 +138,40 @@ describe('dialogService global prompt FIFO queue', () => {
     dialogStore.closeDialog()
     await expect(second).resolves.toBeNull()
   })
+
+  it('settles a cap-evicted prompt as null and releases the queue', async () => {
+    const { service, dialogStore } = await importDialogModules()
+    const filler = { render: () => null }
+
+    // 9 fillers first so the global-prompt lands at dialogStack[0] — equal
+    // priorities insert at the front, and the 10-cap evicts from index 0.
+    for (let i = 0; i < 9; i++) {
+      dialogStore.showDialog({ key: `filler-${i}`, component: filler })
+    }
+
+    const first = service.confirm({ title: 'Evicted', message: 'gone?' })
+    const second = service.confirm({ title: 'Following', message: 'next up' })
+
+    await flushQueue()
+
+    expect(dialogStore.dialogStack).toHaveLength(10)
+    expect(dialogStore.dialogStack[0].key).toBe('global-prompt')
+
+    // Overflow the cap: the prompt at index 0 is evicted without any user
+    // interaction. Its promise must settle (null) instead of hanging, and
+    // the FIFO queue must release so the second confirm can show.
+    dialogStore.showDialog({ key: 'overflow', component: filler })
+
+    await expect(first).resolves.toBeNull()
+
+    await flushQueue()
+
+    const promptDialog = dialogStore.dialogStack.find(
+      (d) => d.key === 'global-prompt'
+    )
+    expect(promptDialog?.title).toBe('Following')
+
+    dialogStore.closeDialog({ key: 'global-prompt' })
+    await expect(second).resolves.toBeNull()
+  })
 })
