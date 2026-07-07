@@ -2936,6 +2936,31 @@
       "save": "Save"
     },
     "requestMore": "Request more",
+    "planCredits": {
+      "tabs": {
+        "overview": "Overview",
+        "activity": "Activity",
+        "invoices": "Invoices"
+      }
+    },
+    "activity": {
+      "columns": {
+        "date": "Date",
+        "user": "User",
+        "eventType": "Event type",
+        "eventDetails": "Event details",
+        "creditsUsed": "Credits used"
+      },
+      "perUserHint": "Looking for total usage per user?"
+    },
+    "invoices": {
+      "columns": {
+        "date": "Date",
+        "eventType": "Event type",
+        "price": "Price"
+      },
+      "fullHistory": "Full invoice history"
+    },
     "memberLimitDialog": {
       "title": "Workspace is at the member limit",
       "message": "All {count} seats are filled. To invite someone new, remove a member or request more seats."
