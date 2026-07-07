@@ -19,12 +19,26 @@
  * `cbm.active` localStorage key). The floating panel is draggable + collapsible
  * and persists scenario + position across the save+reload it triggers.
  */
+import { useAuthStore } from '@/stores/authStore'
+
 const LS = 'comfyBillingMock'
 const LS_UI = 'cbm_ui'
 const ACTIVE_KEY = 'cbm.active'
 
 type Workspace = 'personal' | 'team'
-type Role = 'owner' | 'member'
+// 'owner' = the signed-in user is the workspace creator (isOriginalOwner);
+// 'admin' = owner-role but not the creator; 'member' = plain member.
+type Role = 'owner' | 'admin' | 'member'
+
+// Real signed-in email so 'owner' can make the current user the creator (the
+// original-owner check matches the earliest member's email to the current user).
+function currentUserEmail(): string {
+  try {
+    return useAuthStore().userEmail ?? 'you@comfy.org'
+  } catch {
+    return 'you@comfy.org'
+  }
+}
 type Tier = 'free' | 'standard' | 'creator' | 'pro'
 type State = 'active' | 'cancelled' | 'inactive' | 'changing'
 type Balance = 'funded' | 'low' | 'empty'
@@ -122,7 +136,7 @@ function workspaces(): unknown {
           id: 'ws-active',
           name: 'My Team',
           type: 'team',
-          role: cfg.role,
+          role: cfg.role === 'member' ? 'member' : 'owner',
           subscription_tier: TIER[cfg.tier],
           created_at: '2026-01-01T00:00:00Z',
           joined_at: '2026-01-01T00:00:00Z'
@@ -259,16 +273,34 @@ const opStatus = () => ({
 function members(): unknown {
   const hoursAgo = (h: number) =>
     new Date(Date.now() - h * 60 * 60 * 1000).toISOString()
+  const me = currentUserEmail()
+  // 'owner' → the current user IS the creator; otherwise the creator is someone
+  // else and the current user is injected as a non-original owner/member below.
   const creator = {
     id: 'user-creator',
-    name: 'You (creator)',
-    email: 'you@comfy.org',
+    name: cfg.role === 'owner' ? 'You (creator)' : 'Original Owner',
+    email: cfg.role === 'owner' ? me : 'you@comfy.org',
     joined_at: '2026-01-01T00:00:00Z',
     role: 'owner',
     is_original_owner: true,
     last_active_at: hoursAgo(2),
     credits_used_this_month: 6532
   }
+  const selfRow =
+    cfg.role === 'owner'
+      ? []
+      : [
+          {
+            id: 'user-self',
+            name: 'You',
+            email: me,
+            joined_at: '2026-01-05T00:00:00Z',
+            role: cfg.role === 'admin' ? 'owner' : 'member',
+            is_original_owner: false,
+            last_active_at: hoursAgo(1),
+            credits_used_this_month: 1234
+          }
+        ]
   // A long roster so the table overflows and scrolls under its sticky header.
   // role 'owner' (non-creator) renders as "Admin"; 'member' as "Member".
   const names = [
@@ -311,7 +343,7 @@ function members(): unknown {
     credits_used_this_month:
       [15, 140, 320, 1025, 2586, 88, 1740, 6][i % 7] * (i + 1)
   }))
-  const list = cfg.ws === 'team' ? [creator, ...team] : [creator]
+  const list = cfg.ws === 'team' ? [creator, ...selfRow, ...team] : [creator]
   return {
     members: list,
     pagination: { offset: 0, limit: 10, total: list.length }
@@ -1254,7 +1286,7 @@ function buildPanel(): void {
     `<span id="cbm-close" title="turn off the harness" style="cursor:pointer;opacity:.7;padding:0 4px">✕</span></span></div>` +
     `<div id="cbm-body"${ui.collapsed ? ' style="display:none"' : ''}>` +
     row('workspace', 'ws', ['personal', 'team']) +
-    row('role', 'role', ['owner', 'member']) +
+    row('role', 'role', ['owner', 'admin', 'member']) +
     row('tier', 'tier', ['free', 'standard', 'creator', 'pro']) +
     row('state', 'state', ['active', 'cancelled', 'inactive', 'changing']) +
     row('balance', 'balance', ['funded', 'low', 'empty']) +
@@ -1266,6 +1298,12 @@ function buildPanel(): void {
     `<div style="font-size:10px;opacity:.55;margin-top:4px">change → saves + reloads · personal=/customers · team=/api/billing</div>` +
     `</div>`
   document.body.appendChild(wrap)
+
+  // Keep the (non-modal) settings dialog open while using the panel: reka
+  // dismisses on a bubble-phase document 'pointerdown'/'focusin' outside its
+  // content, so stop those from bubbling out of the panel.
+  wrap.addEventListener('pointerdown', (e) => e.stopPropagation())
+  wrap.addEventListener('focusin', (e) => e.stopPropagation())
 
   const apply = () => {
     saveCfg()
