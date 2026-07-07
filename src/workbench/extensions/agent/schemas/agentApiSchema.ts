@@ -26,12 +26,15 @@ export const zAgentThreadCreated = z.object({
 })
 export type AgentThreadCreated = z.infer<typeof zAgentThreadCreated>
 
-// The captured 202 carries workflow_id beyond the openapi-required pair; passthrough
-// tolerates that and any further additive keys.
+// The server owns the workflow: it creates one when a message opens a thread and returns its
+// id in the 202 ack (the panel binds drafts to it, it does not mint its own). workflow_id is
+// optional only because the openapi marks it so; every observed ack carries it. Passthrough
+// tolerates further additive keys.
 export const zAgentTurnAccepted = z
   .object({
     thread_id: z.string(),
-    message_id: z.string()
+    message_id: z.string(),
+    workflow_id: z.string().optional()
   })
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>

@@ -170,10 +170,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel).toBeVisible()
 
     // The draft store only adopts a draft_patch whose workflow_id matches the
-    // session workflow the panel binds to — and that binding happens on the first
-    // send (the composer's submit mints POST /api/workflows -> WORKFLOW_ID, which
-    // the send then binds the draft store to). So send once to establish the bind
-    // before pushing the patch. A draft_patch is otherwise NEVER turn-filtered.
+    // server's workflow. The server returns that id in the message ack, and the
+    // panel binds the draft store to it. So send once to establish the bind before
+    // pushing the patch. A draft_patch is otherwise NEVER turn-filtered.
     await panel.getByPlaceholder('Ask the agent anything...').fill('Build it')
     await panel.getByRole('button', { name: 'Send' }).click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
