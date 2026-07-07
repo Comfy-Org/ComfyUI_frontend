@@ -12,6 +12,10 @@ interface ListSecretsResponse {
   data: SecretMetadata[]
 }
 
+interface SecretProvidersResponse {
+  data: { id: string }[]
+}
+
 interface ErrorResponse {
   message?: string
   code?: string
@@ -54,6 +58,12 @@ export async function listSecrets(): Promise<SecretMetadata[]> {
   const response = await api.fetchApi('/secrets')
   const data = await handleResponse<ListSecretsResponse>(response)
   return data.data
+}
+
+export async function listSecretProviders(): Promise<string[]> {
+  const response = await api.fetchApi('/secrets/providers')
+  const data = await handleResponse<SecretProvidersResponse>(response)
+  return data.data.map((provider) => provider.id)
 }
 
 export async function createSecret(

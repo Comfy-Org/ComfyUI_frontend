@@ -184,6 +184,53 @@ describe('useSecretForm', () => {
       expect(civitai?.disabled).toBe(false)
     })
 
+    it('falls back to all base providers when availableProviders is empty', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'huggingface',
+        'civitai'
+      ])
+    })
+
+    it('restricts options to the providers returned by the server', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['civitai'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['civitai'])
+    })
+
+    it('reacts to availableProviders changing', () => {
+      const visible = ref(true)
+      const availableProviders = ref<string[]>([])
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toHaveLength(2)
+
+      availableProviders.value = ['huggingface']
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+    })
+
     it('updates disabled state when existingProviders changes', () => {
       const visible = ref(true)
       const existingProviders = ref<SecretProvider[]>(['huggingface'])

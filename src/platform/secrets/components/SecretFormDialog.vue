@@ -139,10 +139,12 @@ import type { SecretMetadata, SecretProvider } from '../types'
 const {
   secret,
   existingProviders = [],
+  availableProviders = [],
   mode = 'create'
 } = defineProps<{
   secret?: SecretMetadata
   existingProviders?: SecretProvider[]
+  availableProviders?: string[]
   mode?: 'create' | 'edit'
 }>()
 
@@ -159,6 +161,7 @@ const { form, errors, loading, apiError, providerOptions, handleSubmit } =
     mode,
     secret: () => secret,
     existingProviders: () => existingProviders,
+    availableProviders: () => availableProviders,
     visible,
     onSaved: () => emit('saved')
   })
