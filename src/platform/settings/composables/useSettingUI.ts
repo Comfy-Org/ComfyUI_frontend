@@ -338,7 +338,10 @@ export function useSettingUI(
           ? [planCreditsPanel.node, membersPanel.node]
           : []),
         ...(shouldShowPartnerNodesPanel.value ? [partnerNodesPanel.node] : []),
-        ...(isLoggedIn.value &&
+        // The legacy per-account Credits panel is redundant once the workspace
+        // Plan & Credits panel is present, which now owns the credit balance.
+        ...(!shouldShowWorkspacePanel.value &&
+        isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
           : [])
