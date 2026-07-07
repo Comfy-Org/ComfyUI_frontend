@@ -44,7 +44,7 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
-    args.dialogComponentProps.onClose()
+    args.dialogComponentProps.onRemoved()
     await expect(result).resolves.toBeNull()
   })
 
@@ -54,7 +54,7 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
-    args.dialogComponentProps.onClose()
+    args.dialogComponentProps.onRemoved()
     await expect(result).resolves.toBeNull()
   })
 
@@ -71,7 +71,7 @@ describe('dialogService Reka renderer opt-in', () => {
     const result = service.confirm({ title: 'T2', message: 'M2' })
     await vi.waitFor(() => expect(showDialog).toHaveBeenCalledTimes(2))
     const [args] = showDialog.mock.calls[1]
-    args.dialogComponentProps.onClose()
+    args.dialogComponentProps.onRemoved()
     await expect(result).resolves.toBeNull()
   })
 

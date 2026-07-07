@@ -97,8 +97,9 @@ export interface ExecutionErrorDialogInput {
 
 // prompt() and confirm() share the 'global-prompt' key, and
 // dialogStore.showDialog merely raises an existing dialog with the same key —
-// a concurrent second caller's onConfirm/onClose would never be wired and its
-// promise would never settle. Serialize them FIFO so every promise settles.
+// a concurrent second caller's onConfirm/onRemoved would never be wired and
+// its promise would never settle. Serialize them FIFO so every promise
+// settles.
 let globalPromptTail: Promise<unknown> = Promise.resolve()
 
 function enqueueGlobalPrompt<T>(
@@ -298,7 +299,9 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => {
+          // onRemoved (not onClose) so the promise also settles when the
+          // dialog is cap-evicted rather than closed by the user.
+          onRemoved: () => {
             resolve(null)
           }
         }
@@ -335,7 +338,9 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => resolve(null)
+          // onRemoved (not onClose) so the promise also settles when the
+          // dialog is cap-evicted rather than closed by the user.
+          onRemoved: () => resolve(null)
         }
       }
 
