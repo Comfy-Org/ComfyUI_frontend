@@ -139,12 +139,12 @@ import type { SecretMetadata, SecretProvider } from '../types'
 const {
   secret,
   existingProviders = [],
-  availableProviders = [],
+  availableProviders = null,
   mode = 'create'
 } = defineProps<{
   secret?: SecretMetadata
   existingProviders?: SecretProvider[]
-  availableProviders?: string[]
+  availableProviders?: string[] | null
   mode?: 'create' | 'edit'
 }>()
 

@@ -17,7 +17,7 @@ export function useSecrets() {
 
   const loading = ref(false)
   const secrets = ref<SecretMetadata[]>([])
-  const availableProviders = ref<string[]>([])
+  const availableProviders = ref<string[] | null>(null)
   const operatingSecretId = ref<string | null>(null)
 
   const existingProviders = computed<SecretProvider[]>(() =>

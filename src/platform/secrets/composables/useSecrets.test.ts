@@ -142,14 +142,24 @@ describe('useSecrets', () => {
 
       const { availableProviders, fetchProviders } = useSecrets()
 
-      expect(availableProviders.value).toEqual([])
+      expect(availableProviders.value).toBeNull()
 
       await fetchProviders()
 
       expect(availableProviders.value).toEqual(['huggingface', 'civitai'])
     })
 
-    it('leaves availableProviders empty on API failure', async () => {
+    it('distinguishes a server-returned empty allowlist from not-loaded', async () => {
+      mockListSecretProviders.mockResolvedValue([])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual([])
+    })
+
+    it('leaves availableProviders null on API failure', async () => {
       const { SecretsApiError } = await import('../api/secretsApi')
       mockListSecretProviders.mockRejectedValue(
         new SecretsApiError('unavailable', 503)
@@ -159,7 +169,7 @@ describe('useSecrets', () => {
 
       await fetchProviders()
 
-      expect(availableProviders.value).toEqual([])
+      expect(availableProviders.value).toBeNull()
       expect(mockAdd).not.toHaveBeenCalled()
     })
   })

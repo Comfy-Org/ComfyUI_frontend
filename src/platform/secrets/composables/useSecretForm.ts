@@ -29,7 +29,7 @@ interface UseSecretFormOptions {
   mode: 'create' | 'edit'
   secret?: MaybeRefOrGetter<SecretMetadata | undefined>
   existingProviders: MaybeRefOrGetter<SecretProvider[]>
-  availableProviders?: MaybeRefOrGetter<string[]>
+  availableProviders?: MaybeRefOrGetter<string[] | null>
   visible: { value: boolean }
   onSaved: () => void
 }
@@ -40,7 +40,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     mode,
     secret: secretRef,
     existingProviders,
-    availableProviders = [],
+    availableProviders = null,
     visible,
     onSaved
   } = options
@@ -63,9 +63,10 @@ export function useSecretForm(options: UseSecretFormOptions) {
 
   const providerOptions = computed<ProviderOption[]>(() => {
     const available = toValue(availableProviders)
-    const providers = available.length
-      ? SECRET_PROVIDERS.filter((p) => available.includes(p.value))
-      : SECRET_PROVIDERS
+    const providers =
+      mode === 'edit' || available === null
+        ? SECRET_PROVIDERS
+        : SECRET_PROVIDERS.filter((p) => available.includes(p.value))
     return providers.map((p) => ({
       label: p.label,
       value: p.value,

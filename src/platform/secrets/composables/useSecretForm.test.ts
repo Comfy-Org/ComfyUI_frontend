@@ -184,7 +184,23 @@ describe('useSecretForm', () => {
       expect(civitai?.disabled).toBe(false)
     })
 
-    it('falls back to all base providers when availableProviders is empty', () => {
+    it('falls back to all base providers when availableProviders is not loaded', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => null,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'huggingface',
+        'civitai'
+      ])
+    })
+
+    it('shows no options when the server returns an empty allowlist', () => {
       const visible = ref(true)
       const { providerOptions } = useSecretForm({
         mode: 'create',
@@ -194,10 +210,7 @@ describe('useSecretForm', () => {
         onSaved: vi.fn()
       })
 
-      expect(providerOptions.value.map((o) => o.value)).toEqual([
-        'huggingface',
-        'civitai'
-      ])
+      expect(providerOptions.value).toEqual([])
     })
 
     it('restricts options to the providers returned by the server', () => {
@@ -215,7 +228,7 @@ describe('useSecretForm', () => {
 
     it('reacts to availableProviders changing', () => {
       const visible = ref(true)
-      const availableProviders = ref<string[]>([])
+      const availableProviders = ref<string[] | null>(null)
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
@@ -229,6 +242,23 @@ describe('useSecretForm', () => {
       availableProviders.value = ['huggingface']
 
       expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+    })
+
+    it('ignores the availableProviders filter in edit mode', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'edit',
+        secret: () => createMockSecret({ provider: 'huggingface' }),
+        existingProviders: () => [],
+        availableProviders: () => ['civitai'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'huggingface',
+        'civitai'
+      ])
     })
 
     it('updates disabled state when existingProviders changes', () => {
