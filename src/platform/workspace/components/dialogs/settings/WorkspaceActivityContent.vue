@@ -48,7 +48,7 @@
           <TableRow
             v-for="event in pagedItems"
             :key="event.id"
-            class="even:bg-secondary-background/25 hover:bg-transparent"
+            class="hover:bg-transparent [&:nth-child(even)>td]:bg-secondary-background/25 [&>td:first-child]:rounded-l [&>td:last-child]:rounded-r"
           >
             <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ formatDate(event.date) }}

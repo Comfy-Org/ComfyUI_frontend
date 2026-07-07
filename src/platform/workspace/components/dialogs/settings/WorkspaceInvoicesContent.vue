@@ -35,7 +35,7 @@
           <TableRow
             v-for="invoice in pagedItems"
             :key="invoice.id"
-            class="even:bg-secondary-background/25 hover:bg-transparent"
+            class="hover:bg-transparent [&:nth-child(even)>td]:bg-secondary-background/25 [&>td:first-child]:rounded-l [&>td:last-child]:rounded-r"
           >
             <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ formatDate(invoice.date) }}
