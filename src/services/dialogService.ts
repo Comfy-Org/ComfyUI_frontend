@@ -250,7 +250,7 @@ export const useDialogService = () => {
           headless: true,
           contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -277,7 +277,9 @@ export const useDialogService = () => {
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
           closable: true,
-          onClose: () => resolve(false)
+          // onRemoved (not onClose) so the promise also settles when the
+          // dialog is cap-evicted rather than closed by the user.
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -837,7 +839,7 @@ export const useDialogService = () => {
           closable: false,
           contentClass:
             'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
-          onClose: () => resolve()
+          onRemoved: () => resolve()
         }
       })
     })
