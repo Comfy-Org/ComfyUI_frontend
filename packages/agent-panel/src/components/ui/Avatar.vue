@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { AvatarFallback, AvatarImage, AvatarRoot } from 'reka-ui'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../utils/cn'
 
 const {
   src,

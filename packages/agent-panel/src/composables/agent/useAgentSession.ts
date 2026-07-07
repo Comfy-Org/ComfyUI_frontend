@@ -1,12 +1,12 @@
 import { computed, ref } from 'vue'
 
-import { i18n } from '@/i18n'
-import type { TurnId } from '@/schemas/agentApiSchema'
-import { isAgentEvent, parseAgentWsEvent } from '@/schemas/agentApiSchema'
-import { AgentApiError } from '@/services/agent/agentRestClient'
-import type { AgentRestClient } from '@/services/agent/agentRestClient'
-import { useAgentConversationStore } from '@/stores/agent/agentConversationStore'
-import { useAgentDraftStore } from '@/stores/agent/agentDraftStore'
+import { i18n } from '../../i18n'
+import type { TurnId } from '../../schemas/agentApiSchema'
+import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
+import { AgentApiError } from '../../services/agent/agentRestClient'
+import type { AgentRestClient } from '../../services/agent/agentRestClient'
+import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
 // Monotonic counter for LOCAL error-turn ids. These never go on the wire: a failed
 // send has no server-minted message_id, so recordFailedSend needs a unique local key

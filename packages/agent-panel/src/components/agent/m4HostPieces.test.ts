@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCanvasContext } from '@/composables/agent/useCanvasContext'
-import type { CloudAsset } from '@/composables/agent/useCloudAssets'
-import { useCloudAssets } from '@/composables/agent/useCloudAssets'
+import { useCanvasContext } from '../../composables/agent/useCanvasContext'
+import type { CloudAsset } from '../../composables/agent/useCloudAssets'
+import { useCloudAssets } from '../../composables/agent/useCloudAssets'
 
 import ActiveTabStrip from './ActiveTabStrip.vue'
 import AssetTray from './composer/AssetTray.vue'

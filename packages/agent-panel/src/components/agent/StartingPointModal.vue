@@ -2,7 +2,7 @@
 import { DialogDescription, DialogRoot, DialogTitle } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import DialogContent from '@/components/ui/DialogContent.vue'
+import DialogContent from '../ui/DialogContent.vue'
 
 export type StartingPoint = 'scratch' | 'template'
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Textarea from '@/components/ui/Textarea.vue'
-import type { ComposerAttachment } from '@/composables/agent/useComposer'
-import { useComposer } from '@/composables/agent/useComposer'
-import { cn } from '@/utils/cn'
+import Textarea from '../ui/Textarea.vue'
+import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import { useComposer } from '../../composables/agent/useComposer'
+import { cn } from '../../utils/cn'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
 

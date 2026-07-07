@@ -2,9 +2,9 @@
 import { DialogDescription, DialogRoot, DialogTitle } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/Button.vue'
-import DialogContent from '@/components/ui/DialogContent.vue'
-import type { ConflictChoice } from '@/components/agent/safety/safetyTypes'
+import Button from '../../ui/Button.vue'
+import DialogContent from '../../ui/DialogContent.vue'
+import type { ConflictChoice } from './safetyTypes'
 
 // Controlled: visibility is driven by the lock's conflictOpen state, and resolving flips
 // that state upstream. Not self-dismissible (no update:open handler) — the user must pick.

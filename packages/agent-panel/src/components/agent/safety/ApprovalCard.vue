@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/Button.vue'
-import type { ApprovalCard } from '@/components/agent/safety/safetyTypes'
-import { cn } from '@/utils/cn'
+import Button from '../../ui/Button.vue'
+import type { ApprovalCard } from './safetyTypes'
+import { cn } from '../../../utils/cn'
 
 // NON-optimistic: clicking Approve/Deny emits the answer and moves the card to 'waiting'
 // (parent calls answerApproval); it flips to 'resolved' ONLY when the server's
