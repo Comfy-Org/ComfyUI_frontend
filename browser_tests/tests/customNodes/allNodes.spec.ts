@@ -48,6 +48,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'environment-variable execution: rejected at validation locally, clean on Linux CI',
     Screencap_mss:
       'captures the screen; no X display on CI runners, real display locally',
+    LoadAndResizeImage:
+      'image-combo default follows input dir contents; a non-image media file (our staged video) makes PIL error - content-variable',
     PointsEditor:
       'requires its pack JS to inject the points JSON at queue time; raw defaults JSONDecodeError. Excluded unconditionally - curated-workflow candidate',
     SplineEditor:
@@ -60,6 +62,16 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'environment-variable execution: upload combo state differs between hosts (clean locally, Exception on CI)'
   },
   'was-node-suite-comfyui': {
+    'BLIP Model Loader':
+      'downloads BLIP weights at execution; hangs non-interruptibly without them and would pull large models on a networked runner',
+    'SAM Model Loader':
+      'downloads Segment Anything weights at execution; same non-interruptible download class as BLIP',
+    'MiDaS Model Loader':
+      'downloads MiDaS weights via torch hub at execution; same non-interruptible download class as BLIP',
+    'True Random.org Number Generator':
+      'fetches entropy from random.org at validation/execution; network-dependent',
+    'Create Grid Image':
+      'scans the input dir for images; ValueError when only non-image media is present - content-variable',
     'Random Number':
       'environment-variable execution: TypeError locally, clean on Linux CI',
     ImageGrabPIL: 'grabs the screen via PIL; OSError on headless CI runners',
@@ -83,10 +95,10 @@ const CONSOLE_ERROR_ALLOWLIST: Record<
 > = {
   'ComfyUI-Impact-Pack': [
     {
-      // Image widgets preview a hardcoded example.png fallback at creation;
-      // 404s on a backend whose root does not serve it.
-      pattern: /Failed to load resource.*404.*example\.png/,
-      reason: 'image widget previews a hardcoded example.png fallback'
+      // Media widgets preview their value via root-relative URLs at
+      // creation; 404s on a backend whose root does not serve the file.
+      pattern: /Failed to load resource.*404.*(example\.png|plain_video\.mp4)/,
+      reason: 'media widget previews its value via a root-relative URL'
     }
   ],
   'ComfyUI-KJNodes': [
