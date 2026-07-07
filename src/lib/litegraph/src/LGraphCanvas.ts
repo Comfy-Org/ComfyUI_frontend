@@ -11,6 +11,8 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -2589,6 +2591,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             return
           } else if (e.altKey && !e.shiftKey) {
             const newReroute = graph.createReroute([x, y], linkSegment)
+            if (!newReroute) return
+
             pointer.onDragStart = (pointer) =>
               this._startDraggingItems(newReroute, pointer)
             pointer.onDragEnd = (e) => this._processDraggedItems(e)
@@ -4245,7 +4249,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       const reroute = graph.setReroute(rerouteInfo)
       created.push(reroute)
-      reroutes.set(id, reroute)
+      reroutes.set(toRerouteId(id), reroute)
     }
 
     // Remap reroute parentIds for pasted reroutes
@@ -4262,9 +4266,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       let outNode: LGraphNode | null | undefined = nodes.get(
         serializeNodeId(info.origin_id)
       )
-      let afterRerouteId: number | undefined
+      let afterRerouteId: RerouteId | undefined
       if (info.parentId != null)
-        afterRerouteId = reroutes.get(info.parentId)?.id
+        afterRerouteId = reroutes.get(toRerouteId(info.parentId))?.id
 
       // If it wasn't copied, use the original graph value
       if (
@@ -4273,7 +4277,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ) {
         const originNodeId = parseNodeId(info.origin_id)
         outNode ??= originNodeId ? graph.getNodeById(originNodeId) : null
-        afterRerouteId ??= info.parentId
+        if (info.parentId !== undefined) {
+          afterRerouteId ??= toRerouteId(info.parentId)
+        }
       }
 
       const inNode = nodes.get(serializeNodeId(info.target_id))
@@ -4284,7 +4290,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           info.target_slot,
           afterRerouteId
         )
-        if (link) links.set(info.id, link)
+        if (link) links.set(toLinkId(info.id), link)
       }
     }
 
@@ -6700,7 +6706,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           const linkId =
             segment instanceof Reroute
               ? segment.linkIds.values().next().value
-              : segment.id
+              : segment instanceof LLink
+                ? segment.id
+                : undefined
           if (linkId !== undefined) {
             graph.removeLink(linkId)
             // Clean up layout store

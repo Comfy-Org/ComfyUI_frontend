@@ -313,6 +313,81 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it.for([
+      ['flow_opened', TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED, {}],
+      ['confirmed', TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED, {}],
+      ['abandoned', TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED, {}],
+      [
+        'failed',
+        TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED,
+        { error_message: 'timed out' }
+      ]
+    ] as const)(
+      'captures %s cancellation stage',
+      async ([stage, event, extra]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        provider.trackSubscriptionCancellation(stage, {
+          current_tier: 'standard',
+          ...extra
+        })
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(event, {
+          current_tier: 'standard',
+          ...extra
+        })
+      }
+    )
+
+    it('captures resubscribe clicks with their source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackResubscribeClicked({ source: 'settings_billing_panel' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED,
+        { source: 'settings_billing_panel' }
+      )
+    })
+
+    it('captures begin_checkout with intent metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackBeginCheckout({
+        user_id: 'user-1',
+        tier: 'pro',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: 'subscribe_to_run'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BEGIN_CHECKOUT,
+        {
+          user_id: 'user-1',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          payment_intent_source: 'subscribe_to_run'
+        }
+      )
+    })
+
+    it('captures add-credit clicks with their source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
+        { source: 'credits_panel' }
+      )
+    })
+
     it('captures share attribution events', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

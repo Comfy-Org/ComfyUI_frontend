@@ -18,7 +18,7 @@
       </div>
 
       <!-- Workspace mode: workspace-aware subscription content (renders its own footer) -->
-      <SubscriptionPanelContentWorkspace v-if="teamWorkspacesEnabled" />
+      <SubscriptionPanelContentWorkspace v-if="shouldUseWorkspaceBilling" />
       <!-- Legacy mode: user-level subscription content -->
       <template v-else>
         <SubscriptionPanelContentLegacy />
@@ -29,24 +29,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { defineAsyncComponent } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import SubscriptionPanelContentLegacy from '@/platform/cloud/subscription/components/SubscriptionPanelContentLegacy.vue'
-import { isCloud } from '@/platform/distribution/types'
 
 const SubscriptionPanelContentWorkspace = defineAsyncComponent(
   () =>
     import('@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue')
 )
 
-const { flags } = useFeatureFlags()
-const teamWorkspacesEnabled = computed(
-  () => isCloud && flags.teamWorkspacesEnabled
-)
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 
 const { isActiveSubscription } = useBillingContext()
 </script>

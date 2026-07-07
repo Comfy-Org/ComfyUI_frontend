@@ -40,13 +40,13 @@ export function getMainNavigation(locale: Locale): NavItem[] {
     {
       label: t('nav.products', locale),
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/featured-model-card.jpg',
+        imageSrc: 'https://media.comfy.org/website/nav/mcp-card.webp',
         imageAlt: t('nav.featuredProductsAlt', locale),
         title: t('nav.featuredProductsTitle', locale),
         cta: {
-          label: t('cta.tryWorkflow', locale),
+          label: t('cta.getStarted', locale),
           ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: 'https://comfy.org/workflows/api_seedance2_0_r2v-64f4db9e3e33/'
+          href: routes.mcp
         }
       },
       columns: [
@@ -82,6 +82,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.launches,
               badge: 'new'
             },
+            { label: t('nav.supportedModels', locale), href: routes.models },
             {
               label: t('nav.docs', locale),
               href: externalLinks.docs,
