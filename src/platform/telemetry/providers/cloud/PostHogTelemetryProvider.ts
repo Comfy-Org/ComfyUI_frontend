@@ -292,15 +292,29 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
    * Cross-surface analytics axes shared with the desktop main process and
    * CLI (MAR-51): `client` = which surface emitted the event
    * (desktop | web | cli), `deployment` = which backend runs the work
-   * (cloud | local | remote). This provider only ships in cloud builds, so
-   * `deployment` is pinned to 'cloud'. The desktop-embedded view is
-   * detected via the desktop preload bridge (window.__comfyDesktop2),
-   * which Electron injects before any page script runs — deterministic,
-   * unlike user-agent sniffing or the utm-based `source_app` attribution
-   * below (which only covers sessions that ENTERED via a desktop link and
-   * sticks to persisted storage afterwards). register() persists to
-   * localStorage, but these are re-registered on every init so they always
-   * reflect the current context.
+   * (cloud | local | remote).
+   *
+   * `deployment` is pinned to 'cloud' because the cloud bundle always
+   * talks to the cloud backend — INCLUDING when it runs embedded in
+   * Comfy Desktop (a cloud install loads this same bundle in Electron).
+   * The embedding is what the `client` axis captures: 'desktop' when the
+   * desktop preload bridge (window.__comfyDesktop2) is present, which
+   * Electron injects before any page script runs — deterministic, unlike
+   * user-agent sniffing or the utm-based `source_app` attribution below
+   * (which only covers sessions that ENTERED via a desktop link and
+   * sticks to persisted storage afterwards).
+   *
+   * Note the embedded-in-desktop case routes most tracked events away
+   * from this provider entirely: main.ts runs initHostTelemetry() after
+   * initTelemetry(), and (when remote config enables it) that REPLACES
+   * the registry with HostTelemetrySink, forwarding events to the desktop
+   * main process — which tags the same client/deployment values from the
+   * install's source category (Comfy-Desktop#1229). These super
+   * properties therefore only need to cover what posthog-js sends from
+   * the page itself (pageviews, web vitals, identify, and tracked events
+   * when host telemetry is off). register() persists to localStorage, but
+   * these are re-registered on every init so they always reflect the
+   * current context.
    */
   private registerPlatformProps(): void {
     if (!this.posthog) return
