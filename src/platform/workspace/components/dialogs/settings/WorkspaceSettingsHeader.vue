@@ -50,6 +50,12 @@
     >
       {{ workspaceName }}
     </h1>
+    <span
+      v-if="isEditing && remaining <= 10"
+      class="shrink-0 text-sm text-muted-foreground tabular-nums"
+    >
+      {{ $t('workspacePanel.charactersLeft', { count: remaining }) }}
+    </span>
   </div>
 </template>
 
@@ -79,6 +85,9 @@ const canEdit = computed(() => uiConfig.value.showEditWorkspaceMenuItem)
 const isEditing = ref(false)
 const draftName = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
+
+// Surface the limit only as the user approaches it, to keep the header quiet.
+const remaining = computed(() => MAX_NAME_LENGTH - draftName.value.length)
 
 // Client-side only preview (prototype): the picked image is held locally, not
 // uploaded or persisted. Resets on reload.
