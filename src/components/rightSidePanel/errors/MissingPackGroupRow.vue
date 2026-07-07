@@ -5,8 +5,7 @@
       :class="
         cn(
           'flex min-h-8 items-center gap-1',
-          SELECTION_EMPHASIS_TRANSITION_CLASS,
-          highlighted && SELECTION_EMPHASIS_CLASS
+          selectionEmphasisClass(highlighted)
         )
       "
     >
@@ -226,10 +225,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import {
-  SELECTION_EMPHASIS_CLASS,
-  SELECTION_EMPHASIS_TRANSITION_CLASS
-} from './selectionEmphasis'
+import { selectionEmphasisClass } from './selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
@@ -241,11 +237,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import type { MissingNodeType } from '@/types/comfy'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const {
-  group,
-  showInfoButton,
-  highlighted = false
-} = defineProps<{
+const { group, showInfoButton, highlighted } = defineProps<{
   group: MissingPackGroup
   showInfoButton: boolean
   /** Emphasize the header row (pack containing the canvas selection). */

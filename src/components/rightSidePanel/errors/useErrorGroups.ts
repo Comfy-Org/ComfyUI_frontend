@@ -829,31 +829,33 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   })
 
   /**
-   * Execution node ids of missing-asset candidates (models, media, missing
-   * node types) that belong to the current selection. Drives row-level
+   * Execution node ids referenced by any missing-asset candidate (models,
+   * media, missing node types).
+   */
+  const assetNodeIdsWithError = computed<string[]>(() => {
+    const candidateIds = [
+      ...(missingModelStore.missingModelCandidates ?? []),
+      ...(missingMediaStore.missingMediaCandidates ?? [])
+    ].map((candidate) => candidate.nodeId)
+    const missingNodeTypeIds = (
+      missingNodesStore.missingNodesError?.nodeTypes ?? []
+    ).map((nodeType) =>
+      typeof nodeType === 'string' ? undefined : nodeType.nodeId
+    )
+    return [...candidateIds, ...missingNodeTypeIds]
+      .filter((nodeId) => nodeId != null)
+      .map(String)
+  })
+
+  /**
+   * Asset node ids that belong to the current selection. Drives row-level
    * highlighting inside the missing-* cards.
    */
   const selectionMatchedAssetNodeIds = computed<Set<string>>(() => {
-    const ids = new Set<string>()
-    if (!hasSelection.value) return ids
-
-    const addIfMatched = (nodeId: string | number | null | undefined) => {
-      if (nodeId == null) return
-      if (isAssetCandidateInSelection(nodeId)) ids.add(String(nodeId))
-    }
-
-    for (const candidate of missingModelStore.missingModelCandidates ?? []) {
-      addIfMatched(candidate.nodeId)
-    }
-    for (const candidate of missingMediaStore.missingMediaCandidates ?? []) {
-      addIfMatched(candidate.nodeId)
-    }
-    for (const nodeType of missingNodesStore.missingNodesError?.nodeTypes ??
-      []) {
-      if (typeof nodeType === 'string') continue
-      addIfMatched(nodeType.nodeId)
-    }
-    return ids
+    if (!hasSelection.value) return new Set()
+    return new Set(
+      assetNodeIdsWithError.value.filter(isAssetCandidateInSelection)
+    )
   })
 
   const selectionMatchedGroupKeys = computed<Set<string>>(() => {
@@ -862,13 +864,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   })
 
   const selectionMatchedCardIds = computed<Set<string>>(() => {
-    const ids = new Set<string>()
-    if (!hasSelection.value) return ids
-    for (const group of selectionScopedGroups.value) {
-      if (group.type !== 'execution') continue
-      for (const card of group.cards) ids.add(card.id)
-    }
-    return ids
+    if (!hasSelection.value) return new Set()
+    return new Set(
+      selectionScopedGroups.value
+        .flatMap((group) => (group.type === 'execution' ? group.cards : []))
+        .map((card) => card.id)
+    )
   })
 
   const selectionErrorCount = computed(() => {
@@ -881,25 +882,11 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   /** Distinct nodes affected by any error (workflow-level summary). */
   const errorNodeCount = computed(() => {
-    const ids = new Set<string>()
-    for (const group of allErrorGroups.value) {
-      if (group.type !== 'execution') continue
-      for (const card of group.cards) {
-        if (card.nodeId) ids.add(card.nodeId)
-      }
-    }
-    for (const candidate of missingModelStore.missingModelCandidates ?? []) {
-      if (candidate.nodeId != null) ids.add(String(candidate.nodeId))
-    }
-    for (const candidate of missingMediaStore.missingMediaCandidates ?? []) {
-      if (candidate.nodeId != null) ids.add(String(candidate.nodeId))
-    }
-    for (const nodeType of missingNodesStore.missingNodesError?.nodeTypes ??
-      []) {
-      if (typeof nodeType === 'string' || nodeType.nodeId == null) continue
-      ids.add(String(nodeType.nodeId))
-    }
-    return ids.size
+    const executionNodeIds = allErrorGroups.value
+      .flatMap((group) => (group.type === 'execution' ? group.cards : []))
+      .map((card) => card.nodeId)
+      .filter((nodeId) => nodeId != null)
+    return new Set([...executionNodeIds, ...assetNodeIdsWithError.value]).size
   })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {

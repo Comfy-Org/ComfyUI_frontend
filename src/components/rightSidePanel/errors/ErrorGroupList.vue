@@ -210,8 +210,7 @@
                   :class="
                     cn(
                       'min-w-0',
-                      SELECTION_EMPHASIS_TRANSITION_CLASS,
-                      isCardInSelection(item.cardId) && SELECTION_EMPHASIS_CLASS
+                      selectionEmphasisClass(isCardInSelection(item.cardId))
                     )
                   "
                 >
@@ -286,11 +285,8 @@
                 :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
                 :class="
                   cn(
-                    SELECTION_EMPHASIS_TRANSITION_CLASS,
-                    isCardInSelection(card.id) && [
-                      SELECTION_EMPHASIS_CLASS,
-                      '-my-1 py-1'
-                    ]
+                    selectionEmphasisClass(isCardInSelection(card.id)),
+                    isCardInSelection(card.id) && '-my-1 py-1'
                   )
                 "
                 @locate-node="handleLocateNode"
@@ -350,10 +346,7 @@ import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
-import {
-  SELECTION_EMPHASIS_CLASS,
-  SELECTION_EMPHASIS_TRANSITION_CLASS
-} from './selectionEmphasis'
+import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
 interface ExecutionItemListEntry {
@@ -461,13 +454,8 @@ const selectionStripNodeLabel = computed(
   () => selectedNodeTitle.value ?? t('g.untitled')
 )
 
-/**
- * The strip always occupies its slot so toggling a selection never shifts
- * the layout: it reads as a workflow summary by default and switches to
- * the selection's errors while an emphasis is active. Summary numbers are
- * workflow-wide (never search-filtered) — the strip is a status line, not
- * a view of the current filter.
- */
+// The strip is a status line, not a view of the current filter — summary
+// numbers are workflow-wide, never search-filtered.
 const workflowErrorCount = computed(() =>
   allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
 )

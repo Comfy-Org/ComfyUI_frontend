@@ -302,8 +302,6 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       const node1 = await comfyPage.nodeOps.getNodeRefById('1')
       await node1.click('title')
 
-      // Selection no longer filters the list — the count stays global
-      // and the selection is surfaced via the context strip instead.
       await expect(
         getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
       ).toBeVisible()
@@ -312,13 +310,16 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.propertiesPanel.selectionContextStrip
       )
       await expect(strip).toBeVisible()
-      // The strip count is scoped to the selection (1 matched model),
-      // diverging from the global reference badge (2)
-      await expect(strip).toContainText('1 error')
+      await expect(
+        strip,
+        'The strip count is scoped to the selection, diverging from the global reference badge'
+      ).toContainText('1 error')
 
       await comfyPage.canvas.click()
-      // Deselecting swaps the always-visible strip back to the summary
-      await expect(strip).toContainText('2 nodes — 1 error')
+      await expect(
+        strip,
+        'Deselecting swaps the always-visible strip back to the summary'
+      ).toContainText('2 nodes — 1 error')
       await expectReferenceBadge(missingModelGroup, 2)
     })
   })

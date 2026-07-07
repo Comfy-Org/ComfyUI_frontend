@@ -1,22 +1,19 @@
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { MissingNodeType } from '@/types/comfy'
 
-/**
- * Background applied to error rows/cards that belong to the canvas
- * selection. Uses the design-system selection blue so panel emphasis
- * matches the canvas selection color in both themes. The negative margin
- * and matching padding cancel out, so text never shifts — the background
- * simply bleeds 6px past the content for breathing room.
- */
-export const SELECTION_EMPHASIS_CLASS =
-  'rounded-sm bg-blue-selection -mx-1.5 px-1.5'
+// The negative margin and matching padding cancel out, so the background
+// bleeds 6px past the content without shifting the text.
+const EMPHASIS_CLASS = 'rounded-sm bg-blue-selection -mx-1.5 px-1.5'
 
-/**
- * Applied unconditionally to emphasizable elements so the emphasis
- * animates in both directions. Margin and padding interpolate in lockstep,
- * keeping text stationary while the background expands/contracts.
- */
-export const SELECTION_EMPHASIS_TRANSITION_CLASS =
+// Present even when unhighlighted so the emphasis animates both ways.
+const TRANSITION_CLASS =
   'transition-[background-color,margin,padding,border-radius] duration-200'
+
+/** Classes emphasizing rows/cards that belong to the canvas selection. */
+export function selectionEmphasisClass(highlighted: boolean | undefined) {
+  return cn(TRANSITION_CLASS, highlighted && EMPHASIS_CLASS)
+}
 
 /** True when any node type resolves to a node in the given id set. */
 export function someNodeTypeInSelection(

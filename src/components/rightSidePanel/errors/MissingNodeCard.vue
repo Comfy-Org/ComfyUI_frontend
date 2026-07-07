@@ -62,7 +62,9 @@
         :key="group.packId ?? '__unknown__'"
         :group="group"
         :show-info-button="showInfoButton"
-        :highlighted="isGroupHighlighted(group)"
+        :highlighted="
+          someNodeTypeInSelection(group.nodeTypes, highlightedNodeIds)
+        "
         @locate-node="emit('locateNode', $event)"
         @open-manager-info="emit('openManagerInfo', $event)"
       />
@@ -109,7 +111,7 @@ import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErr
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
 import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
 
-const { showInfoButton, missingPackGroups, highlightedNodeIds } = defineProps<{
+const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean
   missingPackGroups: MissingPackGroup[]
   /** Execution node ids to emphasize (current canvas selection). */
@@ -172,8 +174,4 @@ const hasInstalledPacksPendingRestart = computed(() =>
     (g) => g.packId !== null && comfyManagerStore.isPackInstalled(g.packId)
   )
 )
-
-function isGroupHighlighted(group: MissingPackGroup) {
-  return someNodeTypeInSelection(group.nodeTypes, highlightedNodeIds)
-}
 </script>

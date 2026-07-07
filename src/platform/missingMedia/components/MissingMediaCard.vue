@@ -21,8 +21,7 @@
           :class="
             cn(
               'flex min-w-0 items-center gap-2',
-              SELECTION_EMPHASIS_TRANSITION_CLASS,
-              highlightedNodeIds?.has(item.nodeId) && SELECTION_EMPHASIS_CLASS
+              selectionEmphasisClass(highlightedNodeIds?.has(item.nodeId))
             )
           "
         >
@@ -61,10 +60,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import {
-  SELECTION_EMPHASIS_CLASS,
-  SELECTION_EMPHASIS_TRANSITION_CLASS
-} from '@/components/rightSidePanel/errors/selectionEmphasis'
+import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
@@ -73,7 +69,7 @@ import { st } from '@/i18n'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
-const { missingMediaGroups, highlightedNodeIds } = defineProps<{
+const { missingMediaGroups } = defineProps<{
   missingMediaGroups: MissingMediaGroup[]
   /** Execution node ids to emphasize (current canvas selection). */
   highlightedNodeIds?: Set<string>

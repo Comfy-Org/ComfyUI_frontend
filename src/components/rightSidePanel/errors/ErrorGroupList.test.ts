@@ -158,7 +158,7 @@ describe('ErrorGroupList selection emphasis', () => {
     expect(isSectionExpanded(samplerSection)).toBe(true)
   })
 
-  it('applies emphasis for a selection that predates mount', async () => {
+  it('expands only matched groups for a selection that predates mount', async () => {
     const pinia = createPinia()
     seedTwoErrorGroups(pinia)
     const canvasStore = useCanvasStore(pinia)
