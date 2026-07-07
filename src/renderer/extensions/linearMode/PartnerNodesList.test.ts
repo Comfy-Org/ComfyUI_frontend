@@ -22,19 +22,22 @@ function renderList(
 }
 
 describe('PartnerNodesList', () => {
-  it('lists each priced node with its title and credit cost', () => {
-    renderList([
+  it('pairs each priced node title with its own credit cost, in order', () => {
+    const badges = [
       ['Flux Pro Ultra', '99.9 credits/Run', toNodeId(1)],
       ['Kling Video', '250 credits/Run', toNodeId(2)]
-    ])
+    ] as const
+    renderList(badges)
 
     const breakdown = screen.getByRole('list', {
       name: enMessages.linearMode.creditBreakdown
     })
-    expect(within(breakdown).getByText('Flux Pro Ultra')).toBeInTheDocument()
-    expect(within(breakdown).getByText('99.9 credits/Run')).toBeInTheDocument()
-    expect(within(breakdown).getByText('Kling Video')).toBeInTheDocument()
-    expect(within(breakdown).getByText('250 credits/Run')).toBeInTheDocument()
-    expect(within(breakdown).getAllByRole('listitem')).toHaveLength(2)
+    const rows = within(breakdown).getAllByRole('listitem')
+    expect(rows).toHaveLength(badges.length)
+
+    badges.forEach(([title, price], i) => {
+      expect(within(rows[i]).getByText(title)).toBeInTheDocument()
+      expect(within(rows[i]).getByText(price)).toBeInTheDocument()
+    })
   })
 })
