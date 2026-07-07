@@ -8,7 +8,9 @@ import { createMemoryHistory, createRouter } from 'vue-router'
  * The code lives only in the preserved-query stash (the tracker strips it
  * from the URL at capture time); redemption fires from router.afterEach and
  * an auth watcher, so every test drives a real in-memory router:
- * - Redemption requires explicit user approval, asked once per code
+ * - Redemption requires explicit user approval, asked once per code and
+ *   account: an account change after approval (mid-dialog or before a retry)
+ *   must never redeem on the stale approval
  * - A valid code with an authenticated user is redeemed exactly once
  * - A session appearing without any navigation redeems via the auth watcher
  * - Terminal backend responses (400/403/404/409/410) drop the code with an
@@ -17,6 +19,8 @@ import { createMemoryHistory, createRouter } from 'vue-router'
  *   retry; once the per-code attempt budget is spent the code is dropped
  *   with an error toast
  * - Each distinct code gets its own approval and attempt budget
+ * - A newer code stashed while an older one is in flight survives the older
+ *   code's settlement and is processed right after it
  * - Unauthenticated sessions keep the stash for a later trigger
  *
  * The fake clock (installed for every test) keeps the retry timers scheduled
@@ -534,6 +538,118 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockFetch).toHaveBeenCalledTimes(4)
     expect(stashedCode()).toBeUndefined()
   })
+
+  it('re-asks for approval when the account changes after approval and redeems with the new account token', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    seedStash(VALID_CODE)
+    mockFetch
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(okResponse())
+
+    // user-1 approves; the redeem fails transiently, keeping the code stashed.
+    await trigger()
+    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(stashedCode()).toBe(VALID_CODE)
+
+    // The session changes to user-2 before the retry: user-1's approval must
+    // not authorize redeeming with user-2's token.
+    mockAuthStore.currentUser = {
+      uid: 'user-2',
+      getIdToken: vi.fn().mockResolvedValue('second-user-token')
+    }
+
+    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      REDEEM_URL,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer second-user-token'
+        })
+      })
+    )
+    expect(stashedCode()).toBeUndefined()
+  })
+
+  it('does not redeem when the session changes while the approval dialog is open', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    seedStash(VALID_CODE)
+    let approve!: (value: boolean) => void
+    mockConfirm.mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        approve = resolve
+      })
+    )
+    mockFetch.mockResolvedValue(okResponse())
+
+    await trigger()
+    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
+
+    // The session swaps to user-2 while user-1's dialog is still open; the
+    // approval that resolves now is ambiguous and must not redeem.
+    const secondUser = {
+      uid: 'user-2',
+      getIdToken: vi.fn().mockResolvedValue('second-user-token')
+    }
+    mockAuthStore.currentUser = secondUser
+    await flushRedemption()
+    approve(true)
+    await flushRedemption()
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(stashedCode()).toBe(VALID_CODE)
+
+    // The next trigger re-prompts under user-2 and redeems with its token.
+    await trigger()
+
+    expect(mockConfirm).toHaveBeenCalledTimes(2)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledWith(
+      REDEEM_URL,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer second-user-token'
+        })
+      })
+    )
+    expect(stashedCode()).toBeUndefined()
+  })
+
+  it.for([
+    ['succeeds', () => okResponse()],
+    ['fails terminally', () => new Response(null, { status: 404 })]
+  ] as const)(
+    'processes a newer code stashed mid-flight after the older redemption %s',
+    async ([_label, firstResponse]) => {
+      const { trigger, seedStash, stashedCode } = await setup()
+      seedStash(VALID_CODE)
+      let resolveFirstFetch!: (response: Response) => void
+      mockFetch.mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolveFirstFetch = resolve
+        })
+      )
+
+      await trigger()
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+
+      // A second code arrives while the first redemption is still in flight;
+      // settling the first must not clear it, and it must be processed
+      // without waiting for another navigation.
+      seedStash(SECOND_CODE)
+      mockFetch.mockResolvedValue(okResponse())
+      resolveFirstFetch(firstResponse())
+
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+      expect(mockConfirm).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        REDEEM_URL,
+        expect.objectContaining({ body: JSON.stringify({ code: SECOND_CODE }) })
+      )
+      expect(stashedCode()).toBeUndefined()
+    }
+  )
 
   it('coalesces concurrent triggers into one dialog and one request', async () => {
     const { router, seedStash } = await setup()

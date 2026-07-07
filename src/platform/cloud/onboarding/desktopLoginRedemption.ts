@@ -36,7 +36,7 @@ const REDEEM_TIMEOUT_MS = 10_000
 
 interface CodeRedemptionState {
   attempts: number
-  approved: boolean
+  approvedUserUid: string | null
   settled: boolean
 }
 
@@ -44,25 +44,34 @@ interface CodeRedemptionState {
 // attempt budget, while retries of the same code reuse both.
 const codeStates = new Map<string, CodeRedemptionState>()
 
-// Coalesces concurrent triggers (afterEach can burst) into one redemption.
-let inFlight: Promise<void> | null = null
+// Coalesces concurrent triggers (afterEach can burst) into one drain.
+let draining = false
 
 let authWatcherInstalled = false
 
 function getCodeState(code: string): CodeRedemptionState {
   const existing = codeStates.get(code)
   if (existing) return existing
-  const fresh = { attempts: 0, approved: false, settled: false }
+  const fresh = { attempts: 0, approvedUserUid: null, settled: false }
   codeStates.set(code, fresh)
   return fresh
 }
 
-function settle(state: CodeRedemptionState): void {
+// A newer code can be stashed while an older one is mid-redemption; settling
+// the older one must not wipe it.
+function clearStashIfHolds(code: string): void {
+  if (getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY) === code) {
+    clearPreservedQuery(NAMESPACE)
+  }
+}
+
+function settle(code: string, state: CodeRedemptionState): void {
   state.settled = true
-  clearPreservedQuery(NAMESPACE)
+  clearStashIfHolds(code)
 }
 
 function handleTransientFailure(
+  code: string,
   state: CodeRedemptionState,
   reason: string
 ): void {
@@ -78,7 +87,7 @@ function handleTransientFailure(
   // The budget is spent on a sign-in the user explicitly approved: drop the
   // stash so reloads never retry a dead code, and tell the user instead of
   // failing silently.
-  settle(state)
+  settle(code, state)
   useToastStore().add({
     severity: 'error',
     summary: t('desktopLogin.failedSummary'),
@@ -89,23 +98,28 @@ function handleTransientFailure(
 
 // A leaked link carrying a code must not silently bind the victim's session
 // to an attacker's desktop app: redemption requires explicit approval.
-// Approval is per code — retries of the same code reuse it, but a different
-// code arriving later must be approved on its own.
-async function confirmRedemption(state: CodeRedemptionState): Promise<boolean> {
-  if (state.approved) return true
+// Approval is per code *and* account — retries of the same code under the
+// same account reuse it, but a different code, or the same code under a
+// different account, must be approved on its own.
+async function confirmRedemption(
+  state: CodeRedemptionState,
+  uid: string
+): Promise<boolean> {
+  if (state.approvedUserUid === uid) return true
   const confirmed = await useDialogService().confirm({
     title: t('desktopLogin.confirmSummary'),
     message: t('desktopLogin.confirmMessage')
   })
-  state.approved = confirmed === true
-  return state.approved
+  if (confirmed !== true) return false
+  state.approvedUserUid = uid
+  return true
 }
 
 async function redeemCode(code: string): Promise<void> {
   const state = getCodeState(code)
   if (state.settled) {
     // A later navigation can re-capture an already-settled code; drop it.
-    clearPreservedQuery(NAMESPACE)
+    clearStashIfHolds(code)
     return
   }
 
@@ -114,11 +128,18 @@ async function redeemCode(code: string): Promise<void> {
   const user = useAuthStore().currentUser
   if (!user) return
 
-  if (!(await confirmRedemption(state))) {
+  if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
-    settle(state)
+    settle(code, state)
     return
   }
+
+  // The session can change while the dialog is open or between a transient
+  // failure and its retry: approval binds the code to one account, so redeem
+  // only while that exact account is still active. On mismatch the code stays
+  // stashed and the next trigger re-prompts under the now-current account.
+  const approvedUser = useAuthStore().currentUser
+  if (!approvedUser || approvedUser.uid !== state.approvedUserUid) return
 
   state.attempts++
 
@@ -127,9 +148,9 @@ async function redeemCode(code: string): Promise<void> {
   // flow must not trigger.
   let idToken: string
   try {
-    idToken = await user.getIdToken()
+    idToken = await approvedUser.getIdToken()
   } catch {
-    handleTransientFailure(state, 'could not get id token')
+    handleTransientFailure(code, state, 'could not get id token')
     return
   }
 
@@ -148,6 +169,7 @@ async function redeemCode(code: string): Promise<void> {
     })
   } catch (error) {
     handleTransientFailure(
+      code,
       state,
       error instanceof Error && error.name === 'TimeoutError'
         ? 'request timed out'
@@ -157,7 +179,7 @@ async function redeemCode(code: string): Promise<void> {
   }
 
   if (response.ok) {
-    settle(state)
+    settle(code, state)
     useToastStore().add({
       severity: 'success',
       summary: t('desktopLogin.successSummary'),
@@ -168,7 +190,7 @@ async function redeemCode(code: string): Promise<void> {
   }
 
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
-    settle(state)
+    settle(code, state)
     useToastStore().add({
       severity: 'error',
       summary: t('desktopLogin.expiredSummary'),
@@ -178,25 +200,35 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
-  handleTransientFailure(state, `status ${response.status}`)
+  handleTransientFailure(code, state, `status ${response.status}`)
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
   // Never rejects: the triggers fire-and-forget this and must not be derailed
   // by a redemption failure.
+  if (draining) return
+  draining = true
   try {
-    const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
-    if (!code) return
-    if (!DESKTOP_LOGIN_CODE_PATTERN.test(code)) {
-      clearPreservedQuery(NAMESPACE)
-      return
+    // A newer code can replace the stashed one while an older redemption is
+    // mid-flight (its trigger lands here while draining and returns), so after
+    // each pass process whatever the stash holds now. A pass that leaves its
+    // own code stashed — a transient failure awaiting its retry timer, or an
+    // account mismatch awaiting the next trigger — ends the drain.
+    let processedCode: string | undefined
+    for (;;) {
+      const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+      if (!code || code === processedCode) return
+      if (!DESKTOP_LOGIN_CODE_PATTERN.test(code)) {
+        clearPreservedQuery(NAMESPACE)
+        return
+      }
+      processedCode = code
+      await redeemCode(code)
     }
-    inFlight ??= redeemCode(code).finally(() => {
-      inFlight = null
-    })
-    await inFlight
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
+  } finally {
+    draining = false
   }
 }
 
