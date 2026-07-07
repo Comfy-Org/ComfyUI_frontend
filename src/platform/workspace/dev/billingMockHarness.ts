@@ -269,24 +269,47 @@ function members(): unknown {
     last_active_at: hoursAgo(2),
     credits_used_this_month: 6532
   }
+  // A long roster so the table overflows and scrolls under its sticky header.
   // role 'owner' (non-creator) renders as "Admin"; 'member' as "Member".
-  const team = [
-    ['Jane Doe', 'janedoe@comfy.ai', 'owner', 7, 15],
-    ['Rob Johnson', 'robjohnson@comfy.ai', 'owner', 24, 1025],
-    ['Min Lee', 'minlee@comfy.ai', 'member', 23, 140],
-    ['Yuta Tanaka', 'yutatanaka@comfy.ai', 'member', 0.1, 2586],
-    ['Alice', 'alice@example.com', 'member', 72, 320],
-    ['Bob', 'bob@example.com', 'owner', 120, 88],
-    ['Priya Nair', 'priya@studio.com', 'member', 5, 1740]
-  ].map(([name, email, role, hrs, credits], i) => ({
+  const names = [
+    'Jane Doe',
+    'Rob Johnson',
+    'Min Lee',
+    'Yuta Tanaka',
+    'Alice Martin',
+    'Bob Ferreira',
+    'Priya Nair',
+    'Diego Alvarez',
+    'Mei Chen',
+    'Sam Okafor',
+    'Lena Vogt',
+    'Tomás Silva',
+    'Aisha Khan',
+    'Noah Weber',
+    'Sofia Rossi',
+    'Kenji Sato',
+    'Ivy Nguyen',
+    'Omar Haddad',
+    'Clara Boyd',
+    'Ravi Iyer',
+    'Hana Kim',
+    'Leo Fischer',
+    'Zara Ahmed',
+    'Marco Bianchi',
+    'Nadia Petrova',
+    'Eli Brooks',
+    'Yara Costa'
+  ]
+  const team = names.map((name, i) => ({
     id: `user-${100 + i}`,
     name,
-    email,
+    email: `${name.toLowerCase().replace(/[^a-z]+/g, '.')}@example.com`,
     joined_at: '2026-02-15T00:00:00Z',
-    role,
+    role: i % 3 === 0 ? 'owner' : 'member',
     is_original_owner: false,
-    last_active_at: hoursAgo(hrs as number),
-    credits_used_this_month: credits
+    last_active_at: hoursAgo([0.1, 2, 7, 23, 24, 72, 120][i % 7]),
+    credits_used_this_month:
+      [15, 140, 320, 1025, 2586, 88, 1740, 6][i % 7] * (i + 1)
   }))
   const list = cfg.ws === 'team' ? [creator, ...team] : [creator]
   return {
