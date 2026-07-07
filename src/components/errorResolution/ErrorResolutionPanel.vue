@@ -89,25 +89,30 @@
     </div>
 
     <TransitionCollapse>
-      <div v-if="!isNarrow || isExpanded" class="flex min-h-0 flex-col">
+      <div v-if="!isNarrow || isExpanded" class="flex min-h-0 flex-1 flex-col">
         <div
           v-if="isResolved"
-          class="flex flex-col items-center gap-3 px-6 pt-4 pb-6 text-center"
+          class="flex min-h-0 flex-1 flex-col bg-interface-panel-surface p-3"
         >
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--circle-check] size-10 text-success-background"
-          />
-          <p class="m-0 text-sm font-semibold text-base-foreground">
-            {{ t('errorResolution.allResolved') }}
-          </p>
-          <p class="m-0 text-sm text-muted-foreground">
-            {{ t('errorResolution.allResolvedDesc') }}
-          </p>
-          <Button variant="primary" size="lg" @click="emit('back')">
-            <i class="icon-[lucide--arrow-left] size-4" />
-            {{ t('errorResolution.backToApp') }}
-          </Button>
+          <div
+            role="status"
+            class="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-secondary-background px-6 py-8 text-center"
+          >
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--circle-check] size-10 text-success-background"
+            />
+            <p class="m-0 text-sm font-semibold text-base-foreground">
+              {{ t('errorResolution.allResolved') }}
+            </p>
+            <p class="m-0 text-sm text-muted-foreground">
+              {{ t('errorResolution.allResolvedDesc') }}
+            </p>
+            <Button variant="secondary" class="mt-2" @click="emit('back')">
+              <i class="icon-[lucide--arrow-left] size-4" />
+              {{ t('errorResolution.backToApp') }}
+            </Button>
+          </div>
         </div>
         <ErrorGroupList
           v-else
