@@ -2176,6 +2176,7 @@ const translations = {
   'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
   'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
