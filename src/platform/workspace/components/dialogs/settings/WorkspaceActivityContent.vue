@@ -56,9 +56,9 @@
             <TableCell>
               <div class="flex items-center gap-3">
                 <span
-                  class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+                  class="flex size-5 shrink-0 items-center justify-center rounded-full bg-secondary-background"
                 >
-                  <span class="text-sm font-bold text-base-foreground">
+                  <span class="text-xs font-bold text-base-foreground">
                     {{ event.userName.charAt(0).toUpperCase() }}
                   </span>
                 </span>
