@@ -40,7 +40,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
         >
           <div class="flex flex-wrap items-center gap-x-8 gap-y-2">
             <p
-              class="text-primary-warm-white ppformula-text-center text-base/6"
+              class="text-primary-warm-white ppformula-text-center text-sm md:text-base/6"
             >
               {{ data.title }}
               <span v-if="data.description" class="text-primary-warm-white/80">

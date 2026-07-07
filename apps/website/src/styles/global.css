@@ -95,7 +95,9 @@
 }
 
 /* Pre-hydration hide for a dismissed announcement banner (set by an inline
-   script in BaseLayout head) — prevents any flash before Vue hydrates. */
+   script in BaseLayout head) — prevents any flash before Vue hydrates.
+   The [data-banner-dismissed] literal is BANNER_DISMISS_ATTR in utils/banner.ts;
+   keep them in sync. */
 [data-banner-dismissed] [data-slot='announcement-banner'] {
   display: none;
 }

@@ -3983,7 +3983,7 @@ const translations = {
     'zh-CN': '现在，让你的智能体成为创意技术专家。'
   },
   'launches.banner.cta': {
-    en: 'start Comfy MCP',
+    en: 'Start Comfy MCP',
     'zh-CN': '启动 Comfy MCP'
   },
 

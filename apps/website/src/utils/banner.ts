@@ -1,6 +1,12 @@
 // Pure, framework-agnostic banner logic — no Vue/Astro/config imports so it stays
 // trivially unit-testable. Locale/section are plain strings on purpose.
 
+// Shared dismissal storage contract. The pre-hydration script in BaseLayout.astro,
+// the useBannerDismissal composable, and the CSS selector in global.css must all
+// agree on these literals — keep them here as the single source of truth.
+export const BANNER_STORAGE_KEY = 'closedBanners'
+export const BANNER_DISMISS_ATTR = 'data-banner-dismissed'
+
 export interface BannerVisibilityContext {
   currentLocale: string
   currentSection: string

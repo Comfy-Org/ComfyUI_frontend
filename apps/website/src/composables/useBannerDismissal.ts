@@ -1,13 +1,12 @@
 import { onMounted, ref } from 'vue'
 
-const STORAGE_KEY = 'closedBanners'
-const DISMISS_ATTR = 'data-banner-dismissed'
+import { BANNER_DISMISS_ATTR, BANNER_STORAGE_KEY } from '../utils/banner'
 
 type ClosedBanners = Record<string, boolean>
 
 function readClosedBanners(): ClosedBanners {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(BANNER_STORAGE_KEY)
     return raw ? (JSON.parse(raw) as ClosedBanners) : {}
   } catch {
     return {}
@@ -16,7 +15,7 @@ function readClosedBanners(): ClosedBanners {
 
 function writeClosedBanners(value: ClosedBanners): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
+    localStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(value))
   } catch {
     // Storage unavailable (private mode / quota) — dismissal just won't persist.
   }
@@ -43,7 +42,7 @@ export function useBannerDismissal(version: string) {
 
     // Prune stale versions of THIS banner+locale; keep other banners/locales
     // and the current version.
-    const cleaned: ClosedBanners = {}
+    const cleaned: ClosedBanners = Object.create(null) as ClosedBanners
     let pruned = false
     for (const key of Object.keys(stored)) {
       if (versionPrefix(key) !== prefix || key === version) {
@@ -69,7 +68,7 @@ export function useBannerDismissal(version: string) {
   // navigation — where the inline <head> script does not re-run but <html>
   // persists. Deferred to after the animation so the leave transition can play.
   function persistHidden(): void {
-    document.documentElement.setAttribute(DISMISS_ATTR, '')
+    document.documentElement.setAttribute(BANNER_DISMISS_ATTR, '')
   }
 
   return { isVisible, close, persistHidden }

@@ -7,7 +7,12 @@ import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
-import { createBannerVersion, evaluateBannerVisibility } from '../utils/banner'
+import {
+  BANNER_DISMISS_ATTR,
+  BANNER_STORAGE_KEY,
+  createBannerVersion,
+  evaluateBannerVisibility
+} from '../utils/banner'
 import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
@@ -139,11 +144,18 @@ const websiteJsonLd = {
 
     <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
     {bannerVisible && (
-      <script is:inline define:vars={{ bannerVersion }}>
+      <script
+        is:inline
+        define:vars={{
+          bannerVersion,
+          storageKey: BANNER_STORAGE_KEY,
+          dismissAttr: BANNER_DISMISS_ATTR
+        }}
+      >
         try {
-          const dismissed = JSON.parse(localStorage.getItem('closedBanners') || '{}')
+          const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
           if (dismissed[bannerVersion]) {
-            document.documentElement.setAttribute('data-banner-dismissed', '')
+            document.documentElement.setAttribute(dismissAttr, '')
           }
         } catch (e) {}
       </script>

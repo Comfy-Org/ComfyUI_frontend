@@ -62,19 +62,22 @@ export function getBannerData(
   config: BannerConfig,
   locale: Locale
 ): BannerData {
+  const { link } = config
+  const target = link?.target ? '_blank' : undefined
+
   return {
     id: config.id,
     title: t(config.titleKey, locale),
     description: config.descriptionKey
       ? t(config.descriptionKey, locale)
       : undefined,
-    link: config.link
+    link: link
       ? {
-          href: config.link.href,
-          title: t(config.link.titleKey, locale),
-          target: config.link.target ? '_blank' : undefined,
-          rel: resolveRel({ target: config.link.target ? '_blank' : '_self' }),
-          buttonVariant: config.link.buttonVariant
+          href: link.href,
+          title: t(link.titleKey, locale),
+          target,
+          rel: resolveRel({ target: target ?? '_self' }),
+          buttonVariant: link.buttonVariant
         }
       : undefined
   }
