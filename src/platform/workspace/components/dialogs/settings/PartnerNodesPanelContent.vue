@@ -34,92 +34,96 @@
     <div
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
-      <div class="min-h-0 flex-1 overflow-auto px-4">
-        <Table>
-          <TableHeader class="sticky top-0 z-10 bg-base-background">
-            <TableRow class="hover:bg-transparent">
-              <TableHead class="w-6">
-                <Checkbox
-                  v-if="hasSelection"
-                  :model-value="allFilteredSelected"
-                  :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
-                  @update:model-value="toggleSelectAll"
-                />
-              </TableHead>
-              <TableHead>
-                <button :class="sortHeaderClass" @click="toggleSort('name')">
-                  {{ $t('workspacePanel.partnerNodes.columns.name') }}
-                  <i :class="sortIcon('name')" />
-                </button>
-              </TableHead>
-              <TableHead class="w-40">
-                <button :class="sortHeaderClass" @click="toggleSort('partner')">
-                  {{ $t('workspacePanel.partnerNodes.columns.partner') }}
-                  <i :class="sortIcon('partner')" />
-                </button>
-              </TableHead>
-              <TableHead class="w-40">
-                <button
-                  :class="sortHeaderClass"
-                  @click="toggleSort('lastModified')"
-                >
-                  {{ $t('workspacePanel.partnerNodes.columns.lastModified') }}
-                  <i :class="sortIcon('lastModified')" />
-                </button>
-              </TableHead>
-              <TableHead class="w-14" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow
-              v-for="node in filteredNodes"
-              :key="node.id"
-              :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
-              :class="cn('group cursor-pointer', !node.enabled && 'opacity-55')"
-              @click="toggleSelection(node.id)"
+      <Table class="min-h-0 flex-1 px-4">
+        <TableHeader class="sticky top-0 z-10 bg-base-background">
+          <TableRow
+            class="hover:bg-transparent [&>th]:border-b [&>th]:border-interface-stroke/60"
+          >
+            <TableHead class="w-6">
+              <Checkbox
+                v-if="hasSelection"
+                :model-value="allFilteredSelected"
+                :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
+                @update:model-value="toggleSelectAll"
+              />
+            </TableHead>
+            <TableHead>
+              <button :class="sortHeaderClass" @click="toggleSort('name')">
+                {{ $t('workspacePanel.partnerNodes.columns.name') }}
+                <i :class="sortIcon('name')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-40">
+              <button :class="sortHeaderClass" @click="toggleSort('partner')">
+                {{ $t('workspacePanel.partnerNodes.columns.partner') }}
+                <i :class="sortIcon('partner')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-40">
+              <button
+                :class="sortHeaderClass"
+                @click="toggleSort('lastModified')"
+              >
+                {{ $t('workspacePanel.partnerNodes.columns.lastModified') }}
+                <i :class="sortIcon('lastModified')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-14" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
+            v-for="node in filteredNodes"
+            :key="node.id"
+            :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
+            :class="cn('group cursor-pointer', !node.enabled && 'opacity-55')"
+            @click="toggleSelection(node.id)"
+          >
+            <TableCell>
+              <Checkbox
+                :model-value="selectedIds.has(node.id)"
+                :aria-label="node.name"
+                :class="
+                  cn(
+                    'pointer-events-none',
+                    !hasSelection &&
+                      'opacity-0 transition-opacity group-hover:opacity-100'
+                  )
+                "
+              />
+            </TableCell>
+            <TableCell class="text-base-foreground">
+              {{ node.name }}
+            </TableCell>
+            <TableCell class="text-muted-foreground">
+              <div class="flex items-center gap-2">
+                <PartnerBadge :partner="node.partner" />
+                <span>{{ node.partner }}</span>
+              </div>
+            </TableCell>
+            <TableCell class="text-muted-foreground">
+              {{ formatLastModified(node.last_modified) }}
+            </TableCell>
+            <TableCell class="text-right" @click.stop>
+              <Switch
+                :model-value="node.enabled"
+                @update:model-value="(v: boolean) => setEnabled(node, v)"
+              />
+            </TableCell>
+          </TableRow>
+          <TableRow
+            v-if="filteredNodes.length === 0"
+            class="hover:bg-transparent"
+          >
+            <TableCell
+              :colspan="5"
+              class="py-6 text-center text-sm text-muted-foreground"
             >
-              <TableCell>
-                <Checkbox
-                  :model-value="selectedIds.has(node.id)"
-                  :aria-label="node.name"
-                  :class="
-                    cn(
-                      'pointer-events-none',
-                      !hasSelection &&
-                        'opacity-0 transition-opacity group-hover:opacity-100'
-                    )
-                  "
-                />
-              </TableCell>
-              <TableCell class="text-base-foreground">
-                {{ node.name }}
-              </TableCell>
-              <TableCell class="text-muted-foreground">
-                <div class="flex items-center gap-2">
-                  <PartnerBadge :partner="node.partner" />
-                  <span>{{ node.partner }}</span>
-                </div>
-              </TableCell>
-              <TableCell class="text-muted-foreground">
-                {{ formatLastModified(node.last_modified) }}
-              </TableCell>
-              <TableCell class="text-right" @click.stop>
-                <Switch
-                  :model-value="node.enabled"
-                  @update:model-value="(v: boolean) => setEnabled(node, v)"
-                />
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-
-        <p
-          v-if="filteredNodes.length === 0"
-          class="px-2 py-6 text-center text-sm text-muted-foreground"
-        >
-          {{ $t('workspacePanel.partnerNodes.empty') }}
-        </p>
-      </div>
+              {{ $t('workspacePanel.partnerNodes.empty') }}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
 
     <!-- Auto-enable default: outside the card, pinned to the panel bottom -->
