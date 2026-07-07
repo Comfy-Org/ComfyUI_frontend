@@ -8,7 +8,7 @@
 #      repo, so the public cannot trigger this.
 #   2. The reusable workflow's secret-bearing jobs do not run on fork PRs (forks
 #      get no secrets), so CURSOR_API_KEY is reachable only on internal branches.
-name: 'PR: Cursor Review'
+name: "PR: Cursor Review"
 
 on:
   pull_request:
