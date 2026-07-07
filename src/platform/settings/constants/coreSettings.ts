@@ -803,7 +803,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
     name: 'Pointer click drift delay',
     tooltip:
-      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty.',
+      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the mouse pointer is held still then released. Touch and pen taps are never time-converted to drags. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty.',
     experimental: true,
     type: 'slider',
     attrs: {

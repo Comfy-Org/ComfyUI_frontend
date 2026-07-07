@@ -6,6 +6,7 @@ import type {
   IContextMenuValue
 } from './interfaces'
 import { LiteGraph } from './litegraph'
+import { isTouchLikePointerType } from './types/events'
 
 const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
 const ALLOWED_STYLE_PROPS = new Set([
@@ -58,6 +59,7 @@ export class ContextMenu<TValue = unknown> {
   lock?: boolean
 
   controller: AbortController = new AbortController()
+  private ignoreNextClickUntilRootPointerDown = false
 
   /**
    * @todo Interface for values requires functionality change - currently accepts
@@ -105,6 +107,10 @@ export class ContextMenu<TValue = unknown> {
       options.event = undefined
     }
 
+    this.ignoreNextClickUntilRootPointerDown = shouldIgnoreOpeningClick(
+      options.event
+    )
+
     const root: ContextMenuDivElement<TValue> = document.createElement('div')
     let classes = 'litegraph litecontextmenu litemenubar-panel'
     if (options.className) classes += ` ${options.className}`
@@ -128,6 +134,21 @@ export class ContextMenu<TValue = unknown> {
       )
     }
 
+    // Touch browsers may dispatch a synthetic click after the pointerup that
+    // opened the menu. It has no matching pointerdown inside this root, unlike
+    // a real follow-up tap, so only suppress that first unmatched click.
+    root.addEventListener(
+      'click',
+      (e) => {
+        if (!this.ignoreNextClickUntilRootPointerDown) return
+
+        this.ignoreNextClickUntilRootPointerDown = false
+        e.preventDefault()
+        e.stopImmediatePropagation()
+      },
+      eventOptions
+    )
+
     // this prevents the default context browser menu to open in case this menu was created when pressing right button
     root.addEventListener('pointerup', (e) => e.preventDefault(), eventOptions)
 
@@ -143,6 +164,8 @@ export class ContextMenu<TValue = unknown> {
     root.addEventListener(
       'pointerdown',
       (e) => {
+        this.ignoreNextClickUntilRootPointerDown = false
+
         if (e.button == 2) {
           this.close()
           e.preventDefault()
@@ -449,4 +472,14 @@ export class ContextMenu<TValue = unknown> {
     }
     return false
   }
+}
+
+function shouldIgnoreOpeningClick(event: Event | undefined): boolean {
+  return isTouchLikeEvent(event) && event.button !== 2
+}
+
+function isTouchLikeEvent(event: Event | undefined): event is PointerEvent {
+  if (!event || !('pointerType' in event)) return false
+
+  return isTouchLikePointerType((event as PointerEvent).pointerType)
 }

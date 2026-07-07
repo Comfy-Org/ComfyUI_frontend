@@ -1,5 +1,6 @@
 import type { CompassCorners } from './interfaces'
 import { dist2 } from './measure'
+import { isTouchLikePointerType } from './types/events'
 import type { CanvasPointerEvent } from './types/events'
 
 /**
@@ -220,9 +221,10 @@ export class CanvasPointer {
 
     const longerThanBufferTime =
       e.timeStamp - eDown.timeStamp > CanvasPointer.bufferTime
-    if (longerThanBufferTime || !this._hasSamePosition(e, eDown)) {
-      this._setDragStarted(e)
-    }
+    const hasMoved = !this._hasSamePosition(e, eDown)
+    const shouldStartTimedDrag =
+      longerThanBufferTime && !isTouchLikePointerType(eDown.pointerType)
+    if (shouldStartTimedDrag || hasMoved) this._setDragStarted(e)
   }
 
   /**
