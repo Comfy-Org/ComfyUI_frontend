@@ -122,7 +122,7 @@
               }"
               type="button"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="flex items-center text-muted"
+              class="flex cursor-help appearance-none items-center border-none bg-transparent p-0 text-muted transition-colors hover:text-text-primary"
             >
               <i class="icon-[lucide--info] size-4" />
             </button>
