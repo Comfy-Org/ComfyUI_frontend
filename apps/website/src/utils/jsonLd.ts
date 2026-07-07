@@ -12,6 +12,22 @@ export interface JsonLdGraph {
   '@graph': JsonLdNode[]
 }
 
+export interface PageContext {
+  siteUrl: string
+  locale: Locale
+}
+
+export type WebPageType =
+  | 'WebPage'
+  | 'AboutPage'
+  | 'ContactPage'
+  | 'CollectionPage'
+
+export interface Crumb {
+  name: string
+  url?: string
+}
+
 // Owner-controlled social profiles, single-sourced from the footer links so
 // `sameAs` can never drift from the real accounts.
 const sameAs = [
@@ -30,12 +46,26 @@ export function siteUrlFrom(site: URL | undefined): string {
   return (site?.href ?? 'https://comfy.org/').replace(/\/$/, '')
 }
 
+// Resolves a route path against the site origin so every page derives its
+// canonical URL and `@id`s from the same source.
+export function absoluteUrl(site: URL | undefined, path: string): string {
+  return new URL(path, site ?? 'https://comfy.org').href
+}
+
 function organizationId(siteUrl: string): string {
   return `${siteUrl}/#organization`
 }
 
 function websiteId(siteUrl: string): string {
   return `${siteUrl}/#website`
+}
+
+function breadcrumbId(pageUrl: string): string {
+  return `${pageUrl}#breadcrumb`
+}
+
+function webPageId(pageUrl: string): string {
+  return `${pageUrl}#webpage`
 }
 
 export function buildGraph(
@@ -74,4 +104,219 @@ export function websiteNode(siteUrl: string, locale: Locale): JsonLdNode {
     publisher: { '@id': organizationId(siteUrl) },
     inLanguage: locale
   }
+}
+
+export function breadcrumbNode(pageUrl: string, crumbs: Crumb[]): JsonLdNode {
+  return {
+    '@type': 'BreadcrumbList',
+    '@id': breadcrumbId(pageUrl),
+    itemListElement: crumbs.map((crumb, index) => {
+      // Google reads the current page URL for the final crumb, so its `item`
+      // is intentionally omitted.
+      const isLast = index === crumbs.length - 1
+      return isLast || !crumb.url
+        ? { '@type': 'ListItem', position: index + 1, name: crumb.name }
+        : {
+            '@type': 'ListItem',
+            position: index + 1,
+            name: crumb.name,
+            item: crumb.url
+          }
+    })
+  }
+}
+
+export function itemListNode(
+  pageUrl: string,
+  items: { url: string; name: string }[]
+): JsonLdNode {
+  return {
+    '@type': 'ItemList',
+    '@id': `${pageUrl}#itemlist`,
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: item.url,
+      name: item.name
+    }))
+  }
+}
+
+export interface WebPageInput {
+  siteUrl: string
+  locale: Locale
+  url: string
+  name: string
+  description?: string
+  imageUrl?: string
+  crumbs?: Crumb[]
+  mainEntityId?: string
+}
+
+export function webPageNode(
+  input: WebPageInput,
+  type: WebPageType = 'WebPage'
+): JsonLdNode {
+  const hasCrumbs = Boolean(input.crumbs && input.crumbs.length > 0)
+  return {
+    '@type': type,
+    '@id': webPageId(input.url),
+    url: input.url,
+    name: input.name,
+    description: input.description,
+    isPartOf: { '@id': websiteId(input.siteUrl) },
+    primaryImageOfPage: input.imageUrl
+      ? { '@type': 'ImageObject', url: input.imageUrl }
+      : undefined,
+    breadcrumb: hasCrumbs ? { '@id': breadcrumbId(input.url) } : undefined,
+    mainEntity: input.mainEntityId ? { '@id': input.mainEntityId } : undefined,
+    inLanguage: input.locale
+  }
+}
+
+export interface SoftwareAppInput {
+  siteUrl: string
+  id: string
+  name: string
+  url: string
+  applicationCategory: string
+  applicationSubCategory?: string
+  description?: string
+  operatingSystem?: string
+  image?: string
+  softwareVersion?: string
+  license?: string
+  authorName?: string
+  isFree?: boolean
+}
+
+export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
+  return {
+    '@type': 'SoftwareApplication',
+    '@id': input.id,
+    name: input.name,
+    url: input.url,
+    applicationCategory: input.applicationCategory,
+    applicationSubCategory: input.applicationSubCategory,
+    description: input.description,
+    operatingSystem: input.operatingSystem,
+    image: input.image,
+    softwareVersion: input.softwareVersion,
+    license: input.license,
+    author: input.authorName
+      ? { '@type': 'Person', name: input.authorName }
+      : { '@id': organizationId(input.siteUrl) },
+    publisher: { '@id': organizationId(input.siteUrl) },
+    // Free/open-source is a true offer, unlike a fabricated price.
+    offers: input.isFree
+      ? { '@type': 'Offer', price: 0, priceCurrency: 'USD' }
+      : undefined
+  }
+}
+
+export interface SourceCodeInput {
+  siteUrl: string
+  id: string
+  name: string
+  codeRepository: string
+  programmingLanguage?: string
+  runtimePlatform?: string
+}
+
+export function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
+  return {
+    '@type': 'SoftwareSourceCode',
+    '@id': input.id,
+    name: input.name,
+    codeRepository: input.codeRepository,
+    programmingLanguage: input.programmingLanguage,
+    runtimePlatform: input.runtimePlatform,
+    author: { '@id': organizationId(input.siteUrl) }
+  }
+}
+
+export interface VideoInput {
+  url: string
+  name: string
+  description?: string
+  thumbnailUrl?: string
+  uploadDate?: string
+  duration?: string
+  transcript?: string
+}
+
+export function videoObjectNode(input: VideoInput): JsonLdNode {
+  return {
+    '@type': 'VideoObject',
+    '@id': `${input.url}#video`,
+    name: input.name,
+    description: input.description,
+    thumbnailUrl: input.thumbnailUrl,
+    uploadDate: input.uploadDate,
+    duration: input.duration,
+    transcript: input.transcript
+  }
+}
+
+export interface OfferInput {
+  name: string
+  price: string | number
+  url?: string
+}
+
+export interface ProductInput {
+  siteUrl: string
+  id: string
+  name: string
+  url: string
+  description?: string
+  offers: OfferInput[]
+}
+
+export function productNode(input: ProductInput): JsonLdNode {
+  return {
+    '@type': 'Product',
+    '@id': input.id,
+    name: input.name,
+    url: input.url,
+    description: input.description,
+    brand: { '@id': organizationId(input.siteUrl) },
+    offers: input.offers.map((offer) => ({
+      '@type': 'Offer',
+      name: offer.name,
+      price: offer.price,
+      priceCurrency: 'USD',
+      url: offer.url,
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: offer.price,
+        priceCurrency: 'USD',
+        unitText: 'MONTH'
+      }
+    }))
+  }
+}
+
+// The DRY entry point every page uses: prepends the site-wide Organization and
+// WebSite, adds the page's primary WebPage entity plus an optional breadcrumb,
+// then layers on any page-specific nodes (Article, Product, VideoObject, ...).
+export function buildPageGraph(
+  ctx: PageContext,
+  page: Omit<WebPageInput, 'siteUrl' | 'locale'> & { type?: WebPageType },
+  ...extraNodes: (JsonLdNode | null | undefined)[]
+): JsonLdGraph {
+  const { type = 'WebPage', ...rest } = page
+  const input: WebPageInput = {
+    ...rest,
+    siteUrl: ctx.siteUrl,
+    locale: ctx.locale
+  }
+  const hasCrumbs = Boolean(page.crumbs && page.crumbs.length > 0)
+  return buildGraph(
+    organizationNode(ctx.siteUrl),
+    websiteNode(ctx.siteUrl, ctx.locale),
+    webPageNode(input, type),
+    hasCrumbs ? breadcrumbNode(page.url, page.crumbs!) : undefined,
+    ...extraNodes
+  )
 }
