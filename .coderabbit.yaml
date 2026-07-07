@@ -79,3 +79,8 @@ reviews:
         When a fixture cast hides a too-wide production signature, suggest narrowing the production type instead of casting the fixture.
         Flag process-level listeners (process.on('unhandledRejection')) in tests; assert the rejected promise directly.
         Tests should import the module under test from its public entrypoint, not deep internal paths.
+    - path: 'src/lib/litegraph/**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
+        Reuse shared factories in `src/utils/__tests__/litegraphTestUtils.ts` instead of hand-rolling litegraph mock builders.
+        Flag mocked litegraph classes when a real instance or shared factory would exercise behavior directly.
