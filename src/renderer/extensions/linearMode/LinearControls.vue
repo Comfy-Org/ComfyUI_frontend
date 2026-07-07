@@ -176,7 +176,7 @@ function handleDragDrop() {
           <RekaPopoverRoot v-if="creditsBadges.length">
             <RekaPopoverTrigger as-child>
               <Button class="mr-2 size-10">
-                <i :class="cn(CREDITS_ICON, 'bg-amber-400')" />
+                <i :class="cn(CREDITS_ICON, 'bg-current')" />
               </Button>
             </RekaPopoverTrigger>
             <RekaPopoverPortal>
