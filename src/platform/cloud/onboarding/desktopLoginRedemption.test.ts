@@ -10,7 +10,11 @@ import { createMemoryHistory, createRouter } from 'vue-router'
  * an auth watcher, so every test drives a real in-memory router:
  * - Redemption requires explicit user approval, asked once per code and
  *   account: an account change after approval (mid-dialog or before a retry)
- *   must never redeem on the stale approval
+ *   must never redeem on the stale approval; a trigger that races an open
+ *   drain is replayed after it, so the mid-dialog case re-prompts under the
+ *   new account without another navigation
+ * - A 401 forces a token refresh on the retry (a stale cached token must not
+ *   be resent)
  * - A valid code with an authenticated user is redeemed exactly once
  * - A session appearing without any navigation redeems via the auth watcher
  * - Terminal backend responses (400/403/404/409/410) drop the code with an
@@ -43,7 +47,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 interface MockAuthStore {
-  currentUser: { uid: string; getIdToken: () => Promise<string> } | null
+  currentUser: {
+    uid: string
+    getIdToken: (forceRefresh?: boolean) => Promise<string>
+  } | null
   getIdToken: () => Promise<string>
 }
 
@@ -386,6 +393,26 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
+  it('forces a token refresh on the retry after a 401', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    seedStash(VALID_CODE)
+    mockFetch
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(okResponse())
+
+    await trigger()
+    expect(mockUserGetIdToken).toHaveBeenLastCalledWith(false)
+
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(mockUserGetIdToken).toHaveBeenLastCalledWith(true)
+    expect(stashedCode()).toBeUndefined()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
+  })
+
   it('passes a timeout signal and treats an aborted request as transient', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     seedStash(VALID_CODE)
@@ -572,8 +599,8 @@ describe('installDesktopLoginRedemption', () => {
     expect(stashedCode()).toBeUndefined()
   })
 
-  it('does not redeem when the session changes while the approval dialog is open', async () => {
-    const { trigger, seedStash, stashedCode } = await setup()
+  it('re-prompts and redeems under the new account when the session changes while the approval dialog is open', async () => {
+    const { seedStash, stashedCode, trigger } = await setup()
     seedStash(VALID_CODE)
     let approve!: (value: boolean) => void
     mockConfirm.mockReturnValueOnce(
@@ -586,8 +613,10 @@ describe('installDesktopLoginRedemption', () => {
     await trigger()
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
 
-    // The session swaps to user-2 while user-1's dialog is still open; the
-    // approval that resolves now is ambiguous and must not redeem.
+    // The session swaps to user-2 while user-1's dialog is still open. The
+    // auth-change trigger lands mid-drain and must be replayed, not dropped:
+    // user-1's approval resolving now is stale and must not redeem, and the
+    // replay re-prompts under user-2 without needing another navigation.
     const secondUser = {
       uid: 'user-2',
       getIdToken: vi.fn().mockResolvedValue('second-user-token')
@@ -597,14 +626,8 @@ describe('installDesktopLoginRedemption', () => {
     approve(true)
     await flushRedemption()
 
-    expect(mockFetch).not.toHaveBeenCalled()
-    expect(stashedCode()).toBe(VALID_CODE)
-
-    // The next trigger re-prompts under user-2 and redeems with its token.
-    await trigger()
-
-    expect(mockConfirm).toHaveBeenCalledTimes(2)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
     expect(mockFetch).toHaveBeenCalledWith(
       REDEEM_URL,
       expect.objectContaining({

@@ -21,7 +21,8 @@ const DESKTOP_LOGIN_CODE_PATTERN = /^dlc_[A-Za-z0-9_-]{20,256}$/
 
 // Rejected (400/403), unknown/expired (404/410), or redeemed by a different
 // user (409) means the desktop app must start a fresh sign-in, so the code is
-// dropped. 401 stays transient: the session may still be settling post-login.
+// dropped. 401 stays transient: the session may still be settling post-login,
+// and the retry mints a fresh token instead of resending the same one.
 const TERMINAL_REDEEM_STATUSES = new Set([400, 403, 404, 409, 410])
 
 // Allows one transient-failure retry without ever looping within a page load.
@@ -38,21 +39,31 @@ interface CodeRedemptionState {
   attempts: number
   approvedUserUid: string | null
   settled: boolean
+  forceTokenRefresh: boolean
 }
 
 // Keyed by code so a different code arriving later gets its own approval and
 // attempt budget, while retries of the same code reuse both.
 const codeStates = new Map<string, CodeRedemptionState>()
 
-// Coalesces concurrent triggers (afterEach can burst) into one drain.
+// Coalesces concurrent triggers (afterEach can burst) into one drain. A
+// trigger arriving mid-drain — e.g. the auth watcher firing while the
+// approval dialog is open — is not dropped: it is replayed as one more pass
+// once the current drain finishes.
 let draining = false
+let retriggerRequested = false
 
 let authWatcherInstalled = false
 
 function getCodeState(code: string): CodeRedemptionState {
   const existing = codeStates.get(code)
   if (existing) return existing
-  const fresh = { attempts: 0, approvedUserUid: null, settled: false }
+  const fresh = {
+    attempts: 0,
+    approvedUserUid: null,
+    settled: false,
+    forceTokenRefresh: false
+  }
   codeStates.set(code, fresh)
   return fresh
 }
@@ -137,7 +148,8 @@ async function redeemCode(code: string): Promise<void> {
   // The session can change while the dialog is open or between a transient
   // failure and its retry: approval binds the code to one account, so redeem
   // only while that exact account is still active. On mismatch the code stays
-  // stashed and the next trigger re-prompts under the now-current account.
+  // stashed; the auth-change trigger (replayed if it raced this drain)
+  // re-prompts under the now-current account.
   const approvedUser = useAuthStore().currentUser
   if (!approvedUser || approvedUser.uid !== state.approvedUserUid) return
 
@@ -148,7 +160,7 @@ async function redeemCode(code: string): Promise<void> {
   // flow must not trigger.
   let idToken: string
   try {
-    idToken = await approvedUser.getIdToken()
+    idToken = await approvedUser.getIdToken(state.forceTokenRefresh)
   } catch {
     handleTransientFailure(code, state, 'could not get id token')
     return
@@ -200,31 +212,43 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  // A 401 with a live session usually means the cached id token went stale;
+  // mint a fresh one on the retry instead of resending the same token.
+  if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
+}
+
+// A newer code can replace the stashed one while an older redemption is
+// mid-flight, so after each redemption process whatever the stash holds now.
+// A pass that leaves its own code stashed — a transient failure awaiting its
+// retry timer, or an account mismatch awaiting a re-prompt — ends the pass.
+async function drainStash(): Promise<void> {
+  let processedCode: string | undefined
+  for (;;) {
+    const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+    if (!code || code === processedCode) return
+    if (!DESKTOP_LOGIN_CODE_PATTERN.test(code)) {
+      clearPreservedQuery(NAMESPACE)
+      return
+    }
+    processedCode = code
+    await redeemCode(code)
+  }
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
   // Never rejects: the triggers fire-and-forget this and must not be derailed
   // by a redemption failure.
-  if (draining) return
+  if (draining) {
+    retriggerRequested = true
+    return
+  }
   draining = true
   try {
-    // A newer code can replace the stashed one while an older redemption is
-    // mid-flight (its trigger lands here while draining and returns), so after
-    // each pass process whatever the stash holds now. A pass that leaves its
-    // own code stashed — a transient failure awaiting its retry timer, or an
-    // account mismatch awaiting the next trigger — ends the drain.
-    let processedCode: string | undefined
-    for (;;) {
-      const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
-      if (!code || code === processedCode) return
-      if (!DESKTOP_LOGIN_CODE_PATTERN.test(code)) {
-        clearPreservedQuery(NAMESPACE)
-        return
-      }
-      processedCode = code
-      await redeemCode(code)
-    }
+    do {
+      retriggerRequested = false
+      await drainStash()
+    } while (retriggerRequested)
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
   } finally {
