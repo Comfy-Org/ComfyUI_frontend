@@ -62,7 +62,6 @@
     "test:custom-nodes:connectivity": "pnpm test:custom-nodes:debug -g \"connectivity\"",
     "test:custom-nodes:self-check": "pnpm test:custom-nodes:watch -g \"self-check\"",
     "test:coverage": "vitest run --coverage",
-    "test:coverage:critical": "cross-env COVERAGE_CRITICAL=true vitest run --coverage",
     "test:unit": "vitest run",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
