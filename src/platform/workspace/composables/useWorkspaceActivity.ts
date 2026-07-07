@@ -15,8 +15,6 @@ export interface UserSummary {
   lastActivity: Date
 }
 
-const ITEMS_PER_PAGE = 11
-
 // Prototype mock: there is no usage-activity endpoint yet, so the event list is
 // generated client-side and paginated in the browser.
 const USERS = ['Yuta', 'Jane', 'Rob', 'Min', 'Alice', 'Priya', 'Diego']
@@ -45,9 +43,13 @@ export type ActivitySortField =
   | 'detail'
   | 'credits'
 
-export function useWorkspaceActivity(search: MaybeRefOrGetter<string>) {
+export function useWorkspaceActivity(
+  search: MaybeRefOrGetter<string>,
+  pageSize: MaybeRefOrGetter<number>
+) {
   const all = mockActivity()
   const page = ref(1)
+  const perPage = computed(() => Math.max(1, toValue(pageSize)))
   const sortField = ref<ActivitySortField>('date')
   const sortDirection = ref<'asc' | 'desc'>('desc')
 
@@ -78,8 +80,8 @@ export function useWorkspaceActivity(search: MaybeRefOrGetter<string>) {
   const total = computed(() => filtered.value.length)
 
   const pagedItems = computed(() => {
-    const start = (page.value - 1) * ITEMS_PER_PAGE
-    return sorted.value.slice(start, start + ITEMS_PER_PAGE)
+    const start = (page.value - 1) * perPage.value
+    return sorted.value.slice(start, start + perPage.value)
   })
 
   function toggleSort(field: ActivitySortField) {
@@ -91,8 +93,8 @@ export function useWorkspaceActivity(search: MaybeRefOrGetter<string>) {
     }
   }
 
-  watch(total, (count) => {
-    const lastPage = Math.max(1, Math.ceil(count / ITEMS_PER_PAGE))
+  watch([total, perPage], ([count]) => {
+    const lastPage = Math.max(1, Math.ceil(count / perPage.value))
     if (page.value > lastPage) page.value = lastPage
   })
 
@@ -119,7 +121,7 @@ export function useWorkspaceActivity(search: MaybeRefOrGetter<string>) {
   return {
     page,
     total,
-    itemsPerPage: ITEMS_PER_PAGE,
+    itemsPerPage: perPage,
     pagedItems,
     sortField,
     sortDirection,

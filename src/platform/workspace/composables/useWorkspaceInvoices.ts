@@ -8,8 +8,6 @@ export interface Invoice {
   amountCents: number
 }
 
-const ITEMS_PER_PAGE = 11
-
 // Prototype mock: there is no billing-history endpoint yet, so the invoice
 // list is generated client-side and paginated in the browser.
 const INVOICE_KINDS: Array<[eventType: string, amountCents: number]> = [
@@ -38,9 +36,13 @@ function mockInvoices(): Invoice[] {
 
 export type InvoiceSortField = 'date' | 'eventType' | 'price'
 
-export function useWorkspaceInvoices(search: MaybeRefOrGetter<string>) {
+export function useWorkspaceInvoices(
+  search: MaybeRefOrGetter<string>,
+  pageSize: MaybeRefOrGetter<number>
+) {
   const all = mockInvoices()
   const page = ref(1)
+  const perPage = computed(() => Math.max(1, toValue(pageSize)))
   const sortField = ref<InvoiceSortField>('date')
   const sortDirection = ref<'asc' | 'desc'>('desc')
 
@@ -64,8 +66,8 @@ export function useWorkspaceInvoices(search: MaybeRefOrGetter<string>) {
   const total = computed(() => filtered.value.length)
 
   const pagedItems = computed(() => {
-    const start = (page.value - 1) * ITEMS_PER_PAGE
-    return sorted.value.slice(start, start + ITEMS_PER_PAGE)
+    const start = (page.value - 1) * perPage.value
+    return sorted.value.slice(start, start + perPage.value)
   })
 
   function toggleSort(field: InvoiceSortField) {
@@ -77,16 +79,17 @@ export function useWorkspaceInvoices(search: MaybeRefOrGetter<string>) {
     }
   }
 
-  // Filtering can shrink the list past the current page; snap back into range.
-  watch(total, (count) => {
-    const lastPage = Math.max(1, Math.ceil(count / ITEMS_PER_PAGE))
+  // Filtering or a shorter dialog can shrink the list past the current page;
+  // snap back into range.
+  watch([total, perPage], ([count]) => {
+    const lastPage = Math.max(1, Math.ceil(count / perPage.value))
     if (page.value > lastPage) page.value = lastPage
   })
 
   return {
     page,
     total,
-    itemsPerPage: ITEMS_PER_PAGE,
+    itemsPerPage: perPage,
     pagedItems,
     sortField,
     sortDirection,

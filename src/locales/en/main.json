@@ -2959,7 +2959,10 @@
         "lastActivity": "Last activity",
         "creditsUsed": "Credits used",
         "topSpenders": "Top spenders",
-        "recentActivity": "Recent activity"
+        "recentActivity": "Recent activity",
+        "empty": {
+          "title": "No credits used yet this month"
+        }
       }
     },
     "activity": {
@@ -2974,7 +2977,9 @@
         "totalCreditsUsed": "Total credits used",
         "lastActivity": "Last activity"
       },
-      "perUserHint": "Looking for total usage per user?"
+      "fullActivity": "Full activity",
+      "perUserHint": "Looking for total usage per user?",
+      "seeMembers": "See Members"
     },
     "invoices": {
       "columns": {
@@ -2983,6 +2988,49 @@
         "price": "Price"
       },
       "fullHistory": "Full invoice history"
+    },
+    "autoReload": {
+      "title": "Credit auto-reload",
+      "subtitle": "Automatically add credits when your balance runs low, within an optional monthly budget.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "edit": "Edit",
+      "empty": {
+        "body": "Keep your workflows running with auto-reloaded credits. Set a monthly budget so charges don't surprise you.",
+        "cta": "Set up auto-reload"
+      },
+      "tile": {
+        "label": "Auto-reload",
+        "whenBelow": "when credits drop below",
+        "monthlyBudget": "Monthly budget",
+        "resets": "Resets {date}",
+        "spent": "{amount} spent",
+        "leftOfBudget": "{left} left of {budget} budget",
+        "reloadsLeft": "{count} reload left | {count} reloads left",
+        "recentReload": "Recent reload: {date}",
+        "noRecentReload": "No reloads yet"
+      },
+      "badge": {
+        "paused": "Paused",
+        "off": "Off"
+      },
+      "dialog": {
+        "title": "Auto-reload credits",
+        "subtitle": "Automatically add credits when your balance gets low.",
+        "thresholdLabel": "When credits drop below:",
+        "amountLabel": "Add this amount of credits:",
+        "budgetToggleLabel": "Set a monthly budget",
+        "budgetToggleHint": "Limit the total amount of auto-reloads per month.",
+        "budgetPlaceholderCredits": "Enter in an amount of credits",
+        "budgetPlaceholderUsd": "Enter in an amount of dollars",
+        "minReloadCredits": "Minimum added credits is {count}",
+        "minReloadUsd": "Minimum added amount is {amount}",
+        "allowsReloads": "Allows {count} reload /mo | Allows {count} reloads /mo",
+        "credits": "Credits",
+        "usd": "USD",
+        "cancel": "Cancel",
+        "update": "Update"
+      }
     },
     "memberLimitDialog": {
       "title": "Workspace is at the member limit",

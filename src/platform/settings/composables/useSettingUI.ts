@@ -36,7 +36,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   'server-config': 'icon-[lucide--server]',
   subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--building-2]'
+  workspace: 'icon-[lucide--receipt-text]'
 }
 
 interface SettingPanelItem {

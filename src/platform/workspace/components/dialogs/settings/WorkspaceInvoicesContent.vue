@@ -1,6 +1,7 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
     <div
+      ref="tableContainer"
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
       <Table class="min-h-0 flex-1 px-4">
@@ -55,7 +56,7 @@
 
     <div class="flex h-8 items-center justify-between">
       <button
-        class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-sm text-muted-foreground transition-colors hover:text-base-foreground"
+        class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-[inherit] text-sm text-muted-foreground transition-colors hover:text-base-foreground"
         @click="openHistory"
       >
         <i class="icon-[lucide--external-link] size-4" />
@@ -71,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Pagination from '@/components/ui/pagination/Pagination.vue'
@@ -81,6 +83,7 @@ import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { useWorkspaceInvoices } from '@/platform/workspace/composables/useWorkspaceInvoices'
 import type { InvoiceSortField } from '@/platform/workspace/composables/useWorkspaceInvoices'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -90,6 +93,9 @@ const { search } = defineProps<{ search: string }>()
 const { d } = useI18n()
 const { manageSubscription } = useBillingContext()
 
+const tableContainer = ref<HTMLElement | null>(null)
+const { pageSize } = useAutoPageSize(tableContainer)
+
 const {
   page,
   total,
@@ -98,7 +104,7 @@ const {
   sortField,
   sortDirection,
   toggleSort
-} = useWorkspaceInvoices(() => search)
+} = useWorkspaceInvoices(() => search, pageSize)
 
 const sortHeaderClass =
   'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left font-[inherit] text-sm text-muted-foreground'

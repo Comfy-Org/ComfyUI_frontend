@@ -21,10 +21,16 @@ export function useWorkspaceOverview() {
   const store = useTeamWorkspaceStore()
   const { members } = storeToRefs(store)
 
+  const nextRenewal = new Date()
+  nextRenewal.setDate(nextRenewal.getDate() + 20)
   const plan = {
     name: 'Team',
     priceCents: 32000,
-    renewalLabel: 'Jan 20, 2026'
+    renewalLabel: nextRenewal.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
   }
 
   const nextInvoiceCents = 32000

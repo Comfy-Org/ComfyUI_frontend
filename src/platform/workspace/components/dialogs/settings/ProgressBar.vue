@@ -1,9 +1,9 @@
 <template>
   <div
-    class="h-1.5 w-full overflow-hidden rounded-full bg-secondary-background"
+    class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
   >
     <div
-      class="h-full rounded-full bg-warning-background transition-[width]"
+      class="h-full rounded-full bg-credit transition-[width]"
       :style="{ width: `${clamped * 100}%` }"
     />
   </div>

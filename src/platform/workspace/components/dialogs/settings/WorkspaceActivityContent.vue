@@ -1,6 +1,7 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
     <div
+      ref="tableContainer"
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
       <Table class="min-h-0 flex-1 px-4">
@@ -125,9 +126,29 @@
     </div>
 
     <div class="flex h-8 items-center justify-between">
-      <p class="text-sm text-muted-foreground">
-        {{ $t('workspacePanel.activity.perUserHint') }}
-      </p>
+      <div class="flex items-center gap-6">
+        <a
+          :href="fullActivityUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+        >
+          <i class="icon-[lucide--external-link] size-4" />
+          {{ $t('workspacePanel.activity.fullActivity') }}
+        </a>
+        <div class="flex items-center gap-3">
+          <p class="text-sm text-muted-foreground">
+            {{ $t('workspacePanel.activity.perUserHint') }}
+          </p>
+          <button
+            class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-[inherit] text-sm text-base-foreground transition-colors hover:text-muted-foreground"
+            @click="goToMembers"
+          >
+            {{ $t('workspacePanel.activity.seeMembers') }}
+            <i class="icon-[lucide--arrow-right] size-4" />
+          </button>
+        </div>
+      </div>
       <Pagination
         v-model:page="page"
         :total="total"
@@ -138,6 +159,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
@@ -150,6 +172,10 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
+import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
+import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
 import type { ActivitySortField } from '@/platform/workspace/composables/useWorkspaceActivity'
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
@@ -160,6 +186,18 @@ const { search } = defineProps<{ search: string }>()
 
 const { t, d } = useI18n()
 
+const tableContainer = ref<HTMLElement | null>(null)
+const { pageSize } = useAutoPageSize(tableContainer)
+
+const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
+
+const { navigateToPanel } = useSettingsNavigation()
+
+function goToMembers() {
+  requestMembersSort('credits')
+  navigateToPanel('workspace-members')
+}
+
 const {
   page,
   total,
@@ -169,7 +207,7 @@ const {
   sortDirection,
   toggleSort,
   userSummaries
-} = useWorkspaceActivity(() => search)
+} = useWorkspaceActivity(() => search, pageSize)
 
 function summaryFor(userName: string) {
   return (

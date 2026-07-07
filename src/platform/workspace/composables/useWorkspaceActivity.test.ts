@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { useWorkspaceActivity } from './useWorkspaceActivity'
 
 describe('useWorkspaceActivity', () => {
-  it('paginates into fixed-size pages', () => {
-    const { itemsPerPage, pagedItems } = useWorkspaceActivity('')
-    expect(pagedItems.value).toHaveLength(itemsPerPage)
+  it('paginates to the requested page size', () => {
+    const { itemsPerPage, pagedItems } = useWorkspaceActivity('', 11)
+    expect(pagedItems.value).toHaveLength(itemsPerPage.value)
   })
 
   it('aggregates per-user totals and latest activity for the hover card', () => {
-    const { pagedItems, userSummaries } = useWorkspaceActivity('')
+    const { pagedItems, userSummaries } = useWorkspaceActivity('', 11)
     const sample = pagedItems.value[0]
     const summary = userSummaries.value.get(sample.userName)
 

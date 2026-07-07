@@ -41,9 +41,19 @@ function currentUserEmail(): string {
 }
 type Tier = 'free' | 'standard' | 'creator' | 'pro'
 type State = 'active' | 'cancelled' | 'inactive' | 'changing'
-// 'funded' = full monthly, nobody has used anything (all member usage is 0);
-// 'partial' = members have used some of the monthly allotment.
-type Balance = 'funded' | 'partial' | 'low' | 'empty'
+// 'full' = fresh cycle, monthly credits reset, nobody has used anything (all
+// member usage is 0); 'partial' = members have used some of the monthly allotment.
+type Balance = 'full' | 'partial' | 'low' | 'empty'
+
+// Mirrors AutoReloadScenario in useAutoReload.ts (kept as a plain union here so
+// the dev harness doesn't import app code).
+type AutoReload =
+  | 'notset'
+  | 'nobudget'
+  | 'healthy'
+  | 'nearlimit'
+  | 'paused'
+  | 'off'
 
 interface MockCfg {
   ws: Workspace
@@ -53,6 +63,7 @@ interface MockCfg {
   balance: Balance
   roleChange: '200' | '500'
   multiWs: boolean
+  autoReload: AutoReload
 }
 
 interface UiState {
@@ -68,20 +79,48 @@ const DEFAULTS: MockCfg = {
   state: 'active',
   balance: 'partial',
   roleChange: '200',
-  multiWs: false
+  multiWs: false,
+  autoReload: 'healthy'
 }
 
 const cfg: MockCfg = { ...DEFAULTS }
 
+// Allowed values per enum field, shared by the picker and by loadCfg's
+// validation so a persisted value that's no longer valid (e.g. after renaming
+// 'funded' → 'full') is dropped rather than silently desyncing the picker.
+const OPTIONS: Record<
+  'ws' | 'role' | 'tier' | 'state' | 'balance' | 'roleChange' | 'autoReload',
+  string[]
+> = {
+  ws: ['personal', 'team'],
+  role: ['owner', 'admin', 'member'],
+  tier: ['free', 'standard', 'creator', 'pro'],
+  state: ['active', 'cancelled', 'inactive', 'changing'],
+  balance: ['full', 'partial', 'low', 'empty'],
+  roleChange: ['200', '500'],
+  autoReload: ['notset', 'nobudget', 'healthy', 'nearlimit', 'paused', 'off']
+}
+
 function loadCfg(): void {
   try {
-    Object.assign(cfg, JSON.parse(localStorage.getItem(LS) || '{}'))
+    const saved = JSON.parse(localStorage.getItem(LS) || '{}') as Record<
+      string,
+      unknown
+    >
+    for (const [key, opts] of Object.entries(OPTIONS)) {
+      const value = saved[key]
+      if (typeof value === 'string' && !opts.includes(value)) delete saved[key]
+    }
+    Object.assign(cfg, saved)
   } catch {
     /* ignore */
   }
 }
 function saveCfg(): void {
   localStorage.setItem(LS, JSON.stringify(cfg))
+  // Auto-reload has no API, so useAutoReload reads its scenario straight from
+  // this dedicated key rather than an intercepted response.
+  localStorage.setItem('cbm.autoReload', cfg.autoReload)
 }
 function loadUi(): UiState {
   try {
@@ -108,12 +147,21 @@ const PRICING: Record<Tier, [number, number]> = {
   creator: [3500, 7400],
   pro: [10000, 21100]
 }
-const BALANCES: Record<Balance, [number, number, number]> = {
-  // [amount_micros, cloud_credit (monthly), prepaid (additional)]
-  funded: [5000000, 2000000, 3000000],
-  partial: [3500000, 1000000, 2500000],
-  low: [1000000, 0, 1000000],
-  empty: [0, 0, 0]
+// Team monthly credit allotment (credit_stop.credits_monthly). The CreditsTile
+// derives "used of total" from this, so balances below are expressed as credit
+// counts relative to it, not raw micros.
+const TEAM_MONTHLY_CREDITS = 56_900
+
+// Balance *_micros fields are actually cents; credits = cents * CREDITS_PER_USD /
+// 100, so cents = round(credits * 100 / 211).
+const creditsToCents = (credits: number) => Math.round((credits * 100) / 211)
+
+// [monthly credits remaining, prepaid/additional credits] per balance state.
+const BALANCE_CREDITS: Record<Balance, [number, number]> = {
+  full: [TEAM_MONTHLY_CREDITS, 12_000], // 0% of monthly used
+  partial: [Math.round(TEAM_MONTHLY_CREDITS / 2), 8_000], // ~50% used
+  low: [0, 1_500], // monthly exhausted, sliver of prepaid left
+  empty: [0, 0]
 }
 const FUTURE = '2099-02-20T00:00:00Z'
 const CANCEL_AT = '2099-03-01T00:00:00Z'
@@ -176,7 +224,14 @@ function billingStatus(): unknown {
     plan_slug: slug(cfg.tier),
     billing_status: cfg.state === 'inactive' ? 'inactive' : 'paid',
     renewal_date: FUTURE,
-    cancel_at: cfg.state === 'cancelled' ? CANCEL_AT : undefined
+    cancel_at: cfg.state === 'cancelled' ? CANCEL_AT : undefined,
+    // Presence marks a new credit-slider team plan (vs. legacy) and gives the
+    // CreditsTile a team-scale monthly total to measure usage against.
+    team_credit_stop: {
+      id: 'team-stop-1',
+      credits_monthly: TEAM_MONTHLY_CREDITS,
+      stop_usd: 500
+    }
   }
 }
 
@@ -194,13 +249,17 @@ function legacyStatus(): unknown {
 }
 
 function balance(): unknown {
-  const b = BALANCES[cfg.balance] || BALANCES.funded
+  const [monthlyCredits, prepaidCredits] =
+    BALANCE_CREDITS[cfg.balance] || BALANCE_CREDITS.full
+  const cloud = creditsToCents(monthlyCredits)
+  const prepaid = creditsToCents(prepaidCredits)
+  const total = cloud + prepaid
   return {
-    amount_micros: b[0],
+    amount_micros: total,
     currency: 'usd',
-    effective_balance_micros: b[0],
-    cloud_credit_balance_micros: b[1],
-    prepaid_balance_micros: b[2]
+    effective_balance_micros: total,
+    cloud_credit_balance_micros: cloud,
+    prepaid_balance_micros: prepaid
   }
 }
 
@@ -277,8 +336,8 @@ function members(): unknown {
   const hoursAgo = (h: number) =>
     new Date(Date.now() - h * 60 * 60 * 1000).toISOString()
   const me = currentUserEmail()
-  // Nobody has spent anything in the fully-funded state, so member usage is 0.
-  const usage = (n: number) => (cfg.balance === 'funded' ? 0 : n)
+  // Nobody has spent anything in a fresh cycle, so member usage is 0.
+  const usage = (n: number) => (cfg.balance === 'full' ? 0 : n)
   // 'owner' → the current user IS the creator; otherwise the creator is someone
   // else and the current user is injected as a non-original owner/member below.
   const creator = {
@@ -1291,13 +1350,14 @@ function buildPanel(): void {
     `<span style="display:flex;align-items:center;gap:8px"><span id="cbm-collapse" title="collapse" style="cursor:pointer;opacity:.7;padding:0 4px;border:1px solid #3a3d46;border-radius:4px;line-height:1.4">${ui.collapsed ? '+' : '–'}</span>` +
     `<span id="cbm-close" title="turn off the harness" style="cursor:pointer;opacity:.7;padding:0 4px">✕</span></span></div>` +
     `<div id="cbm-body"${ui.collapsed ? ' style="display:none"' : ''}>` +
-    row('workspace', 'ws', ['personal', 'team']) +
-    row('role', 'role', ['owner', 'admin', 'member']) +
-    row('tier', 'tier', ['free', 'standard', 'creator', 'pro']) +
-    row('state', 'state', ['active', 'cancelled', 'inactive', 'changing']) +
-    row('balance', 'balance', ['funded', 'partial', 'low', 'empty']) +
+    row('workspace', 'ws', OPTIONS.ws) +
+    row('role', 'role', OPTIONS.role) +
+    row('tier', 'tier', OPTIONS.tier) +
+    row('state', 'state', OPTIONS.state) +
+    row('balance', 'balance', OPTIONS.balance) +
+    row('autoReload', 'autoReload', OPTIONS.autoReload) +
     `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
-    row('roleChange', 'roleChange', ['200', '500']) +
+    row('roleChange', 'roleChange', OPTIONS.roleChange) +
     `<label style="display:flex;gap:6px;margin:4px 0"><input type="checkbox" id="cbm-multiWs"${cfg.multiWs ? ' checked' : ''}/><span style="opacity:.7">2nd workspace (switcher)</span></label>` +
     `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
     `<button id="cbm-queued" style="width:100%;background:#0d0e11;color:#e6e6e6;border:1px solid #3a3d46;border-radius:4px;padding:3px;cursor:pointer">preview: workflow queued</button>` +
@@ -1315,10 +1375,24 @@ function buildPanel(): void {
     saveCfg()
     location.reload()
   }
+  // Most fields feed data the stores read once at boot, so a reload is the only
+  // reliable way to re-derive everything. These don't: autoReload is pure client
+  // state (updated live via an event) and roleChange only shapes the next
+  // role-change response — so they skip the reload and keep the dialog open.
+  const NO_RELOAD = new Set<keyof MockCfg>(['autoReload', 'roleChange'])
   wrap.querySelectorAll('select').forEach((s) => {
     s.addEventListener('change', () => {
       const k = s.getAttribute('data-k') as keyof MockCfg
       ;(cfg as unknown as Record<string, string>)[k] = s.value
+      if (NO_RELOAD.has(k)) {
+        saveCfg()
+        if (k === 'autoReload') {
+          window.dispatchEvent(
+            new CustomEvent('cbm:autoReload', { detail: s.value })
+          )
+        }
+        return
+      }
       apply()
     })
   })

@@ -68,7 +68,17 @@
             </TabsList>
           </Tabs>
 
-          <Table>
+          <div
+            v-if="showSnapshotEmpty"
+            class="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center"
+          >
+            <i class="icon-[lucide--coins] size-6 text-muted-foreground" />
+            <p class="m-0 text-sm text-base-foreground">
+              {{ $t('workspacePanel.overview.snapshot.empty.title') }}
+            </p>
+          </div>
+
+          <Table v-else>
             <TableHeader>
               <TableRow
                 class="hover:bg-transparent [&>th]:h-9 [&>th]:border-b [&>th]:border-interface-stroke/60"
@@ -156,22 +166,38 @@
       </Button>
     </div>
 
+    <!-- Credit auto-reload -->
+    <AutoReloadSection />
+
     <!-- Footer links -->
     <div
       class="flex h-8 shrink-0 items-center gap-6 text-sm text-muted-foreground"
     >
-      <span class="flex items-center gap-1">
+      <a
+        :href="learnMoreUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex cursor-pointer items-center gap-1 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+      >
         <i class="icon-[lucide--circle-help] size-4" />
         {{ $t('workspacePanel.overview.learnMore') }}
-      </span>
-      <span class="flex items-center gap-1">
+      </a>
+      <a
+        :href="partnerNodesPricingUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex cursor-pointer items-center gap-1 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+      >
         <i class="icon-[lucide--circle-help] size-4" />
         {{ $t('workspacePanel.overview.pricingTable') }}
-      </span>
-      <span class="flex items-center gap-1">
+      </a>
+      <button
+        class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-[inherit] text-sm text-muted-foreground transition-colors hover:text-base-foreground"
+        @click="openSupport"
+      >
         <i class="icon-[lucide--message-circle] size-4" />
         {{ $t('workspacePanel.overview.messageSupport') }}
-      </span>
+      </button>
     </div>
   </div>
 </template>
@@ -193,9 +219,13 @@ import TableRow from '@/components/ui/table/TableRow.vue'
 import Tabs from '@/components/ui/tabs/Tabs.vue'
 import TabsList from '@/components/ui/tabs/TabsList.vue'
 import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
+import { buildSupportUrl } from '@/platform/support/config'
 import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -211,6 +241,21 @@ const { isOriginalOwner, isActiveSubscription, isTeamPlanCancelled } =
   useWorkspaceUI()
 const { isFreeTier, subscription } = useBillingContext()
 const { showCancelSubscriptionDialog } = useDialogService()
+
+const { buildDocsUrl, docsPaths } = useExternalLink()
+const learnMoreUrl = 'https://docs.comfy.org/get_started/cloud'
+const partnerNodesPricingUrl = buildDocsUrl(docsPaths.partnerNodesPricing, {
+  includeLocale: true
+})
+
+const { userEmail, resolvedUserInfo } = useCurrentUser()
+function openSupport() {
+  const url = buildSupportUrl({
+    userEmail: userEmail.value,
+    userId: resolvedUserInfo.value?.id
+  })
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
 
 const canCancelPlan = computed(
   () =>
@@ -242,6 +287,15 @@ const { navigateToPanel } = useSettingsNavigation()
 const snapshotView = ref('top')
 const snapshotRows = computed(() =>
   snapshotView.value === 'top' ? topSpenders.value : recentActivity.value
+)
+
+// A top-spenders leaderboard of all-zeros (a fresh billing cycle) is
+// meaningless, so swap in an empty state. Recent activity persists across
+// cycles, so it keeps its list.
+const showSnapshotEmpty = computed(
+  () =>
+    snapshotView.value === 'top' &&
+    !topSpenders.value.some((row) => row.credits > 0)
 )
 
 // Top spenders → the Members panel pre-sorted by credit usage; Recent activity
