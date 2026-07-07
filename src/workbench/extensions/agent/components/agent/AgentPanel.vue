@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -14,6 +14,7 @@ import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
+import SessionBar from './SessionBar.vue'
 import ApprovalCardView from './safety/ApprovalCard.vue'
 import ConflictDialog from './safety/ConflictDialog.vue'
 import LockBanner from './safety/LockBanner.vue'
@@ -56,6 +57,16 @@ const composerRef = ref<InstanceType<typeof Composer>>()
 
 const { t } = useI18n()
 
+// Session bar title (B4): the first user prompt titles the session; a fresh session reads
+// "New Chat" (SessionBar's fallback).
+const sessionTitle = computed(() => {
+  const firstUser = entries.find(
+    (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
+      entry.role === 'user'
+  )
+  return firstUser?.text.trim().slice(0, 60) || undefined
+})
+
 // The root wires the file picker + upload and stages the result back through here, so the
 // panel forwards a staged attachment down to the composer without owning the upload path.
 function addAttachment(attachment: ComposerAttachment): void {
@@ -69,11 +80,9 @@ defineExpose({ addAttachment })
   <section
     class="bg-agent-surface text-agent-fg flex h-full flex-col overflow-hidden"
   >
-    <PanelHeader
-      @new-chat="emit('newChat')"
-      @close="emit('close')"
-      @open-history="emit('openHistory')"
-    />
+    <PanelHeader @new-chat="emit('newChat')" @close="emit('close')" />
+
+    <SessionBar :title="sessionTitle" @open-history="emit('openHistory')" />
 
     <LockBanner :state="lockState" @take-control="emit('takeControl')" />
 
