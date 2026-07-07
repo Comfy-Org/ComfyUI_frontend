@@ -274,7 +274,7 @@ const {
 const { staticUrls } = useExternalLink()
 
 const sortHeaderClass =
-  'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left text-sm text-muted-foreground'
+  'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left font-[inherit] text-sm text-muted-foreground'
 
 function sortIcon(field: string) {
   if (sortField.value !== field) return 'icon-[lucide--chevrons-up-down] size-3'
