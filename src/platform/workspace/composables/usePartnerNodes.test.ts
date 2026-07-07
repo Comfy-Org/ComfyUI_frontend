@@ -104,7 +104,7 @@ describe('usePartnerNodes', () => {
     expect(mockToastAdd).toHaveBeenCalled()
   })
 
-  it('bulk-toggles the current selection and clears it', async () => {
+  it('bulk-toggles the current selection and keeps it selected', async () => {
     const pn = await setupLoaded()
     pn.toggleSelection('a')
     pn.toggleSelection('c')
@@ -115,7 +115,7 @@ describe('usePartnerNodes', () => {
       ['a', 'c'],
       false
     )
-    expect(pn.selectedCount.value).toBe(0)
+    expect(pn.selectedCount.value).toBe(2)
   })
 
   it('select-all reflects the filtered set', async () => {

@@ -120,8 +120,8 @@ export function usePartnerNodes() {
     const previous = new Map(nodes.value.map((n) => [n.id, n.enabled]))
     applyEnabled(ids, enabled)
     try {
+      // Keep the selection after a bulk toggle so the user can flip it again.
       await partnerNodesApi.setEnabledBulk(ids, enabled)
-      clearSelection()
     } catch {
       nodes.value = nodes.value.map((n) =>
         previous.has(n.id) ? { ...n, enabled: previous.get(n.id)! } : n
