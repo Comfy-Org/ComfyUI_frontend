@@ -68,40 +68,60 @@
             </TabsList>
           </Tabs>
 
-          <div
-            class="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 text-sm text-muted-foreground"
-          >
-            <span>{{ $t('workspacePanel.overview.snapshot.user') }}</span>
-            <span>{{
-              $t('workspacePanel.overview.snapshot.lastActivity')
-            }}</span>
-            <span class="flex items-center gap-1 justify-self-end">
-              <i class="icon-[lucide--coins] size-4" />
-              {{ $t('workspacePanel.overview.snapshot.creditsUsed') }}
-            </span>
-            <template v-for="row in snapshotRows" :key="row.userName">
-              <span class="flex items-center gap-2 py-1 text-base-foreground">
-                <span
-                  class="flex size-5 shrink-0 items-center justify-center rounded-full"
-                  :style="{ backgroundColor: row.color }"
-                >
-                  <span class="text-2xs font-bold text-base-foreground">
-                    {{ row.userName.charAt(0).toUpperCase() }}
+          <Table>
+            <TableHeader>
+              <TableRow
+                class="hover:bg-transparent [&>th]:h-9 [&>th]:border-b [&>th]:border-interface-stroke/60"
+              >
+                <TableHead>
+                  {{ $t('workspacePanel.overview.snapshot.user') }}
+                </TableHead>
+                <TableHead>
+                  {{ $t('workspacePanel.overview.snapshot.lastActivity') }}
+                </TableHead>
+                <TableHead class="text-right">
+                  <span class="inline-flex items-center gap-1">
+                    <i class="icon-[lucide--coins] size-4" />
+                    {{ $t('workspacePanel.overview.snapshot.creditsUsed') }}
                   </span>
-                </span>
-                {{ row.userName }}
-              </span>
-              <span class="text-muted-foreground tabular-nums">
-                {{ row.lastActivity }}
-              </span>
-              <span class="justify-self-end text-base-foreground tabular-nums">
-                {{ row.credits.toLocaleString() }}
-              </span>
-            </template>
-          </div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="row in snapshotRows"
+                :key="row.userName"
+                class="hover:bg-transparent [&:nth-child(even)>td]:bg-secondary-background/25 [&>td:first-child]:rounded-l [&>td:last-child]:rounded-r"
+              >
+                <TableCell>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="flex size-5 shrink-0 items-center justify-center rounded-full"
+                      :style="{ backgroundColor: row.color }"
+                    >
+                      <span class="text-2xs font-bold text-base-foreground">
+                        {{ row.userName.charAt(0).toUpperCase() }}
+                      </span>
+                    </span>
+                    <span class="text-sm text-base-foreground">
+                      {{ row.userName }}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell class="text-sm text-muted-foreground tabular-nums">
+                  {{ row.lastActivity }}
+                </TableCell>
+                <TableCell
+                  class="text-right text-sm text-base-foreground tabular-nums"
+                >
+                  {{ row.credits.toLocaleString() }}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
 
           <Button
-            variant="secondary"
+            variant="tertiary"
             size="lg"
             class="mt-auto w-full"
             @click="emit('navigate', 'activity')"
@@ -164,6 +184,12 @@ import type { MenuItem } from 'primevue/menuitem'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableCell from '@/components/ui/table/TableCell.vue'
+import TableHead from '@/components/ui/table/TableHead.vue'
+import TableHeader from '@/components/ui/table/TableHeader.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
 import Tabs from '@/components/ui/tabs/Tabs.vue'
 import TabsList from '@/components/ui/tabs/TabsList.vue'
 import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'

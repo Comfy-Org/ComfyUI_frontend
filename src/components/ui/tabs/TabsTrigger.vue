@@ -18,7 +18,7 @@ const forwarded = useForwardProps(computed(() => rest))
     v-bind="forwarded"
     :class="
       cn(
-        '-mb-px cursor-pointer border-b-2 border-transparent pb-2 text-sm text-muted-foreground transition-colors data-[state=active]:border-base-foreground data-[state=active]:text-base-foreground',
+        'cursor-pointer appearance-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2 text-sm text-muted-foreground transition-colors outline-none data-[state=active]:border-base-foreground data-[state=active]:text-base-foreground',
         className
       )
     "

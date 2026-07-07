@@ -13,12 +13,7 @@ const { class: className, ...rest } = defineProps<
 <template>
   <TabsList
     v-bind="rest"
-    :class="
-      cn(
-        'inline-flex items-center gap-4 border-b border-interface-stroke/60',
-        className
-      )
-    "
+    :class="cn('inline-flex items-center gap-4', className)"
   >
     <slot />
   </TabsList>
