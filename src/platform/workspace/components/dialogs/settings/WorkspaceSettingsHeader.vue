@@ -63,6 +63,7 @@ import { useI18n } from 'vue-i18n'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { WORKSPACE_NAME_MAX_LENGTH } from '@/platform/workspace/workspaceConstants'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -70,7 +71,7 @@ const store = useTeamWorkspaceStore()
 const { workspaceName } = storeToRefs(store)
 const { uiConfig } = useWorkspaceUI()
 
-const MAX_NAME_LENGTH = 50
+const MAX_NAME_LENGTH = WORKSPACE_NAME_MAX_LENGTH
 
 // Renaming is gated to Owner + Admins (and the sole owner of a personal
 // workspace); Members never see the affordance.
