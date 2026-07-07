@@ -178,7 +178,7 @@ function copy(obj: unknown) {
         {{ t('g.dismiss') }}
       </Button>
       <Button variant="textonly" size="lg" @click="viewErrorsInGraph()">
-        {{ t('linearMode.viewGraph') }}
+        {{ t('linearMode.fixErrors') }}
       </Button>
       <Button
         v-if="accessibleErrors.length"
