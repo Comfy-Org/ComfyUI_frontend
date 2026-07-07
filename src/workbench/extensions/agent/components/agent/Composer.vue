@@ -8,7 +8,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
 
-const { streaming = false } = defineProps<{ streaming?: boolean }>()
+const { streaming = false, canAttach = false } = defineProps<{
+  streaming?: boolean
+  canAttach?: boolean
+}>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
   stop: []
@@ -65,6 +68,7 @@ defineExpose({
 
     <div class="flex items-center justify-between">
       <button
+        v-if="canAttach"
         type="button"
         :aria-label="t('agent.attach')"
         class="rounded-agent text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 items-center justify-center transition-colors"
@@ -72,6 +76,7 @@ defineExpose({
       >
         <span class="icon-[lucide--paperclip] size-4" />
       </button>
+      <span v-else />
 
       <button
         type="button"

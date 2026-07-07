@@ -26,7 +26,8 @@ const {
   approvalCards = [],
   lockState = 'UNLOCKED',
   conflictOpen = false,
-  canRevert = false
+  canRevert = false,
+  canAttach = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -36,6 +37,7 @@ const {
   lockState?: LockState
   conflictOpen?: boolean
   canRevert?: boolean
+  canAttach?: boolean
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
@@ -99,6 +101,7 @@ const composerRef = ref<InstanceType<typeof Composer>>()
       <Composer
         ref="composerRef"
         :streaming="streaming"
+        :can-attach="canAttach"
         @send="(text, attachments) => emit('send', text, attachments)"
         @stop="emit('stop')"
         @attach="emit('attach')"
