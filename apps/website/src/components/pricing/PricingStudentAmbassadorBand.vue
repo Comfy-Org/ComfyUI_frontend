@@ -5,6 +5,7 @@ import { Clock } from '@lucide/vue'
 
 import { externalLinks } from '../../config/routes'
 import { t } from '../../i18n/translations'
+import Button from '../ui/button/Button.vue'
 import PricingCard from './PricingCard.vue'
 
 const { locale = 'en' } = defineProps<{
@@ -13,39 +14,38 @@ const { locale = 'en' } = defineProps<{
 </script>
 
 <template>
-  <PricingCard class="col-span-full">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
+  <PricingCard class="col-span-full py-3">
+    <div
+      class="inline-flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-8"
+    >
       <span
-        class="text-primary-warm-gray inline-flex shrink-0 items-center gap-2 text-sm tracking-wider uppercase"
+        class="text-primary-warm-gray inline-flex shrink-0 items-center gap-2 text-base tracking-wider uppercase"
       >
-        <Clock class="size-4" />
-        {{ t('pricing.studentAmbassador.comingSoon', locale) }}
+        <Clock class="size-5" />
+        <span class="ppformula-text-center">
+          {{ t('pricing.studentAmbassador.comingSoon', locale) }}
+        </span>
       </span>
 
       <span
-        class="text-primary-warm-white shrink-0 text-base font-bold tracking-wider uppercase"
+        class="ppformula-text-center shrink-0 text-base font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
         {{ t('pricing.studentAmbassador.label', locale) }}
       </span>
 
-      <p class="text-primary-warm-white flex-1 text-sm">
+      <p class="text-primary-warm-white ppformula-text-center flex-1 text-base">
         {{ t('pricing.studentAmbassador.description', locale) }}
       </p>
 
-      <a
+      <Button
         :href="externalLinks.studentAmbassadorForm"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-primary-comfy-yellow inline-flex shrink-0 items-center gap-3 text-sm font-bold tracking-wider uppercase"
+        variant="underlineLink"
+        class="shrink-0"
       >
-        <span class="underline underline-offset-4">
-          {{ t('pricing.studentAmbassador.cta', locale) }}
-        </span>
-        <span
-          class="border-primary-comfy-yellow/50 hidden w-12 border-t border-dashed lg:block"
-          aria-hidden="true"
-        />
-      </a>
+        {{ t('pricing.studentAmbassador.cta', locale) }}
+      </Button>
     </div>
   </PricingCard>
 </template>

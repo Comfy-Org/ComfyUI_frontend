@@ -27,10 +27,6 @@ const { locale = 'en', education = false } = defineProps<{
 
 const billingPeriod = ref<BillingCycle>('yearly')
 
-// Education discount off the monthly list price: 10% monthly, 25% yearly.
-const EDU_MONTHLY_PCT = 10
-const EDU_YEARLY_PCT = 25
-
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
   if (education) {
     if (billingPeriod.value === 'yearly') {
@@ -66,15 +62,6 @@ function yearlyTotalFor(plan: PricingPlan): string | undefined {
       : undefined
   }
   return plan.yearlyTotalKey ? t(plan.yearlyTotalKey, locale) : undefined
-}
-
-// Only individual education cards show the savings label, via PricingPrice's
-// discount slot; the percentage flips with the billing toggle.
-function eduSavingsFor(plan: PricingPlan): string | undefined {
-  if (!education || !plan.eduPriceKey) return undefined
-  const pct =
-    billingPeriod.value === 'yearly' ? EDU_YEARLY_PCT : EDU_MONTHLY_PCT
-  return t('pricing.educationalSavings', locale).replace('{pct}', String(pct))
 }
 </script>
 
@@ -141,7 +128,6 @@ function eduSavingsFor(plan: PricingPlan): string | undefined {
           :price="t(displayPriceKey(plan)!, locale)"
           :period="t('pricing.plan.period', locale)"
           :original-price="originalPriceFor(plan)"
-          :discount="eduSavingsFor(plan)"
           :billing-period="billingPeriod"
           :yearly-total="yearlyTotalFor(plan)"
           :locale
@@ -179,9 +165,8 @@ function eduSavingsFor(plan: PricingPlan): string | undefined {
       <PricingTeamCard :billing-period="billingPeriod" :education :locale />
 
       <PricingEnterpriseBand :education :locale />
-
-      <PricingStudentAmbassadorBand v-if="education" :locale />
     </div>
+    <PricingStudentAmbassadorBand v-if="education" :locale />
 
     <!-- Footnote -->
     <p class="mt-12 text-xs text-primary-comfy-canvas/70">

@@ -13,7 +13,7 @@ const { class: className } = defineProps<{
   <span
     :class="
       cn(
-        'text-primary-comfy-yellow text-base font-bold tracking-wider uppercase',
+        'text-primary-comfy-yellow text-base font-bold tracking-wider whitespace-nowrap uppercase',
         className
       )
     "

@@ -30,7 +30,7 @@ const descriptionKey = education
         class="flex flex-col gap-6 lg:col-span-2 lg:flex-row lg:items-center"
       >
         <PricingPlanLabel :label="t(labelKey, locale)" />
-        <p class="text-primary-warm-white text-sm">
+        <p class="text-primary-warm-white">
           {{ t(descriptionKey, locale) }}
         </p>
       </div>
