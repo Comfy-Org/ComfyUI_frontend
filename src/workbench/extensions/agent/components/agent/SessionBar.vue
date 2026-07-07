@@ -2,7 +2,8 @@
 import { useI18n } from 'vue-i18n'
 
 // Session / title bar (Figma B4): the row under the header showing the current chat title
-// (or "New Chat" for a fresh session). The whole row is a button that opens Chat History.
+// (or "New Chat" for a fresh session). The compact pill is a button that opens Chat
+// History.
 const { title } = defineProps<{ title?: string }>()
 const emit = defineEmits<{ openHistory: [] }>()
 
@@ -10,17 +11,17 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <button
-    type="button"
-    class="border-agent-border text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex w-full items-center gap-2 border-b px-3 py-2 text-left text-sm transition-colors"
-    @click="emit('openHistory')"
-  >
-    <span class="text-agent-fg-subtle icon-[lucide--menu] size-4 shrink-0" />
-    <span class="min-w-0 flex-1 truncate">{{
-      title || t('agent.newChatTitle')
-    }}</span>
-    <span
-      class="text-agent-fg-subtle icon-[lucide--chevron-down] size-4 shrink-0"
-    />
-  </button>
+  <div class="flex shrink-0 items-center px-2 py-1.5">
+    <button
+      v-tooltip.bottom="{ value: t('agent.history'), showDelay: 500 }"
+      type="button"
+      class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-6 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
+      @click="emit('openHistory')"
+    >
+      <span class="icon-[lucide--align-justify] size-3.5 shrink-0" />
+      <span class="max-w-56 truncate">{{
+        title || t('agent.newChatTitle')
+      }}</span>
+    </button>
+  </div>
 </template>

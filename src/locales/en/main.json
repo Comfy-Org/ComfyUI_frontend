@@ -4968,6 +4968,8 @@
     "alpha": "ALPHA",
     "newChat": "New chat",
     "newChatTitle": "New Chat",
+    "maximize": "Maximize panel",
+    "minimize": "Minimize panel",
     "close": "Close",
     "history": "Chat history",
     "historyCurrent": "Current",
@@ -4986,7 +4988,7 @@
     "browseTemplates": "Browse templates",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Ask the agent anything...",
+    "placeholder": "Ask Comfy Agent…",
     "suggestedPrompts": [
       "Generate a yellow duck with a hockey mask",
       "List my saved workflows",

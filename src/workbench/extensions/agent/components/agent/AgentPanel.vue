@@ -28,7 +28,8 @@ const {
   lockState = 'UNLOCKED',
   conflictOpen = false,
   canRevert = false,
-  canAttach = false
+  canAttach = false,
+  isMaximized = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -38,6 +39,7 @@ const {
   conflictOpen?: boolean
   canRevert?: boolean
   canAttach?: boolean
+  isMaximized?: boolean
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
@@ -49,6 +51,7 @@ const emit = defineEmits<{
   resolveConflict: [choice: ConflictChoice]
   revert: []
   newChat: []
+  toggleSize: []
   close: []
   openHistory: []
 }>()
@@ -78,9 +81,14 @@ defineExpose({ addAttachment })
 
 <template>
   <section
-    class="bg-agent-surface text-agent-fg flex h-full flex-col overflow-hidden"
+    class="bg-agent-surface text-agent-fg @container flex h-full flex-col overflow-hidden"
   >
-    <PanelHeader @new-chat="emit('newChat')" @close="emit('close')" />
+    <PanelHeader
+      :is-maximized="isMaximized"
+      @new-chat="emit('newChat')"
+      @toggle-size="emit('toggleSize')"
+      @close="emit('close')"
+    />
 
     <SessionBar :title="sessionTitle" @open-history="emit('openHistory')" />
 
@@ -112,18 +120,20 @@ defineExpose({ addAttachment })
       </div>
     </div>
 
-    <footer class="border-agent-border border-t p-3">
-      <Composer
-        ref="composerRef"
-        :streaming="streaming"
-        :can-attach="canAttach"
-        @send="(text, attachments) => emit('send', text, attachments)"
-        @stop="emit('stop')"
-        @attach="emit('attach')"
-      />
-      <p class="text-agent-fg-subtle pt-1 text-center text-xs">
-        {{ t('agent.caption') }}
-      </p>
+    <footer class="shrink-0 p-4">
+      <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2.5">
+        <Composer
+          ref="composerRef"
+          :streaming="streaming"
+          :can-attach="canAttach"
+          @send="(text, attachments) => emit('send', text, attachments)"
+          @stop="emit('stop')"
+          @attach="emit('attach')"
+        />
+        <p class="text-agent-fg-muted my-0 text-center text-xs">
+          {{ t('agent.caption') }}
+        </p>
+      </div>
     </footer>
 
     <ConflictDialog

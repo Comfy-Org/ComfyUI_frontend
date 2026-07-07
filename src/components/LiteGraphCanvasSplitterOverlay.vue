@@ -2,6 +2,8 @@
   <div
     class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-row"
   >
+    <!-- Left column: workflow tabs + canvas/panels. The agent dock is a sibling so it
+         spans the full viewport height beside the tab bar. -->
     <div
       class="pointer-events-none flex min-w-0 flex-1 flex-col overflow-hidden"
     >
@@ -38,10 +40,10 @@
             :class="
               sidebarLocation === 'left'
                 ? cn(
-                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
                     sidebarPanelVisible && 'min-w-78'
                   )
-                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                : 'pointer-events-auto bg-comfy-menu-bg'
             "
             :min-size="
               sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -87,7 +89,7 @@
               </SplitterPanel>
               <SplitterPanel
                 v-show="bottomPanelVisible && !focusMode"
-                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
+                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg"
               >
                 <slot name="bottom-panel" />
               </SplitterPanel>
@@ -100,10 +102,10 @@
             :class="
               sidebarLocation === 'right'
                 ? cn(
-                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
                     sidebarPanelVisible && 'min-w-78'
                   )
-                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                : 'pointer-events-auto bg-comfy-menu-bg'
             "
             :min-size="
               sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -125,17 +127,35 @@
       </div>
     </div>
 
+    <!-- Right column: the agent dock, full viewport height, pixel width with a drag
+         handle on its left edge (420-960px; the panel header icon jumps between the
+         extremes). -->
+    <div
+      v-if="agentPanelDocked"
+      class="pointer-events-auto relative h-full shrink-0 overflow-hidden"
+      :style="{ width: `${agentPanelWidth}px` }"
+    >
+      <div
+        class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+        :data-resizing="isAgentResizing"
+        @pointerdown="onAgentResizeStart"
+        @lostpointercapture="isAgentResizing = false"
+      />
+      <slot name="agent-panel" />
+    </div>
+
     <slot name="agent-panel" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -172,15 +192,39 @@ const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
-const { isOpen: agentPanelOpen, enabled: agentPanelEnabled } =
-  storeToRefs(agentPanelStore)
-// The agent panel docks in the offside (right) splitter slot, so it shows whenever it is
-// open (fail-closed behind its flag), alongside the node-properties / select-mode triggers.
+const {
+  isOpen: agentPanelOpen,
+  enabled: agentPanelEnabled,
+  width: agentPanelWidth
+} = storeToRefs(agentPanelStore)
+// The agent dock renders only while its flag gate is on and the user opened it.
+const agentPanelDocked = computed(
+  () => agentPanelEnabled.value && agentPanelOpen.value
+)
+
+// Drag-resize for the agent dock: capture the pointer on the handle and track the delta;
+// the store clamps into its [min, max] range.
+const isAgentResizing = ref(false)
+let agentResizeStartX = 0
+let agentResizeStartWidth = 0
+
+function onAgentResizeStart(e: PointerEvent): void {
+  isAgentResizing.value = true
+  agentResizeStartX = e.clientX
+  agentResizeStartWidth = agentPanelStore.width
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  e.preventDefault()
+}
+
+useEventListener(document, 'pointermove', (e: PointerEvent) => {
+  if (!isAgentResizing.value) return
+  agentPanelStore.setWidth(
+    agentResizeStartWidth + (agentResizeStartX - e.clientX)
+  )
+})
+
 const showOffsideSplitter = computed(
-  () =>
-    rightSidePanelVisible.value ||
-    isSelectMode.value ||
-    (agentPanelEnabled.value && agentPanelOpen.value)
+  () => rightSidePanelVisible.value || isSelectMode.value
 )
 
 const sidebarPanelVisible = computed(
@@ -277,7 +321,7 @@ function normalizeSavedSizes() {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${agentPanelOpen.value ? '-with-agent' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {
@@ -320,5 +364,11 @@ const lastPanelStyle = computed(() => {
 
 .splitter-overlay-bottom :deep(.p-splitter-gutter) {
   transform: translateY(5px);
+}
+
+.agent-resize-handle:hover,
+.agent-resize-handle[data-resizing='true'] {
+  transition: background-color 0.2s ease 300ms;
+  background-color: var(--p-primary-color);
 }
 </style>
