@@ -45,8 +45,13 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
-  it('emits attach when the paperclip is clicked', async () => {
-    const { emitted } = mount()
+  it('hides the paperclip by default', () => {
+    mount()
+    expect(screen.queryByRole('button', { name: 'Attach a file' })).toBeNull()
+  })
+
+  it('emits attach when the paperclip is clicked and canAttach is set', async () => {
+    const { emitted } = mount({ canAttach: true })
     await userEvent.click(screen.getByRole('button', { name: 'Attach a file' }))
     expect(emitted().attach).toHaveLength(1)
   })
