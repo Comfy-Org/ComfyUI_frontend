@@ -1,4 +1,4 @@
-import type { AgentEventSource } from '@/composables/agent/useAgentSession'
+import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 
 /**
  * agentEventSource: adapts one live WebSocket-like into the AgentEventSource the

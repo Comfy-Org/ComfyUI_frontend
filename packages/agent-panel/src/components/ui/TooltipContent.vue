@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TooltipContent, TooltipPortal } from 'reka-ui'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../utils/cn'
 
 const {
   side = 'top',

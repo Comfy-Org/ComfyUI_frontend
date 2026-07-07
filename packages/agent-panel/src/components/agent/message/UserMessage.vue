@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Avatar from '@/components/ui/Avatar.vue'
+import Avatar from '../../ui/Avatar.vue'
 
 const { text, name, avatarSrc } = defineProps<{
   text: string

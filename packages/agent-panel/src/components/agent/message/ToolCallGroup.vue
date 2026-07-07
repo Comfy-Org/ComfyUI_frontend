@@ -3,9 +3,9 @@ import { CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CollapsibleContent from '@/components/ui/CollapsibleContent.vue'
-import type { ToolPart } from '@/services/agent/agentMessageParts'
-import { cn } from '@/utils/cn'
+import CollapsibleContent from '../../ui/CollapsibleContent.vue'
+import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import { cn } from '../../../utils/cn'
 
 import ToolCallCard from './ToolCallCard.vue'
 

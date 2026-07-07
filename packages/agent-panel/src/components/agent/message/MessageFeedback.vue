@@ -3,7 +3,7 @@ import { useClipboard } from '@vueuse/core'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/cn'
+import { cn } from '../../../utils/cn'
 
 // Thumbs are mutually exclusive; clicking the active one clears it. Feedback is emitted
 // so the container can forward it to the real submit_feedback tool.

@@ -2,7 +2,7 @@
 import { ToggleGroupRoot } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import ToggleGroupItem from '@/components/ui/ToggleGroupItem.vue'
+import ToggleGroupItem from '../../ui/ToggleGroupItem.vue'
 
 // Display control for the approval mode. Server-side honoring of client `auto` is removed
 // by the M5.3 hardening, so this reflects a local preference; the send path never bypasses

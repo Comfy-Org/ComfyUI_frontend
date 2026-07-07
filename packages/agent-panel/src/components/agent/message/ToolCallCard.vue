@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { PartState } from '@/services/agent/agentMessageParts'
-import { cn } from '@/utils/cn'
+import type { PartState } from '../../../services/agent/agentMessageParts'
+import { cn } from '../../../utils/cn'
 
 // One tool row (or a run of identical calls collapsed with a count). `ok` is undefined
 // while the call is still running.

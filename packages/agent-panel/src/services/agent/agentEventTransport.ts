@@ -1,4 +1,4 @@
-import type { AgentWsEvent, TokenUsage } from '@/schemas/agentApiSchema'
+import type { AgentWsEvent, TokenUsage } from '../../schemas/agentApiSchema'
 
 import type { AssistantMessage, TextPart, ToolPart } from './agentMessageParts'
 import { snapshotMessage } from './agentMessageParts'

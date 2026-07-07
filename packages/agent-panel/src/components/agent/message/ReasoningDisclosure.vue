@@ -3,7 +3,7 @@ import { CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CollapsibleContent from '@/components/ui/CollapsibleContent.vue'
+import CollapsibleContent from '../../ui/CollapsibleContent.vue'
 
 // Open while the reasoning is still streaming so the user sees it live; collapses to a
 // one-line summary once the turn moves on. Controlled (not defaultOpen, which reka reads
