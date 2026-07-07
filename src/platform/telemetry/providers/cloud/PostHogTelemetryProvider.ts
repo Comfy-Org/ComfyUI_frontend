@@ -12,7 +12,7 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 
 import type {
   AddCreditsClickMetadata,
-  AuthErrorMetadata,
+  AgentMessageFeedbackMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
   UnifiedAuthRefreshMetadata,
@@ -656,20 +656,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
-  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
-    this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
-  }
-
-  trackNamedValuesShadowDiffMismatch(
-    metadata: NamedValuesShadowDiffMismatchMetadata
-  ): void {
-    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_MISMATCH, metadata)
-  }
-
-  trackNamedValuesShadowDiffSummary(
-    metadata: NamedValuesShadowDiffSummaryMetadata
-  ): void {
-    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_SUMMARY, metadata)
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

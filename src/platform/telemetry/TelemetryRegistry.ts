@@ -1,6 +1,6 @@
 import type {
   AddCreditsClickMetadata,
-  AuthErrorMetadata,
+  AgentMessageFeedbackMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
@@ -326,24 +326,8 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
   }
 
-  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
-    this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
-  }
-
-  trackNamedValuesShadowDiffMismatch(
-    metadata: NamedValuesShadowDiffMismatchMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackNamedValuesShadowDiffMismatch?.(metadata)
-    )
-  }
-
-  trackNamedValuesShadowDiffSummary(
-    metadata: NamedValuesShadowDiffSummaryMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackNamedValuesShadowDiffSummary?.(metadata)
-    )
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
