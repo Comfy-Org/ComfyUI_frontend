@@ -25,6 +25,7 @@ import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { createReconnectingEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
 // The in-source agent panel root: the sidebar tab renders this directly (type 'vue'),
 // so it runs in the single host pinia + host i18n context and wires every host
@@ -106,6 +107,7 @@ onBeforeUnmount(() => {
 })
 
 const history = useAgentChatHistoryStore()
+const agentPanelStore = useAgentPanelStore()
 
 const { copy } = useClipboard({ legacy: true })
 
@@ -230,6 +232,7 @@ async function onFilesPicked(event: Event): Promise<void> {
       @feedback="onFeedback"
       @new-chat="onNewChat"
       @open-history="historyOpen = true"
+      @close="agentPanelStore.close()"
     />
     <ChatHistoryDrawer
       v-model:open="historyOpen"

@@ -29,9 +29,10 @@ import {
  * itself already installs the cloud Firebase-auth mock for any `@cloud` test and
  * boots the app, so tests only arrange agent mocks and act.
  *
- * The tab is additionally gated FAIL-CLOSED by the PostHog flag
+ * The panel docks on the right and opens from the top-bar "Ask Comfy Agent"
+ * button (not a sidebar tab). It is gated FAIL-CLOSED by the PostHog flag
  * `agent-in-app-experience`: `agentPanel.ts` reads `posthog.isFeatureEnabled`
- * and only registers the sidebar tab once it is `true`. PostHog only initializes
+ * and only exposes that button once it is `true`. PostHog only initializes
  * when `/api/features` supplies a `posthog_project_token`, so the mocks seed both
  * the token and the flag (through PostHog `bootstrap.featureFlags`, which resolves
  * the read synchronously with no `/decide` network call — see `agentPanelMocks.ts`).
@@ -65,7 +66,8 @@ const agentCloudFixture = comfyPageFixture.extend<AgentFixtures>({
 
 const test = mergeTests(agentCloudFixture, webSocketFixture)
 
-const AGENT_TAB_BUTTON = '.agent-panel-tab-button'
+// The panel opens from the top-bar action button, exposed with aria-label = tooltip.
+const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
 // Push one agent WS event onto the app's /ws in the ComfyUI envelope shape.
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
@@ -76,16 +78,18 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not register the agent rail tab', async ({
+    test('does not expose the Ask Comfy Agent button', async ({
       comfyPage,
       postedMessages
     }) => {
       // Touch the fixture so its mocks (flag-off /api/features) are installed.
       expect(postedMessages).toHaveLength(0)
 
-      // Fail-closed: with the PostHog flag false the sidebar tab is never
-      // registered, so the rail button must not exist.
-      await expect(comfyPage.page.locator(AGENT_TAB_BUTTON)).toHaveCount(0)
+      // Fail-closed: with the PostHog flag false the top-bar button is never
+      // exposed, so the panel cannot be opened.
+      await expect(
+        comfyPage.page.getByRole('button', { name: OPEN_AGENT_LABEL })
+      ).toHaveCount(0)
     })
   })
 
@@ -96,10 +100,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
 
-    // Flag on: the rail tab is registered. Open it.
-    const tabButton = page.locator(AGENT_TAB_BUTTON)
-    await expect(tabButton).toBeVisible()
-    await tabButton.click()
+    // Flag on: the top-bar button is exposed. Open the panel.
+    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    await expect(openButton).toBeVisible()
+    await openButton.click()
 
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
@@ -165,9 +169,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const page = comfyPage.page
     const panel = page.locator('#agent-panel-root')
 
-    const tabButton = page.locator(AGENT_TAB_BUTTON)
-    await expect(tabButton).toBeVisible()
-    await tabButton.click()
+    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    await expect(openButton).toBeVisible()
+    await openButton.click()
     await expect(panel).toBeVisible()
 
     // The draft store only adopts a draft_patch whose workflow_id matches the
