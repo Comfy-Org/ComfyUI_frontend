@@ -979,10 +979,24 @@ function partnerNodes(): unknown {
 }
 
 // ---- route table -----------------------------------------------------------
-type Route = [string, RegExp, () => unknown, (() => number)?]
+type Route = [string, RegExp, (body?: string) => unknown, (() => number)?]
+
+function renamedWorkspace(body?: string): unknown {
+  const active = (
+    workspaces() as { workspaces: Array<Record<string, unknown>> }
+  ).workspaces[0]
+  let name: string | undefined
+  try {
+    name = body ? (JSON.parse(body) as { name?: string }).name : undefined
+  } catch {
+    /* ignore */
+  }
+  return { ...active, name: name ?? active.name }
+}
 
 const ROUTES: Route[] = [
   ['GET', /\/api\/workspaces(\?|$)/, workspaces],
+  ['PATCH', /\/api\/workspaces\/[^/]+$/, renamedWorkspace],
   ['GET', /\/api\/billing\/status/, billingStatus],
   ['GET', /\/api\/billing\/balance/, balance],
   ['GET', /\/api\/billing\/plans/, plans],
@@ -1041,10 +1055,10 @@ interface Hit {
   status: number
 }
 
-function lookup(method: string, url: string): Hit | null {
+function lookup(method: string, url: string, body?: string): Hit | null {
   for (const r of ROUTES) {
     if (r[0] === method && r[1].test(url)) {
-      return { body: r[2](), status: r[3] ? r[3]() : 200 }
+      return { body: r[2](body), status: r[3] ? r[3]() : 200 }
     }
   }
   return null
@@ -1073,7 +1087,8 @@ function installXhrPatch(): void {
   }
 
   XMLHttpRequest.prototype.send = function (this: Tagged, ...args) {
-    const hit = this.__mk && lookup(this.__mk.method, this.__mk.url)
+    const body = typeof args[0] === 'string' ? args[0] : undefined
+    const hit = this.__mk && lookup(this.__mk.method, this.__mk.url, body)
     if (!hit)
       return SEND.apply(this, args as unknown as Parameters<typeof SEND>)
     const xhr = this
@@ -1144,7 +1159,8 @@ function installFetchPatch(): void {
       })
     }
 
-    const hit = lookup(methodOf(input, init), url)
+    const reqBody = typeof init?.body === 'string' ? init.body : undefined
+    const hit = lookup(methodOf(input, init), url, reqBody)
     if (!hit) return ORIG(input, init)
     const text = hit.body == null ? '' : JSON.stringify(hit.body)
     return new Response(text, {

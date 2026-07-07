@@ -2842,6 +2842,7 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "doubleClickToRename": "Double-click to rename",
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",
