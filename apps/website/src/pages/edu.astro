@@ -2,13 +2,21 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import PricingSection from '../components/pricing/PricingSection.vue'
 import CtaSection from '../templates/education/CtaSection.vue'
+import CustomerStoriesSection from '../templates/education/CustomerStoriesSection.vue'
 import FAQSection from '../templates/education/FAQSection.vue'
 import HeroSection from '../templates/education/HeroSection.vue'
 import HowItWorksSection from '../templates/education/HowItWorksSection.vue'
 import { educationFaqs } from '../data/educationFaq'
 import { t } from '../i18n/translations'
+import { isEducationStory, toCardProps } from '../utils/customers'
+import { loadStories } from '../utils/loadStories'
 
 const locale = 'en' as const
+
+// Creative Campus stories power the education carousel.
+const stories = (await loadStories(locale))
+  .map(toCardProps)
+  .filter((story) => isEducationStory(story.slug))
 
 const faqJsonLd = {
   '@context': 'https://schema.org',
@@ -39,6 +47,11 @@ const faqJsonLd = {
   <HeroSection />
   <PricingSection client:visible locale={locale} education />
   <HowItWorksSection />
+  {
+    stories.length > 0 && (
+      <CustomerStoriesSection client:visible stories={stories} locale={locale} />
+    )
+  }
   <FAQSection client:visible />
   <CtaSection />
 </BaseLayout>

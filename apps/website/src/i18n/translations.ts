@@ -4057,6 +4057,12 @@ const translations = {
     'zh-CN': 'Comfy 生成的发光树木艺术作品'
   },
 
+  // EducationCustomerStoriesSection
+  'education.customerStories.heading': {
+    en: 'Educators and students using ComfyUI',
+    'zh-CN': '使用 ComfyUI 的教育者与学生'
+  },
+
   // EducationFAQSection
   'education.faq.heading': {
     en: 'Q&A',
