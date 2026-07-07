@@ -53,7 +53,7 @@ function choose(session: ChatSession): void {
     <DialogPortal>
       <DialogOverlay class="fixed inset-0 z-50 bg-black/50" />
       <DialogContent
-        class="border-agent-border bg-agent-surface-raised text-agent-fg fixed inset-y-0 right-0 z-50 flex w-80 max-w-full flex-col border-l shadow-xl focus:outline-none"
+        class="agent-scope border-agent-border bg-agent-surface-raised text-agent-fg fixed inset-y-0 right-0 z-50 flex w-80 max-w-full flex-col border-l shadow-xl focus:outline-none"
       >
         <DialogTitle
           class="border-agent-border border-b px-4 py-3 text-sm font-semibold"

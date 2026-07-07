@@ -23,7 +23,7 @@ const { t } = useI18n()
     <DialogContent
       :class="
         cn(
-          'rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-1/2 border p-5 shadow-xl focus:outline-none',
+          'agent-scope rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-1/2 border p-5 shadow-xl focus:outline-none',
           cls
         )
       "
