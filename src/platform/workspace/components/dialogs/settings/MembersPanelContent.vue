@@ -195,12 +195,7 @@
       class="flex h-8 items-center"
     >
       <p class="text-sm text-muted-foreground">
-        {{
-          $t('workspacePanel.members.membersUsage', {
-            count: memberCount,
-            max: maxSeats
-          })
-        }}
+        {{ membersUsageLabel }}
         <template v-if="permissions.canInviteMembers">
           {{ $t('workspacePanel.members.needMoreMembers') }}
         </template>
@@ -234,7 +229,8 @@ import MembersOutOfCreditsBanner from '@/platform/workspace/components/dialogs/s
 import PendingInviteRow from '@/platform/workspace/components/dialogs/settings/PendingInviteRow.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const {
   searchQuery,
@@ -273,6 +269,17 @@ const {
 } = useMembersPanel()
 
 const { staticUrls } = useExternalLink()
+const { t } = useI18n()
+
+// Owners get "Need more members?" after the count, where the period reads as a
+// separator; members see just the count, so drop the trailing period.
+const membersUsageLabel = computed(() => {
+  const label = t('workspacePanel.members.membersUsage', {
+    count: memberCount.value,
+    max: maxSeats.value
+  })
+  return permissions.value.canInviteMembers ? label : label.replace(/\.$/, '')
+})
 
 const sortHeaderClass =
   'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left font-[inherit] text-sm text-muted-foreground'
