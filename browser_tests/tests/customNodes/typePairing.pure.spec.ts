@@ -148,6 +148,54 @@ test.describe('typePairing', () => {
     expect(plan.combos).toEqual([])
   })
 
+  // Census-derived: transformed (V2-schema) defs carry combo inputs as the
+  // string 'COMBO' with options in the opts object. Same vocabulary must
+  // pair across forms, and a combo with no static options (remote/lazy)
+  // must never blind-match.
+  test('V2-form combos pair across forms by vocabulary; unknown options never pair', () => {
+    const nodes = normalizeNodeDefs({
+      ListFormSource: {
+        input: { required: {} },
+        output: [['x', 'y']],
+        output_name: [['x', 'y'] as unknown as string],
+        python_module: 'nodes'
+      },
+      V2FormSink: {
+        input: {
+          required: {
+            dim: ['COMBO', { multiselect: false, options: ['y', 'x'] }]
+          }
+        },
+        output: [],
+        python_module: 'nodes'
+      },
+      RemoteComboSink: {
+        input: {
+          required: {
+            image: ['COMBO', { remote: { route: '/internal/files/output' } }]
+          }
+        },
+        output: [],
+        python_module: 'nodes'
+      },
+      ...DEFS
+    })
+    const plan = planPairs(nodes, [
+      'ListFormSource',
+      'V2FormSink',
+      'RemoteComboSink'
+    ])
+    expect(
+      plan.pairs.map(
+        (p) =>
+          `${p.producer.nodeType}.${p.producer.slotName}->${p.consumer.nodeType}.${p.consumer.slotName}`
+      )
+    ).toEqual(['ListFormSource.COMBO->V2FormSink.dim'])
+    expect(plan.combos.map((s) => `${s.nodeType}.${s.slotName}`)).toEqual([
+      'RemoteComboSink.image'
+    ])
+  })
+
   test('COMBO vocabulary matching ignores option order', () => {
     // A wired input bypasses its own widget, so menu order and the
     // options[0] default are not part of the wire contract - membership is.

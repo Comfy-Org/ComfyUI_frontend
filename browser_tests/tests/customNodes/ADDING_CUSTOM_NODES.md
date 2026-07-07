@@ -301,6 +301,28 @@ the gate stays honest and none can grow silently:
 | `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts` | pack JS legitimately vetoes a planned wiring                                                                                                                                           |
 | `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts` | pack's own serialize/configure drops links it manages itself                                                                                                                           |
 
+### Evidence rules for changing the harness itself
+
+Two bug classes shipped past green tests once, so these are now policy:
+
+- **Ground assertions in an oracle you did not write.** A semantic claim
+  about how ComfyUI behaves (what a wire accepts, what an event means, when
+  a widget exists) must cite a live probe, the backend/frontend source, or
+  a CI observation - never plausibility. If every layer agreeing with you
+  was authored from your own mental model (code, fixtures, measurement
+  script), their agreement is not evidence.
+- **Parse live data against a shape census, not memory.** Node defs reach
+  the suite through `getNodeDefs`, which emits BOTH schema forms (combo as
+  an option-list literal AND as the string `COMBO` with `options`/`remote`
+  in the opts; `forceInput` on any form; autogrow `template` inputs;
+  `socketless`). Any parser of def shapes must handle every form the census
+  shows, its pure-spec fixtures must include each form (copied from real
+  census examples, not invented), and an unrecognized shape must be
+  excluded WITH a record - never silently matched or silently skipped.
+- **Verify against the source the code consumes.** Measuring raw
+  `/object_info` proves nothing about code that reads the transformed
+  `getNodeDefs` object.
+
 ## Step 7 - push and watch CI
 
 The `CI: Tests Custom Nodes` job (gating) re-does Steps 1-6 from scratch on

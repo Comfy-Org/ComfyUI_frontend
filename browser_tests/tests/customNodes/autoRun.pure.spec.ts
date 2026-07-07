@@ -120,6 +120,64 @@ test.describe('autoRun classifier', () => {
     expect(verdict.reason).toContain('ckpt_name')
   })
 
+  // Census-derived: transformed (V2-schema) defs carry combos as the string
+  // 'COMBO' with options in the opts object - the classifier must not read
+  // that as an unproducible socket type.
+  test('a V2-form combo with options is a widget', () => {
+    const verdict = classifyAutoRunnable(
+      'LatentConcatLike',
+      {
+        input: {
+          required: {
+            dim: ['COMBO', { multiselect: false, options: ['x', '-x', 'y'] }]
+          }
+        },
+        output: ['LATENT'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(verdict.verdict).toBe('AUTO_RUNNABLE')
+  })
+
+  // Census-derived (DevToolsNodeWithOutputCombo.subset_options): a combo
+  // carrying forceInput is a socket in ANY form - no widget materializes,
+  // so its option list cannot satisfy the input.
+  test('forceInput on a list-form combo is a socket, not a widget', () => {
+    const verdict = classifyAutoRunnable(
+      'OutputComboLike',
+      {
+        input: {
+          required: { subset_options: [['A', 'B'], { forceInput: true }] }
+        },
+        output: ['COMBO'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(verdict.verdict).toBe('NEEDS_WIRES')
+    expect(verdict.reason).toContain('subset_options')
+  })
+
+  test('a V2-form combo with no static options means NEEDS_MODELS', () => {
+    for (const spec of [
+      ['COMBO', { multiselect: false, options: [] }],
+      ['COMBO', { remote: { route: '/internal/files/output' } }]
+    ]) {
+      const verdict = classifyAutoRunnable(
+        'LoadImageOutputLike',
+        {
+          input: { required: { image: spec } },
+          output: ['IMAGE'],
+          output_node: false
+        },
+        SYNTH
+      )
+      expect(verdict.verdict).toBe('NEEDS_MODELS')
+      expect(verdict.reason).toContain('image')
+    }
+  })
+
   test('no outputs and not an OUTPUT_NODE means NO_OBSERVABLE_OUTPUT', () => {
     const verdict = classifyAutoRunnable(
       'SideEffectOnly',

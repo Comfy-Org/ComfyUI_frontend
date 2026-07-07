@@ -55,11 +55,24 @@ type InputSpec = [unknown, Record<string, unknown>?] | unknown
 function classifyInput(spec: InputSpec): 'widget' | 'socket' | 'empty-combo' {
   const specArray = Array.isArray(spec) ? spec : [spec]
   const rawType = specArray[0]
-  const options = specArray[1] as { forceInput?: boolean } | undefined
+  const options = specArray[1] as
+    | { forceInput?: boolean; options?: unknown }
+    | undefined
+  // forceInput beats every form, combos included: no widget materializes,
+  // so no default exists to run on - the input must be wired.
+  if (options?.forceInput) return 'socket'
   if (Array.isArray(rawType))
     return rawType.length > 0 ? 'widget' : 'empty-combo'
   if (typeof rawType !== 'string') return 'socket'
-  if (options?.forceInput) return 'socket'
+  if (rawType === 'COMBO') {
+    // Transformed (V2-schema) defs carry combos as the literal 'COMBO' with
+    // the option list in the opts object. No static list (empty, or a
+    // `remote` lazy combo) means the default value cannot be verified
+    // runnable at plan time - same bucket as an empty model scan.
+    return Array.isArray(options?.options) && options.options.length > 0
+      ? 'widget'
+      : 'empty-combo'
+  }
   return WIDGET_TYPES.has(rawType) ? 'widget' : 'socket'
 }
 
