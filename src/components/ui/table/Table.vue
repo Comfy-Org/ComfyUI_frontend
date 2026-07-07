@@ -1,6 +1,8 @@
 <template>
-  <div class="relative w-full overflow-auto">
-    <table :class="cn('w-full caption-bottom text-sm', className)">
+  <div :class="cn('relative w-full overflow-auto', className)">
+    <table
+      class="w-full caption-bottom border-separate border-spacing-0 text-sm"
+    >
       <slot />
     </table>
   </div>

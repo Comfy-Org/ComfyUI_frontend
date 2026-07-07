@@ -134,9 +134,11 @@
       </Table>
     </div>
 
-    <!-- Auto-enable default: outside the card, pinned to the panel bottom -->
+    <!-- Auto-enable default: outside the card, pinned to the panel bottom. The
+    right padding lines the toggle up with the in-table row toggles (table px-4
+    + cell px-2), per the Figma. -->
     <div
-      class="flex items-center justify-end gap-2 pt-4 text-sm text-muted-foreground"
+      class="flex items-center justify-end gap-2 pt-4 pr-6 text-sm text-muted-foreground"
     >
       <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
       <span class="text-base-foreground">
