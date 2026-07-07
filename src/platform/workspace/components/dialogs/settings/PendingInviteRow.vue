@@ -1,5 +1,8 @@
 <template>
-  <TableRow :data-testid="`invite-row-${invite.id}`" class="group">
+  <TableRow
+    :data-testid="`invite-row-${invite.id}`"
+    class="group hover:bg-transparent"
+  >
     <TableCell>
       <div class="flex items-center gap-3">
         <span

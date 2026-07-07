@@ -1,12 +1,17 @@
 <template>
-  <TableRow :data-testid="`member-row-${member.id}`" class="group">
+  <TableRow
+    :data-testid="`member-row-${member.id}`"
+    class="group hover:bg-transparent"
+  >
     <TableCell>
       <div class="flex items-center gap-3">
-        <UserAvatar
-          class="size-8"
-          :photo-url="isCurrentUser ? photoUrl : undefined"
-          :pt:icon:class="{ 'text-xl!': !isCurrentUser || !photoUrl }"
-        />
+        <span
+          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+        >
+          <span class="text-sm font-bold text-base-foreground">
+            {{ initial }}
+          </span>
+        </span>
         <div class="flex min-w-0 flex-1 flex-col gap-1">
           <span class="text-sm text-base-foreground">
             {{ member.name }}
@@ -57,7 +62,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
-import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
@@ -74,13 +78,16 @@ const {
 } = defineProps<{
   member: WorkspaceMember
   isCurrentUser: boolean
-  photoUrl?: string
   canManageMembers?: boolean
   isOriginalOwner?: boolean
   menuItems?: MenuItem[]
 }>()
 
 const { t } = useI18n()
+
+const initial = computed(() =>
+  (member.name || member.email).charAt(0).toUpperCase()
+)
 
 // The creator and the current user can't be managed from their own row.
 const showMenu = computed(

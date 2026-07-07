@@ -113,7 +113,6 @@
             v-if="isPersonalWorkspace"
             :member="personalWorkspaceMember"
             :is-current-user="true"
-            :photo-url="userPhotoUrl ?? undefined"
           />
           <template v-else>
             <MemberTableRow
@@ -121,9 +120,6 @@
               :key="member.id"
               :member="member"
               :is-current-user="isCurrentUser(member)"
-              :photo-url="
-                isCurrentUser(member) ? (userPhotoUrl ?? undefined) : undefined
-              "
               :can-manage-members="permissions.canManageMembers"
               :is-original-owner="isOriginalOwner(member)"
               :menu-items="memberMenus.get(member.id)"
@@ -257,7 +253,6 @@ const {
   pendingInvites,
   permissions,
   uiConfig,
-  userPhotoUrl,
   showOutOfCreditsBanner,
   creditResetDate,
   dismissOutOfCreditsBanner,
