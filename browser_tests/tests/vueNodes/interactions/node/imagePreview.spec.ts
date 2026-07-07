@@ -14,7 +14,8 @@ const wstest = mergeTests(test, webSocketFixture)
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
-    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.searchBoxV2.addNode('Load Image')
 
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
