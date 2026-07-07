@@ -57,14 +57,6 @@ export function purgeOrphanedLinks(
     const link = graph._links.get(id)
     if (!link) continue
 
-    const originNode = graph.getNodeById(link.origin_id)
-    const output = originNode?.outputs?.[link.origin_slot]
-    if (output?.links) {
-      for (let i = output.links.length - 1; i >= 0; i--) {
-        if (output.links[i] === id) output.links.splice(i, 1)
-      }
-    }
-
     graph._removeLink(id)
   }
 

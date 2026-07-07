@@ -79,9 +79,7 @@ function createTestLink(
     targetNode.id,
     inputSlot
   )
-  graph._links.set(linkId, link)
-  sourceNode.outputs[outputSlot].links ??= []
-  sourceNode.outputs[outputSlot].links!.push(linkId)
+  graph._addLink(link)
   targetNode.inputs[inputSlot].link = linkId
   return link
 }

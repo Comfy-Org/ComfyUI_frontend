@@ -1,7 +1,7 @@
 # Output Slot Connectivity
 
 Date: 2026-07-06
-Status: Proposed (follow-up to the
+Status: Accepted (follow-up to the
 [link topology store](link-topology-store.md); the minimal, non-breaking
 slice of the deferred `SlotConnection` component work in the
 [ECS migration plan](ecs-migration-plan.md))
@@ -123,22 +123,45 @@ a mirror read plus a `slotFloatingLinks` scan), widget value propagation
 (`widgetValuePropagation`), and matchType link revalidation
 (`dynamicWidgets.changeOutputType`).
 
-Readers that stay on the mirror, deliberately:
+## Decision 6: Delete the mirror (implemented)
 
-- `rerouteNode`, `widgetInputs` (PrimitiveNode), and `groupNode` read
-  `output.links` inside `onConnectionsChange` / `onConnectOutput`, where
-  their behavior depends on the mirror's mid-mutation staleness window
-  (during `disconnectOutput`, the store unregisters before the origin's
-  OUTPUT callback while the mirror still holds the ids). They are
-  litegraph-native legacy surfaces owned by the `SlotConnection` phase.
-- `linkFixer`, `migrateReroute`, and `proxyWidgetMigration` operate on
-  the serialized mirror itself — validating or repairing it is their job.
-- `useNodeReplacement` writes the mirror; write sites are out of scope.
+The runtime `output.links[]` field and all nine of its write sites are
+deleted. The store is the single source; litegraph internals read through
+the pure helpers in `node/slotLinks.ts` (`outputHasLinks`,
+`outputLinkIds`, `outputLinks`), and `NodeOutputSlot.isConnected`,
+`serialize`, and `configure` derive from the store. Details:
 
-Because the mirror field stays written and readable, no extension breaks.
-Deleting `output.links[]` and `input.link` is an extension-visible change
-to litegraph-native surfaces (the 40+ custom-node-repo rule in
-AGENTS.md), so it is a later step, not this one.
+- **Wire format unchanged.** `outputAsSerialisable` / `toJSON` emit the
+  serialized `outputs[].links` array from the store, sorted ascending by
+  id (a determinism choice — equal to push order for organically built
+  graphs) and `null` when empty. `configure` fires its output
+  `onConnectionsChange` callbacks from the serialized argument.
+- **Floating links are never returned by link queries.** They are
+  reroute-chain scaffolding, named by `isFloatingTopology`
+  (`src/types/linkTopology.ts`). `isOutputSlotConnected` /
+  `getOutputSlotLinks` see fully-assigned links only, matching the
+  mirror they replace; the one consumer with legacy floating-aware
+  behavior (the slot-drag disconnect check) keeps its own
+  `slotFloatingLinks` scan.
+- **Extension compat = deprecation telemetry, not compatibility.** A
+  read-only prototype getter on `NodeOutputSlot` returns a fresh
+  store-derived `LinkId[] | null` and fires `warnDeprecated`. There is no
+  setter, so extension writes throw in strict mode. `INodeOutputSlot`
+  keeps `links` as `@deprecated readonly` so `'links' in slot`
+  discriminants still compile and hold at runtime via the prototype.
+- **Serialized-data operators are untouched.** `linkFixer` (serialized
+  branch), `migrateReroute`, and `unpackSubgraph`'s pre-configure strip
+  operate on the wire format, which still carries `links`.
+- **Behavior changes, deliberate:** `PrimitiveNode.onLastDisconnect`
+  fires on disconnect-all (the stale mirror previously suppressed it);
+  `disconnectInput` passes `link_info.origin_slot` — not the old
+  mirror-array index — as the OUTPUT slot in `onConnectionsChange`;
+  serialization emits `null` where a lingering `[]` used to persist.
+
+Extension migration map: presence → `node.isOutputConnected(slot)` /
+`slot.isConnected`; enumerate targets → `node.getOutputNodes(slot)`;
+mutate → `node.connect(...)` / `node.disconnectOutput(slot, target?)`.
+App/Vue code uses `useLinkStore().getOutputSlotLinks(...)` (reactive).
 
 ## Decision 5: Wire connected state into the dots (the payoff)
 
@@ -165,16 +188,20 @@ reader migration, and wiring `connected` from `NodeSlots` into
 `InputSlot` / `OutputSlot` (whose `lg-slot--connected` class reaches the
 dot via CSS).
 
+Since implemented by Decision 6: `output.links` reader migration, write
+sites, and field deletion.
+
 Out of scope, each a piece of the deferred `SlotConnection` phase:
 
-- Deleting the `input.link` / `output.links` mirror fields. This is
-  extension-breaking and needs migration guidance.
-- Removing the `output.links` write sites at the chokepoints.
-- Migrating the remaining ~200 `output.links` readers.
+- Deleting the `input.link` mirror field (same recipe as Decision 6).
 - Slot entity extraction: `SlotIdentity`, `SlotVisual`, and retiring the
   `NodeInputSlot` / `NodeOutputSlot` class instances and their
   `shallowReactive` graft.
 - A `compatible`-state source beyond the current drag UI state.
+- Floating/regular link-id counter unification (mint floating ids from
+  the shared `state.lastLinkId`) — only if the internal wart ever bites;
+  nothing resolves store-returned ids against `graph.links` across the
+  id spaces anymore.
 
 ## Open questions
 

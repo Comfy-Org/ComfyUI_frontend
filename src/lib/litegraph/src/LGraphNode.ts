@@ -2998,9 +2998,6 @@ export class LGraphNode
     // add to graph links list
     graph._addLink(link)
 
-    // connect in output
-    output.links ??= []
-    output.links.push(link.id)
     // connect in input
     inputNode.inputs[inputIndex].link = link.id
 
@@ -3135,9 +3132,6 @@ export class LGraphNode
         if (link_info.target_id != target.id) continue
 
         // is the link we are searching for...
-        // remove here
-        const mirrorIndex = output.links?.indexOf(link_info.id) ?? -1
-        if (mirrorIndex !== -1) output.links!.splice(mirrorIndex, 1)
         const input = target.inputs[link_info.target_slot]
         // remove there
         input.link = null
@@ -3207,7 +3201,6 @@ export class LGraphNode
           output
         )
       }
-      output.links = null
     }
 
     this.setDirtyCanvas(false, true)
@@ -3285,10 +3278,6 @@ export class LGraphNode
           // Output not found - may have been removed
           return false
         }
-
-        // remove the mirror entry on the origin output
-        const mirrorIndex = output.links?.indexOf(link_id) ?? -1
-        if (mirrorIndex !== -1) output.links!.splice(mirrorIndex, 1)
 
         link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
         if (graph) graph.incrementVersion()

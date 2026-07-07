@@ -937,7 +937,6 @@ describe('_removeDuplicateLinks', () => {
     graph.state.lastLinkId = linkId
     const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
     graph._addLink(dup)
-    source.outputs[0].links!.push(dup.id)
     return dup
   }
 
@@ -947,7 +946,8 @@ describe('_removeDuplicateLinks', () => {
     for (let i = 0; i < 3; i++) injectDuplicateLink(graph, source, target)
 
     expect(graph._links.size).toBe(4)
-    expect(source.outputs[0].links).toHaveLength(4)
+    // The derived output.links view never contained the contested duplicates.
+    expect(source.outputs[0].links).toHaveLength(1)
 
     graph._removeDuplicateLinks()
 
@@ -1123,7 +1123,7 @@ describe('Subgraph Unpacking', () => {
     return rootGraph.createSubgraph(createTestSubgraphData())
   }
 
-  function duplicateExistingLink(graph: LGraph, source: LGraphNode) {
+  function duplicateExistingLink(graph: LGraph) {
     const existingLink = graph._links.values().next().value!
     const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
     graph.state.lastLinkId = linkId
@@ -1136,7 +1136,6 @@ describe('Subgraph Unpacking', () => {
       existingLink.target_slot
     )
     graph._links.set(dup.id, dup)
-    source.outputs[0].links!.push(dup.id)
     return dup
   }
 
@@ -1152,7 +1151,7 @@ describe('Subgraph Unpacking', () => {
 
     sourceNode.connect(0, targetNode, 0)
 
-    for (let i = 0; i < 3; i++) duplicateExistingLink(subgraph, sourceNode)
+    for (let i = 0; i < 3; i++) duplicateExistingLink(subgraph)
     expect(subgraph._links.size).toBe(4)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
@@ -1175,7 +1174,7 @@ describe('Subgraph Unpacking', () => {
     subgraph.add(targetNode)
 
     sourceNode.connect(0, targetNode, 0)
-    duplicateExistingLink(subgraph, sourceNode)
+    duplicateExistingLink(subgraph)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     rootGraph.add(subgraphNode)

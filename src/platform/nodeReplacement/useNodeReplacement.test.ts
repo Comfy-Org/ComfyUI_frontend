@@ -310,7 +310,6 @@ describe('useNodeReplacement', () => {
       // Output link should be remapped
       expect(link.origin_id).toBe(1)
       expect(link.origin_slot).toBe(0)
-      expect(newNode.outputs[0].links).toEqual([20])
     })
 
     it('should apply set_value to widget', () => {
@@ -657,7 +656,8 @@ describe('useNodeReplacement', () => {
       // Default mapping transfers connections and widget values by name
       expect(newNode.id).toBe(13)
       expect(newNode.inputs[0].link).toBe(4)
-      expect(newNode.outputs[0].links).toEqual([6])
+      expect(outLink.origin_id).toBe(13)
+      expect(outLink.origin_slot).toBe(0)
       expect(newNode.widgets![0].value).toBe(0.75)
     })
 

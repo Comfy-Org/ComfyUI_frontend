@@ -25,6 +25,7 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { toLinkId } from '@/types/linkId'
 import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -175,13 +176,15 @@ export function fixBadLinks(
           return false
         }
         patchedNode['outputs']![slot]!['links'].push(linkId)
-        if (fix) {
+        // Live NodeOutputSlot mirrors are store-derived and need no repair;
+        // only serialized plain slots carry a writable links array.
+        if (fix && !(node.outputs?.[slot] instanceof NodeOutputSlot)) {
           node.outputs = node.outputs || []
-          node.outputs[slot] =
-            node.outputs[slot] ||
-            ({} satisfies Partial<INodeOutputSlot> as INodeOutputSlot)
-          node.outputs[slot]!.links = node.outputs[slot]!.links || []
-          node.outputs[slot]!.links!.push(toLinkId(linkId))
+          const slotData = (node.outputs[slot] ??=
+            {} satisfies Partial<INodeOutputSlot> as INodeOutputSlot)
+          const writable = slotData as { links?: number[] | null }
+          writable.links = writable.links || []
+          writable.links.push(linkId)
         }
       } else {
         const linkIdIndex =
@@ -193,8 +196,9 @@ export function fixBadLinks(
           return false
         }
         patchedNode['outputs']![slot]!['links'].splice(linkIdIndex, 1)
-        if (fix) {
-          node.outputs?.[slot]!.links!.splice(linkIdIndex, 1)
+        if (fix && !(node.outputs?.[slot] instanceof NodeOutputSlot)) {
+          const writable = node.outputs?.[slot] as { links?: number[] | null }
+          writable.links?.splice(linkIdIndex, 1)
         }
       }
     }

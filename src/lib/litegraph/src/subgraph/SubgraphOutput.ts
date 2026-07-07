@@ -1,5 +1,3 @@
-import { pull } from 'es-toolkit/compat'
-
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
@@ -60,9 +58,6 @@ export class SubgraphOutput extends SubgraphSlot {
       subgraph.beforeChange()
 
       existingLink.disconnect(subgraph, 'input')
-      const resolved = existingLink.resolve(subgraph)
-      const links = resolved.output?.links
-      if (links) pull(links, existingLink.id)
     }
 
     const linkId = toLinkId(Number(subgraph.state.lastLinkId) + 1)
@@ -83,8 +78,6 @@ export class SubgraphOutput extends SubgraphSlot {
 
     // Set link ID in each slot
     this.linkIds[0] = link.id
-    slot.links ??= []
-    slot.links.push(link.id)
 
     anchorRerouteChain(subgraph, link)
     subgraph.incrementVersion()
@@ -145,9 +138,7 @@ export class SubgraphOutput extends SubgraphSlot {
       const link = subgraph.links[linkId]
       if (!link) continue
       subgraph.removeLink(linkId)
-      const { output, outputNode } = link.resolve(subgraph)
-      if (output)
-        output.links = output.links?.filter((id) => id !== linkId) ?? null
+      const { outputNode } = link.resolve(subgraph)
       outputNode?.onConnectionsChange?.(
         NodeSlotType.OUTPUT,
         link.origin_slot,

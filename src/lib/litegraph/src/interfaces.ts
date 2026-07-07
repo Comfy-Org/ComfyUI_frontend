@@ -376,7 +376,13 @@ export interface IWidgetInputSlot extends INodeInputSlot {
 }
 
 export interface INodeOutputSlot extends INodeSlot {
-  links: LinkId[] | null
+  /**
+   * @deprecated Ids of the links leaving this slot, derived from the link
+   * store by a warning getter. Read via `node.isOutputConnected(slot)` /
+   * `node.getOutputNodes(slot)`; mutate via `node.connect()` /
+   * `node.disconnectOutput()`.
+   */
+  readonly links?: readonly LinkId[] | null
   _data?: unknown
   slot_index?: SlotIndex
 }

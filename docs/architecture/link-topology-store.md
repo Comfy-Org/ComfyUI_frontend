@@ -105,8 +105,11 @@ subgraph-definition GC unregister whole graphs
 
 This design covers link topology (endpoints, type, chain terminus).
 Link visual state (`color`, path caches) and the layout store's link
-_geometry_ records are out of scope. The `input.link` / `output.links`
-slot mirrors remain the litegraph-native representation un-migrated
-consumers read; extracting them is the `SlotConnection` component work
-in the [ECS migration plan](ecs-migration-plan.md), not part of this
-store.
+_geometry_ records are out of scope. The `output.links` mirror has since
+been deleted — the store is the single source for output-side
+connectivity (see
+[output slot connectivity](output-slot-connectivity.md) Decision 6). The
+`input.link` slot mirror remains the litegraph-native representation
+un-migrated consumers read; extracting it is the `SlotConnection`
+component work in the [ECS migration plan](ecs-migration-plan.md), not
+part of this store.

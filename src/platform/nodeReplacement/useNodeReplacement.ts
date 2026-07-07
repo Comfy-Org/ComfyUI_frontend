@@ -70,8 +70,6 @@ function transferOutputConnections(
     link.origin_id = newNode.id
     link.origin_slot = newOutputIdx
   }
-  newNode.outputs[newOutputIdx].links = links.map((link) => link.id)
-  oldNode.outputs[oldOutputIdx].links = []
 }
 
 /** Uses old_widget_ids as name→index lookup into widgets_values. */

@@ -266,7 +266,14 @@ export function createTestSubgraphNode(
     order: 0
   }
 
-  return new SubgraphNode(parentGraph, subgraph, instanceData)
+  const subgraphNode = new SubgraphNode(parentGraph, subgraph, instanceData)
+  // Reserve the id: the node is not add()ed here, so without this a later
+  // parentGraph.add() would mint a duplicate id.
+  const numericId = Number(subgraphNode.id)
+  if (Number.isInteger(numericId) && numericId > parentGraph.state.lastNodeId) {
+    parentGraph.state.lastNodeId = numericId
+  }
+  return subgraphNode
 }
 
 export function setupComplexPromotionFixture(): {
