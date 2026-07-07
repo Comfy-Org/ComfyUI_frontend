@@ -249,29 +249,6 @@ export function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
   }
 }
 
-export interface VideoInput {
-  url: string
-  name: string
-  description?: string
-  thumbnailUrl?: string
-  uploadDate?: string
-  duration?: string
-  transcript?: string
-}
-
-export function videoObjectNode(input: VideoInput): JsonLdNode {
-  return {
-    '@type': 'VideoObject',
-    '@id': `${input.url}#video`,
-    name: input.name,
-    description: input.description,
-    thumbnailUrl: input.thumbnailUrl,
-    uploadDate: input.uploadDate,
-    duration: input.duration,
-    transcript: input.transcript
-  }
-}
-
 export interface OfferInput {
   name: string
   price: string | number
