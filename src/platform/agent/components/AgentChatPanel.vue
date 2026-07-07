@@ -9,6 +9,7 @@ import Message from '@/components/ai-elements/message/Message.vue'
 import MessageAction from '@/components/ai-elements/message/MessageAction.vue'
 import MessageActions from '@/components/ai-elements/message/MessageActions.vue'
 import MessageAttachments from '@/components/ai-elements/message/MessageAttachments.vue'
+import MessageConfirmation from '@/components/ai-elements/message/MessageConfirmation.vue'
 import MessageContent from '@/components/ai-elements/message/MessageContent.vue'
 import MessageResponse from '@/components/ai-elements/message/MessageResponse.vue'
 import MessageThinking from '@/components/ai-elements/message/MessageThinking.vue'
@@ -44,6 +45,7 @@ const {
   currentConversationId,
   send,
   stop,
+  respondToConfirmation,
   applySuggestion,
   startNewChat,
   loadConversation,
@@ -209,6 +211,12 @@ function onNewChatFromHistory() {
                   status === 'ready' ||
                   message !== messages[messages.length - 1]
                 "
+              />
+              <MessageConfirmation
+                v-else-if="message.confirmation"
+                :confirmation="message.confirmation"
+                @approve="respondToConfirmation(message.id, true)"
+                @reject="respondToConfirmation(message.id, false)"
               />
               <MessageResponse
                 v-if="message.text"

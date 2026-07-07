@@ -28,6 +28,14 @@
     "toolCalls": {
       "summary": "Ran {count} tool calls for {duration}"
     },
+    "confirmation": {
+      "prompt": "This tool wants to run the workflow:",
+      "question": "Do you approve?",
+      "reject": "Reject",
+      "run": "Run",
+      "approved": "You approved this workflow run",
+      "rejected": "You rejected this workflow run"
+    },
     "message": {
       "thumbsUp": "Good response",
       "thumbsDown": "Bad response",

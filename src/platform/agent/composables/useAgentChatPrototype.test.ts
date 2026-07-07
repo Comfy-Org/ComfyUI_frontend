@@ -66,6 +66,43 @@ describe('useAgentChatPrototype', () => {
     expect(input.value).toBe('List my saved workflows')
   })
 
+  it('marks a confirmation rejected without triggering a reply', () => {
+    const { messages, loadConversation, respondToConfirmation } =
+      useAgentChatPrototype()
+
+    loadConversation('demo-code-block')
+    const confirmationMessage = messages.value.find((m) => m.confirmation)!
+
+    respondToConfirmation(confirmationMessage.id, false)
+
+    expect(confirmationMessage.confirmation).toMatchObject({
+      status: 'rejected'
+    })
+    vi.advanceTimersByTime(10_000)
+    expect(messages.value).toHaveLength(3)
+  })
+
+  it('simulates the agent processing after a confirmation is approved', () => {
+    const { messages, status, loadConversation, respondToConfirmation } =
+      useAgentChatPrototype()
+
+    loadConversation('demo-code-block')
+    const confirmationMessage = messages.value.find((m) => m.confirmation)!
+
+    respondToConfirmation(confirmationMessage.id, true)
+
+    expect(confirmationMessage.confirmation).toMatchObject({
+      status: 'approved'
+    })
+    expect(status.value).toBe('submitted')
+
+    vi.advanceTimersByTime(10_000)
+
+    expect(status.value).toBe('ready')
+    expect(messages.value).toHaveLength(4)
+    expect(messages.value.at(-1)?.text).toContain('ran successfully')
+  })
+
   it('clears the conversation on startNewChat', () => {
     const { messages, send, startNewChat, isEmpty } = useAgentChatPrototype()
 

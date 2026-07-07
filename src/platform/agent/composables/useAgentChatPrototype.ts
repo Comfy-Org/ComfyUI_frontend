@@ -15,6 +15,11 @@ export interface MessageAttachment {
   size: number
 }
 
+export interface ToolRunConfirmation {
+  workflowName: string
+  status: 'pending' | 'approved' | 'rejected'
+}
+
 interface AgentMessage {
   id: string
   role: 'user' | 'assistant'
@@ -22,6 +27,7 @@ interface AgentMessage {
   attachments?: readonly MessageAttachment[]
   thinking?: boolean
   toolCalls?: readonly ToolCall[]
+  confirmation?: ToolRunConfirmation
 }
 
 export interface AgentConversation {
@@ -74,6 +80,15 @@ export default {
   ],
 }
 ${FENCE}`
+      },
+      {
+        id: 'demo-code-3',
+        role: 'assistant',
+        text: '',
+        confirmation: {
+          workflowName: 'image flux2 klein text to image',
+          status: 'pending'
+        }
       }
     ]
   },
@@ -416,6 +431,27 @@ function send(text?: string, files: File[] = []) {
   }, THINKING_DELAY_MS)
 }
 
+function respondToConfirmation(messageId: string, approved: boolean) {
+  const message = messages.value.find((m) => m.id === messageId)
+  if (!message?.confirmation || message.confirmation.status !== 'pending')
+    return
+
+  const { workflowName } = message.confirmation
+  message.confirmation = {
+    workflowName,
+    status: approved ? 'approved' : 'rejected'
+  }
+  if (!approved || status.value !== 'ready') return
+
+  status.value = 'submitted'
+  thinkingTimer = setTimeout(() => {
+    thinkingTimer = null
+    streamReply(
+      `Workflow **${workflowName}** ran successfully. The output image has been generated.\n\n_This is a prototype response and does not modify your graph._`
+    )
+  }, THINKING_DELAY_MS)
+}
+
 function stop() {
   clearTimers()
   status.value = 'ready'
@@ -470,6 +506,7 @@ export function useAgentChatPrototype() {
     isEmpty: computed(() => messages.value.length === 0),
     send,
     stop,
+    respondToConfirmation,
     applySuggestion,
     startNewChat,
     loadConversation,
