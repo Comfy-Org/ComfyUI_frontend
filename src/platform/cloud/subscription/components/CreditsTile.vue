@@ -117,17 +117,18 @@
         >
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
-            <button
+            <Button
               v-tooltip="{
                 value: $t('subscription.additionalCreditsTooltip'),
                 showDelay: 300
               }"
-              type="button"
+              variant="muted-textonly"
+              size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
               class="flex cursor-help appearance-none items-center border-none bg-transparent p-0 text-muted transition-colors hover:text-text-primary"
             >
               <i class="icon-[lucide--info] size-4" />
-            </button>
+            </Button>
             <span
               v-if="isSpendingAdditional"
               class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
