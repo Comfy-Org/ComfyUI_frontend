@@ -25,7 +25,9 @@
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
         <i class="icon-[lucide--coins] size-4 self-center text-credit" />
-        <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
+        <span class="text-2xl leading-none font-bold tabular-nums">{{
+          displayTotal
+        }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
         }}</span>
@@ -78,13 +80,13 @@
             width="5rem"
             height="1rem"
           />
-          <span v-else class="text-muted @max-[300px]:hidden">
+          <span v-else class="text-muted tabular-nums @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
           <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
           <span
             v-else
-            class="flex items-center gap-1 font-bold text-text-primary"
+            class="flex items-center gap-1 font-bold text-text-primary tabular-nums"
           >
             <i class="icon-[lucide--coins] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
@@ -136,7 +138,7 @@
           <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
           <span
             v-else
-            class="flex items-center gap-1 font-bold text-text-primary"
+            class="flex items-center gap-1 font-bold text-text-primary tabular-nums"
           >
             <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}

@@ -4,6 +4,7 @@
     data-testid="settings-dialog"
     size="full"
     header-height-class="h-22"
+    :content-padding="activeCategoryKey === 'workspace' ? 'flush' : 'default'"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />

@@ -161,7 +161,7 @@ const SIZE_CLASSES = {
 } as const
 
 type ModalSize = keyof typeof SIZE_CLASSES
-type ContentPadding = 'default' | 'compact' | 'none'
+type ContentPadding = 'default' | 'compact' | 'none' | 'flush'
 
 const {
   contentTitle,
@@ -216,7 +216,10 @@ const contentContainerClass = computed(() =>
   cn(
     'flex scrollbar-custom min-h-0 flex-1 flex-col overflow-y-auto',
     contentPadding === 'default' && 'px-6 pt-0 pb-10',
-    contentPadding === 'compact' && 'px-6 pt-0 pb-2'
+    contentPadding === 'compact' && 'px-6 pt-0 pb-2',
+    // Keep the horizontal inset but let content run to the bottom edge (it
+    // clips there instead of ending above a padding gap).
+    contentPadding === 'flush' && 'px-6 pt-0'
   )
 )
 
