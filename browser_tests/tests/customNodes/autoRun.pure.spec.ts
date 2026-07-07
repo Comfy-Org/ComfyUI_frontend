@@ -63,13 +63,13 @@ test.describe('autoRun classifier', () => {
     expect(verdict.reason).toContain('ckpt_name')
   })
 
-  test('no outputs and not an OUTPUT_NODE means NO_SINK', () => {
+  test('no outputs and not an OUTPUT_NODE means NO_OBSERVABLE_OUTPUT', () => {
     const verdict = classifyAutoRunnable('SideEffectOnly', {
       input: { required: { value: ['INT', {}] } },
       output: [],
       output_node: false
     })
-    expect(verdict.verdict).toBe('NO_SINK')
+    expect(verdict.verdict).toBe('NO_OBSERVABLE_OUTPUT')
   })
 
   test('optional socket inputs do not block auto-running', () => {
@@ -84,7 +84,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.verdict).toBe('AUTO_RUNNABLE')
   })
 
-  test('planAutoRuns maps keys and batchAutoRunnable chunks only runnables', () => {
+  test('planAutoRuns maps keys and batchAutoRunnable chunks only runnables', async () => {
     const defs = {
       A: {
         input: { required: { v: ['INT', {}] } },
@@ -109,7 +109,7 @@ test.describe('autoRun classifier', () => {
       'AUTO_RUNNABLE'
     ])
     const batches = batchAutoRunnable(verdicts, 1)
-    expect(batches).toHaveLength(2)
+    await expect(batches).toHaveLength(2)
     expect(batches[0][0].key).toBe('A')
   })
 })

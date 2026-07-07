@@ -92,14 +92,9 @@ export class LocalDesktopTarget {
       ['execution_start', ...TERMINAL, 'executing']
     )
 
-    // Browser path: app.queuePrompt runs graphToPrompt internally. Do NOT call
-    // app.api.queuePrompt, which submits an already-serialized (empty) prompt.
-    // A backend validation reject emits NO events at all - without checking the
-    // queue result, every rejected prompt would burn the full wait and
-    // masquerade as TIMEOUT. But a false return is NOT proof of a backend
-    // reject: pack JS hooking the queue path (Impact's wildcard processing)
-    // can refuse transiently right after nodes are created. Retry once -
-    // genuine backend rejects are deterministic and fail both attempts.
+    // app.queuePrompt (NOT api.queuePrompt: that submits an empty prompt).
+    // false = validation reject (emits no events), but pack JS hooking the
+    // queue can refuse transiently - retry once; real rejects fail twice.
     let queued = await page.evaluate(() => window.app!.queuePrompt(0))
     if (queued === false) {
       await page.evaluate(

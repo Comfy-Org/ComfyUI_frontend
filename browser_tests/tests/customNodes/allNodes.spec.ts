@@ -26,19 +26,12 @@ import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 
 const target = new LocalDesktopTarget()
 
-// Empirically calibrated (browser_tests/tools/batchCalibration.spec.ts):
-// 24 was the largest chunk size with deterministic results across repeats
-// and the best per-node cost (6.6ms/node; smaller chunks pay per-chunk
-// overhead, larger ones pay fit-view and DOM density).
+// Measured optimum (deterministic across repeats, best ms/node); see PR.
 const BATCH_SIZE = 24
 const AUTO_RUN_BATCH = 10
 const GRID_SPACING = { x: 420, y: 360 }
 
-// Nodes whose EXECUTION is unsafe on a bare sandboxed backend even though
-// their inputs classify as auto-runnable. Every entry names the mechanism.
-// The canonical case: a node that downloads a model at execution time hangs
-// a network-restricted backend in a non-interruptible call, jamming the
-// prompt queue for everything after it.
+// Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   'rgthree-comfy': {
     'Power Primitive (rgthree)':
@@ -64,8 +57,7 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   }
 }
 
-// Pack-attributed console noise with no visible error surface. Every entry
-// names the mechanism; anything not matching stays a hard failure.
+// Pack-attributed console noise with no visible error surface.
 const CONSOLE_ERROR_ALLOWLIST: Record<
   string,
   Array<{ pattern: RegExp; reason: string }>
@@ -97,8 +89,7 @@ async function expectNoVisibleErrors(
     await expect(locator, `${context}: ${surface}`).toHaveCount(0)
 }
 
-// One in-page round-trip per chunk: batch-add on a grid, fit the viewport.
-// Returns ids aligned with `types` (null = createNode failed).
+// null id = createNode failed for that type.
 function addChunk(page: Page, types: string[]): Promise<Array<string | null>> {
   return page.evaluate(
     ([chunk, spacingX, spacingY]) => {
@@ -297,8 +288,7 @@ for (const entry of loadManifest()) {
       )
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
-      // A hung execution from an earlier test would make every run below
-      // false-timeout; fail fast with the real cause instead.
+      // A leftover hung execution would false-timeout every run below.
       const queueBusy = await comfyPage.page.evaluate(async () => {
         const queue = (await window.app!.api.getQueue()) as {
           Running?: unknown[]
@@ -328,10 +318,6 @@ for (const entry of loadManifest()) {
 
       const batches = batchAutoRunnable(verdicts, AUTO_RUN_BATCH)
       const hardFailures: string[] = []
-      // Nodes observed unable to run standalone: backend validation rejects
-      // their defaults, or execution errors on them (empty expressions,
-      // empty folders, no webcam). Reconciled against the committed
-      // cannotRunAlone baseline below - never silently dropped.
       const cannotRun = new Map<string, string>()
       const ranClean = new Set<string>()
       for (const batch of batches) {
@@ -340,16 +326,14 @@ for (const entry of loadManifest()) {
           for (const verdict of batch) ranClean.add(verdict.key)
           continue
         }
-        // A jammed queue makes every further run a false timeout - stop and
-        // name the suspects instead of bisecting through poisoned results.
+        // A jammed queue false-timeouts everything after it - stop here.
         if (outcome.startsWith('HUNG_BACKEND')) {
           hardFailures.push(
             `[${batch.map((verdict) => verdict.key).join(', ')}]: ${outcome} - add the offender to AUTO_RUN_EXCLUDE with its mechanism`
           )
           break
         }
-        // Isolate: rerun each node alone so one bad node names itself
-        // instead of implicating its nine batch-mates.
+        // Rerun singles so the bad node names itself.
         for (const verdict of batch) {
           const single = await runBatch(comfyPage.page, [verdict])
           if (single === 'PASS') ranClean.add(verdict.key)
@@ -361,10 +345,8 @@ for (const entry of loadManifest()) {
           } else cannotRun.set(verdict.key, single)
         }
       }
-      // Two-way baseline reconciliation. A failure missing from the baseline
-      // is a regression (a node that used to run clean broke); a baseline
-      // entry that now runs clean, or names a node that is not even
-      // auto-runnable, is stale and must be removed - the list cannot rot.
+      // Two-way reconciliation: unlisted failure = regression; listed node
+      // that runs clean (or is not auto-runnable) = stale entry.
       const baseline = new Set(entry.cannotRunAlone ?? [])
       const runnable = new Set(
         batches.flatMap((batch) => batch.map((verdict) => verdict.key))
@@ -417,18 +399,14 @@ async function runBatch(
     },
     [batch, GRID_SPACING.y] as const
   )
-  // Auto-runnable nodes are widget-only and CPU-trivial; anything that has
-  // not finished in 20s is hung, and validation rejects return instantly.
+  // Widget-only CPU nodes: not finished in 20s = hung.
   const result = await target.runWorkflow(page, {
     expectedNodeIds: ids,
     timeoutMs: 20_000
   })
   if (result.outcome === 'TIMEOUT') {
-    // Leave no execution behind: an abandoned run jams the single prompt
-    // queue and every later run false-timeouts behind it. Interrupt, then
-    // verify the queue actually drained - a non-interruptible hang (e.g. a
-    // node blocked in a network download) can only be cleared by a backend
-    // restart, so name it instead of letting it poison the rest.
+    // Interrupt and verify the queue drained; a non-interruptible hang can
+    // only be cleared by a backend restart, so name it.
     const drained = await page.evaluate(async () => {
       await window.app!.api.interrupt()
       for (let attempt = 0; attempt < 10; attempt++) {

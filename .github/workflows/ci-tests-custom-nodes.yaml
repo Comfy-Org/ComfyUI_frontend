@@ -127,8 +127,10 @@ jobs:
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
+          # workers=1: the auto-run tier needs exclusive backend-queue access;
+          # parallel workers interrupt each other's executions.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=chromium --reporter=list,json
+            --project=chromium --reporter=list,json --workers=1
 
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.

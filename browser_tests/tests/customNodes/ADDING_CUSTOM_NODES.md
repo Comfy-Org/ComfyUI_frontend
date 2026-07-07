@@ -22,7 +22,7 @@ Adding the one row enrolls the pack in two kinds of coverage:
   valid default; output wired to `PreviewAny` or the node is its own
   terminus). Nodes that cannot run alone are classified and logged, never
   silently dropped: `NEEDS_WIRES` (required socket inputs), `NEEDS_MODELS`
-  (empty model/file combo on the bare backend), `NO_SINK` (nothing
+  (empty model/file combo on the bare backend), `NO_OBSERVABLE_OUTPUT` (nothing
   observable to queue), or "rejected at validation on defaults" (needs a
   curated fixture).
 - **Curated tiers (the row's fields).** `expectedNodes` + `workflow` drive

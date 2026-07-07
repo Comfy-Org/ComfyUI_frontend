@@ -81,10 +81,7 @@ for (const entry of loadManifest()) {
       )
       await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
-      // A pack that declares vueNodesCompatible: false is exercised under the
-      // LiteGraph canvas only - rendering its nodes under Vue Nodes 2.0 would
-      // fail for a known pack limitation, not a frontend regression. This is
-      // conditional coverage, not a test skip: the test still runs and gates.
+      // vueNodesCompatible: false = canvas-only assertions; still runs, no skip.
       const rendererPasses = rendererPassesFor(entry)
       if (entry.vueNodesCompatible === false)
         console.log(

@@ -31,10 +31,9 @@ const CONNECT_REJECTED_ALLOWLIST: string[] = [
   // expression variables; its JS vetoes text-list producers.
   'AddTextPrefix.texts -> MathExpression|pysssss.expression'
 ]
-// A pack's own serialize/configure hooks may drop inbound links it manages
-// itself; each committed entry must name the pack behavior. These reproduce
-// in manual use of those packs (wire, save, reload: the link is gone), so
-// they are pack behavior on record, not frontend regressions.
+// A pack's own serialize/configure hooks may drop links it manages itself
+// (reproducible manually: wire, save, reload - link gone). Pack behavior on
+// record, not frontend regressions.
 const ROUNDTRIP_LOST_ALLOWLIST: string[] = [
   // rgthree SDXL Power Prompt rebuilds its dimension widget-inputs during
   // configure and drops inbound links to them.
@@ -101,9 +100,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   for (const entry of connectivityEntries)
     if (!installedEntries.includes(entry))
       console.log(`connectivity: ${entry.pack} not installed on this backend`)
-  // Sweep EVERY node the installed packs register, not just the curated
-  // expectedNodes sentinels - the corpus comes from the live backend, so a
-  // pack update is covered the moment it installs.
+  // Corpus = every node the installed packs register, from the live backend.
   const installedPacks = new Set(installedEntries.map((entry) => entry.pack))
   const packTypes = nodes
     .filter((node) => installedPacks.has(node.pack))
@@ -172,9 +169,8 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
 
-// Instance-level probe for the drag test: the first planned pair whose
-// producer output AND consumer input both exist on freshly created node
-// instances (pack JS can rebuild declared inputs as widget-only controls).
+// First planned pair whose slots both exist on real instances (pack JS can
+// rebuild declared inputs as widget-only controls).
 function firstMaterializedPair(
   page: Page,
   pairs: PlannedPair[]
@@ -231,10 +227,8 @@ function runPairsInPage(
           (slot) => slot.name === pair.consumer.slotName
         )
         if (outIndex < 0 || inIndex < 0) {
-          // A pack's own frontend JS may rebuild a declared input as a
-          // widget-only control (rgthree's Seed does this to `seed`). That is
-          // pack design, not a wiring regression - excluded like wildcards.
-          // A name that exists NEITHER as slot nor widget stays a hard fail.
+          // Pack JS may rebuild a declared input as widget-only (rgthree
+          // Seed.seed) - excluded; missing as slot AND widget stays a fail.
           const widgetOnly =
             outIndex >= 0 &&
             (consumer.widgets ?? []).some(

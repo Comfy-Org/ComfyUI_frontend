@@ -61,11 +61,11 @@ Any `-g` pattern works against the generic scripts, e.g.
 - **Every-node tiers** (`allNodes.spec.ts`): the pack's FULL node list,
   discovered live from `/object_info`, is exercised with zero
   configuration - every registered node mounts in both renderers (chunked
-  at an empirically calibrated batch size), survives a serialize/configure
+  at an empirically measured batch size), survives a serialize/configure
   save-reload round-trip, and executes for real on the backend when
   self-sufficient (all required inputs are widgets with valid defaults).
   Nodes that cannot run alone are classified and logged
-  (`NEEDS_WIRES` / `NEEDS_MODELS` / `NO_SINK` / rejected-at-validation),
+  (`NEEDS_WIRES` / `NEEDS_MODELS` / `NO_OBSERVABLE_OUTPUT` / rejected-at-validation),
   never silently dropped; the documented exception ledgers (see
   [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)) carry a written mechanism for every
   escape hatch.

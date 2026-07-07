@@ -30,19 +30,11 @@ export interface CustomNodeManifestEntry {
   // applied to this pack: its tests still run and pass their LiteGraph-canvas
   // assertions, so the zero-skip gate is preserved.
   vueNodesCompatible?: boolean
-  // Per-node Vue Nodes 2.0 incompatibility ledger: node key -> reason with
-  // evidence (author statement or reproduced mount failure; a run failure
-  // alone is NOT evidence - it may be our own fixture error). Ledgered nodes
-  // keep every canvas assertion; only their Vue mount assertion is withheld.
-  // A key that stops existing on the backend fails the suite, so entries
-  // cannot silently rot.
+  // Node key -> evidenced reason it cannot mount under Vue Nodes 2.0; only
+  // the Vue mount assertion is withheld. Stale keys fail the suite.
   vueIncompatibleNodes?: Record<string, string>
-  // Auto-run baseline: nodes observed unable to execute standalone on a bare
-  // backend (validation reject or execution error on pure defaults - empty
-  // expressions, empty folders, no webcam). Asserted BOTH ways: a failing
-  // node missing from this list is a regression, and a listed node that now
-  // runs clean must be removed. Weak-signal territory by design - a wrong
-  // entry here means a fixture gap, never a skipped test.
+  // Nodes that cannot execute on pure defaults. Asserted both ways: an
+  // unlisted failure is a regression, a listed clean run is a stale entry.
   cannotRunAlone?: string[]
 }
 

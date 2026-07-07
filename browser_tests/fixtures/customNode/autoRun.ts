@@ -1,22 +1,16 @@
-// Classifies which registered nodes can execute with zero hand-authored
-// fixtures: every required input satisfiable by a widget default, plus an
-// observable terminus (the node is an OUTPUT_NODE, or an output we can wire
-// to core PreviewAny). Those run for real on the backend; the rest are
-// recorded with the reason they cannot run alone - never silently dropped.
+// Classifies which nodes can execute with no hand-authored fixture; the
+// rest are recorded with the reason, never silently dropped.
 import type { RawNodeDef } from './typePairing'
 
 export type AutoRunClass =
-  // Runs alone: widgets cover every required input, terminus available.
+  // Widgets cover every required input and a terminus exists.
   | 'AUTO_RUNNABLE'
-  // A required input is a socket (custom type or forceInput); execution
-  // needs wiring, which the curated run workflows cover instead.
+  // A required input is a socket; needs wiring (curated workflows).
   | 'NEEDS_WIRES'
-  // A required combo has zero options on this backend - a model/file scan
-  // came back empty, so no valid default exists (CPU gate has no models).
+  // A required combo has zero options (empty model/file scan).
   | 'NEEDS_MODELS'
-  // Widgets suffice but nothing observable to queue: no outputs and not an
-  // OUTPUT_NODE, so the executor would never touch it.
-  | 'NO_SINK'
+  // No outputs and not an OUTPUT_NODE - nothing the executor could watch.
+  | 'NO_OBSERVABLE_OUTPUT'
 
 export interface AutoRunVerdict {
   key: string
@@ -80,7 +74,7 @@ export function classifyAutoRunnable(
     }
   return {
     key,
-    verdict: 'NO_SINK',
+    verdict: 'NO_OBSERVABLE_OUTPUT',
     reason: 'no outputs and not an OUTPUT_NODE - nothing observable to queue'
   }
 }
@@ -92,8 +86,8 @@ export function planAutoRuns(
   return packNodeKeys.map((key) => classifyAutoRunnable(key, defs[key]))
 }
 
-// Independent single-node chains per prompt; one bad node fails its batch,
-// not the whole tier, and the executed-set check still attributes per node.
+// Independent single-node chains per prompt so one bad node fails a batch,
+// not the tier.
 export function batchAutoRunnable(
   verdicts: AutoRunVerdict[],
   batchSize: number
