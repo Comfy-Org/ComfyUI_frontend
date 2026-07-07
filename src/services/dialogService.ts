@@ -609,7 +609,11 @@ export const useDialogService = () => {
           count: maxSeats
         }),
         onRequestMore: () =>
-          window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+          window.open(
+            staticUrls.teamPlanRequests,
+            '_blank',
+            'noopener,noreferrer'
+          )
       },
       dialogComponentProps: workspaceDialogProps
     })
