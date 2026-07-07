@@ -7,7 +7,7 @@ import Password from 'primevue/password'
 import PrimeVue from 'primevue/config'
 import ProgressSpinner from 'primevue/progressspinner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -38,13 +38,28 @@ vi.mock('@/stores/authStore', () => ({
 }))
 
 const mockTurnstileEnabled = ref(false)
+const mockTurnstileToken = ref('')
+const mockTurnstileUnavailable = ref(false)
 const mockReset = vi.fn()
 let emitTurnstileToken: ((token: string) => void) | undefined
 let emitTurnstileUnavailable: ((unavailable: boolean) => void) | undefined
 
+// The reset-on-toggle behavior lives in useTurnstileGate itself (see
+// useTurnstile.test.ts); this fake just wires token/unavailable through to
+// `waiting` the same way so SignUpForm's submit gating can be exercised.
 vi.mock('@/composables/auth/useTurnstile', () => ({
   useTurnstile: () => ({
     enabled: mockTurnstileEnabled
+  }),
+  useTurnstileGate: () => ({
+    token: mockTurnstileToken,
+    unavailable: mockTurnstileUnavailable,
+    waiting: computed(
+      () =>
+        mockTurnstileEnabled.value &&
+        !mockTurnstileToken.value &&
+        !mockTurnstileUnavailable.value
+    )
   })
 }))
 
@@ -93,6 +108,8 @@ describe('SignUpForm', () => {
   beforeEach(() => {
     mockLoadingRef.value = false
     mockTurnstileEnabled.value = false
+    mockTurnstileToken.value = ''
+    mockTurnstileUnavailable.value = false
     mockReset.mockClear()
     emitTurnstileToken = undefined
     emitTurnstileUnavailable = undefined
@@ -209,51 +226,6 @@ describe('SignUpForm', () => {
       await nextTick()
 
       expect(mockReset).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Turnstile token hygiene', () => {
-    it('clears the stale token when Turnstile becomes disabled', async () => {
-      mockTurnstileEnabled.value = true
-      const { user } = renderComponent()
-      await fillValidSignup(user)
-
-      emitTurnstileToken!('stale-token')
-      await nextTick()
-      expect(
-        screen.getByRole('button', { name: signUpButton })
-      ).not.toBeDisabled()
-
-      mockTurnstileEnabled.value = false
-      await nextTick()
-
-      // re-enable: the stale token must have been cleared so submit is blocked again
-      mockTurnstileEnabled.value = true
-      await nextTick()
-
-      expect(screen.getByRole('button', { name: signUpButton })).toBeDisabled()
-    })
-
-    it('clears a stale "unavailable" fallback when Turnstile becomes disabled', async () => {
-      mockTurnstileEnabled.value = true
-      const { user } = renderComponent()
-      await fillValidSignup(user)
-
-      emitTurnstileUnavailable!(true)
-      await nextTick()
-      expect(
-        screen.getByRole('button', { name: signUpButton })
-      ).not.toBeDisabled()
-
-      mockTurnstileEnabled.value = false
-      await nextTick()
-
-      // re-enable: the stale fallback must have been cleared so submit is
-      // blocked again until the fresh widget instance proves itself
-      mockTurnstileEnabled.value = true
-      await nextTick()
-
-      expect(screen.getByRole('button', { name: signUpButton })).toBeDisabled()
     })
   })
 

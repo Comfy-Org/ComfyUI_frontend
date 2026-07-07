@@ -37,7 +37,7 @@
     />
 
     <small
-      v-show="submitBlockedByTurnstile"
+      v-show="waitingForTurnstile"
       id="comfy-org-sign-up-turnstile-hint"
       role="status"
       aria-live="polite"
@@ -52,11 +52,9 @@
       v-else
       type="submit"
       class="mt-4 h-10 font-medium"
-      :disabled="!$form.valid || submitBlockedByTurnstile"
+      :disabled="!$form.valid || waitingForTurnstile"
       :aria-describedby="
-        submitBlockedByTurnstile
-          ? 'comfy-org-sign-up-turnstile-hint'
-          : undefined
+        waitingForTurnstile ? 'comfy-org-sign-up-turnstile-hint' : undefined
       "
     >
       {{ t('auth.signup.signUpButton') }}
@@ -71,11 +69,11 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useTurnstile } from '@/composables/auth/useTurnstile'
+import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
@@ -88,38 +86,20 @@ const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
 const { enabled: turnstileEnabled } = useTurnstile()
-const turnstileToken = ref('')
-// Set by the widget when it cannot be relied on to ever produce a token (the
-// Cloudflare script failed to load, the challenge errored out, or it just
-// hasn't resolved in time). Submission falls back to proceeding without a
-// token rather than blocking a legitimate signup forever.
-const turnstileUnavailable = ref(false)
+const {
+  token: turnstileToken,
+  unavailable: turnstileUnavailable,
+  waiting: waitingForTurnstile
+} = useTurnstileGate(turnstileEnabled)
 const turnstileWidget =
   useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
-// Gate submit on the widget being enabled (rendering — shadow or enforce),
-// not on it being enforced: shadow mode still needs a real token most of the
-// time to actually measure the false-positive rate, so it can't let users
-// through before the widget has had a chance to resolve.
-const submitBlockedByTurnstile = computed(
-  () =>
-    turnstileEnabled.value &&
-    !turnstileToken.value &&
-    !turnstileUnavailable.value
-)
-
-watch(turnstileEnabled, (on) => {
-  if (!on) {
-    turnstileToken.value = ''
-    turnstileUnavailable.value = false
-  }
-})
 
 const emit = defineEmits<{
   submit: [values: SignUpData, turnstileToken?: string]
 }>()
 
 const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid && !submitBlockedByTurnstile.value) {
+  if (event.valid && !waitingForTurnstile.value) {
     emit(
       'submit',
       event.values as SignUpData,
