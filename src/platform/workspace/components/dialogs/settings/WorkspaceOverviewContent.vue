@@ -27,17 +27,26 @@
           <Button variant="secondary" size="lg">
             {{ $t('workspacePanel.overview.managePayment') }}
           </Button>
-          <Button variant="secondary" size="lg">
+          <Button v-if="isOriginalOwner" variant="secondary" size="lg">
             {{ $t('workspacePanel.overview.changePlan') }}
           </Button>
-          <Button
-            variant="secondary"
-            size="icon-lg"
-            class="rounded-lg"
-            :aria-label="$t('g.moreOptions')"
+          <DropdownMenu
+            v-if="planMenuEntries.length > 0"
+            :entries="planMenuEntries"
+            :modal="false"
           >
-            <i class="pi pi-ellipsis-h" />
-          </Button>
+            <template #button>
+              <Button
+                v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                variant="secondary"
+                size="icon-lg"
+                class="rounded-lg"
+                :aria-label="$t('g.moreOptions')"
+              >
+                <i class="pi pi-ellipsis-h" />
+              </Button>
+            </template>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -243,14 +252,49 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { MenuItem } from 'primevue/menuitem'
+
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import ProgressBar from '@/platform/workspace/components/dialogs/settings/ProgressBar.vue'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useDialogService } from '@/services/dialogService'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const emit = defineEmits<{ navigate: [view: 'activity' | 'invoices'] }>()
 
 const { t } = useI18n()
+
+// Plan lifecycle actions are for the workspace creator (Owner) only; Admins and
+// Members don't see Change plan or the overflow menu.
+const { isOriginalOwner, isActiveSubscription, isTeamPlanCancelled } =
+  useWorkspaceUI()
+const { isFreeTier, subscription } = useBillingContext()
+const { showCancelSubscriptionDialog } = useDialogService()
+
+const canCancelPlan = computed(
+  () =>
+    isOriginalOwner.value &&
+    isActiveSubscription.value &&
+    !isTeamPlanCancelled.value &&
+    !isFreeTier.value
+)
+
+const planMenuEntries = computed<MenuItem[]>(() =>
+  canCancelPlan.value
+    ? [
+        {
+          label: t('subscription.cancelPlan'),
+          command: () =>
+            void showCancelSubscriptionDialog(
+              subscription.value?.endDate ?? undefined
+            )
+        }
+      ]
+    : []
+)
 
 const {
   plan,
