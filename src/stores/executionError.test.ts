@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -97,7 +98,7 @@ function fireError(detail: Record<string, unknown>) {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
+  setActivePinia(createTestingPinia({ stubActions: false }))
   for (const key of Object.keys(handlers)) delete handlers[key]
   openSet.clear()
   dist.isCloud = false

@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
@@ -57,7 +58,7 @@ function leafNode(name: string, nodePath = name): ComfyNodeDefImpl {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
+  setActivePinia(createTestingPinia({ stubActions: false }))
   for (const key of Object.keys(settings)) delete settings[key]
   for (const key of Object.keys(nodeDefs)) delete nodeDefs[key]
   settings[BOOKMARK_ID] = []
