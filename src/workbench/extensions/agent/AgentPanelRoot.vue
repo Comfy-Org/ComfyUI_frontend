@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useClipboard } from '@vueuse/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -13,12 +15,15 @@ import AgentPanel from './components/agent/AgentPanel.vue'
 import ChatHistoryDrawer from './components/agent/ChatHistoryDrawer.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import StartingPointModal from './components/agent/StartingPointModal.vue'
+import { useAttachment } from './composables/agent/useAttachment'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useDraftCanvasApply } from './composables/agent/useDraftCanvasApply'
+import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { createReconnectingEventSource } from './services/agent/agentEventSource'
+import { createAgentWorkflowBinding } from './services/agent/agentWorkflowBinding'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 
 // The in-source agent panel root: the sidebar tab renders this directly (type 'vue'),
@@ -32,6 +37,20 @@ const workspaceAuthStore = useWorkspaceAuthStore()
 
 const rest = createAgentRestClient({
   getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined
+})
+
+// The FE has no uuid surface for the open workflow today (workflow classes are path-keyed;
+// /api/workflows is unused in src), so mint a session workflow that mirrors the backend's
+// own flow: drafts then bind to its id and draft_patch drives the canvas.
+// TODO(FE-1187): replace with the host's real cloud workflow id when the FE adopts the
+// /api/workflows model.
+const binding = createAgentWorkflowBinding({
+  getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined,
+  // ISerialisedGraph is a concrete shape, not an index signature; the binding only forwards
+  // it as an opaque JSON body, so widen through unknown rather than restructure it.
+  serializeGraph: () =>
+    app.graph.serialize() as unknown as Record<string, unknown>,
+  workflowName: () => 'AI Agent session'
 })
 
 // The host /ws carries the agent_* broadcasts; the panel filters them off the shared
@@ -50,7 +69,7 @@ const {
   entries,
   isStreaming,
   notices
-} = useAgentSession({ rest, events })
+} = useAgentSession({ rest, events, workflowId: () => binding.current() })
 
 // Session notices (cancel-failure, draft-resync errors) have no inline conversation row,
 // so surface each newly appended one through the host toast. New-entries-only: the watch
@@ -89,6 +108,24 @@ onBeforeUnmount(stop)
 
 const history = useAgentChatHistoryStore()
 
+const { copy } = useClipboard({ legacy: true })
+
+// Message rating (PM-98). A null vote is a retraction of a prior thumb and is forwarded so
+// the eval pipeline records it rather than dropping it.
+// TODO(PM-98): move to a first-class rating endpoint when the backend exposes one; telemetry
+// capture satisfies rating-after-generation for the eval pipeline meanwhile.
+function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
+  useTelemetry()?.trackAgentMessageFeedback({ message_id: turnId, vote })
+}
+
+// Copy-as-markdown (P1 B12). V0 limitation: only the current in-memory conversation has a
+// transcript; past sessions are not persisted yet, so a non-active session id has nothing to
+// serialize and gets an info toast instead.
+function onCopyMarkdown(id: string): void {
+  if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
+  else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
+}
+
 const sizeMode = ref<'medium' | 'large'>('medium')
 const historyOpen = ref(false)
 const startingOpen = ref(false)
@@ -106,10 +143,14 @@ const panelWidth = computed(() =>
 )
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
-  void sendMessage(
-    text,
-    attachments.map((attachment) => attachment.ref)
-  )
+  void (async () => {
+    // Mint the session workflow before the first send so its ack already binds the draft.
+    await binding.ensure()
+    await sendMessage(
+      text,
+      attachments.map((attachment) => attachment.ref)
+    )
+  })()
 }
 
 function onStop(): void {
@@ -120,16 +161,59 @@ function onNewChat(): void {
   newChat()
   startingOpen.value = true
 }
+
+// Attachments (P0 B6): the composer's attach affordance opens this hidden picker; picked
+// image/video files upload through the cloud REST client, and the staged refs ride the next
+// send's attachments. uploadImage answers {name, subfolder, type}; the send path forwards
+// `name` as the LoadImage-style ref.
+const panelRef = ref<InstanceType<typeof AgentPanel>>()
+const fileInput = ref<HTMLInputElement>()
+
+const attachment = useAttachment({
+  upload: async (file) => ({
+    ref: (await rest.uploadImage(file, file.name)).name
+  }),
+  onError: (message) => toast.add({ severity: 'error', summary: message })
+})
+
+function onAttach(): void {
+  fileInput.value?.click()
+}
+
+async function onFilesPicked(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+  if (files && files.length > 0) {
+    for (const staged of await attachment.addFiles(Array.from(files))) {
+      panelRef.value?.addAttachment(staged)
+    }
+  }
+  // Clear so re-picking the same file fires change again.
+  input.value = ''
+}
 </script>
 
 <template>
   <div id="agent-panel-root" :class="cn('mx-auto size-full', panelWidth)">
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*,video/*"
+      multiple
+      class="hidden"
+      data-testid="agent-file-input"
+      @change="onFilesPicked"
+    />
     <AgentPanel
+      ref="panelRef"
       :entries
       :streaming="isStreaming"
       :size-mode="sizeMode"
+      :can-attach="true"
       @send="onSend"
       @stop="onStop"
+      @attach="onAttach"
+      @feedback="onFeedback"
       @new-chat="onNewChat"
       @open-history="historyOpen = true"
       @toggle-size="sizeMode = sizeMode === 'large' ? 'medium' : 'large'"
@@ -139,6 +223,7 @@ function onNewChat(): void {
       :groups="history.grouped"
       @select="history.setActive($event)"
       @delete="history.remove($event)"
+      @copy-markdown="onCopyMarkdown"
     />
     <StartingPointModal
       v-model:open="startingOpen"

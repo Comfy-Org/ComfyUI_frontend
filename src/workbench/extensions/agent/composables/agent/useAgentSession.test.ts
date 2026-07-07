@@ -221,6 +221,31 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
+  it('(d2) stopTurn rejecting with a network TypeError surfaces a notice, not an unhandled rejection', async () => {
+    // Mirrors resyncDraft (n): newChat/onStop void stopTurn(), so a non-AgentApiError
+    // rethrow would escape as an unhandled rejection. The catch must pushError instead;
+    // the notice is the proof the error was surfaced rather than swallowed or escaped.
+    const cancelMessage = vi
+      .fn<
+        (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+      >()
+      .mockRejectedValue(new TypeError('fetch failed'))
+    const rest = fakeRest({ cancelMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'working'))
+
+    await session.stopTurn()
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'fetch failed' }
+    ])
+  })
+
   it('(e) foreign chat events are ignored, but a mid-turn draft_patch still adopts', async () => {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()

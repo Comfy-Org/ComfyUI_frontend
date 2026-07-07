@@ -1,9 +1,11 @@
-import { markRaw } from 'vue'
+import { markRaw, ref } from 'vue'
 
+import { t } from '@/i18n'
 import AgentPanelRoot from '@/workbench/extensions/agent/AgentPanelRoot.vue'
 import { createPostHogFlagSource } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 import { useExtensionService } from '@/services/extensionService'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { ActionBarButton } from '@/types/comfy'
 
 /**
  * In-App Agent panel (FE-1187): registers the agent side panel as a sidebar tab,
@@ -16,8 +18,30 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const TAB_ID = 'agent-panel'
 
+// Reactive mirror of the flag gate's tab-registration state. The actionBarButtons getter
+// below reads this so the top-bar "Ask Comfy Agent" button shares the tab's fail-closed
+// source: the button is absent until the flag registers the tab and disappears if the flag
+// flips off. actionBarButtonStore reads getters through a pinia computed, so touching this
+// ref re-derives the button list.
+const tabRegistered = ref(false)
+
+// icon 'icon-[lucide--sparkles]' stands in for the Comfy mark, deferred to a design pass.
+const buttons: ActionBarButton[] = [
+  {
+    icon: 'icon-[lucide--sparkles]',
+    label: t('agent.askComfyAgent'),
+    tooltip: t('agent.askComfyAgent'),
+    onClick: () => {
+      useSidebarTabStore().toggleSidebarTab(TAB_ID)
+    }
+  }
+]
+
 useExtensionService().registerExtension({
   name: 'Comfy.AgentPanel',
+  get actionBarButtons() {
+    return tabRegistered.value ? buttons : []
+  },
   setup() {
     const sidebarTabStore = useSidebarTabStore()
 
@@ -27,10 +51,9 @@ useExtensionService().registerExtension({
       // flag source maps to false, so the gate stays closed by default.
       const posthog = (await import('posthog-js')).default
       const source = createPostHogFlagSource(posthog)
-      let registered = false
       const sync = (): void => {
         const enabled = source.isEnabled()
-        if (enabled && !registered) {
+        if (enabled && !tabRegistered.value) {
           sidebarTabStore.registerSidebarTab({
             id: TAB_ID,
             type: 'vue',
@@ -40,10 +63,10 @@ useExtensionService().registerExtension({
             tooltip: 'sideToolbar.agentPanel',
             label: 'sideToolbar.labels.agentPanel'
           })
-          registered = true
-        } else if (!enabled && registered) {
+          tabRegistered.value = true
+        } else if (!enabled && tabRegistered.value) {
           sidebarTabStore.unregisterSidebarTab(TAB_ID)
-          registered = false
+          tabRegistered.value = false
         }
       }
       source.onChange?.(sync)

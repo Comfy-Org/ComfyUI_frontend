@@ -12,6 +12,7 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 
 import type {
   AddCreditsClickMetadata,
+  AgentMessageFeedbackMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
@@ -654,6 +655,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
