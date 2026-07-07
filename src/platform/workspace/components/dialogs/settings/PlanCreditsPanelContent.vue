@@ -4,12 +4,12 @@
       <div class="flex min-w-0 flex-1 items-center gap-2">
         <Button
           v-for="tab in tabs"
-          :key="tab"
-          :variant="activeView === tab ? 'secondary' : 'muted-textonly'"
+          :key="tab.key"
+          :variant="activeView === tab.key ? 'secondary' : 'muted-textonly'"
           size="lg"
-          @click="setView(tab)"
+          @click="setView(tab.key)"
         >
-          {{ $t(`workspacePanel.planCredits.tabs.${tab}`) }}
+          {{ tab.label }}
         </Button>
       </div>
       <SearchInput
@@ -33,7 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -43,7 +44,22 @@ import WorkspaceInvoicesContent from '@/platform/workspace/components/dialogs/se
 
 type View = 'overview' | 'activity' | 'invoices'
 
-const tabs: View[] = ['overview', 'activity', 'invoices']
+const { t } = useI18n()
+
+const tabs = computed(() => [
+  {
+    key: 'overview' as const,
+    label: t('workspacePanel.planCredits.tabs.overview')
+  },
+  {
+    key: 'activity' as const,
+    label: t('workspacePanel.planCredits.tabs.activity')
+  },
+  {
+    key: 'invoices' as const,
+    label: t('workspacePanel.planCredits.tabs.invoices')
+  }
+])
 const activeView = ref<View>('overview')
 const searchQuery = ref('')
 
