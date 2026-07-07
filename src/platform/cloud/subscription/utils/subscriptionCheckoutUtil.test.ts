@@ -161,21 +161,29 @@ describe('performSubscriptionCheckout', () => {
       expect.stringContaining(
         '/customers/cloud-subscription-checkout/pro-yearly'
       ),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({
-          ga_client_id: 'ga-client-id',
-          ga_session_id: 'ga-session-id',
-          ga_session_number: 'ga-session-number',
-          im_ref: 'impact-click-123',
-          utm_source: 'impact',
-          utm_medium: 'affiliate',
-          utm_campaign: 'spring-launch',
-          gclid: 'gclid-123',
-          gbraid: 'gbraid-456',
-          wbraid: 'wbraid-789'
-        })
-      })
+      expect.objectContaining({ method: 'POST' })
+    )
+    const requestBody = JSON.parse(
+      vi.mocked(global.fetch).mock.calls[0][1]?.body as string
+    )
+    expect(requestBody).toEqual({
+      ga_client_id: 'ga-client-id',
+      ga_session_id: 'ga-session-id',
+      ga_session_number: 'ga-session-number',
+      im_ref: 'impact-click-123',
+      utm_source: 'impact',
+      utm_medium: 'affiliate',
+      utm_campaign: 'spring-launch',
+      gclid: 'gclid-123',
+      gbraid: 'gbraid-456',
+      wbraid: 'wbraid-789',
+      checkout_attempt_id: expect.any(String)
+    })
+    // The id sent to the backend must be the same one on begin_checkout and
+    // the persisted attempt — it is the funnel join key echoed back on the
+    // server-side billing success events.
+    expect(requestBody.checkout_attempt_id).toBe(
+      beginCheckoutMetadata.checkout_attempt_id
     )
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
@@ -201,11 +209,14 @@ describe('performSubscriptionCheckout', () => {
     )
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({})
-      })
+      expect.objectContaining({ method: 'POST' })
     )
+    // Attribution failed, but the funnel join key is still sent.
+    expect(
+      JSON.parse(vi.mocked(global.fetch).mock.calls[0][1]?.body as string)
+    ).toEqual({
+      checkout_attempt_id: expect.any(String)
+    })
     expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-123',
       tier: 'pro',
