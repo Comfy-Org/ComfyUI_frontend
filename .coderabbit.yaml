@@ -84,3 +84,11 @@ reviews:
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
         Reuse shared factories in `src/utils/__tests__/litegraphTestUtils.ts` instead of hand-rolling litegraph mock builders.
         Flag mocked litegraph classes when a real instance or shared factory would exercise behavior directly.
+    - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md` and `docs/testing/README.md` as required review context for every changed Playwright test file.
+        Flag missing behavioral coverage, change-detector tests, mock-heavy tests, snapshot abuse, fragile assertions, missing edge cases, unclear setup, and test isolation problems.
+        Every route.fulfill() body must be typed with generated types or schemas from packages/ingest-types, packages/registry-types, src/workbench/extensions/manager/types/generatedManagerTypes.ts, or src/schemas/; flag untyped inline JSON objects.
+        Never use waitForTimeout; use Locator actions and auto-retrying assertions instead.
+        Restrict page.evaluate() to reading internal state or fixture setup; flag any page.evaluate() that drives UI actions when a Playwright action method exists.
+        New shared test helpers must be Playwright fixtures via base.extend(), not properties added to ComfyPage.
