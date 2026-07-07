@@ -6,6 +6,13 @@
         :key="step.name"
         v-auto-animate
         :aria-current="isCurrentStep(step.name) ? 'step' : undefined"
+        :data-step-state="
+          isCurrentStep(step.name)
+            ? 'current'
+            : isCompletedStep(step.name)
+              ? 'completed'
+              : 'upcoming'
+        "
         :class="
           cn(
             isProfileCreationFlow &&

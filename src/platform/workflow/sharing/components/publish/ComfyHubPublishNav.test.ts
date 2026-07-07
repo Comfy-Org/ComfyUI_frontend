@@ -49,12 +49,10 @@ describe('ComfyHubPublishNav', () => {
     const currentStepItem = screen.getByRole('listitem', { current: 'step' })
     expect(currentStepItem).toHaveTextContent('comfyHubPublish.stepExamples')
     expect(currentStepItem).toHaveAttribute('aria-current', 'step')
-    expect(screen.getAllByTestId('step-badge')[0]).toHaveClass(
-      'border-base-foreground'
-    )
-    expect(screen.getAllByTestId('step-badge')[2]).toHaveClass(
-      'border-muted-foreground'
-    )
+    const steps = screen.getAllByRole('listitem')
+    expect(steps[0]).toHaveAttribute('data-step-state', 'completed')
+    expect(steps[1]).toHaveAttribute('data-step-state', 'current')
+    expect(steps[2]).toHaveAttribute('data-step-state', 'upcoming')
 
     await user.click(screen.getByText('comfyHubPublish.stepFinish'))
 
@@ -75,7 +73,6 @@ describe('ComfyHubPublishNav', () => {
       screen.getByText('comfyHubProfile.profileCreationNav')
     ).toBeInTheDocument()
     const finishStep = screen.getAllByRole('listitem')[2]
-    expect(finishStep).toHaveClass('bg-secondary-background-hover')
     expect(finishStep).not.toHaveAttribute('aria-current')
   })
 })
