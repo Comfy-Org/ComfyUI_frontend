@@ -1,30 +1,32 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
-    <!-- Section Header: above the card -->
+    <!-- Header: tabs (left) + search / invite (right), above the card -->
     <div class="flex w-full items-center gap-9">
-      <div class="flex min-w-0 flex-1 items-baseline gap-2">
-        <span class="text-base font-normal text-base-foreground">
-          <template v-if="activeView === 'active'">
-            <template v-if="isOnTeamPlan && !isPersonalWorkspace">
-              {{
-                $t('workspacePanel.members.membersCount', {
-                  count: members.length,
-                  maxSeats: maxSeats
-                })
-              }}
-            </template>
-            <template v-else>
-              {{ $t('workspacePanel.members.header') }}
-            </template>
-          </template>
-          <template v-else-if="permissions.canViewPendingInvites">
+      <div class="flex min-w-0 flex-1 items-center gap-2">
+        <template v-if="showViewTabs">
+          <Button
+            :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
+            size="md"
+            @click="activeView = 'active'"
+          >
+            {{ $t('workspacePanel.members.tabs.membersCount', memberCount) }}
+          </Button>
+          <Button
+            v-if="uiConfig.showPendingTab"
+            :variant="activeView === 'pending' ? 'secondary' : 'muted-textonly'"
+            size="md"
+            @click="activeView = 'pending'"
+          >
             {{
               $t(
-                'workspacePanel.members.pendingInvitesCount',
+                'workspacePanel.members.tabs.pendingCount',
                 pendingInvites.length
               )
             }}
-          </template>
+          </Button>
+        </template>
+        <span v-else class="text-base font-normal text-base-foreground">
+          {{ $t('workspacePanel.members.tabs.membersCount', memberCount) }}
         </span>
       </div>
       <div class="flex items-center gap-2">
@@ -49,155 +51,155 @@
           @click="handleInviteMember"
         >
           {{ $t('workspacePanel.invite') }}
-          <i class="pi pi-plus text-sm" />
+          <i class="icon-[lucide--plus] size-4" />
         </Button>
       </div>
     </div>
 
-    <!-- Card: fills height, list scrolls inside -->
+    <MembersOutOfCreditsBanner
+      v-if="showOutOfCreditsBanner"
+      :reset-date="creditResetDate"
+      @dismiss="dismissOutOfCreditsBanner"
+      @add-credits="handleAddCredits"
+    />
+
+    <!-- Card: fills height, table scrolls inside -->
     <div
-      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60 p-6"
+      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
-      <!-- Members Content -->
-      <div class="flex min-h-0 flex-1 flex-col">
-        <!-- Table Header with Tab Buttons and Column Headers -->
-        <div
-          v-if="uiConfig.showMembersList && showViewTabs"
-          :class="
-            cn(
-              'grid w-full items-center border-b border-interface-stroke/60 pb-2',
-              activeView === 'pending'
-                ? uiConfig.pendingGridCols
-                : uiConfig.headerGridCols
-            )
-          "
-        >
-          <!-- Tab buttons in first column -->
-          <div class="flex items-center gap-2">
-            <Button
-              :variant="
-                activeView === 'active' ? 'secondary' : 'muted-textonly'
-              "
-              size="md"
-              @click="activeView = 'active'"
-            >
-              {{ $t('workspacePanel.members.tabs.active') }}
-            </Button>
-            <Button
-              v-if="uiConfig.showPendingTab"
-              :variant="
-                activeView === 'pending' ? 'secondary' : 'muted-textonly'
-              "
-              size="md"
-              @click="activeView = 'pending'"
-            >
-              {{
-                $t(
-                  'workspacePanel.members.tabs.pendingCount',
-                  pendingInvites.length
-                )
-              }}
-            </Button>
-          </div>
-          <!-- Date column headers -->
-          <template v-if="activeView === 'pending'">
-            <Button
-              variant="muted-textonly"
-              size="sm"
-              class="justify-start"
-              @click="toggleSort('inviteDate')"
-            >
-              {{ $t('workspacePanel.members.columns.inviteDate') }}
-              <i class="icon-[lucide--chevrons-up-down] size-4" />
-            </Button>
-            <Button
-              variant="muted-textonly"
-              size="sm"
-              class="justify-start"
-              @click="toggleSort('expiryDate')"
-            >
-              {{ $t('workspacePanel.members.columns.expiryDate') }}
-              <i class="icon-[lucide--chevrons-up-down] size-4" />
-            </Button>
-            <div />
-          </template>
+      <Table v-if="activeView === 'active'" class="min-h-0 flex-1 px-4">
+        <TableHeader class="sticky top-0 z-10 bg-base-background">
+          <TableRow
+            class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
+          >
+            <TableHead>
+              <button :class="sortHeaderClass" @click="toggleSort('email')">
+                {{ $t('workspacePanel.members.columns.email') }}
+                <i :class="sortIcon('email')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-40">
+              <button :class="sortHeaderClass" @click="toggleSort('role')">
+                {{ $t('workspacePanel.members.columns.role') }}
+                <i :class="sortIcon('role')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-40">
+              <button
+                :class="sortHeaderClass"
+                @click="toggleSort('lastActivity')"
+              >
+                {{ $t('workspacePanel.members.columns.lastActivity') }}
+                <i :class="sortIcon('lastActivity')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-64">
+              <button
+                :class="cn(sortHeaderClass, 'ml-auto')"
+                @click="toggleSort('credits')"
+              >
+                <i class="icon-[lucide--coins] size-4" />
+                {{ $t('workspacePanel.members.columns.creditsUsed') }}
+                <i :class="sortIcon('credits')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-12" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <MemberTableRow
+            v-if="isPersonalWorkspace"
+            :member="personalWorkspaceMember"
+            :is-current-user="true"
+            :photo-url="userPhotoUrl ?? undefined"
+          />
           <template v-else>
-            <Button
-              variant="muted-textonly"
-              size="sm"
-              class="justify-end"
-              @click="toggleSort('role')"
-            >
-              {{ $t('workspacePanel.members.columns.role') }}
-              <i class="icon-[lucide--chevrons-up-down] size-4" />
-            </Button>
-            <!-- Empty cell for action column header (OWNER only) -->
-            <div v-if="permissions.canManageMembers" />
+            <MemberTableRow
+              v-for="member in filteredMembers"
+              :key="member.id"
+              :member="member"
+              :is-current-user="isCurrentUser(member)"
+              :photo-url="
+                isCurrentUser(member) ? (userPhotoUrl ?? undefined) : undefined
+              "
+              :can-manage-members="permissions.canManageMembers"
+              :is-original-owner="isOriginalOwner(member)"
+              :menu-items="memberMenus.get(member.id)"
+            />
           </template>
-        </div>
+        </TableBody>
+      </Table>
 
-        <!-- Members List -->
-        <div class="min-h-0 flex-1 overflow-y-auto">
-          <!-- Active Members -->
-          <template v-if="activeView === 'active'">
-            <!-- Personal Workspace: show only current user -->
-            <template v-if="isPersonalWorkspace">
-              <MemberListItem
-                :member="personalWorkspaceMember"
-                :is-current-user="true"
-                :photo-url="userPhotoUrl ?? undefined"
-                :grid-cols="uiConfig.membersGridCols"
-              />
-            </template>
-
-            <!-- Team Workspace: sorted list -->
-            <template v-else>
-              <MemberListItem
-                v-for="(member, index) in filteredMembers"
-                :key="member.id"
-                :member="member"
-                :is-current-user="isCurrentUser(member)"
-                :photo-url="
-                  isCurrentUser(member)
-                    ? (userPhotoUrl ?? undefined)
-                    : undefined
-                "
-                :grid-cols="uiConfig.membersGridCols"
-                :show-role-column="
-                  uiConfig.showRoleColumn && hasMultipleMembers
-                "
-                :can-manage-members="permissions.canManageMembers"
-                :is-single-seat-plan="!isOnTeamPlan"
-                :is-original-owner="isOriginalOwner(member)"
-                :striped="index % 2 === 1"
-                :menu-items="memberMenus.get(member.id)"
-              />
-            </template>
-          </template>
-
-          <!-- Pending Invites -->
-          <PendingInvitesList
-            v-if="activeView === 'pending'"
-            :invites="filteredPendingInvites"
-            :grid-cols="uiConfig.pendingGridCols"
+      <Table v-else class="min-h-0 flex-1 px-4">
+        <TableHeader class="sticky top-0 z-10 bg-base-background">
+          <TableRow
+            class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
+          >
+            <TableHead>
+              <span :class="sortHeaderClass">
+                {{ $t('workspacePanel.members.columns.email') }}
+              </span>
+            </TableHead>
+            <TableHead class="w-40">
+              <button
+                :class="sortHeaderClass"
+                @click="toggleSort('inviteDate')"
+              >
+                {{ $t('workspacePanel.members.columns.inviteDate') }}
+                <i :class="sortIcon('inviteDate')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-40">
+              <button
+                :class="sortHeaderClass"
+                @click="toggleSort('expiryDate')"
+              >
+                {{ $t('workspacePanel.members.columns.expiryDate') }}
+                <i :class="sortIcon('expiryDate')" />
+              </button>
+            </TableHead>
+            <TableHead class="w-12" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <PendingInviteRow
+            v-for="invite in filteredPendingInvites"
+            :key="invite.id"
+            :invite="invite"
             @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
-        </div>
-      </div>
+          <TableRow
+            v-if="filteredPendingInvites.length === 0"
+            class="hover:bg-transparent"
+          >
+            <TableCell
+              :colspan="4"
+              class="py-6 text-center text-sm text-muted-foreground"
+            >
+              {{ $t('workspacePanel.members.noInvites') }}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
-    <!-- Upsell Banner -->
+
     <MemberUpsellBanner
       v-if="!isOnTeamPlan"
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
-    <!-- Need More Members Footer -->
     <div
       v-if="isOnTeamPlan && !isPersonalWorkspace"
-      class="flex items-center pt-2"
+      class="flex items-center pt-1"
     >
       <p class="text-sm text-muted-foreground">
+        {{
+          $t('workspacePanel.members.membersUsage', {
+            count: memberCount,
+            max: maxSeats
+          })
+        }}
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
       <Button
@@ -215,20 +217,30 @@
 <script setup lang="ts">
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableCell from '@/components/ui/table/TableCell.vue'
+import TableHead from '@/components/ui/table/TableHead.vue'
+import TableHeader from '@/components/ui/table/TableHeader.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
+import MemberTableRow from '@/platform/workspace/components/dialogs/settings/MemberTableRow.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
-import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
+import MembersOutOfCreditsBanner from '@/platform/workspace/components/dialogs/settings/MembersOutOfCreditsBanner.vue'
+import PendingInviteRow from '@/platform/workspace/components/dialogs/settings/PendingInviteRow.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
+import { onMounted } from 'vue'
 
 const {
   searchQuery,
   activeView,
+  sortField,
+  sortDirection,
   maxSeats,
+  memberCount,
   isOnTeamPlan,
   hasLapsedTeamPlan,
-  hasMultipleMembers,
   showSearch,
   showViewTabs,
   showInviteButton,
@@ -240,11 +252,15 @@ const {
   filteredPendingInvites,
   memberMenus,
   isPersonalWorkspace,
-  members,
   pendingInvites,
   permissions,
   uiConfig,
   userPhotoUrl,
+  showOutOfCreditsBanner,
+  creditResetDate,
+  dismissOutOfCreditsBanner,
+  handleAddCredits,
+  fetchBalance,
   isCurrentUser,
   isOriginalOwner,
   toggleSort,
@@ -255,7 +271,21 @@ const {
 
 const { staticUrls } = useExternalLink()
 
+const sortHeaderClass =
+  'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left text-sm text-muted-foreground'
+
+function sortIcon(field: string) {
+  if (sortField.value !== field) return 'icon-[lucide--chevrons-up-down] size-3'
+  return sortDirection.value === 'asc'
+    ? 'icon-[lucide--chevron-up] size-3'
+    : 'icon-[lucide--chevron-down] size-3'
+}
+
 function handleContactUs() {
   window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
 }
+
+onMounted(() => {
+  void fetchBalance()
+})
 </script>

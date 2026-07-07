@@ -1,8 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Slots } from 'vue'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import MembersPanelContent from './MembersPanelContent.vue'
@@ -18,6 +17,9 @@ const mockMemberMenuItems = vi.fn(() => [])
 const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
+const mockDismissBanner = vi.fn()
+const mockHandleAddCredits = vi.fn()
+const mockFetchBalance = vi.fn()
 
 const {
   mockMembers,
@@ -27,13 +29,15 @@ const {
   mockFilteredPendingInvites,
   mockIsPersonalWorkspace,
   mockIsOnTeamPlan,
-  mockHasMultipleMembers,
   mockShowSearch,
   mockShowViewTabs,
   mockShowInviteButton,
   mockIsInviteDisabled,
   mockActiveView,
   mockSearchQuery,
+  mockSortField,
+  mockSortDirection,
+  mockShowOutOfCreditsBanner,
   mockPermissions,
   mockUiConfig
 } = vi.hoisted(() => {
@@ -44,7 +48,6 @@ const {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
-    mockHasMultipleMembers: ref(true),
     mockShowSearch: ref(true),
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
@@ -55,28 +58,18 @@ const {
     mockIsOnTeamPlan: ref(true),
     mockActiveView: ref<'active' | 'pending'>('active'),
     mockSearchQuery: ref(''),
+    mockSortField: ref('role'),
+    mockSortDirection: ref('desc'),
+    mockShowOutOfCreditsBanner: ref(false),
     mockPermissions: ref({
-      canViewOtherMembers: true,
       canViewPendingInvites: true,
       canInviteMembers: true,
-      canManageInvites: true,
-      canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageMembers: true
     }),
     mockUiConfig: ref({
       showMembersList: true,
       showPendingTab: true,
-      showSearch: true,
-      showRoleColumn: true,
-      membersGridCols: 'grid-cols-[50%_40%_10%]',
-      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete' as 'leave' | 'delete' | null,
-      workspaceMenuDisabledTooltip: null as string | null
+      showSearch: true
     })
   }
 })
@@ -85,9 +78,12 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
   useMembersPanel: () => ({
     searchQuery: mockSearchQuery,
     activeView: mockActiveView,
-    maxSeats: computed(() => 20),
+    sortField: mockSortField,
+    sortDirection: mockSortDirection,
+    maxSeats: computed(() => 50),
+    memberCount: computed(() => mockMembers.value.length),
     isOnTeamPlan: mockIsOnTeamPlan,
-    hasMultipleMembers: mockHasMultipleMembers,
+    hasLapsedTeamPlan: computed(() => false),
     showSearch: mockShowSearch,
     showViewTabs: mockShowViewTabs,
     showInviteButton: mockShowInviteButton,
@@ -104,7 +100,6 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     })),
     filteredMembers: mockFilteredMembers,
     filteredPendingInvites: mockFilteredPendingInvites,
-    memberMenuItems: mockMemberMenuItems,
     memberMenus: computed(
       () =>
         new Map(
@@ -112,26 +107,23 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
         )
     ),
     isPersonalWorkspace: mockIsPersonalWorkspace,
-    members: mockMembers,
     pendingInvites: mockPendingInvites,
     permissions: mockPermissions,
     uiConfig: mockUiConfig,
     userPhotoUrl: ref(null),
+    showOutOfCreditsBanner: mockShowOutOfCreditsBanner,
+    creditResetDate: computed(() => 'Feb 20'),
+    dismissOutOfCreditsBanner: mockDismissBanner,
+    handleAddCredits: mockHandleAddCredits,
+    fetchBalance: mockFetchBalance,
     isCurrentUser: (m: WorkspaceMember) =>
       m.email.toLowerCase() === 'owner@example.com',
     isOriginalOwner: (m: WorkspaceMember) => m.id === mockOriginalOwnerId.value,
     toggleSort: mockToggleSort,
     showTeamPlans: mockShowTeamPlans,
     handleResendInvite: mockHandleResendInvite,
-    handleRevokeInvite: mockHandleRevokeInvite,
-    handleRemoveMember: vi.fn(),
-    handleChangeRole: vi.fn()
+    handleRevokeInvite: mockHandleRevokeInvite
   })
-}))
-
-vi.mock('@/components/button/MoreButton.vue', () => ({
-  default: (_: unknown, { slots }: { slots: Slots }) =>
-    h('div', slots.default?.({ close: () => {} }))
 }))
 
 const i18n = createI18n({
@@ -157,6 +149,15 @@ const SearchInputStub = {
   emits: ['update:modelValue']
 }
 
+// Render the trigger slot (carries the g.moreOptions button) plus each entry as
+// a flat button, so menu items are assertable without opening a real overlay.
+const DropdownMenuStub = {
+  name: 'DropdownMenu',
+  props: ['entries', 'modal', 'contentClass'],
+  template:
+    '<div><slot name="button" /><button v-for="e in (entries || [])" :key="e.label" :aria-label="e.label" @click="e.command && e.command()">{{ e.label }}</button></div>'
+}
+
 function renderComponent() {
   return render(MembersPanelContent, {
     global: {
@@ -164,8 +165,8 @@ function renderComponent() {
       stubs: {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
-        UserAvatar: true,
-        WorkspaceMenuButton: true
+        DropdownMenu: DropdownMenuStub,
+        UserAvatar: true
       },
       directives: { tooltip: () => {} }
     }
@@ -207,35 +208,22 @@ describe('MembersPanelContent', () => {
     mockFilteredPendingInvites.value = []
     mockIsPersonalWorkspace.value = false
     mockIsOnTeamPlan.value = true
-    mockHasMultipleMembers.value = true
     mockShowSearch.value = true
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
     mockIsInviteDisabled.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
+    mockShowOutOfCreditsBanner.value = false
     mockPermissions.value = {
-      canViewOtherMembers: true,
       canViewPendingInvites: true,
       canInviteMembers: true,
-      canManageInvites: true,
-      canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageMembers: true
     }
     mockUiConfig.value = {
       showMembersList: true,
       showPendingTab: true,
-      showSearch: true,
-      showRoleColumn: true,
-      membersGridCols: 'grid-cols-[50%_40%_10%]',
-      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete',
-      workspaceMenuDisabledTooltip: null
+      showSearch: true
     }
   })
 
@@ -243,13 +231,9 @@ describe('MembersPanelContent', () => {
     beforeEach(() => {
       mockIsPersonalWorkspace.value = true
       mockIsOnTeamPlan.value = false
-      mockHasMultipleMembers.value = false
       mockShowSearch.value = false
       mockShowViewTabs.value = false
       mockIsInviteDisabled.value = true
-      mockUiConfig.value.showMembersList = false
-      mockUiConfig.value.showSearch = false
-      mockUiConfig.value.showPendingTab = false
     })
 
     it('shows the upsell banner below the members card', () => {
@@ -275,7 +259,7 @@ describe('MembersPanelContent', () => {
     })
   })
 
-  describe('team workspace - member list', () => {
+  describe('team workspace - member table', () => {
     it('shows the Role column header and member roles', () => {
       mockFilteredMembers.value = [
         createMember({ role: 'owner', email: 'boss@test.com' }),
@@ -287,6 +271,23 @@ describe('MembersPanelContent', () => {
       ).toBeTruthy()
       expect(screen.getByText('workspaceSwitcher.roleAdmin')).toBeTruthy()
       expect(screen.getByText('workspaceSwitcher.roleMember')).toBeTruthy()
+    })
+
+    it('shows the Last activity and Credits columns', () => {
+      mockFilteredMembers.value = [createMember()]
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.columns.lastActivity')
+      ).toBeTruthy()
+      expect(
+        screen.getByText('workspacePanel.members.columns.creditsUsed')
+      ).toBeTruthy()
+    })
+
+    it('renders the monthly credits for a member', () => {
+      mockFilteredMembers.value = [createMember({ creditsUsedThisMonth: 6532 })]
+      renderComponent()
+      expect(screen.getByText('6,532')).toBeTruthy()
     })
 
     it('labels the original owner as Owner and other owners as Admin', () => {
@@ -308,11 +309,7 @@ describe('MembersPanelContent', () => {
     it('renders filtered members', () => {
       mockFilteredMembers.value = [
         createMember({ name: 'Alice', email: 'alice@test.com' }),
-        createMember({
-          id: '2',
-          name: 'Bob',
-          email: 'bob@test.com'
-        })
+        createMember({ id: '2', name: 'Bob', email: 'bob@test.com' })
       ]
       renderComponent()
       expect(screen.getByText('Alice')).toBeTruthy()
@@ -363,6 +360,45 @@ describe('MembersPanelContent', () => {
     })
   })
 
+  describe('out-of-credits banner', () => {
+    it('renders the banner when the workspace is out of credits', () => {
+      mockShowOutOfCreditsBanner.value = true
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.outOfCredits.title')
+      ).toBeTruthy()
+    })
+
+    it('is hidden when the workspace has credits', () => {
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.outOfCredits.title')
+      ).toBeNull()
+    })
+
+    it('dismisses the banner from the Dismiss action', async () => {
+      mockShowOutOfCreditsBanner.value = true
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: 'workspacePanel.members.outOfCredits.dismiss'
+        })
+      )
+      expect(mockDismissBanner).toHaveBeenCalled()
+    })
+
+    it('opens the add-credits flow from the banner action', async () => {
+      mockShowOutOfCreditsBanner.value = true
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: 'workspacePanel.members.outOfCredits.addCredits'
+        })
+      )
+      expect(mockHandleAddCredits).toHaveBeenCalled()
+    })
+  })
+
   describe('pending invites tab', () => {
     it('shows pending tab button when configured', () => {
       mockPendingInvites.value = [createInvite()]
@@ -404,15 +440,9 @@ describe('MembersPanelContent', () => {
   describe('member role', () => {
     beforeEach(() => {
       mockPermissions.value = {
-        canViewOtherMembers: true,
         canViewPendingInvites: false,
         canInviteMembers: false,
-        canManageInvites: false,
-        canManageMembers: false,
-        canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true,
-        canManageSubscription: false,
-        canTopUp: false
+        canManageMembers: false
       }
       mockUiConfig.value.showPendingTab = false
     })
@@ -422,15 +452,6 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(
         screen.queryByText(/workspacePanel\.members\.tabs\.pendingCount/)
-      ).toBeNull()
-    })
-
-    it('does not show the pending invites header', () => {
-      mockActiveView.value = 'pending'
-      mockPendingInvites.value = [createInvite()]
-      renderComponent()
-      expect(
-        screen.queryByText(/workspacePanel\.members\.pendingInvitesCount/)
       ).toBeNull()
     })
 
@@ -467,15 +488,6 @@ describe('MembersPanelContent', () => {
       ).toBeNull()
     })
 
-    it('opens subscription dialog on upgrade click', async () => {
-      renderComponent()
-      const upgradeBtn = screen.getByRole('button', {
-        name: /workspacePanel\.members\.upgradeToTeam/
-      })
-      await userEvent.click(upgradeBtn)
-      expect(mockShowTeamPlans).toHaveBeenCalled()
-    })
-
     it('hides search input', () => {
       renderComponent()
       expect(screen.queryByRole('textbox')).toBeNull()
@@ -491,9 +503,7 @@ describe('MembersPanelContent', () => {
     it('opens discord in a new tab for team workspaces on a team plan', async () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
-      expect(
-        screen.getByText('workspacePanel.members.needMoreMembers')
-      ).toBeTruthy()
+      expect(screen.getByText(/needMoreMembers/)).toBeTruthy()
       await userEvent.click(
         screen.getByText('workspacePanel.members.contactUs')
       )
@@ -512,16 +522,12 @@ describe('MembersPanelContent', () => {
     })
   })
 
-  describe('member count display', () => {
-    it('shows member count header for team workspace', () => {
-      mockFilteredMembers.value = [
-        createMember({ id: '1' }),
-        createMember({ id: '2' })
-      ]
-      mockMembers.value = mockFilteredMembers.value
+  describe('member count tab', () => {
+    it('shows the members count tab for team workspace', () => {
+      mockMembers.value = [createMember({ id: '1' }), createMember({ id: '2' })]
       renderComponent()
       expect(
-        screen.getByText(/workspacePanel\.members\.membersCount/)
+        screen.getByText(/workspacePanel\.members\.tabs\.membersCount/)
       ).toBeTruthy()
     })
   })
@@ -556,10 +562,7 @@ describe('MembersPanelContent', () => {
       mockShowViewTabs.value = false
       renderComponent()
       expect(
-        screen.queryByText('workspacePanel.members.tabs.active')
-      ).toBeNull()
-      expect(
-        screen.queryByText('workspacePanel.members.columns.role')
+        screen.queryByText(/workspacePanel\.members\.tabs\.pendingCount/)
       ).toBeNull()
     })
   })
