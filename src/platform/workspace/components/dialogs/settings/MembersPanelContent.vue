@@ -189,7 +189,7 @@
     />
     <div
       v-if="isOnTeamPlan && !isPersonalWorkspace"
-      class="flex items-center pt-1"
+      class="flex h-8 items-center"
     >
       <p class="text-sm text-muted-foreground">
         {{
@@ -202,8 +202,8 @@
       </p>
       <Button
         variant="muted-textonly"
-        size="sm"
-        class="text-base-foreground"
+        size="md"
+        class="text-sm text-base-foreground"
         @click="handleContactUs"
       >
         {{ $t('workspacePanel.members.contactUs') }}
