@@ -4,10 +4,8 @@ import type { Locale } from '../../i18n/translations'
 import { Download } from '@lucide/vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
-import {
-  BRAND_ASSETS_ZIP,
-  affiliateBrandAssets
-} from '../../data/affiliateBrandAssets'
+import { affiliateBrandAssets } from '../../data/affiliateBrandAssets'
+import { BRAND_ASSETS_ZIP } from '../../data/brandAssets'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -27,10 +25,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <a
       :href="BRAND_ASSETS_ZIP"
       download
-      class="text-primary-comfy-yellow mt-6 inline-flex items-center gap-3 text-sm font-extrabold tracking-[0.7px] uppercase hover:underline"
+      class="text-primary-comfy-yellow mt-6 inline-flex items-baseline gap-2 text-sm font-extrabold tracking-[0.7px] uppercase hover:underline"
     >
       {{ t('brand.logos.download', locale) }}
-      <Download class="size-7" aria-hidden="true" />
+      <Download class="size-5" aria-hidden="true" />
     </a>
 
     <ul class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

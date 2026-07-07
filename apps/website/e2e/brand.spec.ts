@@ -1,11 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { BRAND_ASSETS_ZIP, BRAND_GUIDELINES_PDF } from '../src/data/brandAssets'
 import { test } from './fixtures/blockExternalMedia'
-
-const BRAND_ASSETS_ZIP =
-  'https://media.comfy.org/website/comfy-org-brand-assets.zip'
-const BRAND_GUIDELINES_PDF =
-  'https://media.comfy.org/website/Comfy_Brand_guideline_2026.pdf'
 
 test.describe('Brand portal @smoke', () => {
   test.beforeEach(async ({ page }) => {
