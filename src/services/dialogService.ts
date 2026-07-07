@@ -18,7 +18,8 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -441,9 +442,9 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog(options?: {
-    reason?: SubscriptionDialogReason
-  }) {
+  async function showSubscriptionRequiredDialog(
+    options?: SubscriptionDialogOptions
+  ) {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
@@ -538,6 +539,21 @@ export const useDialogService = () => {
       key: 'remove-member',
       component,
       props: { memberId },
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
+  async function showChangeMemberRoleDialog(props: {
+    memberId: string
+    memberName: string
+    targetRole: WorkspaceRole
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'change-member-role',
+      component,
+      props,
       dialogComponentProps: workspaceDialogProps
     })
   }
@@ -712,6 +728,7 @@ export const useDialogService = () => {
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
+    showChangeMemberRoleDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,

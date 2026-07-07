@@ -6,6 +6,10 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import {
+  fetchWithUnifiedRemint,
+  shouldRemintCloudRequest
+} from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
   ModelFile,
@@ -23,9 +27,9 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -221,7 +225,7 @@ type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
     ? StatusWsMessageStatus
     : K extends 'executing'
-      ? NodeId
+      ? SerializedNodeId
       : T[K]
 }
 
@@ -446,6 +450,7 @@ export class ComfyApi extends EventTarget {
 
   async fetchApi(route: string, options?: RequestInit) {
     const headers: HeadersInit = options?.headers ?? {}
+    let unifiedRetryOn401 = false
 
     if (isCloud) {
       await this.waitForAuthInitialization()
@@ -467,15 +472,16 @@ export class ComfyApi extends EventTarget {
         for (const [key, value] of Object.entries(authHeader)) {
           addHeaderEntry(headers, key, value)
         }
+        unifiedRetryOn401 = await shouldRemintCloudRequest()
       }
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
-    return fetch(this.apiURL(route), {
-      cache: 'no-cache',
-      ...options,
-      headers
-    })
+    return fetchWithUnifiedRemint(
+      this.apiURL(route),
+      { cache: 'no-cache', ...options, headers },
+      unifiedRetryOn401
+    )
   }
 
   /**

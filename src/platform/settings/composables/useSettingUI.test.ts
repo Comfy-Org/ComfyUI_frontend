@@ -11,21 +11,49 @@ import type { SettingTreeNode } from '@/platform/settings/settingStore'
 
 import { useSettingUI } from './useSettingUI'
 
+const env = vi.hoisted(() => {
+  const state = {
+    isCloud: false,
+    isDesktop: false,
+    isLoggedIn: false,
+    teamWorkspacesEnabled: false,
+    userSecretsEnabled: false,
+    isActiveSubscription: false,
+    billingType: 'legacy' as 'legacy' | 'workspace'
+  }
+  const fakeRef = <K extends keyof typeof state>(key: K) => ({
+    get value() {
+      return state[key]
+    }
+  })
+  return { state, fakeRef }
+})
+
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (_: string, fallback: string) => fallback })
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ isLoggedIn: ref(false) })
+  useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ isActiveSubscription: ref(false) })
+  useBillingContext: () => ({
+    isActiveSubscription: env.fakeRef('isActiveSubscription'),
+    type: env.fakeRef('billingType')
+  })
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
-    flags: { teamWorkspacesEnabled: false, userSecretsEnabled: false }
+    flags: {
+      get teamWorkspacesEnabled() {
+        return env.state.teamWorkspacesEnabled
+      },
+      get userSecretsEnabled() {
+        return env.state.userSecretsEnabled
+      }
+    }
   })
 }))
 
@@ -34,8 +62,12 @@ vi.mock('@/composables/useVueFeatureFlags', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false,
-  isDesktop: false
+  get isCloud() {
+    return env.state.isCloud
+  },
+  get isDesktop() {
+    return env.state.isDesktop
+  }
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -76,6 +108,16 @@ describe('useSettingUI', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia())
     vi.clearAllMocks()
+
+    Object.assign(env.state, {
+      isCloud: false,
+      isDesktop: false,
+      isLoggedIn: false,
+      teamWorkspacesEnabled: false,
+      userSecretsEnabled: false,
+      isActiveSubscription: false,
+      billingType: 'legacy'
+    })
 
     vi.mocked(useSettingStore).mockReturnValue({
       settingsById: mockSettings
@@ -136,5 +178,60 @@ describe('useSettingUI', () => {
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
+  })
+
+  describe('legacy billing in the workspace layout', () => {
+    const navKeys = (groups: { items: { id: string }[] }[]) =>
+      groups.flatMap((group) => group.items.map((item) => item.id))
+
+    beforeEach(() => {
+      Object.assign(env.state, {
+        isCloud: true,
+        isLoggedIn: true,
+        teamWorkspacesEnabled: true,
+        isActiveSubscription: true
+      })
+      window.__CONFIG__ = {
+        subscription_required: true
+      } as typeof window.__CONFIG__
+    })
+
+    it('exposes the legacy plan panel when billing is legacy', () => {
+      env.state.billingType = 'legacy'
+      const { defaultCategory, navGroups } = useSettingUI('subscription')
+
+      expect(defaultCategory.value.key).toBe('subscription')
+      expect(navKeys(navGroups.value)).toContain('subscription')
+      expect(navKeys(navGroups.value)).toContain('workspace')
+    })
+
+    it('hides the legacy plan panel when billing is workspace', () => {
+      env.state.billingType = 'workspace'
+      const { navGroups } = useSettingUI()
+
+      expect(navKeys(navGroups.value)).not.toContain('subscription')
+      expect(navKeys(navGroups.value)).toContain('workspace')
+    })
+
+    it('never renders the plan panel in more than one tab', () => {
+      const countSubscription = () => {
+        const { navGroups } = useSettingUI()
+        return navKeys(navGroups.value).filter((id) => id === 'subscription')
+          .length
+      }
+
+      for (const teamWorkspacesEnabled of [true, false]) {
+        for (const billingType of ['legacy', 'workspace'] as const) {
+          for (const isLoggedIn of [true, false]) {
+            Object.assign(env.state, {
+              teamWorkspacesEnabled,
+              billingType,
+              isLoggedIn
+            })
+            expect(countSubscription()).toBeLessThanOrEqual(1)
+          }
+        }
+      }
+    })
   })
 })

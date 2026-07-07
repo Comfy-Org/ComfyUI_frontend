@@ -25,6 +25,14 @@ import type {
   ToastMessageOptions
 } from './extensionTypes'
 
+export type { NodeId, SerializedNodeId } from './nodeId'
+export { toNodeId, parseNodeId } from './nodeId'
+export type { LinkId } from './linkId'
+export { toLinkId } from './linkId'
+export type { RerouteId } from './rerouteId'
+export { toRerouteId } from './rerouteId'
+export type { SlotDirection, SlotId, SlotIndex } from './slotId'
+export { slotId } from './slotId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'

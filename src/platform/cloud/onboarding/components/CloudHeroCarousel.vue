@@ -24,7 +24,7 @@
             <div
               class="absolute -top-1/20 -right-1/50 flex aspect-square w-7 items-center justify-center rounded-lg border border-primary-comfy-canvas/30 bg-white/20 text-primary-comfy-canvas shadow-xl backdrop-blur-sm"
             >
-              <i class="icon-[comfy--gemini-mono] size-3.5" />
+              <i class="icon-mask-[comfy--gemini] size-3.5" />
             </div>
 
             <div
@@ -43,7 +43,7 @@
             <div
               class="absolute -top-1/10 right-1/10 flex aspect-square w-7 items-center justify-center rounded-lg border border-primary-comfy-canvas/30 bg-white/20 text-primary-comfy-canvas shadow-xl backdrop-blur-sm"
             >
-              <i class="icon-[comfy--bytedance-mono] size-3.5" />
+              <i class="icon-mask-[comfy--bytedance] size-3.5" />
             </div>
           </div>
 

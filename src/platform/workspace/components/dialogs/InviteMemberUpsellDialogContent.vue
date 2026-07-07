@@ -39,11 +39,7 @@
         {{ $t('g.cancel') }}
       </Button>
       <Button variant="primary" size="lg" @click="onUpgrade">
-        {{
-          isActiveSubscription
-            ? $t('workspacePanel.inviteUpsellDialog.upgradeToCreator')
-            : $t('workspacePanel.inviteUpsellDialog.viewPlans')
-        }}
+        {{ $t('workspacePanel.inviteUpsellDialog.upgradeToTeam') }}
       </Button>
     </div>
   </div>
@@ -65,6 +61,9 @@ function onDismiss() {
 
 function onUpgrade() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
-  subscriptionDialog.show({ planMode: 'team' })
+  subscriptionDialog.show({
+    planMode: 'team',
+    reason: 'invite_member_upsell'
+  })
 }
 </script>

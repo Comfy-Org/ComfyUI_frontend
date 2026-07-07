@@ -24,12 +24,17 @@
     </Button>
 
     <div class="flex flex-col items-center gap-3">
-      <!-- Decorative initial for "Team" workspace icon; not user-facing text -->
+      <!-- Decorative workspace-initial icon; not user-facing text -->
       <div
-        class="flex size-10 items-center justify-center rounded-xl bg-primary-background text-lg font-semibold text-white"
+        :class="
+          cn(
+            'flex size-10 items-center justify-center rounded-xl text-lg font-semibold text-white',
+            isPersonal ? 'bg-muted-foreground/30' : 'bg-primary-background'
+          )
+        "
         aria-hidden="true"
       >
-        T
+        {{ isPersonal ? 'P' : 'T' }}
       </div>
       <i18n-t
         keypath="subscription.plansForWorkspace"
@@ -37,8 +42,14 @@
         class="m-0 font-inter text-2xl font-semibold text-base-foreground"
       >
         <template #workspace>
-          <span class="text-emerald-400">
-            {{ $t('subscription.teamWorkspace') }}
+          <span
+            :class="isPersonal ? 'text-muted-foreground' : 'text-emerald-400'"
+          >
+            {{
+              isPersonal
+                ? $t('subscription.personalWorkspace')
+                : $t('subscription.teamWorkspace')
+            }}
           </span>
         </template>
       </i18n-t>
@@ -102,8 +113,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
@@ -111,9 +124,14 @@ import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPrev
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
-const { onClose, reason } = defineProps<{
+const {
+  onClose,
+  reason,
+  isPersonal = false
+} = defineProps<{
   onClose: () => void
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
+  isPersonal?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -136,7 +154,7 @@ const {
   handleConfirmTransition,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit)
+} = useSubscriptionCheckout(emit, reason)
 </script>
 
 <style scoped>

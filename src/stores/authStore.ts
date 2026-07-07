@@ -22,6 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
@@ -29,7 +30,6 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -43,6 +43,20 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
+
+/**
+ * Request body for createCustomer. The Cloudflare Turnstile token captured at
+ * signup is forwarded to the backend as `turnstile_token` (snake_case), which
+ * reads this field on the CreateCustomer request; it is omitted for non-signup
+ * flows and on OSS / localhost where Turnstile is not rendered.
+ *
+ * TODO: replace with the generated `operations['createCustomer']` request-body
+ * type once the backend OpenAPI spec includes `turnstile_token`, so the field
+ * name/optionality drift-checks against the backend at compile time.
+ */
+type CreateCustomerPayload = {
+  turnstile_token?: string
+}
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 type AccessBillingPortalResponse =
@@ -56,9 +70,12 @@ export type BillingPortalTargetTier = NonNullable<
 >['target_tier']
 
 export class AuthStoreError extends Error {
-  constructor(message: string) {
+  readonly status: number | undefined
+
+  constructor(message: string, status?: number) {
     super(message)
     this.name = 'AuthStoreError'
+    this.status = status
   }
 }
 
@@ -66,7 +83,6 @@ const REGISTER_DEDUP_RETENTION_MS = 10_000
 
 export const useAuthStore = defineStore('auth', () => {
   const { flags } = useFeatureFlags()
-  const toastStore = useToastStore()
 
   // State
   const loading = ref(false)
@@ -192,17 +208,25 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Retrieves the appropriate authentication header for API requests.
-   * Checks for authentication in the following order:
+   *
+   * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
+   * cloud request (no Firebase/API-key fallback) so one token is used end to end.
+   * Otherwise checks for authentication in the following order:
    * 1. Workspace token (if team_workspaces_enabled and user has active workspace context)
    * 2. Firebase authentication token (if user is logged in)
    * 3. API key (if stored in the browser's credential manager)
    *
    * @returns {Promise<AuthHeader | null>}
-   *   - A LoggedInAuthHeader with Bearer token (workspace or Firebase)
+   *   - A LoggedInAuthHeader with Bearer token (unified Cloud JWT, workspace, or Firebase)
    *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (flags.unifiedCloudAuthEnabled) {
+      const token = useWorkspaceAuthStore().unifiedToken
+      return token ? { Authorization: `Bearer ${token}` } : null
+    }
+
     if (flags.teamWorkspacesEnabled) {
       const wsHeader = useWorkspaceAuthStore().getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
@@ -229,10 +253,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Returns the raw auth token (not wrapped in a header object).
-   * Priority: workspace token > Firebase token.
+   * When unified_cloud_auth is enabled, returns the single Cloud JWT; otherwise
+   * priority is workspace token > Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
+    if (flags.unifiedCloudAuthEnabled) {
+      return useWorkspaceAuthStore().unifiedToken ?? undefined
+    }
+
     if (flags.teamWorkspacesEnabled) {
       const wsToken = useWorkspaceAuthStore().getWorkspaceToken()
       if (wsToken) return wsToken
@@ -265,12 +294,16 @@ export const useAuthStore = defineStore('auth', () => {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
 
-      const response = await fetch(buildApiUrl('/customers/balance'), {
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await fetchWithUnifiedRemint(
+        buildApiUrl('/customers/balance'),
+        {
+          headers: {
+            ...authHeader,
+            'Content-Type': 'application/json'
+          }
+        },
+        isCloud && flags.unifiedCloudAuthEnabled
+      )
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -295,19 +328,27 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const createCustomer = async (): Promise<CreateCustomerResponse> => {
+  const createCustomer = async (
+    payload?: CreateCustomerPayload
+  ): Promise<CreateCustomerResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const createCustomerRes = await fetch(buildApiUrl('/customers'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      }
-    })
+    const createCustomerRes = await fetchWithUnifiedRemint(
+      buildApiUrl('/customers'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        ...(payload &&
+          Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
+      },
+      isCloud && flags.unifiedCloudAuthEnabled
+    )
     if (!createCustomerRes.ok) {
       // statusText is empty under HTTP/2; use the body message, then the status.
       let detail = `HTTP ${createCustomerRes.status}`
@@ -325,7 +366,8 @@ export const useAuthStore = defineStore('auth', () => {
         // Non-JSON body; keep the status code.
       }
       throw new AuthStoreError(
-        t('toastMessages.failedToCreateCustomer', { error: detail })
+        t('toastMessages.failedToCreateCustomer', { error: detail }),
+        createCustomerRes.status
       )
     }
 
@@ -346,6 +388,7 @@ export const useAuthStore = defineStore('auth', () => {
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
+      customerPayload?: CreateCustomerPayload
     } = {}
   ): Promise<T> => {
     loading.value = true
@@ -353,29 +396,13 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action(auth)
 
-      // Provisioning is best-effort (the server also provisions on the next
-      // authenticated request), so surface failures without blocking sign-in.
+      // Create customer if needed
       if (options?.createCustomer) {
-        try {
-          const token = await getIdToken()
-          if (token) {
-            await createCustomer()
-          } else {
-            console.warn(
-              '[auth] skipped account setup: no ID token available after sign-in'
-            )
-          }
-        } catch (error) {
-          console.warn('[auth] account setup failed after sign-in', error)
-          if (isCloud) {
-            toastStore.add({
-              severity: 'warn',
-              summary: t('g.warning'),
-              detail: t('toastMessages.accountSetupIncomplete'),
-              life: 8000
-            })
-          }
+        const token = await getIdToken()
+        if (!token) {
+          throw new Error('Cannot create customer: User not authenticated')
         }
+        await createCustomer(options.customerPayload)
       }
 
       return result
@@ -394,15 +421,13 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      useTelemetry()?.trackAuth({
-        method: 'email',
-        is_new_user: false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    useTelemetry()?.trackAuth({
+      method: 'email',
+      is_new_user: false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -412,7 +437,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const register = (
     email: string,
-    password: string
+    password: string,
+    turnstileToken?: string
   ): Promise<UserCredential> => {
     const key = email.trim().toLowerCase()
 
@@ -420,11 +446,38 @@ export const useAuthStore = defineStore('auth', () => {
     if (existing) return existing
 
     const pending = (async () => {
-      const result = await executeAuthAction(
-        (authInstance) =>
-          createUserWithEmailAndPassword(authInstance, email, password),
-        { createCustomer: true }
-      )
+      // Drive create + customer inside one action so a failed customer step can
+      // roll back the just-created Firebase user. createCustomer is where the
+      // Turnstile token is validated server-side; if it fails (rejection, 5xx,
+      // network) the Firebase user is already created and, without rollback, the
+      // account is orphaned — every retry then fails "email already in use",
+      // permanently bricking signup. Rollback is scoped to register only; login /
+      // social sign-in must never delete an existing user on a customer hiccup.
+      const result = await executeAuthAction(async (authInstance) => {
+        const credential = await createUserWithEmailAndPassword(
+          authInstance,
+          email,
+          password
+        )
+        try {
+          await createCustomer(
+            turnstileToken ? { turnstile_token: turnstileToken } : undefined
+          )
+        } catch (error) {
+          // Best-effort rollback of the user created in THIS call; never let a
+          // cleanup failure mask the original error.
+          try {
+            await credential.user.delete()
+          } catch (deleteError) {
+            console.warn(
+              'Failed to roll back orphaned Firebase user after customer creation failed',
+              deleteError
+            )
+          }
+          throw error
+        }
+        return credential
+      })
 
       // useTelemetry() is null off-cloud, so this is already a no-op there.
       useTelemetry()?.trackAuth({
@@ -462,17 +515,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      const additionalUserInfo = getAdditionalUserInfo(result)
-      useTelemetry()?.trackAuth({
-        method: 'google',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    const additionalUserInfo = getAdditionalUserInfo(result)
+    useTelemetry()?.trackAuth({
+      method: 'google',
+      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -485,17 +535,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      const additionalUserInfo = getAdditionalUserInfo(result)
-      useTelemetry()?.trackAuth({
-        method: 'github',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    const additionalUserInfo = getAdditionalUserInfo(result)
+    useTelemetry()?.trackAuth({
+      method: 'github',
+      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -535,14 +582,18 @@ export const useAuthStore = defineStore('auth', () => {
       customerCreated.value = true
     }
 
-    const response = await fetch(buildApiUrl('/customers/credit'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
+    const response = await fetchWithUnifiedRemint(
+      buildApiUrl('/customers/credit'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBodyContent)
       },
-      body: JSON.stringify(requestBodyContent)
-    })
+      isCloud && flags.unifiedCloudAuthEnabled
+    )
 
     if (!response.ok) {
       const errorData = await response.json()
@@ -569,16 +620,20 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetch(buildApiUrl('/customers/billing'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
+    const response = await fetchWithUnifiedRemint(
+      buildApiUrl('/customers/billing'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        ...(targetTier && {
+          body: JSON.stringify({ target_tier: targetTier })
+        })
       },
-      ...(targetTier && {
-        body: JSON.stringify({ target_tier: targetTier })
-      })
-    })
+      isCloud && flags.unifiedCloudAuthEnabled
+    )
 
     if (!response.ok) {
       const errorData = await response.json()
