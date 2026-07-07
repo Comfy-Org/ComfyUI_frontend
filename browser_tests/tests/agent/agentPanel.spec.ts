@@ -117,7 +117,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
-    const composer = panel.getByPlaceholder('Ask the agent anything...')
+    const composer = panel.getByPlaceholder(enMessages.agent.placeholder)
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
     // Clicking a suggested prompt INSERTS it into the composer, it does not send.
@@ -178,7 +178,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     // server's workflow. The server returns that id in the message ack, and the
     // panel binds the draft store to it. So send once to establish the bind before
     // pushing the patch. A draft_patch is otherwise NEVER turn-filtered.
-    await panel.getByPlaceholder('Ask the agent anything...').fill('Build it')
+    await panel.getByPlaceholder(enMessages.agent.placeholder).fill('Build it')
     await panel.getByRole('button', { name: 'Send' }).click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 

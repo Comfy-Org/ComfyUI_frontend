@@ -12,23 +12,14 @@ vi.mock('@/services/extensionService', () => ({
   })
 }))
 
-// The panel now docks on the right via a visibility store (no sidebar tab). Mock the store so
-// the gate's effect on `enabled` and the button's `toggle()` are observable.
-const agentToggle = vi.fn()
+// The extension's only job is the fail-closed flag gate: it flips the panel store's
+// `enabled` and closes an open panel when the flag turns off (the tab-bar button and the
+// dock both key off the store). Mock the store so both effects are observable.
 const agentClose = vi.fn()
-const agentStore = {
-  enabled: false,
-  isOpen: false,
-  toggle: agentToggle,
-  close: agentClose
-}
+const agentStore = { enabled: false, close: agentClose }
 
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () => agentStore
-}))
-
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
 }))
 
 // The entry awaits `(await import('posthog-js')).default`. Expose isFeatureEnabled (whose
@@ -50,16 +41,11 @@ vi.mock('posthog-js', () => ({
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
-function capturedAgentExtension(): ComfyExtension {
-  const ext = capturedExtensions.find((e) => e.name === 'Comfy.AgentPanel')
-  expect(ext).toBeDefined()
-  return ext!
-}
-
 async function loadEntryAndSetup(): Promise<void> {
   await import('./agentPanel')
-  const ext = capturedAgentExtension()
-  ext.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
+  const ext = capturedExtensions.find((e) => e.name === 'Comfy.AgentPanel')
+  expect(ext).toBeDefined()
+  ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
   // setup fires setupFlagGate, which awaits the (mocked) posthog-js dynamic import before
   // it captures the onFeatureFlags listener and runs the initial sync(). Flush macrotasks
   // until that listener is registered so tests can drive flag transitions through it.
@@ -67,19 +53,15 @@ async function loadEntryAndSetup(): Promise<void> {
   expect(flagListener).toBeTypeOf('function')
 }
 
-function resetState(): void {
-  capturedExtensions.length = 0
-  agentToggle.mockClear()
-  agentClose.mockClear()
-  agentStore.enabled = false
-  agentStore.isOpen = false
-  flagEnabled = undefined
-  flagListener = null
-  vi.resetModules()
-}
-
 describe('AgentPanel extension flag gate', () => {
-  beforeEach(resetState)
+  beforeEach(() => {
+    capturedExtensions.length = 0
+    agentClose.mockClear()
+    agentStore.enabled = false
+    flagEnabled = undefined
+    flagListener = null
+    vi.resetModules()
+  })
 
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
@@ -102,45 +84,5 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(agentStore.enabled).toBe(false)
     expect(agentClose).toHaveBeenCalled()
-  })
-})
-
-describe('AgentPanel top-bar button', () => {
-  beforeEach(resetState)
-
-  it('exposes no action bar button while the flag is off', async () => {
-    await loadEntryAndSetup()
-    expect(capturedAgentExtension().actionBarButtons).toEqual([])
-  })
-
-  it('exposes the button once the flag is on', async () => {
-    await loadEntryAndSetup()
-    flagEnabled = true
-    flagListener!()
-
-    const [button] = capturedAgentExtension().actionBarButtons ?? []
-    expect(button).toBeDefined()
-    expect(button.icon).toBe('icon-[comfy--comfy-c]')
-    expect(button.label).toBe('agent.askComfyAgent')
-  })
-
-  it('toggles the agent panel when the button is clicked', async () => {
-    await loadEntryAndSetup()
-    flagEnabled = true
-    flagListener!()
-
-    const [button] = capturedAgentExtension().actionBarButtons ?? []
-    button.onClick?.()
-    expect(agentToggle).toHaveBeenCalled()
-  })
-
-  it('drops the button when the flag flips back off', async () => {
-    await loadEntryAndSetup()
-    flagEnabled = true
-    flagListener!()
-    flagEnabled = false
-    flagListener!()
-
-    expect(capturedAgentExtension().actionBarButtons).toEqual([])
   })
 })
