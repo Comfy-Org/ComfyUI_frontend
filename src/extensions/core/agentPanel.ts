@@ -1,29 +1,23 @@
-import { markRaw, ref } from 'vue'
+import { ref } from 'vue'
 
 import { t } from '@/i18n'
-import AgentPanelRoot from '@/workbench/extensions/agent/AgentPanelRoot.vue'
 import { createPostHogFlagSource } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useExtensionService } from '@/services/extensionService'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ActionBarButton } from '@/types/comfy'
 
 /**
- * In-App Agent panel (FE-1187): registers the agent side panel as a sidebar tab,
- * gated by the PostHog flag `agent-in-app-experience`. Fail-closed: the tab is not
- * registered until the flag evaluates true, and it unregisters if the flag turns off.
- * The panel lives as an in-source workbench extension subtree
- * (src/workbench/extensions/agent) and renders through a host `vue` sidebar tab, so it
- * shares the host pinia and vue-i18n instances.
+ * In-App Agent panel (FE-1187): the panel docks on the right of the canvas (rendered by
+ * GraphCanvas in the host right-side-panel slot) and opens from the top-bar "Ask Comfy
+ * Agent" button — it is not a left sidebar tab (per the Figma). Gated by the PostHog flag
+ * `agent-in-app-experience`, fail-closed: the button is absent and the panel unrenderable
+ * until the flag evaluates true, and both hide again if the flag turns off.
  */
 
-const TAB_ID = 'agent-panel'
-
-// Reactive mirror of the flag gate's tab-registration state. The actionBarButtons getter
-// below reads this so the top-bar "Ask Comfy Agent" button shares the tab's fail-closed
-// source: the button is absent until the flag registers the tab and disappears if the flag
-// flips off. actionBarButtonStore reads getters through a pinia computed, so touching this
-// ref re-derives the button list.
-const tabRegistered = ref(false)
+// Reactive mirror of the flag gate. The actionBarButtons getter reads it so the top-bar
+// button shares the panel's fail-closed source; actionBarButtonStore reads getters through a
+// pinia computed, so touching this ref re-derives the button list.
+const flagEnabled = ref(false)
 
 const buttons: ActionBarButton[] = [
   {
@@ -31,7 +25,7 @@ const buttons: ActionBarButton[] = [
     label: t('agent.askComfyAgent'),
     tooltip: t('agent.askComfyAgent'),
     onClick: () => {
-      useSidebarTabStore().toggleSidebarTab(TAB_ID)
+      useAgentPanelStore().toggle()
     }
   }
 ]
@@ -39,10 +33,10 @@ const buttons: ActionBarButton[] = [
 useExtensionService().registerExtension({
   name: 'Comfy.AgentPanel',
   get actionBarButtons() {
-    return tabRegistered.value ? buttons : []
+    return flagEnabled.value ? buttons : []
   },
   setup() {
-    const sidebarTabStore = useSidebarTabStore()
+    const agentPanelStore = useAgentPanelStore()
 
     async function setupFlagGate(): Promise<void> {
       // posthog-js is initialized (or not) by the telemetry provider; an
@@ -55,21 +49,10 @@ useExtensionService().registerExtension({
         // project the dev build may not read); test and production builds still gate on it.
         const forceInDev = import.meta.env.MODE === 'development'
         const enabled = forceInDev || source.isEnabled()
-        if (enabled && !tabRegistered.value) {
-          sidebarTabStore.registerSidebarTab({
-            id: TAB_ID,
-            type: 'vue',
-            component: markRaw(AgentPanelRoot),
-            icon: 'icon-[comfy--comfy-c]',
-            title: 'sideToolbar.agentPanel',
-            tooltip: 'sideToolbar.agentPanel',
-            label: 'sideToolbar.labels.agentPanel'
-          })
-          tabRegistered.value = true
-        } else if (!enabled && tabRegistered.value) {
-          sidebarTabStore.unregisterSidebarTab(TAB_ID)
-          tabRegistered.value = false
-        }
+        flagEnabled.value = enabled
+        agentPanelStore.enabled = enabled
+        // Fail-closed: a flag flip-off also closes an open panel.
+        if (!enabled) agentPanelStore.close()
       }
       source.onChange?.(sync)
       sync()

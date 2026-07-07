@@ -12,27 +12,23 @@ vi.mock('@/services/extensionService', () => ({
   })
 }))
 
-const registerSidebarTab = vi.fn()
-const unregisterSidebarTab = vi.fn()
-const toggleSidebarTab = vi.fn()
+// The panel now docks on the right via a visibility store (no sidebar tab). Mock the store so
+// the gate's effect on `enabled` and the button's `toggle()` are observable.
+const agentToggle = vi.fn()
+const agentClose = vi.fn()
+const agentStore = {
+  enabled: false,
+  isOpen: false,
+  toggle: agentToggle,
+  close: agentClose
+}
 
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
-  useSidebarTabStore: () => ({
-    registerSidebarTab,
-    unregisterSidebarTab,
-    toggleSidebarTab
-  })
+vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
+  useAgentPanelStore: () => agentStore
 }))
 
 vi.mock('@/i18n', () => ({
   t: (key: string) => key
-}))
-
-// Stub the panel component so importing the entry does not pull the whole agent subtree
-// (stores, composables, services) into this test. The gate registers it by id/type; the
-// component identity is not asserted here.
-vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', () => ({
-  default: { name: 'AgentPanelRootStub', render: () => null }
 }))
 
 // The entry awaits `(await import('posthog-js')).default`. Expose isFeatureEnabled (whose
@@ -71,76 +67,53 @@ async function loadEntryAndSetup(): Promise<void> {
   expect(flagListener).toBeTypeOf('function')
 }
 
+function resetState(): void {
+  capturedExtensions.length = 0
+  agentToggle.mockClear()
+  agentClose.mockClear()
+  agentStore.enabled = false
+  agentStore.isOpen = false
+  flagEnabled = undefined
+  flagListener = null
+  vi.resetModules()
+}
+
 describe('AgentPanel extension flag gate', () => {
-  beforeEach(() => {
-    capturedExtensions.length = 0
-    registerSidebarTab.mockClear()
-    unregisterSidebarTab.mockClear()
-    toggleSidebarTab.mockClear()
-    flagEnabled = undefined
-    flagListener = null
-    vi.resetModules()
-  })
+  beforeEach(resetState)
 
-  it('does not register the tab while the flag is undefined', async () => {
+  it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
-    expect(registerSidebarTab).not.toHaveBeenCalled()
+    expect(agentStore.enabled).toBe(false)
   })
 
-  it('registers the agent-panel vue tab once when the flag turns true', async () => {
+  it('enables the panel when the flag turns true', async () => {
     await loadEntryAndSetup()
     flagEnabled = true
     flagListener!()
-
-    expect(registerSidebarTab).toHaveBeenCalledTimes(1)
-    expect(registerSidebarTab.mock.calls[0][0]).toMatchObject({
-      id: 'agent-panel',
-      type: 'vue',
-      icon: 'icon-[comfy--comfy-c]'
-    })
+    expect(agentStore.enabled).toBe(true)
   })
 
-  it('unregisters the tab when the flag flips back to false', async () => {
+  it('disables and closes the panel when the flag flips back to false', async () => {
     await loadEntryAndSetup()
     flagEnabled = true
     flagListener!()
     flagEnabled = false
     flagListener!()
 
-    expect(unregisterSidebarTab).toHaveBeenCalledWith('agent-panel')
-  })
-
-  it('never double-registers across true/false/true toggling', async () => {
-    await loadEntryAndSetup()
-    flagEnabled = true
-    flagListener!()
-    flagEnabled = false
-    flagListener!()
-    flagEnabled = true
-    flagListener!()
-
-    expect(registerSidebarTab).toHaveBeenCalledTimes(2)
-    expect(unregisterSidebarTab).toHaveBeenCalledTimes(1)
+    expect(agentStore.enabled).toBe(false)
+    expect(agentClose).toHaveBeenCalled()
   })
 })
 
 describe('AgentPanel top-bar button', () => {
-  beforeEach(() => {
-    capturedExtensions.length = 0
-    registerSidebarTab.mockClear()
-    unregisterSidebarTab.mockClear()
-    toggleSidebarTab.mockClear()
-    flagEnabled = undefined
-    flagListener = null
-    vi.resetModules()
-  })
+  beforeEach(resetState)
 
   it('exposes no action bar button while the flag is off', async () => {
     await loadEntryAndSetup()
     expect(capturedAgentExtension().actionBarButtons).toEqual([])
   })
 
-  it('exposes the button once the flag registers the tab', async () => {
+  it('exposes the button once the flag is on', async () => {
     await loadEntryAndSetup()
     flagEnabled = true
     flagListener!()
@@ -151,14 +124,14 @@ describe('AgentPanel top-bar button', () => {
     expect(button.label).toBe('agent.askComfyAgent')
   })
 
-  it('toggles the agent-panel tab when the button is clicked', async () => {
+  it('toggles the agent panel when the button is clicked', async () => {
     await loadEntryAndSetup()
     flagEnabled = true
     flagListener!()
 
     const [button] = capturedAgentExtension().actionBarButtons ?? []
     button.onClick?.()
-    expect(toggleSidebarTab).toHaveBeenCalledWith('agent-panel')
+    expect(agentToggle).toHaveBeenCalled()
   })
 
   it('drops the button when the flag flips back off', async () => {
