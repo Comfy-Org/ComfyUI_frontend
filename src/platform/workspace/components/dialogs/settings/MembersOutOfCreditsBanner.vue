@@ -11,7 +11,7 @@
           {{ $t('workspacePanel.members.outOfCredits.title') }}
         </span>
       </div>
-      <p class="pl-6 text-sm text-muted-foreground">
+      <p class="m-0 pl-6 text-sm text-muted-foreground">
         {{
           resetDate
             ? $t('workspacePanel.members.outOfCredits.bodyWithReset', {
