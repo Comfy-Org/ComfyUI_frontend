@@ -75,21 +75,22 @@ more text into their boxes.
 
 The eight views are zoom levels of one mental model, not eight parallel
 pictures. Every arrow below names the element of the parent view that the
-child expands:
+child expands. The map is ordered by zoom, not by page order: arrows say
+what contains what, section numbers say where to read.
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 240}}}%%
 flowchart LR
     L1["System context (section 2): who and what the suite touches"]
-    L8["CI deployment view (section 13): the order the test world is built in"]
     L2["Building blocks (section 4): what the suite is made of"]
     L3["Definition pipeline (section 6): where every check's expectations come from"]
     L4["Execution flow (section 7): how a foreign node gets run safely"]
     L5["Persistence check (section 8): how save and reload are proven"]
     L6["Event attribution (section 9): when an arriving event may be believed"]
     L7["Evidence model (section 10): how exceptions stay honest"]
-    L1 -->|"expands the CI arrow"| L8
+    L8["CI deployment view (section 13): the order the test world is built in"]
     L1 -->|"opens the suite boxes"| L2
+    L1 -->|"expands the CI arrow"| L8
     L2 -->|"the Definition Normalizer service"| L3
     L2 -->|"the Execution tier"| L4
     L2 -->|"the Persistence tier"| L5
