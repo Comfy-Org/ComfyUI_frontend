@@ -1,9 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { setViewport } from '@/components/searchbox/v2/__test__/testUtils'
 
 import ErrorResolutionPanel from './ErrorResolutionPanel.vue'
 
@@ -115,5 +117,42 @@ describe('ErrorResolutionPanel.vue', () => {
 
     expect(screen.getByTestId('errors-summary-hero')).toBeInTheDocument()
     expect(screen.queryByText('All errors resolved')).not.toBeInTheDocument()
+  })
+
+  it('shows a collapsible top bar with the error count on narrow viewports', async () => {
+    setViewport({ width: 375, height: 800 })
+    const { user, emitted } = renderComponent({
+      executionError: {
+        lastPromptError: {
+          type: 'prompt_no_outputs',
+          message: 'Server Error: No outputs',
+          details: 'Error details'
+        }
+      }
+    })
+
+    expect(
+      screen.getByText('Error detected'),
+      'the top bar shows the error count summary'
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('errors-summary-hero'),
+      'the hero is replaced by the top bar on narrow viewports'
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Hide errors' }))
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('selection-context-strip')
+      ).not.toBeInTheDocument()
+    })
+    expect(
+      screen.getByRole('button', { name: 'Show errors' })
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('error-resolution-back'))
+    expect(emitted('back')).toHaveLength(1)
+
+    setViewport({ width: 1024, height: 768 })
   })
 })

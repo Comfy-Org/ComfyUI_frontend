@@ -61,11 +61,11 @@ vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ execute: executeCommandMock })
 }))
 
-function createSelectedCanvas() {
+function createSelectedCanvas({ width = 800, height = 600 } = {}) {
   const graph = new LGraph()
   const canvasElement = document.createElement('canvas')
-  canvasElement.width = 800
-  canvasElement.height = 600
+  canvasElement.width = width
+  canvasElement.height = height
   canvasElement.getContext = vi
     .fn()
     .mockReturnValue(createMockCanvasRenderingContext2D())
@@ -127,6 +127,39 @@ describe('useViewErrorsInGraph', () => {
         'the graph is fit into view on entry'
       ).toHaveBeenCalledWith('Comfy.Canvas.FitView')
     })
+  })
+
+  it('skips FitView when the canvas never re-measures', async () => {
+    const canvasStore = useCanvasStore()
+    const workflowStore = useWorkflowStore()
+    const { canvas } = createSelectedCanvas({ width: 0, height: 0 })
+    workflowStore.activeWorkflow = {
+      activeMode: 'app'
+    } as typeof workflowStore.activeWorkflow
+    canvasStore.canvas = canvas
+
+    useViewErrorsInGraph().viewErrorsInGraph()
+    // Outlast the 30-frame resize wait
+    await new Promise((resolve) => setTimeout(resolve, 700))
+
+    expect(executeCommandMock).not.toHaveBeenCalled()
+  })
+
+  it('skips FitView when the view is exited during the resize wait', async () => {
+    const canvasStore = useCanvasStore()
+    const errorResolutionStore = useErrorResolutionStore()
+    const workflowStore = useWorkflowStore()
+    const { canvas } = createSelectedCanvas()
+    workflowStore.activeWorkflow = {
+      activeMode: 'app'
+    } as typeof workflowStore.activeWorkflow
+    canvasStore.canvas = canvas
+
+    useViewErrorsInGraph().viewErrorsInGraph()
+    errorResolutionStore.exit()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(executeCommandMock).not.toHaveBeenCalled()
   })
 
   it('opens the errors panel when already in graph mode', () => {

@@ -289,6 +289,16 @@ describe('ErrorGroupList selection emphasis', () => {
       'slides stay expanded instead of collapsing'
     ).toBeInTheDocument()
 
+    const dots = within(screen.getByTestId('error-carousel-dots')).getAllByRole(
+      'button'
+    )
+    expect(dots).toHaveLength(2)
+    scrollTo.mockClear()
+    await user.click(dots[0])
+    expect(scrollTo, 'dot buttons scroll to their slide').toHaveBeenCalledWith(
+      expect.objectContaining({ left: 0 })
+    )
+
     scrollTo.mockRestore()
   })
 })
