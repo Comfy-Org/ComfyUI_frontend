@@ -97,7 +97,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
       {
         key: widgetId,
         persistedHeight: config?.height,
-        nodeData: fullNodeData,
+        nodeData: { ...fullNodeData, inputs: [] },
         widgetIds: [widgetId],
         action: { widget, node }
       }
