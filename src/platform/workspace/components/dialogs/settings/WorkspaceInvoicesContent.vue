@@ -9,19 +9,19 @@
           <TableRow
             class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
           >
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('date')">
               <button :class="sortHeaderClass" @click="toggleSort('date')">
                 {{ $t('workspacePanel.invoices.columns.date') }}
                 <i :class="sortIcon('date')" />
               </button>
             </TableHead>
-            <TableHead>
+            <TableHead :aria-sort="ariaSort('eventType')">
               <button :class="sortHeaderClass" @click="toggleSort('eventType')">
                 {{ $t('workspacePanel.invoices.columns.eventType') }}
                 <i :class="sortIcon('eventType')" />
               </button>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('price')">
               <button
                 :class="cn(sortHeaderClass, 'ml-auto')"
                 @click="toggleSort('price')"
@@ -114,6 +114,13 @@ function sortIcon(field: InvoiceSortField) {
   return sortDirection.value === 'asc'
     ? 'icon-[lucide--chevron-up] size-3'
     : 'icon-[lucide--chevron-down] size-3'
+}
+
+function ariaSort(
+  field: InvoiceSortField
+): 'ascending' | 'descending' | 'none' {
+  if (sortField.value !== field) return 'none'
+  return sortDirection.value === 'asc' ? 'ascending' : 'descending'
 }
 
 function formatDate(date: Date): string {

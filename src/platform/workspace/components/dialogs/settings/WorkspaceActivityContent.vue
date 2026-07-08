@@ -9,31 +9,31 @@
           <TableRow
             class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
           >
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('date')">
               <button :class="sortHeaderClass" @click="toggleSort('date')">
                 {{ $t('workspacePanel.activity.columns.date') }}
                 <i :class="sortIcon('date')" />
               </button>
             </TableHead>
-            <TableHead>
+            <TableHead :aria-sort="ariaSort('user')">
               <button :class="sortHeaderClass" @click="toggleSort('user')">
                 {{ $t('workspacePanel.activity.columns.user') }}
                 <i :class="sortIcon('user')" />
               </button>
             </TableHead>
-            <TableHead class="w-48">
+            <TableHead class="w-48" :aria-sort="ariaSort('eventType')">
               <button :class="sortHeaderClass" @click="toggleSort('eventType')">
                 {{ $t('workspacePanel.activity.columns.eventType') }}
                 <i :class="sortIcon('eventType')" />
               </button>
             </TableHead>
-            <TableHead class="w-32">
+            <TableHead class="w-32" :aria-sort="ariaSort('detail')">
               <button :class="sortHeaderClass" @click="toggleSort('detail')">
                 {{ $t('workspacePanel.activity.columns.eventDetails') }}
                 <i :class="sortIcon('detail')" />
               </button>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('credits')">
               <button
                 :class="cn(sortHeaderClass, 'ml-auto')"
                 @click="toggleSort('credits')"
@@ -272,6 +272,13 @@ function sortIcon(field: ActivitySortField) {
   return sortDirection.value === 'asc'
     ? 'icon-[lucide--chevron-up] size-3'
     : 'icon-[lucide--chevron-down] size-3'
+}
+
+function ariaSort(
+  field: ActivitySortField
+): 'ascending' | 'descending' | 'none' {
+  if (sortField.value !== field) return 'none'
+  return sortDirection.value === 'asc' ? 'ascending' : 'descending'
 }
 
 function formatDate(date: Date): string {

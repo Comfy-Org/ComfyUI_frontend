@@ -77,7 +77,7 @@
           <TableRow
             class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
           >
-            <TableHead>
+            <TableHead :aria-sort="ariaSort('email')">
               <button :class="sortHeaderClass" @click="toggleSort('email')">
                 {{ $t('workspacePanel.members.columns.email') }}
                 <i :class="sortIcon('email')" />
@@ -85,13 +85,18 @@
             </TableHead>
             <TableHead
               :class="permissions.canManageMembers ? 'w-40' : undefined"
+              :aria-sort="ariaSort('role')"
             >
               <button :class="sortHeaderClass" @click="toggleSort('role')">
                 {{ $t('workspacePanel.members.columns.role') }}
                 <i :class="sortIcon('role')" />
               </button>
             </TableHead>
-            <TableHead v-if="permissions.canManageMembers" class="w-40">
+            <TableHead
+              v-if="permissions.canManageMembers"
+              class="w-40"
+              :aria-sort="ariaSort('lastActivity')"
+            >
               <button
                 :class="sortHeaderClass"
                 @click="toggleSort('lastActivity')"
@@ -100,7 +105,11 @@
                 <i :class="sortIcon('lastActivity')" />
               </button>
             </TableHead>
-            <TableHead v-if="permissions.canManageMembers" class="w-64">
+            <TableHead
+              v-if="permissions.canManageMembers"
+              class="w-64"
+              :aria-sort="ariaSort('credits')"
+            >
               <button
                 :class="cn(sortHeaderClass, 'ml-auto')"
                 @click="toggleSort('credits')"
@@ -143,7 +152,7 @@
                 {{ $t('workspacePanel.members.columns.email') }}
               </span>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('inviteDate')">
               <button
                 :class="sortHeaderClass"
                 @click="toggleSort('inviteDate')"
@@ -152,7 +161,7 @@
                 <i :class="sortIcon('inviteDate')" />
               </button>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('expiryDate')">
               <button
                 :class="sortHeaderClass"
                 @click="toggleSort('expiryDate')"
@@ -295,6 +304,11 @@ function sortIcon(field: string) {
   return sortDirection.value === 'asc'
     ? 'icon-[lucide--chevron-up] size-3'
     : 'icon-[lucide--chevron-down] size-3'
+}
+
+function ariaSort(field: string): 'ascending' | 'descending' | 'none' {
+  if (sortField.value !== field) return 'none'
+  return sortDirection.value === 'asc' ? 'ascending' : 'descending'
 }
 
 function handleContactUs() {

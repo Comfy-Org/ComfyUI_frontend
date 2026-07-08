@@ -29,19 +29,19 @@
                 @update:model-value="toggleSelectAll"
               />
             </TableHead>
-            <TableHead>
+            <TableHead :aria-sort="ariaSort('name')">
               <button :class="sortHeaderClass" @click="toggleSort('name')">
                 {{ $t('workspacePanel.partnerNodes.columns.name') }}
                 <i :class="sortIcon('name')" />
               </button>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('partner')">
               <button :class="sortHeaderClass" @click="toggleSort('partner')">
                 {{ $t('workspacePanel.partnerNodes.columns.partner') }}
                 <i :class="sortIcon('partner')" />
               </button>
             </TableHead>
-            <TableHead class="w-40">
+            <TableHead class="w-40" :aria-sort="ariaSort('lastModified')">
               <button
                 :class="sortHeaderClass"
                 @click="toggleSort('lastModified')"
@@ -214,6 +214,13 @@ function sortIcon(field: 'name' | 'partner' | 'lastModified') {
   return sortDirection.value === 'asc'
     ? 'icon-[lucide--chevron-up] size-3'
     : 'icon-[lucide--chevron-down] size-3'
+}
+
+function ariaSort(
+  field: 'name' | 'partner' | 'lastModified'
+): 'ascending' | 'descending' | 'none' {
+  if (sortField.value !== field) return 'none'
+  return sortDirection.value === 'asc' ? 'ascending' : 'descending'
 }
 
 // When every selected node is enabled the bulk switch reads "on", so a toggle
