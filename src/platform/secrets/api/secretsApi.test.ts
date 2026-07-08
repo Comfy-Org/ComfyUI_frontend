@@ -16,6 +16,7 @@ function jsonResponse(body: unknown, init: Partial<Response> = {}): Response {
     status: 200,
     statusText: 'OK',
     json: () => Promise.resolve(body),
+    text: () => Promise.resolve(JSON.stringify(body)),
     ...init
   } as Response
 }
