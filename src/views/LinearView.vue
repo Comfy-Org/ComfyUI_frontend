@@ -112,7 +112,7 @@ function dragDrop(e: DragEvent) {
       </div>
     </div>
     <div
-      class="flex flex-1 overflow-hidden bg-secondary-background"
+      class="flex flex-1 overflow-hidden bg-base-background"
       :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
     >
       <SideToolbar
@@ -123,7 +123,7 @@ function dragDrop(e: DragEvent) {
       />
       <Splitter
         :key="splitterKey"
-        class="h-full flex-1 border-none bg-secondary-background"
+        class="h-full flex-1 border-none bg-base-background"
         @resizestart="$event.originalEvent.preventDefault()"
         @resizeend="onResizeEnd"
       >
@@ -154,11 +154,10 @@ function dragDrop(e: DragEvent) {
           />
         </SplitterPanel>
         <SplitterPanel
-          id="linearCenterPanel"
           v-coachmark="COACH_IDS.outputs"
           data-testid="linear-center-panel"
           :size="CENTER_PANEL_SIZE"
-          class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
+          class="relative flex min-w-[20vw] flex-col gap-4 bg-interface-canvas-background text-muted-foreground outline-none"
           @drop="dragDrop"
         >
           <LinearProgressBar

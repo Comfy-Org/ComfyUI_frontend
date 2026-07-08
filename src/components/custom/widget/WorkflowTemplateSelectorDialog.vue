@@ -444,8 +444,15 @@ import type { TemplateTypeFilter } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import {
+  getBaseThumbnailSrc,
+  getEffectiveSourceModule,
+  getOverlayThumbnailSrc,
+  getTemplateDescription,
+  getTemplateTitle,
+  isAppTemplate
+} from '@/platform/workflow/templates/utils/templateUtil'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { isAppTemplate } from '@/platform/workflow/templates/utils/templateUtil'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
@@ -488,26 +495,7 @@ provide(OnCloseKey, onClose)
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
-const {
-  loadTemplates,
-  loadWorkflowTemplate,
-  getTemplateThumbnailUrl,
-  getTemplateTitle,
-  getTemplateDescription
-} = useTemplateWorkflows()
-
-const getEffectiveSourceModule = (template: TemplateInfo) =>
-  template.sourceModule || 'default'
-
-const getBaseThumbnailSrc = (template: TemplateInfo) => {
-  const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
-}
-
-const getOverlayThumbnailSrc = (template: TemplateInfo) => {
-  const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
-}
+const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
 
 // Open tutorial in new tab
 const openTutorial = (template: TemplateInfo) => {

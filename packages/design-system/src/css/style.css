@@ -461,6 +461,7 @@
   );
   --color-interface-menu-surface: var(--interface-menu-surface);
   --color-interface-menu-stroke: var(--interface-menu-stroke);
+  --color-interface-canvas-background: var(--color-charcoal-900);
   --color-interface-panel-surface: var(--interface-panel-surface);
   --color-interface-panel-hover-surface: var(--interface-panel-hover-surface);
   --color-interface-panel-selected-surface: var(
