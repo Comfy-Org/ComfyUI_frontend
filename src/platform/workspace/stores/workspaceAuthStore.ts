@@ -452,7 +452,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // A missing Firebase ID token while the user is still signed in is a transient
   // network failure — getIdToken() swallows NETWORK_REQUEST_FAILED and returns
   // undefined — not a revoked session, so it must not tear down a valid context.
-  function isPermanentRecoveryFailure(err: unknown): boolean {
+  function isPermanentRecoveryFailure(
+    err: unknown
+  ): err is WorkspaceAuthError {
     if (!isPermanentAuthError(err)) {
       return false
     }
