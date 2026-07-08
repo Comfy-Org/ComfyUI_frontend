@@ -187,19 +187,21 @@ export const useAuthActions = () => {
     return result
   }, reportError)
 
-  const signInWithGoogle = wrapWithErrorHandlingAsync(
-    async (options?: { isNewUser?: boolean }) => {
-      return await authStore.loginWithGoogle(options)
-    },
-    reportAuthFlowError('google_sign_in')
-  )
+  const signInWithGoogle = async (options?: { isNewUser?: boolean }) =>
+    await wrapWithErrorHandlingAsync(
+      async () => await authStore.loginWithGoogle(options),
+      reportAuthFlowError(
+        options?.isNewUser ? 'google_sign_up' : 'google_sign_in'
+      )
+    )()
 
-  const signInWithGithub = wrapWithErrorHandlingAsync(
-    async (options?: { isNewUser?: boolean }) => {
-      return await authStore.loginWithGithub(options)
-    },
-    reportAuthFlowError('github_sign_in')
-  )
+  const signInWithGithub = async (options?: { isNewUser?: boolean }) =>
+    await wrapWithErrorHandlingAsync(
+      async () => await authStore.loginWithGithub(options),
+      reportAuthFlowError(
+        options?.isNewUser ? 'github_sign_up' : 'github_sign_in'
+      )
+    )()
 
   const signInWithEmail = wrapWithErrorHandlingAsync(
     async (email: string, password: string) => {
