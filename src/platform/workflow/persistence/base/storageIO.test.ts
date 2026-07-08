@@ -219,16 +219,15 @@ describe('storageIO', () => {
     })
 
     it('ignores delete errors', () => {
-      vi.stubGlobal(
-        'localStorage',
-        createStorageStub({
-          removeItem: vi.fn(() => {
-            throw new Error('remove failed')
-          })
-        })
-      )
+      const removeItem = vi.fn(() => {
+        throw new Error('remove failed')
+      })
+      vi.stubGlobal('localStorage', createStorageStub({ removeItem }))
 
       expect(() => deletePayload(workspaceId, draftKey)).not.toThrow()
+      expect(removeItem).toHaveBeenCalledWith(
+        `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
+      )
     })
 
     it('deletes multiple payloads', () => {
@@ -456,11 +455,10 @@ describe('storageIO', () => {
     })
 
     it('silently ignores pointer write failures', () => {
-      const storage = createStorageStub({
-        setItem: vi.fn(() => {
-          throw new Error('write failed')
-        })
+      const setItem = vi.fn(() => {
+        throw new Error('write failed')
       })
+      const storage = createStorageStub({ setItem })
       vi.stubGlobal('localStorage', storage)
       vi.stubGlobal('sessionStorage', storage)
 
@@ -477,6 +475,9 @@ describe('storageIO', () => {
           activeIndex: 0
         })
       ).not.toThrow()
+      expect(setItem).toHaveBeenCalled()
+      expect(readActivePath('client')).toBeNull()
+      expect(readOpenPaths('client')).toBeNull()
     })
   })
 
@@ -518,14 +519,18 @@ describe('storageIO', () => {
     })
 
     it('ignores storage cleanup failures', () => {
+      const localRemoveItem = vi.fn(() => {
+        throw new Error('remove failed')
+      })
+      const sessionRemoveItem = vi.fn(() => {
+        throw new Error('remove failed')
+      })
       vi.stubGlobal(
         'localStorage',
         createStorageStub({
           length: 1,
           key: vi.fn(() => 'Comfy.Workflow.Draft.v2:ws-1:abc'),
-          removeItem: vi.fn(() => {
-            throw new Error('remove failed')
-          })
+          removeItem: localRemoveItem
         })
       )
       vi.stubGlobal(
@@ -533,13 +538,17 @@ describe('storageIO', () => {
         createStorageStub({
           length: 1,
           key: vi.fn(() => 'Comfy.Workflow.ActivePath:client-1'),
-          removeItem: vi.fn(() => {
-            throw new Error('remove failed')
-          })
+          removeItem: sessionRemoveItem
         })
       )
 
       expect(() => clearAllV2Storage()).not.toThrow()
+      expect(localRemoveItem).toHaveBeenCalledWith(
+        'Comfy.Workflow.Draft.v2:ws-1:abc'
+      )
+      expect(sessionRemoveItem).toHaveBeenCalledWith(
+        'Comfy.Workflow.ActivePath:client-1'
+      )
     })
   })
 

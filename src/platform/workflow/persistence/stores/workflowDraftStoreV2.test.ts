@@ -202,6 +202,7 @@ describe('workflowDraftStoreV2', () => {
       const store = useWorkflowDraftStoreV2()
 
       expect(() => store.removeDraft('workflows/missing.json')).not.toThrow()
+      expect(store.getDraft('workflows/missing.json')).toBeNull()
     })
   })
 
@@ -362,6 +363,7 @@ describe('workflowDraftStoreV2', () => {
       const store = useWorkflowDraftStoreV2()
 
       expect(() => store.markDraftUsed('workflows/missing.json')).not.toThrow()
+      expect(store.getMostRecentPath()).toBeNull()
     })
   })
 

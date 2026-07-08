@@ -20,6 +20,7 @@ describe('migrateV1toV2', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     localStorage.clear()
     sessionStorage.clear()
   })
@@ -252,11 +253,20 @@ describe('migrateV1toV2', () => {
     })
 
     it('ignores storage errors during cleanup', () => {
-      vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      const removeItem = vi.fn(() => {
         throw new Error('blocked')
+      })
+      vi.stubGlobal('localStorage', {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(),
+        removeItem,
+        clear: vi.fn(),
+        key: vi.fn(() => null),
+        length: 0
       })
 
       expect(() => cleanupV1Data(workspaceId)).not.toThrow()
+      expect(removeItem).toHaveBeenCalled()
     })
   })
 

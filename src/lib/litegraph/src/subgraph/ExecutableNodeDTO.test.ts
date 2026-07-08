@@ -593,15 +593,16 @@ describe('Bypass node output resolution', () => {
     bypassedNode.mode = LGraphEventMode.BYPASS
     graph.add(bypassedNode)
     const dto = new ExecutableNodeDTO(bypassedNode, [], new Map(), undefined)
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const resolved = dto.resolveOutput(0, 'IMAGE', new Set())
 
     expect(resolved).toBeUndefined()
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('No input types match'),
       dto
     )
+    warn.mockRestore()
   })
 })
 

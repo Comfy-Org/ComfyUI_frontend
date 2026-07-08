@@ -743,6 +743,7 @@ describe('ComfyHubPublishDialog', () => {
     expect(revokeObjectURL).not.toHaveBeenCalledWith(
       'https://example.com/remote.png'
     )
+    vi.unstubAllGlobals()
   })
 
   it('ignores a stale prefill response after the workflow path changes', async () => {

@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   findFirstNode,
@@ -10,14 +10,6 @@ import {
 } from './collections'
 
 import type { Positionable } from '../interfaces'
-
-const graphNodeMock = vi.hoisted(() => ({
-  LGraphNode: class TestLGraphNode {
-    constructor(readonly title: string) {}
-  }
-}))
-
-vi.mock('@/lib/litegraph/src/LGraphNode', () => graphNodeMock)
 
 describe('getAllNestedItems', () => {
   it('returns empty for an undefined input set', () => {

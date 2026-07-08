@@ -518,10 +518,9 @@ describe('useWorkflowStore', () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
       const workflowA = store.getWorkflowByPath('workflows/a.json')!
       const workflowB = store.getWorkflowByPath('workflows/b.json')!
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
 
       await store.openWorkflow(workflowA)
       await store.openWorkflow(workflowB)
@@ -1262,10 +1261,9 @@ describe('useWorkflowStore', () => {
 
   describe('workflow bookmarks', () => {
     it('loads no bookmarks when the index response is not found', async () => {
-      vi.mocked(api.getUserData).mockResolvedValueOnce({
-        status: 404,
-        json: () => Promise.resolve({})
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        new Response('{}', { status: 404 })
+      )
 
       await bookmarkStore.loadBookmarks()
 
@@ -1273,10 +1271,9 @@ describe('useWorkflowStore', () => {
     })
 
     it('loads an empty bookmark set from a sparse index response', async () => {
-      vi.mocked(api.getUserData).mockResolvedValueOnce({
-        status: 200,
-        json: () => Promise.resolve(null)
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        new Response('null', { status: 200 })
+      )
 
       await bookmarkStore.loadBookmarks()
 

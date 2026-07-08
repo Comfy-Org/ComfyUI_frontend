@@ -532,12 +532,15 @@ describe('subgraphUtils', () => {
 
   describe('reorderSubgraphInputs', () => {
     it('returns when the host has no subgraph', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       expect(() =>
         reorderSubgraphInputs(
           fromPartial<Parameters<typeof reorderSubgraphInputs>[0]>({}),
           []
         )
       ).not.toThrow()
+      expect(error).not.toHaveBeenCalled()
     })
 
     it('logs and leaves inputs unchanged for invalid permutations', () => {
