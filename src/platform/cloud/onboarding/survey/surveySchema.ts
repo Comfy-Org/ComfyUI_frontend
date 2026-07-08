@@ -9,6 +9,8 @@ import type {
 
 export type SurveyValues = Record<string, string | string[] | undefined>
 
+export const OTHER_TEXT_MAX_LENGTH = 200
+
 export const hasNonEmptyValue = (
   current: string | string[] | undefined
 ): boolean => {
@@ -59,7 +61,7 @@ export const prepareSurvey = (survey: OnboardingSurvey): OnboardingSurvey => ({
   fields: survey.fields.map(randomizeOptions)
 })
 
-type Translator = (key: string) => string
+type Translator = (key: string, named?: Record<string, unknown>) => string
 
 const identityTranslator: Translator = (key) => key
 
@@ -99,6 +101,11 @@ export const buildZodSchema = (
         .trim()
         .min(1, {
           message: t('cloudOnboarding.survey.errors.describeAnswer')
+        })
+        .max(OTHER_TEXT_MAX_LENGTH, {
+          message: t('cloudOnboarding.survey.errors.answerTooLong', {
+            max: OTHER_TEXT_MAX_LENGTH
+          })
         })
     } else if (field.otherFieldId) {
       shape[field.otherFieldId] = z.string().optional()

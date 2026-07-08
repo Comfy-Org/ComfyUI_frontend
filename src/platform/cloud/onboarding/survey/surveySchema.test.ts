@@ -4,6 +4,7 @@ import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
 import { defaultOnboardingSurvey } from './defaultSurveySchema'
 import {
+  OTHER_TEXT_MAX_LENGTH,
   buildInitialValues,
   buildSubmissionPayload,
   buildZodSchema,
@@ -403,5 +404,24 @@ describe('other free-text validation', () => {
     expect(
       schema.safeParse({ source: 'other', sourceOther: '   ' }).success
     ).toBe(false)
+  })
+
+  it('rejects an "other" answer longer than the max length', () => {
+    const schema = buildZodSchema(otherSurvey, {
+      source: 'other',
+      sourceOther: 'x'.repeat(OTHER_TEXT_MAX_LENGTH + 1)
+    })
+    expect(
+      schema.safeParse({
+        source: 'other',
+        sourceOther: 'x'.repeat(OTHER_TEXT_MAX_LENGTH + 1)
+      }).success
+    ).toBe(false)
+    expect(
+      schema.safeParse({
+        source: 'other',
+        sourceOther: 'x'.repeat(OTHER_TEXT_MAX_LENGTH)
+      }).success
+    ).toBe(true)
   })
 })

@@ -3130,7 +3130,8 @@
       "errors": {
         "chooseAnOption": "Please choose an option.",
         "selectAtLeastOne": "Please select at least one option.",
-        "describeAnswer": "Please describe your answer."
+        "describeAnswer": "Please describe your answer.",
+        "answerTooLong": "Please keep your answer under {max} characters."
       },
       "options": {
         "intent": {

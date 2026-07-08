@@ -61,6 +61,7 @@
       v-if="field.allowOther && field.otherFieldId && isOtherSelected"
       :model-value="(otherValue as string) ?? ''"
       :class="inputClass"
+      :maxlength="OTHER_TEXT_MAX_LENGTH"
       :placeholder="
         $t(
           `cloudOnboarding.survey.options.${field.id}.otherPlaceholder`,
@@ -102,6 +103,8 @@ import type {
   OnboardingSurveyField,
   OnboardingSurveyOption
 } from '@/platform/remoteConfig/types'
+
+import { OTHER_TEXT_MAX_LENGTH } from './surveySchema'
 
 const {
   field,
