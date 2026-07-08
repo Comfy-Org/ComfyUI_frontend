@@ -147,6 +147,8 @@ describe('CORE_SETTINGS', () => {
   })
 
   it('ignores the dev-mode button handler when the element is absent', () => {
+    expect(document.getElementById('comfy-dev-save-api-button')).toBeNull()
+
     expect(() =>
       setting<boolean>('Comfy.DevMode').onChange?.(true)
     ).not.toThrow()
