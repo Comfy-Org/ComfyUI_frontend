@@ -25,6 +25,8 @@ const open = defineModel<boolean>('open', { default: false })
         class="rounded-agent max-h-[80vh] w-full object-contain"
         controls
         autoplay
+        muted
+        playsinline
         loop
       />
       <img
