@@ -56,7 +56,9 @@ export type AuthFlowAction =
   | 'email_sign_in'
   | 'email_sign_up'
   | 'google_sign_in'
+  | 'google_sign_up'
   | 'github_sign_in'
+  | 'github_sign_up'
   | 'password_reset'
 
 /**

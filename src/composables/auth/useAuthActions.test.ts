@@ -9,6 +9,8 @@ type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
 const mockAuthStore = vi.hoisted(() => ({
   login: vi.fn().mockResolvedValue(undefined),
+  loginWithGoogle: vi.fn().mockResolvedValue(undefined),
+  loginWithGithub: vi.fn().mockResolvedValue(undefined),
   register: vi.fn().mockResolvedValue(undefined),
   logout: vi.fn().mockResolvedValue(undefined)
 }))
@@ -264,6 +266,32 @@ describe('useAuthActions auth flow error telemetry', () => {
     expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'unknown',
       auth_action: 'email_sign_up'
+    })
+  })
+
+  it('tracks Google sign-up failures separately from sign-in failures', async () => {
+    const error = new FirebaseError('auth/popup-closed-by-user', 'msg')
+    mockAuthStore.loginWithGoogle.mockRejectedValueOnce(error)
+    const { signInWithGoogle } = useAuthActions()
+
+    await expect(signInWithGoogle({ isNewUser: true })).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'google_sign_up'
+    })
+  })
+
+  it('tracks GitHub sign-up failures separately from sign-in failures', async () => {
+    const error = new FirebaseError('auth/popup-closed-by-user', 'msg')
+    mockAuthStore.loginWithGithub.mockRejectedValueOnce(error)
+    const { signInWithGithub } = useAuthActions()
+
+    await expect(signInWithGithub({ isNewUser: true })).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'github_sign_up'
     })
   })
 
