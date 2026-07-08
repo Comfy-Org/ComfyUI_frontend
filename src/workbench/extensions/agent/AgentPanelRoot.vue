@@ -12,9 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
-import ChatHistoryDrawer from './components/agent/ChatHistoryDrawer.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
-import StartingPointModal from './components/agent/StartingPointModal.vue'
 import { useAttachment } from './composables/agent/useAttachment'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
@@ -151,9 +149,6 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const historyOpen = ref(false)
-const startingOpen = ref(false)
-
 const coachSteps: CoachStep[] = [
   {
     target: '#agent-panel-root',
@@ -174,8 +169,9 @@ function onStop(): void {
 }
 
 function onNewChat(): void {
+  // V0: a new chat just clears the conversation back to the empty state. The onboarding
+  // "starting point" modal is out of scope for V0 (Key Decision #2).
   newChat()
-  startingOpen.value = true
 }
 
 // Attachments (P0 B6): the composer's attach affordance opens this hidden picker; picked
@@ -227,25 +223,17 @@ async function onFilesPicked(event: Event): Promise<void> {
       :streaming="isStreaming"
       :can-attach="true"
       :is-maximized="agentPanelStore.isMaximized"
+      :history-groups="history.grouped"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
       @feedback="onFeedback"
       @new-chat="onNewChat"
-      @open-history="historyOpen = true"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="agentPanelStore.close()"
-    />
-    <ChatHistoryDrawer
-      v-model:open="historyOpen"
-      :groups="history.grouped"
-      @select="history.setActive($event)"
-      @delete="history.remove($event)"
-      @copy-markdown="onCopyMarkdown"
-    />
-    <StartingPointModal
-      v-model:open="startingOpen"
-      @select="startingOpen = false"
+      @select-history="history.setActive($event)"
+      @delete-history="history.remove($event)"
+      @copy-history="onCopyMarkdown"
     />
     <OnboardingCoach
       :steps="coachSteps"
