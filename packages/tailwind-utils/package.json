@@ -9,13 +9,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node ./node_modules/typescript-7/bin/tsc --noEmit"
   },
   "dependencies": {
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "typescript-7": "catalog:"
   }
 }

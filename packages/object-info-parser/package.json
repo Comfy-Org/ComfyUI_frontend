@@ -11,7 +11,7 @@
   },
   "scripts": {
     "test": "vitest run --config ./vitest.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node ./node_modules/typescript-7/bin/tsc --noEmit"
   },
   "dependencies": {
     "zod": "catalog:",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "typescript": "catalog:",
+    "typescript-7": "catalog:",
     "vitest": "catalog:"
   }
 }
