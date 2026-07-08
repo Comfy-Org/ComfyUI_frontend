@@ -3,20 +3,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
 
+import { computed } from 'vue'
+
 // Interactive: the copy button is inert until its host island is hydrated.
 // Render under a `client:*` directive (e.g. `client:visible`) when the page
 // needs it to work.
 const {
   value,
-  multiline = false,
   copyLabel = 'Copy',
   copiedLabel = 'Copied'
-} = defineProps<{
-  value: string
-  multiline?: boolean
-  copyLabel?: string
-  copiedLabel?: string
-}>()
+} = defineProps<{ value: string; copyLabel?: string; copiedLabel?: string }>()
+
+const multiline = computed(() => value.includes('\n'))
 
 const { copy, copied } = useClipboard({ copiedDuring: 2000 })
 

@@ -1917,9 +1917,8 @@ const translations = {
     'zh-CN': '让你的智能体安装 Comfy MCP'
   },
   'mcp.setup.step1.command': {
-    en: 'Help me install Comfy MCP.\nFollow the setup guide at https://docs.comfy.org/agent-tools/cloud',
-    'zh-CN':
-      '帮我安装 Comfy MCP。\n请按照 https://docs.comfy.org/agent-tools/cloud 上的设置指南操作。'
+    en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
+    'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
   },
   'mcp.setup.step1.description': {
     en: 'Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',

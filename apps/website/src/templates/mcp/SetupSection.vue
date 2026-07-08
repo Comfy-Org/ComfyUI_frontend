@@ -17,8 +17,10 @@ const cards: FeatureCard[] = [
     description: t('mcp.setup.step1.description', locale),
     action: {
       type: 'code',
-      value: t('mcp.setup.step1.command', locale),
-      multiline: true
+      value: t('mcp.setup.step1.command', locale).replace(
+        '{url}',
+        externalLinks.docsMcp
+      )
     }
   },
   {

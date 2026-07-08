@@ -17,7 +17,7 @@ type CardAction =
       icon?: Component
       variant?: 'default' | 'outline'
     }
-  | { type: 'code'; value: string; multiline?: boolean }
+  | { type: 'code'; value: string }
 
 export interface FeatureCard {
   id: string
@@ -110,7 +110,6 @@ const columnClass: Record<ColumnCount, string> = {
           <CopyableField
             v-else
             :value="card.action.value"
-            :multiline="card.action.multiline"
             :copy-label="copyLabel"
             :copied-label="copiedLabel"
           />
