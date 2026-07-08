@@ -2990,7 +2990,7 @@
         "user": "User",
         "eventType": "Event type",
         "eventDetails": "Event details",
-        "creditsUsed": "Credits used"
+        "creditsUsed": "Credits"
       },
       "hoverCard": {
         "totalCreditsUsed": "Total credits used",

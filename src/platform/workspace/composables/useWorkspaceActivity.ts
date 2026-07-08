@@ -10,6 +10,8 @@ export interface ActivityEvent {
   credits: number
   /** The partner node used, for 'Partner node usage' events. */
   partnerNode?: string
+  /** True for credit inflows (auto-reload, top-up) vs. usage outflows. */
+  credited?: boolean
 }
 
 export interface UserSummary {
@@ -37,8 +39,37 @@ const PARTNER_NODES = [
 const HOUR_MS = 60 * 60 * 1000
 const BASE = new Date('2026-02-25T18:30:00').getTime()
 
+// Credit inflows (auto-reload / manual top-up) are workspace-level, not tied to a
+// user — they read as '—' in the User column and carry no duration.
+const INFLOWS: Omit<ActivityEvent, 'id'>[] = [
+  {
+    date: new Date(BASE - 20 * HOUR_MS),
+    userName: '',
+    eventType: 'Auto-reload',
+    detail: '',
+    credits: 5000,
+    credited: true
+  },
+  {
+    date: new Date(BASE - 96 * HOUR_MS),
+    userName: '',
+    eventType: 'Credit top-up',
+    detail: '',
+    credits: 20000,
+    credited: true
+  },
+  {
+    date: new Date(BASE - 190 * HOUR_MS),
+    userName: '',
+    eventType: 'Auto-reload',
+    detail: '',
+    credits: 5000,
+    credited: true
+  }
+]
+
 function mockActivity(): ActivityEvent[] {
-  return Array.from({ length: 44 }, (_, i) => {
+  const usage = Array.from({ length: 44 }, (_, i) => {
     const eventType = EVENT_TYPES[i % EVENT_TYPES.length]
     return {
       id: `act-${i}`,
@@ -53,6 +84,8 @@ function mockActivity(): ActivityEvent[] {
           : undefined
     }
   })
+  const inflows = INFLOWS.map((event, i) => ({ ...event, id: `act-in-${i}` }))
+  return [...usage, ...inflows]
 }
 
 export type ActivitySortField =
@@ -77,7 +110,11 @@ export function useWorkspaceActivity(
   // prototype, so present the mock events as the member's own history.
   const base = computed<ActivityEvent[]>(() => {
     const self = toValue(selfName)
-    return self ? all.map((event) => ({ ...event, userName: self })) : all
+    if (!self) return all
+    // Relabel usage to the member; credit inflows stay workspace-level ('—').
+    return all.map((event) =>
+      event.credited ? event : { ...event, userName: self }
+    )
   })
 
   const filtered = computed(() => {
@@ -130,6 +167,7 @@ export function useWorkspaceActivity(
   const userSummaries = computed(() => {
     const map = new Map<string, UserSummary>()
     for (const event of base.value) {
+      if (event.credited) continue
       const existing = map.get(event.userName)
       if (!existing) {
         map.set(event.userName, {

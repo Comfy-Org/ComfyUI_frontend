@@ -55,7 +55,11 @@
               {{ formatDate(event.date) }}
             </TableCell>
             <TableCell>
-              <HoverCard :open-delay="150" :close-delay="0">
+              <HoverCard
+                v-if="event.userName"
+                :open-delay="150"
+                :close-delay="0"
+              >
                 <HoverCardTrigger
                   as="div"
                   class="flex w-fit cursor-default items-center gap-3"
@@ -108,6 +112,7 @@
                   </div>
                 </HoverCardContent>
               </HoverCard>
+              <span v-else class="text-sm text-muted-foreground">—</span>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground">
               <HoverCard
@@ -136,12 +141,18 @@
               <template v-else>{{ event.eventType }}</template>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground tabular-nums">
-              {{ event.detail }}
+              {{ event.detail || '—' }}
             </TableCell>
             <TableCell
-              class="text-right text-sm text-muted-foreground tabular-nums"
+              :class="
+                cn(
+                  'text-right text-sm tabular-nums',
+                  event.credited ? 'text-credit' : 'text-muted-foreground'
+                )
+              "
             >
-              {{ event.credits.toLocaleString() }}
+              {{ event.credited ? '+' : ''
+              }}{{ event.credits.toLocaleString() }}
             </TableCell>
           </TableRow>
         </TableBody>
