@@ -10,6 +10,7 @@ export const BANNER_DISMISS_ATTR = 'data-banner-dismissed'
 export interface BannerVisibilityContext {
   currentLocale: string
   currentSection: string
+  currentPath: string
   now: Date
 }
 
@@ -19,12 +20,19 @@ export interface EvaluableBanner {
   endsAt?: string
   targetLocales?: readonly string[]
   targetSections?: readonly string[]
+  /**
+   * The banner CTA's destination. A promo never advertises the page you are
+   * already on, so the banner is suppressed on this path. An external href (or
+   * an absent one) never matches an on-site path and so never suppresses.
+   */
+  linkHref?: string
 }
 
 /**
  * Server/build-time visibility gate. Returns false on the FIRST failing check,
  * in order: active flag → start window → end window → locale targeting →
- * section targeting. An empty/absent `targetLocales` means "all locales".
+ * section targeting → not on the banner's own CTA page. An empty/absent
+ * `targetLocales` means "all locales".
  */
 export function evaluateBannerVisibility(
   banner: EvaluableBanner,
@@ -46,7 +54,36 @@ export function evaluateBannerVisibility(
   const targetSections = banner.targetSections ?? []
   if (!targetSections.includes(ctx.currentSection)) return false
 
+  if (isOnBannerTarget(banner, ctx)) return false
+
   return true
+}
+
+function normalizePath(path: string): string {
+  const withoutQuery = path.split(/[?#]/, 1)[0]
+  const trimmed = withoutQuery.replace(/\/+$/, '')
+  return trimmed === '' ? '/' : trimmed
+}
+
+/**
+ * True when the visitor is already on the banner's CTA destination. A leading
+ * locale prefix (e.g. `/zh-CN`) is stripped so a localized page still matches an
+ * unprefixed href like `/mcp`.
+ */
+function isOnBannerTarget(
+  banner: EvaluableBanner,
+  ctx: BannerVisibilityContext
+): boolean {
+  if (!banner.linkHref) return false
+  const localePrefix =
+    ctx.currentLocale && ctx.currentLocale !== 'en'
+      ? `/${ctx.currentLocale}`
+      : ''
+  const path =
+    localePrefix && ctx.currentPath.startsWith(localePrefix)
+      ? ctx.currentPath.slice(localePrefix.length) || '/'
+      : ctx.currentPath
+  return normalizePath(path) === normalizePath(banner.linkHref)
 }
 
 interface BannerLinkContent {

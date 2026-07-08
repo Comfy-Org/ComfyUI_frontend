@@ -12,6 +12,7 @@ const base: EvaluableBanner = {
 const ctx = {
   currentLocale: 'en',
   currentSection: 'sitewide',
+  currentPath: '/',
   now: new Date('2026-07-06T00:00:00Z')
 }
 
@@ -73,6 +74,51 @@ describe('evaluateBannerVisibility', () => {
 
   it('hides when targetSections is absent (nothing to match)', () => {
     expect(evaluateBannerVisibility({ isActive: true }, ctx)).toBe(false)
+  })
+
+  it('hides on the banner CTA destination page', () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, linkHref: '/mcp' },
+        { ...ctx, currentPath: '/mcp' }
+      )
+    ).toBe(false)
+  })
+
+  it('still shows on other pages when a linkHref is set', () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, linkHref: '/mcp' },
+        { ...ctx, currentPath: '/pricing' }
+      )
+    ).toBe(true)
+  })
+
+  it('matches the CTA page regardless of a trailing slash', () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, linkHref: '/mcp' },
+        { ...ctx, currentPath: '/mcp/' }
+      )
+    ).toBe(false)
+  })
+
+  it('hides on the localized CTA page, stripping the locale prefix', () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, linkHref: '/mcp' },
+        { ...ctx, currentLocale: 'zh-CN', currentPath: '/zh-CN/mcp' }
+      )
+    ).toBe(false)
+  })
+
+  it('never suppresses when the CTA links off-site', () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, linkHref: 'https://docs.comfy.org/agent-tools/cloud' },
+        { ...ctx, currentPath: '/mcp' }
+      )
+    ).toBe(true)
   })
 })
 
