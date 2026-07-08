@@ -11,11 +11,22 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
 const mockToastAdd = vi.fn()
+const mockCurrentUser = vi.hoisted(() => ({ value: null as unknown }))
+const mockForgetRevokedActiveWorkspace = vi.fn()
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
-    notifyTokenRefreshed: mockNotifyTokenRefreshed
+    notifyTokenRefreshed: mockNotifyTokenRefreshed,
+    get currentUser() {
+      return mockCurrentUser.value
+    }
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace
   })
 }))
 
@@ -82,6 +93,7 @@ describe('useWorkspaceAuthStore', () => {
     sessionStorage.clear()
     mockTeamWorkspacesEnabled.value = true
     mockUnifiedCloudAuthEnabled.value = false
+    mockCurrentUser.value = null
   })
 
   afterEach(() => {
@@ -749,6 +761,73 @@ describe('useWorkspaceAuthStore', () => {
       expect(first).toBeNull()
       expect(second).toBeNull()
       expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('forgets the revoked active workspace on a permanent workspace-selection failure', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          json: () => Promise.resolve({ message: 'Access denied' })
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      const token = await store.ensureWorkspaceToken('workspace-123')
+
+      expect(token).toBeNull()
+      expect(mockForgetRevokedActiveWorkspace).toHaveBeenCalledWith(
+        'workspace-123'
+      )
+    })
+
+    it('does not forget the workspace when the failure is an auth error, not revocation', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: () => Promise.resolve({ message: 'Invalid token' })
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      const token = await store.ensureWorkspaceToken('workspace-123')
+
+      expect(token).toBeNull()
+      expect(mockForgetRevokedActiveWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('preserves a valid context on a transient Firebase network failure while signed in', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace } = storeToRefs(store)
+      await store.switchWorkspace('workspace-123')
+
+      mockCurrentUser.value = { uid: 'user-1' }
+      mockGetIdToken.mockResolvedValue(undefined)
+
+      const token = await store.ensureWorkspaceToken('workspace-999')
+
+      expect(token).toBeNull()
+      expect(currentWorkspace.value?.id).toBe('workspace-123')
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockForgetRevokedActiveWorkspace).not.toHaveBeenCalled()
     })
 
     it('re-mints for the requested workspace rather than returning an in-flight switch to a different one', async () => {

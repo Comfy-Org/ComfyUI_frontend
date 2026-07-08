@@ -2,6 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
 // Mock workspaceAuthStore
@@ -357,6 +359,41 @@ describe('useTeamWorkspaceStore', () => {
       ).rejects.toThrow('Workspace not found or access denied')
 
       expect(store.isSwitching).toBe(false)
+    })
+  })
+
+  describe('forgetRevokedActiveWorkspace', () => {
+    it('drops the persisted selection and reloads when the active team workspace is revoked', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.activeWorkspaceId = mockTeamWorkspace.id
+
+      store.forgetRevokedActiveWorkspace(mockTeamWorkspace.id)
+
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID
+      )
+      expect(mockReload).toHaveBeenCalled()
+    })
+
+    it('is a no-op when the workspace is not the active one', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.activeWorkspaceId = mockTeamWorkspace.id
+
+      store.forgetRevokedActiveWorkspace('some-other-workspace')
+
+      expect(mockReload).not.toHaveBeenCalled()
+    })
+
+    it('does not reload when the revoked workspace is the personal workspace', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.activeWorkspaceId = mockPersonalWorkspace.id
+
+      store.forgetRevokedActiveWorkspace(mockPersonalWorkspace.id)
+
+      expect(mockReload).not.toHaveBeenCalled()
     })
   })
 
