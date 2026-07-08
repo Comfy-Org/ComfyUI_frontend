@@ -70,16 +70,25 @@
   }
 }
 
-/* Tailwind Preflight is disabled host-wide (PrimeVue + litegraph coexistence), so a raw
-   <button> in the panel inherits the UA buttonface fill and 2px outset border. Re-apply
-   Preflight's button normalization, scoped to the panel root and its teleported reka
-   surfaces (dialogs, dropdowns, drawer carry .agent-scope). :where() holds the selector at
-   zero specificity so each button's own bg-* / border utilities still win. */
+/* Tailwind Preflight is disabled host-wide (PrimeVue + litegraph coexistence), so raw form
+   elements in the panel inherit UA chrome: a <button> gets the buttonface fill + 2px outset
+   border, a <textarea>/<input> gets its own border, font and padding. Re-apply Preflight's
+   normalization, scoped to the panel root and its teleported reka surfaces (dialogs,
+   dropdowns, drawer carry .agent-scope). :where() holds the selectors at zero specificity so
+   each element's own bg-* / border utilities still win. */
 @layer base {
   :where(#agent-panel-root, .agent-scope)
     :where(button, [type='button'], [type='reset'], [type='submit']) {
     appearance: none;
     background-color: transparent;
     border: 0 solid;
+  }
+
+  :where(#agent-panel-root, .agent-scope) :where(textarea, input, select) {
+    appearance: none;
+    border: 0 solid;
+    background-color: transparent;
+    font: inherit;
+    color: inherit;
   }
 }
