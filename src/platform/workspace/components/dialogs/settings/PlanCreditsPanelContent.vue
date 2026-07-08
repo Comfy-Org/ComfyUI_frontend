@@ -5,7 +5,7 @@
         'flex min-h-0 flex-1 flex-col gap-4',
         // The panel runs flush to the bottom edge (BaseModalLayout 'flush'); the
         // Activity/Invoices tables keep their prior bottom gap, Overview doesn't.
-        activeView !== 'overview' && 'pb-10'
+        activeView !== 'overview' && 'pb-6'
       )
     "
   >

@@ -112,7 +112,7 @@ const { d, n } = useI18n()
 const { isPaused, manageSubscription } = useBillingContext()
 
 const tableContainer = ref<HTMLElement | null>(null)
-const { pageSize } = useAutoPageSize(tableContainer)
+const { pageSize } = useAutoPageSize(tableContainer, 1)
 
 const {
   page,
