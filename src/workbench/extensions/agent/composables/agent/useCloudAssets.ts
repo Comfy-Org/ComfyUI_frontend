@@ -1,3 +1,4 @@
+import { uniqBy } from 'es-toolkit'
 import { ref } from 'vue'
 
 export interface CloudAsset {
@@ -20,14 +21,10 @@ export function useCloudAssets(options: UseCloudAssetsOptions) {
   async function load(): Promise<void> {
     loading.value = true
     try {
-      const seen = new Set<string>()
-      const deduped: CloudAsset[] = []
-      for (const asset of await options.fetchAssets()) {
-        if (seen.has(asset.id)) continue
-        seen.add(asset.id)
-        deduped.push(asset)
-      }
-      assets.value = deduped.slice(0, options.max ?? 24)
+      assets.value = uniqBy(
+        await options.fetchAssets(),
+        (asset) => asset.id
+      ).slice(0, options.max ?? 24)
     } finally {
       loading.value = false
     }
