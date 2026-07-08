@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Pack } from '../../data/cloudNodes'
+import type { GridPack } from '../../data/cloudNodes'
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
@@ -8,7 +8,7 @@ import PackBanner from './PackBanner.vue'
 
 const { locale = 'en', pack } = defineProps<{
   locale?: Locale
-  pack: Pack
+  pack: GridPack
 }>()
 
 const detailHref =
@@ -38,7 +38,7 @@ function nodeCountLabel(nodeCount: number): string {
 
     <div class="flex flex-1 flex-col gap-5 p-5 md:p-6">
       <div class="flex flex-col gap-2">
-        <h3 class="text-primary-comfy-canvas text-2xl/tight font-semibold">
+        <h3 class="text-2xl/tight font-semibold text-primary-comfy-canvas">
           <a
             :href="detailHref"
             class="hover:text-primary-comfy-yellow"

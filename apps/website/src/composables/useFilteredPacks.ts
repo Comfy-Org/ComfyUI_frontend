@@ -1,17 +1,17 @@
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { Pack } from '../data/cloudNodes'
+import type { GridPack } from '../data/cloudNodes'
 
 export type PackSortMode = 'downloads' | 'mostNodes' | 'az' | 'recentlyUpdated'
 
 interface UseFilteredPacksInput {
-  packs: MaybeRefOrGetter<readonly Pack[]>
+  packs: MaybeRefOrGetter<readonly GridPack[]>
   query: MaybeRefOrGetter<string>
   sortMode: MaybeRefOrGetter<PackSortMode>
 }
 
-function matchesQuery(pack: Pack, normalizedQuery: string): boolean {
+function matchesQuery(pack: GridPack, normalizedQuery: string): boolean {
   if (pack.displayName.toLowerCase().includes(normalizedQuery)) return true
   return pack.nodes.some((node) =>
     node.displayName.toLowerCase().includes(normalizedQuery)
@@ -25,7 +25,7 @@ function safeTimestamp(value: string | undefined): number {
 }
 
 export function useFilteredPacks(input: UseFilteredPacksInput) {
-  const filteredPacks = computed<Pack[]>(() => {
+  const filteredPacks = computed<GridPack[]>(() => {
     const allPacks = toValue(input.packs)
     const normalizedQuery = toValue(input.query).trim().toLowerCase()
 
