@@ -6,6 +6,7 @@ import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLi
 import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuList.vue'
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
+import Badge from '@/components/ui/badge/Badge.vue'
 
 import {
   isHrefActive,
@@ -14,6 +15,7 @@ import {
 import { getMainNavigation } from '../../../data/mainNavigation'
 import type { NavItem } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 
@@ -42,7 +44,12 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           <NavigationMenuTrigger
             :active="isNavItemActive(navItem, currentPath)"
           >
-            {{ navItem.label }}
+            <span class="inline-flex items-center gap-1">
+              <span class="ppformula-text-center">{{ navItem.label }}</span>
+              <Badge v-if="navItem.badge" size="xxs" variant="accent">
+                {{ t('nav.badgeNew', locale) }}
+              </Badge>
+            </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <ul class="flex w-max gap-16">

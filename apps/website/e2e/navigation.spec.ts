@@ -31,6 +31,26 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
+  test('NEW badge shows on Products and Community only', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
+
+    for (const label of ['Products', 'Community']) {
+      await expect(
+        desktopLinks
+          .getByRole('button', { name: label })
+          .getByText('NEW', { exact: true })
+      ).toBeVisible()
+    }
+
+    await expect(
+      desktopLinks.getByRole('button', { name: 'Company' }).getByText('NEW')
+    ).toHaveCount(0)
+    await expect(
+      desktopLinks.getByRole('link', { name: 'Pricing' }).getByText('NEW')
+    ).toHaveCount(0)
+  })
+
   test('CTA buttons are visible', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopCTA = nav.getByTestId('desktop-nav-cta')

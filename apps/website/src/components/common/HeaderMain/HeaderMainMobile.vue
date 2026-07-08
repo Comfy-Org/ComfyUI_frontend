@@ -15,6 +15,7 @@ import SheetHeader from '@/components/ui/sheet/SheetHeader.vue'
 import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -96,7 +97,10 @@ onUnmounted(() => {
                   :href="item.columns ? undefined : item.href"
                   @click="item.columns && (activeSection = item.label)"
                 >
-                  {{ item.label }}
+                  <span>{{ item.label }}</span>
+                  <Badge v-if="item.badge" size="xxs" variant="accent">
+                    {{ t('nav.badgeNew', locale) }}
+                  </Badge>
                   <template #append>
                     <ChevronRight class="size-7" />
                   </template>
