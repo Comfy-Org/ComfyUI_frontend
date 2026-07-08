@@ -78,4 +78,43 @@ describe('TelemetryRegistry', () => {
       })
     ).not.toThrow()
   })
+
+  it('dispatches subscription cancellation telemetry to every registered provider', () => {
+    const a: TelemetryProvider = { trackSubscriptionCancellation: vi.fn() }
+    const b: TelemetryProvider = { trackSubscriptionCancellation: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      source: 'cancel_plan_menu' as const,
+      current_tier: 'standard',
+      cycle: 'monthly' as const,
+      end_date: '2026-08-01T00:00:00.000Z'
+    }
+    registry.trackSubscriptionCancellation('flow_opened', payload)
+
+    expect(a.trackSubscriptionCancellation).toHaveBeenCalledExactlyOnceWith(
+      'flow_opened',
+      payload
+    )
+    expect(b.trackSubscriptionCancellation).toHaveBeenCalledExactlyOnceWith(
+      'flow_opened',
+      payload
+    )
+  })
+
+  it('dispatches resubscribe click telemetry to every registered provider', () => {
+    const a: TelemetryProvider = { trackResubscribeClicked: vi.fn() }
+    const b: TelemetryProvider = { trackResubscribeClicked: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = { source: 'settings_billing_panel' as const }
+    registry.trackResubscribeClicked(payload)
+
+    expect(a.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(b.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
+  })
 })
