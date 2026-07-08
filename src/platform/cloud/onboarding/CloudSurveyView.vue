@@ -1,6 +1,6 @@
 <template>
   <div
-    class="dark-theme flex h-152 max-h-[85vh] w-full max-w-md flex-col overflow-y-auto px-4 sm:px-6"
+    class="dark-theme mt-[12vh] flex max-h-[85vh] w-full max-w-md flex-col self-start overflow-y-auto px-4 sm:px-6"
   >
     <h1
       class="-mb-1 font-inter text-xl/8 font-semibold tracking-wide text-primary-comfy-canvas sm:text-2xl/8"
@@ -9,7 +9,6 @@
     </h1>
     <DynamicSurveyForm
       :key="activeSurvey.version"
-      class="flex-1"
       :survey="activeSurvey"
       :is-submitting="isSubmitting"
       @submit="onSubmitSurvey"

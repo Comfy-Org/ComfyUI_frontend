@@ -12,7 +12,7 @@
       />
     </div>
 
-    <div class="relative flex-1">
+    <div class="relative">
       <Transition
         enter-active-class="transition-opacity duration-300 ease-out"
         enter-from-class="opacity-0"
