@@ -85,6 +85,11 @@ reviews:
       instructions: |
         For app tests that mock or spy on `api.queuePrompt`, require rejected-queue coverage whenever the code temporarily populates `api.authToken` or `api.apiKey`.
         The rejected-path test must populate both values, make `api.queuePrompt` reject, and assert both fields are cleared afterward; success-path cleanup alone is insufficient.
+        If `api.queuePrompt` rejection is tested without asserting `api.authToken` and `api.apiKey` cleanup afterward, flag the missing assertion even when a success-path test already covers cleanup.
+    - path: 'src/scripts/app.ts'
+      instructions: |
+        When app queuing code temporarily assigns `api.authToken` or `api.apiKey` before awaiting `api.queuePrompt`, require app tests for both resolved and rejected `api.queuePrompt` paths.
+        The rejected-path test must prove both credential fields are cleared after `api.queuePrompt` rejects; a rejection assertion without cleanup checks is insufficient.
     - path: 'src/lib/litegraph/src/LGraph.ts'
       instructions: |
         When changes touch `LGraph.configure()`, graph deserialization, link loading, or nullable serialized links, require a direct regression test that constructs an `LGraph` and calls `configure()` with the changed serialized shape.
