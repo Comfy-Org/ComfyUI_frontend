@@ -25,7 +25,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
 import {
   groupLinksByTuple,
@@ -85,6 +85,7 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
   groupResolvedByOutput,
@@ -1195,21 +1196,14 @@ export class LGraph
     }
 
     if (node.isSubgraphNode()) {
-      const allGraphs = [this.rootGraph, ...this.rootGraph.subgraphs.values()]
-      const hasRemainingReferences = allGraphs.some((graph) =>
-        graph.nodes.some(
-          (candidate) =>
-            candidate !== node &&
-            candidate.isSubgraphNode() &&
-            candidate.type === node.subgraph.id
-        )
-      )
-
-      if (!hasRemainingReferences) {
-        forEachNode(node.subgraph, fireNodeRemovalLifecycle)
-        unregisterAllLinkTopologies(node.subgraph)
-        unregisterAllRerouteChains(node.subgraph)
-        this.rootGraph.subgraphs.delete(node.subgraph.id)
+      const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
+      for (const subgraph of releasedSubgraphs) {
+        visitGraphNodes(subgraph, fireNodeRemovalLifecycle)
+      }
+      for (const subgraph of releasedSubgraphs) {
+        unregisterAllLinkTopologies(subgraph)
+        unregisterAllRerouteChains(subgraph)
+        this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
 

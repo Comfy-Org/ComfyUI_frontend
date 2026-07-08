@@ -21,6 +21,7 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
@@ -654,6 +655,80 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+  })
+
+  function createNestedDefinitionFixture() {
+    const rootGraph = new LGraph()
+
+    const nestedDef = rootGraph.createSubgraph(createTestSubgraphData())
+    const producer = new LGraphNode('producer')
+    producer.addOutput('out', '*')
+    const consumer = new LGraphNode('consumer')
+    consumer.addInput('in', '*')
+    nestedDef.add(producer)
+    nestedDef.add(consumer)
+    const innerLink = producer.connect(0, consumer, 0)!
+    const innerReroute = nestedDef.createReroute([10, 10], innerLink)!
+
+    const parentDef = rootGraph.createSubgraph(createTestSubgraphData())
+    parentDef.add(
+      createTestSubgraphNode(nestedDef, { parentGraph: parentDef, id: 30 })
+    )
+
+    const parentInstance = createTestSubgraphNode(parentDef, { id: 10 })
+    rootGraph.add(parentInstance)
+
+    return {
+      rootGraph,
+      nestedDef,
+      parentDef,
+      producer,
+      consumer,
+      innerReroute,
+      parentInstance
+    }
+  }
+
+  it('keeps a nested definition intact when it is still instanced outside the removed parent', () => {
+    const {
+      rootGraph,
+      nestedDef,
+      producer,
+      consumer,
+      innerReroute,
+      parentInstance
+    } = createNestedDefinitionFixture()
+    const rootNestedInstance = createTestSubgraphNode(nestedDef, { id: 20 })
+    rootGraph.add(rootNestedInstance)
+    const removalSpies = [producer, consumer].map(
+      (node) => (node.onRemoved = vi.fn())
+    )
+
+    rootGraph.remove(parentInstance)
+
+    expect(
+      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+    ).toBe(true)
+    expect(
+      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)?.id
+    ).toBe(innerReroute.id)
+    expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(true)
+    for (const spy of removalSpies) expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('releases a nested definition instanced only inside the removed parent', () => {
+    const { rootGraph, nestedDef, consumer, innerReroute, parentInstance } =
+      createNestedDefinitionFixture()
+
+    rootGraph.remove(parentInstance)
+
+    expect(
+      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+    ).toBe(false)
+    expect(
+      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)
+    ).toBeUndefined()
+    expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(false)
   })
 })
 
