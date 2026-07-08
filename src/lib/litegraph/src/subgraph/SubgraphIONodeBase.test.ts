@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { DefaultConnectionColors } from '@/lib/litegraph/src/interfaces'
@@ -150,9 +150,15 @@ function eventAt(x: number, y: number): CanvasPointerEvent {
   return { canvasX: x, canvasY: y } as CanvasPointerEvent
 }
 
+const originalContextMenu = LiteGraph.ContextMenu
+
 beforeEach(() => {
   contextMenus.length = 0
   Object.assign(LiteGraph, { ContextMenu: MockContextMenu })
+})
+
+afterEach(() => {
+  Object.assign(LiteGraph, { ContextMenu: originalContextMenu })
 })
 
 describe('SubgraphIONodeBase', () => {
