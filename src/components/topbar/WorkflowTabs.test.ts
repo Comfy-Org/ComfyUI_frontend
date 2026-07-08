@@ -83,28 +83,10 @@ vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
-const agentPanelHolder = vi.hoisted(() => ({
-  store: null as unknown as {
-    isOpen: { value: boolean }
-    enabled: { value: boolean }
-    gateSettled: { value: boolean }
-    toggle: ReturnType<typeof vi.fn>
-  }
+vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
+  useAgentPanelStore: () =>
+    reactive({ isOpen: false, enabled: false, toggle: vi.fn() })
 }))
-vi.mock('@/workbench/extensions/agent/stores/agentPanelStore', async () => {
-  const { reactive, ref } = await import('vue')
-  agentPanelHolder.store = {
-    isOpen: ref(false),
-    enabled: ref(false),
-    gateSettled: ref(false),
-    toggle: vi.fn(() => {
-      agentPanelHolder.store.isOpen.value = !agentPanelHolder.store.isOpen.value
-    })
-  }
-  // reactive() unwraps the holder refs on read, matching a real pinia
-  // store proxy now that the component reads properties directly.
-  return { useAgentPanelStore: () => reactive(agentPanelHolder.store) }
-})
 
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
