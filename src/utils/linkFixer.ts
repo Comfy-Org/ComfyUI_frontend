@@ -283,7 +283,9 @@ export function fixBadLinks(
     return hasAny
   }
 
-  const links: Array<SerialisedLLinkArray | LLink> = Array.isArray(graph.links)
+  const links: Array<SerialisedLLinkArray | LLink | null> = Array.isArray(
+    graph.links
+  )
     ? graph.links
     : Array.from((graph as LGraph).links.values())
 

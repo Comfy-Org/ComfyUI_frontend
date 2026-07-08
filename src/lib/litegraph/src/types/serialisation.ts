@@ -133,7 +133,7 @@ export interface ISerialisedGraph extends BaseExportedGraph {
   last_node_id: SerializedNodeId
   last_link_id: number
   nodes: ISerialisedNode[]
-  links: SerialisedLLinkArray[]
+  links: (SerialisedLLinkArray | null)[]
   floatingLinks?: SerialisableLLink[]
   groups: ISerialisedGroup[]
   version: typeof LiteGraph.VERSION

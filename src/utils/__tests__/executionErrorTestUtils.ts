@@ -4,7 +4,9 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 type ExecutionErrorStore = ReturnType<typeof useExecutionErrorStore>
 
-function createRequiredInputMissingNodeError(inputName: string): NodeError {
+export function createRequiredInputMissingNodeError(
+  inputName: string
+): NodeError {
   return {
     errors: [
       {
