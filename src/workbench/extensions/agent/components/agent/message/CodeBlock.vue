@@ -42,20 +42,20 @@ watch(
 
 <template>
   <div
-    class="group border-agent-border-strong relative my-2 overflow-hidden rounded-lg border"
+    class="group border-agent-border-strong relative my-2 overflow-hidden rounded-md border"
   >
     <div
       class="border-agent-border-strong bg-agent-surface-hover flex items-center justify-between border-b px-3 py-1.5"
     >
       <span
-        class="text-agent-fg-muted flex items-center gap-1.5 font-mono text-[0.6875rem]"
+        class="text-agent-fg-muted flex items-center gap-1.5 font-mono text-xs"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
         <span class="text-agent-fg font-medium">{{ lang }}</span>
       </span>
       <button
         type="button"
-        class="text-agent-fg-muted hover:bg-agent-surface hover:text-agent-fg border-agent-border-strong flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-[0.6875rem] transition-colors"
+        class="text-agent-fg-muted hover:bg-agent-surface hover:text-agent-fg border-agent-border-strong flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-xs transition-colors"
         @click="copy(code)"
       >
         <span
@@ -71,12 +71,12 @@ watch(
     </div>
     <div
       v-if="highlighted"
-      class="overflow-x-auto p-3 font-mono text-[0.6875rem]/[1.6] [&_pre]:bg-transparent"
+      class="overflow-x-auto p-4 font-mono text-sm [&_pre]:bg-transparent"
       v-html="highlighted"
     />
     <pre
       v-else
-      class="text-agent-fg overflow-x-auto p-3 font-mono text-[0.6875rem]/[1.6]"
+      class="text-agent-fg overflow-x-auto p-4 font-mono text-sm"
     ><code>{{ code }}</code></pre>
   </div>
 </template>
