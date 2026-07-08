@@ -371,11 +371,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
-   * Abandon the active workspace selection when its Cloud JWT can no longer be
-   * minted because access was revoked or the workspace was deleted. Drops the
-   * persisted selection and reloads so init falls back to the personal
-   * workspace. Skips the personal workspace itself — there is nowhere better to
-   * fall back to, so reloading would only loop.
+   * Drop a revoked/deleted active workspace and reload so init falls back to the
+   * personal workspace. Skips the personal workspace to avoid a reload loop.
    */
   function forgetRevokedActiveWorkspace(workspaceId: string): void {
     if (activeWorkspaceId.value !== workspaceId) return

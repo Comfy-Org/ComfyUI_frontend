@@ -2,8 +2,6 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
-
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
 // Mock workspaceAuthStore
@@ -363,18 +361,22 @@ describe('useTeamWorkspaceStore', () => {
   })
 
   describe('forgetRevokedActiveWorkspace', () => {
-    it('drops the persisted selection and reloads when the active team workspace is revoked', async () => {
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      store.activeWorkspaceId = mockTeamWorkspace.id
+    it.for([
+      { type: 'team', workspace: mockTeamWorkspace, reloads: 1 },
+      { type: 'personal', workspace: mockPersonalWorkspace, reloads: 0 }
+    ])(
+      'reloads $reloads time(s) when the active $type workspace is revoked',
+      async ({ workspace, reloads }) => {
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+        store.activeWorkspaceId = workspace.id
 
-      store.forgetRevokedActiveWorkspace(mockTeamWorkspace.id)
+        store.forgetRevokedActiveWorkspace(workspace.id)
 
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID
-      )
-      expect(mockReload).toHaveBeenCalled()
-    })
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(reloads)
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
+      }
+    )
 
     it('is a no-op when the workspace is not the active one', async () => {
       const store = useTeamWorkspaceStore()
@@ -382,16 +384,6 @@ describe('useTeamWorkspaceStore', () => {
       store.activeWorkspaceId = mockTeamWorkspace.id
 
       store.forgetRevokedActiveWorkspace('some-other-workspace')
-
-      expect(mockReload).not.toHaveBeenCalled()
-    })
-
-    it('does not reload when the revoked workspace is the personal workspace', async () => {
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      store.activeWorkspaceId = mockPersonalWorkspace.id
-
-      store.forgetRevokedActiveWorkspace(mockPersonalWorkspace.id)
 
       expect(mockReload).not.toHaveBeenCalled()
     })

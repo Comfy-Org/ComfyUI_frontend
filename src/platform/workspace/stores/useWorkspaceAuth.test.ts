@@ -12,7 +12,7 @@ const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCurrentUser = vi.hoisted(
-  () => ({ value: null }) as { value: { uid: string } | null }
+  (): { value: { uid: string } | null } => ({ value: null })
 )
 const mockForgetRevokedActiveWorkspace = vi.fn()
 

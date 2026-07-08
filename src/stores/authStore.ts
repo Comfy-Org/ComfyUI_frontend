@@ -230,12 +230,8 @@ export const useAuthStore = defineStore('auth', () => {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
-      // With an active workspace, recover to its token rather than silently
-      // issuing the request under the personal Firebase identity — that downgrade
-      // is what makes cloud requests oscillate between workspace and personal
-      // auth. Recovery also revalidates expiry, so an expired token is reminted
-      // instead of being sent stale. Fall through to Firebase only when there is
-      // no workspace to recover to (workspace mode not yet initialized).
+      // Recover the workspace token rather than downgrade to the personal
+      // identity, which is what makes cloud requests oscillate.
       if (activeWorkspaceId) {
         return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
       }
@@ -278,8 +274,7 @@ export const useAuthStore = defineStore('auth', () => {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
-      // Mirror getAuthHeader: recover (and revalidate) the workspace token for
-      // WebSocket/queue auth instead of downgrading to the personal identity.
+      // Mirror getAuthHeader for WebSocket/queue auth.
       if (activeWorkspaceId) {
         return (
           (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??

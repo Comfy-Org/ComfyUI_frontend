@@ -41,8 +41,6 @@ export type WorkspaceTokenResponse = z.infer<
 
 const MAX_SCHEDULED_REFRESH_RETRIES = 3
 
-// After a failed on-demand recovery, refuse to re-mint until this window passes
-// so a stream of requests cannot hammer POST /auth/token once minting is broken.
 const RECOVERY_COOLDOWN_MS = 5000
 
 export class WorkspaceAuthError extends Error {
@@ -117,8 +115,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // Timer state
   let refreshTimerId: ReturnType<typeof setTimeout> | null = null
   let inFlightSwitchCount = 0
-  // The latest in-flight workspace switch/mint, so recovery callers can coalesce
-  // onto it instead of racing ahead under a different identity.
   let inFlightSwitchPromise: Promise<void> | null = null
   let recoveryCooldownUntil = 0
   let scheduledRefreshRetryCount = 0
@@ -449,9 +445,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
-  // A missing Firebase ID token while the user is still signed in is a transient
-  // network failure — getIdToken() swallows NETWORK_REQUEST_FAILED and returns
-  // undefined — not a revoked session, so it must not tear down a valid context.
+  // NOT_AUTHENTICATED while still signed in is a transient network failure, not
+  // a revoked session, so it must not tear down a valid context.
   function isPermanentRecoveryFailure(err: unknown): err is WorkspaceAuthError {
     if (!isPermanentAuthError(err)) {
       return false
@@ -462,10 +457,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return true
   }
 
-  // ACCESS_DENIED / WORKSPACE_NOT_FOUND mean the active workspace selection is
-  // itself invalid (revoked or deleted), not just that this mint failed. Auth
-  // failures (INVALID_FIREBASE_TOKEN, NOT_AUTHENTICATED) are not — abandoning the
-  // workspace would not repair them.
+  // The workspace selection itself is invalid (revoked or deleted), so
+  // abandoning it can help — unlike a plain auth failure.
   function isWorkspaceSelectionInvalid(
     err: unknown
   ): err is WorkspaceAuthError {
@@ -498,15 +491,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   /**
-   * Resolve a workspace token, recovering it when it is transiently unavailable:
-   * a mint still in flight during bootstrap, an expired token, or a context
-   * cleared by a recoverable refresh failure. Coalesces onto an in-flight switch
-   * so a burst of callers triggers a single mint, and only accepts a token minted
-   * for the requested workspace so a stale in-flight switch cannot hand back the
-   * wrong identity. Tears down context on a permanent failure and backs off after
-   * any failure so a broken mint is not retried on every request. Returns null
-   * when no token can be established, so callers fail closed instead of silently
-   * downgrading a workspace-scoped request to the personal identity.
+   * Resolve a valid workspace token, minting one if needed. Coalesces a burst of
+   * callers onto a single in-flight mint, backs off after failure, and returns
+   * null so callers fail closed rather than downgrade to the personal identity.
    */
   async function ensureWorkspaceToken(
     preferredWorkspaceId?: string
@@ -522,9 +509,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return workspaceToken.value
       }
 
-      // Coalesce onto any in-flight switch and re-check after it settles, so a
-      // waiter whose sibling already started the next mint joins that mint rather
-      // than launching its own.
+      // Join any in-flight mint and re-check rather than launching our own.
       if (inFlightSwitchPromise) {
         await inFlightSwitchPromise.catch(() => {})
         continue
@@ -545,9 +530,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return workspaceToken.value
       }
 
-      // The switch resolved without a usable token for the target (stale-abort or
-      // an already-expired mint); back off like a failure so a burst of callers
-      // cannot hammer /auth/token, and fail closed.
+      // Resolved without a usable token; back off like a failure and fail closed.
       startRecoveryCooldown()
       return null
     }
@@ -645,10 +628,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // A parallel mint/refresh lifecycle that writes to the dormant `unifiedToken`
   // slot. The legacy switchWorkspace/refreshToken machinery above is untouched.
   //
-  // TODO(unified): its permanent-failure branches tear down context but do not
-  // yet call forgetRevokedActiveWorkspace on ACCESS_DENIED/WORKSPACE_NOT_FOUND;
-  // wire that in with the PR-3 consumer flip so it cannot reintroduce the
-  // workspace/personal oscillation this change fixes for the legacy path.
+  // TODO(unified): call forgetRevokedActiveWorkspace on
+  // ACCESS_DENIED/WORKSPACE_NOT_FOUND here too, with the PR-3 consumer flip.
 
   // Mint body the unified session re-mints against: `{}` = personal (resolved
   // server-side from the Firebase identity), `{ workspace_id }` = explicit.
