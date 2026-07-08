@@ -85,7 +85,7 @@ reviews:
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed Vitest test file.
         Flag missing behavioral coverage for changed behavior, change-detector tests, mock-heavy tests, snapshot abuse, fragile assertions, missing edge cases, unclear setup, and unrestored global mutations.
         Prefer colocated behavioral tests named after the source file.
-        Build partial mocks with fromPartial<T>() from @total-typescript/shoehorn; flag `as unknown as` double assertions and fromAny().
+        Build partial mocks with fromPartial<T>() from @total-typescript/shoehorn; flag `as unknown as` double assertions, `as never`, and fromAny().
         Mock only at seams (Pinia stores, settings, third-party libs); flag mocked type guards or sibling composables.
         Use a real createI18n instance rather than vi.mock('vue-i18n').
         Flag bare expect(fn).not.toThrow() as a sole assertion, assertions that echo stub return values, and .mock.results assertions.
@@ -94,6 +94,11 @@ reviews:
         Use @testing-library/vue for component tests, not @vue/test-utils.
         For platform-owned types (Response, CustomEvent, DOM events), require real instances (new Response(), Response.json(), new CustomEvent()) instead of fromPartial or casts.
         When a fixture cast hides a too-wide production signature, suggest narrowing the production type instead of casting the fixture.
+        Reuse established test factories such as `src/utils/__tests__/litegraphTestUtils.ts` and `src/utils/__tests__/executionErrorTestUtils.ts`; flag hand-rolled litegraph node/canvas/subgraph/workflow builders and inline `required_input_missing` fixtures when a shared helper exists.
+        For Pinia store tests that exercise real store behavior, require `createTestingPinia({ stubActions: false })`; flag plain `createPinia()` unless the test explicitly needs unmocked plugin behavior.
+        Flag `vi.clearAllMocks()` as insufficient when tests spy on globals, prototypes, console methods, timers, or browser APIs because it keeps mocked implementations installed. Require `vi.restoreAllMocks()`, `mockRestore()`, or explicit descriptor restoration.
+        Flag module-scope global mutations, including `global.fetch`, `global.URL`, `navigator.clipboard`, and `Object.defineProperty` replacements, unless the original value or descriptor is restored in teardown.
+        Async helpers and callbacks must be awaited or asserted with `.resolves` / `.rejects`; flag dropped promises that only pass while the current implementation is synchronous.
         Flag process-level listeners (process.on('unhandledRejection')) in tests; assert the rejected promise directly.
         Tests should import the module under test from its public entrypoint, not deep internal paths.
     - path: 'src/scripts/app*.test.ts'
