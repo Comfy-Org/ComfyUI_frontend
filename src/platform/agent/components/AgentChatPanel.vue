@@ -160,7 +160,7 @@ function onNewChatFromHistory() {
             >
               <i class="icon-[lucide--align-justify] size-3.5" />
               <span class="max-w-56 truncate">
-                {{ conversationTitle ?? $t('agent.newChat') }}
+                {{ conversationTitle ?? $t('agent.untitledChat') }}
               </span>
             </button>
           </TooltipTrigger>

@@ -83,7 +83,7 @@ const groups = computed<Group[]>(() => {
             :aria-label="$t('agent.history.back')"
             @click="emit('back')"
           >
-            <i class="icon-[lucide--arrow-left] size-3" />
+            <i class="icon-[lucide--chevron-left] size-3" />
             <span>{{ $t('agent.history.title') }}</span>
           </button>
         </TooltipTrigger>

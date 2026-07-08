@@ -5,6 +5,7 @@
     "ask": "Ask Comfy Agent",
     "alpha": "ALPHA",
     "newChat": "New chat",
+    "untitledChat": "Untitled",
     "maximize": "Maximize panel",
     "minimize": "Minimize panel",
     "togglePanel": "Toggle panel",
@@ -36,7 +37,7 @@
     "history": {
       "title": "Chat History",
       "show": "Show chat history",
-      "back": "Back to conversation",
+      "back": "Back to previous chat",
       "current": "Current",
       "today": "Today",
       "yesterday": "Yesterday",
