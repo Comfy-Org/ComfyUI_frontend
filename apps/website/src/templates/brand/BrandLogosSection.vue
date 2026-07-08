@@ -11,9 +11,7 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const assets = affiliateBrandAssets.map((asset) =>
-  asset.id === 'icon'
-    ? { ...asset, preview: '/affiliates/brand/comfy-color-combo-ink.svg' }
-    : asset
+  asset.id === 'icon' ? { ...asset, preview: '/icons/comfyicon.svg' } : asset
 )
 </script>
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
-import { Check } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 import { ref } from 'vue'
@@ -15,11 +14,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const specRows = ['hex', 'rgb', 'hsl', 'cmyk'] as const
 
 const { copy, copied } = useClipboard({ copiedDuring: 1500 })
-const copiedId = ref<string | null>(null)
+const copiedHex = ref<string | null>(null)
+const copiedValue = ref('')
 
-function copyValue(id: string, value: string) {
-  copiedId.value = id
+function copyValue(hex: string, value: string) {
+  copiedHex.value = hex
+  copiedValue.value = value
   void copy(value)
+}
+
+function isCardCopied(hex: string) {
+  return copied.value && copiedHex.value === hex
 }
 </script>
 
@@ -40,37 +45,42 @@ function copyValue(id: string, value: string) {
         :key="color.hex"
         :class="
           cn(
-            'flex min-h-[123px] flex-col rounded-[30px] p-6',
+            'flex min-h-[123px] cursor-pointer flex-col rounded-[30px] p-6',
             color.swatchClass,
             color.textClass,
             color.wide && 'lg:col-span-2',
             color.border && 'border-primary-warm-gray border-[0.783px]'
           )
         "
+        @click="copyValue(color.hex, color.hex)"
       >
-        <span class="text-xs font-semibold">{{ color.name }}</span>
-        <dl
-          class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-xs leading-[1.4]"
+        <div
+          v-if="isCardCopied(color.hex)"
+          class="flex flex-1 items-center justify-center text-center text-sm font-semibold"
+          aria-live="polite"
         >
-          <template v-for="row in specRows" :key="row">
-            <dt class="uppercase opacity-50">{{ row }}</dt>
-            <dd>
-              <button
-                type="button"
-                :aria-label="`Copy ${row} value ${color[row]}`"
-                class="inline-flex cursor-pointer items-center gap-1 text-left hover:underline"
-                @click="copyValue(`${color.hex}-${row}`, color[row])"
-              >
-                {{ color[row] }}
-                <Check
-                  v-if="copied && copiedId === `${color.hex}-${row}`"
-                  class="size-3"
-                  aria-hidden="true"
-                />
-              </button>
-            </dd>
-          </template>
-        </dl>
+          Copied {{ copiedValue }}
+        </div>
+        <template v-else>
+          <span class="text-xs font-semibold">{{ color.name }}</span>
+          <dl
+            class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-xs leading-[1.4]"
+          >
+            <template v-for="row in specRows" :key="row">
+              <dt class="uppercase opacity-50">{{ row }}</dt>
+              <dd>
+                <button
+                  type="button"
+                  :aria-label="`Copy ${row} value ${color[row]}`"
+                  class="cursor-pointer text-left hover:underline"
+                  @click.stop="copyValue(color.hex, color[row])"
+                >
+                  {{ color[row] }}
+                </button>
+              </dd>
+            </template>
+          </dl>
+        </template>
       </li>
     </ul>
   </section>
