@@ -7,7 +7,7 @@ import Password from 'primevue/password'
 import PrimeVue from 'primevue/config'
 import ProgressSpinner from 'primevue/progressspinner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -38,29 +38,45 @@ vi.mock('@/stores/authStore', () => ({
 }))
 
 const mockTurnstileEnabled = ref(false)
-const mockTurnstileEnforced = ref(false)
+const mockTurnstileToken = ref('')
+const mockTurnstileUnavailable = ref(false)
 const mockReset = vi.fn()
 let emitTurnstileToken: ((token: string) => void) | undefined
+let emitTurnstileUnavailable: ((unavailable: boolean) => void) | undefined
 
+// The reset-on-toggle behavior lives in useTurnstileGate itself (see
+// useTurnstile.test.ts); this fake just wires token/unavailable through to
+// `waiting` the same way so SignUpForm's submit gating can be exercised.
 vi.mock('@/composables/auth/useTurnstile', () => ({
   useTurnstile: () => ({
-    enabled: mockTurnstileEnabled,
-    enforced: mockTurnstileEnforced
+    enabled: mockTurnstileEnabled
+  }),
+  useTurnstileGate: () => ({
+    token: mockTurnstileToken,
+    unavailable: mockTurnstileUnavailable,
+    waiting: computed(
+      () =>
+        mockTurnstileEnabled.value &&
+        !mockTurnstileToken.value &&
+        !mockTurnstileUnavailable.value
+    )
   })
 }))
 
 // Stub the real widget (which loads the external Turnstile script) with one that
-// exposes a spyable reset() and lets a test drive the v-model token the way a
-// solved challenge would.
+// exposes a spyable reset() and lets a test drive the v-model token/unavailable
+// the way a solved challenge (or a broken/slow widget) would.
 vi.mock('./TurnstileWidget.vue', async () => {
   const { defineComponent: defineMock } = await import('vue')
   return {
     default: defineMock({
       name: 'TurnstileWidget',
-      emits: ['update:token'],
+      emits: ['update:token', 'update:unavailable'],
       setup(_, { expose, emit }) {
         expose({ reset: mockReset })
         emitTurnstileToken = (token: string) => emit('update:token', token)
+        emitTurnstileUnavailable = (unavailable: boolean) =>
+          emit('update:unavailable', unavailable)
         return () => null
       }
     })
@@ -92,9 +108,11 @@ describe('SignUpForm', () => {
   beforeEach(() => {
     mockLoadingRef.value = false
     mockTurnstileEnabled.value = false
-    mockTurnstileEnforced.value = false
+    mockTurnstileToken.value = ''
+    mockTurnstileUnavailable.value = false
     mockReset.mockClear()
     emitTurnstileToken = undefined
+    emitTurnstileUnavailable = undefined
   })
 
   afterEach(() => {
@@ -211,43 +229,22 @@ describe('SignUpForm', () => {
     })
   })
 
-  describe('Turnstile token hygiene', () => {
-    it('clears the stale token when Turnstile becomes disabled', async () => {
-      mockTurnstileEnabled.value = true
-      mockTurnstileEnforced.value = true
-      const { user } = renderComponent()
-      await fillValidSignup(user)
-
-      emitTurnstileToken!('stale-token')
-      await nextTick()
-      expect(
-        screen.getByRole('button', { name: signUpButton })
-      ).not.toBeDisabled()
-
-      mockTurnstileEnabled.value = false
-      await nextTick()
-
-      // re-enable: the stale token must have been cleared so submit is blocked again
-      mockTurnstileEnabled.value = true
-      await nextTick()
-
-      expect(screen.getByRole('button', { name: signUpButton })).toBeDisabled()
-    })
-  })
-
+  // Regression coverage for the shadow-mode race: previously submit was only
+  // gated in 'enforce' mode, so most real signups in 'shadow' mode raced
+  // ahead of the async Cloudflare challenge and reached the backend with an
+  // empty token. Gating now depends only on whether the widget is enabled
+  // (shadow or enforce both render it), so both modes behave identically here.
   describe('Turnstile submit gating', () => {
-    it('disables the submit button in enforce mode until a token is present', async () => {
+    it('disables the submit button until a token is present', async () => {
       mockTurnstileEnabled.value = true
-      mockTurnstileEnforced.value = true
       renderComponent()
       await nextTick()
 
       expect(screen.getByRole('button', { name: signUpButton })).toBeDisabled()
     })
 
-    it('does not emit submit in enforce mode while the token is empty', async () => {
+    it('does not emit submit while the token is empty', async () => {
       mockTurnstileEnabled.value = true
-      mockTurnstileEnforced.value = true
       const onSubmit = vi.fn()
       const { user } = renderComponent({ onSubmit })
       await fillValidSignup(user)
@@ -257,9 +254,8 @@ describe('SignUpForm', () => {
       expect(onSubmit).not.toHaveBeenCalled()
     })
 
-    it('emits submit with the token in enforce mode once the challenge is solved', async () => {
+    it('emits submit with the token once the challenge is solved', async () => {
       mockTurnstileEnabled.value = true
-      mockTurnstileEnforced.value = true
       const onSubmit = vi.fn()
       const { user } = renderComponent({ onSubmit })
       await fillValidSignup(user)
@@ -271,13 +267,14 @@ describe('SignUpForm', () => {
       expect(onSubmit).toHaveBeenCalledWith(expectedValues, 'token-xyz')
     })
 
-    it('emits submit without a token in shadow mode (never blocks)', async () => {
+    it('emits submit without a token once the widget reports itself unavailable (broken/slow load fallback)', async () => {
       mockTurnstileEnabled.value = true
-      mockTurnstileEnforced.value = false
       const onSubmit = vi.fn()
       const { user } = renderComponent({ onSubmit })
       await fillValidSignup(user)
 
+      emitTurnstileUnavailable!(true)
+      await nextTick()
       await user.click(screen.getByRole('button', { name: signUpButton }))
 
       expect(onSubmit).toHaveBeenCalledWith(expectedValues, undefined)
