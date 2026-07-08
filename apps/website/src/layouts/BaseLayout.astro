@@ -5,6 +5,14 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
+import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { bannerConfig, getBannerData } from '../config/banner'
+import {
+  BANNER_DISMISS_ATTR,
+  BANNER_STORAGE_KEY,
+  createBannerVersion,
+  evaluateBannerVisibility
+} from '../utils/banner'
 import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
@@ -33,6 +41,15 @@ const rawLocale = Astro.currentLocale ?? 'en'
 const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
+
+// Announcement banner — build-time visibility gate + content-hash version key.
+const bannerData = getBannerData(bannerConfig, locale)
+const bannerVisible = evaluateBannerVisibility(bannerConfig, {
+  currentLocale: locale,
+  currentSection: 'sitewide',
+  now: new Date(),
+})
+const bannerVersion = createBannerVersion(bannerData, locale)
 
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
@@ -124,6 +141,25 @@ const websiteJsonLd = {
 
     <ClientRouter />
     <slot name="head" />
+
+    <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
+    {bannerVisible && (
+      <script
+        is:inline
+        define:vars={{
+          bannerVersion,
+          storageKey: BANNER_STORAGE_KEY,
+          dismissAttr: BANNER_DISMISS_ATTR
+        }}
+      >
+        try {
+          const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
+          if (dismissed[bannerVersion]) {
+            document.documentElement.setAttribute(dismissAttr, '')
+          }
+        } catch (e) {}
+      </script>
+    )}
   </head>
   <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (
@@ -137,8 +173,16 @@ const websiteJsonLd = {
       </noscript>
     )}
 
+    {bannerVisible && (
+      <AnnouncementBanner
+        data={bannerData}
+        version={bannerVersion}
+        locale={locale}
+        client:load
+      />
+    )}
     <HeaderMain locale={locale} github-stars={githubStars} client:load />
-    <main class="mt-20 lg:mt-32">
+    <main>
       <slot />
     </main>
     <SiteFooter locale={locale} client:load />
