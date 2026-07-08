@@ -19,12 +19,16 @@
 
     <div class="flex flex-col gap-4 p-4">
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-muted-foreground">
+        <label
+          for="auto-reload-threshold"
+          class="text-sm text-muted-foreground"
+        >
           {{ $t('workspacePanel.autoReload.dialog.thresholdLabel') }}
         </label>
         <div :class="fieldClass">
           <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
           <input
+            id="auto-reload-threshold"
             v-model="thresholdModel"
             inputmode="numeric"
             class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none"
@@ -33,7 +37,7 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-muted-foreground">
+        <label for="auto-reload-amount" class="text-sm text-muted-foreground">
           {{ $t('workspacePanel.autoReload.dialog.amountLabel') }}
         </label>
         <div
@@ -45,6 +49,7 @@
           />
           <span v-else class="shrink-0 text-sm text-muted-foreground">$</span>
           <input
+            id="auto-reload-amount"
             v-model="reloadModel"
             inputmode="numeric"
             class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none"
@@ -70,7 +75,10 @@
 
     <div class="flex flex-col gap-2 border-t border-border-default p-4">
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-base-foreground">
+        <span
+          id="auto-reload-budget-label"
+          class="text-sm font-medium text-base-foreground"
+        >
           {{ $t('workspacePanel.autoReload.dialog.budgetToggleLabel') }}
         </span>
         <span class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -94,6 +102,7 @@
         <input
           v-model="budgetModel"
           :disabled="!budgetEnabled"
+          aria-labelledby="auto-reload-budget-label"
           inputmode="numeric"
           :placeholder="budgetPlaceholder"
           class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none disabled:cursor-not-allowed"
