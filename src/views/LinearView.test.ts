@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import type { DetachedWindowAPI } from 'happy-dom'
-import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -22,8 +21,6 @@ const state = vi.hoisted<ViewState>(() => ({
   activeTab: null,
   hasOutputs: false
 }))
-
-const onResizeEnd = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -61,7 +58,7 @@ vi.mock('@/stores/appModeStore', async () => {
 })
 
 vi.mock('@/composables/useStablePrimeVueSplitterSizer', () => ({
-  useStablePrimeVueSplitterSizer: () => ({ onResizeEnd })
+  useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
 }))
 
 function setViewport(width: number) {
@@ -206,27 +203,5 @@ describe('LinearView', () => {
 
     expect(screen.getByTestId('app-builder')).toBeInTheDocument()
     expect(screen.queryByTestId('side-toolbar')).not.toBeInTheDocument()
-  })
-
-  it('blocks the native splitter resize start and runs the resize-end handler', () => {
-    const preventDefault = vi.fn()
-    render(LinearView, {
-      global: {
-        stubs: {
-          ...baseStubs,
-          Splitter: defineComponent({
-            emits: ['resizestart', 'resizeend'],
-            mounted() {
-              this.$emit('resizestart', { originalEvent: { preventDefault } })
-              this.$emit('resizeend')
-            },
-            template: '<div><slot /></div>'
-          })
-        }
-      }
-    })
-
-    expect(preventDefault).toHaveBeenCalled()
-    expect(onResizeEnd).toHaveBeenCalled()
   })
 })

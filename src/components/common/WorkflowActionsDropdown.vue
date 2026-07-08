@@ -1,3 +1,10 @@
+<script lang="ts">
+// A segment switch unmounts the focused toggle instance and mounts a fresh
+// one in the other mode's host, so the focus handoff is tracked at module
+// scope where both instances can reach it.
+let restoreFocusOnMount = false
+</script>
+
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -6,7 +13,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -101,6 +108,7 @@ function onOpenChange(open: boolean) {
 
 function switchMode() {
   dropdownOpen.value = false
+  restoreFocusOnMount = true
   void useCommandStore().execute('Comfy.ToggleLinear', {
     metadata: { source }
   })
@@ -112,9 +120,31 @@ function onSegmentClick(seg: ViewModeSegment, event: MouseEvent) {
   switchMode()
 }
 
+/** Keys the reka trigger opens the menu on; other keys bubble on so app-level
+ *  keybindings keep working while a segment has focus. */
+const MENU_TRIGGER_KEYS = new Set(['Enter', ' ', 'ArrowDown'])
+
 function onSegmentKeydown(seg: ViewModeSegment, event: KeyboardEvent) {
-  if (!seg.active) event.stopPropagation()
+  if (!seg.active && MENU_TRIGGER_KEYS.has(event.key)) event.stopPropagation()
 }
+
+const toggleRef = useTemplateRef<HTMLDivElement>('toggleRef')
+
+// Focuses the active segment whenever reka returns focus to the trigger div
+// (e.g. Escape closing the menu), and when this instance mounts to replace
+// the one unmounted by a segment-initiated mode switch.
+function focusActiveSegment() {
+  toggleRef.value
+    ?.querySelector<HTMLButtonElement>('button[aria-haspopup]')
+    ?.focus()
+}
+
+onMounted(async () => {
+  if (!restoreFocusOnMount) return
+  restoreFocusOnMount = false
+  await nextTick()
+  focusActiveSegment()
+})
 
 const tooltipPt = {
   root: {
@@ -140,11 +170,18 @@ const tooltipPt = {
     @update:open="onOpenChange"
   >
     <DropdownMenuTrigger as-child>
+      <!-- role="group" permits the aria-label (prohibited on a plain div) that
+        names the menu via reka's aria-labelledby, plus the aria attributes reka
+        stamps here. tabindex="-1" lets reka's close-focus land here, where
+        @focus forwards it to the active segment. -->
       <div
+        ref="toggleRef"
         data-testid="view-mode-toggle"
+        role="group"
         tabindex="-1"
         :aria-label="t('breadcrumbsMenu.workflowActions')"
         class="group pointer-events-auto relative inline-block rounded-lg bg-base-background p-1"
+        @focus="focusActiveSegment"
       >
         <TransitionGroup
           tag="div"

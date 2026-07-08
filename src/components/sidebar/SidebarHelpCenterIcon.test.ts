@@ -7,9 +7,10 @@ import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 
 const typeformState = vi.hoisted(() => ({
   typeformError: false,
-  isValidTypeformId: true,
-  typeformId: 'jmmzmlKw'
+  isValidTypeformId: true
 }))
+
+const embedSpy = vi.hoisted(() => vi.fn())
 
 const canvasState = vi.hoisted(() => ({ linearMode: true }))
 
@@ -18,11 +19,15 @@ const helpCenterSpies = vi.hoisted(() => ({ toggleHelpCenter: vi.fn() }))
 vi.mock('@/platform/surveys/useTypeformEmbed', async () => {
   const { computed } = await import('vue')
   return {
-    useTypeformEmbed: () => ({
-      typeformError: computed(() => typeformState.typeformError),
-      isValidTypeformId: computed(() => typeformState.isValidTypeformId),
-      typeformId: computed(() => typeformState.typeformId)
-    })
+    useTypeformEmbed: (containerRef: unknown, formId: string) => {
+      embedSpy(containerRef, formId)
+      return {
+        typeformError: computed(() => typeformState.typeformError),
+        isValidTypeformId: computed(() => typeformState.isValidTypeformId),
+        // The real composable echoes the id it validated.
+        typeformId: computed(() => formId)
+      }
+    }
   }
 })
 
@@ -91,10 +96,12 @@ describe('SidebarHelpCenterIcon', () => {
     canvasState.linearMode = true
   })
 
-  it('mounts the Typeform embed container when the id is valid and loads', () => {
+  it('mounts the Typeform embed container wired to the feedback form', () => {
     renderIcon()
 
-    expect(screen.getByTestId('feedback-embed')).toBeInTheDocument()
+    const embed = screen.getByTestId('feedback-embed')
+    expect(embed).toHaveAttribute('data-tf-widget', 'jmmzmlKw')
+    expect(embedSpy).toHaveBeenCalledWith(expect.anything(), 'jmmzmlKw')
     expect(screen.queryByText(FEEDBACK_LOAD_ERROR)).not.toBeInTheDocument()
   })
 

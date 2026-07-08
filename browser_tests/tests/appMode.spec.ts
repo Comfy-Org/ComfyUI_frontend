@@ -142,7 +142,7 @@ test.describe('App mode usage', () => {
     await expect.poll(() => fileComboWidget.getValue()).toBe(targetImage)
   })
 
-  test('Shares the graph side toolbar, filtered to assets + apps', async ({
+  test('Shows a single side toolbar per mode, filtered to assets + apps in app mode', async ({
     comfyPage
   }) => {
     const { sideToolbar, nodeLibraryTab, assetsTab, appsTab } = comfyPage.menu
@@ -152,12 +152,10 @@ test.describe('App mode usage', () => {
       await expect(nodeLibraryTab.tabButton).toBeVisible()
     })
 
-    await test.step('App mode reuses it with only assets + apps', async () => {
+    await test.step('App mode shows only assets + apps', async () => {
       await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
       await expect(comfyPage.appMode.centerPanel).toBeVisible()
 
-      // The same single instance is reused across the mode flip, not a second
-      // toolbar mounted alongside the first.
       await expect(sideToolbar).toHaveCount(1)
       await expect(assetsTab.tabButton).toBeVisible()
       await expect(appsTab.tabButton).toBeVisible()
@@ -219,9 +217,8 @@ test.describe('App mode usage', () => {
     await workflowActions.enterAppModeSegment.press('Enter')
 
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
-    // Keyboard activation of the inactive segment must switch mode without the
-    // keydown bubbling to the trigger and opening the actions menu.
     await expect(workflowActions.menu).toBeHidden()
+    await expect(workflowActions.trigger).toBeFocused()
   })
 
   test('Mode toggle re-appears after exiting the builder to graph mode', async ({

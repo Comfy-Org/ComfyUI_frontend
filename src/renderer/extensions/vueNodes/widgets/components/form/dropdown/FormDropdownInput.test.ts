@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -135,6 +135,25 @@ describe('FormDropdownInput', () => {
   })
 
   describe('Exposed showPicker', () => {
+    const overriddenMethods = ['showPicker', 'click'] as const
+    const originalDescriptors = overriddenMethods.map(
+      (name) =>
+        [
+          name,
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, name)
+        ] as const
+    )
+
+    afterEach(() => {
+      for (const [name, descriptor] of originalDescriptors) {
+        if (descriptor) {
+          Object.defineProperty(HTMLInputElement.prototype, name, descriptor)
+        } else {
+          Reflect.deleteProperty(HTMLInputElement.prototype, name)
+        }
+      }
+    })
+
     /** Mount a harness that captures the FormDropdownInput instance so we can
      *  invoke its exposed methods, mirroring how FormDropdown drives it. */
     async function mountWithRef(props: Partial<FormDropdownInputProps> = {}) {

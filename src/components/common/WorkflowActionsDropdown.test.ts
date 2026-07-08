@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ViewMode } from '@/utils/appMode'
@@ -98,6 +99,9 @@ describe('WorkflowActionsDropdown', () => {
     vi.clearAllMocks()
     viewState.viewMode = 'graph'
     viewState.displayViewMode = 'graph'
+    // A prior test's segment switch arms the module-level focus handoff;
+    // a throwaway mount consumes it so it cannot steal focus mid-test.
+    renderDropdown().unmount()
   })
 
   it('keeps the active segment label in its accessible name alongside the actions label', () => {
@@ -160,6 +164,12 @@ describe('WorkflowActionsDropdown', () => {
     expect(spies.execute).toHaveBeenCalledWith('Comfy.ToggleLinear', {
       metadata: { source: 'test' }
     })
+    // The switch must not also open the menu as a side effect.
+    expect(
+      screen.getByRole('button', { name: /workflow actions/ })
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(spies.trackUiButtonClicked).not.toHaveBeenCalled()
+    expect(spies.markAsSeen).not.toHaveBeenCalled()
   })
 
   it('opens the menu instead of toggling the mode when the active segment is clicked', async () => {
@@ -197,9 +207,30 @@ describe('WorkflowActionsDropdown', () => {
     expect(spies.execute).toHaveBeenCalledWith('Comfy.ToggleLinear', {
       metadata: { source: 'test' }
     })
+    // The keydown must not reach the trigger and open the menu.
+    expect(
+      screen.getByRole('button', { name: /workflow actions/ })
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(spies.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 
-  it('does not switch mode when the active segment is activated by keyboard', async () => {
+  it('lets non-trigger keys bubble past the inactive segment', async () => {
+    const { user } = renderDropdown()
+    const bubbledKeys: string[] = []
+    const recordKey = (event: KeyboardEvent) => bubbledKeys.push(event.key)
+    document.addEventListener('keydown', recordKey)
+
+    screen.getByRole('button', { name: 'Enter app mode' }).focus()
+    await user.keyboard('r{Enter}')
+    document.removeEventListener('keydown', recordKey)
+
+    // App-level keybindings rely on keydowns bubbling; only the keys that
+    // would open the reka trigger may be stopped.
+    expect(bubbledKeys).toContain('r')
+    expect(bubbledKeys).not.toContain('Enter')
+  })
+
+  it('opens the menu when the active segment is activated by keyboard', async () => {
     const { user } = renderDropdown()
     const active = screen.getByRole('button', { name: /workflow actions/ })
 
@@ -207,6 +238,7 @@ describe('WorkflowActionsDropdown', () => {
     await user.keyboard('{Enter}')
 
     expect(spies.execute).not.toHaveBeenCalled()
+    expect(active).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('opens the menu on ArrowDown on the active segment', async () => {
@@ -217,5 +249,34 @@ describe('WorkflowActionsDropdown', () => {
     await user.keyboard('{ArrowDown}')
 
     expect(active).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('forwards focus from the toggle group to the active segment', () => {
+    renderDropdown()
+
+    // Reka returns focus to the trigger div when the menu closes; the div
+    // hands it on so focus lands on an interactive element.
+    screen.getByRole('group', { name: 'Workflow actions' }).focus()
+
+    expect(
+      screen.getByRole('button', { name: /workflow actions/ })
+    ).toHaveFocus()
+  })
+
+  it('focuses the newly mounted toggle after a segment-initiated switch', async () => {
+    const { user, unmount } = renderDropdown()
+    await user.click(screen.getByRole('button', { name: 'Enter app mode' }))
+
+    // The mode flip unmounts this instance and mounts a fresh one in the
+    // other mode's host.
+    unmount()
+    viewState.viewMode = 'app'
+    viewState.displayViewMode = 'app'
+    renderDropdown()
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: /workflow actions/ })
+    ).toHaveFocus()
   })
 })

@@ -188,7 +188,7 @@ export class AppModeHelper {
       .waitFor({ state: 'hidden', timeout: 5000 })
       .catch(() => {})
 
-    await this.workflowActions.trigger.first().click()
+    await this.workflowActions.trigger.filter({ visible: true }).click()
     await this.page
       .getByRole('menuitem', { name: /Build app|Edit app/ })
       .click()
