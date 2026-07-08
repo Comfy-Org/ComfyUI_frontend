@@ -176,11 +176,11 @@ const {
   providerHelp,
   handleSubmit
 } = useSecretForm({
-    mode,
-    secret: () => secret,
-    existingProviders: () => existingProviders,
-    availableProviders: () => availableProviders,
-    visible,
-    onSaved: () => emit('saved')
-  })
+  mode,
+  secret: () => secret,
+  existingProviders: () => existingProviders,
+  availableProviders: () => availableProviders,
+  visible,
+  onSaved: () => emit('saved')
+})
 </script>

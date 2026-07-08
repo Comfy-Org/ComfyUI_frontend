@@ -46,7 +46,9 @@ export const SECRET_PROVIDERS: ProviderConfig[] = [
  */
 export const DEFAULT_PROVIDER_IDS = ['huggingface', 'civitai'] as const
 
-function findProvider(provider: string | undefined): ProviderConfig | undefined {
+function findProvider(
+  provider: string | undefined
+): ProviderConfig | undefined {
   if (!provider) return undefined
   return SECRET_PROVIDERS.find((p) => p.value === provider)
 }
