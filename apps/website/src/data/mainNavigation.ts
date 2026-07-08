@@ -82,6 +82,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.launches,
               badge: 'new'
             },
+            { label: t('nav.supportedModels', locale), href: routes.models },
             {
               label: t('nav.docs', locale),
               href: externalLinks.docs,
