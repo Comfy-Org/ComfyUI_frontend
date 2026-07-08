@@ -111,10 +111,11 @@ flowchart TB
     PACKS["Community node packs: external code, installed at pinned versions"]
     CIP -->|"builds the environment, triggers the suite"| SUITE
     SUITE -->|"drives a real browser session: creates nodes, wires, saves, submits work"| FE
+    FE -->|"observations back: what mounted, what persisted, what executed, every error"| SUITE
     FE <-->|"node definitions, prompts, execution events"| BE
     PACKS -->|"python side installs into"| BE
     PACKS -->|"frontend scripts load into"| FE
-    SUITE -->|"per-node verdicts + mechanism-carrying exceptions"| TEAM
+    SUITE -->|"turns observations into per-node verdicts + mechanism-carrying exceptions"| TEAM
 ```
 
 The load-bearing property: the suite tests the same stack a user runs. The
