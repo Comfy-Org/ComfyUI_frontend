@@ -64,6 +64,55 @@ test.describe('App mode welcome states', { tag: '@ui' }, () => {
     await expect(comfyPage.templates.content).toBeVisible()
   })
 
+  test('Remote order flag reorders the featured templates', async ({
+    comfyPage
+  }) => {
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.appMode.toggleAppMode()
+    await expect(comfyPage.appMode.getStarted).toBeVisible()
+
+    const naturalOrder = await comfyPage.appMode.getStartedTemplateNames()
+    expect(naturalOrder.length).toBeGreaterThan(1)
+
+    const reversed = [...naturalOrder].reverse()
+    await comfyPage.featureFlags.setFlags({
+      'app-mode-template-order': { templateIds: reversed }
+    })
+
+    // Snapshot mode reads the payload on mount, so remount the page by leaving
+    // and re-entering app mode.
+    await comfyPage.appMode.toggleAppMode()
+    await comfyPage.appMode.toggleAppMode()
+    await expect(comfyPage.appMode.getStarted).toBeVisible()
+
+    await expect
+      .poll(() => comfyPage.appMode.getStartedTemplateNames())
+      .toEqual(reversed)
+  })
+
+  test('Invalid remote order payload falls back to the default order', async ({
+    comfyPage
+  }) => {
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.appMode.toggleAppMode()
+    await expect(comfyPage.appMode.getStarted).toBeVisible()
+
+    const naturalOrder = await comfyPage.appMode.getStartedTemplateNames()
+    expect(naturalOrder.length).toBeGreaterThan(0)
+
+    await comfyPage.featureFlags.setFlags({
+      'app-mode-template-order': { templateIds: 'not-an-array' }
+    })
+
+    await comfyPage.appMode.toggleAppMode()
+    await comfyPage.appMode.toggleAppMode()
+    await expect(comfyPage.appMode.getStarted).toBeVisible()
+
+    await expect
+      .poll(() => comfyPage.appMode.getStartedTemplateNames())
+      .toEqual(naturalOrder)
+  })
+
   test('Empty workflow dialog blocks entering builder on an empty graph', async ({
     comfyPage
   }) => {

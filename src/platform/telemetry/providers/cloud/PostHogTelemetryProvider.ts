@@ -1,5 +1,6 @@
+import { until } from '@vueuse/core'
 import type { PostHog } from 'posthog-js'
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
@@ -8,6 +9,13 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { REMOTE_USER_DATA_KEYS } from '@/platform/remoteUserData/keys'
+import {
+  markRemoteUserDataPending,
+  markRemoteUserDataReady,
+  setPayloadSource
+} from '@/platform/remoteUserData/payloadSource'
+import { useAuthStore } from '@/stores/authStore'
 
 import type {
   AuthMetadata,
@@ -83,6 +91,19 @@ function readDesktopEntryProps(): DesktopEntryProps | null {
   return props
 }
 
+// Fall back to defaults if no flag response lands, so a blocked /flags request
+// or slow auth can't leave gated UI pending forever.
+const REMOTE_USER_DATA_READY_TIMEOUT_MS = 3000
+
+function collectPayloads(posthog: PostHog): Record<string, unknown> {
+  const payloads: Record<string, unknown> = {}
+  for (const key of REMOTE_USER_DATA_KEYS) {
+    const payload = posthog.getFeatureFlagResult(key)?.payload
+    if (payload !== undefined) payloads[key] = payload
+  }
+  return payloads
+}
+
 /**
  * PostHog Telemetry Provider - Cloud Build Implementation
  *
@@ -101,6 +122,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
+  private remoteUserDataReadyTimeout: ReturnType<typeof setTimeout> | null =
+    null
 
   constructor() {
     this.configureDisabledEvents(
@@ -116,6 +139,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
     const apiKey = window.__CONFIG__?.posthog_project_token
     if (apiKey) {
+      // Registered before the async posthog import so late consumers always
+      // see a source; onFeatureFlags mutates this ref later.
+      const payloads = ref<Record<string, unknown>>({})
+      setPayloadSource({ payloads })
+      this.armRemoteUserDataReadiness()
+
       try {
         void import('posthog-js')
           .then((posthogModule) => {
@@ -132,6 +161,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
               ...serverConfig,
               person_profiles: 'identified_only',
+              // Fetch flags only after auth resolves, so the first payloads are
+              // already cohort/person-targeted rather than anonymous-then-reordered.
+              advanced_disable_feature_flags_on_first_load: true,
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
@@ -142,7 +174,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.flushEventQueue()
             this.registerDesktopEntryProps()
 
+            this.posthog.onFeatureFlags(() => {
+              payloads.value = collectPayloads(this.posthog!)
+              this.settleRemoteUserDataReady()
+            })
+
             const currentUser = useCurrentUser()
+            void this.reloadFeatureFlagsWhenAnonymous(currentUser)
             currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
@@ -166,14 +204,44 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
           .catch((error) => {
             console.error('Failed to load PostHog:', error)
             this.isEnabled = false
+            this.settleRemoteUserDataReady()
           })
       } catch (error) {
         console.error('Failed to initialize PostHog:', error)
         this.isEnabled = false
+        this.settleRemoteUserDataReady()
       }
     } else {
       console.warn('PostHog API key not provided in runtime config')
       this.isEnabled = false
+    }
+  }
+
+  private armRemoteUserDataReadiness(): void {
+    markRemoteUserDataPending()
+    this.remoteUserDataReadyTimeout = setTimeout(
+      () => this.settleRemoteUserDataReady(),
+      REMOTE_USER_DATA_READY_TIMEOUT_MS
+    )
+  }
+
+  private settleRemoteUserDataReady(): void {
+    if (this.remoteUserDataReadyTimeout !== null) {
+      clearTimeout(this.remoteUserDataReadyTimeout)
+      this.remoteUserDataReadyTimeout = null
+    }
+    markRemoteUserDataReady()
+  }
+
+  // identify() drives the flag fetch for logged-in users; anonymous users are
+  // never identified, so trigger their fetch once auth settles.
+  private async reloadFeatureFlagsWhenAnonymous(
+    currentUser: ReturnType<typeof useCurrentUser>
+  ): Promise<void> {
+    const authStore = useAuthStore()
+    await until(() => authStore.isInitialized).toBe(true)
+    if (!currentUser.resolvedUserInfo.value) {
+      this.posthog?.reloadFeatureFlags()
     }
   }
 

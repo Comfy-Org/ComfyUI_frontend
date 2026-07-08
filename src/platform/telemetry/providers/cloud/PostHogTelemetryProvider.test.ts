@@ -15,9 +15,14 @@ const hoisted = vi.hoisted(() => {
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
+  const mockOnFeatureFlags = vi.fn()
+  const mockGetFeatureFlagResult = vi.fn()
+  const mockReloadFeatureFlags = vi.fn()
   const refs = {
     tier: null as unknown as Ref<string | null>,
-    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
+    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>,
+    resolvedUserInfo: null as unknown as Ref<{ id: string } | null>,
+    isInitialized: null as unknown as Ref<boolean>
   }
 
   return {
@@ -30,6 +35,9 @@ const hoisted = vi.hoisted(() => {
     mockReset,
     mockOnUserResolved,
     mockOnUserLogout,
+    mockOnFeatureFlags,
+    mockGetFeatureFlagResult,
+    mockReloadFeatureFlags,
     refs,
     mockPosthog: {
       default: {
@@ -38,7 +46,10 @@ const hoisted = vi.hoisted(() => {
         identify: mockIdentify,
         register: mockRegister,
         people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
-        reset: mockReset
+        reset: mockReset,
+        onFeatureFlags: mockOnFeatureFlags,
+        getFeatureFlagResult: mockGetFeatureFlagResult,
+        reloadFeatureFlags: mockReloadFeatureFlags
       }
     }
   }
@@ -47,7 +58,16 @@ const hoisted = vi.hoisted(() => {
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
     onUserResolved: hoisted.mockOnUserResolved,
-    onUserLogout: hoisted.mockOnUserLogout
+    onUserLogout: hoisted.mockOnUserLogout,
+    resolvedUserInfo: hoisted.refs.resolvedUserInfo
+  })
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    get isInitialized() {
+      return hoisted.refs.isInitialized.value
+    }
   })
 }))
 
@@ -65,6 +85,13 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
   return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
 })
 
+import {
+  getPayloadSource,
+  markRemoteUserDataReady,
+  remoteUserDataReady,
+  setPayloadSource
+} from '@/platform/remoteUserData/payloadSource'
+
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
 function createProvider(
@@ -79,14 +106,22 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
+    // Keep each provider's 3s readiness backstop from firing in a later test.
+    vi.useFakeTimers()
     vi.clearAllMocks()
     hoisted.refs.remoteConfig.value = null
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
     hoisted.refs.tier = ref<string | null>(null)
+    hoisted.refs.resolvedUserInfo = ref<{ id: string } | null>(null)
+    hoisted.refs.isInitialized = ref(false)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('initialization', () => {
@@ -631,6 +666,124 @@ describe('PostHogTelemetryProvider', () => {
 
       expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
       expect(hoisted.mockReset).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('remote user data', () => {
+    beforeEach(() => {
+      hoisted.mockGetFeatureFlagResult.mockReturnValue(undefined)
+    })
+
+    afterEach(() => {
+      setPayloadSource(null)
+      markRemoteUserDataReady()
+    })
+
+    it('disables the anonymous first-load flag fetch on init', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({
+          advanced_disable_feature_flags_on_first_load: true
+        })
+      )
+    })
+
+    it('registers a reactive payload source', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(getPayloadSource()).not.toBeNull()
+    })
+
+    it('stays pending until the first flag response, then becomes ready', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(remoteUserDataReady.value).toBe(false)
+
+      const onFlags = hoisted.mockOnFeatureFlags.mock.calls[0][0]
+      onFlags()
+
+      expect(remoteUserDataReady.value).toBe(true)
+    })
+
+    it('collects known-key payloads on the flag response', async () => {
+      hoisted.mockGetFeatureFlagResult.mockImplementation((key: string) =>
+        key === 'app-mode-template-order'
+          ? {
+              key,
+              enabled: true,
+              variant: undefined,
+              payload: { templateIds: ['a'] }
+            }
+          : undefined
+      )
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      hoisted.mockOnFeatureFlags.mock.calls[0][0]()
+
+      expect(getPayloadSource()?.payloads.value).toEqual({
+        'app-mode-template-order': { templateIds: ['a'] }
+      })
+    })
+
+    it('reloads flags when auth settles anonymous', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      hoisted.refs.isInitialized.value = true
+      // Two flushes: one for the `until` watcher, one for its awaiting continuation.
+      await nextTick()
+      await nextTick()
+
+      expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledOnce()
+    })
+
+    it('reloads flags when auth is already settled anonymous before init', async () => {
+      hoisted.refs.isInitialized.value = true
+
+      createProvider()
+      await vi.dynamicImportSettled()
+      await nextTick()
+
+      expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledOnce()
+      expect(hoisted.mockOnUserResolved).toHaveBeenCalled()
+    })
+
+    it('does not reload flags when auth settles with a user (identify drives it)', async () => {
+      hoisted.refs.resolvedUserInfo.value = { id: 'user-1' }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      hoisted.refs.isInitialized.value = true
+      await nextTick()
+      await nextTick()
+
+      expect(hoisted.mockReloadFeatureFlags).not.toHaveBeenCalled()
+    })
+
+    it('marks ready via the timeout backstop when no flags arrive', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+      expect(remoteUserDataReady.value).toBe(false)
+
+      vi.advanceTimersByTime(3000)
+
+      expect(remoteUserDataReady.value).toBe(true)
+    })
+
+    it('marks ready when PostHog fails to load', async () => {
+      hoisted.mockInit.mockImplementationOnce(() => {
+        throw new Error('init boom')
+      })
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(remoteUserDataReady.value).toBe(true)
     })
   })
 

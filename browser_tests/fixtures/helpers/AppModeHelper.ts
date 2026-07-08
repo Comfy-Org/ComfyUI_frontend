@@ -234,6 +234,13 @@ export class AppModeHelper {
     await this.toggleAppMode()
   }
 
+  /** Featured template `name`s in the order the cards are rendered. */
+  async getStartedTemplateNames(): Promise<string[]> {
+    return this.getStartedTemplateCards.evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute('data-template-name') ?? '')
+    )
+  }
+
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").

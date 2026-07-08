@@ -1,8 +1,14 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import {
+  markRemoteUserDataPending,
+  markRemoteUserDataReady,
+  setPayloadSource
+} from '@/platform/remoteUserData/payloadSource'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 import LinearGetStarted from './LinearGetStarted.vue'
@@ -82,6 +88,18 @@ function makeTemplate(name: string, sourceModule?: string): TemplateInfo {
   }
 }
 
+function registerOrder(templateIds: string[]) {
+  setPayloadSource({
+    payloads: ref({ 'app-mode-template-order': { templateIds } })
+  })
+}
+
+function renderedTemplateNames(): (string | undefined)[] {
+  return screen
+    .getAllByTestId('linear-get-started-template')
+    .map((card) => card.textContent?.trim())
+}
+
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false })
 
 function renderComponent() {
@@ -98,6 +116,8 @@ function renderComponent() {
 describe('LinearGetStarted', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setPayloadSource(null)
+    markRemoteUserDataReady()
     templatesState.isTemplatesLoaded = true
     templatesState.loadingTemplateId = null
     templatesState.enhancedTemplates = [
@@ -139,6 +159,37 @@ describe('LinearGetStarted', () => {
     expect(cards).toHaveLength(4)
     expect(screen.getByText('one')).toBeInTheDocument()
     expect(screen.queryByText('five')).not.toBeInTheDocument()
+  })
+
+  it('orders featured templates by the remote payload, backfilling defaults', () => {
+    registerOrder(['d.app', 'b.app'])
+    renderComponent()
+    expect(renderedTemplateNames()).toEqual([
+      'd.app',
+      'b.app',
+      'a.app',
+      'e.app'
+    ])
+  })
+
+  it('drops unknown ids from the remote order', () => {
+    registerOrder(['ghost', 'e.app'])
+    renderComponent()
+    expect(renderedTemplateNames()).toEqual([
+      'e.app',
+      'a.app',
+      'b.app',
+      'd.app'
+    ])
+  })
+
+  it('shows skeletons until the remote order is ready', () => {
+    markRemoteUserDataPending()
+    registerOrder(['a.app'])
+    renderComponent()
+    expect(screen.queryAllByTestId('linear-get-started-template')).toHaveLength(
+      0
+    )
   })
 
   it('loads a template with its source module when a card is clicked', async () => {

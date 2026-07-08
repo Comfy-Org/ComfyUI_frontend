@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { z } from 'zod'
 
 import LazyImage from '@/components/common/LazyImage.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { resolvePrioritizedIds } from '@/platform/remoteUserData/resolvePrioritizedIds'
+import { useRemoteUserData } from '@/platform/remoteUserData/useRemoteUserData'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
@@ -31,13 +34,33 @@ const {
 } = useTemplateWorkflows()
 const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
 
+const { data: templateOrder, isLoaded: isOrderLoaded } = useRemoteUserData({
+  key: 'app-mode-template-order',
+  schema: z.object({ templateIds: z.array(z.string()) }),
+  defaultValue: { templateIds: [] }
+})
+
 onMounted(() => void loadTemplates())
 
 const featuredTemplates = computed(() => {
   const all = templatesStore.enhancedTemplates
   const apps = all.filter(isAppTemplate)
-  return (apps.length ? apps : all).slice(0, FEATURED_COUNT)
+  const candidates = apps.length ? apps : all
+  const byName = new Map(
+    candidates.map((template) => [template.name, template])
+  )
+  const orderedNames = resolvePrioritizedIds(
+    templateOrder.value.templateIds,
+    candidates.map((template) => template.name),
+    new Set(byName.keys()),
+    FEATURED_COUNT
+  )
+  return orderedNames.map((name) => byName.get(name)!)
 })
+
+const isFeaturedReady = computed(
+  () => isTemplatesLoaded.value && isOrderLoaded.value
+)
 
 const isLoadingTemplate = computed(() => loadingTemplateId.value !== null)
 
@@ -101,12 +124,13 @@ async function selectTemplate(template: TemplateInfo) {
 
       <div class="flex flex-col items-center gap-8">
         <div class="flex flex-wrap items-center justify-center gap-5">
-          <template v-if="isTemplatesLoaded">
+          <template v-if="isFeaturedReady">
             <button
               v-for="template in featuredTemplates"
               :key="template.name"
               type="button"
               data-testid="linear-get-started-template"
+              :data-template-name="template.name"
               class="group relative flex size-50 cursor-pointer appearance-none flex-col overflow-hidden rounded-2xl border-none bg-base-background p-0 text-left disabled:cursor-default"
               :disabled="isLoadingTemplate"
               @click="selectTemplate(template)"
