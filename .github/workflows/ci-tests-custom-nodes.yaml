@@ -96,14 +96,26 @@ jobs:
           for entry in "${entries[@]}"; do
             repo=$(jq -r '.repo' <<<"$entry")
             pin=$(jq -r '.pin' <<<"$entry")
-            name=$(basename "$repo")
-            dir="ComfyUI/custom_nodes/$name"
-            echo "::group::install $name"
-            git clone --depth 1 "$repo" "$dir"
-            if [ -n "$pin" ]; then
-              git -C "$dir" fetch --depth 1 origin "$pin"
-              git -C "$dir" checkout "$pin"
+            # Install under the manifest `pack` key, not basename(repo): node
+            # attribution keys on the install dirname via python_module, and
+            # the two only coincide by luck. Same charset the manifest loader
+            # enforces - belt for anything that bypasses it.
+            pack=$(jq -r '.pack' <<<"$entry")
+            if ! [[ "$pack" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+              echo "::error::unsafe pack name: '$pack'"; exit 1
             fi
+            # The gate tests exactly what was verified: a full SHA pin is
+            # mandatory here, before anything installs. The planned canary
+            # (pack HEADs) is the only intended unpinned consumer and runs
+            # with CUSTOM_NODES_ALLOW_UNPINNED=1 through the loader instead.
+            if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
+            fi
+            dir="ComfyUI/custom_nodes/$pack"
+            echo "::group::install $pack"
+            git clone --depth 1 "$repo" "$dir"
+            git -C "$dir" fetch --depth 1 origin "$pin"
+            git -C "$dir" checkout "$pin"
             if [ -f "$dir/requirements.txt" ]; then
               pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
             fi

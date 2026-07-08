@@ -10,6 +10,19 @@ export function collectConsoleErrors(page: Page): {
     const url = message.location().url
     errors.push(url ? `${message.text()} [${url}]` : message.text())
   }
+  // Uncaught page exceptions and unhandled promise rejections never reach
+  // console.error; Chromium surfaces both through pageerror. Without this
+  // listener a pack script crashing outside a console call passes silently.
+  const pageErrorListener = (error: Error) => {
+    errors.push(`Uncaught page error: ${error.message}`)
+  }
   page.on('console', listener)
-  return { errors, stop: () => page.off('console', listener) }
+  page.on('pageerror', pageErrorListener)
+  return {
+    errors,
+    stop: () => {
+      page.off('console', listener)
+      page.off('pageerror', pageErrorListener)
+    }
+  }
 }

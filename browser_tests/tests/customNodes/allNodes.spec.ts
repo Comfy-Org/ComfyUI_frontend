@@ -16,7 +16,10 @@ import {
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+import {
+  loadManifest,
+  rendererPassesFor
+} from '@e2e/fixtures/customNode/manifest'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
@@ -253,6 +256,17 @@ const CONSOLE_ERROR_ALLOWLIST: Record<
         /Failed to load resource.*\/api\/view\?type=input&filename=undefined/,
       reason: 'loader preview fetches undefined filename on empty input dir'
     }
+  ],
+  'ComfyUI-Custom-Scripts': [
+    {
+      // betterCombos.js:473 checks `typeof ret === "object" && "content" in
+      // ret`; typeof null is "object", so a null ret during save/reload
+      // throws `Cannot use 'in' operator to search for 'content' in null`
+      // as an uncaught page error - invisible until pageerror collection
+      // landed. Pack-owned and deterministic; upstream-report candidate.
+      pattern: /Cannot use 'in' operator to search for 'content' in null/,
+      reason: 'betterCombos.js missing null check throws during save/reload'
+    }
   ]
 }
 
@@ -429,7 +443,7 @@ for (const entry of loadManifest()) {
           `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
         ).toContain(ledgered)
 
-      for (const vueNodesEnabled of [false, true]) {
+      for (const vueNodesEnabled of rendererPassesFor(entry)) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
@@ -605,7 +619,7 @@ for (const entry of loadManifest()) {
       // both. Each stage yields a frame so those effects actually flush
       // before the next serialize (a single evaluate would serialize before
       // any Vue component reacted).
-      for (const vueNodesEnabled of [false, true]) {
+      for (const vueNodesEnabled of rendererPassesFor(entry)) {
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
           vueNodesEnabled

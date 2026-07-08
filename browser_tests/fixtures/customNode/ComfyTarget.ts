@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Page, Response } from '@playwright/test'
 
 import type { ObjectInfo } from '@e2e/fixtures/customNode/objectInfoValidator'
 import type {
@@ -110,6 +110,29 @@ export class LocalDesktopTarget {
       ['execution_start', ...TERMINAL, 'executing', 'executed']
     )
 
+    // Positively identify THIS attempt: the /prompt POST response body
+    // carries the prompt_id the backend assigned. When captured it becomes
+    // the primary event filter; the seen-set above and the graph-membership
+    // check below stay as defense in depth (capture can lose a race with a
+    // transient refusal, and `executing` events carry no prompt id at all).
+    let capturedPromptId: string | undefined
+    const onPromptResponse = (response: Response) => {
+      if (response.request().method() !== 'POST') return
+      if (!new URL(response.url()).pathname.endsWith('/prompt')) return
+      response
+        .json()
+        .then((body: unknown) => {
+          const id = (body as { prompt_id?: unknown } | null)?.prompt_id
+          if (typeof id === 'string') capturedPromptId = id
+        })
+        .catch(() => {
+          // a refused submission answers with a non-JSON or error body;
+          // the refusal path below already handles it
+        })
+    }
+    page.on('response', onPromptResponse)
+    const stopCapture = () => page.off('response', onPromptResponse)
+
     // app.queuePrompt (NOT api.queuePrompt: that submits an empty prompt).
     // false = validation reject (emits no events), but pack JS hooking the
     // queue can refuse transiently - retry once; real rejects fail twice.
@@ -135,18 +158,32 @@ export class LocalDesktopTarget {
         () => new Promise((resolve) => setTimeout(resolve, 250))
       )
       queued = await queueOnce()
-      if (refused(queued))
+      if (refused(queued)) {
+        stopCapture()
         return {
           outcome: 'VALIDATION_FAIL',
           executedNodes: [],
           outputsByNode: {},
           clientError: typeof queued === 'object' ? queued.__cnThrew : undefined
         }
+      }
     }
+
+    // The submission resolved, so the /prompt response is in flight or done;
+    // give its body-parse a bounded beat before snapshotting the id.
+    const captureDeadline = Date.now() + 2_000
+    while (capturedPromptId === undefined && Date.now() < captureDeadline)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    // A silent permanent miss would degrade every run to the legacy filters
+    // with no signal - make the fallback observable in the runner output.
+    if (capturedPromptId === undefined)
+      console.warn(
+        '[customNodes] /prompt response id capture missed; falling back to seen-set filtering'
+      )
 
     await page
       .waitForFunction(
-        ([terminal, seen, graphIds]) => {
+        ([terminal, seen, graphIds, promptId]) => {
           const events =
             (
               window as unknown as {
@@ -160,30 +197,43 @@ export class LocalDesktopTarget {
           return events.some(
             (event) =>
               terminal.includes(event.type) &&
-              !(event.prompt_id && seen.includes(event.prompt_id)) &&
-              (graphIds === null ||
-                event.node_id === undefined ||
-                graphIds.includes(event.node_id))
+              (promptId !== null
+                ? event.prompt_id === promptId
+                : !(event.prompt_id && seen.includes(event.prompt_id)) &&
+                  (graphIds === null ||
+                    event.node_id === undefined ||
+                    graphIds.includes(event.node_id)))
           )
         },
-        [TERMINAL, seenPromptIds ?? [], opts.graphNodeIds ?? null] as const,
+        [
+          TERMINAL,
+          seenPromptIds ?? [],
+          opts.graphNodeIds ?? null,
+          capturedPromptId ?? null
+        ] as const,
         { timeout: opts.timeoutMs }
       )
       .catch((error: unknown) => {
         // Only a Playwright wait timeout means "no terminal event"; surface any
         // other fault instead of masquerading it as a run TIMEOUT.
         if (error instanceof Error && error.name === 'TimeoutError') return
+        stopCapture()
         throw error
       })
+    stopCapture()
 
     const raw = (
       await page.evaluate(
         () =>
           (window as unknown as { __cnEvents?: RawEvent[] }).__cnEvents ?? []
       )
-    ).filter(
-      (event) =>
-        !(event.prompt_id && (seenPromptIds ?? []).includes(event.prompt_id))
+    ).filter((event) =>
+      // Positive id match when captured (events without a prompt_id - bare
+      // `executing` strings - stay, and graph membership still vets them);
+      // otherwise the legacy seen-set exclusion.
+      capturedPromptId !== undefined
+        ? event.prompt_id === undefined || event.prompt_id === capturedPromptId
+        : !(event.prompt_id && (seenPromptIds ?? []).includes(event.prompt_id))
     )
     const timedOut = !raw.some((event) => TERMINAL.includes(event.type))
     return classifyRun({

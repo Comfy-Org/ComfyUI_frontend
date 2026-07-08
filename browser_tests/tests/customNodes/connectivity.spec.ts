@@ -171,6 +171,35 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   console.log(`connectivity sweep: ${passed}/${results.length} pairs PASS`)
   expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
   expect(passed).toBeGreaterThan(0)
+  // Two-way guard, same discipline as cannotRunAlone: every allowlisted key
+  // must still be OBSERVED failing in its recorded way. An entry whose pair
+  // now passes (or is no longer even planned) is stale and would silently
+  // hide the fixed bug behind it. On a partially-installed local backend an
+  // absent key only logs; CI installs every pack, so it always enforces.
+  const outcomeByKey = new Map(
+    results.map((result) => [result.key, result.outcome])
+  )
+  const allPacksInstalled =
+    installedEntries.length === connectivityEntries.length
+  const staleEntries: string[] = []
+  for (const [allowlist, expected] of [
+    [CONNECT_REJECTED_ALLOWLIST, 'CONNECT_REJECTED'],
+    [ROUNDTRIP_LOST_ALLOWLIST, 'ROUNDTRIP_LOST']
+  ] as const)
+    for (const key of allowlist) {
+      const observed = outcomeByKey.get(key)
+      if (observed === undefined && !allPacksInstalled) {
+        console.log(
+          `allowlist entry not observed (pack not installed here): ${key}`
+        )
+        continue
+      }
+      if (observed !== expected)
+        staleEntries.push(
+          `${key}: expected ${expected}, observed ${observed ?? 'nothing'} - remove the stale entry`
+        )
+    }
+  expect(staleEntries, 'stale allowlist entries').toEqual([])
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
 

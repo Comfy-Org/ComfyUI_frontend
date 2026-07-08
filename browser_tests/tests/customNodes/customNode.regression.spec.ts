@@ -25,6 +25,18 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const target = new LocalDesktopTarget()
 const OBJECT_INFO_SANITY_FLOOR = 50
+// Display sinks used by the curated workflows; each is an output node whose
+// `executed` event carries a ui payload, so "the workflow ran" can be
+// upgraded to "data actually arrived at the sink". Console-style sinks
+// (WAS `Text to Console`) emit NO ui payload and stay off this list, so a
+// pack whose only sink prints to console gets execution-completed proof
+// only.
+const CURATED_SINK_TYPES = [
+  'PreviewAny',
+  'DisplayAny',
+  'Display Any (rgthree)',
+  'ShowText|pysssss'
+]
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -148,6 +160,15 @@ for (const entry of loadManifest()) {
       })
 
       expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
+      // PASS proves execution completed; the sinks prove data ARRIVED.
+      // Every display sink in the curated workflow must have emitted a ui
+      // payload through its executed event.
+      const sinkIds = await nodeIdsByType(comfyPage.page, CURATED_SINK_TYPES)
+      for (const sinkId of sinkIds)
+        expect(
+          result.outputsByNode[sinkId],
+          `sink node ${sinkId} produced no ui payload`
+        ).toBeTruthy()
       await expectNoVisibleErrors(comfyPage.page, 'after run')
     })
   })
@@ -185,4 +206,68 @@ test('harness self-check: captures a real execution error', async ({
   // expectNoVisibleErrors selectors have rotted and every clean assertion in
   // this suite is meaningless.
   await expect(errorSurfaces(comfyPage.page).errorOverlay).toBeVisible()
+})
+
+test('collector self-check: captures uncaught page exceptions', async ({
+  comfyPage
+}) => {
+  // Positive control for the console collector: an uncaught async throw
+  // never reaches console.error, so this proves the pageerror listener
+  // works. If this fails, every zero-console-errors assertion in the suite
+  // is blind to the whole uncaught-exception class.
+  const collected = collectConsoleErrors(comfyPage.page)
+  await comfyPage.page.evaluate(() => {
+    setTimeout(() => {
+      throw new Error('cn-collector-self-check')
+    }, 0)
+  })
+  await expect
+    .poll(() =>
+      collected.errors.some((error) =>
+        error.includes('cn-collector-self-check')
+      )
+    )
+    .toBe(true)
+  collected.stop()
+})
+
+test('attribution self-check: a foreign-prompt terminal event cannot fail this run', async ({
+  comfyPage
+}) => {
+  test.setTimeout(30_000)
+  const objectInfo = await target.getObjectInfo(comfyPage.page)
+  test.skip(
+    !('PrimitiveInt' in objectInfo) || !('PreviewAny' in objectInfo),
+    'core Primitive/PreviewAny nodes unavailable on this backend'
+  )
+  await comfyPage.workflow.loadGraphData(
+    readWorkflow(assetPath('customNodes/core_primitive_preview_run.json'))
+  )
+  // Once the run's event tap starts filling, inject ONE terminal error under
+  // a prompt id this page never queued. The positive prompt-id filter must
+  // discard it; the pre-capture harness let the never-seen id through the
+  // seen-set and misclassified the run as EXECUTION_ERROR. This is the
+  // discriminating guard for the foreign-attribution bug class.
+  await comfyPage.page.evaluate(() => {
+    const timer = setInterval(() => {
+      const sink = (window as unknown as { __cnEvents?: object[] }).__cnEvents
+      if (!sink || sink.length === 0) return
+      sink.push({
+        type: 'execution_error',
+        prompt_id: 'cn-foreign-self-check',
+        exception_type: 'ForeignError',
+        node_id: '424242'
+      })
+      clearInterval(timer)
+    }, 25)
+  })
+  const result = await target.runWorkflow(comfyPage.page, {
+    expectedNodeIds: await nodeIdsByType(comfyPage.page, [
+      'PrimitiveInt',
+      'PreviewAny'
+    ]),
+    timeoutMs: 15000
+  })
+  expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
+  expect(result.error).toBeUndefined()
 })

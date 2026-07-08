@@ -38,14 +38,35 @@ export interface CustomNodeManifestEntry {
   cannotRunAlone?: string[]
 }
 
-function assertEntry(entry: CustomNodeManifestEntry, index: number): void {
+// Exported for the pure spec's validation cases; production callers go
+// through loadManifest.
+export function assertEntry(
+  entry: CustomNodeManifestEntry,
+  index: number
+): void {
   const missing: string[] = []
-  if (typeof entry.pack !== 'string' || entry.pack.length === 0)
-    missing.push('pack')
+  // CI installs the pack into custom_nodes/<pack>, and node attribution keys
+  // on that directory name via python_module - so pack must be a safe,
+  // plain path segment, not just non-empty.
+  if (
+    typeof entry.pack !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(entry.pack)
+  )
+    missing.push('pack (must be a plain path segment)')
   // CI clones from repo, so an empty value must fail here, not mid-clone.
-  // pin stays optional ("" = default branch head).
   if (typeof entry.repo !== 'string' || entry.repo.length === 0)
     missing.push('repo')
+  // The gate tests exactly what was verified, so pin is a required full
+  // commit SHA. CUSTOM_NODES_ALLOW_UNPINNED=1 is the one escape hatch,
+  // reserved for the planned pack-HEAD canary - never for the PR gate.
+  if (
+    !/^[0-9a-f]{40}$/.test(entry.pin ?? '') &&
+    !(
+      process.env.CUSTOM_NODES_ALLOW_UNPINNED === '1' &&
+      (entry.pin ?? '') === ''
+    )
+  )
+    missing.push('pin (full 40-char commit SHA required)')
   // workflow may be an empty string until the pack gains a run-tier fixture.
   if (typeof entry.workflow !== 'string') missing.push('workflow')
   // A run-tier row with no workflow would otherwise skip locally, leaving
