@@ -22,7 +22,7 @@ function setVote(next: 'up' | 'down'): void {
 </script>
 
 <template>
-  <div class="text-agent-fg-muted flex items-center gap-0.5">
+  <div class="text-agent-fg-subtle flex items-center gap-0.5">
     <button
       type="button"
       :aria-label="t('agent.helpful')"
