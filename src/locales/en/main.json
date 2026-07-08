@@ -3021,12 +3021,8 @@
         "label": "Auto-reload",
         "whenBelow": "when credits drop below",
         "monthlyBudget": "Monthly budget",
-        "resets": "Resets {date}",
-        "spent": "{amount} spent",
-        "leftOfBudget": "{left} left of {budget} budget",
-        "reloadsLeft": "{count} reload left | {count} reloads left",
-        "recentReload": "Recent reload: {date}",
-        "noRecentReload": "No reloads yet"
+        "percentSpent": "{percent}% spent",
+        "spentOfBudget": "{spent} of {budget}"
       },
       "badge": {
         "paused": "Paused",

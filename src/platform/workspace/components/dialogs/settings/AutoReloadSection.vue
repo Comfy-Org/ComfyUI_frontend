@@ -75,28 +75,25 @@
           </span>
         </p>
 
-        <div v-if="hasBudget" class="flex flex-col gap-2">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-muted-foreground">
-              {{ $t('workspacePanel.autoReload.tile.monthlyBudget') }}
-            </span>
-            <span class="text-muted-foreground">{{ resetsLabel }}</span>
-          </div>
-          <ProgressBar :value="budgetUsedFraction" />
-          <div class="flex items-start justify-between text-sm">
-            <span class="text-muted-foreground tabular-nums">
-              {{ spentLabel }}
-            </span>
-            <div class="flex flex-col items-end gap-0.5">
-              <span class="font-medium text-base-foreground tabular-nums">
-                {{ leftLabel }}
+        <template v-if="hasBudget">
+          <div class="h-px w-full bg-interface-stroke" />
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-muted-foreground">
+                {{ $t('workspacePanel.autoReload.tile.monthlyBudget') }}
               </span>
-              <span :class="cn('tabular-nums', reloadsLeftClass)">
-                {{ reloadsLeftLabel }}
+              <span :class="cn('tabular-nums', percentSpentClass)">
+                {{ percentSpentLabel }}
+              </span>
+            </div>
+            <ProgressBar :value="budgetUsedFraction" />
+            <div class="flex justify-end text-sm">
+              <span class="text-muted-foreground tabular-nums">
+                {{ budgetSpentLabel }}
               </span>
             </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
   </div>
@@ -114,17 +111,14 @@ import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
 import { useDialogService } from '@/services/dialogService'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { t, d, n: fmtNumber } = useI18n()
+const { t, n: fmtNumber } = useI18n()
 
 const {
   config,
-  cycleResetDate,
   isConfigured,
   isEnabled,
   hasBudget,
-  budgetLeftCents,
   budgetUsedFraction,
-  reloadsLeft,
   isPaused,
   isWarning,
   setEnabled
@@ -160,30 +154,22 @@ const badge = computed(() => {
 const reloadCreditsLabel = computed(() => fmtCredits(config.reloadCredits))
 const thresholdLabel = computed(() => fmtCredits(config.thresholdCredits))
 
-const resetsLabel = computed(() =>
-  t('workspacePanel.autoReload.tile.resets', {
-    date: d(cycleResetDate, { month: 'short', day: 'numeric' })
+const percentSpentLabel = computed(() =>
+  t('workspacePanel.autoReload.tile.percentSpent', {
+    percent: Math.round(budgetUsedFraction.value * 100)
   })
 )
-const spentLabel = computed(() =>
-  t('workspacePanel.autoReload.tile.spent', {
-    amount: fmtUsd(config.spentThisCycleCents)
-  })
-)
-const leftLabel = computed(() =>
-  t('workspacePanel.autoReload.tile.leftOfBudget', {
-    left: fmtUsd(budgetLeftCents.value),
-    budget: fmtUsd(config.monthlyBudgetCents ?? 0)
-  })
-)
-const reloadsLeftLabel = computed(() =>
-  t('workspacePanel.autoReload.tile.reloadsLeft', reloadsLeft.value ?? 0)
-)
-const reloadsLeftClass = computed(() =>
+const percentSpentClass = computed(() =>
   isPaused.value
     ? 'text-danger'
     : isWarning.value
       ? 'text-credit'
       : 'text-muted-foreground'
+)
+const budgetSpentLabel = computed(() =>
+  t('workspacePanel.autoReload.tile.spentOfBudget', {
+    spent: fmtUsd(config.spentThisCycleCents),
+    budget: fmtUsd(config.monthlyBudgetCents ?? 0)
+  })
 )
 </script>
