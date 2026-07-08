@@ -5,12 +5,10 @@ pieces cooperate, the decisions behind them, and the gotchas that shaped
 them. Companion docs: [README.md](README.md) (how to run it),
 [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md) (how to onboard a pack).
 
-Views in this document: system context (section 2), building blocks
-(section 4), the node-definition pipeline (section 6), the execution flow
-(section 7), the persistence check (section 8), event attribution
-(section 9), the evidence model (section 10), and the CI deployment view
-(section 13). Implementation symbols live in one place: the implementation
-map at the end (section 14).
+The document is organized as eight architecture views; the diagram map
+under "Reading paths" shows what question each answers and how they nest.
+Implementation symbols live in one place: the implementation map at the
+end (section 14).
 
 ## What / Why / How, in one minute
 
@@ -67,6 +65,42 @@ exemptions. Nothing is ever skipped; a skip fails the job.
   maps each red message to a cause; sections 7 and 10 show where in the pipeline it
   happened; section 12 gives symptom-first triage.
 
+How to read the diagrams: a rectangle is one step, named by its purpose; a
+diamond is a short question, drawn only where the flow genuinely forks; a
+check that cannot fork is a "Check:" step, not a diamond; a titled group
+is a thing with internal structure; mechanism detail lives in the prose
+under each diagram, not stacked inside boxes. The two oldest views (the
+evidence model and the CI view) predate this convention and pack a little
+more text into their boxes.
+
+The eight views are zoom levels of one mental model, not eight parallel
+pictures. Every arrow below names the element of the parent view that the
+child expands:
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 240}}}%%
+flowchart LR
+    L1["System context (section 2): who and what the suite touches"]
+    L8["CI deployment view (section 13): the order the test world is built in"]
+    L2["Building blocks (section 4): what the suite is made of"]
+    L3["Definition pipeline (section 6): where every check's expectations come from"]
+    L4["Execution flow (section 7): how a foreign node gets run safely"]
+    L5["Persistence check (section 8): how save and reload are proven"]
+    L6["Event attribution (section 9): when an arriving event may be believed"]
+    L7["Evidence model (section 10): how exceptions stay honest"]
+    L1 -->|"expands the CI arrow"| L8
+    L1 -->|"opens the suite boxes"| L2
+    L2 -->|"the Definition Normalizer service"| L3
+    L2 -->|"the Execution tier"| L4
+    L2 -->|"the Persistence tier"| L5
+    L2 -->|"the Evidence Ledgers box"| L7
+    L4 -->|"the collect-events step"| L6
+```
+
+The mount and wiring tiers have no diagram on purpose: each is a
+single-shot comparison with nothing to sequence, so they live as prose and
+tables in section 5.
+
 ## 1. What this suite proves, and deliberately does not
 
 For every node that the manifest's packs register on the backend,
@@ -102,21 +136,28 @@ behavior: this per-PR gate will not catch it, and does not claim to.
 Who and what the suite touches.
 
 ```mermaid
-flowchart TB
-    TEAM["Engineering team: consumes verdicts and the evidence ledgers"]
+%%{init: {"flowchart": {"wrappingWidth": 220}}}%%
+flowchart LR
     CIP["CI platform: runs the gate on every PR"]
-    SUITE["Custom-Node Regression Suite: manifest-driven verification of community node packs"]
+    PACKS["Community node packs: external code, installed at pinned versions"]
+    DRIVER["Suite test driver: puts every pack node through its create, wire, save, and submit checks"]
     FE["ComfyUI frontend: the system under test, running in a real browser"]
     BE["ComfyUI backend: real graph execution engine"]
-    PACKS["Community node packs: external code, installed at pinned versions"]
-    CIP -->|"builds the environment, triggers the suite"| SUITE
-    SUITE -->|"drives a real browser session: creates nodes, wires, saves, submits work"| FE
-    FE -->|"observations back: what mounted, what persisted, what executed, every error"| SUITE
-    FE <-->|"node definitions, prompts, execution events"| BE
-    PACKS -->|"python side installs into"| BE
+    SYN["Suite verdict synthesis: turns observations into per-node verdicts + exceptions"]
+    TEAM["Engineering team: consumes verdicts and the evidence ledgers"]
+    CIP -->|"builds the environment, triggers"| DRIVER
+    DRIVER -->|"drives a real browser session"| FE
+    FE <-->|"definitions, prompts, execution events"| BE
+    FE -->|"observations: mounts, persistence, execution, errors"| SYN
+    SYN --> TEAM
     PACKS -->|"frontend scripts load into"| FE
-    SUITE -->|"turns observations into per-node verdicts + mechanism-carrying exceptions"| TEAM
+    PACKS -->|"python side installs into"| BE
 ```
+
+The two "Suite" boxes are the same system, split so the flow reads one way:
+the driver puts the frontend through its paces, and verdict synthesis turns
+what came back into the per-node verdicts and mechanism-carrying exceptions
+the team consumes. Nothing flows backwards.
 
 The load-bearing property: the suite tests the same stack a user runs. The
 pack's own frontend scripts are active, the backend actually executes
@@ -142,17 +183,19 @@ services that support the tiers are listed in the table below it, because
 table than as crossing arrows.
 
 ```mermaid
-%%{init: {"flowchart": {"wrappingWidth": 500}}}%%
+%%{init: {"flowchart": {"wrappingWidth": 240}}}%%
 flowchart LR
-    MAN["Pack Manifest: one row per pack (source, pin, tiers, known-failure baseline)"]
+    MAN["Pack Manifest: source, pin, tiers, known-failure baseline per pack"]
     ORCH["Test Orchestrator: runs every tier against every pack"]
     subgraph TIERS ["Verification tiers (section 5)"]
         TM["Mount Completeness"]
         TP["Persistence"]
         TW["Wiring Compatibility"]
         TX["Execution"]
+        TM ~~~ TW
+        TP ~~~ TX
     end
-    EVID["Evidence Ledgers + Reconciler: every result collected; every exception carries its causal mechanism; lists cannot go stale"]
+    EVID["Evidence Ledgers + Reconciler: every result collected, every exception carries its mechanism, lists cannot go stale"]
     GATE["Gate verdict + evidence for the team"]
     MAN -->|"drives"| ORCH
     ORCH -->|"runs, per pack"| TIERS
@@ -223,49 +266,68 @@ still attributes every failure to the right node.
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 700}}}%%
 flowchart TD
-    CLASS["Classify each node: runnable on its own defaults / runnable with synthesized inputs / blocked, with the reason recorded"]
-    CLASS --> BATCH["Group runnable nodes into small batches: a failure stays isolated, and one submission carries many nodes instead of paying the round-trip per node"]
-    BATCH --> BUILD["Build a disposable test graph: node under test + synthetic producers for its inputs + an observation sink on its output"]
-    BUILD --> SUBMIT["Submit for real execution, guarded: a crash inside a pack's own script records as that node's failure, never a tier abort"]
-    SUBMIT --> OBSERVE["Observe execution events through the attribution filters: only THIS attempt, only nodes in THIS graph (section 9)"]
+    CLASS["Classify each node: what can it do with no hand-written fixtures?"]
+    CLASS --> RUND["runnable on its own defaults"]
+    CLASS --> RUNS["runnable with synthesized inputs"]
+    CLASS --> BLOCK["blocked: the reason is recorded"]
+    RUND --> BATCH["Group runnable nodes into small batches: a failure stays isolated, and one submission carries many nodes instead of paying the round-trip per node"]
+    RUNS --> BATCH
+    BLOCK --> REC
+    BLOCK ~~~ BATCH
+    BATCH --> TG
+    subgraph TG ["Build the batch's disposable test graph: one isolated chain per node"]
+        PROD["synthetic producers for each required input"] --> NUT["the node under test"]
+        NUT --> SINK["an observation sink on its output"]
+    end
+    TG --> SUBQ["Submit the assembled batch graph for real execution"]
+    SUBQ --> GUARD{"submission outcome?"}
+    GUARD -->|"crashed inside a pack's own script"| ERR
+    GUARD -->|"accepted"| OBSERVE["Collect the execution events as the graph runs, keeping only events that belong to this submission and name a node in this test graph (section 9)"]
     OBSERVE --> V{"outcome?"}
     V -->|"ran, output observed at the sink"| CLEAN["clean"]
     V -->|"ran, nothing arrived at the sink"| NOOUT["failure: data never flowed"]
     V -->|"error attributed to this graph"| ERR["failure: named node, named cause"]
-    V -->|"no response in time"| INT{"interrupt the engine: does the queue recover?"}
+    V -->|"no response in time"| TRIP["tripwire: interrupt the engine, then watch whether the queue drains"]
+    TRIP --> INT{"recovers?"}
     INT -->|"yes"| ERR
     INT -->|"no"| HUNG["engine wedged: stop the tier and name the batch as suspects; queued nodes are victims, not findings"]
     ERR --> BIS["re-run each batch member alone, so the offender names itself"]
     NOOUT --> BIS
     CLEAN --> REC
-    BIS --> REC["Reconcile with the known-failure baseline, in BOTH directions: an unlisted failure fails the gate, and a listed node that now passes also fails it"]
+    BIS --> REC["Reconcile with the known-failure baseline, in BOTH directions: an unlisted failure fails the gate; a listed entry that now passes, or can no longer run at all, also fails it. Exclusion ledgers are stale-guarded separately"]
 ```
 
-Synthesized inputs are produced by a small set of self-sufficient core
+Synthesized inputs are produced by a small set of self-sufficient producer
 nodes (an empty image, an empty latent, a solid mask, primitive values), so
 "runnable with synthesized inputs" needs no per-node authoring. The
 observation sink is what upgrades "it finished" to "its output actually
 arrived somewhere."
 
+The submission guard is why a crash inside a pack's own script can never
+abort the tier: the throw is caught in the page, recorded as that node's
+failure with the client error text, and the run moves on.
+
 ## 8. The persistence check
 
 Why it is staged: the DOM renderer's widget components react to creation
 and reload on their own schedule, and a check that snapshots synchronously
-would compare state those reactions never touched.
+would compare state those reactions never touched. The whole pass runs once
+per renderer.
 
 ```mermaid
-sequenceDiagram
-    participant T as Persistence tier
-    participant UI as Frontend (per renderer)
-    T->>UI: create every node of the pack
-    T->>UI: let the UI settle
-    T->>UI: snapshot, reload from the snapshot, snapshot again
-    T->>T: strict compare: nothing lost, nothing changed.<br/>Additions the application itself makes are legal
-    T->>UI: write a user-like non-default value into every plain widget
-    T->>UI: verify every write sticks, let the UI settle
-    T->>UI: reload again
-    T->>T: written values must survive wherever the node's<br/>shape stayed stable (a changed dropdown can<br/>legally rebuild a dynamic node's widgets)
+%%{init: {"flowchart": {"wrappingWidth": 240}}}%%
+flowchart LR
+    P1["Stand up: create every node of the pack, let the UI settle"]
+    P2["Round-trip: snapshot, reload from the snapshot, snapshot again"]
+    P3["Check: nothing lost, nothing changed; additions the application itself makes are legal"]
+    P4["Probe: write a user-like non-default value into every plain widget, verify every write sticks"]
+    P5["Round-trip again: snapshot, reload from the snapshot, snapshot again"]
+    P6["Check: written values survive wherever the node's shape stayed stable (a changed dropdown can legally rebuild a dynamic node's widgets)"]
+    P1 --> P2 --> P3 --> P4 --> P5 --> P6
 ```
+
+Between phases the rig yields to the UI so renderer effects flush before
+the next snapshot; those settle points are what makes the staging real.
 
 Widgets whose values the pack's own script owns (canonicalized references,
 embedded editors) are exempt from probe writes, each with a recorded
@@ -276,20 +338,27 @@ choke on the probe.
 
 Real execution reports back over an asynchronous event stream, and the
 stream can mislead in two specific ways. Both produced real misattributed
-failures before the filters existed.
+failures before the filters existed. Every arriving event passes the same
+two questions before it may count as evidence:
 
 ```mermaid
-sequenceDiagram
-    participant H as Execution Harness
-    participant S as Event stream
-    Note over S: hazard 1: an event from a PREVIOUS<br/>attempt arrives late, during this one
-    Note over S: hazard 2: a retried submission creates a<br/>duplicate attempt whose errors arrive<br/>under a fresh identity
-    H->>S: record every attempt identity seen so far
-    H->>S: submit this attempt
-    S-->>H: events (this attempt's, plus strays)
-    H->>H: keep only events that belong to this attempt<br/>AND that name a node in this test graph
-    Note over H: node identities are never reused within a<br/>session, so graph membership is decisive
+%%{init: {"flowchart": {"wrappingWidth": 280}}}%%
+flowchart TD
+    EV["an event arrives on the execution stream, while this attempt runs"]
+    EV --> Q1{"from THIS attempt?"}
+    Q1 -->|"no: its identity was already seen on an earlier attempt"| DROP["dropped: a stray cannot blame any node in this run"]
+    Q1 -->|"yes"| Q2{"names a node in THIS test graph?"}
+    Q2 -->|"no: a retried duplicate under a fresh identity still names an earlier graph's nodes"| DROP
+    Q2 -->|"yes"| KEEP["kept: evidence for exactly that node"]
 ```
+
+Both no-answers are checkable, not hopeful. The harness records every
+attempt identity it has ever seen, so a late event from an observed
+attempt identifies itself at the first question. A duplicate arriving
+under a never-seen identity passes the first question by construction;
+the second question is what defeats it, because node identities are never
+reused within a session, so it can only name an earlier graph's nodes.
+Membership is decisive.
 
 ## 10. The evidence model
 
