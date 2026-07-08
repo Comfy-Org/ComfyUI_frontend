@@ -166,6 +166,7 @@
         :variant="isOutOfCredits ? 'inverted' : 'tertiary'"
         size="lg"
         class="w-full font-normal"
+        :disabled="isPaused"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
@@ -209,6 +210,7 @@ const { locale, t } = useI18n()
 
 const {
   subscription,
+  subscriptionStatus,
   balance,
   isActiveSubscription,
   isFreeTier,
@@ -230,6 +232,11 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
 
+// Paused (failed payment): the plan still exists but refills are frozen, so the
+// tile drops the out-of-credits messaging, shows an empty bar, and disables the
+// top-up action — adding credits doesn't help until payment is resolved.
+const isPaused = computed(() => subscriptionStatus.value === 'paused')
+
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
   if (!tier) return DEFAULT_TIER_KEY
@@ -242,12 +249,13 @@ const monthlyTotalCredits = computed<number | null>(() => {
   return getTierCredits(tierKey.value)
 })
 
-const usage = computed(() =>
-  computeMonthlyUsage(
+const usage = computed(() => {
+  const base = computeMonthlyUsage(
     monthlyBonusCreditsValue.value,
     monthlyTotalCredits.value ?? 0
   )
-)
+  return isPaused.value ? { ...base, used: 0, usedFraction: 0 } : base
+})
 
 const refillsDateShort = computed(() => {
   const raw = subscription.value?.renewalDate
@@ -260,11 +268,12 @@ const refillsDateShort = computed(() => {
 
 const hasRefillsDate = computed(() => refillsDateShort.value !== '')
 
-const refillsLabel = computed(() =>
-  hasRefillsDate.value
+const refillsLabel = computed(() => {
+  if (isPaused.value) return t('subscription.refillPaused')
+  return hasRefillsDate.value
     ? t('subscription.refillsDate', { date: refillsDateShort.value })
     : t('subscription.refillsNextCycle')
-)
+})
 
 const formatCreditCount = (value: number) =>
   formatCredits({
@@ -316,6 +325,7 @@ const showActionButton = computed(
 
 const isMonthlyDepleted = computed(
   () =>
+    !isPaused.value &&
     showBar.value &&
     !isLoadingBalance.value &&
     balance.value != null &&
