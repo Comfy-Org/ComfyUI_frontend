@@ -356,11 +356,9 @@ function processWidget(
   const liveWidget = live?.widget
   const widgetType = liveWidget?.type ?? widgetState.type
   const options: IWidgetOptions = {
+    advanced: liveWidget?.advanced ?? renderState?.advanced,
     ...(widgetState.options ?? {}),
     ...(liveWidget?.options ?? {})
-  }
-  if (options.advanced === undefined) {
-    options.advanced = liveWidget?.advanced ?? renderState?.advanced
   }
   if (!shouldRenderAsVue({ type: widgetType, options })) return null
 
