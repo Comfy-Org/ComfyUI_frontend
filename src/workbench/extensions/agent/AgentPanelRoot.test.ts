@@ -306,14 +306,25 @@ describe('AgentPanelRoot history', () => {
   it('populates Chat History from the server thread list on mount', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.endsWith('/api/agent/threads')) {
+        // Live envelope shape: {threads, pagination}; title is "" until the server
+        // names the thread, with the first prompt in preview.
         return new Response(
-          JSON.stringify([
-            {
-              id: 'th-9',
-              title: 'build a text to image graph',
-              updated_at: '2026-07-07T10:00:00Z'
-            }
-          ]),
+          JSON.stringify({
+            threads: [
+              {
+                id: 'th-9',
+                title: 'build a text to image graph',
+                last_message_at: '2026-07-07T10:00:00Z'
+              },
+              {
+                id: 'th-10',
+                title: '',
+                preview: 'make a duck',
+                last_message_at: '2026-07-07T09:00:00Z'
+              }
+            ],
+            pagination: { page: 1 }
+          }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
@@ -327,22 +338,31 @@ describe('AgentPanelRoot history', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     const history = useAgentChatHistoryStore()
-    await vi.waitFor(() => expect(history.sessions).toHaveLength(1))
+    await vi.waitFor(() => expect(history.sessions).toHaveLength(2))
     expect(history.sessions[0]).toMatchObject({
       id: 'th-9',
       title: 'build a text to image graph'
+    })
+    // An unnamed thread falls back to its preview for the row title.
+    expect(history.sessions[1]).toMatchObject({
+      id: 'th-10',
+      title: 'make a duck'
     })
   })
 
   it('marks the adopted thread as the current session', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        async () =>
-          new Response('[]', {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          })
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/agent/threads')
+          ? new Response('{"threads":[]}', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
+          : new Response('[]', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
       )
     )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
