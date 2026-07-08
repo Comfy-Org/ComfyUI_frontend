@@ -87,6 +87,7 @@ function createMockNodeWithPriceBadge(
   return Object.assign(baseNode, {
     widgets: mockWidgets,
     inputs: mockInputs,
+    isInputConnected: (slot: number) => mockInputs[slot]?.link != null,
     constructor: {
       nodeData: {
         name: nodeTypeName,
@@ -119,6 +120,7 @@ function createMockNode(
   return Object.assign(baseNode, {
     widgets,
     inputs,
+    isInputConnected: (slot: number) => inputs[slot]?.link != null,
     constructor: { nodeData }
   })
 }

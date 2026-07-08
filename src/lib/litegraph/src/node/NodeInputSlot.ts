@@ -9,6 +9,8 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import { inputHasLink, inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -16,7 +18,8 @@ import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
-  link: LinkId | null
+  /** @deprecated Derived from the link store via a warning prototype getter; never written. */
+  declare readonly link?: LinkId | null
   alwaysVisible?: boolean
 
   get isWidgetInputSlot(): boolean {
@@ -42,12 +45,17 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     slot: OptionalProps<INodeInputSlot, 'boundingRect'>,
     node: LGraphNode
   ) {
-    super(slot, node)
-    this.link = slot.link
+    // Serialized inputs carry a legacy link mirror; strip it so the base
+    // ctor's Object.assign cannot collide with the deprecated prototype
+    // getter (assigning a getter-only property throws in strict mode).
+    const { link: _legacyLink, ...rest } = slot
+    super(rest, node)
   }
 
   override get isConnected(): boolean {
-    return this.link != null
+    const { graph } = this._node
+    if (!graph) return false
+    return inputHasLink(graph, this._node.id, this._node.inputs.indexOf(this))
   }
 
   override isValidTarget(
@@ -81,10 +89,40 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   }
 
   override toJSON(): INodeInputSlot {
+    const { graph } = this._node
     return {
       ...super.toJSON(),
-      link: this.link,
+      link: graph
+        ? (inputLinkId(graph, this._node.id, this._node.inputs.indexOf(this)) ??
+          null)
+        : null,
       widget: this.widget
     }
   }
 }
+
+/**
+ * Deprecation telemetry for extensions that still touch `input.link`.
+ * Reads return the store-derived link id; writes fire telemetry and are
+ * ignored, since the store cannot be mutated through the mirror.
+ * First-party code uses the slotLinks helpers.
+ */
+Object.defineProperty(NodeInputSlot.prototype, 'link', {
+  get(this: NodeInputSlot): LinkId | null {
+    warnDeprecated(
+      'input.link is deprecated. Read connectivity via node.isInputConnected(slot) / node.getInputLink(slot); mutate via node.connect() / node.disconnectInput().'
+    )
+    const { graph } = this._node
+    if (!graph) return null
+    return (
+      inputLinkId(graph, this._node.id, this._node.inputs.indexOf(this)) ?? null
+    )
+  },
+  set(this: NodeInputSlot): void {
+    warnDeprecated(
+      'Assignment to input.link is deprecated and has no effect; connectivity is derived from the link store. Mutate via node.connect() / node.disconnectInput().'
+    )
+  },
+  configurable: true,
+  enumerable: false
+})

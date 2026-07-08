@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -8,6 +8,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import type { HasInitialMinSize } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia({ stubActions: false }))
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
@@ -60,7 +61,9 @@ function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
   const node2 = testNode()
   node2.addOutput('out', '*')
   graph.add(node2)
-  node2.connect(0, node, inputIndex)
+  const link = node2.connect(0, node, inputIndex)
+  if (!link) throw new Error(`failed to connect input ${inputIndex}`)
+  return link
 }
 function testNode() {
   const node: LGraphNode & Partial<HasInitialMinSize> = new LGraphNode('test')
@@ -108,6 +111,66 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(4)
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
+  })
+  test('Shrinking rebuild keeps an unrelated input connected at its new slot', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE', 'IMAGE'], ['IMAGE']])
+    graph.add(node)
+    addNodeInput(node, { name: 'other', isOptional: false, type: 'IMAGE' })
+    node.widgets[0].value = '1'
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0',
+      '0.0.0.0',
+      '0.0.0.1',
+      'other'
+    ])
+    const groupLink = connectInput(node, 1, graph)
+    const removedLink = connectInput(node, 2, graph)
+    const otherLink = connectInput(node, 3, graph)
+
+    node.widgets[0].value = '2'
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0',
+      '0.0.0.0',
+      'other'
+    ])
+
+    expect(node.isInputConnected(2)).toBe(true)
+    expect(node.getInputLink(2)?.id).toBe(otherLink.id)
+    expect(otherLink.target_slot).toBe(2)
+    expect(node.getInputLink(1)?.id).toBe(groupLink.id)
+    expect(groupLink.target_slot).toBe(1)
+    expect(graph.getLink(removedLink.id)).toBeUndefined()
+  })
+  test('Growing rebuild keeps an unrelated input connected at its new slot', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE'], ['IMAGE', 'IMAGE']])
+    graph.add(node)
+    addNodeInput(node, { name: 'other', isOptional: false, type: 'IMAGE' })
+    node.widgets[0].value = '1'
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0',
+      '0.0.0.0',
+      'other'
+    ])
+    const groupLink = connectInput(node, 1, graph)
+    const otherLink = connectInput(node, 2, graph)
+
+    node.widgets[0].value = '2'
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0',
+      '0.0.0.0',
+      '0.0.0.1',
+      'other'
+    ])
+
+    expect(node.isInputConnected(3)).toBe(true)
+    expect(node.getInputLink(3)?.id).toBe(otherLink.id)
+    expect(otherLink.target_slot).toBe(3)
+    expect(node.getInputLink(1)?.id).toBe(groupLink.id)
+    expect(groupLink.target_slot).toBe(1)
   })
   test('Dynamically added widgets have tooltips', () => {
     const node = testNode()
@@ -285,5 +348,12 @@ describe('Autogrow', () => {
       '2.b2',
       'aa'
     ])
+    for (const slot of [0, 1, 3, 4]) {
+      expect.soft(newNode.isInputConnected(slot)).toBe(true)
+      expect.soft(newNode.getInputLink(slot)?.target_slot).toBe(slot)
+    }
+    for (const slot of [2, 5, 6]) {
+      expect.soft(newNode.isInputConnected(slot)).toBe(false)
+    }
   })
 })

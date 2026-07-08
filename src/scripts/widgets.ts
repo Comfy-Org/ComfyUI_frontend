@@ -182,8 +182,9 @@ export function addValueControlWidgets(
   function applyWidgetControl(isPartialExecution: boolean | undefined) {
     if (
       node.inputs?.some(
-        (input) =>
-          input.widget?.name === targetWidget.name && input.link != null
+        (input, index) =>
+          input.widget?.name === targetWidget.name &&
+          node.isInputConnected(index)
       )
     )
       return

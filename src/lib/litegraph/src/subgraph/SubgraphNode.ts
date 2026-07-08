@@ -580,13 +580,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         continue
       }
 
-      const { inputNode } = link.resolve(this.subgraph)
+      const { inputNode, input: targetInput } = link.resolve(this.subgraph)
       if (!inputNode) {
         console.warn('Failed to resolve inputNode', link, this)
         continue
       }
 
-      const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
       if (!targetInput) {
         console.warn('Failed to find corresponding input', link, inputNode)
         continue

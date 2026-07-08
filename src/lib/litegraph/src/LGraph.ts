@@ -15,7 +15,12 @@ import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
-import { outputHasLinks, outputLinks } from './node/slotLinks'
+import {
+  inputHasLink,
+  inputLinkId,
+  outputHasLinks,
+  outputLinks
+} from './node/slotLinks'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -25,7 +30,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
   groupLinksByTuple,
   purgeOrphanedLinks,
-  repairInputLinks,
+  realignInputLinkSlots,
   selectSurvivorLink
 } from './linkDeduplication'
 
@@ -764,8 +769,8 @@ export class LGraph
       // num of input connections
       let num = 0
       if (node.inputs) {
-        for (const input of node.inputs) {
-          if (input?.link != null) {
+        for (const [slot] of node.inputs.entries()) {
+          if (inputHasLink(this, node.id, slot)) {
             num += 1
           }
         }
@@ -1170,8 +1175,8 @@ export class LGraph
 
     // disconnect inputs
     if (inputs) {
-      for (const [i, slot] of inputs.entries()) {
-        if (slot.link != null) node.disconnectInput(i, true)
+      for (const [i] of inputs.entries()) {
+        if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
       }
     }
 
@@ -1761,7 +1766,6 @@ export class LGraph
       const keepId = selectSurvivorLink(ids, node)
 
       purgeOrphanedLinks(ids, keepId, this)
-      repairInputLinks(ids, keepId, node)
     }
   }
 
@@ -2146,7 +2150,7 @@ export class LGraph
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
+        const outerLinkId = inputLinkId(this, subgraphNode.id, link.origin_slot)
         if (!outerLinkId) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2716,6 +2720,12 @@ export class LGraph
       // This repairs corrupted data where extra link objects were created
       // without proper cleanup of the previous connection.
       this._removeDuplicateLinks()
+
+      // Node configure() overrides may have reordered serialized inputs in
+      // place to match current node definitions; re-key links to the slots
+      // that reference them. Uses nodeDataMap: the effective (possibly
+      // deduplicated-clone) data nodes were actually configured from.
+      realignInputLinkSlots(this, nodeDataMap.values())
 
       // groups
       this._groups.length = 0

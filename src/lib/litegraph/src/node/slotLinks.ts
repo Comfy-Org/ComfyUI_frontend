@@ -6,10 +6,38 @@ import type { LGraph } from '../LGraph'
 import type { LLink } from '../LLink'
 
 /**
- * Store-backed reads over the links leaving a node's output slot.
- * These replace the `output.links[]` mirror: the link store is the source
- * of truth, and floating links are never included.
+ * Store-backed reads over the links attached to a node's slots.
+ * These replace the `output.links[]` / `input.link` mirrors: the link
+ * store is the source of truth, and floating links are never included.
  */
+
+/** True when a link targets the input slot. */
+export function inputHasLink(
+  graph: Pick<LGraph, 'rootGraph'>,
+  nodeId: NodeId,
+  slot: number
+): boolean {
+  return useLinkStore().isInputSlotConnected(graph.rootGraph.id, nodeId, slot)
+}
+
+/** Id of the link targeting an input slot, if any. */
+export function inputLinkId(
+  graph: Pick<LGraph, 'rootGraph'>,
+  nodeId: NodeId,
+  slot: number
+): LinkId | undefined {
+  return useLinkStore().getInputSlotLink(graph.rootGraph.id, nodeId, slot)?.id
+}
+
+/** The link targeting an input slot, resolved in the owning graph. */
+export function inputLink(
+  graph: LGraph,
+  nodeId: NodeId,
+  slot: number
+): LLink | undefined {
+  const id = inputLinkId(graph, nodeId, slot)
+  return id === undefined ? undefined : graph.getLink(id)
+}
 
 /** True when at least one link leaves the output slot. */
 export function outputHasLinks(

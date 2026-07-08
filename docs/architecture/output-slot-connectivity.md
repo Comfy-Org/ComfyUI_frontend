@@ -142,10 +142,20 @@ the design-standards check (open question 3) picks it. Threading a
 consumer. `compatible` stays driven by the existing drag state
 (`useSlotLinkDragUIState`), which this phase leaves alone.
 
-## Decision 6: Delete the mirror (implemented)
+## Decision 6: Delete the mirrors (implemented; extended to `input.link`)
 
 The runtime `output.links[]` field and all nine of its write sites are
-deleted. The store is the single source; litegraph internals read through
+deleted. The same recipe has since been applied to `input.link`: the
+field is a deprecated warning getter, litegraph and app code read through
+the slotLinks input helpers (`inputHasLink`, `inputLinkId`, `inputLink`)
+or `node.isInputConnected` / `node.getInputLink`, serialization derives
+`inputs[].link` from the store, and the mirror-carried association
+shuffles were reworked — `fixLinkInputSlots` consumes the serialized
+graph data, dynamicWidgets' group rebuilds carry slot→link association
+in a module-scoped WeakMap refreshed from the store, and link
+deduplication selects survivors from the store registration (the
+`repairInputLinks` mirror repair is gone; the derived view cannot be
+wrong). The store is the single source; litegraph internals read through
 the pure helpers in `node/slotLinks.ts` (`outputHasLinks`,
 `outputLinkIds`, `outputLinks`), and `NodeOutputSlot.isConnected`,
 `serialize`, and `configure` derive from the store. Details:
@@ -164,10 +174,31 @@ the pure helpers in `node/slotLinks.ts` (`outputHasLinks`,
   `slotFloatingLinks` scan.
 - **Extension compat = deprecation telemetry, not compatibility.** A
   read-only prototype getter on `NodeOutputSlot` returns a fresh
-  store-derived `LinkId[] | null` and fires `warnDeprecated`. There is no
-  setter, so extension writes throw in strict mode. `INodeOutputSlot`
-  keeps `links` as `@deprecated readonly` so `'links' in slot`
-  discriminants still compile and hold at runtime via the prototype.
+  store-derived `LinkId[] | null` and fires `warnDeprecated`. Writes fire
+  their own `warnDeprecated` naming the replacement APIs
+  (`node.connect()` / `node.disconnectOutput()`) and are otherwise
+  ignored — the store stays authoritative and legacy writers degrade
+  gracefully instead of crashing. A bare accessor-only property would
+  instead throw an unactionable `TypeError` in strict mode.
+  `INodeOutputSlot` keeps `links` as `@deprecated readonly` so
+  `'links' in slot` discriminants still compile and hold at runtime via
+  the prototype. The mirror keys are non-enumerable: `{ ...slot }`,
+  `Object.assign({}, slot)`, and `Object.keys(slot)` do not carry
+  `link` / `links` (use the store queries to snapshot connectivity);
+  `JSON.stringify` still emits them via `toJSON`. `addInput` / `addOutput`
+  drop a stale `link` / `links` key from `extra_info` instead of letting
+  `Object.assign` collide with the accessor — the store is not consulted
+  or mutated by such values.
+- **Duck-typed slots are upgraded in place.** `_setConcreteSlots` writes
+  the concrete `NodeInputSlot` / `NodeOutputSlot` wrappers back into
+  `node.inputs` / `node.outputs`. The concrete classes resolve their slot
+  index by identity (`inputs.indexOf(this)`), so a wrapper that is not
+  the array entry would permanently read as disconnected. Plain-object
+  slots pushed directly into the arrays are therefore upgraded at the
+  next concretisation (`configure`, paste/convert paths, every canvas
+  draw); until then their stale `link` value is dead data. Extensions
+  should use `node.addInput()` / `node.addOutput()` instead of pushing
+  literals.
 - **Serialized-data operators are untouched.** `linkFixer` (serialized
   branch), `migrateReroute`, and `unpackSubgraph`'s pre-configure strip
   operate on the wire format, which still carries `links`.
@@ -196,7 +227,6 @@ sites, and field deletion.
 
 Out of scope, each a piece of the deferred `SlotConnection` phase:
 
-- Deleting the `input.link` mirror field (same recipe as Decision 6).
 - Slot entity extraction: `SlotIdentity`, `SlotVisual`, and retiring the
   `NodeInputSlot` / `NodeOutputSlot` class instances and their
   `shallowReactive` graft.

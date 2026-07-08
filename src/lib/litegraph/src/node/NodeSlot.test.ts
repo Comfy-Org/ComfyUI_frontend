@@ -34,6 +34,7 @@ describe('NodeSlot', () => {
     })
 
     it('removes pos from widget input slots', () => {
+      const node = new LGraphNode('test')
       // Minimal slot for serialization test - boundingRect is calculated at runtime, not serialized
       const widgetInputSlot: INodeInputSlot = {
         name: 'test-id',
@@ -44,11 +45,12 @@ describe('NodeSlot', () => {
         boundingRect
       }
 
-      const serialized = inputAsSerialisable(widgetInputSlot)
+      const serialized = inputAsSerialisable(widgetInputSlot, node, 0)
       expect(serialized).not.toHaveProperty('pos')
     })
 
     it('preserves pos for non-widget input slots', () => {
+      const node = new LGraphNode('test')
       const normalSlot: INodeInputSlot = {
         name: 'test-id',
         type: 'STRING',
@@ -56,11 +58,12 @@ describe('NodeSlot', () => {
         link: null,
         boundingRect
       }
-      const serialized = inputAsSerialisable(normalSlot)
+      const serialized = inputAsSerialisable(normalSlot, node, 0)
       expect(serialized).toHaveProperty('pos')
     })
 
     it('preserves only widget name during serialization', () => {
+      const node = new LGraphNode('test')
       // Extra widget properties simulate real data that should be stripped during serialization
       const widgetInputSlot: INodeInputSlot = {
         name: 'test-id',
@@ -73,7 +76,7 @@ describe('NodeSlot', () => {
         }
       }
 
-      const serialized = inputAsSerialisable(widgetInputSlot)
+      const serialized = inputAsSerialisable(widgetInputSlot, node, 0)
       expect(serialized.widget).toEqual({ name: 'test-widget' })
       expect(serialized.widget).not.toHaveProperty('type')
       expect(serialized.widget).not.toHaveProperty('value')

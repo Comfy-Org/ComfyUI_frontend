@@ -84,9 +84,8 @@ app.registerExtension({
         let inputNode = null
         while (currentNode) {
           updateNodes.unshift(currentNode)
-          const linkId = currentNode.inputs[0].link
-          if (linkId !== null) {
-            const link = graph.links[linkId]
+          if (currentNode.isInputConnected(0)) {
+            const link = currentNode.getInputLink(0)
             if (!link) return
             const node = graph.getNodeById(link.origin_id)
             if (!node) return
@@ -202,11 +201,9 @@ app.registerExtension({
           }
         }
 
-        if (inputNode?.inputs?.[0]?.link) {
-          const link = graph.links[inputNode.inputs[0].link]
-          if (link) {
-            link.color = color
-          }
+        const inputNodeLink = inputNode?.getInputLink(0)
+        if (inputNodeLink) {
+          inputNodeLink.color = color
         }
       }
 

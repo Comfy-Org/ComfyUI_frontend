@@ -124,7 +124,6 @@ import {
 import {
   executeWidgetsCallback,
   createNode,
-  fixLinkInputSlots,
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
@@ -863,8 +862,6 @@ export class ComfyApp {
       }
 
       try {
-        fixLinkInputSlots(this)
-
         // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
         triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 

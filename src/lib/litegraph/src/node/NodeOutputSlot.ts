@@ -105,9 +105,10 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 }
 
 /**
- * Deprecation telemetry for extensions that still read `output.links`.
- * Returns a fresh store-derived array; there is deliberately no setter, so
- * writes throw in strict mode. First-party code uses the slotLinks helpers.
+ * Deprecation telemetry for extensions that still touch `output.links`.
+ * Reads return a fresh store-derived array; writes fire telemetry and are
+ * ignored, since the store cannot be mutated through the mirror.
+ * First-party code uses the slotLinks helpers.
  */
 Object.defineProperty(NodeOutputSlot.prototype, 'links', {
   get(this: NodeOutputSlot): readonly LinkId[] | null {
@@ -122,6 +123,11 @@ Object.defineProperty(NodeOutputSlot.prototype, 'links', {
       this._node.outputs.indexOf(this)
     )
     return ids.length ? Object.freeze(ids) : null
+  },
+  set(this: NodeOutputSlot): void {
+    warnDeprecated(
+      'Assignment to output.links is deprecated and has no effect; connectivity is derived from the link store. Mutate via node.connect() / node.disconnectOutput().'
+    )
   },
   configurable: true,
   enumerable: false

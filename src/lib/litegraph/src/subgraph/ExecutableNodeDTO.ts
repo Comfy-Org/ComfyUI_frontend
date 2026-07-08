@@ -1,4 +1,4 @@
-import { toLinkId } from '@/types/linkId'
+import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -112,8 +112,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Set the internal ID of the DTO
     this._id = [...this.subgraphNodePath, this.node.id].join(':')
     this.graph = node.graph
-    this.inputs = this.node.inputs.map((x) => ({
-      linkId: x.link == null ? null : toLinkId(x.link),
+    this.inputs = this.node.inputs.map((x, index) => ({
+      linkId: inputLinkId(node.graph!, node.id, index) ?? null,
       name: x.name,
       type: x.type
     }))
@@ -184,7 +184,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         )
 
       // Nothing connected
-      const linkId = subgraphNodeInput.link
+      const linkId =
+        inputLinkId(subgraphNode.graph!, subgraphNode.id, link.origin_slot) ??
+        null
       if (linkId == null) {
         const id = subgraphNodeInput.widgetId
         if (!id) return

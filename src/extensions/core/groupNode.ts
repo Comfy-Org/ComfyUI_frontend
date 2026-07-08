@@ -921,9 +921,7 @@ export class GroupNodeHandler {
         for (const innerInputId in map) {
           const groupSlotId = map[Number(innerInputId)]
           if (groupSlotId == null) continue
-          const slot = node.inputs[groupSlotId]
-          if (slot.link == null) continue
-          const link = app.rootGraph.links[slot.link]
+          const link = node.getInputLink(groupSlotId)
           if (!link) continue
           const originNode = app.rootGraph.getNodeById(link.origin_id)
           originNode?.connect(link.origin_slot, newNode, +innerInputId)

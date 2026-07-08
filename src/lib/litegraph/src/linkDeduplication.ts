@@ -1,8 +1,11 @@
+import { toLinkId } from '@/types/linkId'
 import { registerLinkTopology } from './LLink'
+import { inputLinkId } from './node/slotLinks'
 
 import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
+import type { ISerialisedNode } from './types/serialisation'
 
 /** Generates a unique string key for a link's connection tuple. */
 function linkTupleKey(link: LLink): string {
@@ -31,12 +34,11 @@ export function selectSurvivorLink(
   ids: LinkId[],
   node: LGraphNode | null
 ): LinkId {
-  if (!node) return ids[0]
+  if (!node?.graph) return ids[0]
 
-  for (const input of node.inputs ?? []) {
-    if (!input) continue
-    const match = ids.find((id) => input.link === id)
-    if (match != null) return match
+  for (const [index] of (node.inputs ?? []).entries()) {
+    const registered = inputLinkId(node.graph, node.id, index)
+    if (registered != null && ids.includes(registered)) return registered
   }
   return ids[0]
 }
@@ -66,20 +68,26 @@ export function purgeOrphanedLinks(
   if (survivor) registerLinkTopology(graph, survivor)
 }
 
-/** Ensures input.link on the target node points to the surviving link. */
-export function repairInputLinks(
-  ids: LinkId[],
-  keepId: LinkId,
-  node: LGraphNode | null
+/**
+ * Re-points each link's `target_slot` at the index of the serialized input
+ * that references it. Node `configure()` overrides may reorder a node's
+ * serialized inputs in place to match the current node definition (e.g.
+ * widget-to-input conversions, Comfy-Org/ComfyUI_frontend#3348), invalidating
+ * the slot indices stored on links.
+ *
+ * @param graph The graph whose links to realign
+ * @param nodesData The serialized node data the graph's nodes were configured
+ * from, after any in-place input reordering by node `configure()` overrides
+ */
+export function realignInputLinkSlots(
+  graph: LGraph,
+  nodesData: Iterable<ISerialisedNode>
 ): void {
-  if (!node) return
-
-  const duplicateIds = new Set(ids)
-
-  for (const input of node.inputs ?? []) {
-    if (input?.link == null || input.link === keepId) continue
-    if (duplicateIds.has(input.link)) {
-      input.link = keepId
+  for (const nodeData of nodesData) {
+    for (const [slot, input] of (nodeData.inputs ?? []).entries()) {
+      if (input.link == null) continue
+      const link = graph._links.get(toLinkId(input.link))
+      if (link && link.target_slot !== slot) link.target_slot = slot
     }
   }
 }

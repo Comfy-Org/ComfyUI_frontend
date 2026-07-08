@@ -75,8 +75,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isImageNode: vi.fn(),
   isVideoNode: vi.fn(),
   isAudioNode: vi.fn(),
-  executeWidgetsCallback: vi.fn(),
-  fixLinkInputSlots: vi.fn()
+  executeWidgetsCallback: vi.fn()
 }))
 
 vi.mock('@/stores/apiKeyAuthStore', () => ({

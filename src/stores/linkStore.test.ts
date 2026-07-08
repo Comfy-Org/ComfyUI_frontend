@@ -80,19 +80,31 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
   })
 
-  it('reports a lost placement when a target moves onto an occupied slot', () => {
+  it('a target move onto an occupied slot is authoritative', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
     const mover = link(2, 5, 1, 9, 3)
     store.registerLink(graphA, mover)
 
-    expect(
-      store.updateEndpoint(graphA, mover, { targetSlot: 2 })
-    ).toBeUndefined()
+    expect(store.updateEndpoint(graphA, mover, { targetSlot: 2 })).toBeDefined()
 
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(2))
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
     expect(mover.targetSlot).toBe(2)
+  })
+
+  it('keeps both links registered across a pairwise slot swap', () => {
+    const store = useLinkStore()
+    const first = link(1, 5, 0, 9, 0)
+    const second = link(2, 5, 1, 9, 1)
+    store.registerLink(graphA, first)
+    store.registerLink(graphA, second)
+
+    store.updateEndpoint(graphA, first, { targetSlot: 1 })
+    store.updateEndpoint(graphA, second, { targetSlot: 0 })
+
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 0)?.id).toBe(toLinkId(2))
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 1)?.id).toBe(toLinkId(1))
   })
 
   it('never answers target queries from floating links', () => {

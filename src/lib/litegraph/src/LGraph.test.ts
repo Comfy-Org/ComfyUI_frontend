@@ -1004,19 +1004,21 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.size).toBe(1)
     expect(graph._links.has(validLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
-    expect(target.inputs[1].link).toBe(validLinkId)
+    const store = useLinkStore()
+    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+      validLinkId
+    )
   })
 
-  it('repairs input.link when it points to a removed duplicate', () => {
+  it('derives input.link from the surviving registration after dedup', () => {
     const { graph, source, target } = createConnectedGraph()
 
     const dupLink = injectDuplicateLink(graph, source, target)
-    // Point input.link to the duplicate (simulating corrupted state)
-    target.inputs[0].link = dupLink.id
 
     graph._removeDuplicateLinks()
 
     expect(graph._links.size).toBe(1)
+    expect(graph._links.has(dupLink.id)).toBe(false)
     const survivingId = graph._links.keys().next().value!
     expect(target.inputs[0].link).toBe(survivingId)
     expect(graph._links.has(target.inputs[0].link!)).toBe(true)

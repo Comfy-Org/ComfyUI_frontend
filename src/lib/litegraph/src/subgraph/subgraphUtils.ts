@@ -4,10 +4,13 @@ import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
-import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
+import {
+  inputLink,
+  inputLinkId,
+  outputLinkIds
+} from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
@@ -115,16 +118,17 @@ export function getBoundaryLinks(
 
       // Inputs
       if (node.inputs) {
-        for (const [inputIndex, input] of node.inputs.entries()) {
+        for (const [inputIndex] of node.inputs.entries()) {
           addFloatingLinks(
             slotFloatingLinks(graph, 'input', node.id, inputIndex)
           )
 
-          if (input.link == null) continue
+          const linkId = inputLinkId(graph, node.id, inputIndex)
+          if (linkId == null) continue
 
-          const resolved = LLink.resolve(toLinkId(input.link), graph)
+          const resolved = LLink.resolve(linkId, graph)
           if (!resolved) {
-            console.warn(`Failed to resolve link ID [${input.link}]`)
+            console.warn(`Failed to resolve link ID [${linkId}]`)
             continue
           }
 
@@ -530,6 +534,14 @@ export function reorderSubgraphInputs(
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
+  // Capture outer links by pre-reorder index: the store is keyed by
+  // target_slot, which the physical reorder does not move.
+  const outerLinks = subgraphNode.inputs.map((_input, index) =>
+    subgraphNode.graph
+      ? inputLink(subgraphNode.graph, subgraphNode.id, index)
+      : undefined
+  )
+
   reorderInPlace(subgraph.inputs, orderedIndices)
   reorderInPlace(subgraphNode.inputs, orderedIndices)
   subgraphNode.invalidatePromotedViews()
@@ -541,11 +553,9 @@ export function reorderSubgraphInputs(
     link.origin_slot = slot
   }
 
-  function* outerLink(input: INodeInputSlot): Generator<LLink | undefined> {
-    if (input.link != null) yield subgraphNode.graph?.getLink(input.link)
-  }
-  for (const [slot, link] of indexedLinks(subgraphNode.inputs, outerLink)) {
-    link.target_slot = slot
+  for (const [newIndex, oldIndex] of orderedIndices.entries()) {
+    const link = outerLinks[oldIndex]
+    if (link) link.target_slot = newIndex
   }
 
   const newOrder = subgraph.inputs.map((i) => i.id)

@@ -82,26 +82,38 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   /**
-   * Places a link under its current endpoints. The first registration for a
-   * target slot wins; re-placing the already-registered topology is a no-op.
-   * @returns The store-held reactive state when `topology` holds a
-   * registration afterwards — callers keep it as their live state object so
-   * later field writes are tracked — otherwise `undefined`.
+   * Places a link under its current endpoints, evicting any incumbent under
+   * the same target key.
+   * @returns The store-held reactive state — callers keep it as their live
+   * state object so later field writes are tracked.
    */
-  function place(
+  function place(graphId: UUID, topology: LinkTopology): LinkTopology {
+    if (hasUniqueTarget(topology)) {
+      const key = targetKey(topology.targetNodeId, topology.targetSlot)
+      graphTargets(graphId).set(key, topology)
+    } else {
+      graphUnkeyed(graphId).add(topology)
+    }
+    return reactive(topology)
+  }
+
+  /**
+   * Registers a link under its current endpoints. The first registration for
+   * a target slot wins — a duplicate stays detached instead of clobbering the
+   * incumbent — and re-registering the already-registered topology is a no-op.
+   * @returns The store-held reactive state when `topology` holds the
+   * registration afterwards, otherwise `undefined`.
+   */
+  function registerLink(
     graphId: UUID,
     topology: LinkTopology
   ): LinkTopology | undefined {
-    if (!hasUniqueTarget(topology)) {
-      graphUnkeyed(graphId).add(topology)
-      return reactive(topology)
+    if (hasUniqueTarget(topology)) {
+      const key = targetKey(topology.targetNodeId, topology.targetSlot)
+      const existing = graphTargets(graphId).get(key)
+      if (existing && toRaw(existing) !== toRaw(topology)) return undefined
     }
-    const targets = graphTargets(graphId)
-    const key = targetKey(topology.targetNodeId, topology.targetSlot)
-    const existing = targets.get(key)
-    if (existing && toRaw(existing) !== toRaw(topology)) return undefined
-    targets.set(key, topology)
-    return reactive(topology)
+    return place(graphId, topology)
   }
 
   /** Removes a link's placement; only the registered topology may vacate it. */
@@ -116,14 +128,16 @@ export const useLinkStore = defineStore('link', () => {
 
   /**
    * Applies an endpoint patch and re-places the link under its new target.
-   * @returns The store-held reactive state when the link holds a
-   * registration afterwards, otherwise `undefined`.
+   * The move is authoritative: it evicts any incumbent under the new key, so
+   * slot permutations re-keyed one link at a time cannot drop links — an
+   * evicted link re-places itself when its own endpoint write arrives.
+   * @returns The store-held reactive state.
    */
   function updateEndpoint(
     graphId: UUID,
     topology: LinkTopology,
     patch: EndpointPatch
-  ): LinkTopology | undefined {
+  ): LinkTopology {
     displace(graphId, topology)
     const live = reactive(topology)
     if (patch.originNodeId !== undefined) live.originNodeId = patch.originNodeId
@@ -208,7 +222,7 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   return {
-    registerLink: place,
+    registerLink,
     updateEndpoint,
     deleteLink: displace,
     isInputSlotConnected,

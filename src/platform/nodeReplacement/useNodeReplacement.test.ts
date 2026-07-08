@@ -269,7 +269,6 @@ describe('useNodeReplacement', () => {
       // Link should be updated to point at new node's input
       expect(link.target_id).toBe(1)
       expect(link.target_slot).toBe(0)
-      expect(newNode.inputs[0].link).toBe(10)
     })
 
     it('should transfer output connections using output_mapping', () => {
@@ -655,7 +654,8 @@ describe('useNodeReplacement', () => {
 
       // Default mapping transfers connections and widget values by name
       expect(newNode.id).toBe(13)
-      expect(newNode.inputs[0].link).toBe(4)
+      expect(link.target_id).toBe(13)
+      expect(link.target_slot).toBe(0)
       expect(outLink.origin_id).toBe(13)
       expect(outLink.origin_slot).toBe(0)
       expect(newNode.widgets![0].value).toBe(0.75)

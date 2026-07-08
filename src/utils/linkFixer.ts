@@ -25,6 +25,7 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { toLinkId } from '@/types/linkId'
 import { parseNodeId } from '@/types/nodeId'
@@ -148,8 +149,11 @@ export function fixBadLinks(
         return false
       }
       patchedNode['inputs']![slot] = linkIdToSet
-      if (fix) {
-        inputSlot!.link = linkIdToSet === null ? null : toLinkId(linkIdToSet)
+      // Live NodeInputSlot mirrors are store-derived and need no repair;
+      // only serialized plain slots carry a writable link field.
+      if (fix && !(inputSlot instanceof NodeInputSlot)) {
+        const writable = inputSlot as { link?: number | null }
+        writable.link = linkIdToSet
       }
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}

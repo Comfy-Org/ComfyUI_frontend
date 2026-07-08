@@ -27,7 +27,12 @@ import type { NodeProperty } from './LGraphNode'
 import { parseNodeId, serializeNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
-import { outputLinkIds, outputLinks } from './node/slotLinks'
+import {
+  inputHasLink,
+  inputLinkId,
+  outputLinkIds,
+  outputLinks
+} from './node/slotLinks'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -2834,7 +2839,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               e.altKey &&
               !e.shiftKey
             if (
-              input.link !== null ||
+              inputHasLink(graph, node.id, i) ||
               slotFloatingLinks(graph, 'input', node.id, i).length > 0
             ) {
               // Existing link
@@ -4597,16 +4602,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.onNodeSelected?.(item)
 
     // Highlight links
-    if (item.inputs) {
-      for (const input of item.inputs) {
-        if (input.link == null) continue
-        this.highlighted_links[input.link] = true
+    const { graph: highlightGraph } = this
+    if (item.inputs && highlightGraph) {
+      for (const [i] of item.inputs.entries()) {
+        const linkId = inputLinkId(highlightGraph, item.id, i)
+        if (linkId == null) continue
+        this.highlighted_links[linkId] = true
       }
     }
-    const { graph } = item
-    if (graph && item.outputs) {
+    if (item.outputs && highlightGraph) {
       for (const id of item.outputs.flatMap((_, i) =>
-        outputLinkIds(graph, item.id, i)
+        outputLinkIds(highlightGraph, item.id, i)
       )) {
         this.highlighted_links[id] = true
       }
@@ -4655,13 +4661,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Clear link highlight
     if (item.inputs) {
-      for (const input of item.inputs) {
-        if (input.link == null) continue
+      for (const [i] of item.inputs.entries()) {
+        const linkId = inputLinkId(graph, item.id, i)
+        if (linkId == null) continue
 
-        const node = LLink.getOriginNode(graph, input.link)
+        const node = LLink.getOriginNode(graph, linkId)
         if (node && this.selectedItems.has(node)) continue
 
-        delete this.highlighted_links[input.link]
+        delete this.highlighted_links[linkId]
       }
     }
     if (item.outputs) {
@@ -4793,16 +4800,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (oldNode) this.selected_nodes[oldNode.id] = oldNode
 
       // Highlight links
-      if (keepSelected.inputs) {
-        for (const input of keepSelected.inputs) {
-          if (input.link == null) continue
-          this.highlighted_links[input.link] = true
+      const { graph: rehighlightGraph } = this
+      if (keepSelected.inputs && rehighlightGraph) {
+        for (const [i] of keepSelected.inputs.entries()) {
+          const linkId = inputLinkId(rehighlightGraph, keepSelected.id, i)
+          if (linkId == null) continue
+          this.highlighted_links[linkId] = true
         }
       }
-      const { graph } = keepSelected
-      if (graph && keepSelected.outputs) {
+      if (keepSelected.outputs && rehighlightGraph) {
         for (const id of keepSelected.outputs.flatMap((_, i) =>
-          outputLinkIds(graph, keepSelected.id, i)
+          outputLinkIds(rehighlightGraph, keepSelected.id, i)
         )) {
           this.highlighted_links[id] = true
         }
@@ -6035,48 +6043,41 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.arrange()
     }
 
-    for (const node of nodes) {
-      // for every input (we render just inputs because it is easier as every slot can only have one input)
-      const { inputs } = node
-      if (!inputs?.length) continue
+    // Render every link at its target input (each input holds at most one link).
+    for (const link of graph._links.values()) {
+      const node = graph.getNodeById(link.target_id)
+      const input = node?.inputs[link.target_slot]
+      if (!node || !input) continue
 
-      for (const [i, input] of inputs.entries()) {
-        if (!input || input.link == null) continue
+      const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
+        ? getSlotPosition(node, link.target_slot, true)
+        : node.getInputPos(link.target_slot)
 
-        const link_id = input.link
-        const link = graph._links.get(link_id)
-        if (!link) continue
+      // find link info
+      const start_node = graph.getNodeById(link.origin_id)
+      if (start_node == null) continue
 
-        const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
-          ? getSlotPosition(node, i, true)
-          : node.getInputPos(i)
+      const outputId = link.origin_slot
+      const startPos: Point =
+        outputId === -1
+          ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
+          : LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
+            ? getSlotPosition(start_node, outputId, false)
+            : start_node.getOutputPos(outputId)
 
-        // find link info
-        const start_node = graph.getNodeById(link.origin_id)
-        if (start_node == null) continue
+      const output = start_node.outputs[outputId]
+      if (!output) continue
 
-        const outputId = link.origin_slot
-        const startPos: Point =
-          outputId === -1
-            ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
-            : LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
-              ? getSlotPosition(start_node, outputId, false)
-              : start_node.getOutputPos(outputId)
-
-        const output = start_node.outputs[outputId]
-        if (!output) continue
-
-        this._renderAllLinkSegments(
-          ctx,
-          link,
-          startPos,
-          endPos,
-          visibleReroutes,
-          now,
-          output.dir,
-          input.dir
-        )
-      }
+      this._renderAllLinkSegments(
+        ctx,
+        link,
+        startPos,
+        endPos,
+        visibleReroutes,
+        now,
+        output.dir,
+        input.dir
+      )
     }
 
     if (subgraph) {
@@ -8684,11 +8685,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node.getSlotMenuOptions) {
           menu_info = node.getSlotMenuOptions(slot)
         } else {
-          if (
-            (slot.output &&
-              node.isOutputConnected(node.outputs.indexOf(slot.output))) ||
-            slot.input?.link != null
-          ) {
+          const slotConnected = slot.output
+            ? node.isOutputConnected(slot.slot)
+            : node.isInputConnected(slot.slot)
+          if (slotConnected) {
             menu_info.push({ content: 'Disconnect Links', slot })
           }
 
@@ -8698,7 +8698,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               'Both in put and output slots were null when processing context menu.'
             )
 
-          if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
+          if (!_slot.nameLocked && !slot.input?.widget) {
             menu_info.push({ content: 'Rename Slot', slot })
           }
 
