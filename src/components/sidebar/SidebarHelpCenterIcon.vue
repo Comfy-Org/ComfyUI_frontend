@@ -23,6 +23,7 @@
     <div
       v-else
       ref="feedbackRef"
+      data-testid="feedback-embed"
       data-tf-auto-resize
       :data-tf-widget="typeformId"
     />

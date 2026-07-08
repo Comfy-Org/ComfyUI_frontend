@@ -172,9 +172,12 @@ describe('FormDropdownInput', () => {
     })
 
     it('falls back to click() when showPicker is unavailable', async () => {
-      // Simulate older browsers
-      // @ts-expect-error -- intentional removal for fallback path
-      delete HTMLInputElement.prototype.showPicker
+      // Simulate older browsers that predate showPicker
+      Object.defineProperty(HTMLInputElement.prototype, 'showPicker', {
+        value: undefined,
+        configurable: true,
+        writable: true
+      })
       const clickSpy = vi.fn()
       Object.defineProperty(HTMLInputElement.prototype, 'click', {
         value: clickSpy,

@@ -92,29 +92,26 @@ describe('SidebarHelpCenterIcon', () => {
   })
 
   it('mounts the Typeform embed container when the id is valid and loads', () => {
-    const { container } = renderIcon()
+    renderIcon()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- attribute hook: the embed target has no ARIA role
-    expect(container.querySelector('[data-tf-widget]')).not.toBeNull()
+    expect(screen.getByTestId('feedback-embed')).toBeInTheDocument()
     expect(screen.queryByText(FEEDBACK_LOAD_ERROR)).not.toBeInTheDocument()
   })
 
   it('shows the localized fallback instead of the embed when loading fails', () => {
     typeformState.typeformError = true
-    const { container } = renderIcon()
+    renderIcon()
 
     expect(screen.getByText(FEEDBACK_LOAD_ERROR)).toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- attribute hook: the embed target has no ARIA role
-    expect(container.querySelector('[data-tf-widget]')).toBeNull()
+    expect(screen.queryByTestId('feedback-embed')).not.toBeInTheDocument()
   })
 
   it('shows the localized fallback when the form id is invalid', () => {
     typeformState.isValidTypeformId = false
-    const { container } = renderIcon()
+    renderIcon()
 
     expect(screen.getByText(FEEDBACK_LOAD_ERROR)).toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- attribute hook: the embed target has no ARIA role
-    expect(container.querySelector('[data-tf-widget]')).toBeNull()
+    expect(screen.queryByTestId('feedback-embed')).not.toBeInTheDocument()
   })
 
   it('does not open the help center from the feedback button in app mode', async () => {
@@ -127,7 +124,7 @@ describe('SidebarHelpCenterIcon', () => {
 
   it('shows the help center button instead of the feedback popover in graph mode', () => {
     canvasState.linearMode = false
-    const { container } = renderIcon()
+    renderIcon()
 
     expect(
       screen.getByRole('button', { name: 'Help Center' })
@@ -135,8 +132,7 @@ describe('SidebarHelpCenterIcon', () => {
     expect(
       screen.queryByRole('button', { name: 'Give feedback' })
     ).not.toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- attribute hook: the embed target has no ARIA role
-    expect(container.querySelector('[data-tf-widget]')).toBeNull()
+    expect(screen.queryByTestId('feedback-embed')).not.toBeInTheDocument()
   })
 
   it('toggles the help center on click in graph mode', async () => {
