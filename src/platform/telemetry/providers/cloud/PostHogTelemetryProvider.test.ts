@@ -195,6 +195,45 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
+  describe('platform axes (client / deployment)', () => {
+    afterEach(() => {
+      delete window.__comfyDesktop2
+    })
+
+    it('registers client=web and deployment=cloud in a plain browser', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        client: 'web',
+        deployment: 'cloud'
+      })
+    })
+
+    it('registers client=desktop when the desktop preload bridge is present', async () => {
+      window.__comfyDesktop2 = {
+        downloadModel: vi.fn()
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        client: 'desktop',
+        deployment: 'cloud'
+      })
+    })
+
+    it('registers platform axes before flushing pre-init queued events', async () => {
+      const provider = createProvider()
+      provider.trackSignupOpened()
+      await vi.dynamicImportSettled()
+
+      const registerOrder = hoisted.mockRegister.mock.invocationCallOrder[0]
+      const captureOrder = hoisted.mockCapture.mock.invocationCallOrder[0]
+      expect(registerOrder).toBeLessThan(captureOrder)
+    })
+  })
+
   describe('desktop entry capture', () => {
     function setLocation(search: string): void {
       Object.defineProperty(window.location, 'search', {
@@ -208,12 +247,20 @@ describe('PostHogTelemetryProvider', () => {
       setLocation('')
     })
 
+    // The platform-axes register (client/deployment) always fires, so these
+    // assert no register call carrying desktop-entry attribution props.
+    function desktopEntryRegisterCalls(): unknown[][] {
+      return hoisted.mockRegister.mock.calls.filter(
+        ([props]) => props && 'source_app' in (props as Record<string, unknown>)
+      )
+    }
+
     it('does not register desktop props when utm_source is absent', async () => {
       setLocation('')
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+      expect(desktopEntryRegisterCalls()).toHaveLength(0)
     })
 
     it('does not register desktop props when utm_source is not comfy.desktop', async () => {
@@ -221,7 +268,7 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+      expect(desktopEntryRegisterCalls()).toHaveLength(0)
     })
 
     it('registers source_app and desktop_device_id when arriving from desktop', async () => {
