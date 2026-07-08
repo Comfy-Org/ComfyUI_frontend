@@ -67,7 +67,7 @@ to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### Links of various types (surface 4/5 expanded)
 
-The user asked specifically for "links of various types." The connectivity tier
+"Links of various types" is covered breadth-first: the connectivity tier
 plans one representative typed edge per slot across the whole installed corpus,
 so a single break in the validator (#4) fails a broad, named list of concrete
 pairs - not one hand-picked wire. The drag break (#5) additionally proves the
