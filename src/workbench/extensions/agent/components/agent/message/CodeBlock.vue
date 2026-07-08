@@ -48,14 +48,14 @@ watch(
       class="border-agent-border-strong bg-agent-surface-hover flex items-center justify-between border-b px-3 py-1.5"
     >
       <span
-        class="text-agent-fg-muted flex items-center gap-1.5 font-mono text-xs"
+        class="text-agent-fg-subtle flex items-center gap-1.5 font-mono text-xs"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
         <span class="text-agent-fg font-medium">{{ lang }}</span>
       </span>
       <button
         type="button"
-        class="text-agent-fg-muted hover:bg-agent-surface hover:text-agent-fg border-agent-border-strong flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-xs transition-colors"
+        class="text-agent-fg-subtle hover:bg-agent-surface hover:text-agent-fg border-agent-border-strong flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-xs transition-colors"
         @click="copy(code)"
       >
         <span
