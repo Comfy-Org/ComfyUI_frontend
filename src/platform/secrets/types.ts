@@ -1,13 +1,19 @@
-export type SecretProvider = 'huggingface' | 'civitai'
+import type { SecretResponse } from '@comfyorg/ingest-types'
 
-export interface SecretMetadata {
-  id: string
-  name: string
-  provider?: SecretProvider
-  last_used_at?: string
-  created_at: string
-  updated_at: string
-}
+/**
+ * Secret metadata as returned by the ingest API, sourced from the generated
+ * OpenAPI types (`SecretResponse`). The secret value itself is never returned
+ * after creation. `provider` is a free-form identifier (huggingface, civitai,
+ * and BYOK providers); the `SecretProvider` union below is only the subset the
+ * UI renders first-class.
+ */
+export type SecretMetadata = SecretResponse
+
+/**
+ * Base providers the UI renders with a dedicated label/logo. The full set of
+ * configurable providers is data-driven via `GET /secrets/providers`.
+ */
+export type SecretProvider = 'huggingface' | 'civitai'
 
 export interface SecretCreateRequest {
   name: string
