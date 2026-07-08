@@ -85,6 +85,30 @@ test.describe('typePairing', () => {
     ])
     const socketless = nodes.find((n) => n.type === 'SocketlessNode')!
     expect(socketless.inputs).toEqual([])
+    // socketless is a recognized shape deliberately left out of the matrix;
+    // it must never be recorded as an unknown slot.
+    expect(socketless.unknownSlots).toBeUndefined()
+  })
+
+  test('unrecognizable slot specs are recorded, never silently dropped', () => {
+    // A numeric input type and a numeric output type have no connectable
+    // socket type (slotTypeOf null): the slot leaves the corpus, but the
+    // drop must surface on the node and in the plan.
+    const nodes = normalizeNodeDefs({
+      WeirdNode: {
+        input: { required: { strange: [42, {}], ok: ['INT', {}] } },
+        output: [7, 'INT'],
+        python_module: 'custom_nodes.weird-pack'
+      }
+    })
+    const weird = nodes.find((n) => n.type === 'WeirdNode')!
+    expect(weird.unknownSlots).toEqual(['strange', 'output[0]'])
+    expect(weird.inputs.map((s) => s.name)).toEqual(['ok'])
+    const plan = planPairs(nodes, ['WeirdNode'])
+    expect(plan.unknownShapes).toEqual([
+      'WeirdNode.strange',
+      'WeirdNode.output[0]'
+    ])
   })
 
   test('planPairs pairs exact and union types, deterministically', () => {
@@ -98,6 +122,8 @@ test.describe('typePairing', () => {
     expect(keys).toContain('UnionSource.value->IntSink.value')
     const again = planPairs(nodes, ['LatentSink', 'IntSink'])
     expect(again.pairs).toEqual(plan.pairs)
+    // The DEFS corpus is fully recognizable; unknownShapes stays empty.
+    expect(plan.unknownShapes).toEqual([])
   })
 
   test('COMBO slots with different vocabularies stay excluded', () => {

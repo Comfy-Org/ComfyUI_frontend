@@ -53,6 +53,7 @@
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
     "test:custom-nodes": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm exec playwright test browser_tests/tests/customNodes/ --config playwright.chrome.config.ts --workers=1",
+    "test:custom-nodes:ci": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:8188 pnpm exec playwright test browser_tests/tests/customNodes/ --config playwright.chrome.config.ts --workers=1",
     "test:custom-nodes:watch": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:5173 PLAYWRIGHT_LOCAL=1 SLOW_MO=300 pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts browser_tests/tests/customNodes/connectivity.spec.ts --config playwright.chrome.config.ts --workers=1 --headed",
     "test:custom-nodes:debug": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts browser_tests/tests/customNodes/connectivity.spec.ts --config playwright.chrome.config.ts --workers=1 --debug",
     "test:custom-nodes:impact-render": "pnpm test:custom-nodes:debug -g \"ComfyUI-Impact-Pack.*T0\"",

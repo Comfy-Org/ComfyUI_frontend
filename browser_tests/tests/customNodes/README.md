@@ -24,17 +24,18 @@ System design, data flow, and the reasoning behind every invariant:
 
 ## Running
 
-| Script                                 | What it does                                                                          |
-| -------------------------------------- | ------------------------------------------------------------------------------------- |
-| `pnpm test:custom-nodes`               | whole suite headless - the pass/fail gate (every tier passes, zero skips)             |
-| `pnpm test:custom-nodes:watch`         | headed slow-motion run of the browser tiers, hands-off watching                       |
-| `pnpm test:custom-nodes:debug`         | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume)      |
-| `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector)                                     |
-| `pnpm test:custom-nodes:impact-run`    | Impact group workflow executes on the backend (Inspector)                             |
-| `pnpm test:custom-nodes:vhs-render`    | VHS nodes render in both renderers (Inspector)                                        |
-| `pnpm test:custom-nodes:vhs-run`       | VHS decodes a real video through its node chain (Inspector)                           |
-| `pnpm test:custom-nodes:connectivity`  | slot/type contract: type-paired links + real slot drags in both renderers (Inspector) |
-| `pnpm test:custom-nodes:self-check`    | watches the harness catch a deliberate execution error                                |
+| Script                                 | What it does                                                                                                                                                                                                                                                                                     |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm test:custom-nodes`               | whole suite headless against the Vite dev server - the fast local loop for suite-code iteration. NOT the gate: the dev server never loads pack frontend JS (see Gotchas)                                                                                                                         |
+| `pnpm test:custom-nodes:ci`            | whole suite headless against the backend-served BUILT frontend - the gate-equivalent run (every tier passes, zero skips). Requires a backend serving the built dist on :8188 (a separate endpoint from the :8288 dev-proxy backend in Prerequisites); set `PLAYWRIGHT_TEST_URL` if yours differs |
+| `pnpm test:custom-nodes:watch`         | headed slow-motion run of the browser tiers, hands-off watching                                                                                                                                                                                                                                  |
+| `pnpm test:custom-nodes:debug`         | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume)                                                                                                                                                                                                                 |
+| `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector)                                                                                                                                                                                                                                                |
+| `pnpm test:custom-nodes:impact-run`    | Impact group workflow executes on the backend (Inspector)                                                                                                                                                                                                                                        |
+| `pnpm test:custom-nodes:vhs-render`    | VHS nodes render in both renderers (Inspector)                                                                                                                                                                                                                                                   |
+| `pnpm test:custom-nodes:vhs-run`       | VHS decodes a real video through its node chain (Inspector)                                                                                                                                                                                                                                      |
+| `pnpm test:custom-nodes:connectivity`  | slot/type contract: type-paired links + real slot drags in both renderers (Inspector)                                                                                                                                                                                                            |
+| `pnpm test:custom-nodes:self-check`    | watches the harness catch a deliberate execution error                                                                                                                                                                                                                                           |
 
 Example - watch the VHS video-decode run step by step:
 
@@ -83,10 +84,13 @@ Any `-g` pattern works against the generic scripts, e.g.
   dragged for real - slot dot to slot dot - under both renderers. Orphan
   types (no partner in the corpus) are reported, never fake-failed. One
   representative edge per slot bounds cost; it does not prove all pairs.
-- **Zero visible errors, always**: every browser test asserts the app's
-  error surfaces (error overlay, error dialog, node render errors, error
-  toasts) are absent at start and after every pass. A run is green only if a
-  human watching the screen sees no errors. The self-check inverts this: it
+- **Zero visible errors**: the mount, persistence, connectivity, core
+  smoke, and curated workflow tests assert the app's error surfaces (error
+  overlay, error dialog, node render errors, error toasts) are absent at
+  start and after every pass - green means a human watching those runs sees
+  no errors. Two deliberate exceptions: the auto-run execution tier
+  provokes expected failures (baselined cannotRunAlone nodes surface as
+  real error UI by design), and the self-check inverts the invariant - it
   forces a real execution error and asserts the overlay IS visible, proving
   the selectors stay live.
 

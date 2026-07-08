@@ -14,6 +14,7 @@ import {
   dismissTemplatesDialog
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
+import { unallowlistedErrors } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   loadManifest,
   rendererPassesFor
@@ -150,12 +151,26 @@ for (const entry of loadManifest()) {
       )
       await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
+      // Pack scripts can throw during workflow load or execution without
+      // any visible error surface; collect console + uncaught page errors
+      // across the whole run, filtered through the shared pack ledger.
+      const consoleErrors = collectConsoleErrors(comfyPage.page)
       await comfyPage.workflow.loadGraphData(readWorkflow(workflowRelative))
+      // A drifted fixture that dropped an expected node would silently
+      // shrink the executed-set assertion (an empty id list PASSes on
+      // execution_success alone): require every expected type to actually
+      // be present in the loaded workflow before running it.
+      const expectedNodeIds: string[] = []
+      for (const type of entry.expectedNodes) {
+        const ids = await nodeIdsByType(comfyPage.page, [type])
+        expect(
+          ids.length,
+          `expectedNodes drift: ${type} is not in the curated workflow ${entry.workflow}`
+        ).toBeGreaterThan(0)
+        expectedNodeIds.push(...ids)
+      }
       const result = await target.runWorkflow(comfyPage.page, {
-        expectedNodeIds: await nodeIdsByType(
-          comfyPage.page,
-          entry.expectedNodes
-        ),
+        expectedNodeIds,
         timeoutMs: entry.timeoutMs
       })
 
@@ -170,6 +185,11 @@ for (const entry of loadManifest()) {
           `sink node ${sinkId} produced no ui payload`
         ).toBeTruthy()
       await expectNoVisibleErrors(comfyPage.page, 'after run')
+      consoleErrors.stop()
+      expect(
+        unallowlistedErrors(entry.pack, consoleErrors.errors),
+        'console errors during curated run'
+      ).toEqual([])
     })
   })
 }

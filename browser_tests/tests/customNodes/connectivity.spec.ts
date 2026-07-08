@@ -119,7 +119,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
 
   expect(plan.pairs.length, 'pairing produced no edges').toBeGreaterThan(0)
   console.log(
-    `connectivity plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design)`
+    `connectivity plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design), ${plan.unknownShapes.length} unknown-shape slots (recorded: ${plan.unknownShapes.join('; ') || 'none'})`
   )
 
   for (const entry of installedEntries) {
@@ -140,6 +140,13 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const consoleErrors = collectConsoleErrors(comfyPage.page)
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   consoleErrors.stop()
+  // Deliberately raw, not routed through the pack console ledger
+  // (consoleErrorLedger.ts): the sweep holds zero console errors without
+  // exceptions today, and the stricter contract catches noise the moment
+  // wiring provokes it. If a ledgered pattern ever fires here, filter
+  // through unallowlistedErrors with the pack taken from the offending
+  // pair's nodes (the sweep is cross-pack), instead of silently
+  // loosening this assert.
   expect(consoleErrors.errors, 'console errors during breadth sweep').toEqual(
     []
   )

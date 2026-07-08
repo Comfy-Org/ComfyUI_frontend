@@ -25,6 +25,9 @@ export interface NormalizedNode {
   pack: string
   inputs: NormalizedSlot[]
   outputs: NormalizedSlot[]
+  // Slots whose raw spec carried no recognizable type (slotTypeOf null):
+  // recorded so a schema change can never silently shrink the corpus.
+  unknownSlots?: string[]
 }
 
 interface SlotRef {
@@ -51,6 +54,10 @@ export interface PairingPlan {
   // nothing (a checkpoint dropdown would "connect" to a scheduler dropdown).
   // Combos whose option lists match exactly ARE paired like any other type.
   combos: Array<SlotRef & { dir: 'in' | 'out' }>
+  // Slots dropped at normalize time because their raw spec had no
+  // recognizable type - surfaced here (and logged by the sweep) so a
+  // backend or pack schema change cannot silently shrink the corpus.
+  unknownShapes: string[]
 }
 
 // Extends the shared outcome taxonomy (runResult.ts); ORPHAN_TYPE is a
@@ -82,14 +89,18 @@ function slotTypeOf(rawType: unknown): string | null {
 }
 
 function inputSlots(
-  entries: Record<string, unknown> | undefined
+  entries: Record<string, unknown> | undefined,
+  unknown: string[]
 ): NormalizedSlot[] {
   if (!entries) return []
   const slots: NormalizedSlot[] = []
   for (const [name, spec] of Object.entries(entries)) {
     const specArray = Array.isArray(spec) ? spec : [spec]
     const type = slotTypeOf(specArray[0])
-    if (type === null) continue
+    if (type === null) {
+      unknown.push(name)
+      continue
+    }
     const opts = specArray[1] as
       | { socketless?: boolean; options?: unknown }
       | undefined
@@ -114,27 +125,35 @@ function inputSlots(
 export function normalizeNodeDefs(
   defs: Record<string, RawNodeDef>
 ): NormalizedNode[] {
-  return Object.entries(defs).map(([type, def]) => ({
-    type,
-    pack: packOf(def.python_module),
-    inputs: [
-      ...inputSlots(def.input?.required),
-      ...inputSlots(def.input?.optional)
-    ],
-    outputs: (def.output ?? []).flatMap((rawType, index) => {
-      const slotType = slotTypeOf(rawType)
-      if (slotType === null) return []
-      // output_name entries can be non-strings (COMBO literals repeat the
-      // option array); the slot name must stay a string.
-      const rawName = def.output_name?.[index]
-      const slot: NormalizedSlot = {
-        name: typeof rawName === 'string' ? rawName : slotType,
-        type: slotType
-      }
-      if (slotType === 'COMBO') slot.comboOptions = rawType as unknown[]
-      return [slot]
-    })
-  }))
+  return Object.entries(defs).map(([type, def]) => {
+    const unknown: string[] = []
+    const node: NormalizedNode = {
+      type,
+      pack: packOf(def.python_module),
+      inputs: [
+        ...inputSlots(def.input?.required, unknown),
+        ...inputSlots(def.input?.optional, unknown)
+      ],
+      outputs: (def.output ?? []).flatMap((rawType, index) => {
+        const slotType = slotTypeOf(rawType)
+        if (slotType === null) {
+          unknown.push(`output[${index}]`)
+          return []
+        }
+        // output_name entries can be non-strings (COMBO literals repeat the
+        // option array); the slot name must stay a string.
+        const rawName = def.output_name?.[index]
+        const slot: NormalizedSlot = {
+          name: typeof rawName === 'string' ? rawName : slotType,
+          type: slotType
+        }
+        if (slotType === 'COMBO') slot.comboOptions = rawType as unknown[]
+        return [slot]
+      })
+    }
+    if (unknown.length > 0) node.unknownSlots = unknown
+    return node
+  })
 }
 
 // Faithful mirror of LiteGraph.isValidConnection (LiteGraphGlobal.ts):
@@ -212,7 +231,10 @@ export function planPairs(
     pairs: [],
     orphans: [],
     wildcards: [],
-    combos: []
+    combos: [],
+    unknownShapes: all.flatMap((node) =>
+      (node.unknownSlots ?? []).map((slot) => `${node.type}.${slot}`)
+    )
   }
   const seen = new Set<string>()
   const addPair = (producer: SlotRef, consumer: SlotRef) => {

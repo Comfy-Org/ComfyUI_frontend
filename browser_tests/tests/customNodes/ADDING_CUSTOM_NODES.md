@@ -286,25 +286,27 @@ means discovering that class of problem one CI round at a time.
 - **Mount test fails on console errors**: a pack's JS logged real errors
   while its nodes mounted. If it is pack-attributed noise with no visible
   error surface (KJNodes' loader previews fetching `filename=undefined`),
-  add a scoped `CONSOLE_ERROR_ALLOWLIST` entry with the mechanism;
-  otherwise it is a finding.
+  add a scoped `CONSOLE_ERROR_ALLOWLIST` entry (in
+  `fixtures/customNode/consoleErrorLedger.ts`, shared by the all-nodes
+  tiers and the curated run) with the mechanism; otherwise it is a
+  finding.
 
 ### The exception ledgers (all reasons on the record)
 
 Every escape hatch is a reviewed list whose entries carry the mechanism, so
 the gate stays honest and none can grow silently:
 
-| Ledger                       | Lives in               | Covers                                                                                                                                                                                 |
-| ---------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vueIncompatibleNodes`       | manifest row           | node cannot mount under Vue Nodes 2.0 (evidence rule below)                                                                                                                            |
-| `cannotRunAlone`             | manifest row           | node cannot execute standalone on a bare backend; asserted both ways so entries cannot rot                                                                                             |
-| `AUTO_RUN_EXCLUDE`           | `allNodes.spec.ts`     | executing the node is unsafe or unstable (runtime downloads/pip installs, infinite loops, non-interruptible hangs, environment/state-variable results, flip-flopping executed signals) |
-| `WIDGET_SET_ALLOWLIST`       | `allNodes.spec.ts`     | plain-typed widget whose value is owned by pack JS (menu-action combos, canonicalized refs) - set-and-stick does not apply                                                             |
-| `ROUNDTRIP_VALUE_ALLOWLIST`  | `allNodes.spec.ts`     | node whose serialized widgets_values legitimately change on reload (pack JS initializes or rebuilds them); the widget-shrink check still applies                                       |
-| `MOUNT_WIDGET_ALLOWLIST`     | `allNodes.spec.ts`     | node whose pack JS renders custom editor/preview widgets outside the node-widget rows; slot fidelity still applies                                                                     |
-| `CONSOLE_ERROR_ALLOWLIST`    | `allNodes.spec.ts`     | pack-attributed console noise with no visible error surface                                                                                                                            |
-| `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts` | pack JS legitimately vetoes a planned wiring                                                                                                                                           |
-| `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts` | pack's own serialize/configure drops links it manages itself                                                                                                                           |
+| Ledger                       | Lives in                                    | Covers                                                                                                                                                                                 |
+| ---------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vueIncompatibleNodes`       | manifest row                                | node cannot mount under Vue Nodes 2.0 (evidence rule below)                                                                                                                            |
+| `cannotRunAlone`             | manifest row                                | node cannot execute standalone on a bare backend; asserted both ways so entries cannot rot                                                                                             |
+| `AUTO_RUN_EXCLUDE`           | `allNodes.spec.ts`                          | executing the node is unsafe or unstable (runtime downloads/pip installs, infinite loops, non-interruptible hangs, environment/state-variable results, flip-flopping executed signals) |
+| `WIDGET_SET_ALLOWLIST`       | `allNodes.spec.ts`                          | plain-typed widget whose value is owned by pack JS (menu-action combos, canonicalized refs) - set-and-stick does not apply                                                             |
+| `ROUNDTRIP_VALUE_ALLOWLIST`  | `allNodes.spec.ts`                          | node whose serialized widgets_values legitimately change on reload (pack JS initializes or rebuilds them); the widget-shrink check still applies                                       |
+| `MOUNT_WIDGET_ALLOWLIST`     | `allNodes.spec.ts`                          | node whose pack JS renders custom editor/preview widgets outside the node-widget rows; slot fidelity still applies                                                                     |
+| `CONSOLE_ERROR_ALLOWLIST`    | `fixtures/customNode/consoleErrorLedger.ts` | pack-attributed console noise with no visible error surface; shared by the all-nodes tiers and the curated run                                                                         |
+| `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts`                      | pack JS legitimately vetoes a planned wiring                                                                                                                                           |
+| `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts`                      | pack's own serialize/configure drops links it manages itself                                                                                                                           |
 
 ### Evidence rules for changing the harness itself
 

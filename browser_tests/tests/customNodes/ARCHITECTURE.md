@@ -43,10 +43,11 @@ no per-pack test code. The suite reads each pack's real node list live from
 the backend, derives what every node should be able to do, and verifies it
 in a real browser against a real backend with the pack's own frontend
 scripts active. Every exception is a reviewed record that carries its
-causal mechanism, every exception list is guarded against going stale, and
-execution results are reconciled in both directions against a known-failure
-baseline, so the gate can neither hide a regression nor accumulate dead
-exemptions. Nothing is ever skipped; a skip fails the job.
+causal mechanism, every exception list is guarded against going stale
+(section 10 grades the strength of each guard), and execution results are
+reconciled in both directions against a known-failure baseline, so the
+gate can neither hide a regression nor accumulate dead exemptions.
+Nothing is ever skipped; a skip fails the job.
 
 ## Reading paths
 
@@ -87,7 +88,7 @@ flowchart LR
     L8["CI deployment view (section 13): the order the test world is built in"]
     L1 -->|"opens the suite boxes"| L2
     L1 -->|"expands the CI arrow"| L8
-    L2 -->|"the Definition Normalizer service"| L3
+    L2 -->|"the definition parsers"| L3
     L2 -->|"the Execution tier"| L4
     L2 -->|"the Persistence tier"| L5
     L2 -->|"the Evidence Ledgers box"| L7
@@ -200,15 +201,25 @@ flowchart LR
 
 The shared services behind the tiers:
 
-| Service               | Used by                              | Responsibility                                                                                                                                                          |
-| --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Definition Normalizer | Mount, Wiring, Capability Classifier | one canonical node model out of the multiple definition dialects (section 6), so no tier parses raw definitions                                                         |
-| Capability Classifier | Execution                            | decides, per node, what it can do without hand-written fixtures: run on its own defaults, run with synthesized inputs, or blocked, with the reason recorded (section 7) |
-| Execution Harness     | Execution                            | runs nodes for real and attributes every outcome to the right node despite an asynchronous, noisy event stream (sections 7 and 9)                                       |
+| Service               | Used by                                                                 | Responsibility                                                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Definition Normalizer | Wiring (slot model); every all-nodes tier (pack attribution, node keys) | one canonical connectable-slot model out of the multiple definition dialects (section 6), feeding the pairing planner                                                   |
+| Capability Classifier | Execution                                                               | decides, per node, what it can do without hand-written fixtures: run on its own defaults, run with synthesized inputs, or blocked, with the reason recorded (section 7) |
+| Execution Harness     | Execution                                                               | runs nodes for real and attributes every outcome to the right node despite an asynchronous, noisy event stream (sections 7 and 9)                                       |
 
 Two further tiers (curated workflows, core smoke) sit alongside these four
 but are fixture-driven rather than derived from the node corpus; section 5
 lists all six.
+
+Dialect handling is deliberately not centralized. Mount and the Capability
+Classifier read the raw definitions through their own purpose-built
+parsers (`declaredShape`, `classifyInput`), because each needs a different
+slice of a definition (declared parts vs. runnability); the normalizer's
+slot model feeds the wiring planner alone, though the all-nodes tiers
+also call it for pack attribution and node-key derivation. What keeps the
+three parsers from drifting is shared evidence, not shared code: each is
+pinned by fixtures copied from a live census of both definition dialects
+(section 6).
 
 - **Pack Manifest**: the single extension point. Adding a pack is one row;
   no tier knows pack names.
@@ -341,27 +352,33 @@ choke on the probe.
 
 Real execution reports back over an asynchronous event stream, and the
 stream can mislead in two specific ways. Both produced real misattributed
-failures before the filters existed. Every arriving event passes the same
-two questions before it may count as evidence:
+failures before the filters existed. The primary defense is positive: when
+the harness submits a graph, it captures the id the backend assigns to
+that submission from the submission response itself, so an event's
+ownership is checked against a known id, never inferred from history.
+Every arriving event passes the same two questions before it may count as
+evidence:
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 280}}}%%
 flowchart TD
     EV["an event arrives on the execution stream, while this attempt runs"]
     EV --> Q1{"from THIS attempt?"}
-    Q1 -->|"no: its identity was already seen on an earlier attempt"| DROP["dropped: a stray cannot blame any node in this run"]
+    Q1 -->|"no: it does not carry the id this submission was assigned"| DROP["dropped: a stray cannot blame any node in this run"]
     Q1 -->|"yes"| Q2{"names a node in THIS test graph?"}
-    Q2 -->|"no: a retried duplicate under a fresh identity still names an earlier graph's nodes"| DROP
+    Q2 -->|"no: it names another graph's nodes"| DROP
     Q2 -->|"yes"| KEEP["kept: evidence for exactly that node"]
 ```
 
-Both no-answers are checkable, not hopeful. The harness records every
-attempt identity it has ever seen, so a late event from an observed
-attempt identifies itself at the first question. A duplicate arriving
-under a never-seen identity passes the first question by construction;
-the second question is what defeats it, because node identities are never
-reused within a session, so it can only name an earlier graph's nodes.
-Membership is decisive.
+Both no-answers are checkable, not hopeful. The first is a comparison
+against the captured submission id: an event either carries it or it does
+not. If that capture ever misses, the harness says so on the console and
+falls back to identity bookkeeping, recording every attempt identity it
+has ever seen so a late event from an observed attempt still identifies
+itself. The second question defeats the one stray the first cannot: a
+retried duplicate arriving under a never-seen identity. Node identities
+are never reused within a session, so such an event can only name an
+earlier graph's nodes. Membership is decisive.
 
 ## 10. The evidence model
 
@@ -393,6 +410,20 @@ The two-way baseline is what stops the whole evidence model from rotting: a
 failure that is not listed fails the gate, and a listed node that starts
 passing ALSO fails the gate until its stale entry is removed. Exemptions
 cannot silently accumulate.
+
+Not every ledger can earn that two-way strength; the guards come in three
+grades. Ledgers whose nodes still execute (the known-failure baseline) are
+two-way behavioral: a new failure and a stale entry both flip the gate.
+Ledgers that stop a path from running at all (execution exclusions,
+probe-write exemptions) are registration guarded: the suite proves the
+named node still exists, but the excluded path never runs, so an entry
+that stopped being necessary cannot be observed; staleness there is
+caught by review, not observation. Weakest are the pattern allowlists
+(the console-error ledger): an entry that no longer matches anything
+simply filters nothing, and usage tracking cannot be naively bolted on,
+because some patterns are environment conditional (a missing-model 404
+fires only on hosts without the model), so an entry can be legitimately
+idle in one environment and load-bearing in the next.
 
 ## 11. Design decisions
 
@@ -462,8 +493,8 @@ these answer: "green but broken" and "tests can never catch random bugs."
 - **Root cause**: two races over the asynchronous event stream: late
   arrivals from a previous attempt, and duplicate attempts created by a
   submission retry erroring under a fresh identity.
-- **Defense**: the two attribution filters of section 9 (attempt identity + graph
-  membership), made decisive by G2's never-reuse-identities rule.
+- **Defense**: the positive submission-id match plus the graph-membership
+  filter of section 9, made decisive by G2's never-reuse-identities rule.
 - **Answers**: tests can never catch random bugs (a misattributed error is
   noise that erodes trust in every verdict).
 
@@ -493,10 +524,12 @@ these answer: "green but broken" and "tests can never catch random bugs."
   list-form and V2 object-form), and a parser written against one dialect
   misreads the other. Measured example: 8 nodes of one pack were invisibly
   unexecuted until the classifier learned the second dialect.
-- **Defense**: the Definition Normalizer handles both dialects for every
-  consumer; parser fixtures are copied from a live census of the real
-  corpus so tests cannot self-confirm a parser's assumptions; unknown
-  shapes are excluded with a record, never silently matched (section 6).
+- **Defense**: each consumer's parser handles both dialects
+  (`declaredShape` for mount, `classifyInput` for execution, the
+  normalizer for wiring; section 4); parser fixtures are copied from a
+  live census of the real corpus so tests cannot self-confirm a parser's
+  assumptions; unknown shapes are excluded with a record, never silently
+  matched (section 6).
 - **Answers**: green but broken (a whole class of nodes was uncovered while
   the tier stayed green).
 
