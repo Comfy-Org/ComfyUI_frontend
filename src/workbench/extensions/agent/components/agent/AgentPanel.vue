@@ -87,7 +87,7 @@ const composerRef = ref<InstanceType<typeof Composer>>()
 const { t } = useI18n()
 
 // Session bar title (B4): the first user prompt titles the session; a fresh session reads
-// "New Chat" (SessionBar's fallback).
+// "Untitled" (SessionBar's fallback), per the DES-455 chat-history flow.
 const sessionTitle = computed(() => {
   const firstUser = entries.find(
     (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
