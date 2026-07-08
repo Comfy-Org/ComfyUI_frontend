@@ -91,7 +91,10 @@ export function useSecretForm(options: UseSecretFormOptions) {
     const secret = toValue(secretRef)
     if (mode === 'edit' && secret) {
       form.name = secret.name
-      form.provider = secret.provider ?? null
+      // Stored provider is a free-form string; in edit mode the field is
+      // disabled and only needs to be non-empty for validation (it is never
+      // re-sent), so narrowing to the form's known-provider type is safe here.
+      form.provider = (secret.provider ?? null) as SecretProvider | null
       form.secretValue = ''
     } else {
       form.name = ''

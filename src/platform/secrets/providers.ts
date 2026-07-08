@@ -15,14 +15,14 @@ export const SECRET_PROVIDERS: ProviderConfig[] = [
   { value: 'civitai', label: 'Civitai', logo: '/assets/images/civitai.svg' }
 ] as const
 
-export function getProviderLabel(provider: SecretProvider | undefined): string {
+export function getProviderLabel(provider: string | undefined): string {
   if (!provider) return ''
   const config = SECRET_PROVIDERS.find((p) => p.value === provider)
   return config?.label ?? provider
 }
 
 export function getProviderLogo(
-  provider: SecretProvider | undefined
+  provider: string | undefined
 ): string | undefined {
   if (!provider) return undefined
   const config = SECRET_PROVIDERS.find((p) => p.value === provider)
