@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { nodeHelpService } from '@/services/nodeHelpService'
@@ -31,6 +31,10 @@ describe('nodeHelpService', () => {
     vi.clearAllMocks()
     mockFetch.mockReset()
     vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('returns blueprint descriptions without fetching markdown', async () => {

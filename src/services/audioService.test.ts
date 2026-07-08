@@ -97,16 +97,17 @@ describe('useAudioService', () => {
       )
       mockRegister.mockRejectedValueOnce(error)
 
-      await service.registerWavEncoder()
+      const isolatedService = await freshService()
+      await isolatedService.registerWavEncoder()
+      await isolatedService.registerWavEncoder()
 
-      expect(mockConnect).toHaveBeenCalledTimes(0)
-      expect(mockRegister).toHaveBeenCalledTimes(0)
+      expect(mockConnect).toHaveBeenCalledTimes(1)
+      expect(mockRegister).toHaveBeenCalledTimes(1)
       expect(console.error).not.toHaveBeenCalled()
     })
 
     it('should log encoder registration errors', async () => {
       const error = new Error('Encoder failed')
-      mockRegister.mockReset()
       mockRegister.mockRejectedValueOnce(error)
 
       const isolatedService = await freshService()
@@ -120,7 +121,6 @@ describe('useAudioService', () => {
     })
 
     it('should log non-Error encoder registration failures', async () => {
-      mockRegister.mockReset()
       mockRegister.mockRejectedValueOnce('Encoder failed')
 
       const isolatedService = await freshService()

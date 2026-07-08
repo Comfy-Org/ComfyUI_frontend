@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const distributionState = vi.hoisted(() => ({
   isDesktop: false
@@ -10,6 +10,11 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+const hadWindowControlsOverlay = 'windowControlsOverlay' in window.navigator
+const originalWindowControlsOverlay = (
+  window.navigator as { windowControlsOverlay?: unknown }
+).windowControlsOverlay
+
 beforeEach(() => {
   vi.resetModules()
   Reflect.deleteProperty(window, 'electronAPI')
@@ -17,6 +22,18 @@ beforeEach(() => {
     configurable: true,
     value: undefined
   })
+})
+
+afterEach(() => {
+  Reflect.deleteProperty(window, 'electronAPI')
+  if (hadWindowControlsOverlay) {
+    Object.defineProperty(window.navigator, 'windowControlsOverlay', {
+      configurable: true,
+      value: originalWindowControlsOverlay
+    })
+  } else {
+    Reflect.deleteProperty(window.navigator, 'windowControlsOverlay')
+  }
 })
 
 async function importEnvUtil(isDesktop: boolean) {

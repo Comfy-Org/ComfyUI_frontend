@@ -89,10 +89,9 @@ describe('useSubgraphStore', () => {
       }))
     )
     vi.mocked(api).getUserData = vi.fn((f) =>
-      Promise.resolve({
-        status: 200,
-        text: () => Promise.resolve(JSON.stringify(filenames[f.slice(10)]))
-      } as Response)
+      Promise.resolve(
+        new Response(JSON.stringify(filenames[f.slice(10)]), { status: 200 })
+      )
     )
     vi.mocked(api.getGlobalSubgraphs).mockResolvedValue(globalSubgraphs)
     return await store.fetchSubgraphs()
@@ -132,15 +131,16 @@ describe('useSubgraphStore', () => {
       }
     })
     //mock saving of file
-    vi.mocked(api.storeUserData).mockResolvedValue({
-      status: 200,
-      json: () =>
-        Promise.resolve({
+    vi.mocked(api.storeUserData).mockResolvedValue(
+      new Response(
+        JSON.stringify({
           path: 'subgraphs/testname.json',
           modified: Date.now(),
           size: 2
-        })
-    } as Response)
+        }),
+        { status: 200 }
+      )
+    )
     await mockFetch({ 'testname.json': mockGraph })
     //Dialogue service already mocked
     await store.publishSubgraph()
@@ -354,9 +354,9 @@ describe('useSubgraphStore', () => {
 
     it('deletes user blueprints after confirmation', async () => {
       await mockFetch({ 'test.json': mockGraph })
-      vi.mocked(api.deleteUserData).mockResolvedValue({
-        status: 204
-      } as Response)
+      vi.mocked(api.deleteUserData).mockResolvedValue(
+        new Response(null, { status: 204 })
+      )
 
       await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
 
@@ -619,15 +619,16 @@ describe('useSubgraphStore', () => {
     )
     useSettingStore().settingValues['Comfy.Workflow.WarnBlueprintOverwrite'] =
       true
-    vi.mocked(api.storeUserData).mockResolvedValue({
-      status: 200,
-      json: () =>
-        Promise.resolve({
+    vi.mocked(api.storeUserData).mockResolvedValue(
+      new Response(
+        JSON.stringify({
           path: 'subgraphs/test.json',
           modified: Date.now(),
           size: 2
-        })
-    } as Response)
+        }),
+        { status: 200 }
+      )
+    )
     await mockFetch({ 'test.json': mockGraph })
     const blueprint = useWorkflowStore().getWorkflowByPath(
       'subgraphs/test.json'
@@ -833,15 +834,14 @@ describe('useSubgraphStore', () => {
       let savedWorkflowData: Record<string, unknown> | null = null
       vi.mocked(api.storeUserData).mockImplementation(async (_path, data) => {
         savedWorkflowData = JSON.parse(data as string)
-        return {
-          status: 200,
-          json: () =>
-            Promise.resolve({
-              path: 'subgraphs/testname.json',
-              modified: Date.now(),
-              size: 2
-            })
-        } as Response
+        return new Response(
+          JSON.stringify({
+            path: 'subgraphs/testname.json',
+            modified: Date.now(),
+            size: 2
+          }),
+          { status: 200 }
+        )
       })
 
       await mockFetch({ 'testname.json': mockGraph })
@@ -891,15 +891,14 @@ describe('useSubgraphStore', () => {
       let savedWorkflowData: Record<string, unknown> | null = null
       vi.mocked(api.storeUserData).mockImplementation(async (_path, data) => {
         savedWorkflowData = JSON.parse(data as string)
-        return {
-          status: 200,
-          json: () =>
-            Promise.resolve({
-              path: 'subgraphs/testname.json',
-              modified: Date.now(),
-              size: 2
-            })
-        } as Response
+        return new Response(
+          JSON.stringify({
+            path: 'subgraphs/testname.json',
+            modified: Date.now(),
+            size: 2
+          }),
+          { status: 200 }
+        )
       })
 
       await mockFetch({ 'testname.json': mockGraph })
