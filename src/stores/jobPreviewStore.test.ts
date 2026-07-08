@@ -135,6 +135,7 @@ describe('jobPreviewStore', () => {
   it('clears previews when previews are disabled after storage', async () => {
     const store = useJobPreviewStore()
     store.setPreviewUrl('p1', 'blob:a', 'node-1')
+    vi.mocked(releaseSharedObjectUrl).mockClear()
 
     previewMethodRef.value = 'none'
     await nextTick()

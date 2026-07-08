@@ -82,6 +82,10 @@ describe('ResultItemImpl', () => {
       item({ filename: 'a.bin', format: 'video/mp4', frame_rate: 24 })
         .htmlVideoType
     ).toBe('video/mp4')
+    expect(
+      item({ filename: 'a.bin', format: 'video/webm', frame_rate: 24 })
+        .htmlVideoType
+    ).toBe('video/webm')
     expect(item({ filename: 'a.txt' }).htmlVideoType).toBeUndefined()
   })
 

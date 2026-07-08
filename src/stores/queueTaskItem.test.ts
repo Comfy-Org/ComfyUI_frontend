@@ -154,6 +154,9 @@ describe('TaskItemImpl', () => {
     expect(
       new TaskItemImpl(job({ execution_start_time: 1000 })).executionTime
     ).toBeUndefined()
+    expect(
+      new TaskItemImpl(job({ execution_end_time: 3000 })).executionTime
+    ).toBeUndefined()
   })
 
   it('flatten returns itself when not completed', () => {
