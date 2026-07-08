@@ -90,7 +90,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { search } = defineProps<{ search: string }>()
 
-const { d } = useI18n()
+const { d, n } = useI18n()
 const { manageSubscription } = useBillingContext()
 
 const tableContainer = ref<HTMLElement | null>(null)
@@ -127,10 +127,7 @@ function formatDate(date: Date): string {
 }
 
 function formatPrice(cents: number): string {
-  return (cents / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  })
+  return n(cents / 100, { style: 'currency', currency: 'USD' })
 }
 
 function openHistory() {

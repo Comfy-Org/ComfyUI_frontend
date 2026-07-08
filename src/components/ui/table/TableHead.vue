@@ -1,5 +1,6 @@
 <template>
   <th
+    scope="col"
     :class="
       cn(
         'h-10 px-2 text-left align-middle text-sm font-normal text-muted-foreground',

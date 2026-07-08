@@ -155,7 +155,7 @@ function openConfig() {
 const fmtCredits = (value: number) =>
   fmtNumber(value, { maximumFractionDigits: 0 })
 const fmtUsd = (cents: number) =>
-  (cents / 100).toLocaleString('en-US', {
+  fmtNumber(cents / 100, {
     style: 'currency',
     currency: 'USD',
     maximumFractionDigits: 0

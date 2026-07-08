@@ -17,7 +17,7 @@ export interface SnapshotRow {
 const SNAPSHOT_SIZE = 4
 
 export function useWorkspaceOverview() {
-  const { t } = useI18n()
+  const { t, d } = useI18n()
   const store = useTeamWorkspaceStore()
   const { members } = storeToRefs(store)
 
@@ -26,7 +26,7 @@ export function useWorkspaceOverview() {
   const plan = {
     name: 'Team',
     priceCents: 32000,
-    renewalLabel: nextRenewal.toLocaleDateString('en-US', {
+    renewalLabel: d(nextRenewal, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'

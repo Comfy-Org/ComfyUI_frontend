@@ -11,7 +11,7 @@
     <img
       v-if="imageUrl"
       :src="imageUrl"
-      alt=""
+      :alt="workspaceName"
       class="size-full object-cover"
     />
     <template v-else>{{ letter }}</template>

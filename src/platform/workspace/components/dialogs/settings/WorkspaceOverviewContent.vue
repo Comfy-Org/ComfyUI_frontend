@@ -46,7 +46,7 @@
                 class="rounded-lg"
                 :aria-label="$t('g.moreOptions')"
               >
-                <i class="pi pi-ellipsis-h" />
+                <i class="icon-[lucide--ellipsis] size-4" />
               </Button>
             </template>
           </DropdownMenu>
@@ -240,7 +240,7 @@ import { useDialogService } from '@/services/dialogService'
 
 const emit = defineEmits<{ navigate: [view: 'activity' | 'invoices'] }>()
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 
 // Plan lifecycle actions are for the workspace creator (Owner) only; Admins and
 // Members don't see Change plan or the overflow menu.
@@ -258,7 +258,9 @@ const { isFreeTier, subscription } = useBillingContext()
 const { showCancelSubscriptionDialog } = useDialogService()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const learnMoreUrl = 'https://docs.comfy.org/get_started/cloud'
+const learnMoreUrl = buildDocsUrl('/get_started/cloud', {
+  includeLocale: true
+})
 const partnerNodesPricingUrl = buildDocsUrl(docsPaths.partnerNodesPricing, {
   includeLocale: true
 })
@@ -325,7 +327,7 @@ function handleSeeMore() {
 }
 
 function formatPrice(cents: number): string {
-  return (cents / 100).toLocaleString('en-US', {
+  return n(cents / 100, {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0

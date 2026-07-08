@@ -34,6 +34,7 @@ interface SetAutoEnablePayload {
 }
 
 const partnerNodesApiClient = axios.create({
+  timeout: 10000,
   headers: { 'Content-Type': 'application/json' }
 })
 attachUnifiedRemintInterceptor(partnerNodesApiClient)

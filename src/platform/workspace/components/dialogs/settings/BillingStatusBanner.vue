@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="banner"
+    role="status"
     class="flex items-center gap-2 rounded-2xl border border-interface-stroke/60 bg-base-background p-4"
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1">
