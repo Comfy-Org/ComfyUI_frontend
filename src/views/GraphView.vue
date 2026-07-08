@@ -20,6 +20,7 @@
     </template>
   </div>
 
+  <OnboardingTourOverlay />
   <GlobalToast />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
@@ -47,6 +48,8 @@ import {
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
+import OnboardingTourOverlay from '@/renderer/extensions/onboardingTour/OnboardingTourOverlay.vue'
+import { useOnboardingTour } from '@/renderer/extensions/onboardingTour/useOnboardingTour'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
@@ -293,7 +296,11 @@ void nextTick(() => {
   })
 })
 
+const onboardingTour = useOnboardingTour()
+
 const onGraphReady = () => {
+  void onboardingTour.start()
+
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
