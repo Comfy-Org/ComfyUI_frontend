@@ -34,7 +34,7 @@ export const defaultOnboardingSurvey: OnboardingSurvey = {
           workflows: 'icon-[lucide--workflow]',
           apps_api: 'icon-[lucide--blocks]',
           exploring: 'icon-[lucide--compass]',
-          other: 'icon-[lucide--sparkles]'
+          other: 'icon-[lucide--pencil]'
         }
       )
     },

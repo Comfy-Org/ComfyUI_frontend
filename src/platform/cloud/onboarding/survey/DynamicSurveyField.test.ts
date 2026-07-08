@@ -62,6 +62,12 @@ describe('DynamicSurveyField', () => {
     expect(optionButton('Video')).toHaveAttribute('data-state', 'off')
   })
 
+  it('gives each option card a stable "<fieldId>-<value>" id', () => {
+    renderField(singleField)
+    expect(optionButton('Images')).toHaveAttribute('id', 'intent-images')
+    expect(optionButton('Video')).toHaveAttribute('id', 'intent-video')
+  })
+
   const multiField: OnboardingSurveyField = {
     id: 'making',
     type: 'multi',

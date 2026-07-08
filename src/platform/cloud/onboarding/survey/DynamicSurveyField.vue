@@ -2,9 +2,9 @@
   <fieldset
     v-if="field.type !== 'text'"
     :aria-invalid="Boolean(errorMessage)"
-    class="flex flex-col gap-4 border-0 p-0"
+    class="m-0 flex flex-col gap-4 border-0 p-0"
   >
-    <legend class="mb-2 block text-lg font-medium text-base-foreground">
+    <legend class="mb-2 block text-lg font-medium text-primary-comfy-canvas">
       {{ resolvedLabel }}
     </legend>
     <ToggleGroup
@@ -16,13 +16,16 @@
     >
       <ToggleGroupItem
         v-for="option in field.options"
+        :id="`${field.id}-${option.value}`"
         :key="option.value"
         :value="option.value"
         :class="optionCardClass"
       >
         <i
           v-if="option.icon"
-          :class="cn('size-4 shrink-0 text-muted-foreground', option.icon)"
+          :class="
+            cn('size-4 shrink-0 text-primary-comfy-canvas/60', option.icon)
+          "
           aria-hidden="true"
         />
         <span class="flex-1">{{ resolveOptionLabel(option) }}</span>
@@ -38,13 +41,16 @@
     >
       <ToggleGroupItem
         v-for="option in field.options"
+        :id="`${field.id}-${option.value}`"
         :key="option.value"
         :value="option.value"
         :class="optionCardClass"
       >
         <i
           v-if="option.icon"
-          :class="cn('size-4 shrink-0 text-muted-foreground', option.icon)"
+          :class="
+            cn('size-4 shrink-0 text-primary-comfy-canvas/60', option.icon)
+          "
           aria-hidden="true"
         />
         <span class="flex-1">{{ resolveOptionLabel(option) }}</span>
@@ -54,6 +60,7 @@
     <Input
       v-if="field.allowOther && field.otherFieldId && isOtherSelected"
       :model-value="(otherValue as string) ?? ''"
+      :class="inputClass"
       :placeholder="
         $t(
           `cloudOnboarding.survey.options.${field.id}.otherPlaceholder`,
@@ -67,7 +74,7 @@
   <div v-else class="flex flex-col gap-3">
     <label
       :for="controlId"
-      class="block text-lg font-medium text-base-foreground"
+      class="block text-lg font-medium text-primary-comfy-canvas"
     >
       {{ resolvedLabel }}
     </label>
@@ -76,6 +83,7 @@
       :model-value="(modelValue as string) ?? ''"
       :placeholder="field.placeholder"
       :aria-invalid="Boolean(errorMessage)"
+      :class="inputClass"
       @update:model-value="onTextChange"
     />
     <p v-if="errorMessage" class="text-danger text-xs">{{ errorMessage }}</p>
@@ -116,10 +124,13 @@ const { t, te, locale } = useI18n()
 const controlId = useId()
 
 const optionCardClass =
-  'group h-auto w-full items-center justify-start gap-3 rounded-lg bg-node-component-surface px-4 py-3 text-left text-sm text-base-foreground transition-colors hover:bg-tertiary-background data-[state=on]:bg-muted-background data-[state=on]:ring-1 data-[state=on]:ring-brand-yellow'
+  'group h-auto w-full items-center justify-start gap-3 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 px-4 py-3 text-left text-sm text-primary-comfy-canvas shadow-inset-highlight transition-colors hover:bg-sand-300/20 data-[state=on]:bg-sand-300/15 data-[state=on]:ring-1 data-[state=on]:ring-inset data-[state=on]:ring-brand-yellow'
 
 const checkMarkClass =
   'icon-[lucide--check] size-4 shrink-0 text-brand-yellow opacity-0 group-data-[state=on]:opacity-100'
+
+const inputClass =
+  'border-smoke-800/10 bg-smoke-800/10 text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/50 focus-visible:ring-inset'
 
 const isOtherSelected = computed(() =>
   Array.isArray(modelValue)
@@ -148,13 +159,10 @@ const onSingleChange = (value: unknown) => {
   emit('update:modelValue', typeof value === 'string' ? value : '')
 }
 const onMultiChange = (value: unknown) => {
-  if (!Array.isArray(value)) {
-    emit('update:modelValue', [])
-    return
-  }
+  const selected = Array.isArray(value) ? value : []
   emit(
     'update:modelValue',
-    value.filter((v): v is string => typeof v === 'string')
+    selected.filter((v): v is string => typeof v === 'string')
   )
 }
 const onTextChange = (value: string | number | undefined) => {

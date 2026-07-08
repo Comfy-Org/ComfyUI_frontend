@@ -9,7 +9,7 @@ import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 import DynamicSurveyForm from './DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './defaultSurveySchema'
 
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 20))
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 300))
 
 const renderForm = (survey: OnboardingSurvey) =>
   render(DynamicSurveyForm, {
@@ -91,9 +91,8 @@ describe('DynamicSurveyForm', () => {
 
     expect(screen.getByText('What do you want to make?')).toBeVisible()
     expect(screen.getByText('Images')).toBeInTheDocument()
-    // One card per option, plus the single Next button on the first step.
     expect(screen.getAllByRole('button')).toHaveLength(
-      firstField.options!.length + 1
+      firstField.options!.length
     )
   })
 
@@ -137,6 +136,21 @@ describe('DynamicSurveyForm', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }))
     await flushPromises()
     expect(screen.getByText('What do you want to make?')).toBeVisible()
+  })
+
+  it('offers Next on an already-answered single-select reached via Back', async () => {
+    const user = userEvent.setup()
+    renderForm(twoStepSurvey)
+
+    await clickOption(user, 'Images')
+    await flushPromises()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await flushPromises()
+
+    const next = screen.getByRole('button', { name: 'Next' })
+    await user.click(next)
+    await flushPromises()
+    expect(screen.getByText('Pick everything that applies')).toBeVisible()
   })
 
   it('reveals a branched follow-up step from the answer and submits it', async () => {
@@ -212,6 +226,38 @@ describe('DynamicSurveyForm', () => {
     await user.click(submit)
     await flushPromises()
     expect(firstSubmitPayload(emitted())).toEqual({ source: 'A newsletter' })
+  })
+
+  it('surfaces the free-text error once "other" text is touched then cleared', async () => {
+    const user = userEvent.setup()
+    const otherSurvey: OnboardingSurvey = {
+      version: 1,
+      fields: [
+        {
+          id: 'source',
+          type: 'single',
+          label: 'How did you find us?',
+          required: true,
+          allowOther: true,
+          otherFieldId: 'sourceOther',
+          options: [
+            { value: 'search', label: 'Web search' },
+            { value: 'other', label: 'Somewhere else' }
+          ]
+        }
+      ]
+    }
+    renderForm(otherSurvey)
+
+    await clickOption(user, 'Somewhere else')
+    await flushPromises()
+    const input = screen.getByPlaceholderText('Where did you find us?')
+    // Type then clear → the free-text field is touched but empty, so its
+    // required error surfaces.
+    await user.type(input, 'x')
+    await user.clear(input)
+    await flushPromises()
+    expect(screen.getByText('Please describe your answer.')).toBeVisible()
   })
 
   it('shows a required-field error only after the user interacts, not before', async () => {

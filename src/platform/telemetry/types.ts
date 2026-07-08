@@ -62,6 +62,8 @@ export interface SurveyResponses {
   source?: string
   sourceOther?: string
   source_social?: string
+  // Legacy fields — only emitted by older backend-supplied schemas, never by
+  // the current default. Kept so historical responses still typecheck.
   familiarity?: string
   industry?: string
   useCase?: string

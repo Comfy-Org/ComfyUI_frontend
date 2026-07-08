@@ -3123,7 +3123,7 @@
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
     "survey": {
-      "title": "Cloud Survey",
+      "title": "Let's get to know you",
       "placeholder": "Survey questions placeholder",
       "intro": "A few quick questions so we can set up ComfyUI for you.",
       "otherPlaceholder": "Tell us more",

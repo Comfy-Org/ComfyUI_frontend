@@ -1,7 +1,12 @@
 <template>
   <div
-    class="dark-theme flex max-h-[85vh] w-[360px] max-w-[90vw] flex-col overflow-y-auto"
+    class="dark-theme flex max-h-[85vh] w-full max-w-md flex-col overflow-y-auto px-4 sm:px-6"
   >
+    <h1
+      class="-mb-1 font-inter text-xl/8 font-semibold tracking-wide text-primary-comfy-canvas sm:text-2xl/8"
+    >
+      {{ $t('cloudOnboarding.survey.title') }}
+    </h1>
     <DynamicSurveyForm
       :key="activeSurvey.version"
       :survey="activeSurvey"
@@ -30,24 +35,13 @@ const router = useRouter()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 
-// TEMPORARY: prefer the frontend default so the redesigned survey is visible
-// even while the backend still ships the old schema. Revert to
-// `remoteConfig.value.onboarding_survey ?? defaultOnboardingSurvey` before merge.
 const activeSurvey = computed(
-  () => defaultOnboardingSurvey ?? remoteConfig.value.onboarding_survey
+  () => remoteConfig.value.onboarding_survey ?? defaultOnboardingSurvey
 )
 
 const isSubmitting = ref(false)
 
-// TEMPORARY: preview the redesigned survey regardless of enabled/completed
-// state. Delete this line and its use below before merge.
-const previewSurveyAlways = true
-
 onMounted(async () => {
-  if (previewSurveyAlways) {
-    useTelemetry()?.trackSurvey('opened')
-    return
-  }
   if (!onboardingSurveyEnabled.value) {
     await router.replace({ name: 'cloud-user-check' })
     return
