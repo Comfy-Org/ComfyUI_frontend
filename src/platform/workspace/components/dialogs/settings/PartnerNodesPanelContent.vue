@@ -24,7 +24,6 @@
           >
             <TableHead class="w-6">
               <Checkbox
-                v-if="hasSelection"
                 :model-value="allFilteredSelected"
                 :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
                 @update:model-value="toggleSelectAll"
