@@ -297,12 +297,14 @@ describe(useOutputHistory, () => {
         {
           id: 'item-1',
           jobId: 'job-1',
+          seq: 0,
           state: 'image',
           output: makeResult('a.png')
         },
         {
           id: 'item-2',
           jobId: 'job-1',
+          seq: 1,
           state: 'image',
           output: makeResult('b.png')
         }
@@ -422,7 +424,7 @@ describe(useOutputHistory, () => {
 
     it('returns false when there are active in-progress items', () => {
       activeWorkflowInProgressItemsRef.value = [
-        { id: 'item-1', jobId: 'job-1', state: 'skeleton' }
+        { id: 'item-1', jobId: 'job-1', seq: 0, state: 'skeleton' }
       ]
       runningTasksRef.value = [{ jobId: 'job-1' }]
       jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])

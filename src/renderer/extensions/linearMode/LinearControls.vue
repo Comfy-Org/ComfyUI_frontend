@@ -41,7 +41,7 @@ const { toastTo, mobile } = defineProps<{
   mobile?: boolean
 }>()
 defineEmits<{ navigateOutputs: [] }>()
-defineExpose({ runButtonClick, handleDragDrop })
+defineExpose({ handleDragDrop })
 
 //NOTE: due to batching, will never be greater than 2
 const pendingJobQueues = ref(0)
