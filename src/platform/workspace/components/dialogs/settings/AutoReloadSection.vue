@@ -65,7 +65,7 @@
         >
           <i class="icon-[lucide--coins] size-4 text-credit" />
           <span
-            class="text-base font-semibold text-base-foreground tabular-nums"
+            class="text-2xl leading-none font-semibold text-base-foreground tabular-nums"
           >
             {{ reloadCreditsLabel }}
           </span>
