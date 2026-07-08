@@ -9,9 +9,9 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
-import type { NodeId } from '@/types/nodeId'
+import type { CreditBadge } from '@/renderer/extensions/linearMode/useCreditsSummary'
 
-defineProps<{ badges: readonly (readonly [string, string, NodeId])[] }>()
+defineProps<{ badges: readonly CreditBadge[] }>()
 
 const { t } = useI18n()
 </script>
@@ -49,10 +49,10 @@ const { t } = useI18n()
       class="m-0 grid max-h-31 list-none grid-cols-[1fr_auto] gap-x-3 gap-y-2 overflow-y-auto pr-0.5 pl-0"
     >
       <PartnerNodeItem
-        v-for="[title, price, key] in badges"
-        :key
-        :title
-        :price
+        v-for="badge in badges"
+        :key="badge.nodeId"
+        :title="badge.title"
+        :price="badge.price"
       />
     </ul>
   </div>

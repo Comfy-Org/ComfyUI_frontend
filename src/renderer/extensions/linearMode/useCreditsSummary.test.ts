@@ -60,7 +60,7 @@ describe('useCreditsSummary', () => {
     expect(useCreditsSummary().creditsBadges.value).toEqual([])
   })
 
-  it('summarizes only priced leaf nodes as [title, price, id]', () => {
+  it('summarizes only priced leaf nodes as title/price/nodeId', () => {
     appMock.graph = {
       nodes: [
         node('a', 'Flux', [creditsBadge('99 credits/Run')]),
@@ -70,8 +70,8 @@ describe('useCreditsSummary', () => {
     }
 
     expect(useCreditsSummary().creditsBadges.value).toEqual([
-      ['Flux', '99 credits/Run', 'a'],
-      ['Inner', '12 credits', 'c']
+      { title: 'Flux', price: '99 credits/Run', nodeId: 'a' },
+      { title: 'Inner', price: '12 credits', nodeId: 'c' }
     ])
   })
 

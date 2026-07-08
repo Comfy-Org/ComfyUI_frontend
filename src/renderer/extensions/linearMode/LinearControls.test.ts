@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeError } from '@/schemas/apiSchema'
+import type { CreditBadge } from '@/renderer/extensions/linearMode/useCreditsSummary'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -21,7 +22,7 @@ const overlayMock = vi.hoisted(() => ({
 }))
 
 const creditsMock = vi.hoisted(() => ({
-  badges: [] as (readonly [string, string, string])[]
+  badges: [] as CreditBadge[]
 }))
 
 vi.mock('@/renderer/extensions/linearMode/useCreditsSummary', async () => {
@@ -56,7 +57,7 @@ const i18n = createI18n({
           goto: 'Show errors in graph'
         },
         mobileNoWorkflow: 'No workflow',
-        runCount: 'Run count',
+        generations: 'Generations',
         usesCredits: 'Uses credits',
         viewJob: 'View job'
       },
@@ -216,7 +217,9 @@ describe('LinearControls', () => {
   ])(
     'flags a credit cost on the run button in $label controls',
     ({ mobile }) => {
-      creditsMock.badges = [['Flux', '99.9 credits/Run', '1']]
+      creditsMock.badges = [
+        { title: 'Flux', price: '99.9 credits/Run', nodeId: toNodeId('1') }
+      ]
 
       renderControls({ mobile })
 

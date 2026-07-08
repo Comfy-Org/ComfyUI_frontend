@@ -199,11 +199,11 @@ function handleDragDrop() {
             </template>
             <div
               class="m-1 mb-2 text-node-component-slot-text uppercase"
-              v-text="t('linearMode.runCount')"
+              v-text="t('linearMode.generations')"
             />
             <ScrubableNumberInput
               v-model="batchCount"
-              :aria-label="t('linearMode.runCount')"
+              :aria-label="t('linearMode.generations')"
               :min="1"
               :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
               class="h-10 min-w-40"
@@ -234,11 +234,11 @@ function handleDragDrop() {
         <div class="mx-1 flex flex-wrap items-center justify-between gap-2">
           <div
             class="text-xs text-base-foreground uppercase"
-            v-text="t('linearMode.runCount')"
+            v-text="t('linearMode.generations')"
           />
           <ScrubableNumberInput
             v-model="batchCount"
-            :aria-label="t('linearMode.runCount')"
+            :aria-label="t('linearMode.generations')"
             :min="1"
             :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
             class="h-7 min-w-40"

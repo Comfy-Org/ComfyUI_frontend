@@ -3,17 +3,23 @@ import { computed, toValue } from 'vue'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { app } from '@/scripts/app'
+import type { NodeId } from '@/types/nodeId'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
+export interface CreditBadge {
+  title: string
+  price: string
+  nodeId: NodeId
+}
+
 /**
- * Collects the credit-cost badges of every priced node in the active graph.
- * Shared by the credits panel and the run/subscribe button pill so both stay
- * in sync.
+ * Collects the credit-cost badges of every priced node in the active graph,
+ * feeding both the run/subscribe button pill and the breakdown popover.
  */
 export function useCreditsSummary() {
   const { isCreditsBadge } = usePriceBadge()
 
-  const creditsBadges = computed(() => {
+  const creditsBadges = computed<CreditBadge[]>(() => {
     if (!app.isGraphReady) return []
 
     return mapAllNodes(app.graph, (node) => {
@@ -23,7 +29,11 @@ export function useCreditsSummary() {
       if (!priceBadge) return
 
       trackNodePrice(node)
-      return [node.title, toValue(priceBadge).text, node.id] as const
+      return {
+        title: node.title,
+        price: toValue(priceBadge).text,
+        nodeId: node.id
+      }
     })
   })
 

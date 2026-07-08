@@ -26,12 +26,13 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { large = false } = defineProps<{ large?: boolean }>()
 
@@ -54,11 +55,9 @@ const buttonLabel = computed(() => {
 })
 
 const buttonTooltip = computed(() => {
-  const tooltip = canResubscribe.value
-    ? t('subscription.subscribeToRunFull')
-    : t('subscription.inactive.memberRunTooltip')
-  // Skip the tooltip when it would only repeat the visible button label
-  return tooltip === buttonLabel.value ? undefined : tooltip
+  if (!canResubscribe.value) return t('subscription.inactive.memberRunTooltip')
+  // md+ already shows the full label, so the matching tooltip would be redundant
+  return isMdOrLarger.value ? undefined : t('subscription.subscribeToRunFull')
 })
 
 function handleSubscribeToRun() {
