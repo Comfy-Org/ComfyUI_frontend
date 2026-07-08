@@ -126,6 +126,10 @@ reviews:
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
         Reuse shared factories in `src/utils/__tests__/litegraphTestUtils.ts` instead of hand-rolling litegraph mock builders.
         Flag mocked litegraph classes when a real instance or shared factory would exercise behavior directly.
+    - path: '{src/scripts/app.core.test.ts,src/scripts/pnginfo.test.ts,src/services/subgraphService.test.ts,src/utils/vintageClipboard.test.ts}'
+      instructions: |
+        Flag local fixture builders such as `createMockNode`, `createMockCanvas`, `createNode`, `createCanvas`, `createWorkflow`, or `createExportedSubgraph` when they recreate LiteGraph nodes, canvases, workflows, or subgraphs that existing shared helpers already provide.
+        Prefer shared helpers from `src/utils/__tests__/litegraphTestUtils.ts`, `src/utils/__tests__/executionErrorTestUtils.ts`, or subgraph fixtures. A wrapper is acceptable only when it delegates to the shared helper and adds meaningful domain-specific behavior.
     - path: 'src/services/litegraphService*.test.ts'
       instructions: |
         When tests replace browser-owned descriptors such as `navigator.clipboard`, verify the original descriptor is saved and restored. `vi.unstubAllGlobals()` does not restore descriptors changed with `Object.defineProperty`.
