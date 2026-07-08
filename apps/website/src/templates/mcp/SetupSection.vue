@@ -17,7 +17,8 @@ const cards: FeatureCard[] = [
     description: t('mcp.setup.step1.description', locale),
     action: {
       type: 'code',
-      value: externalLinks.mcpServer
+      value: t('mcp.setup.step1.command', locale),
+      multiline: true
     }
   },
   {
@@ -53,6 +54,7 @@ const cards: FeatureCard[] = [
 
 <template>
   <FeatureGrid01
+    id="setup"
     :eyebrow="t('mcp.setup.label', locale)"
     :heading="t('mcp.setup.heading', locale)"
     :subtitle="t('mcp.setup.subtitle', locale)"

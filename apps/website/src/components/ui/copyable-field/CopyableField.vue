@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -7,9 +8,15 @@ import { useClipboard } from '@vueuse/core'
 // needs it to work.
 const {
   value,
+  multiline = false,
   copyLabel = 'Copy',
   copiedLabel = 'Copied'
-} = defineProps<{ value: string; copyLabel?: string; copiedLabel?: string }>()
+} = defineProps<{
+  value: string
+  multiline?: boolean
+  copyLabel?: string
+  copiedLabel?: string
+}>()
 
 const { copy, copied } = useClipboard({ copiedDuring: 2000 })
 
@@ -20,15 +27,32 @@ function handleCopy() {
 
 <template>
   <div
-    class="bg-transparency-white-t4 border-primary-warm-gray flex items-center gap-2 rounded-xl border px-4 py-3"
+    :class="
+      cn(
+        'bg-transparency-white-t4 border-primary-warm-gray flex gap-2 rounded-xl border px-4 py-3',
+        multiline ? 'items-start' : 'items-center'
+      )
+    "
   >
-    <span class="flex-1 truncate font-mono text-xs text-primary-comfy-canvas">
+    <span
+      :class="
+        cn(
+          'flex-1 font-mono text-xs text-primary-comfy-canvas',
+          multiline ? 'wrap-break-word whitespace-pre-line' : 'truncate'
+        )
+      "
+    >
       {{ value }}
     </span>
     <button
       type="button"
       :aria-label="copied ? copiedLabel : copyLabel"
-      class="text-primary-warm-gray shrink-0 cursor-pointer transition-colors hover:text-primary-comfy-canvas"
+      :class="
+        cn(
+          'text-primary-warm-gray shrink-0 cursor-pointer transition-colors hover:text-primary-comfy-canvas',
+          multiline && 'mt-0.5'
+        )
+      "
       @click="handleCopy"
     >
       <component :is="copied ? Check : Copy" class="size-4" />

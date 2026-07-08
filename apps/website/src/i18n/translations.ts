@@ -1872,6 +1872,10 @@ const translations = {
     en: 'VIEW DOCS',
     'zh-CN': '查看文档'
   },
+  'mcp.hero.installMcp': {
+    en: 'INSTALL MCP',
+    'zh-CN': '安装 MCP'
+  },
   'mcp.hero.runWorkflow': {
     en: 'RUN A WORKFLOW',
     'zh-CN': '运行工作流'
@@ -1909,21 +1913,28 @@ const translations = {
   },
   'mcp.setup.step1.label': { en: 'STEP 1', 'zh-CN': '第 1 步' },
   'mcp.setup.step1.title': {
-    en: 'Copy the MCP URL',
-    'zh-CN': '复制 MCP URL'
+    en: 'Ask your agent to install Comfy MCP',
+    'zh-CN': '让你的智能体安装 Comfy MCP'
+  },
+  'mcp.setup.step1.command': {
+    en: 'Help me install Comfy MCP.\nFollow the setup guide at https://docs.comfy.org/agent-tools/cloud',
+    'zh-CN':
+      '帮我安装 Comfy MCP。\n请按照 https://docs.comfy.org/agent-tools/cloud 上的设置指南操作。'
   },
   'mcp.setup.step1.description': {
-    en: "Click the copy button below. You'll paste it into your client in the next step.",
-    'zh-CN': '点击下方的复制按钮，下一步将其粘贴到你的客户端中。'
+    en: 'Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
+    'zh-CN':
+      '将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
   },
   'mcp.setup.step2.label': { en: 'STEP 2', 'zh-CN': '第 2 步' },
   'mcp.setup.step2.title': {
-    en: 'Add the connector',
-    'zh-CN': '添加连接器'
+    en: 'Or add it by hand',
+    'zh-CN': '或手动添加'
   },
   'mcp.setup.step2.description': {
-    en: 'Name it Comfy Cloud and paste the URL. The docs below cover every client.',
-    'zh-CN': '将其命名为 Comfy Cloud 并粘贴 URL。下方文档涵盖各类客户端。'
+    en: 'Prefer manual setup? Add Comfy Cloud as a custom connector with the MCP URL. The docs cover every client.',
+    'zh-CN':
+      '想手动配置？用 MCP URL 将 Comfy Cloud 添加为自定义连接器。文档涵盖各类客户端。'
   },
   'mcp.setup.step2.cta': {
     en: 'COMFY CLOUD MCP DOCS',
