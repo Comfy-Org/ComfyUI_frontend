@@ -102,18 +102,18 @@ Who and what the suite touches.
 
 ```mermaid
 flowchart TB
-    TEAM["Engineering team<br/>consumes verdicts and the<br/>evidence ledgers"]
-    CIP["CI platform<br/>runs the gate on every PR"]
-    SUITE["Custom-Node Regression Suite<br/>manifest-driven verification of<br/>community node packs"]
-    FE["ComfyUI frontend<br/>the system under test,<br/>running in a real browser"]
-    BE["ComfyUI backend<br/>real graph execution engine"]
-    PACKS["Community node packs<br/>external code, installed at<br/>pinned versions"]
-    CIP -->|"builds the environment,<br/>triggers the suite"| SUITE
-    SUITE -->|"drives a real browser session:<br/>creates nodes, wires, saves,<br/>submits work"| FE
-    FE <-->|"node definitions, prompts,<br/>execution events"| BE
+    TEAM["Engineering team: consumes verdicts and the evidence ledgers"]
+    CIP["CI platform: runs the gate on every PR"]
+    SUITE["Custom-Node Regression Suite: manifest-driven verification of community node packs"]
+    FE["ComfyUI frontend: the system under test, running in a real browser"]
+    BE["ComfyUI backend: real graph execution engine"]
+    PACKS["Community node packs: external code, installed at pinned versions"]
+    CIP -->|"builds the environment, triggers the suite"| SUITE
+    SUITE -->|"drives a real browser session: creates nodes, wires, saves, submits work"| FE
+    FE <-->|"node definitions, prompts, execution events"| BE
     PACKS -->|"python side installs into"| BE
     PACKS -->|"frontend scripts load into"| FE
-    SUITE -->|"per-node verdicts +<br/>mechanism-carrying exceptions"| TEAM
+    SUITE -->|"per-node verdicts + mechanism-carrying exceptions"| TEAM
 ```
 
 The load-bearing property: the suite tests the same stack a user runs. The
@@ -141,8 +141,8 @@ table than as crossing arrows.
 
 ```mermaid
 flowchart TB
-    MAN["Pack Manifest<br/>one declarative row per pack:<br/>source, pinned version, tiers,<br/>known-failure baseline"]
-    ORCH["Test Orchestrator<br/>iterates the manifest, runs every<br/>tier against every pack"]
+    MAN["Pack Manifest: one declarative row per pack (source, pinned version, tiers, known-failure baseline)"]
+    ORCH["Test Orchestrator: iterates the manifest and runs every tier against every pack"]
     subgraph TIERS ["Verification tiers (section 5)"]
         direction LR
         TM["Mount<br/>Completeness"]
@@ -150,12 +150,12 @@ flowchart TB
         TW["Wiring<br/>Compatibility"]
         TX["Execution"]
     end
-    EVID["Evidence Ledgers + Reconciler<br/>collects every pass/fail from every tier;<br/>every exception carries its causal mechanism;<br/>lists are guarded against going stale"]
+    EVID["Evidence Ledgers + Reconciler: collects every result; every exception carries its causal mechanism; lists cannot go stale"]
     GATE["Gate verdict + team-facing evidence"]
     MAN -->|"drives"| ORCH
     ORCH -->|"runs, per pack"| TIERS
     TIERS -->|"all results and exceptions"| EVID
-    EVID -->|"green only if everything is<br/>accounted for"| GATE
+    EVID -->|"green only if everything is accounted for"| GATE
 ```
 
 The shared services behind the tiers:
@@ -194,11 +194,11 @@ corpus.
 
 ```mermaid
 flowchart LR
-    PUB["Backend publishes<br/>node definitions"] --> NORM["Suite normalizes them:<br/>definitions arrive in two dialects,<br/>one canonical model leaves"]
-    NORM --> CORPUS["Canonical definition corpus:<br/>every node the packs register,<br/>re-discovered live each run"]
-    CORPUS -->|"derives"| W["Wiring plan:<br/>which slots can pair, and why"]
-    CORPUS -->|"derives"| X["Execution plan:<br/>which nodes can run,<br/>and why the rest cannot"]
-    CORPUS -->|"derives"| M["Mount expectations:<br/>what each created node<br/>must materialize"]
+    PUB["Backend publishes node definitions"] --> NORM["Suite normalizes them: two dialects arrive, one canonical model leaves"]
+    NORM --> CORPUS["Canonical definition corpus: every node the packs register, re-discovered live each run"]
+    CORPUS -->|"derives"| W["Wiring plan: which slots can pair, and why"]
+    CORPUS -->|"derives"| X["Execution plan: which nodes can run, and why the rest cannot"]
+    CORPUS -->|"derives"| M["Mount expectations: what each created node must materialize"]
 ```
 
 The three plans are independent consumers of the same corpus: the wiring
@@ -219,22 +219,22 @@ still attributes every failure to the right node.
 
 ```mermaid
 flowchart TD
-    CLASS["Classify each node's capability:<br/>runnable on its own defaults /<br/>runnable with synthesized inputs /<br/>blocked, with the reason recorded<br/>(needs real models, needs unproducible<br/>inputs, nothing observable to run)"]
-    CLASS --> BATCH["Group runnable nodes into small batches:<br/>failures stay isolated, queue cost amortized"]
-    BATCH --> BUILD["Build a disposable test graph per batch:<br/>each node under test + synthetic producers<br/>for its required inputs + an observation<br/>sink on its output"]
-    BUILD --> SUBMIT["Submit for real execution.<br/>Guarded: a crash inside a pack's own<br/>script records as that node's failure,<br/>never as a tier abort"]
-    SUBMIT --> OBSERVE["Observe execution events through<br/>attribution filters: only THIS attempt,<br/>only nodes in THIS graph (D6)"]
+    CLASS["Classify each node: runnable on its own defaults / runnable with synthesized inputs / blocked, with the reason recorded"]
+    CLASS --> BATCH["Group runnable nodes into small batches: failures stay isolated, queue cost is amortized"]
+    BATCH --> BUILD["Build a disposable test graph: node under test + synthetic producers for its inputs + an observation sink on its output"]
+    BUILD --> SUBMIT["Submit for real execution, guarded: a crash inside a pack's own script records as that node's failure, never a tier abort"]
+    SUBMIT --> OBSERVE["Observe execution events through the attribution filters: only THIS attempt, only nodes in THIS graph (D6)"]
     OBSERVE --> V{"outcome?"}
     V -->|"ran, output observed at the sink"| CLEAN["clean"]
-    V -->|"ran, but nothing arrived at the sink"| NOOUT["failure: data never flowed"]
+    V -->|"ran, nothing arrived at the sink"| NOOUT["failure: data never flowed"]
     V -->|"error attributed to this graph"| ERR["failure: named node, named cause"]
-    V -->|"no response in time"| INT{"interrupt the engine:<br/>does the queue recover?"}
+    V -->|"no response in time"| INT{"interrupt the engine: does the queue recover?"}
     INT -->|"yes"| ERR
-    INT -->|"no: the engine is wedged"| HUNG["stop the tier and name the batch<br/>as suspects. Everything queued behind<br/>the offender is a victim, not a finding;<br/>identify the offender before excluding"]
-    ERR --> BIS["re-run each batch member alone,<br/>so the offender names itself"]
+    INT -->|"no"| HUNG["engine wedged: stop the tier and name the batch as suspects; queued nodes are victims, not findings"]
+    ERR --> BIS["re-run each batch member alone, so the offender names itself"]
     NOOUT --> BIS
     CLEAN --> REC
-    BIS --> REC["Reconcile against the pack's known-failure<br/>baseline, in BOTH directions:<br/>an unlisted failure fails the gate (regression<br/>or a new, justified entry) AND a listed node<br/>that now passes fails the gate (stale entry)"]
+    BIS --> REC["Reconcile with the known-failure baseline, in BOTH directions: an unlisted failure fails the gate, and a listed node that now passes also fails it"]
 ```
 
 Synthesized inputs are produced by a small set of self-sufficient core
