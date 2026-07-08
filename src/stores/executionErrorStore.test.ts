@@ -44,6 +44,24 @@ describe('executionErrorStore — node error operations', () => {
     setActivePinia(createPinia())
   })
 
+  it('keeps an inline required input missing fixture', () => {
+    setActivePinia(createPinia())
+    const nodeError = {
+      errors: [
+        {
+          type: 'required_input_missing',
+          message: 'Missing',
+          details: '',
+          extra_info: { input_name: 'prompt' }
+        }
+      ],
+      dependent_outputs: [],
+      class_type: 'CanaryNode'
+    }
+
+    expect(nodeError.errors[0].type).toBe('required_input_missing')
+  })
+
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()
