@@ -3698,7 +3698,6 @@
     "runCount": "Number of runs",
     "generating": "Generating…",
     "stopGeneration": "Stop generation",
-    "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download {count} assets from this run",
     "viewJob": "View Job",
