@@ -78,10 +78,8 @@ watch(
   }
 )
 
-// The draft rides the wire untyped; validate it through the host workflow schema
-// before loading. A failed canvas apply is a WORKFLOW error, so it surfaces through
-// the host error overlay ("View details" opens the Errors tab), once per failure
-// streak (a turn can carry many patches).
+// The draft rides the wire untyped; validate through the host schema. A failed
+// apply is a workflow error, surfaced via the host overlay once per failure streak.
 const executionErrorStore = useExecutionErrorStore()
 let draftRejectionNotified = false
 
@@ -91,7 +89,7 @@ function surfaceDraftApplyFailure(details: string): void {
   draftRejectionNotified = true
   executionErrorStore.lastPromptError = {
     type: 'agent_draft_apply_failed',
-    message: t('agent.draftApplyFailed'),
+    message: t('errorCatalog.promptErrors.agent_draft_apply_failed.desc'),
     details
   }
   executionErrorStore.showErrorOverlay()
