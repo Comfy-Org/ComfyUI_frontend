@@ -44,9 +44,7 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
 // Announcement banner — build-time visibility gate + content-hash version key.
 const bannerData = getBannerData(bannerConfig, locale)
-// Path with the locale prefix stripped, so exclusion works on both /mcp and /zh-CN/mcp.
 const bannerCurrentPath = Astro.url.pathname.replace(/^\/zh-CN/, '') || '/'
-// Never show the banner on its own internal CTA destination (e.g. the /mcp page).
 const bannerExcludePaths = bannerConfig.link?.href.startsWith('/')
   ? [bannerConfig.link.href]
   : undefined

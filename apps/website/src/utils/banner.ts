@@ -10,7 +10,6 @@ export const BANNER_DISMISS_ATTR = 'data-banner-dismissed'
 export interface BannerVisibilityContext {
   currentLocale: string
   currentSection: string
-  /** The current page path (locale prefix stripped), for `excludePaths`. */
   currentPath: string
   now: Date
 }
@@ -21,14 +20,10 @@ export interface EvaluableBanner {
   endsAt?: string
   targetLocales?: readonly string[]
   targetSections?: readonly string[]
-  /**
-   * Paths the banner must NOT render on — typically its own CTA destination, so
-   * a "Go to X" banner doesn't linger on page X. Compared locale-agnostically.
-   */
+  /** Paths the banner must not render on (e.g. its own CTA destination). */
   excludePaths?: readonly string[]
 }
 
-/** Leading slash, no trailing slash, so `/mcp` and `/mcp/` compare equal. */
 function normalizePath(path: string): string {
   const withLead = path.startsWith('/') ? path : `/${path}`
   return withLead.length > 1 ? withLead.replace(/\/+$/, '') : withLead

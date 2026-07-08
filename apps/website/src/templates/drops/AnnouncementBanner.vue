@@ -21,8 +21,7 @@ const {
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)
 
-// Clicking the CTA is engagement: persist the dismissal so the banner doesn't
-// linger on the destination page or keep nagging on later navigations.
+// Engaging with the CTA dismisses the banner too.
 function onCtaClick(): void {
   close()
   persistHidden()
@@ -37,8 +36,7 @@ function onCtaClick(): void {
           data-slot="announcement-banner"
           class="bg-primary-comfy-ink-light relative flex items-center gap-x-4 px-4 py-2.5 sm:before:flex-1"
         >
-          <!-- Acid-yellow hairline along the bottom edge: the one brand accent
-               that separates this dark bar from the dark navbar below it. -->
+          <!-- Acid-yellow hairline separating the bar from the navbar. -->
           <div
             class="bg-primary-comfy-yellow/40 pointer-events-none absolute inset-x-0 bottom-0 h-px"
             aria-hidden="true"
