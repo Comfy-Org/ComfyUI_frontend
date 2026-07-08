@@ -137,6 +137,10 @@ reviews:
       instructions: |
         When link-retargeting logic such as `compressWidgetInputSlots()` changes to guard nullable or sparse links, require direct coverage of the malformed legacy shape.
         For sparse links, tests should include `links: [null, validLink]` and assert the valid link is still retargeted while the null entry is ignored.
+    - path: 'src/stores/executionErrorStore.test.ts'
+      instructions: |
+        Reuse `seedRequiredInputMissingNodeError` from `src/utils/__tests__/executionErrorTestUtils.ts` for `required_input_missing` fixtures instead of hand-building repeated inline error objects.
+        Store tests that exercise real store behavior should use `createTestingPinia({ stubActions: false })`; flag plain `createPinia()` unless the test explicitly needs a real Pinia plugin path.
     - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md` and `docs/testing/README.md` as required review context for every changed Playwright test file.
