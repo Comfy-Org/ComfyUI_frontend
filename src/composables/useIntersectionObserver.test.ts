@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createApp, h, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import type { Ref } from 'vue'
@@ -9,6 +9,8 @@ type ObserverInit = ConstructorParameters<typeof IntersectionObserver>[1]
 type ObserverCallback = ConstructorParameters<typeof IntersectionObserver>[0]
 
 const observers: MockIntersectionObserver[] = []
+const hadOriginalIntersectionObserver = 'IntersectionObserver' in window
+const originalIntersectionObserver = window.IntersectionObserver
 
 class MockIntersectionObserver {
   readonly callback: ObserverCallback
@@ -50,6 +52,17 @@ beforeEach(() => {
     configurable: true,
     value: MockIntersectionObserver
   })
+})
+
+afterEach(() => {
+  if (hadOriginalIntersectionObserver) {
+    Object.defineProperty(window, 'IntersectionObserver', {
+      configurable: true,
+      value: originalIntersectionObserver
+    })
+  } else {
+    Reflect.deleteProperty(window, 'IntersectionObserver')
+  }
 })
 
 describe('useIntersectionObserver', () => {

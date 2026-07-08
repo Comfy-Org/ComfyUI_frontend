@@ -608,7 +608,7 @@ describe('useNodeReplacement', () => {
         .mockImplementationOnce(() => {
           throw new Error('create failed')
         })
-      vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { replaceNodesInPlace } = useNodeReplacement()
       const result = replaceNodesInPlace([
@@ -631,6 +631,7 @@ describe('useNodeReplacement', () => {
       expect(result).toEqual(['FirstType'])
       expect(graph.updateExecutionOrder).toHaveBeenCalled()
       expect(graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+      errorSpy.mockRestore()
     })
 
     it('should transfer all widget values for ImageScaleBy with real workflow data', () => {

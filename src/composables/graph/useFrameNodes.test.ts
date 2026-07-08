@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
 const mockSelectionState = vi.hoisted(() => ({
   refs: null as null | {
@@ -21,12 +23,6 @@ const mockApp = vi.hoisted(() => ({
       add: vi.fn()
     }
   }
-}))
-
-const mockGroups = vi.hoisted(() => ({
-  instances: [] as Array<{
-    resizeTo: ReturnType<typeof vi.fn>
-  }>
 }))
 
 vi.mock('@/composables/graph/useSelectionState', async () => {
@@ -55,17 +51,9 @@ vi.mock('@/scripts/app', () => ({
   app: mockApp
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LGraphGroup: class MockLGraphGroup {
-    resizeTo = vi.fn()
-
-    constructor() {
-      mockGroups.instances.push(this)
-    }
-  }
-}))
-
 describe('useFrameNodes', () => {
+  let resizeToSpy: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
     vi.clearAllMocks()
     if (mockSelectionState.refs) {
@@ -77,7 +65,15 @@ describe('useFrameNodes', () => {
     mockApp.canvas.graph = {
       add: vi.fn()
     }
-    mockGroups.instances = []
+    // Real LGraphGroup constructor; only resizeTo's own geometry math is
+    // out of scope here (see LGraphGroup's own test coverage for that).
+    resizeToSpy = vi
+      .spyOn(LGraphGroup.prototype, 'resizeTo')
+      .mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    resizeToSpy.mockRestore()
   })
 
   it('exposes whether selected nodes can be framed', async () => {
@@ -100,7 +96,7 @@ describe('useFrameNodes', () => {
 
     frameNodes()
 
-    expect(mockGroups.instances).toHaveLength(0)
+    expect(resizeToSpy).not.toHaveBeenCalled()
     expect(mockApp.canvas.graph.add).not.toHaveBeenCalled()
   })
 
@@ -113,11 +109,9 @@ describe('useFrameNodes', () => {
 
     frameNodes()
 
-    const group = mockGroups.instances[0]
-    expect(group.resizeTo).toHaveBeenCalledWith(
-      mockApp.canvas.selectedItems,
-      24
-    )
+    const group = mockApp.canvas.graph.add.mock.calls[0]?.[0] as LGraphGroup
+    expect(group).toBeInstanceOf(LGraphGroup)
+    expect(resizeToSpy).toHaveBeenCalledWith(mockApp.canvas.selectedItems, 24)
     expect(mockApp.canvas.graph.add).toHaveBeenCalledWith(group)
     expect(mockTitleEditorStore.titleEditorTarget).toBe(group)
   })

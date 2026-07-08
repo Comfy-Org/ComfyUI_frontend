@@ -49,6 +49,8 @@ import { resetDirtyRect } from './brushDrawingUtils'
 import { useGPUResources } from './useGPUResources'
 
 let scope: EffectScope | null = null
+const hadOriginalNavigatorGpu = 'gpu' in navigator
+const originalNavigatorGpu = (navigator as { gpu?: unknown }).gpu
 
 function setup() {
   scope = effectScope()
@@ -207,6 +209,15 @@ afterEach(() => {
   scope?.stop()
   scope = null
   vi.unstubAllGlobals()
+  // Object.defineProperty on navigator isn't undone by unstubAllGlobals.
+  if (hadOriginalNavigatorGpu) {
+    Object.defineProperty(navigator, 'gpu', {
+      value: originalNavigatorGpu,
+      configurable: true
+    })
+  } else {
+    Reflect.deleteProperty(navigator, 'gpu')
+  }
 })
 
 describe('initial reactive state', () => {

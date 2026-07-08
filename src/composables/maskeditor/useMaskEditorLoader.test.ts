@@ -1,5 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   extractWidgetStringValue,
@@ -119,6 +118,11 @@ describe('useMaskEditorLoader', () => {
     mockCloudState.isCloud = false
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
   it('loads base and mask layers from a node image reference', async () => {
     const node = makeNode({
       images: [
@@ -226,14 +230,13 @@ describe('useMaskEditorLoader', () => {
   it('uses cloud mask layer metadata when available', async () => {
     mockCloudState.isCloud = true
     vi.mocked(api.fetchApi).mockResolvedValue(
-      fromPartial<Response>({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
+      new Response(
+        JSON.stringify({
           painted_masked: 'painted-masked.png',
           painted: 'painted.png',
           paint: 'paint.png'
         })
-      })
+      )
     )
 
     await useMaskEditorLoader().loadFromNode(
@@ -275,10 +278,7 @@ describe('useMaskEditorLoader', () => {
   it('uses painted cloud metadata when painted-masked metadata is absent', async () => {
     mockCloudState.isCloud = true
     vi.mocked(api.fetchApi).mockResolvedValue(
-      fromPartial<Response>({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ painted: 'painted-only.png' })
-      })
+      new Response(JSON.stringify({ painted: 'painted-only.png' }))
     )
 
     await useMaskEditorLoader().loadFromNode(

@@ -107,6 +107,9 @@ vi.mock('@/composables/graph/useSelectionMenuOptions', () => ({
 beforeEach(() => {
   vi.clearAllMocks()
   registerNodeOptionsInstance(null)
+  // hoveredWidget is a module-level singleton; clear it via the same
+  // public API that sets it so hover state can't leak across tests.
+  showNodeOptions(new MouseEvent('contextmenu'))
   canvasState.canvas = undefined
   extraWidgetOptions.value = []
   imageOptions.value = []
@@ -287,6 +290,7 @@ describe('useMoreOptionsMenu', () => {
       'Error getting LiteGraph menu items:',
       expect.any(Error)
     )
+    errorSpy.mockRestore()
   })
 
   it('adds hovered widget options to the selected node menu', () => {

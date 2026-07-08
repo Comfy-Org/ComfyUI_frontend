@@ -1,7 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IContextMenuOptions } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 const mockInstall = vi.hoisted(() => vi.fn())
 const mockRegisterWrapper = vi.hoisted(() => vi.fn())
@@ -12,43 +14,12 @@ const mockSt = vi.hoisted(() => vi.fn())
 const mockTe = vi.hoisted(() => vi.fn())
 const mockContextMenuConstructor = vi.hoisted(() => vi.fn())
 
-const mockClasses = vi.hoisted(() => {
-  class LGraphCanvas {
-    getCanvasMenuOptions() {
-      return [{ content: 'Base' }, null]
-    }
-
-    getNodeMenuOptions(node: unknown) {
-      return [{ content: `Node:${String(node)}` }]
-    }
-  }
-
-  class ContextMenu {
-    constructor(values: unknown, options: unknown) {
-      mockContextMenuConstructor(values, options)
-    }
-  }
-
-  return {
-    LGraphCanvas,
-    ContextMenu,
-    LiteGraph: {
-      ContextMenu
-    }
-  }
-})
-
 vi.mock('@/lib/litegraph/src/contextMenuCompat', () => ({
   legacyMenuCompat: {
     install: mockInstall,
     registerWrapper: mockRegisterWrapper,
     extractLegacyItems: mockExtractLegacyItems
   }
-}))
-
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LGraphCanvas: mockClasses.LGraphCanvas,
-  LiteGraph: mockClasses.LiteGraph
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -67,10 +38,20 @@ vi.mock('@/utils/formatUtil', () => ({
   normalizeI18nKey: (value: string) => `normalized-${value}`
 }))
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useContextMenuTranslation } from './useContextMenuTranslation'
 
+class FakeContextMenu {
+  constructor(values: unknown, options: unknown) {
+    mockContextMenuConstructor(values, options)
+  }
+}
+
 describe('useContextMenuTranslation', () => {
+  const originalGetCanvasMenuOptions =
+    LGraphCanvas.prototype.getCanvasMenuOptions
+  const originalGetNodeMenuOptions = LGraphCanvas.prototype.getNodeMenuOptions
+  const originalContextMenu = LiteGraph.ContextMenu
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockCollectCanvasMenuItems.mockReturnValue([{ content: 'NewApi' }])
@@ -82,27 +63,42 @@ describe('useContextMenuTranslation', () => {
     mockTe.mockImplementation(
       (key: string) => key === 'contextMenu.TranslateMe'
     )
-    mockClasses.LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+    // Real LGraphCanvas.prototype so the composable's monkeypatch is
+    // exercised against the class it patches in production; the base
+    // implementations are stubbed since a real one needs a constructed
+    // canvas/graph pair that this translation-only suite doesn't need.
+    LGraphCanvas.prototype.getCanvasMenuOptions = function () {
       return [{ content: 'Base' }, null]
     }
-    mockClasses.LGraphCanvas.prototype.getNodeMenuOptions = function (
-      node: unknown
-    ) {
+    LGraphCanvas.prototype.getNodeMenuOptions = function (node: unknown) {
       return [{ content: `Node:${String(node)}` }]
     }
-    mockClasses.LiteGraph.ContextMenu = mockClasses.ContextMenu
+    LiteGraph.ContextMenu =
+      FakeContextMenu as unknown as typeof LiteGraph.ContextMenu
+  })
+
+  afterEach(() => {
+    LGraphCanvas.prototype.getCanvasMenuOptions = originalGetCanvasMenuOptions
+    LGraphCanvas.prototype.getNodeMenuOptions = originalGetNodeMenuOptions
+    LiteGraph.ContextMenu = originalContextMenu
   })
 
   it('wraps canvas menu options with new API, legacy, and translated items', () => {
     useContextMenuTranslation()
-    const canvas = new mockClasses.LGraphCanvas()
+    // A plain receiver, not `instanceof LGraphCanvas`: the real class's
+    // other getters (e.g. read_only) read constructor-initialized state
+    // that a bare receiver doesn't have, which trips up Vitest's assertion
+    // formatting. The patched method only needs a `this` to call through.
+    const canvas = fromPartial<LGraphCanvas>({})
 
-    const result = canvas.getCanvasMenuOptions()
+    const result = LGraphCanvas.prototype.getCanvasMenuOptions.call(canvas)
 
-    expect(mockInstall).toHaveBeenCalledWith(
-      mockClasses.LGraphCanvas.prototype,
-      'getCanvasMenuOptions'
-    )
+    // toBe, not toHaveBeenCalledWith: the real prototype's other getters
+    // (e.g. read_only) read constructor-initialized state, and Vitest's
+    // deep-equality formatting walks own properties, including those
+    // getters, when comparing objects.
+    expect(mockInstall.mock.calls[0]?.[0]).toBe(LGraphCanvas.prototype)
+    expect(mockInstall.mock.calls[0]?.[1]).toBe('getCanvasMenuOptions')
     expect(mockCollectCanvasMenuItems).toHaveBeenCalledWith(canvas)
     expect(mockExtractLegacyItems).toHaveBeenCalledWith(
       'getCanvasMenuOptions',
@@ -118,22 +114,21 @@ describe('useContextMenuTranslation', () => {
 
   it('wraps node menu options with new API and legacy extension items', () => {
     useContextMenuTranslation()
-    const canvas = new mockClasses.LGraphCanvas()
+    const canvas = fromPartial<LGraphCanvas>({})
+    const node = fromPartial<LGraphNode>({})
 
-    const result = canvas.getNodeMenuOptions('node')
+    const result = LGraphCanvas.prototype.getNodeMenuOptions.call(canvas, node)
 
-    expect(mockInstall).toHaveBeenCalledWith(
-      mockClasses.LGraphCanvas.prototype,
-      'getNodeMenuOptions'
-    )
-    expect(mockCollectNodeMenuItems).toHaveBeenCalledWith('node')
+    expect(mockInstall.mock.calls[1]?.[0]).toBe(LGraphCanvas.prototype)
+    expect(mockInstall.mock.calls[1]?.[1]).toBe('getNodeMenuOptions')
+    expect(mockCollectNodeMenuItems).toHaveBeenCalledWith(node)
     expect(mockExtractLegacyItems).toHaveBeenCalledWith(
       'getNodeMenuOptions',
       canvas,
-      'node'
+      node
     )
     expect(result).toEqual([
-      { content: 'Node:node' },
+      { content: `Node:${String(node)}` },
       { content: 'NodeApi' },
       { content: 'Legacy' }
     ])

@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
+import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 type DropInput = {
   clientX: number
@@ -78,9 +79,16 @@ const {
   }
 })
 
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x / 2, y / 2]
+// useCanvasStore is the seam; useSharedCanvasPositionConversion itself runs
+// for real so the drop position math (see useCanvasPositionConversion.test.ts
+// for its own coverage) is genuinely exercised here, not reimplemented.
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    getCanvas: () =>
+      createMockCanvas({
+        canvas: document.createElement('canvas'),
+        ds: { offset: [0, 0], scale: 1 }
+      })
   })
 }))
 
@@ -187,7 +195,7 @@ describe('useCanvasDrop', () => {
       expect.any(Function)
     )
     expect(addNodeOnGraph).toHaveBeenCalledWith(nodeDef, {
-      pos: [10, 44]
+      pos: [20, 64]
     })
   })
 
@@ -237,7 +245,7 @@ describe('useCanvasDrop', () => {
     )
 
     expect(addNodeOnGraph).toHaveBeenCalledWith(provider.nodeDef, {
-      pos: [10, 20]
+      pos: [20, 40]
     })
     expect(widget.value).toBe('style.safetensors')
   })
@@ -279,7 +287,7 @@ describe('useCanvasDrop', () => {
     await droppable.onDrop(dropEvent(workflow))
 
     expect(insertWorkflow).toHaveBeenCalledWith(workflow, {
-      position: [10, 20]
+      position: [20, 40]
     })
   })
 })

@@ -185,5 +185,6 @@ describe('useHelpCenter', () => {
       error
     )
     app.unmount()
+    consoleError.mockRestore()
   })
 })

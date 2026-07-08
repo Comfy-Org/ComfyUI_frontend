@@ -30,8 +30,9 @@ function setup(initial: string[]) {
 const mouseEvent = () => fromPartial<MouseEvent>({ stopPropagation: vi.fn() })
 
 function makeInputEvent(value: string): Event {
-  const event: unknown = { target: { value } }
-  return event as Event
+  return fromPartial<Event>({
+    target: fromPartial<HTMLInputElement>({ value })
+  })
 }
 
 describe('usePaletteSwatchRow', () => {

@@ -18,6 +18,7 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { toNodeId } from '@/types/nodeId'
 import { app } from '@/scripts/app'
 import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -905,7 +906,7 @@ describe('Graph node manager property triggers', () => {
 
   it('ignores property events for nodes the manager does not track', () => {
     const graph = new LGraph()
-    useGraphNodeManager(graph)
+    const { vueNodeData } = useGraphNodeManager(graph)
 
     expect(() =>
       graph.trigger('node:property:changed', {
@@ -914,6 +915,8 @@ describe('Graph node manager property triggers', () => {
         newValue: 'ignored'
       })
     ).not.toThrow()
+    expect(vueNodeData.has(toNodeId('missing'))).toBe(false)
+    expect(vueNodeData.size).toBe(0)
   })
 
   it('ignores non-input slot link events and refreshes slot error metadata', () => {
@@ -1191,7 +1194,9 @@ describe('extractVueNodeData widget mapping', () => {
     subgraphNode._internalConfigureAfterSlots()
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const rootGraphSpy = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(graph)
 
     const id = subgraphNode.inputs[0].widgetId
     if (!id) throw new Error('Expected promoted input to have widgetId')
@@ -1210,6 +1215,7 @@ describe('extractVueNodeData widget mapping', () => {
     useGraphNodeManager(graph)
 
     expect(widgetStore.getWidget(id)?.value).toBe('existing.safetensors')
+    rootGraphSpy.mockRestore()
   })
 })
 

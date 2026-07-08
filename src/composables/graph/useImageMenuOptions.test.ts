@@ -50,6 +50,9 @@ vi.mock('@/base/common/downloadUtil', () => ({
   openFileInNewTab: vi.fn()
 }))
 
+const hadOriginalClipboard = 'clipboard' in navigator
+const originalClipboard = navigator.clipboard
+
 function mockClipboard(clipboard: Partial<Clipboard> | undefined) {
   Object.defineProperty(navigator, 'clipboard', {
     value: clipboard,
@@ -92,6 +95,16 @@ describe('useImageMenuOptions', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+    // Object.defineProperty on navigator isn't undone by unstubAllGlobals.
+    if (hadOriginalClipboard) {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: originalClipboard,
+        writable: true,
+        configurable: true
+      })
+    } else {
+      Reflect.deleteProperty(navigator, 'clipboard')
+    }
   })
 
   describe('getImageMenuOptions', () => {

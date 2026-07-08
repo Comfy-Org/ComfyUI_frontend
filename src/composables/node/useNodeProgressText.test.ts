@@ -45,6 +45,12 @@ describe('useNodeProgressText', () => {
   })
 
   it('creates a text preview widget when one is missing', () => {
+    const createdWidget = fromPartial<IBaseWidget>({
+      name: '$$node-text-preview',
+      type: 'progressText',
+      value: ''
+    })
+    mockTextPreviewWidget.mockReturnValueOnce(createdWidget)
     const graphNode = node([])
     const { showTextPreview } = useNodeProgressText()
 
@@ -54,7 +60,7 @@ describe('useNodeProgressText', () => {
       name: '$$node-text-preview',
       type: 'progressText'
     })
-    expect(mockTextPreviewWidget.mock.results[0].value.value).toBe('queued')
+    expect(createdWidget.value).toBe('queued')
   })
 
   it('removes an existing preview widget and calls its cleanup', () => {

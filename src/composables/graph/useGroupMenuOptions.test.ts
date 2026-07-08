@@ -170,6 +170,7 @@ describe('useGroupMenuOptions', () => {
       'Failed to recompute nodes in group for mode options:',
       expect.any(Error)
     )
+    warnSpy.mockRestore()
   })
 
   it('builds mode options for uniform nodes and applies the new mode', () => {
