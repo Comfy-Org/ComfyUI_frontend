@@ -5,11 +5,12 @@ pieces cooperate, the decisions behind them, and the gotchas that shaped
 them. Companion docs: [README.md](README.md) (how to run it),
 [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md) (how to onboard a pack).
 
-Views in this document: system context (D1), building blocks (D2), the
-node-definition pipeline (D3), the execution flow (D4), the persistence
-check (D5), event attribution (D6), the evidence model (D7), and the CI
-deployment view (D8). Implementation symbols live in one place: the
-implementation map at the end (section 14).
+Views in this document: system context (section 2), building blocks
+(section 4), the node-definition pipeline (section 6), the execution flow
+(section 7), the persistence check (section 8), event attribution
+(section 9), the evidence model (section 10), and the CI deployment view
+(section 13). Implementation symbols live in one place: the implementation
+map at the end (section 14).
 
 ## What / Why / How, in one minute
 
@@ -63,7 +64,7 @@ exemptions. Nothing is ever skipped; a skip fails the job.
 - **Onboarding a pack:** ADDING_CUSTOM_NODES.md, not this doc. This doc is
   the why; that doc is the step-by-step.
 - **Debugging a red run:** the failure-class list in ADDING_CUSTOM_NODES.md
-  maps each red message to a cause; D4 and D7 show where in the pipeline it
+  maps each red message to a cause; sections 7 and 10 show where in the pipeline it
   happened; section 12 gives symptom-first triage.
 
 ## 1. What this suite proves, and deliberately does not
@@ -79,7 +80,7 @@ re-discovered live on every run:
   serialized value silently changes across a save/reload round-trip, and a
   user-like non-default write sticks and survives a second reload, under
   both renderers (dynamic widgets the application itself adds on reload are
-  expected and allowed, see D5)
+  expected and allowed, see section 8)
 - the node's concrete slots **wire type-correctly** through the real
   connection validator, and the wires survive save, reload, and prompt
   serialization
@@ -88,7 +89,7 @@ re-discovered live on every run:
 
 Every tier also asserts the app shows **zero visible errors** while doing
 this, except the execution tier, which deliberately provokes expected
-failures (D4).
+failures (section 7).
 
 Deliberately out of scope: output semantics (does a blur actually blur),
 frontend-virtual nodes that never register on the backend, and hour-scale
@@ -96,7 +97,7 @@ soak behavior. A rare intermittent glitch that only surfaces after long
 interactive use (a widget that occasionally shrinks on its own) is soak
 behavior: this per-PR gate will not catch it, and does not claim to.
 
-## 2. D1 - system context
+## 2. System context
 
 Who and what the suite touches.
 
@@ -132,7 +133,7 @@ while testing the wrong thing:
 | Isolated test users                                                       | Test state must not leak between runs or into a developer's real workspace.                                                                                                                                                                                     |
 | One test worker                                                           | The backend's execution queue is a shared, exclusive resource. Two workers interrupt each other's work and misattribute events.                                                                                                                                 |
 
-## 4. D2 - building blocks
+## 4. Building blocks
 
 What the suite is made of. The main flow is a straight pipeline; the shared
 services that support the tiers are listed in the table below it, because
@@ -160,11 +161,11 @@ flowchart TB
 
 The shared services behind the tiers:
 
-| Service               | Used by                              | Responsibility                                                                                                                                                   |
-| --------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Definition Normalizer | Mount, Wiring, Capability Classifier | one canonical node model out of the multiple definition dialects (D3), so no tier parses raw definitions                                                         |
-| Capability Classifier | Execution                            | decides, per node, what it can do without hand-written fixtures: run on its own defaults, run with synthesized inputs, or blocked, with the reason recorded (D4) |
-| Execution Harness     | Execution                            | runs nodes for real and attributes every outcome to the right node despite an asynchronous, noisy event stream (D4, D6)                                          |
+| Service               | Used by                              | Responsibility                                                                                                                                                          |
+| --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Definition Normalizer | Mount, Wiring, Capability Classifier | one canonical node model out of the multiple definition dialects (section 6), so no tier parses raw definitions                                                         |
+| Capability Classifier | Execution                            | decides, per node, what it can do without hand-written fixtures: run on its own defaults, run with synthesized inputs, or blocked, with the reason recorded (section 7) |
+| Execution Harness     | Execution                            | runs nodes for real and attributes every outcome to the right node despite an asynchronous, noisy event stream (sections 7 and 9)                                       |
 
 Two further tiers (curated workflows, core smoke) sit alongside these four
 but are fixture-driven rather than derived from the node corpus; section 5
@@ -173,20 +174,20 @@ lists all six.
 - **Pack Manifest**: the single extension point. Adding a pack is one row;
   no tier knows pack names.
 - **Evidence Ledgers**: the honesty mechanism. An exception without a
-  recorded mechanism is not allowed to exist (D7).
+  recorded mechanism is not allowed to exist (section 10).
 
 ## 5. The verification tiers
 
-| Tier                 | Verifies                                                                                                                                                                                 | Renderers          | Notes                                                                           |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------- |
-| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                | both               | missing parts fail; extras are tolerated                                        |
-| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                 | both               | application-added dynamic widgets are legal; see D5                             |
-| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                           | one, by decision 7 | dropdown slots pair only on identical option sets; see D7 for exception routing |
-| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                            | one, by decision 7 | the full flow is D4                                                             |
-| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node) | both (render pass) | plus a forced-error self-check proving the harness detects real failures        |
-| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                               | both               | guards against packs breaking the base app                                      |
+| Tier                 | Verifies                                                                                                                                                                                 | Renderers          | Notes                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------- |
+| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                | both               | missing parts fail; extras are tolerated                                                |
+| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                 | both               | application-added dynamic widgets are legal; see section 8                              |
+| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                           | one, by decision 7 | dropdown slots pair only on identical option sets; see section 10 for exception routing |
+| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                            | one, by decision 7 | the full flow is section 7                                                              |
+| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node) | both (render pass) | plus a forced-error self-check proving the harness detects real failures                |
+| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                               | both               | guards against packs breaking the base app                                              |
 
-## 6. D3 - the node-definition pipeline
+## 6. The node-definition pipeline
 
 Where the suite's knowledge of every node comes from: definitions flow left
 to right, and the suite derives three independent plans from one canonical
@@ -212,7 +213,7 @@ skipped. The dialects differ in where dropdown options live, how "must be
 wired" is flagged, and how growable input groups are declared; details and
 evidence rules are in ADDING_CUSTOM_NODES.md.
 
-## 7. D4 - the execution flow
+## 7. The execution flow
 
 How the suite runs hundreds of foreign nodes safely, with no fixtures, and
 still attributes every failure to the right node.
@@ -220,10 +221,10 @@ still attributes every failure to the right node.
 ```mermaid
 flowchart TD
     CLASS["Classify each node: runnable on its own defaults / runnable with synthesized inputs / blocked, with the reason recorded"]
-    CLASS --> BATCH["Group runnable nodes into small batches: failures stay isolated, queue cost is amortized"]
+    CLASS --> BATCH["Group runnable nodes into small batches: a failure stays isolated, and one submission carries many nodes instead of paying the round-trip per node"]
     BATCH --> BUILD["Build a disposable test graph: node under test + synthetic producers for its inputs + an observation sink on its output"]
     BUILD --> SUBMIT["Submit for real execution, guarded: a crash inside a pack's own script records as that node's failure, never a tier abort"]
-    SUBMIT --> OBSERVE["Observe execution events through the attribution filters: only THIS attempt, only nodes in THIS graph (D6)"]
+    SUBMIT --> OBSERVE["Observe execution events through the attribution filters: only THIS attempt, only nodes in THIS graph (section 9)"]
     OBSERVE --> V{"outcome?"}
     V -->|"ran, output observed at the sink"| CLEAN["clean"]
     V -->|"ran, nothing arrived at the sink"| NOOUT["failure: data never flowed"]
@@ -243,7 +244,7 @@ nodes (an empty image, an empty latent, a solid mask, primitive values), so
 observation sink is what upgrades "it finished" to "its output actually
 arrived somewhere."
 
-## 8. D5 - the persistence check
+## 8. The persistence check
 
 Why it is staged: the DOM renderer's widget components react to creation
 and reload on their own schedule, and a check that snapshots synchronously
@@ -268,7 +269,7 @@ embedded editors) are exempt from probe writes, each with a recorded
 mechanism: writing probe markers into them only makes the pack's script
 choke on the probe.
 
-## 9. D6 - event attribution
+## 9. Event attribution
 
 Real execution reports back over an asynchronous event stream, and the
 stream can mislead in two specific ways. Both produced real misattributed
@@ -287,7 +288,7 @@ sequenceDiagram
     Note over H: node identities are never reused within a<br/>session, so graph membership is decisive
 ```
 
-## 10. D7 - the evidence model
+## 10. The evidence model
 
 The suite's honesty mechanism. Every exception is a reviewed record that
 names its causal mechanism, and every list is guarded: an entry naming a
@@ -319,20 +320,20 @@ deliberate extension seam is the curated-workflow fixture: anything the
 manifest cannot derive from the live node corpus (pack-specific semantics,
 multi-node behavior) is expressed there (decisions 6 and 11).
 
-| #   | Decision                                                                                                   | Why                                                                                                                                                   | Trade-off accepted                                                                                                            |
-| --- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Drive a real browser, not just the backend API                                                             | Pack frontend scripts (widget rebuilds, restyles, submission hooks) are half of what breaks; only a browser running the built frontend exercises them | Browser e2e is the slowest, most race-prone tier; mitigated by the attribution filters (D6) and the staged settle points (D5) |
-| 1   | Real environment only: real browser, real backend, pack scripts active, nothing mocked                     | The failures worth catching live in the integration, not in units                                                                                     | Slower than unit tests; needs a backend in CI                                                                                 |
-| 2   | The backend serves the built frontend                                                                      | The dev server never loads pack scripts, so it tests a different product                                                                              | Local iteration needs a build + restart for pack-script changes                                                               |
-| 3   | One test worker                                                                                            | The execution queue is exclusive; parallel workers corrupt each other's evidence                                                                      | Wall-clock time grows with the manifest                                                                                       |
-| 4   | Execution caching disabled                                                                                 | The per-node "actually ran" signal only exists for uncached executions                                                                                | Every run pays full execution cost                                                                                            |
-| 5   | Packs installed at pinned, verified versions                                                               | An upstream push must not change what the gate tests mid-flight                                                                                       | Pins need deliberate bumps; a nightly canary against pack HEADs is the planned complement                                     |
-| 6   | One manifest row per pack, zero per-pack test code                                                         | Extension cost stays constant as coverage grows                                                                                                       | The generic tiers cannot assert pack-specific semantics; curated workflows exist for that                                     |
-| 7   | Both renderers only where the renderer can change the outcome (mount, persistence); one renderer elsewhere | Widget values flow through the same store under both renderers (verified by probe), so doubling execution buys no new failure surface                 | If that store unification ever changes, revisit this decision                                                                 |
-| 8   | Every exception carries its mechanism and is stale-guarded                                                 | An unexplained exemption is indistinguishable from a hidden bug                                                                                       | Onboarding a flaky pack takes more effort than a blanket skip                                                                 |
-| 9   | Known-failure baseline reconciled in both directions                                                       | One-way baselines rot into permanent blind spots                                                                                                      | A node that gets fixed upstream turns the gate red until its entry is removed (by design)                                     |
-| 10  | Small batches with single-node bisection                                                                   | Batching amortizes queue latency; bisection restores per-node attribution on failure                                                                  | A failing batch costs one extra pass over its members                                                                         |
-| 11  | Scope excludes output semantics and frontend-virtual nodes                                                 | Both need per-node knowledge a manifest cannot derive; curated workflows and future behavior tests are the extension point                            | "Green" is narrower than "the pack fully works," and says so                                                                  |
+| #   | Decision                                                                                                   | Why                                                                                                                                                   | Trade-off accepted                                                                                                                          |
+| --- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Drive a real browser, not just the backend API                                                             | Pack frontend scripts (widget rebuilds, restyles, submission hooks) are half of what breaks; only a browser running the built frontend exercises them | Browser e2e is the slowest, most race-prone tier; mitigated by the attribution filters (section 9) and the staged settle points (section 8) |
+| 1   | Real environment only: real browser, real backend, pack scripts active, nothing mocked                     | The failures worth catching live in the integration, not in units                                                                                     | Slower than unit tests; needs a backend in CI                                                                                               |
+| 2   | The backend serves the built frontend                                                                      | The dev server never loads pack scripts, so it tests a different product                                                                              | Local iteration needs a build + restart for pack-script changes                                                                             |
+| 3   | One test worker                                                                                            | The execution queue is exclusive; parallel workers corrupt each other's evidence                                                                      | Wall-clock time grows with the manifest                                                                                                     |
+| 4   | Execution caching disabled                                                                                 | The per-node "actually ran" signal only exists for uncached executions                                                                                | Every run pays full execution cost                                                                                                          |
+| 5   | Packs installed at pinned, verified versions                                                               | An upstream push must not change what the gate tests mid-flight                                                                                       | Pins need deliberate bumps; a nightly canary against pack HEADs is the planned complement                                                   |
+| 6   | One manifest row per pack, zero per-pack test code                                                         | Extension cost stays constant as coverage grows                                                                                                       | The generic tiers cannot assert pack-specific semantics; curated workflows exist for that                                                   |
+| 7   | Both renderers only where the renderer can change the outcome (mount, persistence); one renderer elsewhere | Widget values flow through the same store under both renderers (verified by probe), so doubling execution buys no new failure surface                 | If that store unification ever changes, revisit this decision                                                                               |
+| 8   | Every exception carries its mechanism and is stale-guarded                                                 | An unexplained exemption is indistinguishable from a hidden bug                                                                                       | Onboarding a flaky pack takes more effort than a blanket skip                                                                               |
+| 9   | Known-failure baseline reconciled in both directions                                                       | One-way baselines rot into permanent blind spots                                                                                                      | A node that gets fixed upstream turns the gate red until its entry is removed (by design)                                                   |
+| 10  | Small batches with single-node bisection                                                                   | Batching amortizes queue latency; bisection restores per-node attribution on failure                                                                  | A failing batch costs one extra pass over its members                                                                                       |
+| 11  | Scope excludes output semantics and frontend-virtual nodes                                                 | Both need per-node knowledge a manifest cannot derive; curated workflows and future behavior tests are the extension point                            | "Green" is narrower than "the pack fully works," and says so                                                                                |
 
 ## 12. Gotchas: every incident, its root cause, and the defense
 
@@ -352,7 +353,7 @@ these answer: "green but broken" and "tests can never catch random bugs."
   frontend scripts never run under it. The node tested there is a
   different node than the one users get.
 - **Defense**: the environment contract (section 3): the backend serves the
-  built frontend and tests point at the backend. CI does exactly this (D8).
+  built frontend and tests point at the backend. CI does exactly this (section 13).
 - **Answers**: green but broken.
 
 ### G2. Widget-state bleed through recycled node identities
@@ -378,7 +379,7 @@ these answer: "green but broken" and "tests can never catch random bugs."
 - **Root cause**: two races over the asynchronous event stream: late
   arrivals from a previous attempt, and duplicate attempts created by a
   submission retry erroring under a fresh identity.
-- **Defense**: the two attribution filters of D6 (attempt identity + graph
+- **Defense**: the two attribution filters of section 9 (attempt identity + graph
   membership), made decisive by G2's never-reuse-identities rule.
 - **Answers**: tests can never catch random bugs (a misattributed error is
   noise that erodes trust in every verdict).
@@ -411,7 +412,7 @@ these answer: "green but broken" and "tests can never catch random bugs."
 - **Defense**: the Definition Normalizer handles both dialects for every
   consumer; parser fixtures are copied from a live census of the real
   corpus so tests cannot self-confirm a parser's assumptions; unknown
-  shapes are excluded with a record, never silently matched (D3).
+  shapes are excluded with a record, never silently matched (section 6).
 - **Answers**: green but broken (a whole class of nodes was uncovered while
   the tier stayed green).
 
@@ -479,7 +480,7 @@ these answer: "green but broken" and "tests can never catch random bugs."
   boundaries; a synchronous snapshot compares state those reactions never
   touched.
 - **Defense**: the persistence check is staged with explicit settle points
-  between build, snapshot, reload, and write phases (D5), and runs once
+  between build, snapshot, reload, and write phases (section 8), and runs once
   per renderer.
 - **Answers**: green but broken (a synchronous pass certifies a value path
   it never observed).
@@ -537,7 +538,7 @@ these answer: "green but broken" and "tests can never catch random bugs."
   result stays meaningful everywhere else.
 - **Answers**: tests can never catch random bugs.
 
-## 13. D8 - the CI deployment view
+## 13. The CI deployment view
 
 ```mermaid
 flowchart LR
