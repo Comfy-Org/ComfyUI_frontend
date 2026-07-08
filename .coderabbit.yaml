@@ -68,3 +68,11 @@ reviews:
     - path: '**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed Vitest test file.
+    - path: 'src/lib/litegraph/**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
+        Reuse shared factories in `src/utils/__tests__/litegraphTestUtils.ts` instead of hand-rolling litegraph node, canvas, graph, subgraph, or workflow builders.
+        Flag mocked litegraph classes when a real instance or shared factory would exercise behavior directly.
+        When a PR changes litegraph graph deserialization, link loading, nullable serialized links, or sparse legacy link handling, require direct regression coverage for the changed runtime path. Helper-only coverage in a different utility is insufficient.
+        For `LGraph.configure()` sparse legacy links, expect a test that constructs an `LGraph`, calls `configure()` with a v0.4 payload containing `links: [null, validLink]`, asserts it does not throw, and asserts the valid link is still created.
+        For link-retargeting or widget-slot compression changes such as `compressWidgetInputSlots()`, expect a direct test of the compression path with `links: [null, validLink]` that proves the valid link is still retargeted while the null entry is ignored.
