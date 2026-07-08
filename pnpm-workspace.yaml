@@ -96,6 +96,7 @@ catalog:
   gsap: ^3.14.2
   happy-dom: ^20.8.9
   husky: ^9.1.7
+  immer: ^11.1.8
   jiti: 2.6.1
   jsdom: ^27.4.0
   jsonata: ^2.1.0
