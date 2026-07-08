@@ -17,6 +17,9 @@ export const hasNonEmptyValue = (
   return true
 }
 
+export const isOtherValue = (current: string | string[] | undefined): boolean =>
+  Array.isArray(current) ? current.includes('other') : current === 'other'
+
 const conditionMatches = (
   condition: OnboardingSurveyFieldCondition | undefined,
   values: SurveyValues
@@ -89,11 +92,14 @@ export const buildZodSchema = (
     if (
       field.allowOther &&
       field.otherFieldId &&
-      values[field.id] === 'other'
+      isOtherValue(values[field.id])
     ) {
-      shape[field.otherFieldId] = z.string().min(1, {
-        message: t('cloudOnboarding.survey.errors.describeAnswer')
-      })
+      shape[field.otherFieldId] = z
+        .string()
+        .trim()
+        .min(1, {
+          message: t('cloudOnboarding.survey.errors.describeAnswer')
+        })
     } else if (field.otherFieldId) {
       shape[field.otherFieldId] = z.string().optional()
     }
@@ -122,17 +128,23 @@ export const buildSubmissionPayload = (
       continue
     }
     const value = values[field.id]
-    const otherRaw = field.otherFieldId ? values[field.otherFieldId] : undefined
-    if (
+    const otherFieldId = field.otherFieldId
+    const otherRaw = otherFieldId ? values[otherFieldId] : undefined
+    const otherText =
       field.allowOther &&
-      field.otherFieldId &&
-      value === 'other' &&
+      otherFieldId &&
+      isOtherValue(value) &&
       typeof otherRaw === 'string'
-    ) {
-      const other = otherRaw.trim()
-      payload[field.id] = other || 'other'
+        ? otherRaw.trim()
+        : undefined
+
+    if (otherText !== undefined && field.type !== 'multi') {
+      payload[field.id] = otherText || 'other'
     } else {
       payload[field.id] = field.type === 'multi' ? (value ?? []) : (value ?? '')
+      if (otherText !== undefined && otherFieldId) {
+        payload[otherFieldId] = otherText
+      }
     }
   }
   return payload

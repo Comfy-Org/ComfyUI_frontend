@@ -324,3 +324,84 @@ describe('hasNonEmptyValue', () => {
     expect(hasNonEmptyValue(value)).toBe(expected)
   })
 })
+
+describe('multi-select allowOther', () => {
+  const multiOtherSurvey: OnboardingSurvey = {
+    version: 1,
+    fields: [
+      {
+        id: 'making',
+        type: 'multi',
+        required: true,
+        allowOther: true,
+        otherFieldId: 'makingOther',
+        options: [
+          { value: 'a', labelKey: 'a' },
+          { value: 'other', labelKey: 'other' }
+        ]
+      }
+    ]
+  }
+
+  it('requires the free-text when a multi field includes "other"', () => {
+    const schema = buildZodSchema(multiOtherSurvey, {
+      making: ['a', 'other'],
+      makingOther: ''
+    })
+    expect(
+      schema.safeParse({ making: ['a', 'other'], makingOther: '' }).success
+    ).toBe(false)
+    expect(
+      schema.safeParse({ making: ['a', 'other'], makingOther: 'Comics' })
+        .success
+    ).toBe(true)
+  })
+
+  it('does not require the free-text when "other" is not among the choices', () => {
+    const schema = buildZodSchema(multiOtherSurvey, {
+      making: ['a'],
+      makingOther: ''
+    })
+    expect(schema.safeParse({ making: ['a'], makingOther: '' }).success).toBe(
+      true
+    )
+  })
+
+  it('keeps the array and surfaces the trimmed free-text separately', () => {
+    const payload = buildSubmissionPayload(multiOtherSurvey, {
+      making: ['a', 'other'],
+      makingOther: '  Comics  '
+    })
+    expect(payload.making).toEqual(['a', 'other'])
+    expect(payload.makingOther).toBe('Comics')
+  })
+})
+
+describe('other free-text validation', () => {
+  const otherSurvey: OnboardingSurvey = {
+    version: 1,
+    fields: [
+      {
+        id: 'source',
+        type: 'single',
+        required: true,
+        allowOther: true,
+        otherFieldId: 'sourceOther',
+        options: [
+          { value: 'search', labelKey: 'search' },
+          { value: 'other', labelKey: 'other' }
+        ]
+      }
+    ]
+  }
+
+  it('rejects a whitespace-only "other" answer', () => {
+    const schema = buildZodSchema(otherSurvey, {
+      source: 'other',
+      sourceOther: '   '
+    })
+    expect(
+      schema.safeParse({ source: 'other', sourceOther: '   ' }).success
+    ).toBe(false)
+  })
+})

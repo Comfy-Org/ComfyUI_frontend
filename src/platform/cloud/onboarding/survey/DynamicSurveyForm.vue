@@ -112,6 +112,7 @@ import {
   buildSubmissionPayload,
   buildZodSchema,
   hasNonEmptyValue,
+  isOtherValue,
   prepareSurvey,
   visibleFields
 } from './surveySchema'
@@ -216,7 +217,7 @@ const isCurrentValid = computed(() => {
   const value = values[field.id]
   if (!hasNonEmptyValue(value)) return !field.required
 
-  if (field.allowOther && field.otherFieldId && value === 'other') {
+  if (field.allowOther && field.otherFieldId && isOtherValue(value)) {
     const other = values[field.otherFieldId]
     return typeof other === 'string' && other.trim().length > 0
   }
@@ -224,16 +225,23 @@ const isCurrentValid = computed(() => {
 })
 
 const isAutoAdvanceValue = (field: OnboardingSurveyField, value: unknown) =>
-  field.type === 'single' && typeof value === 'string' && value !== 'other'
+  field.type === 'single' &&
+  typeof value === 'string' &&
+  value !== '' &&
+  value !== 'other'
 
 const markTouched = (id: string) => {
   touched.value = new Set(touched.value).add(id)
 }
 
 const onFieldChange = async (id: string, value: string | string[]) => {
+  if (isAdvancing.value) return
   markTouched(id)
   setFieldValue(id, value)
   liveValues.value = { ...liveValues.value, [id]: value }
+  if (stepIndex.value > visible.value.length - 1) {
+    stepIndex.value = Math.max(0, visible.value.length - 1)
+  }
 
   const field = currentField.value
   if (field?.id === id && isAutoAdvanceValue(field, value)) {
