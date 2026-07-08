@@ -25,6 +25,7 @@ export enum ServerFeatureFlag {
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
+  BYOK_PARTNER_NODES = 'byok_partner_nodes',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
@@ -137,6 +138,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,
         remoteConfig.value.user_secrets_enabled,
+        false
+      )
+    },
+    get byokPartnerNodesEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.BYOK_PARTNER_NODES,
+        remoteConfig.value.byok_partner_nodes,
         false
       )
     },

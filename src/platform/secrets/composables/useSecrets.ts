@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import {
@@ -9,16 +10,24 @@ import {
   listSecrets,
   SecretsApiError
 } from '../api/secretsApi'
+import { BYOK_PARTNER_PROVIDERS } from '../providers'
 import type { SecretMetadata, SecretProvider } from '../types'
 
 export function useSecrets() {
   const { t } = useI18n()
   const toastStore = useToastStore()
+  const { flags } = useFeatureFlags()
 
   const loading = ref(false)
   const secrets = ref<SecretMetadata[]>([])
-  const availableProviders = ref<string[] | null>(null)
+  const serverProviders = ref<string[] | null>(null)
   const operatingSecretId = ref<string | null>(null)
+
+  const availableProviders = computed<string[] | null>(() => {
+    const providers = serverProviders.value
+    if (providers === null || flags.byokPartnerNodesEnabled) return providers
+    return providers.filter((p) => !BYOK_PARTNER_PROVIDERS.has(p))
+  })
 
   const existingProviders = computed<SecretProvider[]>(() =>
     secrets.value
@@ -52,7 +61,7 @@ export function useSecrets() {
 
   async function fetchProviders() {
     try {
-      availableProviders.value = await listSecretProviders()
+      serverProviders.value = await listSecretProviders()
     } catch (err) {
       console.error('Unexpected error fetching secret providers:', err)
     }

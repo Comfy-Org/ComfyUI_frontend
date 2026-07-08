@@ -4,6 +4,7 @@ import type { SecretMetadata } from '../types'
 import { useSecrets } from './useSecrets'
 
 const mockAdd = vi.fn()
+const { byokFlag } = vi.hoisted(() => ({ byokFlag: { enabled: false } }))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -11,6 +12,16 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: mockAdd })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get byokPartnerNodesEnabled() {
+        return byokFlag.enabled
+      }
+    }
+  })
 }))
 
 const mockListSecrets = vi.fn()
@@ -49,6 +60,7 @@ function createMockSecret(
 describe('useSecrets', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    byokFlag.enabled = false
   })
 
   describe('fetchSecrets', () => {
@@ -171,6 +183,56 @@ describe('useSecrets', () => {
 
       expect(availableProviders.value).toBeNull()
       expect(mockAdd).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('BYOK partner provider gating', () => {
+    it('hides BYOK providers while keeping base providers when the flag is off', async () => {
+      byokFlag.enabled = false
+      mockListSecretProviders.mockResolvedValue([
+        'huggingface',
+        'civitai',
+        'gemini',
+        'runway'
+      ])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual(['huggingface', 'civitai'])
+    })
+
+    it('includes BYOK providers returned by the server when the flag is on', async () => {
+      byokFlag.enabled = true
+      mockListSecretProviders.mockResolvedValue([
+        'huggingface',
+        'civitai',
+        'gemini',
+        'runway'
+      ])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual([
+        'huggingface',
+        'civitai',
+        'gemini',
+        'runway'
+      ])
+    })
+
+    it('does not add BYOK providers the server did not return when the flag is on', async () => {
+      byokFlag.enabled = true
+      mockListSecretProviders.mockResolvedValue(['huggingface', 'civitai'])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual(['huggingface', 'civitai'])
     })
   })
 
