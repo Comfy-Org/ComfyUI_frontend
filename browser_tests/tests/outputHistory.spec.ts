@@ -362,13 +362,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     const ws = await getWebSocket()
     const { exec, jobId } = await startExecution(comfyPage, ws)
 
-    const {
-      inProgressItems,
-      headerOverallProgress,
-      headerNodeProgress,
-      itemOverallProgress,
-      itemNodeProgress
-    } = comfyPage.appMode.outputHistory
+    const { inProgressItems, headerOverallProgress, headerNodeProgress } =
+      comfyPage.appMode.outputHistory
 
     await expect(inProgressItems.first()).toBeVisible()
 
@@ -381,7 +376,6 @@ test.describe('Output History', { tag: '@ui' }, () => {
     exec.progress(jobId, KSAMPLER_NODE, 5, 10)
 
     await expect(headerNodeProgress).toHaveAttribute('style', /width:\s*50%/)
-    await expect(itemNodeProgress).toHaveAttribute('style', /width:\s*50%/)
     // Overall still 0% - no nodes completed yet
     await expect(headerOverallProgress).toHaveAttribute('style', /width:\s*0%/)
 
@@ -391,13 +385,11 @@ test.describe('Output History', { tag: '@ui' }, () => {
     const oneNodePercent = Math.round((1 / ALL_NODE_IDS.length) * 100)
     const pct = new RegExp(`width:\\s*${oneNodePercent}%`)
     await expect(headerOverallProgress).toHaveAttribute('style', pct)
-    await expect(itemOverallProgress).toHaveAttribute('style', pct)
 
     // Node progress reaches 100%
     exec.progress(jobId, KSAMPLER_NODE, 10, 10)
 
     await expect(headerNodeProgress).toHaveAttribute('style', /width:\s*100%/)
-    await expect(itemNodeProgress).toHaveAttribute('style', /width:\s*100%/)
 
     // Complete remaining nodes - overall reaches 100%
     const remainingNodes = ALL_NODE_IDS.filter((id) => id !== KSAMPLER_NODE)
@@ -410,6 +402,5 @@ test.describe('Output History', { tag: '@ui' }, () => {
       'style',
       /width:\s*100%/
     )
-    await expect(itemOverallProgress).toHaveAttribute('style', /width:\s*100%/)
   })
 })

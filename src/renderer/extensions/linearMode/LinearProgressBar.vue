@@ -6,13 +6,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   class: className,
   overallOpacity = 1,
-  activeOpacity = 1,
-  rounded = false
+  activeOpacity = 1
 } = defineProps<{
   class?: string
   overallOpacity?: number
   activeOpacity?: number
-  rounded?: boolean
 }>()
 
 const { totalPercent, currentNodePercent } = useQueueProgress()
@@ -24,7 +22,6 @@ const executionStore = useExecutionStore()
       cn(
         'relative h-2 bg-secondary-background transition-opacity',
         !executionStore.isActiveWorkflowRunning && 'opacity-0',
-        rounded && 'rounded-sm',
         className
       )
     "
@@ -32,13 +29,11 @@ const executionStore = useExecutionStore()
     <div
       data-testid="linear-progress-overall"
       class="absolute inset-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
-      :class="cn(rounded && 'rounded-sm')"
       :style="{ width: `${totalPercent}%`, opacity: overallOpacity }"
     />
     <div
       data-testid="linear-progress-node"
       class="absolute inset-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
-      :class="cn(rounded && 'rounded-sm')"
       :style="{ width: `${currentNodePercent}%`, opacity: activeOpacity }"
     />
   </div>
