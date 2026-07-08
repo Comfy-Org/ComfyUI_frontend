@@ -81,6 +81,10 @@ reviews:
         When a fixture cast hides a too-wide production signature, suggest narrowing the production type instead of casting the fixture.
         Flag process-level listeners (process.on('unhandledRejection')) in tests; assert the rejected promise directly.
         Tests should import the module under test from its public entrypoint, not deep internal paths.
+    - path: 'src/scripts/app*.test.ts'
+      instructions: |
+        For app tests that mock or spy on `api.queuePrompt`, require rejected-queue coverage whenever the code temporarily populates `api.authToken` or `api.apiKey`.
+        The rejected-path test must populate both values, make `api.queuePrompt` reject, and assert both fields are cleared afterward; success-path cleanup alone is insufficient.
     - path: 'src/lib/litegraph/**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
