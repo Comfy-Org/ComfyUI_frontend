@@ -115,4 +115,19 @@ describe('LGraphNodePreview', () => {
     expect(widgets.find((w) => w.name === 'steps')?.value).toBe(20)
     expect(widgets.find((w) => w.name === 'text')?.value).toBe('')
   })
+
+  it('hides advanced widgets in previews', () => {
+    const widgets = renderedWidgets(
+      fromPartial<ComfyNodeDefV2>({
+        name: 'TestNode',
+        inputs: {
+          prompt: { type: 'STRING' },
+          sampler: { type: 'STRING', advanced: true }
+        },
+        outputs: []
+      })
+    )
+
+    expect(widgets.map((widget) => widget.name)).toEqual(['prompt'])
+  })
 })

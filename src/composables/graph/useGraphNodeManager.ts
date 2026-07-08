@@ -24,6 +24,7 @@ import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 type Badges = (LGraphBadge | (() => LGraphBadge))[]
+const reactiveArrayNodes = new WeakSet<LGraphNode>()
 
 export interface VueNodeData {
   executing: boolean
@@ -61,6 +62,12 @@ function makeReactiveNodeArrays(node: LGraphNode): {
   inputs: INodeInputSlot[]
   outputs: INodeOutputSlot[]
 } {
+  // Will be removeable with a later step in the migration.
+  if (reactiveArrayNodes.has(node)) {
+    return { inputs: node.inputs ?? [], outputs: node.outputs ?? [] }
+  }
+  reactiveArrayNodes.add(node)
+
   const existingWidgetsDescriptor = Object.getOwnPropertyDescriptor(
     node,
     'widgets'
