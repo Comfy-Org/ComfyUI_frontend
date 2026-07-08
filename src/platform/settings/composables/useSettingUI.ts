@@ -30,7 +30,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   'Mask Editor': 'icon-[lucide--pen-tool]',
   Members: 'icon-[lucide--users]',
   Other: 'icon-[lucide--ellipsis]',
-  PartnerNodes: 'icon-[comfy--node]',
+  PartnerNodes: 'icon-[lucide--shield-check]',
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
