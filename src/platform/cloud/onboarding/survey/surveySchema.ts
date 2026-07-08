@@ -9,7 +9,9 @@ import type {
 
 export type SurveyValues = Record<string, string | string[] | undefined>
 
-const hasNonEmptyValue = (current: string | string[] | undefined): boolean => {
+export const hasNonEmptyValue = (
+  current: string | string[] | undefined
+): boolean => {
   if (current === undefined || current === '') return false
   if (Array.isArray(current)) return current.length > 0
   return true

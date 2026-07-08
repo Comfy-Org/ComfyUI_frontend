@@ -7,6 +7,7 @@ import {
   buildInitialValues,
   buildSubmissionPayload,
   buildZodSchema,
+  hasNonEmptyValue,
   prepareSurvey,
   visibleFields
 } from './surveySchema'
@@ -252,6 +253,24 @@ describe('defaultOnboardingSurvey branching', () => {
   const idsFor = (values: Record<string, string | string[]>) =>
     visibleFields(defaultOnboardingSurvey, values).map((f) => f.id)
 
+  it('asks only the core steps when no branch condition is met', () => {
+    expect(idsFor({ intent: 'images', source: 'friend' })).toEqual([
+      'intent',
+      'experience',
+      'source'
+    ])
+  })
+
+  it('asks every step when both branches are active', () => {
+    expect(idsFor({ intent: 'workflows', source: 'social' })).toEqual([
+      'intent',
+      'experience',
+      'focus',
+      'source',
+      'source_social'
+    ])
+  })
+
   it('asks focus only for builder intents (workflows / apps_api)', () => {
     expect(idsFor({ intent: 'workflows' })).toContain('focus')
     expect(idsFor({ intent: 'apps_api' })).toContain('focus')
@@ -289,5 +308,19 @@ describe('defaultOnboardingSurvey branching', () => {
     })
     expect(payload.intent).toBe('Comics')
     expect(payload.source).toBe('A podcast')
+  })
+})
+
+describe('hasNonEmptyValue', () => {
+  const cases: [string | string[] | undefined, boolean][] = [
+    [undefined, false],
+    ['', false],
+    [[], false],
+    ['a', true],
+    [['a'], true],
+    [['a', 'b'], true]
+  ]
+  it.for(cases)('treats %o as non-empty=%o', ([value, expected]) => {
+    expect(hasNonEmptyValue(value)).toBe(expected)
   })
 })
