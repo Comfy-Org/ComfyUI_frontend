@@ -113,6 +113,7 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  collectReservedRerouteIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
@@ -2631,15 +2632,9 @@ export class LGraph
           : undefined
 
         if (deduplicated) {
-          const reservedRerouteIds = new Set<number>()
-          for (const reroute of this.reroutes.values())
-            reservedRerouteIds.add(Number(reroute.id))
-          for (const sg of this.subgraphs.values())
-            for (const reroute of sg.reroutes.values())
-              reservedRerouteIds.add(Number(reroute.id))
           deduplicateSubgraphRerouteIds(
             deduplicated.subgraphs,
-            reservedRerouteIds,
+            collectReservedRerouteIds(this),
             this.state
           )
         }

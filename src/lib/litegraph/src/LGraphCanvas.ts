@@ -96,7 +96,11 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
-import { topologicalSortSubgraphs } from './subgraph/subgraphDeduplication'
+import {
+  collectReservedRerouteIds,
+  deduplicateSubgraphRerouteIds,
+  topologicalSortSubgraphs
+} from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -4071,8 +4075,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           subgraphs.add(node.subgraph)
         }
       }
-      const cloned = subgraph.clone(true).asSerialisable()
-      serialisable.subgraphs.push(cloned)
+      // Snapshot without Subgraph.clone(): configuring a throwaway live
+      // subgraph would register its links and reroutes into the same
+      // root-scoped store buckets as the live subgraph's.
+      serialisable.subgraphs.push(structuredClone(subgraph.asSerialisable()))
     }
     return serialisable
   }
@@ -4191,6 +4197,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
+    deduplicateSubgraphRerouteIds(
+      parsed.subgraphs,
+      collectReservedRerouteIds(graph.rootGraph),
+      graph.rootGraph.state
+    )
 
     // Subgraphs
     for (const info of parsed.subgraphs) {
