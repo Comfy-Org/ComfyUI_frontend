@@ -4513,6 +4513,7 @@
     "close": "Close",
     "history": "Chat history",
     "showChatHistory": "Show chat history",
+    "backToChat": "Back to chat",
     "historyCurrent": "Current",
     "historyToday": "Today",
     "historyYesterday": "Yesterday",
