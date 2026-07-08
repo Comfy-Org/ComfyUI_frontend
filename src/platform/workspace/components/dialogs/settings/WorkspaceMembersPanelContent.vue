@@ -1,6 +1,5 @@
 <template>
-  <div class="flex size-full flex-col gap-4">
-    <BillingStatusBanner />
+  <div class="flex size-full flex-col">
     <MembersPanelContent :key="workspaceRole" />
   </div>
 </template>
@@ -8,7 +7,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
