@@ -228,6 +228,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
+  // The caller's threads for the Chat History list. Best-effort: the caller catches so a
+  // history-list failure never breaks the live conversation.
+  function listThreads() {
+    return rest.listThreads()
+  }
+
+  // Open a past thread from Chat History: cancel any in-flight turn, adopt the thread id,
+  // persist it for resume, and hydrate its transcript. A stale/deleted id 404s inside
+  // hydrateFromServer and is forgotten there.
+  async function loadThread(threadId: string): Promise<void> {
+    void stopTurn()
+    conversationStore.setThreadId(threadId)
+    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+    await hydrateFromServer(threadId)
+  }
+
   function onRaw(raw: unknown): void {
     const value = typeof raw === 'string' ? tryParseJson(raw) : raw
     if (value === undefined) return
@@ -283,6 +299,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendMessage,
     stopTurn,
     newChat,
+    listThreads,
+    loadThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),

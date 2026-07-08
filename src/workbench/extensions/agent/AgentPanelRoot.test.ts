@@ -228,24 +228,59 @@ describe('AgentPanelRoot history', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
-  it('registers the active conversation as the current history session', async () => {
+  it('populates Chat History from the server thread list on mount', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith('/api/agent/threads')) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: 'th-9',
+              title: 'build a text to image graph',
+              updated_at: '2026-07-07T10:00:00Z'
+            }
+          ]),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response('[]', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const history = useAgentChatHistoryStore()
+    await vi.waitFor(() => expect(history.sessions).toHaveLength(1))
+    expect(history.sessions[0]).toMatchObject({
+      id: 'th-9',
+      title: 'build a text to image graph'
+    })
+  })
+
+  it('marks the adopted thread as the current session', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('[]', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+      )
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     const convo = useAgentConversationStore()
-    const turnId = 'turn-1' as TurnId
-    convo.recordUser(turnId, 'build a text to image graph')
-    convo.startTurn(turnId)
+    convo.setThreadId('th-active')
     await nextTick()
 
     const history = useAgentChatHistoryStore()
-    expect(history.activeId).toBe('turn-1')
-    expect(history.grouped.current).toHaveLength(1)
-    expect(history.grouped.current[0]).toMatchObject({
-      id: 'turn-1',
-      title: 'build a text to image graph'
-    })
+    expect(history.activeId).toBe('th-active')
   })
 })
 

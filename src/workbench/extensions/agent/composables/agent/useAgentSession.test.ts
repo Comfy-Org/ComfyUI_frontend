@@ -6,6 +6,7 @@ import type {
   AgentDraftSnapshot,
   AgentMessages,
   AgentThreadCreated,
+  AgentThreads,
   AgentTurnAccepted,
   TokenUsage,
   UploadImageResult
@@ -44,6 +45,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
+    listThreads: vi.fn(async (): Promise<AgentThreads> => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
     ),
@@ -651,5 +653,44 @@ describe('thread resume (B17)', () => {
         (entry) => entry.role === 'user' && entry.text === 'live message'
       )
     ).toBe(true)
+  })
+
+  it('loadThread adopts, persists and hydrates a chat picked from history', async () => {
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(getMessages).toHaveBeenCalledWith('th-9')
+    expect(session.threadId.value).toBe('th-9')
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-9')
+    await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      text: 'build a duck'
+    })
+  })
+
+  it('listThreads returns the REST client thread list', async () => {
+    const listThreads = vi.fn(
+      async (): Promise<AgentThreads> => [
+        {
+          id: 'th-9',
+          title: 'build a duck',
+          updated_at: '2026-07-07T00:00:00Z'
+        }
+      ]
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ listThreads }),
+      events: fakeEvents().source
+    })
+    const threads = await session.listThreads()
+    expect(threads).toHaveLength(1)
+    expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
   })
 })
