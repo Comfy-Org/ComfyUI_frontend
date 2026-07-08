@@ -38,12 +38,12 @@
               "
               :error-message="currentError"
               @update:model-value="
-                (value) => onFieldChange(currentField.id, value)
+                (value) => void onFieldChange(currentField.id, value)
               "
               @update:other-value="
                 (value) =>
                   currentField.otherFieldId &&
-                  onFieldChange(currentField.otherFieldId, value)
+                  void onFieldChange(currentField.otherFieldId, value)
               "
             />
           </div>
