@@ -25,7 +25,7 @@
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
         <i class="icon-[lucide--coins] size-4 self-center text-credit" />
-        <span class="text-2xl leading-none font-bold tabular-nums">{{
+        <span class="text-base leading-none font-bold tabular-nums">{{
           displayTotal
         }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
@@ -57,7 +57,7 @@
             $t('subscription.monthly')
           }}</span>
           <span class="text-muted">
-            {{ refillsLabel }}
+            {{ monthlyStatusLabel }}
           </span>
         </div>
         <div
@@ -72,40 +72,6 @@
             class="h-full rounded-full bg-credit"
             :style="{ width: usedBarWidth }"
           />
-        </div>
-        <div class="flex items-center justify-between gap-2 text-sm">
-          <Skeleton
-            v-if="isLoadingBalance"
-            class="@max-[300px]:hidden"
-            width="5rem"
-            height="1rem"
-          />
-          <span v-else class="text-muted tabular-nums @max-[300px]:hidden">
-            {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
-          </span>
-          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
-          <span
-            v-else
-            class="flex items-center gap-1 font-bold text-text-primary tabular-nums"
-          >
-            <i class="icon-[lucide--coins] size-4 text-credit" />
-            <span class="@max-[180px]:hidden">
-              {{
-                $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyBonusCredits,
-                  total: monthlyTotalDisplay
-                })
-              }}
-            </span>
-            <span class="hidden @max-[180px]:inline">
-              {{
-                $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyRemainingCompact,
-                  total: monthlyTotalCompact
-                })
-              }}
-            </span>
-          </span>
         </div>
       </div>
 
@@ -219,7 +185,6 @@ const {
   fetchStatus
 } = useBillingContext()
 const {
-  monthlyBonusCredits,
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
@@ -263,12 +228,15 @@ const refillsDateShort = computed(() => {
 
 const hasRefillsDate = computed(() => refillsDateShort.value !== '')
 
-const refillsLabel = computed(() => {
-  if (isPaused.value) return t('subscription.refillPaused')
-  return hasRefillsDate.value
-    ? t('subscription.refillsDate', { date: refillsDateShort.value })
-    : t('subscription.refillsNextCycle')
-})
+const monthlyUsedPercent = computed(() =>
+  Math.round(usage.value.usedFraction * 100)
+)
+
+const monthlyStatusLabel = computed(() =>
+  isPaused.value
+    ? t('subscription.refillPaused')
+    : t('subscription.percentUsed', { percent: monthlyUsedPercent.value })
+)
 
 const formatCreditCount = (value: number) =>
   formatCredits({
@@ -283,17 +251,6 @@ const monthlyTotalDisplay = computed(() => {
 })
 
 const usedDisplay = computed(() => formatCreditCount(usage.value.used))
-
-const compactNumber = computed(
-  () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
-)
-const monthlyRemainingCompact = computed(() =>
-  compactNumber.value.format(monthlyBonusCreditsValue.value)
-)
-const monthlyTotalCompact = computed(() => {
-  const total = monthlyTotalCredits.value
-  return total === null ? '—' : compactNumber.value.format(total)
-})
 
 const displayTotal = computed(() => (zeroState ? '0' : totalCredits.value))
 const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))

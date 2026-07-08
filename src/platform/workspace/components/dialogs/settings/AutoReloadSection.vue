@@ -64,7 +64,9 @@
           "
         >
           <i class="icon-[lucide--coins] size-4 text-credit" />
-          <span class="text-lg font-semibold text-base-foreground tabular-nums">
+          <span
+            class="text-base font-semibold text-base-foreground tabular-nums"
+          >
             {{ reloadCreditsLabel }}
           </span>
           {{ $t('workspacePanel.autoReload.tile.whenBelow') }}
@@ -95,23 +97,6 @@
             </div>
           </div>
         </div>
-
-        <div
-          class="flex items-center justify-between border-t border-interface-stroke/60 pt-3 text-sm text-muted-foreground"
-        >
-          <span class="tabular-nums">{{ recentReloadLabel }}</span>
-          <span
-            v-if="config.lastReload"
-            class="flex items-center gap-1.5 tabular-nums"
-          >
-            <i class="icon-[lucide--coins] size-4 text-credit" />
-            <span class="text-base-foreground">{{
-              lastReloadCreditsLabel
-            }}</span>
-            <span>·</span>
-            <span class="text-base-foreground">{{ lastReloadCostLabel }}</span>
-          </span>
-        </div>
       </div>
     </div>
   </div>
@@ -121,7 +106,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { creditsToCents } from '@/base/credits/comfyCredits'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
@@ -201,23 +185,5 @@ const reloadsLeftClass = computed(() =>
     : isWarning.value
       ? 'text-credit'
       : 'text-muted-foreground'
-)
-
-const recentReloadLabel = computed(() =>
-  config.lastReload
-    ? t('workspacePanel.autoReload.tile.recentReload', {
-        date: d(config.lastReload.date, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        })
-      })
-    : t('workspacePanel.autoReload.tile.noRecentReload')
-)
-const lastReloadCreditsLabel = computed(() =>
-  config.lastReload ? fmtCredits(config.lastReload.credits) : ''
-)
-const lastReloadCostLabel = computed(() =>
-  config.lastReload ? fmtUsd(creditsToCents(config.lastReload.credits)) : ''
 )
 </script>

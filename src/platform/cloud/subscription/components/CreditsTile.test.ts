@@ -98,10 +98,8 @@ const i18n = createI18n({
         remaining: 'remaining',
         refreshCredits: 'Refresh credits',
         monthly: 'Monthly',
-        refillsDate: 'Refills {date}',
-        refillsNextCycle: 'Refills next cycle',
-        creditsUsed: '{used} used',
-        creditsLeftOfTotal: '{remaining} left of {total}',
+        percentUsed: '{percent}% used',
+        refillPaused: 'Refill paused',
         monthlyUsageProgress: '{used} of {total} monthly credits used',
         additionalCreditsInfo: 'About additional credits',
         additionalCreditsTooltip: 'Credits you add on top of your plan.',
@@ -179,20 +177,12 @@ describe('CreditsTile', () => {
   it('renders the monthly usage bar and additional breakdown', () => {
     activeProSubscription()
     const { container } = renderTile()
-    // PRO monthly allowance = 21,100; remaining 422 -> used 20,678.
+    // PRO monthly allowance = 21,100; remaining 422 -> used 20,678 -> 98%.
     expect(container.textContent).toContain('Monthly')
-    expect(container.textContent).toMatch(/Refills Feb/)
-    expect(container.textContent).toContain('20,678 used')
-    expect(container.textContent).toContain('422 left of 21,100')
+    expect(container.textContent).toContain('98% used')
     expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
     expect(container.textContent).toContain('Used after monthly runs out')
-  })
-
-  it('renders a compact monthly summary for narrow containers', () => {
-    activeProSubscription()
-    const { container } = renderTile()
-    expect(container.textContent).toContain('422 left of 21K')
   })
 
   it('uses the team credit stop monthly grant for the monthly total', () => {
@@ -208,10 +198,13 @@ describe('CreditsTile', () => {
       stop_usd: 2500
     }
     state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
-    const { container } = renderTile()
+    renderTile()
     // Monthly total is the stop's raw monthly grant, not the tier fallback,
     // and is not multiplied by 12 for annual billing.
-    expect(container.textContent).toContain('422 left of 527,500')
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuemax',
+      '527500'
+    )
   })
 
   it('uses the per-month nominal grant for an annual personal tier', () => {
@@ -222,18 +215,12 @@ describe('CreditsTile', () => {
       renewalDate: '2026-02-20T12:00:00Z'
     }
     state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
-    const { container } = renderTile()
+    renderTile()
     // Annual billing still grants the monthly nominal (21,100), not 12x.
-    expect(container.textContent).toContain('422 left of 21,100')
-    expect(container.textContent).not.toContain('253,200')
-  })
-
-  it('falls back to a dateless refills label when renewal date is missing', () => {
-    activeProSubscription()
-    state.subscription = { tier: 'PRO', duration: 'MONTHLY', renewalDate: null }
-    const { container } = renderTile()
-    expect(container.textContent).toContain('Refills next cycle')
-    expect(container.textContent).not.toContain('Refills Feb')
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuemax',
+      '21100'
+    )
   })
 
   it('uses a dateless out-of-credits notice when renewal date is invalid', () => {

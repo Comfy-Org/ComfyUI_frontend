@@ -26,6 +26,7 @@ export function useWorkspaceOverview() {
   const plan = {
     name: 'Team',
     priceCents: 32000,
+    monthlyCredits: 56900,
     renewalLabel: d(nextRenewal, {
       month: 'short',
       day: 'numeric',
