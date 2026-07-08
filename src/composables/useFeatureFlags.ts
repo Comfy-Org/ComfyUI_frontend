@@ -105,10 +105,12 @@ export function useFeatureFlags() {
       )
     },
     get onboardingSurveyEnabled() {
+      // TEMPORARY: default forced to true to preview the redesigned survey.
+      // Revert to `false` before merge — the gating logic is not shipping here.
       return resolveFlag(
         ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
         remoteConfig.value.onboarding_survey_enabled,
-        false
+        true
       )
     },
     get linearToggleEnabled() {

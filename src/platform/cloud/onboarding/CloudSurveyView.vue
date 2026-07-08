@@ -30,13 +30,24 @@ const router = useRouter()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 
+// TEMPORARY: prefer the frontend default so the redesigned survey is visible
+// even while the backend still ships the old schema. Revert to
+// `remoteConfig.value.onboarding_survey ?? defaultOnboardingSurvey` before merge.
 const activeSurvey = computed(
-  () => remoteConfig.value.onboarding_survey ?? defaultOnboardingSurvey
+  () => defaultOnboardingSurvey ?? remoteConfig.value.onboarding_survey
 )
 
 const isSubmitting = ref(false)
 
+// TEMPORARY: preview the redesigned survey regardless of enabled/completed
+// state. Delete this line and its use below before merge.
+const previewSurveyAlways = true
+
 onMounted(async () => {
+  if (previewSurveyAlways) {
+    useTelemetry()?.trackSurvey('opened')
+    return
+  }
   if (!onboardingSurveyEnabled.value) {
     await router.replace({ name: 'cloud-user-check' })
     return
