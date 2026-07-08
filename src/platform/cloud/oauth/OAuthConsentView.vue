@@ -17,7 +17,7 @@
             aria-hidden="true"
           />
           <div
-            class="flex size-14 items-center justify-center rounded-2xl bg-(--oauth-comfy-tile)"
+            class="flex size-14 items-center justify-center rounded-2xl bg-plum-600"
           >
             <i
               class="icon-[comfy--comfy-c] size-8 text-white"
@@ -45,7 +45,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="rounded-lg bg-(--oauth-box) p-3 text-sm text-muted"
+          class="rounded-lg bg-ink-400 p-3 text-sm text-muted"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -53,7 +53,7 @@
           v-else
           v-model="selectedWorkspaceId"
           :aria-label="t('oauth.consent.workspaceLabel')"
-          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-white/10 overflow-hidden overflow-y-auto rounded-lg bg-(--oauth-box) p-0"
+          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-white/10 overflow-hidden overflow-y-auto rounded-lg bg-ink-400 p-0"
         >
           <RadioGroupItem
             v-for="workspace in challenge.workspaces"
@@ -62,10 +62,9 @@
             :class="
               cn(
                 'flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-3 text-left transition-colors',
-                'hover:bg-secondary-background-hover',
+                'hover:bg-ink-300',
                 'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset',
-                selectedWorkspaceId === workspace.id &&
-                  'bg-secondary-background-selected'
+                selectedWorkspaceId === workspace.id && 'bg-ink-200'
               )
             "
           >
@@ -94,7 +93,7 @@
         <p class="m-0 text-sm font-medium">
           {{ t('oauth.consent.detailsHeader') }}
         </p>
-        <div class="flex flex-col gap-1.5 rounded-lg bg-(--oauth-box) p-3">
+        <div class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3">
           <span class="text-xs text-muted">
             {{ t('oauth.consent.permissionsHeader') }}
           </span>
@@ -116,13 +115,13 @@
         </div>
         <div
           v-if="challenge.redirect_uri"
-          class="flex flex-col gap-1.5 rounded-lg bg-(--oauth-box) p-3"
+          class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3"
         >
           <span class="text-xs text-muted">
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
-            class="m-0 block truncate rounded-md bg-(--oauth-inset) px-3 py-2 font-mono text-xs text-base-foreground"
+            class="m-0 block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-base-foreground"
             :title="challenge.redirect_uri"
           >
             {{ challenge.redirect_uri }}
@@ -142,7 +141,7 @@
         <Button
           variant="secondary"
           size="lg"
-          class="w-full bg-(--oauth-button) hover:bg-(--oauth-box)"
+          class="w-full bg-ink-500 hover:bg-ink-400"
           :loading="submitting === 'allow'"
           :disabled="isSubmitting || !selectedWorkspaceIsValid"
           @click="submit('allow')"
@@ -152,7 +151,7 @@
         <Button
           variant="secondary"
           size="lg"
-          class="w-full bg-(--oauth-button-cancel) hover:bg-(--oauth-box)"
+          class="w-full bg-ink-600 hover:bg-ink-400"
           :loading="submitting === 'deny'"
           :disabled="isSubmitting"
           @click="submit('deny')"

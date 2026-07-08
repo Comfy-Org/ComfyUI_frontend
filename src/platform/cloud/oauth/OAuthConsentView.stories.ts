@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
-import { oauthDuskSurfaces } from '@/platform/cloud/oauth/oauthDuskTheme'
 
 const baseChallenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
@@ -32,11 +31,8 @@ const meta: Meta<typeof OAuthConsentView> = {
   component: OAuthConsentView,
   decorators: [
     () => ({
-      setup() {
-        return { oauthDuskSurfaces }
-      },
       template:
-        '<div class="dark-theme relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas" :style="oauthDuskSurfaces"><i class="icon-[comfy--comfy-logo] absolute top-6 left-6 h-6 w-26 text-brand-yellow" aria-hidden="true" /><story /></div>'
+        '<div class="dark-theme relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"><i class="icon-[comfy--comfy-logo] absolute top-6 left-6 h-6 w-26 text-brand-yellow" aria-hidden="true" /><story /></div>'
     })
   ]
 }

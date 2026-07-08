@@ -1,6 +1,5 @@
 <template>
   <div
-    :style="oauthDuskSurfaces"
     class="dark-theme relative h-svh w-screen overflow-y-auto bg-primary-comfy-ink font-sans text-primary-comfy-canvas"
   >
     <i
@@ -17,7 +16,6 @@ import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
-import { oauthDuskSurfaces } from '@/platform/cloud/oauth/oauthDuskTheme'
 
 onMounted(() => {
   document.getElementById('splash-loader')?.remove()
