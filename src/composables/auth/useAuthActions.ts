@@ -8,6 +8,7 @@ import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -27,6 +28,15 @@ export const useAuthActions = () => {
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
+
+  const reportAuthFlowError =
+    (authAction: AuthFlowAction) => (error: unknown) => {
+      useTelemetry()?.trackAuthFailed({
+        error_code: error instanceof FirebaseError ? error.code : 'unknown',
+        auth_action: authAction
+      })
+      reportError(error)
+    }
 
   const reportError = (error: unknown) => {
     // Ref: https://firebase.google.com/docs/auth/admin/errors
@@ -127,7 +137,7 @@ export const useAuthActions = () => {
         life: 5000
       })
     },
-    reportError
+    reportAuthFlowError('password_reset')
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
@@ -181,28 +191,28 @@ export const useAuthActions = () => {
     async (options?: { isNewUser?: boolean }) => {
       return await authStore.loginWithGoogle(options)
     },
-    reportError
+    reportAuthFlowError('google_sign_in')
   )
 
   const signInWithGithub = wrapWithErrorHandlingAsync(
     async (options?: { isNewUser?: boolean }) => {
       return await authStore.loginWithGithub(options)
     },
-    reportError
+    reportAuthFlowError('github_sign_in')
   )
 
   const signInWithEmail = wrapWithErrorHandlingAsync(
     async (email: string, password: string) => {
       return await authStore.login(email, password)
     },
-    reportError
+    reportAuthFlowError('email_sign_in')
   )
 
   const signUpWithEmail = wrapWithErrorHandlingAsync(
     async (email: string, password: string, turnstileToken?: string) => {
       return await authStore.register(email, password, turnstileToken)
     },
-    reportError
+    reportAuthFlowError('email_sign_up')
   )
 
   /**

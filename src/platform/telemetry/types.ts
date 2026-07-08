@@ -52,6 +52,21 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
+export type AuthFlowAction =
+  | 'email_sign_in'
+  | 'email_sign_up'
+  | 'google_sign_in'
+  | 'github_sign_in'
+  | 'password_reset'
+
+/**
+ * Metadata for failed authentication attempts
+ */
+export interface AuthErrorMetadata {
+  error_code: string
+  auth_action: AuthFlowAction
+}
+
 /**
  * Survey response data for user profiling
  * Maps 1-to-1 with actual survey fields
@@ -525,6 +540,7 @@ export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
+  trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -637,6 +653,7 @@ export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
+  USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
   // Subscription Flow
@@ -743,6 +760,7 @@ export type ExecutionTriggerSource =
  */
 export type TelemetryEventProperties =
   | AuthMetadata
+  | AuthErrorMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
