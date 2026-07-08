@@ -11,7 +11,7 @@
       <DialogContent
         v-reka-z-index
         data-testid="coach-landing"
-        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border-default bg-secondary-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:min-h-98 md:max-w-[800px] md:flex-row"
+        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border-default bg-secondary-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:h-fit md:min-h-100 md:max-w-[800px] md:flex-row"
         @pointer-down-outside.prevent
         @open-auto-focus="onOpenAutoFocus"
       >
@@ -38,14 +38,14 @@
         <div
           class="flex flex-col items-start justify-between self-stretch px-15 pt-15 pb-10 md:w-1/2"
         >
-          <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2.5">
             <DialogTitle
               class="m-0 text-[28px] leading-normal font-medium text-base-foreground"
             >
               {{ title }}
             </DialogTitle>
             <DialogDescription
-              class="flex flex-col items-start gap-2 self-stretch py-2 text-base/5 text-muted-foreground"
+              class="flex flex-col items-start gap-2 self-stretch text-base/5 text-muted-foreground"
             >
               {{ message }}
             </DialogDescription>
