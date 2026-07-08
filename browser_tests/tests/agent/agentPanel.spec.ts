@@ -51,16 +51,20 @@ type AgentFixtures = {
   postedMessages: string[]
 }
 
-// Install agent boot + REST mocks in the `page` fixture (before navigation) and
-// expose the recorded POST bodies. `comfyPageFixture` consumes this same `page`
-// and then boots the app, so the mocks are in place before mount.
+// Override the `page` fixture to install the agent boot + REST mocks, the same
+// pattern as workspaceSwitcher.spec.ts: `comfyPage` depends on `page`, so the
+// override is guaranteed to finish before `comfyPage` navigates and boots the
+// app. A sibling fixture carries no such ordering, so its mocks can land after
+// boot and the real server answers /api/features (no PostHog token, gate stays
+// closed).
 const agentCloudFixture = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
-  postedMessages: async ({ page, agentFlagEnabled }, use) => {
-    const { postedMessages } = await mockAgentBoot(page, {
-      agentFlag: agentFlagEnabled
-    })
-    await use(postedMessages)
+  postedMessages: async ({}, use) => {
+    await use([])
+  },
+  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
+    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+    await use(page)
   }
 })
 
@@ -82,7 +86,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       comfyPage,
       postedMessages
     }) => {
-      // Touch the fixture so its mocks (flag-off /api/features) are installed.
       expect(postedMessages).toHaveLength(0)
 
       // Fail-closed: with the PostHog flag false the top-bar button is never
