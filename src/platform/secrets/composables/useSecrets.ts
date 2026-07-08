@@ -11,7 +11,7 @@ import {
   SecretsApiError
 } from '../api/secretsApi'
 import { BYOK_PARTNER_PROVIDERS } from '../providers'
-import type { SecretMetadata, SecretProvider } from '../types'
+import type { SecretMetadata } from '../types'
 
 export function useSecrets() {
   const { t } = useI18n()
@@ -29,10 +29,10 @@ export function useSecrets() {
     return providers.filter((p) => !BYOK_PARTNER_PROVIDERS.has(p))
   })
 
-  const existingProviders = computed<SecretProvider[]>(() =>
+  const existingProviders = computed<string[]>(() =>
     secrets.value
       .map((s) => s.provider)
-      .filter((p): p is SecretProvider => p !== undefined)
+      .filter((p): p is string => p !== undefined)
   )
 
   async function fetchSecrets() {

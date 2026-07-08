@@ -226,6 +226,23 @@ describe('useSecretForm', () => {
       expect(providerOptions.value.map((o) => o.value)).toEqual(['civitai'])
     })
 
+    it('surfaces partner providers from the server with friendly labels', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['huggingface', 'gemini', 'runway'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([
+        { label: 'HuggingFace', value: 'huggingface', disabled: false },
+        { label: 'Gemini', value: 'gemini', disabled: false },
+        { label: 'Runway', value: 'runway', disabled: false }
+      ])
+    })
+
     it('reacts to availableProviders changing', () => {
       const visible = ref(true)
       const availableProviders = ref<string[] | null>(null)

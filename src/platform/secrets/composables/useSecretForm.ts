@@ -4,13 +4,13 @@ import { computed, reactive, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { createSecret, SecretsApiError, updateSecret } from '../api/secretsApi'
-import { SECRET_PROVIDERS } from '../providers'
-import type { SecretErrorCode, SecretMetadata, SecretProvider } from '../types'
+import { getProviderLabel, SECRET_PROVIDERS } from '../providers'
+import type { SecretErrorCode, SecretMetadata } from '../types'
 
 interface SecretFormState {
   name: string
   secretValue: string
-  provider: SecretProvider | null
+  provider: string | null
 }
 
 interface SecretFormErrors {
@@ -21,14 +21,14 @@ interface SecretFormErrors {
 
 interface ProviderOption {
   label: string
-  value: SecretProvider
+  value: string
   disabled: boolean
 }
 
 interface UseSecretFormOptions {
   mode: 'create' | 'edit'
   secret?: MaybeRefOrGetter<SecretMetadata | undefined>
-  existingProviders: MaybeRefOrGetter<SecretProvider[]>
+  existingProviders: MaybeRefOrGetter<string[]>
   availableProviders?: MaybeRefOrGetter<string[] | null>
   visible: { value: boolean }
   onSaved: () => void
@@ -64,14 +64,12 @@ export function useSecretForm(options: UseSecretFormOptions) {
   const providerOptions = computed<ProviderOption[]>(() => {
     const available = toValue(availableProviders)
     const providers =
-      mode === 'edit' || available === null
-        ? SECRET_PROVIDERS
-        : SECRET_PROVIDERS.filter((p) => available.includes(p.value))
-    return providers.map((p) => ({
-      label: p.label,
-      value: p.value,
+      mode === 'edit' || available === null ? SECRET_PROVIDERS : available
+    return providers.map((provider) => ({
+      label: getProviderLabel(provider),
+      value: provider,
       disabled:
-        mode === 'edit' ? false : toValue(existingProviders).includes(p.value)
+        mode === 'edit' ? false : toValue(existingProviders).includes(provider)
     }))
   })
 
@@ -91,10 +89,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     const secret = toValue(secretRef)
     if (mode === 'edit' && secret) {
       form.name = secret.name
-      // Stored provider is a free-form string; in edit mode the field is
-      // disabled and only needs to be non-empty for validation (it is never
-      // re-sent), so narrowing to the form's known-provider type is safe here.
-      form.provider = (secret.provider ?? null) as SecretProvider | null
+      form.provider = secret.provider ?? null
       form.secretValue = ''
     } else {
       form.name = ''

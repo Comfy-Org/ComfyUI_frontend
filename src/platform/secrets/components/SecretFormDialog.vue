@@ -134,7 +134,7 @@ import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 
 import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata, SecretProvider } from '../types'
+import type { SecretMetadata } from '../types'
 
 const {
   secret,
@@ -143,7 +143,7 @@ const {
   mode = 'create'
 } = defineProps<{
   secret?: SecretMetadata
-  existingProviders?: SecretProvider[]
+  existingProviders?: string[]
   availableProviders?: string[] | null
   mode?: 'create' | 'edit'
 }>()

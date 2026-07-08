@@ -18,7 +18,7 @@ export type SecretProvider = 'huggingface' | 'civitai'
 export interface SecretCreateRequest {
   name: string
   secret_value: string
-  provider?: SecretProvider
+  provider?: string
 }
 
 export interface SecretUpdateRequest {

@@ -1,19 +1,32 @@
 import type { SecretProvider } from './types'
 
 interface ProviderConfig {
-  value: SecretProvider
   label: string
-  logo: string
+  logo?: string
 }
 
-export const SECRET_PROVIDERS: ProviderConfig[] = [
-  {
-    value: 'huggingface',
-    label: 'HuggingFace',
-    logo: '/assets/images/hf-logo.svg'
-  },
-  { value: 'civitai', label: 'Civitai', logo: '/assets/images/civitai.svg' }
-] as const
+/**
+ * Display metadata (label + optional logo) for known providers, keyed by the
+ * free-form provider id. Providers not listed here fall back to their raw id as
+ * the label and render without a logo.
+ */
+const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
+  huggingface: { label: 'HuggingFace', logo: '/assets/images/hf-logo.svg' },
+  civitai: { label: 'Civitai', logo: '/assets/images/civitai.svg' },
+  gemini: { label: 'Gemini' },
+  runway: { label: 'Runway' }
+}
+
+/**
+ * Base providers shown in the add-secret dropdown before/without a
+ * server-provided list. Partner providers are surfaced only when the server
+ * returns them and the BYOK flag is on (see `BYOK_PARTNER_PROVIDERS`), so they
+ * are intentionally excluded from this fallback set.
+ */
+export const SECRET_PROVIDERS: readonly SecretProvider[] = [
+  'huggingface',
+  'civitai'
+]
 
 /**
  * BYOK (bring-your-own-key) partner providers. The server payload does not mark
@@ -28,14 +41,12 @@ export const BYOK_PARTNER_PROVIDERS: ReadonlySet<string> = new Set([
 
 export function getProviderLabel(provider: string | undefined): string {
   if (!provider) return ''
-  const config = SECRET_PROVIDERS.find((p) => p.value === provider)
-  return config?.label ?? provider
+  return PROVIDER_CONFIGS[provider]?.label ?? provider
 }
 
 export function getProviderLogo(
   provider: string | undefined
 ): string | undefined {
   if (!provider) return undefined
-  const config = SECRET_PROVIDERS.find((p) => p.value === provider)
-  return config?.logo
+  return PROVIDER_CONFIGS[provider]?.logo
 }
