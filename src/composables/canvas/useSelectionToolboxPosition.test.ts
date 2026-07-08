@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
@@ -54,6 +54,10 @@ describe('useSelectionToolboxPosition', () => {
     if (mockFeatureFlags.refs) {
       mockFeatureFlags.refs.shouldRenderVueNodes.value = false
     }
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   function renderToolboxForSelection(

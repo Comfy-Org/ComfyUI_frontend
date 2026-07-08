@@ -1,10 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   LGraphGroup,
@@ -358,30 +360,6 @@ vi.mock('@/stores/queueStore', () => ({
   useQueueUIStore: vi.fn(() => ({}))
 }))
 
-const MockLGraphGroup = vi.hoisted(() =>
-  vi.fn(function (this: Record<string, unknown>) {
-    this['resizeTo'] = vi.fn()
-    this['recomputeInsideNodes'] = vi.fn()
-  })
-)
-
-function lastGroupInstance() {
-  const instances = MockLGraphGroup.mock.instances as {
-    resizeTo: ReturnType<typeof vi.fn>
-    recomputeInsideNodes: ReturnType<typeof vi.fn>
-  }[]
-  const instance = instances.at(-1)
-  if (!instance) throw new Error('No LGraphGroup was constructed')
-  return instance
-}
-vi.mock('@/lib/litegraph/src/litegraph', async () => {
-  const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
-  return {
-    ...actual,
-    LGraphGroup: MockLGraphGroup
-  }
-})
-
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
     const baseNode = createMockLGraphNode({ id })
@@ -507,6 +485,11 @@ describe('useCoreCommands', () => {
       'open',
       vi.fn().mockReturnValue({ focus: vi.fn(), closed: false })
     )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   describe('ClearWorkflow command', () => {
@@ -1143,10 +1126,10 @@ describe('useCoreCommands', () => {
         value: false
       })
       mockNode.pin = vi.fn()
-      Object.assign(mockGroup, {
-        pinned: true,
-        pin: vi.fn()
-      })
+      // `pinned` is a getter derived from `flags.pinned`; set the backing
+      // field directly rather than the read-only accessor, and let the
+      // real pin() mutate it so the assertion checks actual state.
+      mockGroup.flags.pinned = true
       app.canvas.selectedItems = new Set([
         mockNode,
         mockGroup,
@@ -1156,7 +1139,7 @@ describe('useCoreCommands', () => {
       await findCommand('Comfy.Canvas.ToggleSelected.Pin').function()
 
       expect(mockNode.pin).toHaveBeenCalledWith(true)
-      expect(mockGroup.pin).toHaveBeenCalledWith(false)
+      expect(mockGroup.pinned).toBe(false)
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
@@ -1255,24 +1238,53 @@ describe('useCoreCommands', () => {
     })
 
     it('should create group when items are selected', async () => {
-      const mockNode = createMockLGraphNode({ id: 1 })
+      // useSettingStore().get is stubbed to return `false` ambient-wide
+      // (see beforeEach), which resizeTo's padding arithmetic treats as 0.
+      const mockNode = createMockLGraphNode({
+        id: 1,
+        boundingRect: new Rectangle(50, 50, 100, 100)
+      })
       app.canvas.selectedItems = new Set([
         mockNode
       ]) as typeof app.canvas.selectedItems
+      // The command calls group.recomputeInsideNodes() right after adding
+      // it to the graph, so the stubbed add() needs to attach a graph.
+      vi.mocked(app.canvas.graph!.add).mockImplementation((item) => {
+        ;(item as LGraphGroup).graph = fromPartial<LGraph>({
+          nodes: [],
+          reroutes: new Map(),
+          groups: []
+        })
+        return undefined
+      })
 
       await findCommand('Comfy.Graph.GroupSelectedNodes').function()
 
-      expect(lastGroupInstance().resizeTo).toHaveBeenCalled()
-      expect(app.canvas.graph!.add).toHaveBeenCalled()
+      const addedGroup = vi.mocked(app.canvas.graph!.add).mock
+        .calls[0]?.[0] as LGraphGroup
+      expect(addedGroup).toBeInstanceOf(LGraphGroup)
+      // Resized to bound the node's rect [50,50,100,100] with 0 padding,
+      // offset on the y-axis by the group's title bar.
+      expect(Array.from(addedGroup.pos)).toEqual([50, 20])
+      expect(Array.from(addedGroup.size)).toEqual([100, 130])
     })
   })
 
   describe('FitGroupToContents command', () => {
     it('resizes selected groups and ignores non-groups', async () => {
-      const group = new LGraphGroup()
-      Object.assign(group, {
-        children: new Set([createMockLGraphNode({ id: 1 })])
+      const nodeInsideGroup = createMockLGraphNode({
+        id: 1,
+        boundingRect: new Rectangle(50, 50, 100, 100)
       })
+      const group = new LGraphGroup()
+      group.pos = [0, 0]
+      group.size = [200, 200]
+      group.graph = fromPartial<LGraph>({
+        nodes: [nodeInsideGroup],
+        reroutes: new Map(),
+        groups: [group]
+      })
+
       app.canvas.selectedItems = new Set([
         createMockLGraphNode({ id: 2 }),
         group
@@ -1280,8 +1292,11 @@ describe('useCoreCommands', () => {
 
       await findCommand('Comfy.Graph.FitGroupToContents').function()
 
-      expect(group.recomputeInsideNodes).toHaveBeenCalled()
-      expect(group.resizeTo).toHaveBeenCalled()
+      // recomputeInsideNodes pulled in the node whose centre falls inside
+      // the group's bounding rect; resizeTo then bound the group to it.
+      expect(group.children).toEqual(new Set([nodeInsideGroup]))
+      expect(Array.from(group.pos)).toEqual([50, 20])
+      expect(Array.from(group.size)).toEqual([100, 130])
       expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
     })
   })

@@ -833,6 +833,9 @@ describe('useBrushDrawing', () => {
       const { destroy } = useBrushDrawing()
 
       expect(() => destroy()).not.toThrow()
+      // Teardown with nothing to tear down is idempotent, not just a
+      // one-off no-op.
+      expect(() => destroy()).not.toThrow()
     })
   })
 

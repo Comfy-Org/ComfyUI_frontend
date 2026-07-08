@@ -13,6 +13,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 import { usePainter } from './usePainter'
 
@@ -137,23 +138,11 @@ function mountPainter(
 
 function createCanvasContext() {
   const gradient = { addColorStop: vi.fn() }
-  return fromPartial<CanvasRenderingContext2D>({
-    beginPath: vi.fn(),
-    arc: vi.fn(),
-    fill: vi.fn(),
+  return createMockCanvas2DContext({
     createRadialGradient: vi.fn(() => gradient),
-    clearRect: vi.fn(),
     drawImage: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
     globalCompositeOperation: '' as GlobalCompositeOperation,
     globalAlpha: 1,
-    lineWidth: 1,
     lineCap: 'butt',
     lineJoin: 'miter'
   })
@@ -598,10 +587,9 @@ describe('usePainter', () => {
 
     it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
       const fetchApiMock = vi.mocked(api.fetchApi)
-      fetchApiMock.mockResolvedValueOnce({
-        status: 200,
-        json: async () => ({ name: 'uploaded.png' })
-      } as Response)
+      fetchApiMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ name: 'uploaded.png' }))
+      )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
 
@@ -620,10 +608,9 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload response is missing a name', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 200,
-        json: async () => ({})
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(JSON.stringify({}))
+      )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
 
@@ -653,11 +640,12 @@ describe('usePainter', () => {
     })
 
     it('throws when the upload response is not successful', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 500,
-        statusText: 'Internal Server Error',
-        text: async () => 'upload failed'
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response('upload failed', {
+          status: 500,
+          statusText: 'Internal Server Error'
+        })
+      )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
 
@@ -667,11 +655,9 @@ describe('usePainter', () => {
     })
 
     it('uses statusText when an unsuccessful upload response has no body', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 502,
-        statusText: 'Bad Gateway',
-        text: async () => ''
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response('', { status: 502, statusText: 'Bad Gateway' })
+      )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
 
@@ -681,11 +667,9 @@ describe('usePainter', () => {
     })
 
     it('uses unknown error when an unsuccessful upload response has no detail', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 500,
-        statusText: '',
-        text: async () => ''
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response('', { status: 500, statusText: '' })
+      )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
 
@@ -696,12 +680,7 @@ describe('usePainter', () => {
 
     it('throws when the upload response body is not valid JSON', async () => {
       vi.mocked(api.fetchApi).mockResolvedValueOnce(
-        fromPartial<Response>({
-          status: 200,
-          json: async () => {
-            throw new SyntaxError('Unexpected token')
-          }
-        })
+        new Response('not valid json{')
       )
 
       const { maskWidget } = await mountPainterWithMaskCanvas()
@@ -918,10 +897,9 @@ describe('usePainter', () => {
       expect(ctx.clearRect).toHaveBeenCalledWith(0, 0, 50, 40)
       expect(modelValue.value).toBe('')
 
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 200,
-        json: async () => ({ name: 'cleared.png' })
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(JSON.stringify({ name: 'cleared.png' }))
+      )
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
