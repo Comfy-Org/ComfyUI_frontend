@@ -9,6 +9,7 @@ import HowItWorksSection from '../../templates/education/HowItWorksSection.vue'
 import { educationFaqs } from '../../data/educationFaq'
 import { t } from '../../i18n/translations'
 import { isEducationStory, toCardProps } from '../../utils/customers'
+import { escapeJsonLd } from '../../utils/escapeJsonLd'
 import { loadStories } from '../../utils/loadStories'
 
 const locale = 'zh-CN' as const
@@ -40,12 +41,18 @@ const faqJsonLd = {
     <script
       is:inline
       type="application/ld+json"
-      set:html={JSON.stringify(faqJsonLd)}
+      set:html={escapeJsonLd(faqJsonLd)}
     />
   </Fragment>
 
   <HeroSection locale="zh-CN" />
-  <PricingSection client:visible locale="zh-CN" education />
+  <PricingSection
+    client:visible
+    locale="zh-CN"
+    education
+    headingLevel="h2"
+    id="plans"
+  />
   <HowItWorksSection locale="zh-CN" />
   {
     stories.length > 0 && (

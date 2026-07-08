@@ -121,21 +121,21 @@ const scrimStyle = {
             />
 
             <h1
-              class="text-primary-warm-white mt-10 text-4xl/tight font-light tracking-tight whitespace-pre-line lg:text-6xl/tight lg:text-primary-comfy-ink"
+              class="mt-10 text-4xl/tight font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight lg:text-primary-comfy-ink"
             >
               {{ title }}
             </h1>
 
             <p
               v-if="subtitle"
-              class="text-primary-warm-white mt-8 max-w-md text-base lg:text-lg lg:text-primary-comfy-ink"
+              class="mt-8 max-w-md text-base text-primary-comfy-canvas lg:text-lg lg:text-primary-comfy-ink"
             >
               {{ subtitle }}
             </p>
 
             <p
               v-if="footnote"
-              class="text-primary-warm-white mt-10 text-sm lg:text-primary-comfy-ink"
+              class="mt-10 text-sm text-primary-comfy-canvas lg:text-primary-comfy-ink"
             >
               {{ footnote }}
             </p>

@@ -20,9 +20,14 @@ import PricingPrice from './PricingPrice.vue'
 import PricingStudentAmbassadorBand from './PricingStudentAmbassadorBand.vue'
 import PricingTeamCard from './PricingTeamCard.vue'
 
-const { locale = 'en', education = false } = defineProps<{
+const {
+  locale = 'en',
+  education = false,
+  headingLevel = 'h1'
+} = defineProps<{
   locale?: Locale
   education?: boolean
+  headingLevel?: 'h1' | 'h2'
 }>()
 
 const billingPeriod = ref<BillingCycle>('yearly')
@@ -73,7 +78,7 @@ const planCards = computed(() =>
     priceKey: displayPriceKey(plan),
     originalPrice: originalPriceFor(plan),
     yearlyTotal: yearlyTotalFor(plan),
-    features: planFeatures(plan, education)
+    features: planFeatures(plan, education, billingPeriod.value)
   }))
 )
 </script>
@@ -82,11 +87,12 @@ const planCards = computed(() =>
   <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-14">
     <!-- Header -->
     <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
-      <h1
+      <component
+        :is="headingLevel"
         class="font-formula text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('pricing.title', locale) }}
-      </h1>
+      </component>
       <p
         class="mx-auto mt-3 max-w-xl text-base text-pretty text-primary-comfy-canvas"
       >

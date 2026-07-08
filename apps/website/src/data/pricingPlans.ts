@@ -127,18 +127,23 @@ export const pricingPlans: PricingPlan[] = SHOW_FREE_TIER
   ? [freePlan, ...standardPricingPlans]
   : standardPricingPlans
 
-const eduSavingsFeature: PlanFeature = {
-  text: 'pricing.feature.educationalSavings',
+const eduSavingsFeature = (cycle: BillingCycle): PlanFeature => ({
+  text:
+    cycle === 'yearly'
+      ? 'pricing.feature.educationalSavingsYearly'
+      : 'pricing.feature.educationalSavings',
   highlight: true
-}
+})
 
 // In education mode, plans with education pricing lead with the highlighted
-// savings row; every other case keeps the plan's own feature list unchanged.
+// savings row (whose discount tracks the billing cycle); every other case
+// keeps the plan's own feature list unchanged.
 export function planFeatures(
   plan: PricingPlan,
-  education: boolean
+  education: boolean,
+  cycle: BillingCycle
 ): PlanFeature[] {
   return education && plan.eduPriceKey
-    ? [eduSavingsFeature, ...plan.features]
+    ? [eduSavingsFeature(cycle), ...plan.features]
     : plan.features
 }

@@ -1261,10 +1261,14 @@ const translations = {
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
 
-  // Education-only highlighted feature row; zh-CN drafted, pending native review.
+  // Education-only highlighted feature rows; zh-CN drafted, pending native review.
   'pricing.feature.educationalSavings': {
     en: 'Educational savings – 10% off',
     'zh-CN': '教育优惠 – 立减 10%'
+  },
+  'pricing.feature.educationalSavingsYearly': {
+    en: 'Educational savings – 25% off',
+    'zh-CN': '教育优惠 – 立减 25%'
   },
   'pricing.feature.shortRuntime': {
     en: '30 minute max workflow runtime',

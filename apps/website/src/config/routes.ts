@@ -59,6 +59,7 @@ export const externalLinks = {
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
   cloudStatus: 'https://status.comfy.org',
+  creativeCampusApplicationForm: 'https://tally.so/r/Xx97lL',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/api-reference/cloud',

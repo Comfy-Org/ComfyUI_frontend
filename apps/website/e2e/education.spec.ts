@@ -135,8 +135,12 @@ test.describe('Education landing — desktop interactions', () => {
     await firstQuestion.scrollIntoViewIfNeeded()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
-    await firstQuestion.click()
-    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    // The trigger renders aria-expanded="false" server-side, so a click can
+    // land before the island hydrates. Re-click until it actually toggles.
+    await expect(async () => {
+      await firstQuestion.click()
+      await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    }).toPass()
     await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
 
     await firstQuestion.click()
@@ -160,6 +164,11 @@ test.describe('Education pricing — desktop @smoke', () => {
     await expect(section.getByText('$26.25', { exact: true })).toBeVisible()
     await expect(section.getByText('$75', { exact: true })).toBeVisible()
 
+    // The highlighted savings row tracks the yearly discount.
+    await expect(
+      section.getByText('Educational savings – 25% off').first()
+    ).toBeVisible()
+
     for (const listPrice of ['$20', '$35', '$100']) {
       await expect(
         section.locator('span.line-through', {
@@ -180,6 +189,11 @@ test.describe('Education pricing — desktop @smoke', () => {
 
     await expect(section.getByText('$31.50', { exact: true })).toBeVisible()
     await expect(section.getByText('$90', { exact: true })).toBeVisible()
+
+    // The highlighted savings row now reflects the monthly discount.
+    await expect(
+      section.getByText('Educational savings – 10% off').first()
+    ).toBeVisible()
 
     // Strikethrough remains the monthly list price in both cycles.
     for (const listPrice of ['$20', '$35', '$100']) {
@@ -296,6 +310,18 @@ test.describe('Education pricing — Student Ambassador band @smoke', () => {
     await expect(register).toBeVisible()
     await expect(register).toHaveAttribute('href', STUDENT_AMBASSADOR_FORM)
     await expect(register).toHaveAttribute('target', '_blank')
+  })
+})
+
+test.describe('Education landing — zh-CN @smoke', () => {
+  test('CTA plan anchor resolves to the pricing section', async ({ page }) => {
+    await page.goto('/zh-CN/edu')
+
+    const choosePlan = page.getByRole('link', {
+      name: t('education.cta.choosePlan', 'zh-CN')
+    })
+    await expect(choosePlan).toHaveAttribute('href', '#plans')
+    await expect(page.locator('#plans')).toBeAttached()
   })
 })
 
