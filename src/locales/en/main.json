@@ -4508,7 +4508,7 @@
       "replay": "Take a tour of App Mode",
       "landing": {
         "title": "Welcome to Apps",
-        "body": "A quick tour of the essentials, in about a minute. You'll fill inputs and see your first generation.",
+        "body": "A quick tour of the essentials, in about a minute. We'll show you where to add inputs, run your app, and find your results.",
         "primary": "Start tutorial"
       },
       "inputs": {
