@@ -20,6 +20,13 @@ const {
 }>()
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)
+
+// Clicking the CTA is engagement: persist the dismissal so the banner doesn't
+// linger on the destination page or keep nagging on later navigations.
+function onCtaClick(): void {
+  close()
+  persistHidden()
+}
 </script>
 
 <template>
@@ -28,22 +35,23 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
       <div class="min-h-0 overflow-hidden">
         <div
           data-slot="announcement-banner"
-          class="after:bg-transparency-white-t4 relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px sm:px-3.5 sm:before:flex-1"
-          style="
-            background: linear-gradient(
-              90deg,
-              var(--color-primary-comfy-plum) 0%,
-              var(--color-secondary-deep-plum) 53.85%,
-              var(--color-secondary-mauve) 100%
-            );
-          "
+          class="bg-primary-comfy-ink-light relative flex items-center gap-x-4 px-4 py-2.5 sm:before:flex-1"
         >
-          <div class="flex flex-wrap items-center gap-x-8 gap-y-2">
+          <!-- Acid-yellow hairline along the bottom edge: the one brand accent
+               that separates this dark bar from the dark navbar below it. -->
+          <div
+            class="bg-primary-comfy-yellow/40 pointer-events-none absolute inset-x-0 bottom-0 h-px"
+            aria-hidden="true"
+          />
+
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5"
+          >
             <p
-              class="text-primary-warm-white ppformula-text-center text-sm md:text-base/6"
+              class="ppformula-text-center text-primary-warm-white text-sm md:text-[15px]/6"
             >
               {{ data.title }}
-              <span v-if="data.description" class="text-primary-warm-white/80">
+              <span v-if="data.description" class="text-primary-warm-white/70">
                 {{ data.description }}
               </span>
             </p>
@@ -53,18 +61,24 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
               :href="data.link.href"
               :target="data.link.target"
               :rel="data.link.rel"
-              :variant="data.link.buttonVariant ?? 'underlineLink'"
+              :variant="data.link.buttonVariant ?? 'default'"
               size="sm"
+              class="group/cta shrink-0"
+              @click="onCtaClick"
             >
               {{ data.link.title }}
               <template #append>
-                <ArrowRight class="size-4" />
+                <ArrowRight
+                  class="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5"
+                />
               </template>
             </Button>
           </div>
+
           <div class="flex flex-1 justify-end">
             <IconButton
               type="button"
+              class="text-primary-warm-white/70 hover:text-primary-warm-white"
               :aria-label="t('nav.close', locale)"
               @click="close"
             >

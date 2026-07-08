@@ -53,6 +53,8 @@ export const bannerConfig: BannerConfig = {
   link: {
     href: '/mcp',
     titleKey: 'launches.banner.cta',
+    // Minimal yellow text link (animated underline on hover) + arrow — no
+    // bordered pill, so the CTA reads as inline emphasis in the bar.
     buttonVariant: 'underlineLink'
   }
 }

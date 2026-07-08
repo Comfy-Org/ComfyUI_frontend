@@ -12,12 +12,40 @@ const base: EvaluableBanner = {
 const ctx = {
   currentLocale: 'en',
   currentSection: 'sitewide',
+  currentPath: '/',
   now: new Date('2026-07-06T00:00:00Z')
 }
 
 describe('evaluateBannerVisibility', () => {
   it('shows an active, untargeted, sitewide banner', () => {
     expect(evaluateBannerVisibility(base, ctx)).toBe(true)
+  })
+
+  it("hides on an excluded path (the banner's own CTA destination)", () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, excludePaths: ['/mcp'] },
+        { ...ctx, currentPath: '/mcp' }
+      )
+    ).toBe(false)
+  })
+
+  it('still shows on other paths when excludePaths is set', () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, excludePaths: ['/mcp'] },
+        { ...ctx, currentPath: '/' }
+      )
+    ).toBe(true)
+  })
+
+  it('matches excluded paths regardless of a trailing slash', () => {
+    expect(
+      evaluateBannerVisibility(
+        { ...base, excludePaths: ['/mcp'] },
+        { ...ctx, currentPath: '/mcp/' }
+      )
+    ).toBe(false)
   })
 
   it('hides when inactive', () => {
