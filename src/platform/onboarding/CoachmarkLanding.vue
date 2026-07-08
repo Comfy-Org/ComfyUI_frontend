@@ -58,6 +58,7 @@
               ref="startButtonRef"
               variant="inverted"
               size="lg"
+              class="grow"
               :disabled="waitingForTarget"
               @click="emit('start')"
             >
