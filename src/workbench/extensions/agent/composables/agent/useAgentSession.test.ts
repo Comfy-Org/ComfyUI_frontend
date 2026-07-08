@@ -198,7 +198,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(postMessage.mock.calls[1][0]).toBe('th-9')
   })
 
-  it('(c) a postMessage AgentApiError pushes an error notice and opens no live turn', async () => {
+  it('(c) a postMessage AgentApiError surfaces inline only (no toast) and opens no live turn', async () => {
     const postMessage = vi
       .fn<
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
@@ -212,11 +212,11 @@ describe('useAgentSession (v1 composition root)', () => {
     const ok = await session.sendMessage('boom')
     expect(ok).toBe(false)
 
-    expect(session.notices.value).toEqual([
-      { level: 'error', text: 'server exploded' }
-    ])
-    // The failed send renders as a settled exchange (user + error notice), not a live
-    // turn: no spinner is left running.
+    // A send failure already has an inline conversation row, so it must NOT also raise a
+    // session notice (host toast) — that double-surfaces and, top-right, collides with the
+    // docked panel. The failed send renders as a settled exchange (user + error notice),
+    // not a live turn: no spinner is left running.
+    expect(session.notices.value).toHaveLength(0)
     expect(session.entries.value.map((e) => e.role)).toEqual([
       'user',
       'assistant'
