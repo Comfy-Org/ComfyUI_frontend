@@ -1,0 +1,197 @@
+---
+name: Backport Auto-Merge
+
+# Completes the merge of backport PRs once they are approved and their required
+# checks pass.
+#
+# Background: pr-backport.yaml opens each backport PR (labelled `backport`) and
+# calls `gh pr merge --auto`, which relies on the repo-level "Allow auto-merge"
+# setting. That setting is off, so `--auto` is a silent no-op and backport PRs
+# sit unmerged until a human clicks merge. This workflow performs the merge
+# directly (a plain `gh pr merge --squash`, which does not depend on that
+# setting) once GitHub itself reports the PR as ready to merge.
+#
+# Safety: branch protection on core/** and cloud/** is the hard gate — it
+# unconditionally requires an approval + the required status checks and cannot
+# be bypassed, and GitHub's merge API re-enforces it at merge time. This
+# workflow can only ever complete a merge that already satisfies those rules;
+# the eligibility check below only avoids pointless merge attempts.
+#
+# The merge uses PR_GH_TOKEN (not the default GITHUB_TOKEN) on purpose: a merge
+# performed by the default token does not emit events that trigger other
+# workflows, which would silently starve cloud-backport-tag.yaml (it runs on the
+# backport PR's `pull_request: closed` event to create the release tag).
+
+on:
+  # Fires when someone approves — if the required checks are already green, the
+  # PR merges immediately.
+  pull_request_review:
+    types: [submitted]
+  # Primary catch for the "approved first, checks went green later" case, plus a
+  # general backstop. A `check_suite`/`workflow_run` trigger would react faster to
+  # checks completing, but GitHub suppresses `check_suite` events for its own
+  # Actions suites (so it wouldn't fire for this repo's CI), and `workflow_run` is
+  # a secrets-bearing "dangerous" trigger we don't want on a public repo for a
+  # non-latency-critical task. Backports wait hours today, so a short sweep is a
+  # large improvement and needs neither.
+  schedule:
+    - cron: '*/15 * * * *'
+
+# Only constrains the default github.token (used for read-only PR lookups below).
+# It does NOT constrain PR_GH_TOKEN, whose authority is fixed by its own scopes.
+permissions:
+  contents: read # read-only; required for gh api / gh pr list to resolve candidates
+  pull-requests: read # read-only; required for gh pr view eligibility checks
+
+# Serialize runs that act on the same PR (review events keyed by PR number; all
+# scheduled sweeps share one key). Cross-key overlaps are still possible but
+# harmless: the merge loop treats an already-merged PR as success (idempotent).
+concurrency:
+  group: backport-auto-merge-${{ github.event.pull_request.number || 'sweep' }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Merge eligible backport PRs
+    # Skip review events that can't possibly make a PR mergeable — non-approval
+    # reviews, or reviews on non-backport PRs (most reviews in the repo) — before
+    # spending any API call. Schedule sweeps always proceed. The per-PR
+    # eligibility checks in the job still re-verify the label and decision from
+    # live state.
+    if: github.event_name != 'pull_request_review' || (github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'backport'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # read-only PR/commit lookups via the default token
+      pull-requests: read # read-only PR metadata via the default token
+    steps:
+      - name: Collect candidate backport PRs
+        id: candidates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_FROM_REVIEW: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          numbers=""
+          case "$EVENT_NAME" in
+            pull_request_review)
+              numbers="$PR_FROM_REVIEW"
+              ;;
+            schedule)
+              # Sweep every open backport PR.
+              numbers=$(gh pr list --repo "$GH_REPO" --state open --label backport \
+                --limit 100 --json number --jq '.[].number')
+              ;;
+          esac
+          # De-duplicate and emit space-separated, digit-only tokens.
+          numbers=$(echo "$numbers" | tr ' ' '\n' | grep -E '^[0-9]+$' | sort -u | tr '\n' ' ' || true)
+          echo "numbers=${numbers}" >> "$GITHUB_OUTPUT"
+          echo "Candidate PRs: '${numbers:-<none>}'"
+
+      - name: Merge eligible backport PRs
+        if: steps.candidates.outputs.numbers != ''
+        env:
+          GH_REPO: ${{ github.repository }}
+          # Read with the default token; merge with PR_GH_TOKEN so the merge emits
+          # the events that downstream workflows (cloud-backport-tag.yaml) rely on.
+          READ_TOKEN: ${{ github.token }}
+          MERGE_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          CANDIDATES: ${{ steps.candidates.outputs.numbers }}
+        run: |
+          set -euo pipefail
+
+          is_merged() {
+            [ "$(GH_TOKEN="$READ_TOKEN" gh pr view "$1" --repo "$GH_REPO" --json merged --jq '.merged' 2>/dev/null || echo false)" = "true" ]
+          }
+
+          for pr in $CANDIDATES; do
+            echo "::group::PR #${pr}"
+
+            info=$(GH_TOKEN="$READ_TOKEN" gh pr view "$pr" --repo "$GH_REPO" \
+              --json number,state,isDraft,labels,baseRefName,reviewDecision,mergeStateStatus 2>/dev/null || echo '')
+            if [ -z "$info" ]; then
+              echo "Could not read PR #${pr} — skipping."; echo "::endgroup::"; continue
+            fi
+
+            state=$(echo "$info" | jq -r '.state')
+            is_draft=$(echo "$info" | jq -r '.isDraft')
+            is_backport=$(echo "$info" | jq -r '[.labels[].name] | any(. == "backport")')
+            base=$(echo "$info" | jq -r '.baseRefName')
+            review=$(echo "$info" | jq -r '.reviewDecision')
+            merge_state=$(echo "$info" | jq -r '.mergeStateStatus')
+
+            # Only ever act on open, non-draft, backport-labelled PRs targeting a
+            # protected release branch.
+            if [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ] || [ "$is_backport" != "true" ]; then
+              echo "Not an actionable backport PR (state=$state draft=$is_draft backport=$is_backport) — skipping."
+              echo "::endgroup::"; continue
+            fi
+            case "$base" in
+              cloud/*|core/*) : ;;
+              *) echo "Base '$base' is not a release branch — skipping."; echo "::endgroup::"; continue ;;
+            esac
+
+            # Ready = approved AND GitHub says it's mergeable with required checks green.
+            #   CLEAN    = approved, all required checks green, mergeable, no conflict.
+            #   UNSTABLE = same, but a NON-required check is pending/failing — GitHub
+            #              still allows the merge, so we do too (matches what a human
+            #              clicking "Squash and merge" can do; required checks are the
+            #              only merge gate per the ruleset). Requiring CLEAN alone would
+            #              stick forever behind flaky/slow non-required checks.
+            # Any other state (BLOCKED/DIRTY/BEHIND/UNKNOWN/...) => not ready; re-checked
+            # by a later event or the next sweep.
+            if [ "$review" != "APPROVED" ] || { [ "$merge_state" != "CLEAN" ] && [ "$merge_state" != "UNSTABLE" ]; }; then
+              echo "Not yet ready (reviewDecision=$review mergeStateStatus=$merge_state) — will re-check later."
+              echo "::endgroup::"; continue
+            fi
+
+            echo "PR #${pr} is ready — attempting squash merge."
+            attempt=0
+            max=3
+            merged=false
+            while [ "$attempt" -lt "$max" ]; do
+              attempt=$((attempt + 1))
+              # A concurrent run (or a human) may have merged it already.
+              if is_merged "$pr"; then merged=true; break; fi
+              if out=$(GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash 2>&1); then
+                merged=true; break
+              fi
+              echo "Merge attempt ${attempt}/${max} failed: ${out}"
+              # No sleep after the final attempt.
+              [ "$attempt" -lt "$max" ] && sleep $((attempt * 15))
+            done
+
+            # Final reconciliation: a failed merge command may just mean a concurrent
+            # run won the race — don't post a false failure if the PR is in fact merged.
+            if [ "$merged" != "true" ] && is_merged "$pr"; then merged=true; fi
+
+            if [ "$merged" = "true" ]; then
+              echo "PR #${pr} merged."
+            else
+              echo "::warning::PR #${pr} looked ready but did not merge after ${max} attempts."
+              # Avoid spamming a persistently-stuck PR: only re-warn if the last
+              # warning (identified by its marker) is more than an hour old.
+              marker='<!-- backport-auto-merge:merge-failed -->'
+              # `gh api --paginate` emits one JSON array per page; `--jq` would run
+              # per page (missing the true latest across pages), so slurp all pages
+              # into one array first and filter with a separate jq pass.
+              last_warned=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/issues/${pr}/comments" --paginate 2>/dev/null \
+                | jq -s "[.[][] | select(.body | contains(\"${marker}\"))] | sort_by(.created_at) | last | .created_at // empty") || last_warned=''
+              stale=true
+              if [ -n "$last_warned" ]; then
+                last_epoch=$(date -d "$last_warned" +%s 2>/dev/null || echo 0)
+                now_epoch=$(date -u +%s)
+                [ $((now_epoch - last_epoch)) -lt 3600 ] && stale=false
+              fi
+              if [ "$stale" = "true" ]; then
+                body=$(printf '%s\n\n%s' \
+                  "This backport PR is approved and its required checks are green, but automatic merge failed after ${max} attempts. Please merge manually or investigate (possible branch-protection mismatch)." \
+                  "$marker")
+                GH_TOKEN="$MERGE_TOKEN" gh pr comment "$pr" --repo "$GH_REPO" --body "$body" || true
+              else
+                echo "Already warned within the last hour — skipping duplicate comment."
+              fi
+            fi
+            echo "::endgroup::"
+          done

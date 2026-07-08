@@ -1,3 +1,8 @@
+import type {
+  SecretListResponse,
+  SecretProvidersResponse
+} from '@comfyorg/ingest-types'
+
 import { api } from '@/scripts/api'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
@@ -8,10 +13,6 @@ import type {
   SecretUpdateRequest
 } from '../types'
 import { SECRET_ERROR_CODES } from '../types'
-
-interface ListSecretsResponse {
-  data: SecretMetadata[]
-}
 
 export class SecretsApiError extends Error {
   constructor(
@@ -39,8 +40,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 export async function listSecrets(): Promise<SecretMetadata[]> {
   const response = await api.fetchApi('/secrets')
-  const data = await handleResponse<ListSecretsResponse>(response)
+  const data = await handleResponse<SecretListResponse>(response)
   return data.data
+}
+
+export async function listSecretProviders(): Promise<string[]> {
+  const response = await api.fetchApi('/secrets/providers')
+  const data = await handleResponse<SecretProvidersResponse>(response)
+  return (data.data ?? []).map((provider) => provider.id)
 }
 
 export async function createSecret(
