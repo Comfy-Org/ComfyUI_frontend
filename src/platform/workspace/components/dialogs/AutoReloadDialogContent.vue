@@ -186,8 +186,8 @@ function onUnitChange(value: unknown) {
   if (value === 'credits' || value === 'usd') unit.value = value
 }
 
-const thresholdCredits = ref(config.thresholdCredits || 1000)
-const reloadCredits = ref(config.reloadCredits || 5000)
+const thresholdCredits = ref(config.thresholdCredits ?? 1000)
+const reloadCredits = ref(config.reloadCredits ?? 5000)
 const budgetEnabled = ref(config.monthlyBudgetCents != null)
 const budgetCents = ref(config.monthlyBudgetCents ?? 0)
 

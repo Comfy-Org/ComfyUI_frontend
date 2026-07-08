@@ -147,6 +147,7 @@ function useBillingContextInternal(): BillingContext {
   const subscriptionStatus = computed(() =>
     toValue(activeContext.value.subscriptionStatus)
   )
+  const isPaused = computed(() => subscriptionStatus.value === 'paused')
   const tier = computed(() => toValue(activeContext.value.tier))
   const renewalDate = computed(() => toValue(activeContext.value.renewalDate))
 
@@ -301,6 +302,7 @@ function useBillingContextInternal(): BillingContext {
     isLegacyTeamPlan,
     billingStatus,
     subscriptionStatus,
+    isPaused,
     tier,
     renewalDate,
     getMaxSeats,

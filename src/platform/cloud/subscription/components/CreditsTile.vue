@@ -210,7 +210,7 @@ const { locale, t } = useI18n()
 
 const {
   subscription,
-  subscriptionStatus,
+  isPaused,
   balance,
   isActiveSubscription,
   isFreeTier,
@@ -231,11 +231,6 @@ const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
-
-// Paused (failed payment): the plan still exists but refills are frozen, so the
-// tile drops the out-of-credits messaging, shows an empty bar, and disables the
-// top-up action — adding credits doesn't help until payment is resolved.
-const isPaused = computed(() => subscriptionStatus.value === 'paused')
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier

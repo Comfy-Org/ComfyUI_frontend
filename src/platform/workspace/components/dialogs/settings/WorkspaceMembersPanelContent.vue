@@ -15,7 +15,7 @@ const { workspaceRole } = useWorkspaceUI()
 const { fetchMembers, fetchPendingInvites } = useTeamWorkspaceStore()
 
 onMounted(() => {
-  fetchMembers()
-  fetchPendingInvites()
+  void fetchMembers()
+  void fetchPendingInvites()
 })
 </script>

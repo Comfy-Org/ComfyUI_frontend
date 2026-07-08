@@ -117,7 +117,7 @@ export function useAutoReload() {
   )
 
   const budgetUsedFraction = computed(() =>
-    config.monthlyBudgetCents
+    config.monthlyBudgetCents != null && config.monthlyBudgetCents > 0
       ? Math.min(1, config.spentThisCycleCents / config.monthlyBudgetCents)
       : 0
   )

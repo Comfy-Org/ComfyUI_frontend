@@ -60,8 +60,9 @@
 
     <BillingStatusBanner />
 
+    <!-- Hidden while paused: the paused banner already covers the zero balance. -->
     <MembersOutOfCreditsBanner
-      v-if="showOutOfCreditsBanner && !isSubscriptionPaused"
+      v-if="showOutOfCreditsBanner && !isPaused"
       :reset-date="creditResetDate"
       @dismiss="dismissOutOfCreditsBanner"
       @add-credits="handleAddCredits"
@@ -274,13 +275,7 @@ const {
 
 const { staticUrls } = useExternalLink()
 const { t } = useI18n()
-const { subscriptionStatus } = useBillingContext()
-
-// When paused, the workspace-wide "Subscription paused" banner already explains
-// the zero balance, so suppress the redundant out-of-credits banner here.
-const isSubscriptionPaused = computed(
-  () => subscriptionStatus.value === 'paused'
-)
+const { isPaused } = useBillingContext()
 
 // Owners get "Need more members?" after the count, where the period reads as a
 // separator; members see just the count, so drop the trailing period.

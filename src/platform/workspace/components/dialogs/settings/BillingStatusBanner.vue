@@ -35,7 +35,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, d } = useI18n()
-const { billingStatus, subscriptionStatus, renewalDate } = useBillingContext()
+const { billingStatus, isPaused, renewalDate } = useBillingContext()
 const { permissions, isInPersonalWorkspace } = useWorkspaceUI()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
@@ -46,7 +46,7 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const banner = computed(() => {
   if (isInPersonalWorkspace.value) return null
 
-  if (subscriptionStatus.value === 'paused') {
+  if (isPaused.value) {
     return {
       kind: 'paused' as const,
       title: t('workspacePanel.billingStatus.paused.title'),

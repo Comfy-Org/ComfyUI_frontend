@@ -91,12 +91,16 @@ export function usePartnerNodes() {
   }
 
   async function setEnabled(node: PartnerNode, enabled: boolean) {
-    const previous = node.enabled
+    const { enabled: prevEnabled, last_modified: prevModified } = node
     applyEnabled([node.id], enabled)
     try {
       await partnerNodesApi.setEnabled(node.id, enabled)
     } catch {
-      applyEnabled([node.id], previous)
+      nodes.value = nodes.value.map((n) =>
+        n.id === node.id
+          ? { ...n, enabled: prevEnabled, last_modified: prevModified }
+          : n
+      )
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.partnerNodes.updateError')
@@ -107,14 +111,19 @@ export function usePartnerNodes() {
   async function setSelectedEnabled(enabled: boolean) {
     const ids = [...selectedIds.value]
     if (ids.length === 0) return
-    const previous = new Map(nodes.value.map((n) => [n.id, n.enabled]))
+    const previous = new Map(
+      nodes.value.map((n) => [
+        n.id,
+        { enabled: n.enabled, last_modified: n.last_modified }
+      ])
+    )
     applyEnabled(ids, enabled)
     try {
       // Keep the selection after a bulk toggle so the user can flip it again.
       await partnerNodesApi.setEnabledBulk(ids, enabled)
     } catch {
       nodes.value = nodes.value.map((n) =>
-        previous.has(n.id) ? { ...n, enabled: previous.get(n.id)! } : n
+        previous.has(n.id) ? { ...n, ...previous.get(n.id)! } : n
       )
       toast.add({
         severity: 'error',
