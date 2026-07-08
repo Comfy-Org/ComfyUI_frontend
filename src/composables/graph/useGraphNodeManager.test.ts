@@ -140,7 +140,9 @@ describe('Widget input link reactivity', () => {
 
     await nextTick()
 
-    expect(nodeData?.inputs?.[0]?.link).toBeNull()
+    const updatedData = vueNodeData.get(node.id)
+    expect(updatedData).not.toBe(nodeData)
+    expect(updatedData?.inputs?.[0]?.link).toBeNull()
   })
 
   it('keeps widget input link state current after disconnect', async () => {
@@ -164,8 +166,10 @@ describe('Widget input link reactivity', () => {
 
     await nextTick()
 
+    const updatedData = vueNodeData.get(node.id)!
+    expect(updatedData).not.toBe(nodeData)
     expect(
-      nodeData.inputs?.find((slot) => slot.widget?.name === 'prompt')?.link
+      updatedData.inputs?.find((slot) => slot.widget?.name === 'prompt')?.link
     ).toBeNull()
   })
 
@@ -248,8 +252,10 @@ describe('Widget input link reactivity', () => {
 
     await nextTick()
 
+    const updatedData = vueNodeData.get(node.id)!
+    expect(updatedData).not.toBe(nodeData)
     expect(
-      nodeData.inputs?.some(
+      updatedData.inputs?.some(
         (slot) => slot.name === 'prompt' && slot.widget?.name === 'prompt'
       )
     ).toBe(false)
