@@ -57,6 +57,7 @@ const cards: FeatureCard[] = [
 <template>
   <FeatureGrid01
     id="setup"
+    class="scroll-mt-24 lg:scroll-mt-36"
     :eyebrow="t('mcp.setup.label', locale)"
     :heading="t('mcp.setup.heading', locale)"
     :subtitle="t('mcp.setup.subtitle', locale)"
