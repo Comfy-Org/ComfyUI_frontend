@@ -153,31 +153,6 @@
       </div>
     </div>
 
-    <!-- Next month invoice -->
-    <div
-      v-if="canManageBilling"
-      class="flex items-center justify-between gap-4 rounded-2xl border border-interface-stroke/60 p-6"
-    >
-      <div class="flex flex-col gap-1">
-        <span class="text-sm text-base-foreground">
-          {{ $t('workspacePanel.overview.nextInvoice') }}
-        </span>
-        <p class="m-0 text-2xl font-semibold text-base-foreground">
-          {{ formatPrice(nextInvoiceCents) }}
-          <span class="text-base font-normal text-muted-foreground">
-            {{ $t('workspacePanel.overview.usd') }}
-          </span>
-        </p>
-      </div>
-      <Button
-        variant="secondary"
-        size="lg"
-        @click="emit('navigate', 'invoices')"
-      >
-        {{ $t('workspacePanel.planCredits.tabs.invoices') }}
-      </Button>
-    </div>
-
     <!-- Credit auto-reload -->
     <AutoReloadSection v-if="canManageBilling" />
 
@@ -246,9 +221,9 @@ import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorksp
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const emit = defineEmits<{ navigate: [view: 'activity' | 'invoices'] }>()
+const emit = defineEmits<{ navigate: [view: 'activity'] }>()
 
-const { t, n } = useI18n()
+const { t } = useI18n()
 
 // Plan lifecycle actions are for the workspace creator (Owner) only; Admins and
 // Members don't see Change plan or the overflow menu.
@@ -304,8 +279,7 @@ const planMenuEntries = computed<MenuItem[]>(() =>
     : []
 )
 
-const { plan, nextInvoiceCents, topSpenders, recentActivity } =
-  useWorkspaceOverview()
+const { plan, topSpenders, recentActivity } = useWorkspaceOverview()
 
 const { navigateToPanel } = useSettingsNavigation()
 
@@ -340,13 +314,5 @@ function handleSeeMore() {
   }
   requestMembersSort('credits')
   navigateToPanel('workspace-members')
-}
-
-function formatPrice(cents: number): string {
-  return n(cents / 100, {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0
-  })
 }
 </script>

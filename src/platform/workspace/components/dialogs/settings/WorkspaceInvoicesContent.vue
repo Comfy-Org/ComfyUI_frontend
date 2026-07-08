@@ -1,6 +1,10 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
+    <!-- When paused there's no upcoming invoice; the parent's "Subscription
+         paused" banner covers that state, so we drop this one to avoid stacking
+         two banners. Full invoice history moves to the footer below. -->
     <div
+      v-if="!isPaused"
       class="flex items-center justify-between gap-4 rounded-2xl border border-interface-stroke/60 p-4"
     >
       <div class="flex flex-col gap-2">
@@ -74,11 +78,20 @@
       </Table>
     </div>
 
-    <div class="flex h-8 items-center justify-end">
+    <div class="flex h-8 items-center">
+      <button
+        v-if="isPaused"
+        class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-[inherit] text-sm text-muted-foreground transition-colors hover:text-base-foreground"
+        @click="openHistory"
+      >
+        <i class="icon-[lucide--external-link] size-4" />
+        {{ $t('workspacePanel.invoices.fullHistory') }}
+      </button>
       <Pagination
         v-model:page="page"
         :total="total"
         :items-per-page="itemsPerPage"
+        class="ml-auto"
       />
     </div>
   </div>
@@ -105,7 +118,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { search } = defineProps<{ search: string }>()
 
 const { d, n } = useI18n()
-const { manageSubscription } = useBillingContext()
+const { isPaused, manageSubscription } = useBillingContext()
 
 const tableContainer = ref<HTMLElement | null>(null)
 const { pageSize } = useAutoPageSize(tableContainer)

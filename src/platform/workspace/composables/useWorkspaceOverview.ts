@@ -27,7 +27,6 @@ export function useWorkspaceOverview() {
   nextRenewal.setDate(nextRenewal.getDate() + 20)
   const plan = {
     name: 'Team',
-    priceCents: 32000,
     monthlyCredits: 56900,
     renewalLabel: d(nextRenewal, {
       month: 'short',
@@ -35,8 +34,6 @@ export function useWorkspaceOverview() {
       year: 'numeric'
     })
   }
-
-  const nextInvoiceCents = 32000
 
   function activityLabel(member: WorkspaceMember): string {
     if (!member.lastActivity) return '—'
@@ -77,5 +74,5 @@ export function useWorkspaceOverview() {
       .map(toRow)
   )
 
-  return { plan, nextInvoiceCents, topSpenders, recentActivity }
+  return { plan, topSpenders, recentActivity }
 }
