@@ -1546,6 +1546,53 @@ const translations = {
   },
   'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
+  // VfxHeroSection
+  'vfx.heroTitle.before': { en: 'Create VFX', 'zh-CN': '创作视效' },
+  'vfx.heroTitle.after': { en: '.', 'zh-CN': '。' },
+  'vfx.heroTitle.line2': {
+    en: 'Build what doesn’t exist yet.',
+    'zh-CN': '构建尚未存在之物。'
+  },
+
+  // VfxFeaturedWorkflowSection
+  'vfx.featured.title': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'vfx.featured.author': {
+    en: 'by Doug Hogan',
+    'zh-CN': '作者：Doug Hogan'
+  },
+  'vfx.featured.description': {
+    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
+    'zh-CN':
+      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+  },
+  'vfx.featured.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
+
+  // VfxTutorialsSection
+  'vfx.tutorials.heading': {
+    en: 'Featured Demos',
+    'zh-CN': '精选演示'
+  },
+  'vfx.tutorials.titlePrefix': {
+    en: 'Learn how to:',
+    'zh-CN': '学习如何：'
+  },
+
+  // VfxCallToActionSection
+  'vfx.cta.heading': {
+    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
+    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
+  },
+  'vfx.cta.contactSales': {
+    en: 'Contact Sales',
+    'zh-CN': '联系销售'
+  },
+
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {
