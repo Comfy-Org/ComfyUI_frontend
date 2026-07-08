@@ -6,14 +6,9 @@ export const AGENT_PANEL_FLAG = 'agent-in-app-experience'
 export interface AgentFlagSource {
   // Must return false while flags are unknown/not yet loaded (fail closed).
   isEnabled(): boolean
-  // Fires when flag values (re)load so the gate re-reads. Returns an unsubscribe.
   onChange?(listener: () => void): () => void
 }
 
-/**
- * Reactive fail-closed gate over an AgentFlagSource. The ref is seeded from
- * source.isEnabled() and re-read on every onChange callback; dispose unsubscribes.
- */
 export function useAgentFeatureGate(source: AgentFlagSource): {
   enabled: Readonly<Ref<boolean>>
   dispose: () => void
@@ -28,8 +23,6 @@ export function useAgentFeatureGate(source: AgentFlagSource): {
   }
 }
 
-// Minimal structural surface of posthog-js. The host passes its already-initialized
-// client; the panel takes NO posthog-js dependency.
 export interface PostHogLike {
   isFeatureEnabled(flag: string): boolean | undefined
   onFeatureFlags(listener: () => void): (() => void) | void

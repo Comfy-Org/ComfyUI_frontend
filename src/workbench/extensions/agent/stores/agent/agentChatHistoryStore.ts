@@ -21,19 +21,13 @@ function startOfLocalDay(now: number): number {
   return date.getTime()
 }
 
-/**
- * Bucket sessions into Current / Today / Yesterday / Earlier, newest first. Pure and
- * `now`-injected so tests pin the clock. The active session is always "Current"
- * regardless of its timestamp.
- */
 export function groupSessionsByRecency(
   sessions: ChatSession[],
   activeId: string | null,
   now: number
 ): HistoryGroups {
   const startToday = startOfLocalDay(now)
-  // Local-day start of the day before, not startToday - 24h, so a DST transition (a 23h or
-  // 25h day) doesn't misbucket the yesterday boundary.
+  // Local-day start, not startToday - 24h, so a DST 23h/25h day doesn't misbucket yesterday.
   const startYesterday = startOfLocalDay(startToday - 1)
   const groups: HistoryGroups = {
     current: [],
@@ -70,7 +64,6 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     if (activeId.value === id) activeId.value = null
   }
 
-  // Replace the whole list from an authoritative server fetch (GET /api/agent/threads).
   function replaceAll(next: ChatSession[]): void {
     sessions.value = next
   }
