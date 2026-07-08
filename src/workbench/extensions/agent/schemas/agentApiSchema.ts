@@ -41,15 +41,17 @@ export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
 
 // content is a free object (user={text, attachments?}, assistant={text}); it is
 // omitted while a message is still streaming, so it stays optional and tolerant.
-export const zAgentMessage = z.object({
-  id: z.string(),
-  thread_id: z.string(),
-  seq: z.number().int(),
-  role: z.enum(['user', 'assistant', 'tool', 'system']),
-  status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
-  turn_id: z.string(),
-  content: z.record(z.string(), z.unknown()).optional()
-})
+export const zAgentMessage = z
+  .object({
+    id: z.string(),
+    thread_id: z.string(),
+    seq: z.number().int(),
+    role: z.enum(['user', 'assistant', 'tool', 'system']),
+    status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
+    turn_id: z.string(),
+    content: z.record(z.string(), z.unknown()).optional()
+  })
+  .passthrough()
 
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>

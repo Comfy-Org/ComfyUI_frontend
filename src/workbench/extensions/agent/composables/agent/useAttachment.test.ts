@@ -53,6 +53,26 @@ describe('useAttachment', () => {
     expect(onError).toHaveBeenCalledOnce()
   })
 
+  it('keeps earlier staged files and continues the batch when one upload fails', async () => {
+    const upload = vi
+      .fn()
+      .mockResolvedValueOnce({ ref: 'a.png', url: 'blob:a' })
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ ref: 'c.png', url: 'blob:c' })
+    const onError = vi.fn()
+    const { addFiles, pending } = useAttachment({ upload, onError })
+
+    const staged = await addFiles([
+      fileOfSize('a.png', 10),
+      fileOfSize('b.png', 10),
+      fileOfSize('c.png', 10)
+    ])
+
+    expect(staged.map((item) => item.ref)).toEqual(['a.png', 'c.png'])
+    expect(onError).toHaveBeenCalledWith('b.png could not be uploaded')
+    expect(pending.value).toBe(false)
+  })
+
   it('calls preventDefault before doing any work on drop', async () => {
     const upload = vi.fn().mockResolvedValue({ ref: 'r' })
     const { onDrop } = useAttachment({ upload })

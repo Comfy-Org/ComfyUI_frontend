@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from '@vueuse/core'
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrollArea from '../ui/ScrollArea.vue'
@@ -32,14 +32,23 @@ function scrollToLatest(): void {
   bottom.value?.scrollIntoView({ block: 'end' })
 }
 
+// Only the LAST entry can grow while a turn streams (earlier ones are settled), so this
+// signal replaces a deep watch that re-walked every entry per token.
+const latestContentSignal = computed(() => {
+  const last = entries.at(-1)
+  if (!last) return '0'
+  const size = 'parts' in last ? JSON.stringify(last.parts).length : 0
+  return `${entries.length}:${size}`
+})
+
 watch(
-  () => entries,
+  latestContentSignal,
   async () => {
     if (!atBottom.value) return
     await nextTick()
     scrollToLatest()
   },
-  { deep: true, flush: 'post' }
+  { flush: 'post' }
 )
 </script>
 

@@ -1,12 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
 import Composer from './Composer.vue'
 
-function mount(props: Record<string, unknown> = {}) {
+function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, { props, global: { plugins: [i18n] } })
 }
 
