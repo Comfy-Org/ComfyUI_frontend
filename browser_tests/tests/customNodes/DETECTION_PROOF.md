@@ -1,0 +1,155 @@
+# Detection Proof
+
+How we prove the custom-node regression suite actually catches every failure
+mode it claims to in [ARCHITECTURE.md](ARCHITECTURE.md). The proof is a
+separate, deliberately-red pull request branched off the suite branch: each
+commit breaks one surface on purpose, cites the real regression class it
+recreates, and turns exactly one CI check red. Green anywhere in that PR would
+mean the gate failed to catch a regression.
+
+This replaces the earlier ad-hoc "kill-test" name. The verb is **falsify**: we
+falsify each guard by breaking the thing it watches and confirming it fires.
+
+## Why this exists
+
+The suite's whole value claim is "a frontend PR can no longer silently break a
+widely-installed custom-node pack." That claim is only worth as much as its
+ability to go red on a real break. A green suite proves nothing on its own -
+it could be green because everything works, or green because it checks nothing.
+The Detection Proof PR removes that doubt: it shows, break by break, that every
+tier in ARCHITECTURE.md turns red on the exact class of regression it was built
+to catch, and names the offender in the failure message.
+
+## How to read the proof PR
+
+- **It must never merge.** Every commit is a deliberate break. A reviewer reads
+  it, they do not ship it.
+- **One commit per surface.** Each commit is a single-file change plus a comment
+  naming the historical regression it recreates and the red it should produce.
+  Check out a commit, watch the named CI check go red, read the message, move on.
+- **CI is the source of truth, not a local full run.** The CI job shards one
+  fresh backend per pack, so it is deterministic. A local run of the whole
+  suite against a single CPU backend is not reliable for this (see
+  [Honest caveat](#honest-caveat-local-full-run-is-not-the-oracle)); run CI, or
+  run one pack locally at a time.
+
+## Two protection modes
+
+The gate protects against two distinct things, and the proof covers both:
+
+- **FE-regression** - a change to _this frontend_ breaks installed packs. This
+  is the primary thing the gate guards on every frontend PR. These breaks live
+  in `src/`.
+- **Pack-bug** - a pack itself ships a bug (or a pinned pack is bumped to a
+  broken version). The gate catches these too. These breaks live in the pack's
+  own code under the test backend's `custom_nodes/`.
+
+Each row below is labelled with its mode.
+
+## The correlation matrix
+
+Every "Exact red" below is the real message captured when the break was applied
+and the tier was run against a real backend - not a prediction. Sections refer
+to [ARCHITECTURE.md](ARCHITECTURE.md).
+
+| #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                              | The one-file break                                                                                             | CI check that catches it                   | Exact red                                                                                              |
+| --- | ------------------------------------------------ | ---- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| 1   | Mount completeness, canvas / v1 (s1, s5)         | FE   | Nodes 2.0 migration dropping declared parts (FE-627, FE-634 iTools missing buttons)                       | `src/services/litegraphService.ts` `addInputs`: stop materializing the last declared input                     | Tests Custom Nodes / mount tier            | `BatchCount+: instance is missing declared input "batch" (litegraph)`                                  |
+| 2   | Mount completeness, DOM / v2 (s1, s5)            | FE   | Widgets not rendering under Nodes 2.0 (FE-841 Video Combine fields, FE-630/FE-637 SAM3 hidden values)     | `src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts`: drop the `int` widget component mapping | Tests Custom Nodes / mount tier (Vue pass) | `Ideogram4PromptBuilderKJ: Vue mounts 9 of 15 widgets`                                                 |
+| 3   | Persistence, save/reload (s1, s8)                | FE   | Widget values silently lost on reload (FE-489 iTools Prompt Styler empties on file change)                | `src/lib/litegraph/src/LGraphNode.ts` `configure`: off-by-one drops the last `widgets_values` entry            | Tests Custom Nodes / persistence tier      | `Seed (rgthree): widgets_values [1,"fixed"] -> [1,"randomize"] on set-values reload`                   |
+| 4   | Wiring - type compatibility (s5, s6)             | FE   | A frontend change narrowing connectable types (PR #12279 defaultInput/forceInput migration class)         | `src/lib/litegraph/src/LiteGraphGlobal.ts` `isValidConnection`: reject IMAGE links                             | Tests Custom Nodes / connectivity sweep    | `AddLabel.IMAGE -> FastPreviewBatch.input: CONNECT_REJECTED` (full pair list)                          |
+| 5   | Wiring - drop resolution (s5)                    | FE   | Slot hit-test regression on drag (FE-625 / FE-632 EditUtils connections shift after drag)                 | `src/lib/litegraph/src/canvas/measureSlots.ts` `getNodeInputOnPos`: return undefined                           | Tests Custom Nodes / connectivity drag     | `EmptyImage.IMAGE -> ImageBatch.image2 with VueNodes=false`                                            |
+| 6   | Execution - frontend prompt serialization (s7)   | FE   | A graphToPrompt change corrupting inputs (FE-751 drag-drop/load breakage class)                           | `src/utils/executionUtil.ts`: drop numeric widget values from the API prompt                                   | Tests Custom Nodes / curated run (T1)      | `Prompt outputs failed validation; ImpactInt: value; ImpactFloat: value`                               |
+| 7   | Zero-visible-errors / load hook (s1)             | FE   | A pack extension hook crashing on load (FE-751 multiple packs break workflow loading)                     | `src/composables/node/useNodeBadge.ts` `afterConfigureGraph`: throw                                            | Tests Custom Nodes / curated run (T1)      | `Error calling extension 'Comfy.NodeBadge' method 'afterConfigureGraph' ...`                           |
+| 8   | Console / pageerror ledger (s10)                 | Pack | An uncaught pack-JS error during save/reload (the betterCombos.js `typeof null` bug this suite found)     | `custom_nodes/ComfyUI-Custom-Scripts/web/js/showText.js`: `console.error` in `onConfigure`                     | Tests Custom Nodes / curated run (T1)      | `console errors during curated run` + the exact text + script URL                                      |
+| 9   | Execution - runtime (s7)                         | Pack | A pack node raising at execution (WAS Text Find/Replace infinite loop; KJ ImageGridtoBatch min violation) | `custom_nodes/was-node-suite-comfyui/WAS_Node_Suite.py`: `return_constant_number` raises                       | Tests Custom Nodes / auto-run tier         | `Constant Number: EXECUTION_ERROR (Constant Number: ValueError) - not in cannotRunAlone; a regression` |
+| 10  | Registration / expectedNodes sentinels (s5, s10) | Pack | A pinned pack bump renaming a node key                                                                    | `custom_nodes/ComfyUI-Impact-Pack/__init__.py`: rename the `ImpactInt` mapping key                             | Tests Custom Nodes / zero-skip gate        | job goes red on `skipped != 0` (T0 + T1 skip; the workflow's "Forbid skipped tests" step fails)        |
+
+### Links of various types (surface 4/5 expanded)
+
+The user asked specifically for "links of various types." The connectivity tier
+plans one representative typed edge per slot across the whole installed corpus,
+so a single break in the validator (#4) fails a broad, named list of concrete
+pairs - not one hand-picked wire. The drag break (#5) additionally proves the
+_pointer_ path resolves the exact slot. To show breadth explicitly, the proof PR
+can add two more validator mutations, each turning a different link class red:
+
+- Reject a COMBO pairing (break the option-vocabulary compare) - shows dropdown
+  slots are checked, not just primitive types.
+- Short-circuit the wildcard `*` handling - shows the suite excludes wildcards
+  by design and a change there is caught rather than silently widening matches.
+
+### Execution of various types (surface 6/7/9 expanded)
+
+Three distinct execution break-points, each caught by a different tier:
+
+- **Frontend serialization** (#6) - the value never leaves the browser correctly;
+  caught at submit as a named `VALIDATION_FAIL`.
+- **Load-time hook** (#7) - a pack script crashes the graph load; caught by the
+  console/pageerror ledger.
+- **Backend runtime** (#9) - the node runs and raises; caught by the auto-run
+  tier's two-way baseline, which names the root node even through a downstream
+  cascade.
+
+## What is already proven (the falsification pass)
+
+Before writing this plan, every break in the matrix was applied one at a time
+against a real backend and the tier was confirmed to catch and name it. That is
+where the "Exact red" column comes from. Two of those runs also corrected the
+suite itself, and those fixes are already committed on the suite branch:
+
+- **Drag drop-resolution (#5)** was originally a _miss_: the curated drag test
+  only targeted first-slot inputs, so a hit-test regression that falls back to
+  the first compatible input was invisible. Fixed by adding the second-slot
+  anchor (`EmptyImage.IMAGE -> ImageBatch.image2`); the matrix red above is from
+  the fixed test.
+- **Curated-run failure naming (#6)** originally reported `{}` for a backend
+  validation rejection. Fixed by capturing and flattening the backend
+  `node_errors`; the matrix now shows the named nodes and input.
+- **Boot-time console noise** was confirmed out of the ledger's window by
+  design (documented in ARCHITECTURE.md section 10 and README), backstopped by
+  the startup zero-visible-errors check.
+
+## Honest caveat: a local full run is not the oracle
+
+Running the entire suite (all 7 packs) locally against one shared CPU backend is
+**not** reliably green-on-green, and this is expected, not a suite defect. The
+execution tiers run real nodes; back-to-back across 7 packs on one CPU backend
+they contend for the backend (async execution events bleed across test
+boundaries, and the batch timeout tips different packs over on different runs).
+Four full local runs failed a _different_ set of packs each time. An
+in-suite backend-drain between tests was investigated and did not fix it (the
+contention is timing, not queue state), so it was not kept.
+
+CI does not hit this because it **shards one fresh backend per pack**. For the
+Detection Proof, therefore:
+
+- Use **CI** as the pass/fail oracle (deterministic, per-pack isolated).
+- If reproducing locally, run **one pack at a time** (or restart the backend
+  between packs), never all 7 serially against one backend.
+
+Making a local single-backend full run deterministic would need per-pack backend
+isolation locally (a wrapper that restarts the backend between packs, mirroring
+CI sharding) - tracked as follow-up, not required for the proof.
+
+## Building the proof PR
+
+1. Branch off the suite branch: `git checkout -b nathaniel/detection-proof nathaniel/custom-node-e2e-suite`.
+2. One commit per matrix row. Each commit: the single-file break, plus a comment
+   `// DETECTION PROOF: recreates <FE-xxx / PR #12279 / suite-found bug> - <surface>. Expected: <CI check> red with "<message>".`
+3. Commit message names the surface and the reference, e.g.
+   `demo(detection): break Vue widget mount (recreates FE-841) - expect mount tier red`.
+4. Open the PR against the suite branch (not main) with the correlation matrix as
+   the description and a bold header: **This PR must never merge. Every commit is
+   a deliberate break; green would mean the gate missed a regression.**
+5. Let CI run. Each commit turns its named check red with its named message. The
+   reviewer bisects commit-by-commit to correlate break -> catch.
+
+## References
+
+- Linear "Custom Node Bugs" project issues (symptoms): FE-841, FE-627, FE-634,
+  FE-630, FE-637, FE-629, FE-625, FE-632, FE-751, FE-489, FE-491, FE-492.
+- Frontend PR touching the slot/link migration class: Comfy-Org/ComfyUI_frontend #12279.
+- Suite-discovered bugs with no upstream ticket yet (betterCombos `typeof null`,
+  WAS infinite-loop, WAS pip-install-in-execute, KJ ImageGridtoBatch min) are
+  pending upstream filing.
