@@ -11,7 +11,9 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
 const mockToastAdd = vi.fn()
-const mockCurrentUser = vi.hoisted(() => ({ value: null as unknown }))
+const mockCurrentUser = vi.hoisted(
+  () => ({ value: null }) as { value: { uid: string } | null }
+)
 const mockForgetRevokedActiveWorkspace = vi.fn()
 
 vi.mock('@/stores/authStore', () => ({
@@ -828,6 +830,39 @@ describe('useWorkspaceAuthStore', () => {
       expect(currentWorkspace.value?.id).toBe('workspace-123')
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockForgetRevokedActiveWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('collapses a burst of waiters into a single mint after a shared in-flight switch rejects', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.resolve({})
+        })
+        .mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      const initialSwitch = store
+        .switchWorkspace('workspace-123')
+        .catch(() => {})
+      const [first, second] = await Promise.all([
+        store.ensureWorkspaceToken('workspace-123'),
+        store.ensureWorkspaceToken('workspace-123')
+      ])
+      await initialSwitch
+
+      expect(first).toBe('workspace-token-abc')
+      expect(second).toBe('workspace-token-abc')
+      // One failed initial switch + exactly one recovery mint the burst shares.
+      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
     it('re-mints for the requested workspace rather than returning an in-flight switch to a different one', async () => {

@@ -644,6 +644,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   //
   // A parallel mint/refresh lifecycle that writes to the dormant `unifiedToken`
   // slot. The legacy switchWorkspace/refreshToken machinery above is untouched.
+  //
+  // TODO(unified): its permanent-failure branches tear down context but do not
+  // yet call forgetRevokedActiveWorkspace on ACCESS_DENIED/WORKSPACE_NOT_FOUND;
+  // wire that in with the PR-3 consumer flip so it cannot reintroduce the
+  // workspace/personal oscillation this change fixes for the legacy path.
 
   // Mint body the unified session re-mints against: `{}` = personal (resolved
   // server-side from the Firebase identity), `{ workspace_id }` = explicit.
