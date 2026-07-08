@@ -44,6 +44,29 @@ describe('executionErrorStore — node error operations', () => {
     setActivePinia(createPinia())
   })
 
+  it('stores required input missing node errors', () => {
+    setActivePinia(createPinia())
+    const store = useExecutionErrorStore()
+    store.lastNodeErrors = {
+      '1': {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Required input is missing',
+            details: '',
+            extra_info: { input_name: 'prompt' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'TestNode'
+      }
+    }
+
+    expect(store.lastNodeErrors['1'].errors[0].type).toBe(
+      'required_input_missing'
+    )
+  })
+
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()

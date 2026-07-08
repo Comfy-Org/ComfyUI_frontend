@@ -11,6 +11,11 @@ global.URL = {
 
 describe('mediaCacheService', () => {
   describe('URL reference counting', () => {
+    it('keeps the global mocks available', () => {
+      expect(global.fetch).toBeDefined()
+      expect(global.URL.createObjectURL(new Blob())).toBe('blob:mock-url')
+    })
+
     it('should handle URL acquisition for non-existent cache entry', () => {
       const { acquireUrl } = useMediaCache()
 

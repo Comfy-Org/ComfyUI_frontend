@@ -1667,10 +1667,11 @@ export class ComfyApp {
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
-            const res = await api.queuePrompt(number, p, {
+            const queueOptions = {
               partialExecutionTargets: queueNodeIds,
               previewMethod
-            })
+            }
+            const res = await api.queuePrompt(number, p, queueOptions)
             delete api.authToken
             delete api.apiKey
             const nodeErrors = res.node_errors
