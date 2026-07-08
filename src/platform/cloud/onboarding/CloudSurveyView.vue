@@ -1,5 +1,7 @@
 <template>
-  <div class="flex h-[700px] max-h-[85vh] w-[320px] max-w-[90vw] flex-col">
+  <div
+    class="dark-theme flex max-h-[85vh] w-[360px] max-w-[90vw] flex-col overflow-y-auto"
+  >
     <DynamicSurveyForm
       :key="activeSurvey.version"
       :survey="activeSurvey"
