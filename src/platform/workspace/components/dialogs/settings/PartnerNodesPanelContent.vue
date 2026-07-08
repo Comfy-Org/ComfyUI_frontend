@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-4">
+  <div class="relative flex min-h-0 flex-1 flex-col gap-4">
     <div class="flex w-full items-center gap-9">
       <span class="min-w-0 flex-1 text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.description') }}
@@ -142,22 +142,26 @@
       />
     </div>
 
-    <!-- Bulk selection toolbar -->
-    <Transition
-      enter-active-class="transition-opacity duration-150"
-      leave-active-class="transition-opacity duration-150"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <SelectionBar
-        v-if="selectedCount > 0"
-        :label="$t('workspacePanel.partnerNodes.selectedCount', selectedCount)"
-        :deselect-label="$t('workspacePanel.partnerNodes.clearSelection')"
-        @deselect="clearSelection"
+    <!-- Bulk selection toolbar: overlaid so toggling it doesn't reflow the panel -->
+    <div class="absolute inset-x-0 bottom-0">
+      <Transition
+        enter-active-class="transition-opacity duration-150"
+        leave-active-class="transition-opacity duration-150"
+        enter-from-class="opacity-0"
+        leave-to-class="opacity-0"
       >
-        <Switch :model-value="bulkEnabled" @update:model-value="applyBulk" />
-      </SelectionBar>
-    </Transition>
+        <SelectionBar
+          v-if="selectedCount > 0"
+          :label="
+            $t('workspacePanel.partnerNodes.selectedCount', selectedCount)
+          "
+          :deselect-label="$t('workspacePanel.partnerNodes.clearSelection')"
+          @deselect="clearSelection"
+        >
+          <Switch :model-value="bulkEnabled" @update:model-value="applyBulk" />
+        </SelectionBar>
+      </Transition>
+    </div>
   </div>
 </template>
 
