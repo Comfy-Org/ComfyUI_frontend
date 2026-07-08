@@ -7,9 +7,10 @@ export type BillingCycle = 'monthly' | 'yearly'
 
 export type PlanFeatureStatus = 'included' | 'excluded' | 'coming'
 
-interface PlanFeature {
+export interface PlanFeature {
   text: TranslationKey
   status?: PlanFeatureStatus
+  highlight?: boolean
 }
 
 export interface PlanFeatureGroup {
@@ -125,3 +126,19 @@ const standardPricingPlans: PricingPlan[] = [
 export const pricingPlans: PricingPlan[] = SHOW_FREE_TIER
   ? [freePlan, ...standardPricingPlans]
   : standardPricingPlans
+
+const eduSavingsFeature: PlanFeature = {
+  text: 'pricing.feature.educationalSavings',
+  highlight: true
+}
+
+// In education mode, plans with education pricing lead with the highlighted
+// savings row; every other case keeps the plan's own feature list unchanged.
+export function planFeatures(
+  plan: PricingPlan,
+  education: boolean
+): PlanFeature[] {
+  return education && plan.eduPriceKey
+    ? [eduSavingsFeature, ...plan.features]
+    : plan.features
+}

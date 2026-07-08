@@ -5,7 +5,7 @@ import type {
   PlanFeatureStatus
 } from '../../data/pricingPlans'
 
-import { Check, Clock, X } from '@lucide/vue'
+import { BookOpen, Check, Clock, X } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
 
@@ -52,9 +52,17 @@ const { locale = 'en' } = defineProps<{
           class="flex items-start gap-2"
         >
           <component
-            :is="statusIcon[feature.status ?? 'included']"
+            :is="
+              feature.highlight
+                ? BookOpen
+                : statusIcon[feature.status ?? 'included']
+            "
             class="mt-0.5 size-4 shrink-0"
-            :class="statusIconClass[feature.status ?? 'included']"
+            :class="
+              feature.highlight
+                ? 'text-primary-comfy-yellow'
+                : statusIconClass[feature.status ?? 'included']
+            "
             aria-hidden="true"
           />
           <span class="sr-only">
@@ -67,7 +75,11 @@ const { locale = 'en' } = defineProps<{
           </span>
           <span
             class="ppformula-text-center text-sm"
-            :class="statusTextClass[feature.status ?? 'included']"
+            :class="
+              feature.highlight
+                ? 'text-primary-comfy-yellow'
+                : statusTextClass[feature.status ?? 'included']
+            "
           >
             {{ t(feature.text, locale) }}
           </span>

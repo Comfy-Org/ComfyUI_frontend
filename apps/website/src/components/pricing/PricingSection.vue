@@ -4,7 +4,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
-import { pricingPlans } from '../../data/pricingPlans'
+import { planFeatures, pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
@@ -72,7 +72,8 @@ const planCards = computed(() =>
     plan,
     priceKey: displayPriceKey(plan),
     originalPrice: originalPriceFor(plan),
-    yearlyTotal: yearlyTotalFor(plan)
+    yearlyTotal: yearlyTotalFor(plan),
+    features: planFeatures(plan, education)
   }))
 )
 </script>
@@ -132,7 +133,13 @@ const planCards = computed(() =>
       "
     >
       <PricingCard
-        v-for="{ plan, priceKey, originalPrice, yearlyTotal } in planCards"
+        v-for="{
+          plan,
+          priceKey,
+          originalPrice,
+          yearlyTotal,
+          features
+        } in planCards"
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
       >
@@ -159,11 +166,8 @@ const planCards = computed(() =>
         />
 
         <!-- Features -->
-        <div v-if="plan.features.length" class="mt-8">
-          <PricingPlanFeatureList
-            :features="[{ features: plan.features }]"
-            :locale
-          />
+        <div v-if="features.length" class="mt-8">
+          <PricingPlanFeatureList :features="[{ features }]" :locale />
         </div>
 
         <!-- Credits -->
