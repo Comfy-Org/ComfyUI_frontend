@@ -195,6 +195,12 @@ export async function mockAgentBoot(
     postedMessages
   }: { agentFlag: boolean; postedMessages: string[] }
 ): Promise<void> {
+  // Mark the coach as already seen: its full-viewport scrim otherwise blocks
+  // every click on the freshly-opened panel (fresh storage in CI).
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+  })
+
   await page.route('**/api/features', (r) =>
     r.fulfill(jsonRoute(agentFeatures(agentFlag)))
   )
