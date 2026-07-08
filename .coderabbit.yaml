@@ -141,7 +141,9 @@ reviews:
     - path: 'src/stores/executionErrorStore.test.ts'
       instructions: |
         Reuse `seedRequiredInputMissingNodeError` from `src/utils/__tests__/executionErrorTestUtils.ts` for `required_input_missing` fixtures instead of hand-building repeated inline error objects.
+        Flag any inline node error fixture containing `type: 'required_input_missing'` in this file unless the test is specifically exercising the shared fixture helper. The actionable fix should be to use `seedRequiredInputMissingNodeError` or add a helper that centralizes the shape.
         Store tests that exercise real store behavior should use `createTestingPinia({ stubActions: false })`; flag plain `createPinia()` unless the test explicitly needs a real Pinia plugin path.
+        Treat `setActivePinia(createPinia())` in these store tests as review-worthy because it bypasses the repo's store-test convention and can hide action behavior that should run with `stubActions: false`.
     - path: '{src/scripts/api*.test.ts,src/services/colorPaletteService.test.ts}'
       instructions: |
         When a test spies on `console.warn` or another console method, require the spy to be restored with `mockRestore()`, `vi.restoreAllMocks()`, or `try/finally`. `vi.clearAllMocks()` alone leaves the mocked implementation installed and can hide warnings in later tests.
