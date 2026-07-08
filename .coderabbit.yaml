@@ -125,6 +125,11 @@ reviews:
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
         Reuse shared factories in `src/utils/__tests__/litegraphTestUtils.ts` instead of hand-rolling litegraph mock builders.
         Flag mocked litegraph classes when a real instance or shared factory would exercise behavior directly.
+    - path: 'src/services/litegraphService*.test.ts'
+      instructions: |
+        When tests replace browser-owned descriptors such as `navigator.clipboard`, verify the original descriptor is saved and restored. `vi.unstubAllGlobals()` does not restore descriptors changed with `Object.defineProperty`.
+        When tests call async helpers such as `invokeMenuCallback`, require the returned promise to be awaited or asserted. Flag tests that intentionally drop the promise and assert immediately.
+        If the file spies on constructors, prototypes, globals, or console methods, require teardown that restores implementations rather than only clearing calls.
     - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md` and `docs/testing/README.md` as required review context for every changed Playwright test file.
