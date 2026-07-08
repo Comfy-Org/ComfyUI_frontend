@@ -27,6 +27,10 @@ const BOOT_FEATURES = {
   user_secrets_enabled: true
 } satisfies RemoteConfig
 
+// TutorialCompleted suppresses the new-user template browser, whose modal
+// overlay (z-1700) would otherwise intercept clicks on the settings dialog.
+const BOOT_SETTINGS = { 'Comfy.TutorialCompleted': true }
+
 // The plaintext key a user types in. It must be sent on create but NEVER echoed
 // back by the API or rendered anywhere in the UI.
 const RUNWAY_KEY_VALUE = 'sk-runway-do-not-echo-0xDEADBEEF'
@@ -156,7 +160,10 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
   }) => {
     test.slow()
 
-    await mockCloudBoot(page, { features: BOOT_FEATURES })
+    await mockCloudBoot(page, {
+      features: BOOT_FEATURES,
+      settings: BOOT_SETTINGS
+    })
     await bootCloud(page)
     const backend = await mockSecretsBackend(page, ['runway', 'gemini'])
 
@@ -224,7 +231,10 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
   }) => {
     test.slow()
 
-    await mockCloudBoot(page, { features: BOOT_FEATURES })
+    await mockCloudBoot(page, {
+      features: BOOT_FEATURES,
+      settings: BOOT_SETTINGS
+    })
     await bootCloud(page)
     // Non-entitled: the server omits runway/gemini from the allowlist.
     await mockSecretsBackend(page, [])
