@@ -9,7 +9,9 @@ import type {
   LockState
 } from './safety/safetyTypes'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
+import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
+import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
@@ -29,7 +31,8 @@ const {
   conflictOpen = false,
   canRevert = false,
   canAttach = false,
-  isMaximized = false
+  isMaximized = false,
+  historyGroups
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -40,6 +43,7 @@ const {
   canRevert?: boolean
   canAttach?: boolean
   isMaximized?: boolean
+  historyGroups: HistoryGroups
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
@@ -53,8 +57,23 @@ const emit = defineEmits<{
   newChat: []
   toggleSize: []
   close: []
-  openHistory: []
+  selectHistory: [id: string]
+  deleteHistory: [id: string]
+  copyHistory: [id: string]
 }>()
+
+// In-panel Chat History screen (B12): the session bar opens it, the back arrow / picking a
+// chat / starting a new chat closes it. Rendered inline instead of a teleported drawer.
+const showHistory = ref(false)
+
+function onNewChat(): void {
+  showHistory.value = false
+  emit('newChat')
+}
+function onSelectHistory(id: string): void {
+  showHistory.value = false
+  emit('selectHistory', id)
+}
 
 const composerRef = ref<InstanceType<typeof Composer>>()
 
@@ -85,55 +104,70 @@ defineExpose({ addAttachment })
   >
     <PanelHeader
       :is-maximized="isMaximized"
-      @new-chat="emit('newChat')"
+      @new-chat="onNewChat"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
     />
 
-    <SessionBar :title="sessionTitle" @open-history="emit('openHistory')" />
-
-    <LockBanner :state="lockState" @take-control="emit('takeControl')" />
-
-    <div class="min-h-0 flex-1">
-      <EmptyState
-        v-if="!entries.length"
-        :user-name="userName"
-        @insert="composerRef?.insert($event)"
+    <template v-if="showHistory">
+      <ChatHistoryScreen
+        :groups="historyGroups"
+        class="min-h-0 flex-1"
+        @back="showHistory = false"
+        @select="onSelectHistory"
+        @delete="emit('deleteHistory', $event)"
+        @copy-markdown="emit('copyHistory', $event)"
       />
-      <ConversationView
-        v-else
-        :entries="entries"
-        @feedback="(id, vote) => emit('feedback', id, vote)"
-      />
-    </div>
+    </template>
 
-    <div v-if="approvalCards.length || canRevert" class="space-y-2 px-3 pb-1">
-      <ApprovalCardView
-        v-for="card in approvalCards"
-        :key="card.approvalId"
-        :card="card"
-        @answer="(id, approved) => emit('answer', id, approved)"
-      />
-      <div v-if="canRevert" class="flex justify-end">
-        <RevertButton :can-revert="canRevert" @revert="emit('revert')" />
-      </div>
-    </div>
+    <template v-else>
+      <SessionBar :title="sessionTitle" @open-history="showHistory = true" />
 
-    <footer class="shrink-0 p-4">
-      <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2.5">
-        <Composer
-          ref="composerRef"
-          :streaming="streaming"
-          :can-attach="canAttach"
-          @send="(text, attachments) => emit('send', text, attachments)"
-          @stop="emit('stop')"
-          @attach="emit('attach')"
+      <LockBanner :state="lockState" @take-control="emit('takeControl')" />
+
+      <div class="min-h-0 flex-1">
+        <EmptyState
+          v-if="!entries.length"
+          :user-name="userName"
+          @insert="composerRef?.insert($event)"
         />
-        <p class="text-agent-fg-muted my-0 text-center text-xs">
-          {{ t('agent.caption') }}
-        </p>
+        <ConversationView
+          v-else
+          :entries="entries"
+          @feedback="(id, vote) => emit('feedback', id, vote)"
+        />
       </div>
-    </footer>
+    </template>
+
+    <template v-if="!showHistory">
+      <div v-if="approvalCards.length || canRevert" class="space-y-2 px-3 pb-1">
+        <ApprovalCardView
+          v-for="card in approvalCards"
+          :key="card.approvalId"
+          :card="card"
+          @answer="(id, approved) => emit('answer', id, approved)"
+        />
+        <div v-if="canRevert" class="flex justify-end">
+          <RevertButton :can-revert="canRevert" @revert="emit('revert')" />
+        </div>
+      </div>
+
+      <footer class="shrink-0 p-4">
+        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2.5">
+          <Composer
+            ref="composerRef"
+            :streaming="streaming"
+            :can-attach="canAttach"
+            @send="(text, attachments) => emit('send', text, attachments)"
+            @stop="emit('stop')"
+            @attach="emit('attach')"
+          />
+          <p class="text-agent-fg-muted my-0 text-center text-xs">
+            {{ t('agent.caption') }}
+          </p>
+        </div>
+      </footer>
+    </template>
 
     <ConflictDialog
       :open="conflictOpen"
