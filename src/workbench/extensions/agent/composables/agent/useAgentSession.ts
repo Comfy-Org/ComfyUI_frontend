@@ -183,9 +183,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
           : error instanceof Error
             ? error.message
             : String(error)
-      pushError(message)
       // A failed send must not vanish: mint a LOCAL id (never sent to the wire) and
-      // render the failed exchange through the existing user + notice paths.
+      // render the failed exchange inline through the existing user + notice paths.
+      // No pushError here: that path is only for errors WITHOUT an inline row (a toast
+      // would double-surface this and, top-right, collide with the docked panel).
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
