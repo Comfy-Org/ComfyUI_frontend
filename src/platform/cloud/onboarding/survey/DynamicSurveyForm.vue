@@ -16,11 +16,12 @@
       class="overflow-hidden transition-[height] duration-300 ease-out"
       :style="animatedHeightStyle"
     >
-      <div ref="questionContent">
+      <div ref="questionContent" class="relative">
         <Transition
-          enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0 translate-y-1"
-          enter-to-class="opacity-100 translate-y-0"
+          enter-active-class="transition-opacity duration-300 ease-out"
+          enter-from-class="opacity-0"
+          leave-active-class="absolute inset-x-0 top-0 transition-opacity duration-300 ease-out"
+          leave-to-class="opacity-0"
         >
           <div
             v-if="currentField"
