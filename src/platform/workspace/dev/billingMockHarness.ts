@@ -39,7 +39,7 @@ function currentUserEmail(): string {
     return 'you@comfy.org'
   }
 }
-type Tier = 'free' | 'standard' | 'creator' | 'pro'
+type Tier = 'free' | 'standard' | 'creator' | 'pro' | 'enterprise'
 type State =
   | 'active'
   | 'cancelled'
@@ -100,7 +100,7 @@ const OPTIONS: Record<
 > = {
   ws: ['personal', 'team'],
   role: ['owner', 'admin', 'member'],
-  tier: ['free', 'standard', 'creator', 'pro'],
+  tier: ['free', 'standard', 'creator', 'pro', 'enterprise'],
   state: ['active', 'cancelled', 'inactive', 'changing', 'past_due', 'paused'],
   balance: ['full', 'partial', 'low', 'empty'],
   roleChange: ['200', '500'],
@@ -144,14 +144,18 @@ const TIER: Record<Tier, string> = {
   free: 'FREE',
   standard: 'STANDARD',
   creator: 'CREATOR',
-  pro: 'PRO'
+  pro: 'PRO',
+  enterprise: 'ENTERPRISE'
 }
-// [price_cents, credits] per personal tier (monthly)
+// [price_cents, credits] per personal tier (monthly). Enterprise is a team-level
+// plan whose credits come from team_credit_stop, so this row is only a benign
+// placeholder for the change-plan preview path.
 const PRICING: Record<Tier, [number, number]> = {
   free: [0, 0],
   standard: [2000, 4200],
   creator: [3500, 7400],
-  pro: [10000, 21100]
+  pro: [10000, 21100],
+  enterprise: [10000, 21100]
 }
 // Team monthly credit allotment (credit_stop.credits_monthly). The CreditsTile
 // derives "used of total" from this, so balances below are expressed as credit

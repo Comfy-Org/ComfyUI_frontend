@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
@@ -22,18 +23,26 @@ export function useWorkspaceOverview() {
   const { t, d } = useI18n()
   const store = useTeamWorkspaceStore()
   const { members } = storeToRefs(store)
+  const { subscription } = useBillingContext()
 
   const nextRenewal = new Date()
   nextRenewal.setDate(nextRenewal.getDate() + 20)
-  const plan = {
-    name: 'Team',
+  const renewalLabel = d(nextRenewal, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+
+  // The enterprise tier relabels the same team layout. 'ENTERPRISE' is a wire
+  // tier not yet in the generated SubscriptionTier union, hence the cast.
+  const plan = computed(() => ({
+    name:
+      (subscription.value?.tier as string | null) === 'ENTERPRISE'
+        ? 'Enterprise'
+        : 'Team',
     monthlyCredits: 56900,
-    renewalLabel: d(nextRenewal, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
+    renewalLabel
+  }))
 
   function activityLabel(member: WorkspaceMember): string {
     if (!member.lastActivity) return '—'

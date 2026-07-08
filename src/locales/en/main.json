@@ -2609,6 +2609,7 @@
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
+    "enterprisePlanName": "Enterprise",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "teamPerks": {
       "inviteMembers": "Invite members",

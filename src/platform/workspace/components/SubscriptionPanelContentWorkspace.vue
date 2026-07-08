@@ -439,11 +439,13 @@ const subscriptionTierName = computed(() => {
     : baseName
 })
 
-const planDisplayName = computed(() =>
-  isInPersonalWorkspace.value
-    ? subscriptionTierName.value
+const planDisplayName = computed(() => {
+  if (isInPersonalWorkspace.value) return subscriptionTierName.value
+  // 'ENTERPRISE' is a wire tier not yet in the generated SubscriptionTier union.
+  return (subscription.value?.tier as string | null) === 'ENTERPRISE'
+    ? t('subscription.enterprisePlanName')
     : t('subscription.teamPlanName')
-)
+})
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
