@@ -2152,8 +2152,8 @@ function buildPanel(): void {
     row('workspace', 'ws', OPTIONS.ws) +
     row('role', 'role', OPTIONS.role) +
     row('tier', 'tier', OPTIONS.tier) +
-    row('state', 'state', OPTIONS.state) +
-    row('balance', 'balance', OPTIONS.balance) +
+    row('subscription state', 'state', OPTIONS.state) +
+    row('credit balance', 'balance', OPTIONS.balance) +
     row('autoReload', 'autoReload', OPTIONS.autoReload) +
     `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
     row('roleChange', 'roleChange', OPTIONS.roleChange) +

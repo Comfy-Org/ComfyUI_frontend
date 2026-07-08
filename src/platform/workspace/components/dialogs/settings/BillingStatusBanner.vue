@@ -1,23 +1,18 @@
 <template>
   <div
     v-if="banner"
-    class="flex items-center gap-2 rounded-2xl border border-interface-stroke/60 bg-base-background p-4"
+    class="flex items-center gap-2 rounded-2xl bg-base-foreground p-4"
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1">
       <div class="flex items-center gap-2">
         <i
-          :class="
-            cn(
-              'icon-[lucide--circle-alert] size-4 shrink-0',
-              banner.kind === 'warning'
-                ? 'text-warning-background'
-                : 'text-muted-foreground'
-            )
-          "
+          class="icon-[lucide--circle-alert] size-4 shrink-0 text-base-background"
         />
-        <span class="text-sm text-base-foreground">{{ banner.title }}</span>
+        <span class="text-sm font-medium text-base-background">
+          {{ banner.title }}
+        </span>
       </div>
-      <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
+      <p class="m-0 pl-6 text-sm text-base-background/70">{{ banner.body }}</p>
     </div>
     <Button v-if="banner.showAction" variant="secondary" size="lg">
       {{ $t('workspacePanel.billingStatus.updatePayment') }}
@@ -32,7 +27,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, d } = useI18n()
 const { billingStatus, subscriptionStatus, renewalDate } = useBillingContext()
@@ -48,7 +42,6 @@ const banner = computed(() => {
 
   if (subscriptionStatus.value === 'paused') {
     return {
-      kind: 'paused' as const,
       title: t('workspacePanel.billingStatus.paused.title'),
       body: canManage.value
         ? t('workspacePanel.billingStatus.paused.body')
@@ -60,7 +53,6 @@ const banner = computed(() => {
   if (billingStatus.value === 'payment_failed' && canManage.value) {
     const raw = renewalDate.value
     return {
-      kind: 'warning' as const,
       title: t('workspacePanel.billingStatus.warning.title'),
       body: t('workspacePanel.billingStatus.warning.body', {
         date: raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
