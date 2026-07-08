@@ -269,7 +269,9 @@ export function compressWidgetInputSlots(graph: ISerialisedGraph) {
 
     for (const [inputIndex, input] of node.inputs?.entries() ?? []) {
       if (input.link) {
-        const link = graph.links.find((link) => link[0] === input.link)
+        const link = graph.links.find(
+          (link) => link !== null && link[0] === input.link
+        )
         if (link) {
           link[4] = inputIndex
         }
