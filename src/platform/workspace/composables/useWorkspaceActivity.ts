@@ -8,6 +8,8 @@ export interface ActivityEvent {
   eventType: string
   detail: string
   credits: number
+  /** The partner node used, for 'Partner node usage' events. */
+  partnerNode?: string
 }
 
 export interface UserSummary {
@@ -21,19 +23,36 @@ const USERS = ['Yuta', 'Jane', 'Rob', 'Min', 'Alice', 'Priya', 'Diego']
 const EVENT_TYPES = ['Cloud workflow', 'Partner node usage']
 const DETAILS = ['1m 4s', '13m 4s', '59s', '1m 1s', '56s', '2m 12s', '48s']
 const CREDITS = [514, 15, 512, 520, 513, 516, 88]
+const PARTNER_NODES = [
+  'Nano Banana Pro',
+  'Kling Video',
+  'Flux.1 Kontext [pro] Image',
+  'OpenAI GPT Image',
+  'Runway Gen-4 Image',
+  'Luma Ray 2',
+  'ByteDance Seedance 2.0',
+  'Ideogram V4'
+]
 
 const HOUR_MS = 60 * 60 * 1000
 const BASE = new Date('2026-02-25T18:30:00').getTime()
 
 function mockActivity(): ActivityEvent[] {
-  return Array.from({ length: 44 }, (_, i) => ({
-    id: `act-${i}`,
-    date: new Date(BASE - i * 7 * HOUR_MS),
-    userName: USERS[i % USERS.length],
-    eventType: EVENT_TYPES[i % EVENT_TYPES.length],
-    detail: DETAILS[i % DETAILS.length],
-    credits: CREDITS[i % CREDITS.length]
-  }))
+  return Array.from({ length: 44 }, (_, i) => {
+    const eventType = EVENT_TYPES[i % EVENT_TYPES.length]
+    return {
+      id: `act-${i}`,
+      date: new Date(BASE - i * 7 * HOUR_MS),
+      userName: USERS[i % USERS.length],
+      eventType,
+      detail: DETAILS[i % DETAILS.length],
+      credits: CREDITS[i % CREDITS.length],
+      partnerNode:
+        eventType === 'Partner node usage'
+          ? PARTNER_NODES[i % PARTNER_NODES.length]
+          : undefined
+    }
+  })
 }
 
 export type ActivitySortField =

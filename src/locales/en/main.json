@@ -2994,7 +2994,8 @@
       },
       "hoverCard": {
         "totalCreditsUsed": "Total credits used",
-        "lastActivity": "Last activity"
+        "lastActivity": "Last activity",
+        "partnerNodeUsed": "Partner node used"
       },
       "fullActivity": "Full activity",
       "perUserHint": "Looking for total usage per user?",

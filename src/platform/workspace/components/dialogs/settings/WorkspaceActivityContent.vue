@@ -110,7 +110,30 @@
               </HoverCard>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground">
-              {{ event.eventType }}
+              <HoverCard
+                v-if="event.partnerNode"
+                :open-delay="150"
+                :close-delay="0"
+              >
+                <HoverCardTrigger as="span" class="cursor-default">
+                  {{ event.eventType }}
+                </HoverCardTrigger>
+                <HoverCardContent class="w-72">
+                  <div class="flex h-5 items-center justify-between gap-4">
+                    <span
+                      class="text-sm whitespace-nowrap text-muted-foreground"
+                    >
+                      {{
+                        $t('workspacePanel.activity.hoverCard.partnerNodeUsed')
+                      }}
+                    </span>
+                    <span class="truncate text-sm text-base-foreground">
+                      {{ event.partnerNode }}
+                    </span>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+              <template v-else>{{ event.eventType }}</template>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ event.detail }}
