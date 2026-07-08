@@ -103,6 +103,7 @@ describe('useWorkspaceAuthStore', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.unstubAllGlobals()
   })
 
   describe('initial state', () => {

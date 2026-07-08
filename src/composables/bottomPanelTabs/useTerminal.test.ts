@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, ref } from 'vue'
 
 interface MockTerminalInstance {
@@ -120,6 +120,10 @@ describe('useTerminal', () => {
     mockResizeObserverInstances.length = 0
     mockDistribution.isDesktop = true
     vi.stubGlobal('ResizeObserver', MockResizeObserver)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('creates a desktop themed terminal and opens it on mount', () => {
