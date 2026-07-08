@@ -140,7 +140,7 @@ async function fetchCloudGeneratedAssets(
 
     for (const asset of batch) {
       assets.push(asset)
-      rememberResolvedTargetNames(
+      rememberResolvedCloudTargetNames(
         asset,
         targetNames,
         foundTargetNames,
@@ -258,6 +258,19 @@ function rememberResolvedTargetNames(
   if (targetNames.size === 0) return
 
   for (const name of getAssetDetectionNames(asset, options)) {
+    if (targetNames.has(name)) foundTargetNames.add(name)
+  }
+}
+
+function rememberResolvedCloudTargetNames(
+  asset: AssetItem,
+  targetNames: ReadonlySet<string>,
+  foundTargetNames: Set<string>,
+  options: MediaPathDetectionOptions
+) {
+  if (targetNames.size === 0 || !asset.hash) return
+
+  for (const name of getMediaPathDetectionNames(asset.hash, options)) {
     if (targetNames.has(name)) foundTargetNames.add(name)
   }
 }
