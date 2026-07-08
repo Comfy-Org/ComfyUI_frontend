@@ -673,14 +673,21 @@ export const useAssetsStore = defineStore('assets', () => {
           pendingRequestByCategory.delete(category)
         }
 
-        const promise = loadBatches().finally(() => {
-          pendingPromiseByCategory.delete(category)
+        const promise = loadBatches()
+        pendingPromiseByCategory.set(category, promise)
+        try {
+          await promise
+        } finally {
+          // Only clear the guards if this walk still owns them — an
+          // invalidateCategory() + fresh walk can register a newer promise and
+          // controller for the same category before this teardown runs.
+          if (pendingPromiseByCategory.get(category) === promise) {
+            pendingPromiseByCategory.delete(category)
+          }
           if (abortByCategory.get(category) === controller) {
             abortByCategory.delete(category)
           }
-        })
-        pendingPromiseByCategory.set(category, promise)
-        await promise
+        }
       }
 
       /**

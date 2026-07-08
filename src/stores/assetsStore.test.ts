@@ -1790,6 +1790,55 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       ).toHaveBeenCalledTimes(1)
     })
 
+    it('does not clear a superseding walk when an aborted walk tears down', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      // Walk A claims more work so it enters the inter-batch delay and can be
+      // aborted mid-walk by invalidateCategory.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('a1')], { has_more: true, next_cursor: 'ca' })
+      )
+      // Walk B stays in-flight (deferred), so its dedupe guard must remain
+      // registered while walk A's aborted teardown runs.
+      let resolveB!: (page: AssetResponse) => void
+      const bPage = new Promise<AssetResponse>((resolve) => {
+        resolveB = resolve
+      })
+      vi.mocked(assetService.getAssetsPageForNodeType).mockReturnValueOnce(
+        bPage
+      )
+
+      const walkA = store.updateModelsForNodeType(nodeType)
+      await vi.waitFor(() =>
+        expect(
+          vi.mocked(assetService.getAssetsPageForNodeType)
+        ).toHaveBeenCalledTimes(1)
+      )
+
+      // Abort walk A, then start walk B before A's teardown runs.
+      store.invalidateCategory('checkpoints')
+      const walkB = store.updateModelsForNodeType(nodeType)
+      await vi.waitFor(() =>
+        expect(
+          vi.mocked(assetService.getAssetsPageForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      )
+
+      // Let walk A's aborted teardown settle; it must not delete walk B's guard.
+      await walkA
+
+      // A concurrent call must dedupe into walk B, not start a duplicate fetch.
+      const walkC = store.updateModelsForNodeType(nodeType)
+      resolveB(makePage([createMockAsset('b1')]))
+      await Promise.all([walkB, walkC])
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['b1'])
+    })
+
     it('drives updateModelsForTag through getAssetsPageByTag with cursors', async () => {
       const store = useAssetsStore()
 
