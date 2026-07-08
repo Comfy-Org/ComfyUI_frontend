@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@/types/linkId'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
 import {
@@ -43,7 +44,7 @@ describe('useMinimapGraph', () => {
         createMockLGraphNode({ id: '1', pos: [100, 100], size: [150, 80] }),
         createMockLGraphNode({ id: '2', pos: [300, 200], size: [120, 60] })
       ],
-      links: createMockLinks([createMockLLink({ id: 1 })]),
+      links: createMockLinks([createMockLLink({ id: toLinkId(1) })]),
       onNodeAdded: vi.fn(),
       onNodeRemoved: vi.fn(),
       onConnectionChange: vi.fn()
@@ -208,8 +209,8 @@ describe('useMinimapGraph', () => {
 
     // Change connections
     mockGraph.links = createMockLinks([
-      createMockLLink({ id: 1 }),
-      createMockLLink({ id: 2 })
+      createMockLLink({ id: toLinkId(1) }),
+      createMockLLink({ id: toLinkId(2) })
     ])
 
     const hasChanges = graphManager.checkForChanges()

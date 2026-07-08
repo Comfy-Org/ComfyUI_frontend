@@ -4,8 +4,9 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
-import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { toNodeId } from '@/types/nodeId'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
   /**
@@ -43,7 +44,7 @@ export class VueNodeHelpers {
       .locator('.lg-slot--input')
       .filter({
         has: this.page.locator(
-          `[data-slot-key="${getSlotKey(nodeId, slotIndex, true)}"]`
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, true)}"]`
         )
       })
   }
@@ -59,7 +60,7 @@ export class VueNodeHelpers {
    * Matches against the actual title element, not the full node body.
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
-  getNodeByTitle(title: string): Locator {
+  getNodeByTitle(title: string | RegExp): Locator {
     return this.page.locator('[data-node-id]').filter({
       has: this.page.getByTestId('node-title').filter({ hasText: title })
     })
@@ -145,7 +146,7 @@ export class VueNodeHelpers {
   /**
    * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getNodeIdByTitle(title: string): Promise<string> {
+  async getNodeIdByTitle(title: string | RegExp): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -163,7 +164,7 @@ export class VueNodeHelpers {
    * Return a DOM-focused VueNodeFixture for the first node matching the title.
    * Resolves the node id up front so subsequent interactions survive title changes.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getFixtureByTitle(title: string | RegExp): Promise<VueNodeFixture> {
     const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
@@ -251,14 +252,18 @@ export class VueNodeHelpers {
     const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
     if (!key) return false
 
-    return await this.page.evaluate((key) => {
-      const [nodeId, type, slotId] = key.split('-')
-      const node = app?.canvas?.graph?.getNodeById(nodeId)
-      if (!node) return false
+    const [rawNodeId, type, slotId] = key.split('-')
+    const nodeId = toNodeId(rawNodeId)
+    return await this.page.evaluate(
+      ([nodeId, type, slotId]) => {
+        const node = app?.canvas?.graph?.getNodeById(nodeId)
+        if (!node) return false
 
-      return type === 'in'
-        ? node.inputs[Number(slotId)]?.link !== null
-        : !!node.outputs[Number(slotId)].links?.length
-    }, key)
+        return type === 'in'
+          ? node.inputs[Number(slotId)]?.link !== null
+          : !!node.outputs[Number(slotId)]?.links?.length
+      },
+      [nodeId, type, slotId] as const
+    )
   }
 }

@@ -8,6 +8,7 @@ const baseRoutes = {
   cloudEnterprise: '/cloud/enterprise',
   api: '/api',
   gallery: '/gallery',
+  launches: '/launches',
   about: '/about',
   careers: '/careers',
   customers: '/customers',
@@ -18,7 +19,8 @@ const baseRoutes = {
   affiliates: '/affiliates',
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
-  models: '/p/supported-models'
+  models: '/p/supported-models',
+  mcp: '/mcp'
 } as const
 
 type Routes = typeof baseRoutes
@@ -59,12 +61,18 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/api-reference/cloud',
+  docsMcp: 'https://docs.comfy.org/agent-tools/cloud',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
+  instagram: 'https://www.instagram.com/comfyui/',
+  mcpServer: 'https://cloud.comfy.org/mcp',
+  mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',
+  reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
   workflows: 'https://comfy.org/workflows',
+  x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const

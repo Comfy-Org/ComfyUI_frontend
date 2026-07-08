@@ -25,25 +25,31 @@
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@lucide/vue": "catalog:",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
+    "class-variance-authority": "catalog:",
     "cva": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
     "posthog-js": "catalog:",
+    "reka-ui": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@astrojs/check": "catalog:",
+    "@astrojs/mdx": "catalog:",
     "@astrojs/vue": "catalog:",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "astro": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
+    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue-component-type-helpers": "catalog:"
   }
 }

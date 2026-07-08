@@ -5,6 +5,7 @@ import { computed, onMounted, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
   demotePromotedInput,
   demoteWidget,
@@ -31,6 +32,7 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -53,6 +55,7 @@ const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
+const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -114,7 +117,7 @@ function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
-    const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
+    const sourceNode = node.subgraph.getNodeById(exposure.sourceNodeId)
     if (!sourceNode) return []
     const realWidget = getPromotableWidgets(sourceNode).find(
       (candidate) => candidate.name === exposure.sourcePreviewName
@@ -175,9 +178,13 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
   const promotedSourceKeys = new Set(activeRows.value.map(activeRowSourceKey))
-  return interiorWidgets.value.filter(
-    ([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`)
-  )
+  return interiorWidgets.value
+    .filter(([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`))
+    .filter(
+      ([, w]) =>
+        w.name.startsWith('$$') ||
+        !(w.options.canvasOnly && shouldRenderVueNodes.value)
+    )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
@@ -242,7 +249,7 @@ function rowDisplayName(row: ActiveRow): string {
 
 function isRowLinked(row: ActiveRow): boolean {
   if (row.kind !== 'promoted') return false
-  if (row.node.id === -1) return true
+  if (row.node.id === UNASSIGNED_NODE_ID) return true
   const source = promotedRowSource(row)
   return (
     !!activeNode.value &&

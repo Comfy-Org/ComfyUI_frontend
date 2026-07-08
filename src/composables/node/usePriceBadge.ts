@@ -3,12 +3,13 @@ import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type LinkedWidgetInput = INodeInputSlot & {
-  _subgraphSlot?: { linkIds?: number[] }
+  _subgraphSlot?: SubgraphInput
 }
 
 const componentIconSvg = new Image()

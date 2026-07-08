@@ -38,7 +38,6 @@ export const TestIds = {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
-    confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
@@ -113,6 +112,10 @@ export const TestIds = {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors'
   },
+  assets: {
+    browserModal: 'asset-browser-modal',
+    card: 'asset-card'
+  },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
     iconEye: 'icon-eye',
@@ -169,6 +172,9 @@ export const TestIds = {
     mobileNavigation: 'linear-mobile-navigation',
     mobileWorkflows: 'linear-mobile-workflows',
     outputInfo: 'linear-output-info',
+    runButton: 'linear-run-button',
+    validationWarning: 'linear-validation-warning',
+    viewErrorsInGraph: 'linear-view-errors',
     widgetContainer: 'linear-widgets'
   },
   builder: {

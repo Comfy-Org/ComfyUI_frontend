@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "ساخت یک پرامپت JSON برای مدل Ideogram 4.",
+    "display_name": "ساخت پرامپت JSON (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "aesthetics",
+        "tooltip": "کلمات کلیدی زیبایی‌شناسی اجباری (مثلاً: moody، cinematic، desaturated)."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "توضیح اجباری درباره پس‌زمینه یا محیط تصویر."
+      },
+      "color_palette": {
+        "name": "color_palette",
+        "tooltip": "کدهای رنگ Hex که رنگ‌های غالب تصویر را تعیین می‌کنند. تا ۱۶ ورودی."
+      },
+      "element": {
+        "name": "element",
+        "tooltip": "عناصر پرامپت از node ایجاد جعبه‌های مرزی."
+      },
+      "high_level_description": {
+        "name": "high_level_description",
+        "tooltip": "توضیح اختیاری درباره تصویر در یک یا دو جمله. به شدت توصیه می‌شود."
+      },
+      "lighting": {
+        "name": "lighting",
+        "tooltip": "توضیح اجباری نورپردازی (مثلاً: golden hour، rim light، dramatic shadows)."
+      },
+      "medium": {
+        "name": "medium",
+        "tooltip": "نوع مدیوم اجباری (مثلاً: photograph، illustration، 3d_render، painting، graphic_design). زمانی که style = photo باشد، مقدار را photograph قرار دهید."
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
     "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
@@ -2471,6 +2514,10 @@
         "name": "روش ادغام",
         "tooltip": "روشی که برای ادغام پنجره‌های زمینه استفاده می‌شود."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "فهرست اندیس‌های latent که باید در خود latent نویز برای هر پنجره حفظ شوند. برای workflowهایی که محتوای مرجع (مثلاً یک تصویر شروع) مستقیماً در latent نویز قرار دارد و نه در کانال‌های شرطی‌سازی جداگانه (مانند I2V به سبک inplace مثل LTXV، AnimateDiff) استفاده می‌شود. مستقل از cond_retain_index_list."
+      },
       "model": {
         "name": "مدل",
         "tooltip": "مدلی که پنجره‌های زمینه هنگام نمونه‌گیری بر آن اعمال می‌شود."
@@ -2629,6 +2676,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "تبدیل آرایه به رشته",
+    "inputs": {
+      "array": {
+        "name": "array"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "تعداد فاصله برای هر سطح تورفتگی. مقدار ۰ یک رشته تک‌خطی فشرده تولید می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "تبدیل دیکشنری به رشته",
+    "inputs": {
+      "dictionary": {
+        "name": "dictionary"
+      },
+      "indent": {
+        "name": "indent",
+        "tooltip": "تعداد فاصله برای هر سطح تورفتگی. مقدار ۰ یک رشته تک‌خطی فشرده تولید می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageToVideoLatent",
     "inputs": {
@@ -2687,6 +2768,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "کشیدن جعبه‌های مرزی در یک بوم. خروجی شامل عناصر پرامپت Ideogram، جعبه‌های مرزی در فضای پیکسلی و یک تصویر پیش‌نمایش است.",
+    "display_name": "ایجاد جعبه‌های مرزی",
+    "inputs": {
+      "background": {
+        "name": "background",
+        "tooltip": "تصویر اختیاری که به عنوان پس‌زمینه در بوم و پیش‌نمایش استفاده می‌شود."
+      },
+      "editor_state": {
+        "name": "editor_state",
+        "tooltip": "جعبه‌های مرزی را رسم کنید و نوع هر جعبه، متن، توضیح و پالت رنگ را تعیین کنید. با عنصر پس‌زمینه شروع و با پیش‌زمینه پایان دهید."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "ارتفاع بوم و شبکه پیکسلی برای جعبه‌های مرزی."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "عرض بوم و شبکه پیکسلی برای جعبه‌های مرزی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "preview",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "elements",
         "tooltip": null
       }
     }
@@ -8034,7 +8151,8 @@
         "name": "کنترل پس از تولید"
       },
       "generate_audio": {
-        "name": "تولید صوت"
+        "name": "تولید صوت",
+        "tooltip": "مدل 'kling-3.0-turbo' همواره صدای بومی تولید می‌کند، بنابراین گزینه فعال‌سازی صدا نادیده گرفته می‌شود."
       },
       "model": {
         "name": "مدل",
@@ -8320,6 +8438,57 @@
       "1": {
         "name": "منفی",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVContextWindows": {
+    "description": "تنظیم پنجره‌های زمینه برای مدل‌های مشابه LTXV.",
+    "display_name": "پنجره‌های زمینه LTXV",
+    "inputs": {
+      "closed_loop": {
+        "name": "حلقه بسته",
+        "tooltip": "آیا حلقه پنجره زمینه بسته شود؛ فقط برای زمان‌بندی‌های حلقه‌ای قابل استفاده است."
+      },
+      "context_length": {
+        "name": "طول زمینه",
+        "tooltip": "طول پنجره زمینه بر حسب فریم واقعی. باید به صورت ۸*n + ۱ باشد."
+      },
+      "context_overlap": {
+        "name": "همپوشانی زمینه",
+        "tooltip": "میزان همپوشانی پنجره زمینه بر حسب فریم واقعی."
+      },
+      "context_schedule": {
+        "name": "زمان‌بندی زمینه",
+        "tooltip": "الگوریتم زمان‌بندی وابسته به گام برای پنجره‌های زمینه."
+      },
+      "context_stride": {
+        "name": "گام زمینه",
+        "tooltip": "گام پنجره زمینه؛ فقط برای زمان‌بندی‌های یکنواخت قابل استفاده است."
+      },
+      "freenoise": {
+        "name": "FreeNoise",
+        "tooltip": "آیا از شافل نویز FreeNoise استفاده شود؛ باعث بهبود ترکیب پنجره‌ها می‌شود."
+      },
+      "fuse_method": {
+        "name": "روش ادغام",
+        "tooltip": "روشی که برای ادغام پنجره‌های زمینه استفاده می‌شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که پنجره‌های زمینه باید هنگام نمونه‌گیری روی آن اعمال شوند."
+      },
+      "retain_first_frame": {
+        "name": "حفظ اولین فریم",
+        "tooltip": "اولین فریم latent را در هر پنجره زمینه حفظ کن (ممکن است به حفظ مرجع اولیه کمک کند)."
+      },
+      "split_conds_to_windows": {
+        "name": "تقسیم شرط‌ها به پنجره‌ها",
+        "tooltip": "آیا شرط‌های متعدد (ایجاد شده توسط ConditionCombine) بر اساس اندیس ناحیه به هر پنجره اختصاص داده شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل با پنجره‌های زمینه اعمال‌شده هنگام نمونه‌گیری."
       }
     }
   },
@@ -9083,6 +9252,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "بارگذاری ۳بعدی (پیشرفته)",
+    "inputs": {
+      "height": {
+        "name": "ارتفاع"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل ۳بعدی",
+        "tooltip": null
+      },
+      "1": {
+        "name": "اطلاعات مدل ۳بعدی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "اطلاعات دوربین",
+        "tooltip": null
+      },
+      "3": {
+        "name": "عرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "ارتفاع",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "بارگذاری صوت",
     "inputs": {
@@ -9742,6 +9950,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "یک تولید قبلی Ray 3.2 را به جلو (ادامه پس از آن) یا به عقب (شروع قبل از آن) گسترش دهید. خروجی generation_id یک نود Luma Ray 3.2 قبلی را متصل کنید. هر گسترش همیشه ۵ ثانیه است.",
+    "display_name": "Luma Ray 3.2 گسترش ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "direction": {
+        "name": "جهت",
+        "tooltip": "جلو به معنای ادامه پس از کلیپ قبلی است؛ عقب به معنای اضافه شدن قبل از آن است."
+      },
+      "direction_loop": {
+        "name": "حلقه"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت متنی برای محتوای جدید."
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "generation_id ویدیوی Ray 3.2 قبلی برای گسترش. خروجی generation_id یک نود دیگر Luma Ray 3.2 را متصل کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "تولید ویدیو از یک فریم ابتدایی و/یا انتهایی با استفاده از مدل Ray 3.2 لومـا. تولیدات مبتنی بر تصویر همیشه ۵ ثانیه هستند.",
+    "display_name": "Luma Ray 3.2 تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "end_frame": {
+        "name": "فریم انتهایی",
+        "tooltip": "آخرین فریم ویدیوی تولید شده."
+      },
+      "loop": {
+        "name": "حلقه",
+        "tooltip": "ویدیو را به صورت یکپارچه حلقه‌ای کنید. زمانی که end_frame تنظیم شده باشد، در دسترس نیست."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت متنی برای تولید ویدیو."
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "start_frame": {
+        "name": "فریم ابتدایی",
+        "tooltip": "اولین فریم ویدیوی تولید شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "یک تصویر راهنما را در موقعیتی از تایم‌لاین ویدیوی خروجی Ray 3.2 قرار دهید. این node را به ورودی 'keyframes' نود Luma Ray 3.2 Keyframes to Video متصل کنید؛ چندین node را می‌توانید از طریق ورودی اختیاری 'keyframes' زیر به هم زنجیر کنید.",
+    "display_name": "Luma Ray 3.2 کی‌فریم",
+    "inputs": {
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر راهنما برای قرار دادن در لحظه انتخاب‌شده از ویدیوی خروجی."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "کی‌فریم‌های قبلی اختیاری برای زنجیر شدن با این مورد."
+      },
+      "position": {
+        "name": "موقعیت",
+        "tooltip": "نحوه قرارگیری این تصویر در تایم‌لاین ویدیوی خروجی."
+      },
+      "position_fraction": {
+        "name": "کسری موقعیت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "تولید یک ویدیو که از طریق دنباله‌ای از تصاویر راهنما، هر یک در موقعیتی روی خط زمان قرار دارند، با استفاده از Luma Ray 3.2 در آن میان‌یابی می‌شود. این دنباله را با نودهای کلیدفریم Luma Ray 3.2 (حداقل ۲ عدد) بسازید.",
+    "display_name": "Luma Ray 3.2 تبدیل کلیدفریم‌ها به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان"
+      },
+      "keyframes": {
+        "name": "کلیدفریم‌ها",
+        "tooltip": "دنباله کلیدفریم از نودهای کلیدفریم Luma Ray 3.2 (حداقل ۲ عدد)."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت متنی برای تولید ویدیو."
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه تولید",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "تولید ویدیو از یک پرامپت متنی با استفاده از مدل Ray 3.2 شرکت Luma.",
+    "display_name": "Luma Ray 3.2 متن به ویدیو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان"
+      },
+      "loop": {
+        "name": "حلقه",
+        "tooltip": "ویدیو را به صورت بی‌وقفه تکرارپذیر کنید. فقط برای مدت زمان ۵ ثانیه در دسترس است."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت متنی برای تولید ویدیو."
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه تولید",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "بازپرداخت یک ویدیوی موجود با پرامپت جدید با استفاده از Luma Ray 3.2 (تغییر سبک، نورپردازی، افزودن یا حذف عناصر) در حالی که حرکت اصلی حفظ می‌شود. ویدیوی منبع تا ۱۸ ثانیه؛ ویدیوی ویرایش‌شده طول منبع را حفظ می‌کند.",
+    "display_name": "Luma Ray 3.2 ویرایش ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح ویرایش مورد نظر."
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان حفظ یا بازآفرینی ویدیوی منبع. مقدار 'auto' به Ray 3.2 اجازه انتخاب می‌دهد؛ adhere_* بیشترین حفظ، flex_* متعادل، reimagine_* بیشترین تغییر را اعمال می‌کند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی منبع برای ویرایش. تا ۱۸ ثانیه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه تولید",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "نسبت تصویر یک ویدیوی موجود را تغییر دهید و با استفاده از Luma Ray ۳.۲ نواحی جدید بوم را پر کنید. ویدیوی منبع تا ۳۰ ثانیه. هزینه بر اساس هر ثانیه خروجی محاسبه می‌شود.",
+    "display_name": "تغییر قاب ویدیو با Luma Ray ۳.۲",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح می‌دهد که نواحی جدید بوم چگونه باید پر شوند."
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed برای تعیین اینکه node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی منبع برای تغییر قاب. تا ۳۰ ثانیه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
         "tooltip": null
       }
     }
@@ -11671,6 +12135,131 @@
       },
       "vector_in_": {
         "name": "ورودی بردار"
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
       }
     }
   },
@@ -14074,6 +14663,12 @@
       "audioUI": {
         "name": "رابط کاربری صوت"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14127,6 +14722,11 @@
     "display_name": "پیش‌نمایش تصویر",
     "inputs": {
       "images": {
+        "name": "تصاویر"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "تصاویر"
       }
     }
@@ -16924,6 +17524,12 @@
       "images": {
         "name": "images"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16947,6 +17553,12 @@
       "quality": {
         "name": "quality"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16960,6 +17572,12 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
       }
     }
   },
@@ -16982,6 +17600,12 @@
         "name": "format",
         "tooltip": "فرمت فایلی که صدا در آن ذخیره می‌شود."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16999,6 +17623,12 @@
       "quality": {
         "name": "quality"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -17015,6 +17645,12 @@
       },
       "quality": {
         "name": "quality"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
       }
     }
   },
@@ -17045,6 +17681,11 @@
         "name": "تصاویر",
         "tooltip": "تصاویری که باید ذخیره شوند."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -17068,6 +17709,12 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "تصاویری که باید ذخیره شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
+        "tooltip": null
       }
     }
   },
@@ -17136,6 +17783,11 @@
       "samples": {
         "name": "نمونه‌ها"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "نمونه‌ها"
+      }
     }
   },
   "SaveLoRA": {
@@ -17165,6 +17817,12 @@
       },
       "svg": {
         "name": "SVG"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "SVG",
+        "tooltip": null
       }
     }
   },
@@ -17210,6 +17868,12 @@
         "name": "ویدیو",
         "tooltip": "ویدیویی که باید ذخیره شود."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17231,6 +17895,12 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "تصاویر RGBA با کانال آلفا به صورت شفاف ذخیره می‌شوند (فقط کدک vp9)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
+        "tooltip": null
       }
     }
   },
@@ -17262,6 +17932,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "بذر",
+    "inputs": {
+      "fixed": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "بذر",
         "tooltip": null
       }
     }
@@ -18806,6 +19493,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(های) مرجع برای ویرایش. Boogu بر یک مرجع برای هر نمونه تمرکز دارد؛ تعداد بیشتر نیز مجاز است."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
         "tooltip": null
       }
     }
@@ -21903,6 +22621,14 @@
       "model": {
         "name": "مدل",
         "tooltip": "مدلی که پنجره‌های زمینه روی آن در هنگام نمونه‌گیری اعمال می‌شود."
+      },
+      "retain_first_frame": {
+        "name": "حفظ اولین فریم",
+        "tooltip": "اولین فریم I2V را در هر پنجره زمینه حفظ کن (ممکن است به حفظ مرجع اولیه کمک کند)."
+      },
+      "split_conds_to_windows": {
+        "name": "تقسیم شرایط به پنجره‌ها",
+        "tooltip": "آیا شرایط متعدد (ایجاد شده توسط ConditionCombine) بر اساس شاخص ناحیه به هر پنجره تقسیم شوند."
       }
     },
     "outputs": {
