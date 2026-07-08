@@ -2,15 +2,24 @@ import { assert, beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import {
   LGraphGroup,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, ISlotType } from '@/lib/litegraph/src/litegraph'
+import type {
+  ISlotType,
+  LGraph,
+  Positionable
+} from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
 
 import {
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
@@ -20,6 +29,49 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
+
+function enableSubgraphNodeCreation(rootGraph: LGraph): void {
+  rootGraph.events.addEventListener('subgraph-created', (e) => {
+    const { subgraph } = e.detail
+    LiteGraph.registered_node_types[subgraph.id] = class extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [200, 100],
+          inputs: [],
+          outputs: [],
+          properties: {},
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+      }
+    }
+  })
+}
+
+const WIDGET_NODE_TYPE = 'test/conversionWidgetNode'
+
+function createWidgetNode(graph: LGraph): LGraphNode {
+  if (!LiteGraph.registered_node_types[WIDGET_NODE_TYPE]) {
+    class WidgetTestNode extends LGraphNode {
+      constructor(title: string) {
+        super(title)
+        this.addInput('in', 'number')
+        this.addOutput('out', 'number')
+        this.addWidget('text', 'text_widget', '', () => {})
+        this.serialize_widgets = true
+      }
+    }
+    LiteGraph.registered_node_types[WIDGET_NODE_TYPE] = WidgetTestNode
+  }
+  const node = LiteGraph.createNode(WIDGET_NODE_TYPE)
+  if (!node) throw new Error('Failed to create widget node')
+  graph.add(node)
+  return node
+}
 
 function createNode(
   graph: LGraph,
@@ -49,6 +101,102 @@ function createNode(
   return node
 }
 describe('SubgraphConversion', () => {
+  describe('Convert to Subgraph store integrity', () => {
+    it('keeps interior and boundary-derived input links registered in the link store', () => {
+      const rootGraph = createTestRootGraph()
+      enableSubgraphNodeCreation(rootGraph)
+
+      const exterior = createNode(rootGraph, [], ['number'])
+      const origin = createNode(rootGraph, ['number'], ['number'])
+      const target = createNode(rootGraph, ['number'])
+      exterior.connect(0, origin, 0)
+      origin.connect(0, target, 0)
+
+      const { subgraph, node: subgraphNode } = rootGraph.convertToSubgraph(
+        new Set<Positionable>([target, origin])
+      )
+
+      const linkStore = useLinkStore()
+
+      expect(linkStore.isInputSlotConnected(rootGraph.id, target.id, 0)).toBe(
+        true
+      )
+      const interiorTopology = linkStore.getInputSlotLink(
+        rootGraph.id,
+        target.id,
+        0
+      )
+      expect(interiorTopology?.originNodeId).toBe(origin.id)
+      expect(subgraph.getLink(interiorTopology?.id)).toBeDefined()
+
+      expect(linkStore.isInputSlotConnected(rootGraph.id, origin.id, 0)).toBe(
+        true
+      )
+      expect(
+        linkStore.getInputSlotLink(rootGraph.id, origin.id, 0)?.originNodeId
+      ).toBe(SUBGRAPH_INPUT_ID)
+
+      expect(
+        linkStore.isInputSlotConnected(rootGraph.id, subgraphNode.id, 0)
+      ).toBe(true)
+    })
+
+    it('keeps interior reroute chains registered with live membership', () => {
+      const rootGraph = createTestRootGraph()
+      enableSubgraphNodeCreation(rootGraph)
+
+      const origin = createNode(rootGraph, [], ['number'])
+      const target = createNode(rootGraph, ['number'])
+      const link = origin.connect(0, target, 0)
+      assert(link)
+      const reroute = rootGraph.createReroute([50, 50], link)
+      assert(reroute)
+
+      const { subgraph } = rootGraph.convertToSubgraph(
+        new Set<Positionable>([target, origin, reroute])
+      )
+
+      const clonedReroute = subgraph.reroutes.get(reroute.id)
+      expect(clonedReroute).toBeDefined()
+      expect(
+        useRerouteStore().getReroute(rootGraph.id, reroute.id)
+      ).toBeDefined()
+      expect(clonedReroute!.linkIds.size).toBe(1)
+      expect(
+        useRerouteStore().getMembership(rootGraph.id, reroute.id).linkIds.size
+      ).toBe(1)
+    })
+
+    it('keeps converted nodes registered in the badge store', () => {
+      const rootGraph = createTestRootGraph()
+      enableSubgraphNodeCreation(rootGraph)
+
+      const origin = createNode(rootGraph, [], ['number'])
+      const target = createNode(rootGraph, ['number'])
+      origin.connect(0, target, 0)
+
+      rootGraph.convertToSubgraph(new Set<Positionable>([target, origin]))
+    })
+
+    it('preserves widget values on interior nodes through conversion', () => {
+      const rootGraph = createTestRootGraph()
+      enableSubgraphNodeCreation(rootGraph)
+
+      const origin = createNode(rootGraph, [], ['number'])
+      const target = createWidgetNode(rootGraph)
+      origin.connect(0, target, 0)
+      target.widgets![0].value = 'converted value'
+
+      const { subgraph } = rootGraph.convertToSubgraph(
+        new Set<Positionable>([target, origin])
+      )
+
+      const innerTarget = subgraph.nodes.find((node) => node.id === target.id)
+      expect(innerTarget).toBeDefined()
+      expect(innerTarget!.widgets?.[0]?.value).toBe('converted value')
+    })
+  })
+
   describe('Subgraph Unpacking Functionality', () => {
     it('Should keep interior nodes and links', () => {
       const subgraph = createTestSubgraph()
