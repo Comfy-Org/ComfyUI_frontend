@@ -13,6 +13,7 @@ type Backdrop =
 
 const {
   backdrop,
+  mobileBackdrop,
   badgeText,
   badgeLogoSrc,
   badgeLogoAlt,
@@ -22,6 +23,7 @@ const {
   class: className
 } = defineProps<{
   backdrop?: Backdrop
+  mobileBackdrop?: Backdrop
   badgeText?: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
@@ -34,6 +36,33 @@ const {
 // Respect prefers-reduced-motion: don't autoplay the looping backdrop video
 // (WCAG 2.2.2). The paused video falls back to its poster/first frame.
 const reduceMotion = computed(() => prefersReducedMotion())
+
+// On mobile the backdrop is an in-flow rounded card above the content; on
+// desktop it is the full-bleed background behind it. When a distinct
+// mobileBackdrop is supplied, render both assets and toggle by breakpoint;
+// otherwise a single element serves both roles responsively.
+const backdropLayers = computed(() => {
+  if (!backdrop) return []
+  if (mobileBackdrop) {
+    return [
+      {
+        backdrop: mobileBackdrop,
+        class: 'relative aspect-3/2 w-full rounded-3xl object-cover lg:hidden'
+      },
+      {
+        backdrop,
+        class: 'absolute inset-0 hidden size-full object-cover lg:block'
+      }
+    ]
+  }
+  return [
+    {
+      backdrop,
+      class:
+        'relative aspect-3/2 w-full rounded-3xl object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:size-full lg:rounded-none'
+    }
+  ]
+})
 
 const scrimShape = 'farthest-side at 50% 50%'
 const scrimStyle = {
@@ -49,35 +78,37 @@ const scrimStyle = {
   >
     <div class="relative overflow-hidden rounded-3xl">
       <slot name="backdrop">
-        <video
-          v-if="backdrop?.type === 'video'"
-          :src="backdrop.src"
-          :poster="backdrop.poster"
-          :aria-label="backdrop.alt"
-          :autoplay="!reduceMotion"
-          loop
-          muted
-          playsinline
-          preload="metadata"
-          class="absolute inset-0 size-full object-cover"
-        />
-        <img
-          v-else-if="backdrop?.type === 'image'"
-          :src="backdrop.src"
-          :alt="backdrop.alt ?? ''"
-          fetchpriority="high"
-          decoding="async"
-          class="absolute inset-0 size-full object-cover"
-        />
+        <template v-for="(layer, i) in backdropLayers" :key="i">
+          <video
+            v-if="layer.backdrop.type === 'video'"
+            :src="layer.backdrop.src"
+            :poster="layer.backdrop.poster"
+            :aria-label="layer.backdrop.alt"
+            :autoplay="!reduceMotion"
+            loop
+            muted
+            playsinline
+            preload="metadata"
+            :class="layer.class"
+          />
+          <img
+            v-else
+            :src="layer.backdrop.src"
+            :alt="layer.backdrop.alt ?? ''"
+            fetchpriority="high"
+            decoding="async"
+            :class="layer.class"
+          />
+        </template>
       </slot>
 
       <div
-        class="relative flex min-h-[70svh] flex-col justify-center px-8 py-16 lg:min-h-176 lg:px-16 lg:py-24"
+        class="relative flex flex-col justify-center px-0 pt-6 pb-8 lg:min-h-176 lg:px-16 lg:py-24"
       >
         <div class="relative w-full max-w-xl">
           <div
             aria-hidden="true"
-            class="pointer-events-none absolute -inset-12 backdrop-blur-md lg:-inset-16"
+            class="pointer-events-none absolute -inset-12 hidden backdrop-blur-md lg:-inset-16 lg:block"
             :style="scrimStyle"
           />
 
@@ -90,19 +121,22 @@ const scrimStyle = {
             />
 
             <h1
-              class="mt-10 text-4xl/tight font-light tracking-tight whitespace-pre-line text-primary-comfy-ink lg:text-6xl/tight"
+              class="text-primary-warm-white mt-10 text-4xl/tight font-light tracking-tight whitespace-pre-line lg:text-6xl/tight lg:text-primary-comfy-ink"
             >
               {{ title }}
             </h1>
 
             <p
               v-if="subtitle"
-              class="mt-8 max-w-md text-base text-primary-comfy-ink lg:text-lg"
+              class="text-primary-warm-white mt-8 max-w-md text-base lg:text-lg lg:text-primary-comfy-ink"
             >
               {{ subtitle }}
             </p>
 
-            <p v-if="footnote" class="mt-10 text-sm text-primary-comfy-ink">
+            <p
+              v-if="footnote"
+              class="text-primary-warm-white mt-10 text-sm lg:text-primary-comfy-ink"
+            >
               {{ footnote }}
             </p>
 

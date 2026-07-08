@@ -89,16 +89,29 @@ const planCards = computed(() =>
       <p
         class="mx-auto mt-3 max-w-xl text-base text-pretty text-primary-comfy-canvas"
       >
-        {{ t('pricing.subtitle', locale) }}
+        {{ t(education ? 'pricing.subtitle.edu' : 'pricing.subtitle', locale) }}
       </p>
     </div>
 
     <div class="flex items-center justify-center pb-16">
       <ToggleGroup v-model="billingPeriod" type="single">
-        <ToggleGroupItem value="monthly" class="min-w-48">
-          {{ t('pricing.period.monthly', locale) }}
+        <ToggleGroupItem
+          value="monthly"
+          class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
+        >
+          {{
+            t(
+              education
+                ? 'pricing.period.monthly.edu'
+                : 'pricing.period.monthly',
+              locale
+            )
+          }}
         </ToggleGroupItem>
-        <ToggleGroupItem value="yearly" class="min-w-48">
+        <ToggleGroupItem
+          value="yearly"
+          class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
+        >
           {{
             t(
               education ? 'pricing.period.yearly.edu' : 'pricing.period.yearly',

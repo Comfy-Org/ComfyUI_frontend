@@ -1218,8 +1218,19 @@ const translations = {
     en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
+  // Education-only pricing subtitle; zh-CN drafted, pending native review.
+  'pricing.subtitle.edu': {
+    en: 'Partner with us on custom features, dedicated support, course accreditation, and a deeper campus partnership.',
+    'zh-CN':
+      '与我们合作，共同打造定制功能、专属支持、课程认证以及更深入的校园合作。'
+  },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
   'pricing.period.monthly': { en: 'Monthly', 'zh-CN': '按月' },
+  // Education-only monthly toggle label; zh-CN drafted, pending native review.
+  'pricing.period.monthly.edu': {
+    en: 'Monthly (Up to 15% off)',
+    'zh-CN': '按月（最高 15% 优惠）'
+  },
   'pricing.period.yearly': {
     en: 'Yearly (Up to 20% off)',
     'zh-CN': '按年（最高 20% 优惠）'
