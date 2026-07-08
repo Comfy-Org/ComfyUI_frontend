@@ -139,32 +139,25 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
 // Chat History (B12) is server-backed via GET /api/agent/threads. The list is refreshed
 // when the panel mounts and each time it is opened; the active row tracks the current
 // thread. Best-effort: a failed fetch leaves the last-known list rather than blanking it.
-function toChatSession(thread: AgentThreadSummary): ChatSession | null {
-  const id = thread.id ?? thread.thread_id
-  if (!id) return null
-  const stamp =
-    thread.updated_at ??
-    thread.updated ??
-    thread.last_message_at ??
-    thread.created_at
+// title is "" until the server names the thread, so the row falls back to the preview
+// (the first prompt), mirroring how the session bar titles a live chat.
+function toChatSession(thread: AgentThreadSummary): ChatSession {
+  const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
   const updatedAt = stamp ? Date.parse(stamp) : Date.now()
   return {
-    id,
-    title: thread.title ?? thread.name ?? t('agent.untitledChat'),
+    id: thread.id,
+    title: thread.title || thread.preview || t('agent.untitledChat'),
     updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
   }
 }
 
 async function refreshHistory(): Promise<void> {
   try {
-    const threads = await listThreads()
-    history.replaceAll(
-      threads
-        .map(toChatSession)
-        .filter((session): session is ChatSession => session !== null)
-    )
-  } catch {
+    history.replaceAll((await listThreads()).map(toChatSession))
+  } catch (error) {
     // History is a best-effort side panel; a list failure must not disrupt the chat.
+    // Logged, not surfaced: a schema/shape drift here must stay diagnosable.
+    console.warn('[agent] listThreads failed:', error)
   }
 }
 

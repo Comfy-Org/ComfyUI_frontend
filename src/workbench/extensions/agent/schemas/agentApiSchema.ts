@@ -54,27 +54,25 @@ export const zAgentMessage = z.object({
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
-// Thread-list row (GET /api/agent/threads). The endpoint shipped after this openapi
-// extract, so the exact field names are not pinned here; the schema is deliberately
-// tolerant (every field optional + passthrough) and the client normalizes id / title /
-// timestamp across the likely spellings, so a shape drift degrades to a best-effort row
-// rather than a hard zod failure that would blank the whole history list.
+// Thread-list row (GET /api/agent/threads), validated against a live response on
+// 2026-07-07: {threads: [...], pagination: {...}}. title is "" until the server names
+// the thread; preview carries the first prompt. Rows also carry status / workflow_id /
+// message_count (passthrough), which the panel does not consume yet.
 const zAgentThreadSummary = z
   .object({
-    id: z.string().optional(),
-    thread_id: z.string().optional(),
-    title: z.string().nullish(),
-    name: z.string().nullish(),
-    created_at: z.string().optional(),
+    id: z.string(),
+    title: z.string(),
+    preview: z.string().optional(),
+    last_message_at: z.string().optional(),
     updated_at: z.string().optional(),
-    updated: z.string().optional(),
-    last_message_at: z.string().optional()
+    created_at: z.string().optional()
   })
   .passthrough()
 export type AgentThreadSummary = z.infer<typeof zAgentThreadSummary>
 
-export const zAgentThreads = z.array(zAgentThreadSummary)
-export type AgentThreads = z.infer<typeof zAgentThreads>
+export const zAgentThreads = z
+  .object({ threads: z.array(zAgentThreadSummary) })
+  .passthrough()
 
 export const zAgentCancelAccepted = z.object({
   status: z.literal('cancelling')

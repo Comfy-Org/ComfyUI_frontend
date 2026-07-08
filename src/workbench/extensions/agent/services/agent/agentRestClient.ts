@@ -15,7 +15,7 @@ import type {
   AgentDraftSnapshot,
   AgentMessages,
   AgentThreadCreated,
-  AgentThreads,
+  AgentThreadSummary,
   AgentTurnAccepted,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
@@ -160,14 +160,16 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     )
   }
 
-  // The caller's own threads, for the Chat History list. Newest-first ordering is the
-  // caller's job (the store sorts by timestamp).
-  async function listThreads(): Promise<AgentThreads> {
-    return request(
+  // The caller's own threads, for the Chat History list, unwrapped from the server's
+  // {threads, pagination} envelope. Newest-first ordering is the caller's job (the
+  // store sorts by timestamp).
+  async function listThreads(): Promise<AgentThreadSummary[]> {
+    const page = await request(
       '/api/agent/threads',
       { method: 'GET', headers: await authHeaders() },
       zAgentThreads
     )
+    return page.threads
   }
 
   async function cancelMessage(
