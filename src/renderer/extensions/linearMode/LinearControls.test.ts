@@ -20,6 +20,19 @@ const overlayMock = vi.hoisted(() => ({
   overlayTitle: 'Required input missing'
 }))
 
+const creditsMock = vi.hoisted(() => ({
+  badges: [] as (readonly [string, string, string])[]
+}))
+
+vi.mock('@/renderer/extensions/linearMode/useCreditsSummary', async () => {
+  const { computed } = await import('vue')
+  return {
+    useCreditsSummary: () => ({
+      creditsBadges: computed(() => creditsMock.badges)
+    })
+  }
+})
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: billingMock.isActiveSubscription
@@ -44,6 +57,7 @@ const i18n = createI18n({
         },
         mobileNoWorkflow: 'No workflow',
         runCount: 'Run count',
+        usesCredits: 'Uses credits',
         viewJob: 'View job'
       },
       menu: {
@@ -123,6 +137,7 @@ describe('LinearControls', () => {
     billingMock.isActiveSubscription = true
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+    creditsMock.badges = []
   })
 
   it.for([
@@ -194,6 +209,26 @@ describe('LinearControls', () => {
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
     }
   )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'flags a credit cost on the run button in $label controls',
+    ({ mobile }) => {
+      creditsMock.badges = [['Flux', '99.9 credits/Run', '1']]
+
+      renderControls({ mobile })
+
+      expect(screen.getByText('Uses credits')).toBeInTheDocument()
+    }
+  )
+
+  it('does not flag a credit cost when no priced nodes are present', () => {
+    renderControls()
+
+    expect(screen.queryByText('Uses credits')).not.toBeInTheDocument()
+  })
 
   it('does not show the warning when the error copy is empty', () => {
     overlayMock.overlayMessage = ''

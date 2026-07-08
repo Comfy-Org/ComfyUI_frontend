@@ -31,7 +31,7 @@
 
     <!-- Credits Section -->
     <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
+      <i :class="cn(CREDITS_ICON, 'text-sm text-amber-400')" />
       <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
@@ -153,7 +153,12 @@ import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import {
+  CREDITS_ICON,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

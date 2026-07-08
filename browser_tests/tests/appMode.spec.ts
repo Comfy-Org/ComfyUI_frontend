@@ -303,3 +303,45 @@ test.describe('App mode usage', () => {
     })
   })
 })
+
+test.describe('App mode credits', () => {
+  const API_PRICED_NODE = 'FluxProUltraImageNode'
+
+  test('shows the credit breakdown popover for priced nodes', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeBadge.ShowApiPricing', true)
+    await comfyPage.page.evaluate((type) => {
+      const registered = window.LiteGraph!.registered_node_types[type] as {
+        nodeData?: { price_badge?: unknown }
+      }
+      if (!registered?.nodeData) throw new Error(`No nodeData for ${type}`)
+      registered.nodeData.price_badge = {
+        engine: 'jsonata',
+        expr: "{'type': 'text', 'text': '99.9 credits/Run'}",
+        depends_on: { widgets: [], inputs: [], input_groups: [] }
+      }
+    }, API_PRICED_NODE)
+
+    await comfyPage.nodeOps.addNode(API_PRICED_NODE)
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+
+    // The run/subscribe button flags that the workflow needs credits, even when
+    // the pill collapses to its icon (kept in the accessible name).
+    const runButton = comfyPage.appMode.runButton
+    await expect(runButton).toBeVisible()
+    await expect(runButton).toHaveAccessibleName(/Uses credits/)
+
+    // Hovering the button reveals the per-node credit breakdown.
+    await runButton.hover()
+    const breakdown = comfyPage.page.getByRole('list', {
+      name: 'Credit breakdown by model'
+    })
+    await expect(breakdown).toBeVisible()
+    await expect(breakdown).toContainText('99.9 credits/Run')
+    await expect(
+      comfyPage.page.getByText('Requires additional credits')
+    ).toBeVisible()
+  })
+})

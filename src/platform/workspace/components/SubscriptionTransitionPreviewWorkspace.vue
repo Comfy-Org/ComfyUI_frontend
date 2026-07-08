@@ -66,7 +66,7 @@
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">{{ refillLabel }}</span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
+            <i :class="cn(CREDITS_ICON, 'size-4 shrink-0 bg-amber-400')" />
             <span class="font-bold text-base-foreground">{{
               refillCredits
             }}</span>
@@ -89,7 +89,7 @@
             {{ $t('subscription.preview.creditsRefillMonthlyTo') }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
+            <i :class="cn(CREDITS_ICON, 'size-4 shrink-0 bg-amber-400')" />
             <span class="font-bold text-base-foreground">{{
               monthlyRefillCredits
             }}</span>
@@ -147,6 +147,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
