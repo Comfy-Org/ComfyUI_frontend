@@ -98,6 +98,7 @@ const i18n = createI18n({
         remaining: 'remaining',
         refreshCredits: 'Refresh credits',
         monthly: 'Monthly',
+        yearly: 'Yearly',
         percentUsed: '{percent}% used',
         refillPaused: 'Refill paused',
         monthlyUsageProgress: '{used} of {total} monthly credits used',
@@ -221,6 +222,19 @@ describe('CreditsTile', () => {
       'aria-valuemax',
       '21100'
     )
+  })
+
+  it('labels the allowance by billing duration (yearly for annual)', () => {
+    state.isActiveSubscription = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
+    renderTile()
+    expect(screen.getByText('Yearly')).toBeInTheDocument()
+    expect(screen.queryByText('Monthly')).not.toBeInTheDocument()
   })
 
   it('uses a dateless out-of-credits notice when renewal date is invalid', () => {

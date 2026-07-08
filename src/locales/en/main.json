@@ -2588,6 +2588,7 @@
     "creditsRemainingThisYear": "Included (Refills {date})",
     "creditsYouveAdded": "Additional",
     "remaining": "remaining",
+    "yearly": "Yearly",
     "refillPaused": "Refill paused",
     "percentUsed": "{percent}% used",
     "monthlyUsageProgress": "{used} of {total} monthly credits used",

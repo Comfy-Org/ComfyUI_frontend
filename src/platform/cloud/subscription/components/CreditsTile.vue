@@ -53,9 +53,7 @@
         :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
       >
         <div class="flex items-center justify-between text-sm">
-          <span class="text-text-primary">{{
-            $t('subscription.monthly')
-          }}</span>
+          <span class="text-muted">{{ cycleLabel }}</span>
           <span class="text-muted">
             {{ monthlyStatusLabel }}
           </span>
@@ -227,6 +225,12 @@ const refillsDateShort = computed(() => {
 })
 
 const hasRefillsDate = computed(() => refillsDateShort.value !== '')
+
+const cycleLabel = computed(() =>
+  subscription.value?.duration === 'ANNUAL'
+    ? t('subscription.yearly')
+    : t('subscription.monthly')
+)
 
 const monthlyUsedPercent = computed(() =>
   Math.round(usage.value.usedFraction * 100)
