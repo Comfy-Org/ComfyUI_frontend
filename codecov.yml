@@ -5,6 +5,54 @@ comment:
   require_base: false
   require_head: true
 
+coverage:
+  status:
+    project:
+      critical-unit:
+        target: auto
+        threshold: 0%
+        flags:
+          - unit
+        paths:
+          - src/base/
+          - src/composables/
+          - src/core/
+          - src/lib/litegraph/src/node/
+          - src/lib/litegraph/src/subgraph/
+          - src/lib/litegraph/src/utils/
+          - src/platform/assets/composables/
+          - src/platform/assets/mappings/
+          - src/platform/assets/schemas/
+          - src/platform/assets/services/
+          - src/platform/assets/utils/
+          - src/platform/errorCatalog/
+          - src/platform/keybindings/
+          - src/platform/missingMedia/
+          - src/platform/missingModel/
+          - src/platform/navigation/
+          - src/platform/nodeReplacement/
+          - src/platform/remote/
+          - src/platform/remoteConfig/
+          - src/platform/secrets/
+          - src/platform/settings/
+          - src/platform/workflow/
+          - src/platform/workspace/api/
+          - src/platform/workspace/auth/
+          - src/platform/workspace/composables/
+          - src/platform/workspace/stores/
+          - src/platform/workspace/utils/
+          - src/schemas/
+          - src/scripts/
+          - src/services/
+          - src/stores/
+          - src/utils/
+          - src/workbench/extensions/manager/composables/
+          - src/workbench/extensions/manager/services/
+          - src/workbench/extensions/manager/stores/
+          - src/workbench/extensions/manager/utils/
+          - src/workbench/utils/
+        informational: false
+
 # Carry forward the last known coverage for a flag when its upload is missing or
 # late. The `e2e` flag is uploaded by a separate workflow_run job that can fail
 # or arrive after Codecov has already computed the patch status; without this,
