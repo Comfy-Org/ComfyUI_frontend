@@ -4318,6 +4318,10 @@
       "prompt_outputs_failed_validation": {
         "title": "Prompt validation failed",
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
+      },
+      "agent_draft_apply_failed": {
+        "title": "An error was found",
+        "desc": "Couldn't apply the agent's draft to the canvas."
       }
     }
   },

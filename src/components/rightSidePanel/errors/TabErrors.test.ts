@@ -147,7 +147,9 @@ describe('TabErrors.vue', () => {
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
       )
     ).toBeInTheDocument()
-    expect(screen.queryByText('Error details')).not.toBeInTheDocument()
+    // Raw prompt-error details pass through to the card so "View details"
+    // shows the underlying failure.
+    expect(screen.getByText('Error details')).toBeInTheDocument()
   })
 
   it('renders node validation errors grouped by catalog copy', async () => {

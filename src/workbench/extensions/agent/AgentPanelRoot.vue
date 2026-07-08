@@ -8,6 +8,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
@@ -78,22 +79,38 @@ watch(
 )
 
 // The draft rides the wire untyped; validate it through the host workflow schema
-// before loading. One toast per failure streak (a turn can carry many patches).
+// before loading. A failed canvas apply is a WORKFLOW error, so it surfaces through
+// the host error overlay ("View details" opens the Errors tab), once per failure
+// streak (a turn can carry many patches).
+const executionErrorStore = useExecutionErrorStore()
 let draftRejectionNotified = false
+
+function surfaceDraftApplyFailure(details: string): void {
+  console.warn(details)
+  if (draftRejectionNotified) return
+  draftRejectionNotified = true
+  executionErrorStore.lastPromptError = {
+    type: 'agent_draft_apply_failed',
+    message: t('agent.draftApplyFailed'),
+    details
+  }
+  executionErrorStore.showErrorOverlay()
+}
+
 useDraftCanvasApply((content) => {
   void (async () => {
     const workflow = await validateComfyWorkflow(content, (error) => {
-      console.warn(error)
-      if (draftRejectionNotified) return
-      draftRejectionNotified = true
-      toast.add({
-        severity: 'error',
-        summary: t('agent.draftApplyFailed')
-      })
+      surfaceDraftApplyFailure(error)
     })
     if (!workflow) return
-    draftRejectionNotified = false
-    await app.loadGraphData(workflow)
+    try {
+      await app.loadGraphData(workflow)
+      draftRejectionNotified = false
+    } catch (error) {
+      surfaceDraftApplyFailure(
+        error instanceof Error ? error.message : String(error)
+      )
+    }
   })()
 })
 

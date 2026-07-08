@@ -54,6 +54,20 @@ vi.mock('@/platform/workflow/validation/schemas/workflowSchema', () => ({
   validateComfyWorkflow: vi.fn(async (content: unknown) => content)
 }))
 
+// Light stand-in for the host execution-error store the draft-apply failure writes to.
+const executionErrors = vi.hoisted(() => ({
+  lastPromptError: null as {
+    type: string
+    message: string
+    details: string
+  } | null,
+  showErrorOverlay: vi.fn()
+}))
+
+vi.mock('@/stores/executionErrorStore', () => ({
+  useExecutionErrorStore: () => executionErrors
+}))
+
 vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => ({ workspaceToken: undefined })
 }))
@@ -220,7 +234,7 @@ describe('AgentPanelRoot draft binding', () => {
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
   })
 
-  it('surfaces one toast per rejection streak and recovers on a valid draft', async () => {
+  it('surfaces one workflow error per rejection streak and recovers on a valid draft', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes('/messages')) {
         return new Response(
@@ -239,21 +253,22 @@ describe('AgentPanelRoot draft binding', () => {
     // Module-level fns retain calls across tests (restoreAllMocks only restores spies).
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
+    executionErrors.lastPromptError = null
+    executionErrors.showErrorOverlay.mockClear()
     // The schema rejects the first two patches (e.g. content missing its required
     // version field, as observed live); the third passes through and must both load
-    // the canvas and reset the notification streak.
+    // the canvas and reset the failure streak so a later rejection surfaces again.
     vi.mocked(validateComfyWorkflow)
       .mockImplementationOnce(async (_content, onError) => {
-        onError?.('rejected')
+        onError?.('rejected: version required')
         return null
       })
       .mockImplementationOnce(async (_content, onError) => {
-        onError?.('rejected')
+        onError?.('rejected: version required')
         return null
       })
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const toast = useToastStore()
 
     await userEvent.type(screen.getByRole('textbox'), 'build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -282,13 +297,78 @@ describe('AgentPanelRoot draft binding', () => {
       expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(2)
     )
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    const rejectionToasts = toast.messagesToAdd.filter(
-      (message) => message.summary === i18n.global.t('agent.draftApplyFailed')
-    )
-    expect(rejectionToasts).toHaveLength(1)
+    // The failure lands on the host workflow-error surface, once per streak.
+    expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    expect(executionErrors.lastPromptError).toMatchObject({
+      type: 'agent_draft_apply_failed',
+      details: 'rejected: version required'
+    })
 
     patch(3)
     await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
+
+    // A rejection after a successful apply is a NEW streak and surfaces again.
+    vi.mocked(validateComfyWorkflow).mockImplementationOnce(
+      async (_content, onError) => {
+        onError?.('rejected again')
+        return null
+      }
+    )
+    patch(4)
+    await vi.waitFor(() =>
+      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(2)
+    )
+  })
+
+  it('surfaces a loadGraphData rejection as the same workflow error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('/messages')
+          ? new Response(
+              JSON.stringify({
+                thread_id: 'th-1',
+                message_id: 'm-1',
+                workflow_id: 'wf-42'
+              }),
+              { status: 202, headers: { 'Content-Type': 'application/json' } }
+            )
+          : new Response('{}', { status: 200 })
+      )
+    )
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.mocked(app.loadGraphData)
+      .mockClear()
+      .mockRejectedValueOnce(new Error('graph configure exploded'))
+    vi.mocked(validateComfyWorkflow).mockClear()
+    executionErrors.lastPromptError = null
+    executionErrors.showErrorOverlay.mockClear()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'build a graph')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'draft_patch',
+        data: {
+          workflow_id: 'wf-42',
+          base_version: 0,
+          version: 1,
+          content: { version: 0.4, nodes: [] }
+        }
+      })
+    })
+
+    await vi.waitFor(() =>
+      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    )
+    expect(executionErrors.lastPromptError).toMatchObject({
+      type: 'agent_draft_apply_failed',
+      details: 'graph configure exploded'
+    })
   })
 })
 
