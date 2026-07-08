@@ -214,9 +214,13 @@ tier, or a `run` tier with an empty `workflow`.
 pnpm test:custom-nodes
 ```
 
-Green means: every tier for every pack passes, zero skips, and the suite's
-zero-visible-errors invariant held (no error overlay, dialog, node error, or
-error toast at any point). Iterate here - it is the fastest loop.
+Green means: every tier for every pack passes, zero skips, and the
+zero-visible-errors invariant held for the tiers that assert it (mount,
+persistence, connectivity, core smoke, curated workflows): no error
+overlay, dialog, node error, or error toast. Two deliberate exceptions,
+same as the README: the auto-run execution tier provokes expected
+failures, and the self-check inverts the invariant. Iterate here - it is
+the fastest loop.
 
 ### 6b - CI-parity run (required if the pack ships frontend JS)
 

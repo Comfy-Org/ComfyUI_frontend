@@ -248,20 +248,20 @@ accepted by the schema but currently gate nothing.
 ## 6. The node-definition pipeline
 
 Where the suite's knowledge of every node comes from: definitions flow left
-to right, and the suite derives three independent plans from one canonical
-corpus.
+to right, and three independent parsers derive three plans from one live
+census.
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 380}}}%%
 flowchart LR
-    PUB["Backend publishes node definitions"] --> NORM["Suite normalizes them: two dialects arrive, one canonical model leaves"]
-    NORM --> CORPUS["Canonical definition corpus: every node the packs register, re-discovered live each run"]
-    CORPUS -->|"derives"| W["Wiring plan: which slots can pair, and why"]
-    CORPUS -->|"derives"| X["Execution plan: which nodes can run, and why the rest cannot"]
-    CORPUS -->|"derives"| M["Mount expectations: what each created node must materialize"]
+    PUB["Backend publishes node definitions"] --> CORPUS["Live definition census: every node the packs register, re-discovered each run, in two dialects"]
+    CORPUS -->|"wiring slot normalizer"| W["Wiring plan: which slots can pair, and why"]
+    CORPUS -->|"execution classifier"| X["Execution plan: which nodes can run, and why the rest cannot"]
+    CORPUS -->|"mount declared-shape parser"| M["Mount expectations: what each created node must materialize"]
 ```
 
-The three plans are independent consumers of the same corpus: the wiring
+The three plans are independent consumers of the same census, each through
+its own dialect-aware parser (section 4 names the symbols): the wiring
 plan feeds the Wiring Compatibility tier, the execution plan feeds the
 Execution tier, and the mount expectations feed Mount Completeness.
 
