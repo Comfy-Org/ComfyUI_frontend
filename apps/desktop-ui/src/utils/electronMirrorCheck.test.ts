@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const { mockElectron } = vi.hoisted(() => ({
   mockElectron: {
     NetWork: {
-      canAccessUrl: vi.fn<[url: string], Promise<boolean>>()
+      canAccessUrl: vi.fn<(url: string) => Promise<boolean>>()
     }
   }
 }))
