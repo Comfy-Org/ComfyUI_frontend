@@ -52,7 +52,7 @@
           <span class="text-sm text-muted-foreground">
             {{ $t('workspacePanel.autoReload.tile.label') }}
           </span>
-          <StatusBadge v-if="badge" :label="badge" severity="secondary" />
+          <StatusBadge v-if="badge" :label="badge" :severity="badgeSeverity" />
         </div>
 
         <p
@@ -150,6 +150,12 @@ const badge = computed(() => {
   if (!isEnabled.value) return t('workspacePanel.autoReload.badge.off')
   return ''
 })
+
+// Paused is an alert state, so give it the high-contrast (inverted) pill; the
+// quieter "off" state keeps the secondary treatment.
+const badgeSeverity = computed(() =>
+  isPaused.value ? 'contrast' : 'secondary'
+)
 
 const reloadCreditsLabel = computed(() => fmtCredits(config.reloadCredits))
 const thresholdLabel = computed(() => fmtCredits(config.thresholdCredits))
