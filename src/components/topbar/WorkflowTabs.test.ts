@@ -79,6 +79,11 @@ vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
+vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
+  useAgentPanelStore: () =>
+    reactive({ isOpen: false, enabled: false, toggle: vi.fn() })
+}))
+
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
 }))
