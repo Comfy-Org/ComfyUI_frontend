@@ -89,6 +89,10 @@ reviews:
       instructions: |
         When app queuing code temporarily assigns `api.authToken` or `api.apiKey` before awaiting `api.queuePrompt`, require app tests for both resolved and rejected `api.queuePrompt` paths.
         The rejected-path test must populate both credential sources, make `api.queuePrompt` reject, call `app.queuePrompt`, and prove both credential fields are cleared after rejection. Success-path cleanup alone is insufficient.
+    - path: 'src/lib/litegraph/src/LGraph.ts'
+      instructions: |
+        When changes touch `LGraph.configure()`, graph deserialization, link loading, or nullable serialized links, require a direct regression test that constructs an `LGraph` and calls `configure()` with the changed serialized shape.
+        Helper-only coverage is insufficient. For sparse legacy links, expect a v0.4 payload with `links: [null, validLink]` to not throw and still create the valid link.
     - path: 'src/lib/litegraph/**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
