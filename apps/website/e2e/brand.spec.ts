@@ -43,7 +43,7 @@ test.describe('Brand portal @smoke', () => {
     }
   })
 
-  test('the hero cta downloads the brand guidelines pdf', async ({ page }) => {
+  test('the hero cta opens the gated brand guidelines', async ({ page }) => {
     await expect(
       page.getByRole('link', { name: 'View brand guidelines' })
     ).toHaveAttribute('href', BRAND_GUIDELINES_PDF)

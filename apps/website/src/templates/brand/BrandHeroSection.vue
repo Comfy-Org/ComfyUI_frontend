@@ -34,7 +34,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <Button
         as="a"
         :href="BRAND_GUIDELINES_PDF"
-        download
+        target="_blank"
+        rel="noopener noreferrer"
         variant="default"
         class="h-12 w-full px-5 text-sm font-extrabold sm:w-auto"
       >
