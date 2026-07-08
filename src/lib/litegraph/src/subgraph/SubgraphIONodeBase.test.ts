@@ -12,6 +12,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
   createTestSubgraph,
@@ -348,21 +349,10 @@ describe('SubgraphIONodeBase', () => {
     it('draws with hover-dependent stroke styling and restores context state', () => {
       const { inputNode } = createArrangedInputNode()
       const strokeStyles: unknown[] = []
-      const ctx = fromPartial<CanvasRenderingContext2D>({
-        getTransform: vi.fn(() => new DOMMatrix()),
-        setTransform: vi.fn(),
-        translate: vi.fn(),
-        beginPath: vi.fn(),
-        arc: vi.fn(),
-        moveTo: vi.fn(),
-        lineTo: vi.fn(),
+      const ctx = createMockCanvasRenderingContext2D({
         stroke: vi.fn(() => {
           strokeStyles.push(ctx.strokeStyle)
         }),
-        fill: vi.fn(),
-        rect: vi.fn(),
-        fillText: vi.fn(),
-        lineWidth: 1,
         strokeStyle: 'original',
         fillStyle: 'original',
         font: 'original',
