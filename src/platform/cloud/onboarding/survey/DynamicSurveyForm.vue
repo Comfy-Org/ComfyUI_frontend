@@ -12,43 +12,38 @@
       />
     </div>
 
-    <div
-      class="overflow-hidden transition-[height] duration-300 ease-out"
-      :style="animatedHeightStyle"
-    >
-      <div ref="questionContent" class="relative">
-        <Transition
-          enter-active-class="transition-opacity duration-300 ease-out"
-          enter-from-class="opacity-0"
-          leave-active-class="absolute inset-x-0 top-0 transition-opacity duration-300 ease-out"
-          leave-to-class="opacity-0"
+    <div class="relative flex-1">
+      <Transition
+        enter-active-class="transition-opacity duration-300 ease-out"
+        enter-from-class="opacity-0"
+        leave-active-class="absolute inset-x-0 top-0 transition-opacity duration-300 ease-out"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="currentField"
+          :key="currentField.id"
+          class="flex flex-col gap-4"
         >
-          <div
-            v-if="currentField"
-            :key="currentField.id"
-            class="flex flex-col gap-4"
-          >
-            <DynamicSurveyField
-              :field="currentField"
-              :model-value="values[currentField.id]"
-              :other-value="
-                currentField.otherFieldId
-                  ? (values[currentField.otherFieldId] as string)
-                  : undefined
-              "
-              :error-message="currentError"
-              @update:model-value="
-                (value) => onFieldChange(currentField.id, value)
-              "
-              @update:other-value="
-                (value) =>
-                  currentField.otherFieldId &&
-                  onFieldChange(currentField.otherFieldId, value)
-              "
-            />
-          </div>
-        </Transition>
-      </div>
+          <DynamicSurveyField
+            :field="currentField"
+            :model-value="values[currentField.id]"
+            :other-value="
+              currentField.otherFieldId
+                ? (values[currentField.otherFieldId] as string)
+                : undefined
+            "
+            :error-message="currentError"
+            @update:model-value="
+              (value) => onFieldChange(currentField.id, value)
+            "
+            @update:other-value="
+              (value) =>
+                currentField.otherFieldId &&
+                onFieldChange(currentField.otherFieldId, value)
+            "
+          />
+        </div>
+      </Transition>
     </div>
 
     <div
@@ -95,7 +90,6 @@
 
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { useElementSize } from '@vueuse/core'
 import { useForm } from 'vee-validate'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -164,12 +158,6 @@ const visible = computed(() =>
 )
 const stepIndex = ref(0)
 const touched = ref(new Set<string>())
-
-const questionContent = ref<HTMLElement | null>(null)
-const { height: contentHeight } = useElementSize(questionContent)
-const animatedHeightStyle = computed(() =>
-  contentHeight.value ? { height: `${contentHeight.value}px` } : {}
-)
 
 const currentField = computed(() => visible.value[stepIndex.value])
 const isFirst = computed(() => stepIndex.value === 0)
