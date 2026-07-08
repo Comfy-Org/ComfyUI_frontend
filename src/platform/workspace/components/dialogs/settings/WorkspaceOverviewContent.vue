@@ -11,9 +11,9 @@
           <span class="text-sm text-base-foreground">{{ plan.name }}</span>
           <p
             v-if="canManageBilling"
-            class="m-0 flex items-center gap-1.5 text-2xl font-semibold text-base-foreground"
+            class="m-0 flex items-center gap-1.5 text-base font-semibold text-base-foreground"
           >
-            <i class="icon-[lucide--coins] size-5 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ plan.monthlyCredits.toLocaleString() }}
             <span class="text-base font-normal text-muted-foreground">
               / {{ $t('workspacePanel.overview.perMonth') }}

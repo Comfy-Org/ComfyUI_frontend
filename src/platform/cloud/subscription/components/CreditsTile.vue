@@ -25,7 +25,7 @@
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
         <i class="icon-[lucide--coins] size-4 self-center text-credit" />
-        <span class="text-base leading-none font-bold tabular-nums">{{
+        <span class="text-2xl leading-none font-bold tabular-nums">{{
           displayTotal
         }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
