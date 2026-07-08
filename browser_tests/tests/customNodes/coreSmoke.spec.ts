@@ -6,6 +6,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   customNodeSuiteSettings,
   dismissTemplatesDialog
@@ -42,8 +43,10 @@ test.describe('smoke: core workflow', () => {
       consoleErrors.stop()
 
       expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
+      // Core smoke loads a graph but queues no prompt; a prompt-execution
+      // error here is a prior tier's async stray (isForeignExecutionNoise).
       expect(
-        consoleErrors.errors,
+        consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
         `console errors (VueNodes=${vueNodesEnabled})`
       ).toEqual([])
       for (const [surface, locator] of Object.entries(

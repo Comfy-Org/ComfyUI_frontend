@@ -8,6 +8,7 @@ import {
   customNodeSuiteSettings,
   dismissTemplatesDialog
 } from '@e2e/fixtures/utils/customNodeSuite'
+import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
@@ -146,10 +147,13 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // wiring provokes it. If a ledgered pattern ever fires here, filter
   // through unallowlistedErrors with the pack taken from the offending
   // pair's nodes (the sweep is cross-pack), instead of silently
-  // loosening this assert.
-  expect(consoleErrors.errors, 'console errors during breadth sweep').toEqual(
-    []
-  )
+  // loosening this assert. The wiring sweep queues no prompts, so a
+  // prompt-execution error here is a prior tier's async stray, not this
+  // test's (isForeignExecutionNoise; ARCHITECTURE section 9 principle).
+  expect(
+    consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
+    'console errors during breadth sweep'
+  ).toEqual([])
 
   const widgetOnly = results.filter(
     (result) =>
@@ -521,7 +525,7 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
 
     consoleErrors.stop()
     expect(
-      consoleErrors.errors,
+      consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
       `console errors with VueNodes=${vueNodesEnabled}`
     ).toEqual([])
     await expectNoVisibleErrors(

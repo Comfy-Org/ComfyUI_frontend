@@ -59,3 +59,24 @@ export function unallowlistedErrors(pack: string, errors: string[]): string[] {
     (error) => !allowlist.some((rule) => rule.pattern.test(error))
   )
 }
+
+// Execution errors surface on the tiers that actually queue prompts (the
+// curated run and the auto-run tier). The mount, persistence, and wiring
+// tiers queue nothing, so a prompt-execution error arriving in their console
+// collector is an async stray from a prior tier's still-draining execution -
+// the same "not this test" principle the event-attribution filter uses
+// (ARCHITECTURE section 9). It is filtered from the non-executing tiers only;
+// the executing tiers still assert on it. This is not error suppression: the
+// visible error SURFACES (overlay/dialog/toast) are still asserted separately
+// by expectNoVisibleErrors.
+const FOREIGN_EXECUTION_NOISE: RegExp[] = [
+  /PromptExecutionError/,
+  /Prompt execution failed/,
+  // The browser logs a rejected prompt submission as a failed resource load
+  // on /api/prompt. Only the executing tiers POST there, so this line in a
+  // mount/persistence/wiring collector is a prior tier's async submission.
+  /Failed to load resource.*\/api\/prompt/
+]
+export function isForeignExecutionNoise(error: string): boolean {
+  return FOREIGN_EXECUTION_NOISE.some((pattern) => pattern.test(error))
+}

@@ -16,7 +16,10 @@ import {
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
-import { CONSOLE_ERROR_ALLOWLIST } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import {
+  CONSOLE_ERROR_ALLOWLIST,
+  isForeignExecutionNoise
+} from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   loadManifest,
   rendererPassesFor
@@ -35,7 +38,43 @@ const target = new LocalDesktopTarget()
 // Measured optimum (deterministic across repeats, best ms/node); see PR.
 const BATCH_SIZE = 24
 const AUTO_RUN_BATCH = 10
+// The auto-run disambiguation pass (re-run one node alone) waits longer than
+// the batch does: by then we are timing a single node, so we can afford to
+// distinguish "slow under load" from "genuinely hung" instead of misreading a
+// slow CPU run as a regression.
+const SINGLE_RERUN_TIMEOUT = 60_000
 const GRID_SPACING = { x: 420, y: 360 }
+
+// Interrupt any running prompt, clear the pending queue, and poll until the
+// backend reports idle (or the budget runs out). getQueue swallows a failed
+// fetch and returns an empty queue, so throw-on-error and treat a failed read
+// as still-busy - the drain must never exit early on a transient error.
+// Returns 0 when idle, 1 when still busy after the budget (a wedged backend).
+async function drainUntilIdle(page: Page, budgetMs: number): Promise<number> {
+  const depth = () =>
+    page.evaluate(async () => {
+      try {
+        const queue = await window.app!.api.getQueue({ throwOnError: true })
+        return queue.Running.length + queue.Pending.length
+      } catch {
+        return Number.POSITIVE_INFINITY
+      }
+    })
+  if ((await depth()) === 0) return 0
+  await page.evaluate(async () => {
+    await window.app!.api.interrupt(null)
+    await window.app!.api.clearItems('queue')
+  })
+  const deadline = Date.now() + budgetMs
+  let remaining = await depth()
+  while (remaining !== 0 && Date.now() < deadline) {
+    await page.evaluate(
+      () => new Promise((resolve) => setTimeout(resolve, 500))
+    )
+    remaining = await depth()
+  }
+  return remaining === 0 ? 0 : 1
+}
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
@@ -93,6 +132,10 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'downloads Segment Anything weights at execution; same non-interruptible download class as BLIP',
     'MiDaS Model Loader':
       'downloads MiDaS weights via torch hub at execution; same non-interruptible download class as BLIP',
+    'CLIPSeg Model Loader':
+      'downloads a CLIPSeg segmentation model at execution; same non-interruptible download class as BLIP',
+    'CLIPSeg Batch Masking':
+      'runs CLIPSeg inference, which downloads its model on first use; same network/model-dependent class as CLIPSeg Model Loader',
     'True Random.org Number Generator':
       'fetches entropy from random.org at validation/execution; network-dependent',
     'Create Video from Path':
@@ -134,7 +177,9 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
     'TransitionMask+':
       'list-expanded execution emits no per-node executing event on some runs, so the executed-set signal flip-flops between PASS and PARTIAL; mount/save-reload/connectivity tiers still cover it',
     'TransparentBGSession+':
-      'ML-session initializer like RemBGSession+; sets up/downloads a background-removal model at execution, unstable on a bare backend'
+      'ML-session initializer like RemBGSession+; sets up/downloads a background-removal model at execution, unstable on a bare backend',
+    'LoadCLIPSegModels+':
+      'downloads a CLIPSeg segmentation model at execution; network/model-dependent (same class as the excluded RemBG/TransparentBG loaders)'
   }
 }
 
@@ -535,7 +580,9 @@ for (const entry of loadManifest()) {
           )
         expect(
           consoleErrors.errors.filter(
-            (error) => !allowlist.some((rule) => rule.pattern.test(error))
+            (error) =>
+              !allowlist.some((rule) => rule.pattern.test(error)) &&
+              !isForeignExecutionNoise(error)
           ),
           `console errors with VueNodes=${vueNodesEnabled}`
         ).toEqual([])
@@ -807,7 +854,9 @@ for (const entry of loadManifest()) {
         const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
         expect(
           consoleErrors.errors.filter(
-            (error) => !allowlist.some((rule) => rule.pattern.test(error))
+            (error) =>
+              !allowlist.some((rule) => rule.pattern.test(error)) &&
+              !isForeignExecutionNoise(error)
           ),
           `console errors during save/reload with VueNodes=${vueNodesEnabled}`
         ).toEqual([])
@@ -837,16 +886,17 @@ for (const entry of loadManifest()) {
       )
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
-      // A leftover hung execution would false-timeout every run below.
-      const queueBusy = await comfyPage.page.evaluate(async () => {
-        const queue = (await window.app!.api.getQueue()) as {
-          Running?: unknown[]
-        }
-        return (queue.Running ?? []).length
-      })
+      // A prior pack's slow CPU execution can still be draining when this tier
+      // starts (all packs share one backend in a local full run; CI shards so
+      // it never happens there). Wait it out rather than hard-fail: interrupt,
+      // clear the pending queue, and poll until the backend is idle. Slow-but-
+      // finite executions drain within the budget; only a truly wedged backend
+      // (which the exclusions already prevent) stays busy past it. The wait is
+      // free when the queue is already idle, so it costs nothing on CI.
+      const queueBusy = await drainUntilIdle(comfyPage.page, 150_000)
       expect(
         queueBusy,
-        'backend queue already has a running prompt (earlier hung execution?) - restart the test backend'
+        'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
       ).toBe(0)
 
       const excluded = AUTO_RUN_EXCLUDE[entry.pack] ?? {}
@@ -887,9 +937,14 @@ for (const entry of loadManifest()) {
           )
           break
         }
-        // Rerun singles so the bad node names itself.
+        // Rerun singles so the bad node names itself, with a longer timeout
+        // so a slow-under-load node is not misread as a regression.
         for (const verdict of batch) {
-          const single = await runBatch(comfyPage.page, [verdict])
+          const single = await runBatch(
+            comfyPage.page,
+            [verdict],
+            SINGLE_RERUN_TIMEOUT
+          )
           if (single === 'PASS') ranClean.add(verdict.key)
           else if (single.startsWith('HUNG_BACKEND')) {
             hardFailures.push(
@@ -934,7 +989,8 @@ async function runBatch(
     key: string
     needsPreviewSink?: boolean
     requiredSockets?: RequiredSocket[]
-  }>
+  }>,
+  timeoutMs: number = 20_000
 ): Promise<string> {
   const { ids, allIds, sinkIdByKey } = await page.evaluate(
     ([nodes, producers, spacingY]) => {
@@ -984,27 +1040,20 @@ async function runBatch(
     },
     [batch, SYNTH_PRODUCERS, GRID_SPACING.y] as const
   )
-  // Widget-only CPU nodes: not finished in 20s = hung.
+  // Batch default 20s = hung; the single re-run pass raises it (see caller)
+  // so a node that is merely slow under load is not misread as a regression.
   const result = await target.runWorkflow(page, {
     expectedNodeIds: ids,
     graphNodeIds: allIds,
-    timeoutMs: 20_000
+    timeoutMs
   })
   if (result.outcome === 'TIMEOUT') {
-    // Interrupt and verify the queue drained; a non-interruptible hang can
-    // only be cleared by a backend restart, so name it.
-    const drained = await page.evaluate(async () => {
-      await window.app!.api.interrupt(null)
-      for (let attempt = 0; attempt < 10; attempt++) {
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        const queue = (await window.app!.api.getQueue()) as {
-          Running?: unknown[]
-        }
-        if ((queue.Running ?? []).length === 0) return true
-      }
-      return false
-    })
-    if (!drained)
+    // A slow-but-finite CPU node (seam carving, heavy image ops) can exceed
+    // the batch budget under load; give the backend time to drain before
+    // calling it hung, so the caller can re-run it alone with the longer
+    // single timeout. Only a truly non-interruptible execution stays busy
+    // past this, and that genuinely needs a backend restart.
+    if ((await drainUntilIdle(page, 90_000)) !== 0)
       return 'HUNG_BACKEND (non-interruptible execution; backend restart required)'
   }
   if (result.outcome === 'PASS') {

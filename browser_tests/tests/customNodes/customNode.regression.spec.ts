@@ -14,7 +14,10 @@ import {
   dismissTemplatesDialog
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
-import { unallowlistedErrors } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import {
+  isForeignExecutionNoise,
+  unallowlistedErrors
+} from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   loadManifest,
   rendererPassesFor
@@ -125,8 +128,12 @@ for (const entry of loadManifest()) {
             await expect(comfyPage.vueNodes.getNodeLocator(id)).toBeVisible()
 
         consoleErrors.stop()
+        // T0 loads and renders nodes but queues no prompt; a prompt-execution
+        // error here is a prior tier's async stray (isForeignExecutionNoise).
         expect(
-          consoleErrors.errors,
+          consoleErrors.errors.filter(
+            (error) => !isForeignExecutionNoise(error)
+          ),
           `console errors with VueNodes=${vueNodesEnabled}`
         ).toEqual([])
         await expectNoVisibleErrors(

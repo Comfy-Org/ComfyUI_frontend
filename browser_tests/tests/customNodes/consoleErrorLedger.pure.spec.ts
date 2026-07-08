@@ -2,7 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { unallowlistedErrors } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import {
+  isForeignExecutionNoise,
+  unallowlistedErrors
+} from '@e2e/fixtures/customNode/consoleErrorLedger'
 
 // unallowlistedErrors is the sole enforcement point of the curated-run
 // console gate (customNode.regression.spec.ts T1): a degradation to
@@ -33,5 +36,34 @@ test.describe('consoleErrorLedger', () => {
       'boom'
     ]
     expect(unallowlistedErrors('Some-Future-Pack', errors)).toEqual(errors)
+  })
+})
+
+// Filters a prior tier's async execution error out of the non-executing
+// tiers; must match execution-domain lines and nothing a mount/wiring tier
+// should legitimately catch.
+test.describe('isForeignExecutionNoise', () => {
+  test('matches the execution-domain console surfaces', () => {
+    expect(isForeignExecutionNoise('PromptExecutionError: boom')).toBe(true)
+    expect(isForeignExecutionNoise('Prompt execution failed')).toBe(true)
+    expect(
+      isForeignExecutionNoise(
+        'Failed to load resource: the server responded with a status of 400 (Bad Request) http://127.0.0.1:8288/api/prompt'
+      )
+    ).toBe(true)
+  })
+
+  test('does not match render or unrelated resource errors a tier must catch', () => {
+    expect(
+      isForeignExecutionNoise('TypeError: cannot read x of undefined')
+    ).toBe(false)
+    expect(
+      isForeignExecutionNoise(
+        'Failed to load resource: 404 http://127.0.0.1:8288/api/view?filename=x.png'
+      )
+    ).toBe(false)
+    expect(
+      isForeignExecutionNoise('Uncaught page error: something rendered wrong')
+    ).toBe(false)
   })
 })
