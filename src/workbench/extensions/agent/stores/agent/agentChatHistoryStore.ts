@@ -70,9 +70,22 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     if (activeId.value === id) activeId.value = null
   }
 
+  // Replace the whole list from an authoritative server fetch (GET /api/agent/threads).
+  function replaceAll(next: ChatSession[]): void {
+    sessions.value = next
+  }
+
   function setActive(id: string | null): void {
     activeId.value = id
   }
 
-  return { sessions, activeId, grouped, upsert, remove, setActive }
+  return {
+    sessions,
+    activeId,
+    grouped,
+    upsert,
+    remove,
+    replaceAll,
+    setActive
+  }
 })

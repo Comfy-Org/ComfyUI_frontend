@@ -16,7 +16,8 @@ import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import { useAttachment } from './composables/agent/useAttachment'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
-import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import type { AgentThreadSummary } from './schemas/agentApiSchema'
+import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useDraftCanvasApply } from './composables/agent/useDraftCanvasApply'
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
@@ -59,7 +60,10 @@ const {
   stop,
   entries,
   isStreaming,
-  notices
+  notices,
+  threadId,
+  listThreads,
+  loadThread
 } = useAgentSession({ rest, events })
 
 // Session notices (cancel-failure, draft-resync errors) have no inline conversation row,
@@ -117,30 +121,50 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   useTelemetry()?.trackAgentMessageFeedback({ message_id: turnId, vote })
 }
 
-// V0 mirrors the single in-memory conversation as one "current" history row, keyed by its
-// first turn, so the drawer isn't empty mid-chat and copy-as-markdown has a target. The row
-// is replaced (not archived) on new-chat; persisting past sessions is a documented V0 limit.
-const currentPrompt = computed(
-  () =>
-    entries.value.find(
-      (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
-        entry.role === 'user'
-    ) ?? null
-)
-watch(
-  () => currentPrompt.value?.id ?? null,
-  (id, previousId) => {
-    if (previousId && id !== previousId) history.remove(previousId)
-    const prompt = currentPrompt.value
-    if (!prompt) return
-    history.setActive(prompt.id)
-    history.upsert({
-      id: prompt.id,
-      title: prompt.text.slice(0, 60) || t('agent.untitledChat'),
-      updatedAt: Date.now()
-    })
+// Chat History (B12) is server-backed via GET /api/agent/threads. The list is refreshed
+// when the panel mounts and each time it is opened; the active row tracks the current
+// thread. Best-effort: a failed fetch leaves the last-known list rather than blanking it.
+function toChatSession(thread: AgentThreadSummary): ChatSession | null {
+  const id = thread.id ?? thread.thread_id
+  if (!id) return null
+  const stamp =
+    thread.updated_at ??
+    thread.updated ??
+    thread.last_message_at ??
+    thread.created_at
+  const updatedAt = stamp ? Date.parse(stamp) : Date.now()
+  return {
+    id,
+    title: thread.title ?? thread.name ?? t('agent.untitledChat'),
+    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
   }
-)
+}
+
+async function refreshHistory(): Promise<void> {
+  try {
+    const threads = await listThreads()
+    history.replaceAll(
+      threads
+        .map(toChatSession)
+        .filter((session): session is ChatSession => session !== null)
+    )
+  } catch {
+    // History is a best-effort side panel; a list failure must not disrupt the chat.
+  }
+}
+
+// The active row follows the live thread (adopted on the first send's ack, or on load).
+watch(threadId, (id) => history.setActive(id), { immediate: true })
+
+// Prime the list on mount so the panel opens with a populated Chat History.
+void refreshHistory()
+
+// Load a past chat from history: adopt + hydrate the thread, then refresh the list so its
+// row moves to "Current".
+async function onSelectHistory(id: string): Promise<void> {
+  await loadThread(id)
+  void refreshHistory()
+}
 
 // Copy-as-markdown (B12). Only the current in-memory conversation has a transcript; a
 // non-active session id has nothing to serialize and gets an info toast instead.
@@ -231,7 +255,8 @@ async function onFilesPicked(event: Event): Promise<void> {
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="agentPanelStore.close()"
-      @select-history="history.setActive($event)"
+      @open-history="refreshHistory()"
+      @select-history="onSelectHistory"
       @delete-history="history.remove($event)"
       @copy-history="onCopyMarkdown"
     />
