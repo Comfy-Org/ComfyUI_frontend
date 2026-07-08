@@ -144,20 +144,23 @@ describe('useNodeDefStore', () => {
   describe('filter registry', () => {
     it('updates LiteGraph skip state for registered dev-only nodes', () => {
       const registeredNodeTypes = LiteGraph.registered_node_types
-      LiteGraph.registered_node_types = {
-        DevNode: {
-          nodeData: { dev_only: true },
-          skip_list: false
-        } as typeof LGraphNode,
-        NormalNode: { nodeData: {}, skip_list: false } as typeof LGraphNode
+      try {
+        LiteGraph.registered_node_types = {
+          DevNode: {
+            nodeData: { dev_only: true },
+            skip_list: false
+          } as typeof LGraphNode,
+          NormalNode: { nodeData: {}, skip_list: false } as typeof LGraphNode
+        }
+
+        setActivePinia(createTestingPinia({ stubActions: false }))
+        useNodeDefStore()
+
+        expect(LiteGraph.registered_node_types.DevNode.skip_list).toBe(true)
+        expect(LiteGraph.registered_node_types.NormalNode.skip_list).toBe(false)
+      } finally {
+        LiteGraph.registered_node_types = registeredNodeTypes
       }
-
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      useNodeDefStore()
-
-      expect(LiteGraph.registered_node_types.DevNode.skip_list).toBe(true)
-      expect(LiteGraph.registered_node_types.NormalNode.skip_list).toBe(false)
-      LiteGraph.registered_node_types = registeredNodeTypes
     })
 
     it('should register a new filter', () => {

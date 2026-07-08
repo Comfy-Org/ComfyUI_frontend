@@ -1028,21 +1028,24 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     it('ignores a model rejection after the category is invalidated', async () => {
       const store = useAssetsStore()
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      let rejectFetch!: (error: Error) => void
-      vi.mocked(assetService.getAssetsForNodeType).mockReturnValueOnce(
-        new Promise((_resolve, reject) => {
-          rejectFetch = reject
-        })
-      )
+      try {
+        let rejectFetch!: (error: Error) => void
+        vi.mocked(assetService.getAssetsForNodeType).mockReturnValueOnce(
+          new Promise((_resolve, reject) => {
+            rejectFetch = reject
+          })
+        )
 
-      const request = store.updateModelsForNodeType('CheckpointLoaderSimple')
-      store.invalidateCategory('checkpoints')
-      rejectFetch(new Error('stale rejection'))
-      await request
+        const request = store.updateModelsForNodeType('CheckpointLoaderSimple')
+        store.invalidateCategory('checkpoints')
+        rejectFetch(new Error('stale rejection'))
+        await request
 
-      expect(store.getError('CheckpointLoaderSimple')).toBeUndefined()
-      expect(consoleSpy).not.toHaveBeenCalled()
-      consoleSpy.mockRestore()
+        expect(store.getError('CheckpointLoaderSimple')).toBeUndefined()
+        expect(consoleSpy).not.toHaveBeenCalled()
+      } finally {
+        consoleSpy.mockRestore()
+      }
     })
   })
 
@@ -1137,24 +1140,34 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const error = new Error('model fetch failed')
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(error)
+      try {
+        vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+          error
+        )
 
-      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+        await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
-      expect(store.getError('CheckpointLoaderSimple')).toBe(error)
-      expect(store.isModelLoading('CheckpointLoaderSimple')).toBe(false)
-      consoleSpy.mockRestore()
+        expect(store.getError('CheckpointLoaderSimple')).toBe(error)
+        expect(store.isModelLoading('CheckpointLoaderSimple')).toBe(false)
+      } finally {
+        consoleSpy.mockRestore()
+      }
     })
 
     it('should wrap non-error model loading failures', async () => {
       const store = useAssetsStore()
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce('boom')
+      try {
+        vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+          'boom'
+        )
 
-      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+        await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
-      expect(store.getError('CheckpointLoaderSimple')?.message).toBe('boom')
-      consoleSpy.mockRestore()
+        expect(store.getError('CheckpointLoaderSimple')?.message).toBe('boom')
+      } finally {
+        consoleSpy.mockRestore()
+      }
     })
   })
 
