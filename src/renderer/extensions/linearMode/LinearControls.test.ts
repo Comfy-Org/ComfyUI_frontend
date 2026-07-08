@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeError } from '@/schemas/apiSchema'
+import type { CreditBadge } from '@/renderer/extensions/linearMode/useCreditsSummary'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -19,6 +20,19 @@ const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
   overlayTitle: 'Required input missing'
 }))
+
+const creditsMock = vi.hoisted(() => ({
+  badges: [] as CreditBadge[]
+}))
+
+vi.mock('@/renderer/extensions/linearMode/useCreditsSummary', async () => {
+  const { computed } = await import('vue')
+  return {
+    useCreditsSummary: () => ({
+      creditsBadges: computed(() => creditsMock.badges)
+    })
+  }
+})
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -43,7 +57,8 @@ const i18n = createI18n({
           goto: 'Show errors in graph'
         },
         mobileNoWorkflow: 'No workflow',
-        runCount: 'Run count',
+        generations: 'Generations',
+        usesCredits: 'Uses credits',
         viewJob: 'View job'
       },
       menu: {
@@ -123,6 +138,7 @@ describe('LinearControls', () => {
     billingMock.isActiveSubscription = true
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+    creditsMock.badges = []
   })
 
   it.for([
@@ -194,6 +210,28 @@ describe('LinearControls', () => {
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
     }
   )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'flags a credit cost on the run button in $label controls',
+    ({ mobile }) => {
+      creditsMock.badges = [
+        { title: 'Flux', price: '99.9 credits/Run', nodeId: toNodeId('1') }
+      ]
+
+      renderControls({ mobile })
+
+      expect(screen.getByText('Uses credits')).toBeInTheDocument()
+    }
+  )
+
+  it('does not flag a credit cost when no priced nodes are present', () => {
+    renderControls()
+
+    expect(screen.queryByText('Uses credits')).not.toBeInTheDocument()
+  })
 
   it('does not show the warning when the error copy is empty', () => {
     overlayMock.overlayMessage = ''

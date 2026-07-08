@@ -25,7 +25,8 @@ export const buttonVariants = cva({
       tertiary:
         'bg-tertiary-background text-base-foreground hover:bg-tertiary-background-hover',
       gradient:
-        'border-transparent bg-(image:--subscription-button-gradient) text-white hover:opacity-90'
+        'border-transparent bg-(image:--subscription-button-gradient) text-white hover:opacity-90',
+      'brand-yellow': 'bg-brand-yellow text-black hover:bg-brand-yellow/85'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',
@@ -58,7 +59,8 @@ const variants = [
   'base',
   'tertiary',
   'overlay-white',
-  'gradient'
+  'gradient',
+  'brand-yellow'
 ] as const satisfies Array<ButtonVariants['variant']>
 const sizes = [
   'sm',

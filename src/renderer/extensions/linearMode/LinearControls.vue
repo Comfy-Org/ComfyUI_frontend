@@ -1,9 +1,22 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import {
+  HoverCardContent,
+  HoverCardPortal,
+  HoverCardRoot,
+  HoverCardTrigger,
+  PopoverContent as RekaPopoverContent,
+  PopoverPortal as RekaPopoverPortal,
+  PopoverRoot as RekaPopoverRoot,
+  PopoverTrigger as RekaPopoverTrigger
+} from 'reka-ui'
 import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { CREDITS_ICON } from '@/base/credits/comfyCredits'
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
@@ -15,9 +28,11 @@ import SubscribeToRunButton from '@/platform/cloud/subscription/components/Subsc
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import CreditsPill from '@/renderer/extensions/linearMode/CreditsPill.vue'
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
+import { useCreditsSummary } from '@/renderer/extensions/linearMode/useCreditsSummary'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useAppMode } from '@/composables/useAppMode'
@@ -35,6 +50,7 @@ const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
 const { hasAnyError } = storeToRefs(useExecutionErrorStore())
 const { overlayMessage } = useErrorOverlayState()
+const { creditsBadges } = useCreditsSummary()
 
 const { toastTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
@@ -145,19 +161,35 @@ function handleDragDrop() {
           </template>
         </div>
       </Teleport>
-      <PartnerNodesList v-if="!mobile" />
       <section
         v-if="mobile"
         :data-testid="linearRunButtonTestId"
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
+        <SubscribeToRunButton v-if="!isActiveSubscription" class="mt-4 w-full">
+          <template #trailing>
+            <CreditsPill v-if="creditsBadges.length" class="ml-auto" />
+          </template>
+        </SubscribeToRunButton>
         <div v-else class="mt-4 flex">
-          <PartnerNodesList mobile />
+          <RekaPopoverRoot v-if="creditsBadges.length">
+            <RekaPopoverTrigger as-child>
+              <Button class="mr-2 size-10">
+                <i :class="cn(CREDITS_ICON, 'bg-current')" />
+              </Button>
+            </RekaPopoverTrigger>
+            <RekaPopoverPortal>
+              <RekaPopoverContent
+                side="top"
+                :side-offset="8"
+                :collision-padding="10"
+                class="z-1700 w-72 max-w-[calc(100vw-2rem)]"
+              >
+                <PartnerNodesList :badges="creditsBadges" />
+              </RekaPopoverContent>
+            </RekaPopoverPortal>
+          </RekaPopoverRoot>
           <Popover side="top" @open-auto-focus.prevent>
             <template #button>
               <Button size="lg" class="-mr-3 pr-7">
@@ -166,19 +198,19 @@ function handleDragDrop() {
               </Button>
             </template>
             <div
-              class="m-1 mb-2 text-node-component-slot-text"
-              v-text="t('linearMode.runCount')"
+              class="m-1 mb-2 text-node-component-slot-text uppercase"
+              v-text="t('linearMode.generations')"
             />
             <ScrubableNumberInput
               v-model="batchCount"
-              :aria-label="t('linearMode.runCount')"
+              :aria-label="t('linearMode.generations')"
               :min="1"
               :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
               class="h-10 min-w-40"
             />
           </Popover>
           <Button
-            variant="primary"
+            variant="inverted"
             class="grow"
             size="lg"
             :aria-describedby="
@@ -190,45 +222,73 @@ function handleDragDrop() {
           >
             <i aria-hidden="true" class="icon-[lucide--play]" />
             {{ t('menu.run') }}
+            <CreditsPill
+              v-if="creditsBadges.length"
+              class="ml-auto text-brand-blue"
+            />
           </Button>
         </div>
       </section>
-      <section
-        v-else
-        :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
-      >
+      <section v-else :data-testid="linearRunButtonTestId" class="p-4 pb-6">
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <div
-          class="m-1 mb-2 text-node-component-slot-text"
-          v-text="t('linearMode.runCount')"
-        />
-        <ScrubableNumberInput
-          v-model="batchCount"
-          :aria-label="t('linearMode.runCount')"
-          :min="1"
-          :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-          class="h-7 min-w-40"
-        />
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
-        <Button
-          v-else
-          variant="primary"
-          class="mt-4 w-full text-sm"
-          size="lg"
-          :aria-describedby="
-            showRunErrorWarning
-              ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
-              : undefined
-          "
-          @click="runButtonClick"
+        <div class="mx-1 flex flex-wrap items-center justify-between gap-2">
+          <div
+            class="text-xs text-base-foreground uppercase"
+            v-text="t('linearMode.generations')"
+          />
+          <ScrubableNumberInput
+            v-model="batchCount"
+            :aria-label="t('linearMode.generations')"
+            :min="1"
+            :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+            class="h-7 min-w-40"
+          />
+        </div>
+        <HoverCardRoot
+          :open-delay="creditsBadges.length ? 0 : 150"
+          :close-delay="100"
         >
-          <i aria-hidden="true" class="icon-[lucide--play]" />
-          {{ t('menu.run') }}
-        </Button>
+          <HoverCardTrigger as-child>
+            <SubscribeToRunButton
+              v-if="!isActiveSubscription"
+              large
+              class="mt-4 w-full"
+            >
+              <template #trailing>
+                <CreditsPill v-if="creditsBadges.length" class="ml-auto" />
+              </template>
+            </SubscribeToRunButton>
+            <Button
+              v-else
+              variant="inverted"
+              class="mt-4 w-full text-sm"
+              size="lg"
+              :aria-describedby="
+                showRunErrorWarning
+                  ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+                  : undefined
+              "
+              @click="runButtonClick"
+            >
+              <i aria-hidden="true" class="icon-[lucide--play]" />
+              {{ t('menu.run') }}
+              <CreditsPill
+                v-if="creditsBadges.length"
+                class="ml-auto text-brand-blue"
+              />
+            </Button>
+          </HoverCardTrigger>
+          <HoverCardPortal v-if="creditsBadges.length">
+            <HoverCardContent
+              side="top"
+              :side-offset="10"
+              :collision-padding="10"
+              class="z-1700 w-(--reka-hover-card-trigger-width)"
+            >
+              <PartnerNodesList :badges="creditsBadges" />
+            </HoverCardContent>
+          </HoverCardPortal>
+        </HoverCardRoot>
       </section>
     </div>
   </div>
