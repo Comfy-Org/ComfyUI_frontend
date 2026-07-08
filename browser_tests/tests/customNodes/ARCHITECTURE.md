@@ -142,18 +142,18 @@ services that support the tiers are listed in the table below it, because
 table than as crossing arrows.
 
 ```mermaid
-flowchart TB
-    MAN["Pack Manifest: one declarative row per pack (source, pinned version, tiers, known-failure baseline)"]
-    ORCH["Test Orchestrator: iterates the manifest and runs every tier against every pack"]
+%%{init: {"flowchart": {"wrappingWidth": 500}}}%%
+flowchart LR
+    MAN["Pack Manifest: one row per pack (source, pin, tiers, known-failure baseline)"]
+    ORCH["Test Orchestrator: runs every tier against every pack"]
     subgraph TIERS ["Verification tiers (section 5)"]
-        direction LR
-        TM["Mount<br/>Completeness"]
+        TM["Mount Completeness"]
         TP["Persistence"]
-        TW["Wiring<br/>Compatibility"]
+        TW["Wiring Compatibility"]
         TX["Execution"]
     end
-    EVID["Evidence Ledgers + Reconciler: collects every result; every exception carries its causal mechanism; lists cannot go stale"]
-    GATE["Gate verdict + team-facing evidence"]
+    EVID["Evidence Ledgers + Reconciler: every result collected; every exception carries its causal mechanism; lists cannot go stale"]
+    GATE["Gate verdict + evidence for the team"]
     MAN -->|"drives"| ORCH
     ORCH -->|"runs, per pack"| TIERS
     TIERS -->|"all results and exceptions"| EVID
@@ -195,6 +195,7 @@ to right, and the suite derives three independent plans from one canonical
 corpus.
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 380}}}%%
 flowchart LR
     PUB["Backend publishes node definitions"] --> NORM["Suite normalizes them: two dialects arrive, one canonical model leaves"]
     NORM --> CORPUS["Canonical definition corpus: every node the packs register, re-discovered live each run"]
@@ -220,6 +221,7 @@ How the suite runs hundreds of foreign nodes safely, with no fixtures, and
 still attributes every failure to the right node.
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 700}}}%%
 flowchart TD
     CLASS["Classify each node: runnable on its own defaults / runnable with synthesized inputs / blocked, with the reason recorded"]
     CLASS --> BATCH["Group runnable nodes into small batches: a failure stays isolated, and one submission carries many nodes instead of paying the round-trip per node"]
