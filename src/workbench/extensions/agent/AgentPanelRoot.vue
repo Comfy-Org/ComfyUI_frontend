@@ -119,8 +119,8 @@ onBeforeUnmount(() => {
   // generating and billing while the panel is closed (its events would be missed and leave a
   // turn stuck streaming on reopen); the thread id is persisted, so a reopen resumes the
   // conversation.
-  void stopTurn()
-  stop()
+  // Unsubscribe only after the cancel settles so its ack is not torn down mid-flight.
+  void stopTurn().finally(stop)
 })
 
 const history = useAgentChatHistoryStore()

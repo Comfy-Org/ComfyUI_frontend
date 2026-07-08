@@ -33,27 +33,31 @@ export function useAttachment(options: UseAttachmentOptions) {
     files: Iterable<File>
   ): Promise<ComposerAttachment[]> {
     const staged: ComposerAttachment[] = []
-    for (const file of files) {
-      if (file.size > MAX_ATTACHMENT_BYTES) {
-        options.onError?.(`${file.name} is larger than 20MB`)
-        continue
+    // pending spans the whole batch so a multi-file drop shows one steady busy state
+    // instead of flickering between files.
+    pending.value = true
+    try {
+      for (const file of files) {
+        if (file.size > MAX_ATTACHMENT_BYTES) {
+          options.onError?.(`${file.name} is larger than 20MB`)
+          continue
+        }
+        try {
+          const result = await options.upload(file)
+          staged.push({
+            id: `${result.ref}:${file.name}`,
+            name: file.name,
+            ref: result.ref,
+            previewUrl: result.url
+          })
+        } catch {
+          // A failed upload must not lose already-staged files, skip the rest of the batch,
+          // or surface as an unhandled rejection to the drop handler's caller.
+          options.onError?.(`${file.name} could not be uploaded`)
+        }
       }
-      pending.value = true
-      try {
-        const result = await options.upload(file)
-        staged.push({
-          id: `${result.ref}:${file.name}`,
-          name: file.name,
-          ref: result.ref,
-          previewUrl: result.url
-        })
-      } catch {
-        // A failed upload must not lose already-staged files, skip the rest of the batch,
-        // or surface as an unhandled rejection to the drop handler's caller.
-        options.onError?.(`${file.name} could not be uploaded`)
-      } finally {
-        pending.value = false
-      }
+    } finally {
+      pending.value = false
     }
     return staged
   }

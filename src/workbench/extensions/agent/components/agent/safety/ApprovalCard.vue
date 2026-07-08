@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '../../ui/Button.vue'
@@ -12,6 +13,16 @@ const { card } = defineProps<{ card: ApprovalCard }>()
 const emit = defineEmits<{ answer: [approvalId: string, approved: boolean] }>()
 
 const { t } = useI18n()
+
+// A rapid double-click must not emit two answers before the parent flips the card off
+// 'open'; an approval is a spend decision.
+const answered = ref(false)
+
+function answer(approved: boolean): void {
+  if (answered.value) return
+  answered.value = true
+  emit('answer', card.approvalId, approved)
+}
 </script>
 
 <template>
@@ -28,13 +39,14 @@ const { t } = useI18n()
     <p class="text-agent-fg-subtle font-mono text-xs">{{ card.tool }}</p>
 
     <div v-if="card.status === 'open'" class="flex gap-2">
-      <Button size="sm" @click="emit('answer', card.approvalId, true)">
+      <Button size="sm" :disabled="answered" @click="answer(true)">
         {{ t('agent.approve') }}
       </Button>
       <Button
         size="sm"
         variant="outline"
-        @click="emit('answer', card.approvalId, false)"
+        :disabled="answered"
+        @click="answer(false)"
       >
         {{ t('agent.deny') }}
       </Button>
