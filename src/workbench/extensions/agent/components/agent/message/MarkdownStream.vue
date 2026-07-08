@@ -53,10 +53,7 @@ const segments = computed<Segment[]>(() => {
   return out
 })
 
-// Prose styles matched to the design reference (values read from the deployed prototype's
-// .agent-markdown rules): p 14px/1.625, h1 24/600, h2 16/600, decimal/disc lists,
-// primary-underlined links, 3px muted blockquote, bordered secondary-surface tables, and
-// bordered inline code.
+// Prose styles read from the deployed prototype's .agent-markdown rules.
 const proseClass = cn(
   'text-agent-fg text-sm/relaxed',
   '[&_a]:text-agent-accent [&_a]:cursor-pointer [&_a]:underline',
