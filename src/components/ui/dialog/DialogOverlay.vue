@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DialogOverlayProps } from 'reka-ui'
-import { DialogOverlay, injectDialogRootContext } from 'reka-ui'
+import { DialogOverlay, Presence, injectDialogRootContext } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -9,10 +9,8 @@ const { class: customClass = '', ...delegated } = defineProps<
   DialogOverlayProps & { class?: HTMLAttributes['class'] }
 >()
 
-// Reka renders DialogOverlay only for modal dialogs. Non-modal dialogs
-// (Settings, Manager — see useSettingsDialog) opt out of Reka's focus trap
-// and body pointer-events lock but still need the scrim, so render a plain
-// backdrop for them.
+// Reka renders DialogOverlay only for modal dialogs; non-modal dialogs still
+// need the scrim, so render a plain backdrop for them.
 const rootContext = injectDialogRootContext()
 
 const overlayClass =
@@ -26,10 +24,11 @@ const overlayClass =
     data-testid="dialog-overlay"
     :class="cn(overlayClass, customClass)"
   />
-  <div
-    v-else-if="rootContext.open.value"
-    data-state="open"
-    data-testid="dialog-overlay"
-    :class="cn(overlayClass, customClass)"
-  />
+  <Presence v-else :present="delegated.forceMount || rootContext.open.value">
+    <div
+      :data-state="rootContext.open.value ? 'open' : 'closed'"
+      data-testid="dialog-overlay"
+      :class="cn(overlayClass, customClass)"
+    />
+  </Presence>
 </template>

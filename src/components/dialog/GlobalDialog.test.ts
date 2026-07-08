@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -310,7 +310,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
     expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
   })
 
-  it('renders a backdrop scrim for non-modal Reka dialogs', async () => {
+  it('shows a backdrop scrim while a non-modal Reka dialog is open', async () => {
     // Reka's own DialogOverlay renders nothing when the root is non-modal,
     // which silently dropped the scrim behind Settings/Manager (modal: false).
     mountDialog()
@@ -320,42 +320,43 @@ describe('GlobalDialog Reka overlay scrim', () => {
       key: 'reka-non-modal-scrim',
       title: 'Non-modal',
       component: Body,
-      dialogComponentProps: {
-        renderer: 'reka',
-        modal: false,
-        overlayClass: 'p-8'
-      }
+      dialogComponentProps: { renderer: 'reka', modal: false }
     })
 
     await screen.findByRole('dialog')
-    const scrims = screen.queryAllByTestId('dialog-overlay')
-    expect(scrims).toHaveLength(1)
-    expect(scrims[0].classList.contains('p-8')).toBe(true)
+    expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
+
+    store.closeDialog({ key: 'reka-non-modal-scrim' })
+    await waitFor(() =>
+      expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
+    )
   })
 
   it('renders no scrim for a mounted but closed non-modal dialog', async () => {
     // CustomizationDialog mounts its non-modal Dialog root with open=false;
     // the scrim must stay gated on open, not just on mount.
     render(ClosedNonModalDialog)
-    await Promise.resolve()
+    await nextTick()
     expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
   })
 
-  it('removes the scrim when the dialog closes', async () => {
+  it('dismisses the dialog on a scrim pointerdown', async () => {
     mountDialog()
     const store = useDialogStore()
+    const user = userEvent.setup()
 
     store.showDialog({
-      key: 'reka-scrim-close',
+      key: 'reka-scrim-dismiss',
       title: 'Non-modal',
       component: Body,
       dialogComponentProps: { renderer: 'reka', modal: false }
     })
 
     await screen.findByRole('dialog')
-    store.closeDialog({ key: 'reka-scrim-close' })
+    await user.click(screen.getByTestId('dialog-overlay'))
+
     await waitFor(() =>
-      expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
+      expect(store.isDialogOpen('reka-scrim-dismiss')).toBe(false)
     )
   })
 })
