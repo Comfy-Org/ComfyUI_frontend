@@ -26,6 +26,7 @@ const {
   entries,
   userName,
   streaming = false,
+  submitting = false,
   approvalCards = [],
   lockState = 'UNLOCKED',
   conflictOpen = false,
@@ -37,6 +38,7 @@ const {
   entries: ConversationEntry[]
   userName?: string
   streaming?: boolean
+  submitting?: boolean
   approvalCards?: ApprovalCard[]
   lockState?: LockState
   conflictOpen?: boolean
@@ -162,6 +164,7 @@ defineExpose({ addAttachment })
           <Composer
             ref="composerRef"
             :streaming="streaming"
+            :submitting="submitting"
             :can-attach="canAttach"
             @send="(text, attachments) => emit('send', text, attachments)"
             @stop="emit('stop')"

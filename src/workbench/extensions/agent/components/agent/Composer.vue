@@ -8,8 +8,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
 
-const { streaming = false, canAttach = false } = defineProps<{
+const {
+  streaming = false,
+  submitting = false,
+  canAttach = false
+} = defineProps<{
   streaming?: boolean
+  submitting?: boolean
   canAttach?: boolean
 }>()
 const emit = defineEmits<{
@@ -114,7 +119,11 @@ defineExpose({
             :class="
               cn(
                 'size-4',
-                streaming ? 'icon-[lucide--square]' : 'icon-[lucide--arrow-up]'
+                submitting
+                  ? 'icon-[lucide--loader-circle] animate-spin'
+                  : streaming
+                    ? 'icon-[lucide--square]'
+                    : 'icon-[lucide--arrow-up]'
               )
             "
           />
