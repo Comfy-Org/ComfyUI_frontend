@@ -35,14 +35,23 @@
 
     <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
+      <EditableText
+        v-if="editing"
+        :model-value="slotData.name ?? ''"
+        is-editing
+        @edit="commit"
+        @cancel="cancel"
+      />
       <span
-        v-if="!props.dotOnly && !hasNoLabel"
+        v-else-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
             'truncate text-node-component-slot-text',
-            hasError && 'font-medium text-error'
+            hasError && 'font-medium text-error',
+            isEditable && 'cursor-text'
           )
         "
+        @dblclick.stop="startEdit"
       >
         {{
           slotData.label ||
@@ -58,10 +67,12 @@
 import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
+import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { useEditableSlotTitle } from '@/renderer/extensions/vueNodes/composables/useEditableSlotTitle'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
@@ -83,6 +94,11 @@ interface InputSlotProps {
 }
 
 const props = defineProps<InputSlotProps>()
+
+const { editing, isEditable, startEdit, commit, cancel } = useEditableSlotTitle(
+  () => props.nodeId ?? '',
+  () => props.slotData.name ?? ''
+)
 
 const hasNoLabel = computed(
   () =>

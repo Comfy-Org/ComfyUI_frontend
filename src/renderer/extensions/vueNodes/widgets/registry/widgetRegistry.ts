@@ -75,6 +75,9 @@ const WidgetBoundingBoxes = defineAsyncComponent(
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
+const WidgetPromptEditor = defineAsyncComponent(
+  () => import('@/components/graph/widgets/PromptNodeWidget.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -241,6 +244,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['COLORS'],
       essential: false
     }
+  ],
+  [
+    'prompteditor',
+    {
+      component: WidgetPromptEditor,
+      aliases: ['PROMPTEDITOR'],
+      essential: false
+    }
   ]
 ]
 
@@ -281,7 +292,8 @@ const EXPANDING_TYPES = [
   'painter',
   'imagecompare',
   'range',
-  'boundingboxes'
+  'boundingboxes',
+  'prompteditor'
 ] as const
 
 export function shouldExpand(type: string): boolean {
