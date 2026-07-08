@@ -116,6 +116,10 @@ reviews:
       instructions: |
         When changes touch `LGraph.configure()`, graph deserialization, link loading, or nullable serialized links, require a direct regression test that constructs an `LGraph` and calls `configure()` with the changed serialized shape.
         Helper-only coverage is insufficient for these changes. For sparse legacy links, expect a v0.4 workflow with `links: [null, validLink]` to not throw and still create the valid link.
+    - path: 'src/renderer/extensions/linearMode/PartnerNodesList.vue'
+      instructions: |
+        When behavior changes which graph `PartnerNodesList` traverses, require a focused component test for this component itself.
+        If the change switches from `app.graph` to `app.rootGraph`, the test should arrange different badge nodes in each graph and assert the rendered badge list comes from `rootGraph`. Coverage through `LinearControls.test.ts` is insufficient if `PartnerNodesList` is stubbed there.
     - path: 'src/lib/litegraph/**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed litegraph Vitest test file.
