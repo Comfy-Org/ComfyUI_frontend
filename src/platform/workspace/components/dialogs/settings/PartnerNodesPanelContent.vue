@@ -149,23 +149,14 @@
       enter-from-class="opacity-0"
       leave-to-class="opacity-0"
     >
-      <div
+      <SelectionBar
         v-if="selectedCount > 0"
-        class="fixed bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-full border border-interface-stroke/60 bg-base-background px-4 py-2 shadow-lg"
+        :label="$t('workspacePanel.partnerNodes.selectedCount', selectedCount)"
+        :deselect-label="$t('workspacePanel.partnerNodes.clearSelection')"
+        @deselect="clearSelection"
       >
-        <Button
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="$t('workspacePanel.partnerNodes.clearSelection')"
-          @click="clearSelection"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </Button>
-        <span class="text-sm text-base-foreground tabular-nums">
-          {{ $t('workspacePanel.partnerNodes.selectedCount', selectedCount) }}
-        </span>
         <Switch :model-value="bulkEnabled" @update:model-value="applyBulk" />
-      </div>
+      </SelectionBar>
     </Transition>
   </div>
 </template>
@@ -174,7 +165,7 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import SelectionBar from '@/components/common/SelectionBar.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
