@@ -10,6 +10,8 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
  * Typed mocks for the In-App Agent panel e2e spec. Every REST body and WS frame
@@ -175,12 +177,6 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
   }
 }
 
-const jsonRoute = (body: unknown) => ({
-  status: 200,
-  contentType: 'application/json',
-  body: JSON.stringify(body)
-})
-
 /**
  * Boots the cloud app against fully mocked boot + agent REST endpoints. Mirrors
  * `CloudWorkspaceMockHelper.mockBoot`, adding the agent's own REST surface
@@ -200,6 +196,13 @@ export async function mockAgentBoot(
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
   })
+
+  // Billing + assets answer real requests in CI; unmocked they reject and their
+  // error toasts stack over the docked panel, swallowing clicks.
+  await mockBilling(page)
+  await page.route('**/api/assets**', (r) =>
+    r.fulfill(jsonRoute({ assets: [] }))
+  )
 
   await page.route('**/api/features', (r) =>
     r.fulfill(jsonRoute(agentFeatures(agentFlag)))
