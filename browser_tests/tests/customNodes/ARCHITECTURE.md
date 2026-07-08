@@ -134,38 +134,37 @@ while testing the wrong thing:
 
 ## 4. D2 - building blocks
 
-What the suite is made of, by responsibility.
+What the suite is made of. The main flow is a straight pipeline; the shared
+services that support the tiers are listed in the table below it, because
+"which service feeds which tier" is a matrix, and a matrix reads better as a
+table than as crossing arrows.
 
 ```mermaid
-flowchart LR
-    subgraph SUITE ["The suite"]
-        direction TB
-        MAN["Pack Manifest<br/>declarative row per pack: source,<br/>pinned version, tiers to run,<br/>known-failure baseline"]
-        ORCH["Test Orchestrator<br/>iterates the manifest and runs<br/>each tier against each pack"]
-        subgraph TIERS ["Verification tiers"]
-            direction TB
-            TM["Mount Completeness"]
-            TP["Persistence"]
-            TW["Wiring Compatibility"]
-            TX["Execution"]
-        end
-        NORM["Definition Normalizer<br/>one canonical node model out of<br/>multiple definition dialects"]
-        CLS["Capability Classifier<br/>decides what each node can do<br/>without hand-written fixtures"]
-        HARN["Execution Harness<br/>runs nodes for real and attributes<br/>every outcome to the right node"]
-        EVID["Evidence Ledgers + Reconciler<br/>every exception carries its causal<br/>mechanism; lists are guarded<br/>against going stale"]
+flowchart TB
+    MAN["Pack Manifest<br/>one declarative row per pack:<br/>source, pinned version, tiers,<br/>known-failure baseline"]
+    ORCH["Test Orchestrator<br/>iterates the manifest, runs every<br/>tier against every pack"]
+    subgraph TIERS ["Verification tiers (section 5)"]
+        direction LR
+        TM["Mount<br/>Completeness"]
+        TP["Persistence"]
+        TW["Wiring<br/>Compatibility"]
+        TX["Execution"]
     end
+    EVID["Evidence Ledgers + Reconciler<br/>collects every pass/fail from every tier;<br/>every exception carries its causal mechanism;<br/>lists are guarded against going stale"]
+    GATE["Gate verdict + team-facing evidence"]
     MAN -->|"drives"| ORCH
-    ORCH -->|"runs"| TIERS
-    NORM -->|"canonical model"| TM
-    NORM -->|"canonical model"| TW
-    NORM -->|"canonical model"| CLS
-    CLS -->|"runnable set + reasons"| TX
-    TX -->|"real execution"| HARN
-    HARN -->|"attributed outcomes"| EVID
-    TM -->|"pass/fail + exceptions"| EVID
-    TP -->|"pass/fail + exceptions"| EVID
-    TW -->|"pass/fail + exceptions"| EVID
+    ORCH -->|"runs, per pack"| TIERS
+    TIERS -->|"all results and exceptions"| EVID
+    EVID -->|"green only if everything is<br/>accounted for"| GATE
 ```
+
+The shared services behind the tiers:
+
+| Service               | Used by                              | Responsibility                                                                                                                                                   |
+| --------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Definition Normalizer | Mount, Wiring, Capability Classifier | one canonical node model out of the multiple definition dialects (D3), so no tier parses raw definitions                                                         |
+| Capability Classifier | Execution                            | decides, per node, what it can do without hand-written fixtures: run on its own defaults, run with synthesized inputs, or blocked, with the reason recorded (D4) |
+| Execution Harness     | Execution                            | runs nodes for real and attributes every outcome to the right node despite an asynchronous, noisy event stream (D4, D6)                                          |
 
 Two further tiers (curated workflows, core smoke) sit alongside these four
 but are fixture-driven rather than derived from the node corpus; section 5
@@ -173,14 +172,6 @@ lists all six.
 
 - **Pack Manifest**: the single extension point. Adding a pack is one row;
   no tier knows pack names.
-- **Definition Normalizer**: shields every consumer from the fact that node
-  definitions arrive in more than one schema dialect (D3).
-- **Capability Classifier**: the reason no per-node fixtures exist. It
-  derives, per node, whether the node can run as declared, can run with
-  synthesized inputs, or is blocked, and why (D4).
-- **Execution Harness**: the trust boundary. Real execution is asynchronous
-  and noisy; the harness's job is that every verdict belongs to the node
-  that earned it (D6).
 - **Evidence Ledgers**: the honesty mechanism. An exception without a
   recorded mechanism is not allowed to exist (D7).
 
@@ -197,23 +188,29 @@ lists all six.
 
 ## 6. D3 - the node-definition pipeline
 
-Where the suite's knowledge of every node comes from.
+Where the suite's knowledge of every node comes from: definitions flow left
+to right, and the suite derives three independent plans from one canonical
+corpus.
 
 ```mermaid
 flowchart LR
-    PUB["Backend publishes<br/>node definitions"] --> XF["Frontend normalizes them<br/>for its own use"]
-    XF --> CORPUS["One definition corpus,<br/>as the frontend actually sees it.<br/>Two dialects coexist inside it:<br/>legacy list-form and V2 object-form"]
-    CORPUS --> W["Wiring plan:<br/>which slots can pair, and why"]
-    CORPUS --> X["Execution plan:<br/>which nodes can run,<br/>and why the rest cannot"]
-    CORPUS --> M["Mount expectations:<br/>what each created node<br/>must materialize"]
+    PUB["Backend publishes<br/>node definitions"] --> NORM["Suite normalizes them:<br/>definitions arrive in two dialects,<br/>one canonical model leaves"]
+    NORM --> CORPUS["Canonical definition corpus:<br/>every node the packs register,<br/>re-discovered live each run"]
+    CORPUS -->|"derives"| W["Wiring plan:<br/>which slots can pair, and why"]
+    CORPUS -->|"derives"| X["Execution plan:<br/>which nodes can run,<br/>and why the rest cannot"]
+    CORPUS -->|"derives"| M["Mount expectations:<br/>what each created node<br/>must materialize"]
 ```
 
-Design rule that came from a real bug: every consumer of this corpus must
-handle **both dialects**, and anything with an unknown shape is excluded
-with a record, never silently matched or skipped. The dialects differ in
-where dropdown options live, how "must be wired" is flagged, and how
-growable input groups are declared; the details and the evidence rules are
-in ADDING_CUSTOM_NODES.md.
+The three plans are independent consumers of the same corpus: the wiring
+plan feeds the Wiring Compatibility tier, the execution plan feeds the
+Execution tier, and the mount expectations feed Mount Completeness.
+
+Design rule that came from a real bug: every consumer must handle **both
+definition dialects** (legacy list-form and V2 object-form), and anything
+with an unknown shape is excluded with a record, never silently matched or
+skipped. The dialects differ in where dropdown options live, how "must be
+wired" is flagged, and how growable input groups are declared; details and
+evidence rules are in ADDING_CUSTOM_NODES.md.
 
 ## 7. D4 - the execution flow
 
