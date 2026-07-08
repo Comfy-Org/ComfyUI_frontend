@@ -9,7 +9,8 @@ import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 import DynamicSurveyForm from './DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './defaultSurveySchema'
 
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 20))
+// Waits past the single-select auto-advance delay (autoAdvanceDelayMs = 150)
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 300))
 
 const renderForm = (survey: OnboardingSurvey) =>
   render(DynamicSurveyForm, {
@@ -91,9 +92,10 @@ describe('DynamicSurveyForm', () => {
 
     expect(screen.getByText('What do you want to make?')).toBeVisible()
     expect(screen.getByText('Images')).toBeInTheDocument()
-    // One card per option, plus the single Next button on the first step.
+    // Required single-select auto-advances on pick, so there is no Next button
+    // on this step — just one card per option.
     expect(screen.getAllByRole('button')).toHaveLength(
-      firstField.options!.length + 1
+      firstField.options!.length
     )
   })
 
@@ -137,6 +139,23 @@ describe('DynamicSurveyForm', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }))
     await flushPromises()
     expect(screen.getByText('What do you want to make?')).toBeVisible()
+  })
+
+  it('offers Next on an already-answered single-select reached via Back', async () => {
+    const user = userEvent.setup()
+    renderForm(twoStepSurvey)
+
+    await clickOption(user, 'Images')
+    await flushPromises()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await flushPromises()
+
+    // The step is answered, so Next lets the user move forward again without
+    // re-picking (which would toggle the choice off).
+    const next = screen.getByRole('button', { name: 'Next' })
+    await user.click(next)
+    await flushPromises()
+    expect(screen.getByText('Pick everything that applies')).toBeVisible()
   })
 
   it('reveals a branched follow-up step from the answer and submits it', async () => {
