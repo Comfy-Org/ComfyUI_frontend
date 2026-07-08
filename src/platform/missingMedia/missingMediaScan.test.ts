@@ -559,6 +559,7 @@ describe('verifyMediaCandidates', () => {
       isCloud: true,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
   })
@@ -652,6 +653,7 @@ describe('verifyMediaCandidates', () => {
       generatedMatchNames: new Set([
         '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
       ]),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
     expect(candidates[0]).toMatchObject({
@@ -685,6 +687,7 @@ describe('verifyMediaCandidates', () => {
       isCloud: true,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([outputHash]),
+      generatedHashRequiredNames: new Set([outputHash]),
       allowCompactSuffix: true
     })
     expect(candidates[0]).toMatchObject({
@@ -814,6 +817,7 @@ describe('verifyMediaCandidates', () => {
       isCloud: false,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: false
     })
     expect(candidates[0].isMissing).toBe(true)

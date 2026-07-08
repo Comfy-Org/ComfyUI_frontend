@@ -135,6 +135,11 @@ interface MediaVerificationOptions {
   resolveAssetSources?: MissingMediaAssetResolver
 }
 
+interface GeneratedCandidateMatchNames {
+  names: Set<string>
+  hashRequiredNames: Set<string>
+}
+
 /**
  * Verify media candidates against assets available to the current runtime.
  *
@@ -175,8 +180,9 @@ export async function verifyMediaCandidates(
     const assetSources = await resolveAssetSources({
       signal,
       isCloud,
-      includeGeneratedAssets: generatedMatchNames.size > 0,
-      generatedMatchNames,
+      includeGeneratedAssets: generatedMatchNames.names.size > 0,
+      generatedMatchNames: generatedMatchNames.names,
+      generatedHashRequiredNames: generatedMatchNames.hashRequiredNames,
       allowCompactSuffix: isCloud
     })
     inputAssets = assetSources.inputAssets
@@ -223,14 +229,25 @@ function getGeneratedCandidateMatchNames(
   candidates: MissingMediaCandidate[],
   isCloud: boolean,
   pathOptions: { allowCompactSuffix: boolean }
-): Set<string> {
-  return new Set(
-    candidates
-      .filter((candidate) => isGeneratedCandidate(candidate, pathOptions))
-      .map((candidate) =>
-        getGeneratedCandidateLookupName(candidate.name, isCloud, pathOptions)
-      )
-  )
+): GeneratedCandidateMatchNames {
+  const names = new Set<string>()
+  const hashRequiredNames = new Set<string>()
+
+  for (const candidate of candidates) {
+    if (!isGeneratedCandidate(candidate, pathOptions)) continue
+
+    const normalized = normalizeAnnotatedMediaPathForDetection(
+      candidate.name,
+      pathOptions
+    )
+    const lookupName = isCloud ? getMediaPathBasename(normalized) : normalized
+    names.add(lookupName)
+    if (isCloud && lookupName !== normalized) {
+      hashRequiredNames.add(lookupName)
+    }
+  }
+
+  return { names, hashRequiredNames }
 }
 
 function isGeneratedCandidate(
@@ -242,15 +259,6 @@ function isGeneratedCandidate(
     pathOptions
   )
   return type === 'output'
-}
-
-function getGeneratedCandidateLookupName(
-  value: string,
-  isCloud: boolean,
-  pathOptions: { allowCompactSuffix: boolean }
-): string {
-  const normalized = normalizeAnnotatedMediaPathForDetection(value, pathOptions)
-  return isCloud ? getMediaPathBasename(normalized) : normalized
 }
 
 function isCandidateResolved(
