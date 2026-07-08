@@ -11,9 +11,9 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
 const mockToastAdd = vi.fn()
-const mockCurrentUser = vi.hoisted(
-  (): { value: { uid: string } | null } => ({ value: null })
-)
+const mockCurrentUser = vi.hoisted((): { value: { uid: string } | null } => ({
+  value: null
+}))
 const mockForgetRevokedActiveWorkspace = vi.fn()
 
 vi.mock('@/stores/authStore', () => ({
