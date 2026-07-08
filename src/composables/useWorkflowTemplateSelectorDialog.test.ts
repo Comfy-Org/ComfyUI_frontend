@@ -107,6 +107,21 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       )
     })
 
+    it('passes initialTemplateType through to the dialog props', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('sidebar', { initialTemplateType: 'apps' })
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            initialTemplateType: 'apps'
+          })
+        })
+      )
+    })
+
     it('invokes afterClose callback when dialog is closed', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
       const afterClose = vi.fn()

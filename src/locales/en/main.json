@@ -1159,6 +1159,12 @@
     "useCasesSelected": "{count} Use Cases",
     "runsOnSelected": "{count} Runs On",
     "runsOnFilter": "Runs on",
+    "typeFilter": "Type",
+    "types": {
+      "all": "All",
+      "apps": "App",
+      "nodeGraphs": "Node graph"
+    },
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
@@ -3733,7 +3739,8 @@
       "appsEmptyMessageAction": "Click below to build your first app.",
       "buildAnApp": "Build an app",
       "create": "Create",
-      "createApp": "Create app"
+      "createApp": "Create app",
+      "explore": "Explore"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",

@@ -1,4 +1,5 @@
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
+import type { TemplateTypeFilter } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
@@ -19,7 +20,11 @@ export const useWorkflowTemplateSelectorDialog = () => {
 
   function show(
     source: TemplateLibraryMetadata['source'] = 'command',
-    options?: { initialCategory?: string; afterClose?: () => void }
+    options?: {
+      initialCategory?: string
+      initialTemplateType?: TemplateTypeFilter
+      afterClose?: () => void
+    }
   ) {
     useTelemetry()?.trackTemplateLibraryOpened({ source })
 
@@ -35,7 +40,8 @@ export const useWorkflowTemplateSelectorDialog = () => {
           hide()
           options?.afterClose?.()
         },
-        initialCategory
+        initialCategory,
+        initialTemplateType: options?.initialTemplateType
       },
       // The template browser is a wide layout. Without an explicit size the
       // Reka DialogContent falls back to size 'md' (max-w-xl), clipping the

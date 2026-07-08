@@ -26,13 +26,22 @@
     </template>
     <template #empty-state>
       <NoResultsPlaceholder
-        button-variant="secondary"
         text-class="text-muted-foreground text-sm"
         :message="`${$t('linearMode.appModeToolbar.appsEmptyMessage')}\n${$t('linearMode.appModeToolbar.appsEmptyMessageAction')}`"
-        button-icon="icon-[lucide--plus]"
-        :button-label="$t('linearMode.appModeToolbar.createApp')"
-        @action="createApp"
-      />
+      >
+        <template #actions>
+          <div class="inline-grid auto-cols-fr grid-flow-col gap-2">
+            <Button variant="inverted" size="md" @click="createApp">
+              <i class="icon-[lucide--plus] size-4" aria-hidden="true" />
+              {{ $t('linearMode.appModeToolbar.createApp') }}
+            </Button>
+            <Button variant="secondary" size="md" @click="exploreApps">
+              <i class="icon-[lucide--compass] size-4" aria-hidden="true" />
+              {{ $t('linearMode.appModeToolbar.explore') }}
+            </Button>
+          </div>
+        </template>
+      </NoResultsPlaceholder>
     </template>
   </BaseWorkflowsSidebarTab>
 </template>
@@ -41,10 +50,12 @@
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()
+const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
 
 function isAppWorkflow(workflow: ComfyWorkflow): boolean {
   return workflow.suffix === 'app.json'
@@ -52,5 +63,9 @@ function isAppWorkflow(workflow: ComfyWorkflow): boolean {
 
 function createApp() {
   void commandStore.execute('Comfy.NewBlankWorkflow')
+}
+
+function exploreApps() {
+  templateSelectorDialog.show('sidebar', { initialTemplateType: 'apps' })
 }
 </script>
