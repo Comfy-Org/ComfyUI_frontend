@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
+import { default as DOMPurify } from 'dompurify'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -23,17 +24,24 @@ const highlighted = ref<string | null>(null)
 // awaits the lazy shiki import — after the first await a watchEffect tracks nothing.
 watch(
   () => [code, lang] as const,
-  async ([currentCode, currentLang]) => {
+  async ([currentCode, currentLang], _prev, onCleanup) => {
+    // Streaming re-runs this per token; a superseded run must not land its stale
+    // highlight after a newer one (async resolutions are not ordered).
+    let cancelled = false
+    onCleanup(() => {
+      cancelled = true
+    })
     highlighted.value = null
     try {
       const { codeToHtml } = await import('shiki')
-      highlighted.value = await codeToHtml(currentCode, {
+      const html = await codeToHtml(currentCode, {
         lang: currentLang,
         theme: 'github-dark',
         colorReplacements: { '#24292e': 'transparent' }
       })
+      if (!cancelled) highlighted.value = DOMPurify.sanitize(html)
     } catch {
-      highlighted.value = null
+      if (!cancelled) highlighted.value = null
     }
   },
   { immediate: true }
