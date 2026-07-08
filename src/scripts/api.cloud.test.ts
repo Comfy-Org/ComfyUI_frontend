@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   fetchWithUnifiedRemint,
@@ -63,6 +63,10 @@ describe('ComfyApi cloud mode', () => {
       })
     )
     vi.stubGlobal('WebSocket', FakeWebSocket)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('adds cloud auth headers and enables unified retry for authenticated requests', async () => {

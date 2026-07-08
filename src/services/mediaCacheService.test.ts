@@ -1,16 +1,8 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMediaCache } from './mediaCacheService'
 
 const NativeURL = URL
-
-// Mock fetch
-global.fetch = vi.fn()
-global.URL = fromPartial<typeof URL>({
-  createObjectURL: vi.fn(() => 'blob:mock-url'),
-  revokeObjectURL: vi.fn()
-})
 
 describe('mediaCacheService', () => {
   describe('URL reference counting', () => {

@@ -524,6 +524,32 @@ describe('legacy workflow migration helpers', () => {
     expect(subgraph?.links?.[0].target_slot).toBe(0)
   })
 
+  it('retargets the valid link when links contains a null entry', () => {
+    const graph = fromPartial<ISerialisedGraph>({
+      nodes: [
+        {
+          id: 1,
+          type: 'Node',
+          inputs: [
+            {
+              name: 'widget',
+              type: 'STRING',
+              link: null,
+              widget: { name: 'w' }
+            },
+            { name: 'kept', type: 'STRING', link: 7 }
+          ]
+        }
+      ],
+      links: [null, [7, 2, 0, 1, 99, 'STRING']]
+    })
+
+    compressWidgetInputSlots(graph)
+
+    expect(graph.nodes[0].inputs?.map((input) => input.name)).toEqual(['kept'])
+    expect(graph.links[1]?.[4]).toBe(0)
+  })
+
   it('keeps labeled widget inputs and tolerates missing links', () => {
     const graph = fromPartial<ISerialisedGraph>({
       nodes: [

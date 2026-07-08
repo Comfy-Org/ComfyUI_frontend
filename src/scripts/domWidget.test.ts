@@ -292,7 +292,7 @@ describe('DOMWidgetImpl', () => {
     registerWidget.mockClear()
     unregisterWidget.mockClear()
     const node = new LGraphNode('test-node')
-    node.graph = {} as LGraph
+    node.graph = fromPartial<LGraph>({})
     const beforeResize = vi.fn()
     const afterResize = vi.fn()
     const widget = new DOMWidgetImpl({

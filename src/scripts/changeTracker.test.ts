@@ -490,6 +490,17 @@ describe('ChangeTracker', () => {
       tracker.updateModified()
       expect(workflow.isModified).toBe(true)
     })
+
+    it('does nothing when the workflow cannot be resolved from the store', () => {
+      const tracker = createTracker(createState(1))
+      mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
+
+      expect(() => tracker.updateModified()).not.toThrow()
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'graphChanged',
+        tracker.activeState
+      )
+    })
   })
 
   describe('undo and redo', () => {

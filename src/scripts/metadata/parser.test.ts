@@ -94,9 +94,12 @@ describe('getWorkflowDataFromFile', () => {
 
   it('routes isobmff by mime type and by file extension', async () => {
     await getWorkflowDataFromFile(file('video/mp4'))
+    await getWorkflowDataFromFile(file('', 'clip.mp4'))
     await getWorkflowDataFromFile(file('', 'clip.mov'))
     await getWorkflowDataFromFile(file('', 'clip.m4v'))
-    expect(getFromIsobmffFile).toHaveBeenCalledTimes(3)
+    await getWorkflowDataFromFile(file('video/quicktime'))
+    await getWorkflowDataFromFile(file('video/x-m4v'))
+    expect(getFromIsobmffFile).toHaveBeenCalledTimes(6)
   })
 
   it('routes svg and gltf by mime type or extension', async () => {

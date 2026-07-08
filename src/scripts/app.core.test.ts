@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { PartialDeep } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
@@ -435,6 +435,10 @@ describe('ComfyApp', () => {
     singletonApp.vueAppReady = false
     singletonApp.canvas = mockCanvas
     singletonApp.nodeOutputs = {}
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   describe('queuePrompt', () => {
@@ -2576,6 +2580,27 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
+    const registeredDropListeners: EventListener[] = []
+
+    function installDropHandler() {
+      const addEventListener = vi.spyOn(document, 'addEventListener')
+      ;(
+        Object.getPrototypeOf(app) as { addDropHandler(): void }
+      ).addDropHandler.call(app)
+      const [, dropListener] = addEventListener.mock.calls.find(
+        ([type]) => type === 'drop'
+      )!
+      addEventListener.mockRestore()
+      registeredDropListeners.push(dropListener as EventListener)
+    }
+
+    afterEach(() => {
+      for (const listener of registeredDropListeners) {
+        document.removeEventListener('drop', listener)
+      }
+      registeredDropListeners.length = 0
+    })
+
     it('syncs graph_mouse and routes mixed file drops by media type', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {
@@ -2602,9 +2627,7 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'handleVideoFileList').mockResolvedValue(undefined)
       vi.spyOn(app, 'handleFile').mockResolvedValue(undefined)
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
 
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
@@ -2640,9 +2663,7 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'handleVideoFileList').mockResolvedValue(undefined)
       vi.spyOn(app, 'handleFile').mockResolvedValue(undefined)
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2668,9 +2689,7 @@ describe('ComfyApp', () => {
       mockExtractFilesFromDragEvent.mockResolvedValue([workflow])
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2689,9 +2708,7 @@ describe('ComfyApp', () => {
       mockExtractFilesFromDragEvent.mockResolvedValue([])
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2707,9 +2724,7 @@ describe('ComfyApp', () => {
       })
       mockExtractFilesFromDragEvent.mockRejectedValue(new Error('drop failed'))
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2720,9 +2735,7 @@ describe('ComfyApp', () => {
 
     it('ignores drops that were already handled by nested targets', async () => {
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
 
       const event = new DragEvent('drop', { cancelable: true })
       event.preventDefault()
@@ -2749,9 +2762,7 @@ describe('ComfyApp', () => {
       })
       const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue()
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       document.dispatchEvent(new DragEvent('drop'))
       await flushDropHandler()
 
@@ -2788,9 +2799,7 @@ describe('ComfyApp', () => {
           return 1
         })
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       canvasEl.dispatchEvent(new DragEvent('dragover'))
       canvasEl.dispatchEvent(new DragEvent('dragleave'))
 
@@ -2821,9 +2830,7 @@ describe('ComfyApp', () => {
         })
       })
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       canvasEl.dispatchEvent(new DragEvent('dragover'))
 
       expect(app.dragOverNode).toBeNull()
@@ -2834,9 +2841,7 @@ describe('ComfyApp', () => {
       app.canvasElRef.value = canvasEl
       app.dragOverNode = null
 
-      ;(
-        Object.getPrototypeOf(app) as { addDropHandler(): void }
-      ).addDropHandler.call(app)
+      installDropHandler()
       canvasEl.dispatchEvent(new DragEvent('dragleave'))
 
       expect(mockCanvas.setDirty).not.toHaveBeenCalled()
