@@ -15,6 +15,7 @@ const baseRoutes = {
   demos: '/demos',
   learning: '/learning',
   termsOfService: '/terms-of-service',
+  enterpriseMsa: '/enterprise-msa',
   privacyPolicy: '/privacy-policy',
   affiliates: '/affiliates',
   affiliateTerms: '/affiliates/terms',
@@ -35,10 +36,15 @@ type Routes = typeof baseRoutes
 // block in src/i18n/translations.ts for the reasoning.
 //
 // termsOfService: legal-reviewed English-only document, same reasoning.
+//
+// enterpriseMsa: legal-reviewed English-only document (Comfy Enterprise
+// Customer Agreement template), same reasoning. See the comment header
+// in src/pages/enterprise-msa.astro.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
-  'termsOfService'
+  'termsOfService',
+  'enterpriseMsa'
 ])
 
 export function getRoutes(locale: Locale = 'en'): Routes {
@@ -60,7 +66,7 @@ export const externalLinks = {
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
-  docsApi: 'https://docs.comfy.org/api-reference/cloud',
+  docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   docsMcp: 'https://docs.comfy.org/agent-tools/cloud',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
