@@ -20,9 +20,12 @@
       </div>
       <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
     </div>
-    <Button v-if="banner.showAction" variant="inverted" size="lg">
-      {{ $t('workspacePanel.billingStatus.updatePayment') }}
-    </Button>
+    <div v-if="banner.showAction" class="flex shrink-0 items-center gap-2">
+      <slot name="actions" />
+      <Button variant="inverted" size="lg">
+        {{ $t('workspacePanel.billingStatus.updatePayment') }}
+      </Button>
+    </div>
   </div>
 </template>
 

@@ -30,7 +30,19 @@
       />
     </div>
 
-    <BillingStatusBanner />
+    <BillingStatusBanner>
+      <template #actions>
+        <Button
+          v-if="activeView === 'invoices' && isPaused"
+          variant="textonly"
+          size="lg"
+          @click="openInvoiceHistory"
+        >
+          {{ $t('workspacePanel.invoices.fullHistory') }}
+          <i class="icon-[lucide--external-link] size-4" />
+        </Button>
+      </template>
+    </BillingStatusBanner>
 
     <WorkspaceOverviewContent
       v-if="activeView === 'overview'"
@@ -54,6 +66,7 @@ import BillingStatusBanner from '@/platform/workspace/components/dialogs/setting
 import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
 import WorkspaceOverviewContent from '@/platform/workspace/components/dialogs/settings/WorkspaceOverviewContent.vue'
 import WorkspaceInvoicesContent from '@/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -62,6 +75,11 @@ type View = 'overview' | 'activity' | 'invoices'
 const { t } = useI18n()
 
 const { permissions } = useWorkspaceUI()
+const { isPaused, manageSubscription } = useBillingContext()
+
+function openInvoiceHistory() {
+  void manageSubscription()
+}
 
 const tabs = computed(() => {
   const base: { key: View; label: string }[] = [
