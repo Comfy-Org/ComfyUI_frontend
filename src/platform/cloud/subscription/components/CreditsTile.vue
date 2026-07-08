@@ -245,9 +245,7 @@ const cycleUsedPercent = computed(() =>
 )
 
 const cycleStatusLabel = computed(() =>
-  isPaused.value
-    ? t('subscription.refillPaused')
-    : t('subscription.percentUsed', { percent: cycleUsedPercent.value })
+  t('subscription.percentUsed', { percent: cycleUsedPercent.value })
 )
 
 const formatCreditCount = (value: number) =>

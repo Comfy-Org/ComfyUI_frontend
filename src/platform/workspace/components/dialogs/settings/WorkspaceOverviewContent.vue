@@ -21,9 +21,11 @@
           </p>
           <span class="text-sm text-muted-foreground">
             {{
-              $t('workspacePanel.overview.renewsOn', {
-                date: plan.renewalLabel
-              })
+              isPaused
+                ? $t('workspacePanel.overview.paused')
+                : $t('workspacePanel.overview.renewsOn', {
+                    date: plan.renewalLabel
+                  })
             }}
           </span>
         </div>
@@ -237,7 +239,7 @@ const {
 // Members can't manage or view billing details — only the credit balance. Gates
 // the plan price, payment/plan actions, snapshot, next invoice, and auto-reload.
 const canManageBilling = computed(() => permissions.value.canManageSubscription)
-const { isFreeTier, subscription } = useBillingContext()
+const { isFreeTier, isPaused, subscription } = useBillingContext()
 const { showCancelSubscriptionDialog } = useDialogService()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()

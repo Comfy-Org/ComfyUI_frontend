@@ -100,7 +100,6 @@ const i18n = createI18n({
         monthly: 'Monthly',
         yearly: 'Yearly',
         percentUsed: '{percent}% used',
-        refillPaused: 'Refill paused',
         usageProgress: '{used} of {total} credits used',
         additionalCreditsInfo: 'About additional credits',
         additionalCreditsTooltip: 'Credits you add on top of your plan.',

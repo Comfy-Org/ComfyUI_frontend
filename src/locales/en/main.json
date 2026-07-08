@@ -2588,7 +2588,6 @@
     "creditsRemainingThisYear": "Included (Refills {date})",
     "creditsYouveAdded": "Additional",
     "remaining": "remaining",
-    "refillPaused": "Refill paused",
     "percentUsed": "{percent}% used",
     "usageProgress": "{used} of {total} credits used",
     "additionalCreditsInfo": "About additional credits",
@@ -2962,6 +2961,7 @@
     "overview": {
       "perMonth": "mo",
       "renewsOn": "Renews on {date}",
+      "paused": "Paused",
       "managePayment": "Manage payment",
       "changePlan": "Change plan",
       "usd": "USD",
