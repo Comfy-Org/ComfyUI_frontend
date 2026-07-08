@@ -5,6 +5,7 @@
     <a
       href="https://www.comfy.org/terms-of-service"
       target="_blank"
+      rel="noopener noreferrer"
       class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
     >
       {{ t('auth.login.termsLink') }}
@@ -12,6 +13,7 @@
     <a
       href="https://www.comfy.org/privacy-policy"
       target="_blank"
+      rel="noopener noreferrer"
       class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
     >
       {{ t('auth.login.privacyLink') }}
