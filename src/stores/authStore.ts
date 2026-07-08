@@ -228,20 +228,20 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (flags.teamWorkspacesEnabled) {
       const workspaceAuth = useWorkspaceAuthStore()
-      const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
-      if (wsHeader) return wsHeader
-
-      // The workspace token is transiently absent (mint in flight during
-      // bootstrap, expired, or cleared by a recoverable refresh failure). While
-      // an active workspace context exists, recover to its token rather than
-      // silently issuing the request under the personal Firebase identity — that
-      // downgrade is what makes cloud requests oscillate between workspace and
-      // personal auth. Fall through to Firebase only when there is no workspace
-      // to recover to (workspace mode not yet initialized).
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // With an active workspace, recover to its token rather than silently
+      // issuing the request under the personal Firebase identity — that downgrade
+      // is what makes cloud requests oscillate between workspace and personal
+      // auth. Recovery also revalidates expiry, so an expired token is reminted
+      // instead of being sent stale. Fall through to Firebase only when there is
+      // no workspace to recover to (workspace mode not yet initialized).
       if (activeWorkspaceId) {
         return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
       }
+
+      const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
+      if (wsHeader) return wsHeader
     }
 
     const token = await getIdToken()
@@ -275,7 +275,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsToken = useWorkspaceAuthStore().getWorkspaceToken()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // Mirror getAuthHeader: recover (and revalidate) the workspace token for
+      // WebSocket/queue auth instead of downgrading to the personal identity.
+      if (activeWorkspaceId) {
+        return (
+          (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??
+          undefined
+        )
+      }
+
+      const wsToken = workspaceAuth.getWorkspaceToken()
       if (wsToken) return wsToken
     }
 

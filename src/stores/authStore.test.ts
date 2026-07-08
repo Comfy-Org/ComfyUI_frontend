@@ -685,6 +685,52 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('getAuthToken workspace recovery', () => {
+    beforeEach(() => {
+      mockFeatureFlags.teamWorkspacesEnabled = true
+    })
+
+    it('recovers the workspace token instead of downgrading to personal auth', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      const ensureSpy = vi
+        .spyOn(workspaceAuth, 'ensureWorkspaceToken')
+        .mockResolvedValue('recovered-ws-token')
+
+      const token = await store.getAuthToken()
+
+      expect(ensureSpy).toHaveBeenCalledWith('workspace-123')
+      expect(token).toBe('recovered-ws-token')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
+
+      const token = await store.getAuthToken()
+
+      expect(token).toBeUndefined()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('falls back to Firebase when workspace mode is not yet initialized', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = null
+      vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
+      const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
+
+      const token = await store.getAuthToken()
+
+      expect(ensureSpy).not.toHaveBeenCalled()
+      expect(token).toBe('mock-id-token')
+    })
+  })
+
   describe('social authentication', () => {
     describe('loginWithGoogle', () => {
       it('should sign in with Google', async () => {

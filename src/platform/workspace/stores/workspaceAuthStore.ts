@@ -40,6 +40,10 @@ export type WorkspaceTokenResponse = z.infer<
 
 const MAX_SCHEDULED_REFRESH_RETRIES = 3
 
+// After a failed on-demand recovery, refuse to re-mint until this window passes
+// so a stream of requests cannot hammer POST /auth/token once minting is broken.
+const RECOVERY_COOLDOWN_MS = 5000
+
 export class WorkspaceAuthError extends Error {
   constructor(
     message: string,
@@ -115,6 +119,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // The latest in-flight workspace switch/mint, so recovery callers can coalesce
   // onto it instead of racing ahead under a different identity.
   let inFlightSwitchPromise: Promise<void> | null = null
+  let recoveryCooldownUntil = 0
   let scheduledRefreshRetryCount = 0
   // The unified lifecycle keeps its own timer + request-id so it never shares
   // mutable state with the legacy switchWorkspace/refreshToken machinery.
@@ -402,6 +407,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       workspaceToken.value = token
       workspaceTokenExpiresAt.value = expiresAt
       scheduledRefreshRetryCount = 0
+      recoveryCooldownUntil = 0
 
       persistToSession(workspace, token, expiresAt)
       scheduleTokenRefresh(expiresAt)
@@ -435,40 +441,76 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return promise
   }
 
+  function hasValidTokenForWorkspace(workspaceId: string | undefined): boolean {
+    return (
+      hasValidWorkspaceToken() &&
+      (workspaceId === undefined || currentWorkspace.value?.id === workspaceId)
+    )
+  }
+
+  function handleRecoveryFailure(err: unknown): void {
+    if (isPermanentAuthError(err)) {
+      const hadContext = currentWorkspace.value !== null
+      clearWorkspaceContext()
+      if (hadContext) {
+        surfacePermanentAuthError(err)
+      }
+    }
+    recoveryCooldownUntil = Date.now() + RECOVERY_COOLDOWN_MS
+    console.warn('Workspace auth recovery failed:', err)
+  }
+
   /**
-   * Resolve a workspace Authorization header, recovering the token when it is
-   * transiently unavailable: a mint still in flight during bootstrap, an expired
-   * token, or a context cleared by a recoverable refresh failure. Coalesces onto
-   * an in-flight switch so a burst of callers triggers a single mint. Returns
-   * null only when no token can be established, so callers fail closed instead of
-   * silently downgrading a workspace-scoped request to the personal identity.
+   * Resolve a workspace token, recovering it when it is transiently unavailable:
+   * a mint still in flight during bootstrap, an expired token, or a context
+   * cleared by a recoverable refresh failure. Coalesces onto an in-flight switch
+   * so a burst of callers triggers a single mint, and only accepts a token minted
+   * for the requested workspace so a stale in-flight switch cannot hand back the
+   * wrong identity. Tears down context on a permanent failure and backs off after
+   * any failure so a broken mint is not retried on every request. Returns null
+   * when no token can be established, so callers fail closed instead of silently
+   * downgrading a workspace-scoped request to the personal identity.
    */
-  async function ensureWorkspaceAuthHeader(
+  async function ensureWorkspaceToken(
     preferredWorkspaceId?: string
-  ): Promise<AuthHeader | null> {
+  ): Promise<string | null> {
     if (!flags.teamWorkspacesEnabled) {
       return null
     }
 
-    if (hasValidWorkspaceToken()) {
-      return getWorkspaceAuthHeader()
+    const targetWorkspaceId = preferredWorkspaceId ?? currentWorkspace.value?.id
+
+    if (hasValidTokenForWorkspace(targetWorkspaceId)) {
+      return workspaceToken.value
     }
 
     if (inFlightSwitchPromise) {
       await inFlightSwitchPromise.catch(() => {})
-      return hasValidWorkspaceToken() ? getWorkspaceAuthHeader() : null
+      if (hasValidTokenForWorkspace(targetWorkspaceId)) {
+        return workspaceToken.value
+      }
     }
 
-    const targetWorkspaceId = currentWorkspace.value?.id ?? preferredWorkspaceId
-    if (!targetWorkspaceId) {
+    if (!targetWorkspaceId || Date.now() < recoveryCooldownUntil) {
       return null
     }
 
-    await switchWorkspace(targetWorkspaceId).catch((err) => {
-      console.warn('Workspace auth recovery failed:', err)
-    })
+    try {
+      await switchWorkspace(targetWorkspaceId)
+    } catch (err) {
+      handleRecoveryFailure(err)
+    }
 
-    return hasValidWorkspaceToken() ? getWorkspaceAuthHeader() : null
+    return hasValidTokenForWorkspace(targetWorkspaceId)
+      ? workspaceToken.value
+      : null
+  }
+
+  async function ensureWorkspaceAuthHeader(
+    preferredWorkspaceId?: string
+  ): Promise<AuthHeader | null> {
+    const token = await ensureWorkspaceToken(preferredWorkspaceId)
+    return token ? { Authorization: `Bearer ${token}` } : null
   }
 
   async function refreshToken(): Promise<void> {
@@ -741,6 +783,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     remintUnifiedOnce,
     getWorkspaceAuthHeader,
     ensureWorkspaceAuthHeader,
+    ensureWorkspaceToken,
     getWorkspaceToken,
     clearWorkspaceContext
   }

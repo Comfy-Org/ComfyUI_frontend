@@ -703,6 +703,79 @@ describe('useWorkspaceAuthStore', () => {
       expect(header).toBeNull()
       expect(mockFetch).not.toHaveBeenCalled()
     })
+
+    it('tears down workspace context and surfaces a toast on a permanent recovery failure', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+        .mockResolvedValue({
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          json: () => Promise.resolve({ message: 'Access denied' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace } = storeToRefs(store)
+      await store.switchWorkspace('workspace-123')
+
+      const token = await store.ensureWorkspaceToken('workspace-999')
+
+      expect(token).toBeNull()
+      expect(currentWorkspace.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+    })
+
+    it('backs off re-minting after a failed recovery instead of retrying every call', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: () => Promise.resolve({})
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      const first = await store.ensureWorkspaceToken('workspace-123')
+      const second = await store.ensureWorkspaceToken('workspace-123')
+
+      expect(first).toBeNull()
+      expect(second).toBeNull()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('re-mints for the requested workspace rather than returning an in-flight switch to a different one', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockImplementation((_url, options) => {
+        const { workspace_id: workspaceId } = JSON.parse(options.body)
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: `token-${workspaceId}`,
+              workspace: { ...mockWorkspace, id: workspaceId }
+            })
+        })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      const switchPromise = store.switchWorkspace('workspace-other')
+      const token = await store.ensureWorkspaceToken('workspace-123')
+      await switchPromise
+
+      expect(token).toBe('token-workspace-123')
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('token refresh scheduling', () => {
