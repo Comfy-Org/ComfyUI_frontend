@@ -74,6 +74,8 @@ reviews:
         Mock only at seams (Pinia stores, settings, third-party libs); flag mocked type guards or sibling composables.
         Use a real createI18n instance rather than vi.mock('vue-i18n').
         Flag bare expect(fn).not.toThrow() as a sole assertion, assertions that echo stub return values, and .mock.results assertions.
+        For rejected promises, thrown errors, and failed async calls, require assertions for post-error state cleanup and side-effect rollback, especially auth tokens, API keys, globals, listeners, timers, subscriptions, and caches that production mutates before awaiting.
+        Tests for production changes must exercise the changed runtime/public entrypoint directly; flag helper-only coverage when the changed branch runs through a higher-level entrypoint.
         Use @testing-library/vue for component tests, not @vue/test-utils.
         For platform-owned types (Response, CustomEvent, DOM events), require real instances (new Response(), Response.json(), new CustomEvent()) instead of fromPartial or casts.
         When a fixture cast hides a too-wide production signature, suggest narrowing the production type instead of casting the fixture.
