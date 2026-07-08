@@ -3,7 +3,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { brandColors } from '../../data/brandColors'
@@ -26,6 +26,10 @@ function copyValue(hex: string, value: string) {
 function isCardCopied(hex: string) {
   return copied.value && copiedHex.value === hex
 }
+
+const liveMessage = computed(() =>
+  copied.value ? `${t('brand.colors.copied', locale)} ${copiedValue.value}` : ''
+)
 </script>
 
 <template>
@@ -38,6 +42,8 @@ function isCardCopied(hex: string) {
         </p>
       </template>
     </SectionHeader>
+
+    <span class="sr-only" aria-live="polite">{{ liveMessage }}</span>
 
     <ul class="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-5">
       <li
@@ -57,9 +63,9 @@ function isCardCopied(hex: string) {
         <div
           v-if="isCardCopied(color.hex)"
           class="flex flex-1 items-center justify-center text-center text-sm font-semibold"
-          aria-live="polite"
+          aria-hidden="true"
         >
-          Copied {{ copiedValue }}
+          {{ t('brand.colors.copied', locale) }} {{ copiedValue }}
         </div>
         <template v-else>
           <span class="text-xs font-semibold">{{ color.name }}</span>
@@ -71,7 +77,7 @@ function isCardCopied(hex: string) {
               <dd>
                 <button
                   type="button"
-                  :aria-label="`Copy ${row} value ${color[row]}`"
+                  :aria-label="`${t('brand.colors.copy', locale)} ${row} ${color[row]}`"
                   class="cursor-pointer text-left hover:underline"
                   @click.stop="copyValue(color.hex, color[row])"
                 >

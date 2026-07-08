@@ -4065,6 +4065,14 @@ const translations = {
     'zh-CN':
       '我们的调色板有助于建立品牌辨识度。当人们想到 Comfy 时，我们希望他们联想到以下这些颜色。'
   },
+  'brand.colors.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  },
+  'brand.colors.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
   'brand.voice.heading': {
     en: 'Precise, never cute.',
     'zh-CN': '精准，绝不卖弄。'
