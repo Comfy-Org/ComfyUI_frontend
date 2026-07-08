@@ -226,6 +226,48 @@ describe('useSecretForm', () => {
       expect(providerOptions.value.map((o) => o.value)).toEqual(['civitai'])
     })
 
+    it('renders server-listed BYOK providers with labels and logos', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['runway', 'gemini'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([
+        {
+          value: 'runway',
+          label: 'Runway',
+          logo: '/assets/images/runway.svg',
+          disabled: false
+        },
+        {
+          value: 'gemini',
+          label: 'Google Gemini',
+          logo: '/assets/images/gemini.svg',
+          disabled: false
+        }
+      ])
+    })
+
+    it('omits BYOK providers the server does not list', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['huggingface'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const values = providerOptions.value.map((o) => o.value)
+      expect(values).toEqual(['huggingface'])
+      expect(values).not.toContain('runway')
+      expect(values).not.toContain('gemini')
+    })
+
     it('reacts to availableProviders changing', () => {
       const visible = ref(true)
       const availableProviders = ref<string[] | null>(null)
@@ -280,6 +322,51 @@ describe('useSecretForm', () => {
       expect(
         providerOptions.value.find((o) => o.value === 'huggingface')?.disabled
       ).toBe(false)
+    })
+  })
+
+  describe('providerHelp', () => {
+    it('uses the generic hint when no provider is selected', () => {
+      const visible = ref(true)
+      const { providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      // t() is mocked to echo the key.
+      expect(providerHelp.value).toBe('secrets.providerHint')
+    })
+
+    it('uses provider-specific help when a BYOK provider is selected', () => {
+      const visible = ref(true)
+      const { form, providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['runway', 'gemini'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'runway'
+      expect(providerHelp.value).toBe('secrets.providerHelp.runway')
+
+      form.provider = 'gemini'
+      expect(providerHelp.value).toBe('secrets.providerHelp.gemini')
+    })
+
+    it('falls back to the generic hint for a provider without a help key', () => {
+      const visible = ref(true)
+      const { form, providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'huggingface'
+      expect(providerHelp.value).toBe('secrets.providerHint')
     })
   })
 

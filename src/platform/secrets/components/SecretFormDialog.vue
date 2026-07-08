@@ -37,12 +37,23 @@
                   :value="option.value"
                   :disabled="option.disabled"
                 >
-                  {{ option.label }}
+                  <span class="flex items-center gap-2">
+                    <img
+                      v-if="option.logo"
+                      :src="option.logo"
+                      :alt="option.label"
+                      class="size-4"
+                    />
+                    {{ option.label }}
+                  </span>
                 </SelectItem>
               </SelectContent>
             </Select>
             <small v-if="errors.provider" class="text-red-500">
               {{ errors.provider }}
+            </small>
+            <small v-else class="text-muted">
+              {{ providerHelp }}
             </small>
           </div>
 
@@ -134,7 +145,7 @@ import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 
 import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata, SecretProvider } from '../types'
+import type { SecretMetadata } from '../types'
 
 const {
   secret,
@@ -143,7 +154,7 @@ const {
   mode = 'create'
 } = defineProps<{
   secret?: SecretMetadata
-  existingProviders?: SecretProvider[]
+  existingProviders?: string[]
   availableProviders?: string[] | null
   mode?: 'create' | 'edit'
 }>()
@@ -156,8 +167,15 @@ const emit = defineEmits<{
 
 const titleId = useId()
 
-const { form, errors, loading, apiError, providerOptions, handleSubmit } =
-  useSecretForm({
+const {
+  form,
+  errors,
+  loading,
+  apiError,
+  providerOptions,
+  providerHelp,
+  handleSubmit
+} = useSecretForm({
     mode,
     secret: () => secret,
     existingProviders: () => existingProviders,
