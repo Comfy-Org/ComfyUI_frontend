@@ -6,7 +6,7 @@ import type {
   AgentDraftSnapshot,
   AgentMessages,
   AgentThreadCreated,
-  AgentThreads,
+  AgentThreadSummary,
   AgentTurnAccepted,
   TokenUsage,
   UploadImageResult
@@ -45,7 +45,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
-    listThreads: vi.fn(async (): Promise<AgentThreads> => []),
+    listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
     ),
@@ -677,7 +677,7 @@ describe('thread resume (B17)', () => {
 
   it('listThreads returns the REST client thread list', async () => {
     const listThreads = vi.fn(
-      async (): Promise<AgentThreads> => [
+      async (): Promise<AgentThreadSummary[]> => [
         {
           id: 'th-9',
           title: 'build a duck',
