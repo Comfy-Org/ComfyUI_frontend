@@ -1,6 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -321,6 +321,10 @@ describe('useAuthActions account actions', () => {
       'open',
       vi.fn(() => ({}))
     )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('sends password reset emails and shows success toast', async () => {
