@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
+import { Check } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useClipboard } from '@vueuse/core'
+import { ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { brandColors } from '../../data/brandColors'
@@ -10,6 +13,14 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const specRows = ['hex', 'rgb', 'hsl', 'cmyk'] as const
+
+const { copy, copied } = useClipboard({ copiedDuring: 1500 })
+const copiedId = ref<string | null>(null)
+
+function copyValue(id: string, value: string) {
+  copiedId.value = id
+  void copy(value)
+}
 </script>
 
 <template>
@@ -39,11 +50,25 @@ const specRows = ['hex', 'rgb', 'hsl', 'cmyk'] as const
       >
         <span class="text-xs font-semibold">{{ color.name }}</span>
         <dl
-          class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 text-xs leading-[1.4]"
+          class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-xs leading-[1.4]"
         >
           <template v-for="row in specRows" :key="row">
             <dt class="uppercase opacity-50">{{ row }}</dt>
-            <dd>{{ color[row] }}</dd>
+            <dd>
+              <button
+                type="button"
+                :aria-label="`Copy ${row} value ${color[row]}`"
+                class="inline-flex cursor-pointer items-center gap-1 text-left hover:underline"
+                @click="copyValue(`${color.hex}-${row}`, color[row])"
+              >
+                {{ color[row] }}
+                <Check
+                  v-if="copied && copiedId === `${color.hex}-${row}`"
+                  class="size-3"
+                  aria-hidden="true"
+                />
+              </button>
+            </dd>
           </template>
         </dl>
       </li>

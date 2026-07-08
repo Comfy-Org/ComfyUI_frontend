@@ -65,16 +65,11 @@ function draw() {
   }
 
   ctx.globalAlpha = 1
+  ctx.fillStyle = 'rgba(242, 255, 89, 0.9)'
   for (const n of nodes) {
-    ctx.fillStyle = 'rgba(242, 255, 89, 0.9)'
     ctx.beginPath()
     ctx.arc(n.x * w, n.y * h, 2.5 * dpr, 0, Math.PI * 2)
     ctx.fill()
-
-    ctx.strokeStyle = 'rgba(242, 255, 89, 0.25)'
-    ctx.beginPath()
-    ctx.arc(n.x * w, n.y * h, 8 * dpr, 0, Math.PI * 2)
-    ctx.stroke()
   }
 }
 

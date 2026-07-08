@@ -9,6 +9,12 @@ import { BRAND_ASSETS_ZIP } from '../../data/brandAssets'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const assets = affiliateBrandAssets.map((asset) =>
+  asset.id === 'icon'
+    ? { ...asset, preview: '/affiliates/brand/comfy-color-combo-ink.svg' }
+    : asset
+)
 </script>
 
 <template>
@@ -33,7 +39,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
     <ul class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       <li
-        v-for="asset in affiliateBrandAssets"
+        v-for="asset in assets"
         :key="asset.id"
         class="flex min-h-60 flex-col rounded-[30px] border-[1.5px] border-white/8 lg:min-h-[285px]"
       >

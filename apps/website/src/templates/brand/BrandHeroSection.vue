@@ -36,7 +36,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         :href="BRAND_GUIDELINES_PDF"
         download
         variant="default"
-        class="h-12 px-5 text-sm font-extrabold"
+        class="h-12 w-full px-5 text-sm font-extrabold sm:w-auto"
       >
         {{ t('brand.hero.viewGuidelines', locale) }}
       </Button>
@@ -45,7 +45,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         :href="BRAND_ASSETS_ZIP"
         download
         variant="outline"
-        class="h-12 px-5 text-sm font-extrabold"
+        class="h-12 w-full px-5 text-sm font-extrabold sm:w-auto"
       >
         {{ t('brand.hero.downloadLogos', locale) }}
       </Button>

@@ -2,12 +2,10 @@
 import type { Locale } from '../../i18n/translations'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
-import { getRoutes } from '../../config/routes.ts'
+import { externalLinks } from '../../config/routes.ts'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const routes = getRoutes(locale)
 </script>
 
 <template>
@@ -23,7 +21,12 @@ const routes = getRoutes(locale)
       <p>{{ t('brand.trademark.body2', locale) }}</p>
       <p>
         {{ t('brand.trademark.body3', locale) }}
-        <a :href="routes.contact" class="text-primary-comfy-yellow underline">
+        <a
+          :href="externalLinks.support"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-comfy-yellow underline"
+        >
           {{ t('brand.trademark.contact', locale) }}
         </a>
       </p>
