@@ -26,6 +26,10 @@ const translations = {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
   },
+  'cta.getStarted': {
+    en: 'GET STARTED',
+    'zh-CN': '快速开始'
+  },
   'cta.watchNow': {
     en: 'Watch Now',
     'zh-CN': '立即观看'
@@ -928,9 +932,9 @@ const translations = {
     'zh-CN': '所有模型。\n商业许可保证。'
   },
   'cloud.reason.2.description': {
-    en: 'Run open-source models like Wan 2.2, Flux, LTX and Qwen alongside partner models like Nano Banana, Seedance, Seedream, Grok, Kling, Hunyuan 3D and more. Every model on Comfy Cloud is cleared for commercial use. No license ambiguity. All through one credit balance.',
+    en: 'Run open-source models like Wan 2.2, Flux, LTX and Qwen alongside partner models like Nano Banana, Seedance, Seedream, Grok, Kling, Hunyuan 3D, GPT Image 2 and more. Every model on Comfy Cloud is cleared for commercial use. No license ambiguity. All through one credit balance.',
     'zh-CN':
-      '运行 Wan 2.2、Flux、LTX 和 Qwen 等开源模型，以及 Nano Banana、Seedance、Seedream、Grok、Kling、Hunyuan 3D 等合作伙伴模型。Comfy Cloud 上的每个模型都已获得商业使用许可。无许可证歧义。通过统一的积分余额使用。'
+      '运行 Wan 2.2、Flux、LTX 和 Qwen 等开源模型，以及 Nano Banana、Seedance、Seedream、Grok、Kling、Hunyuan 3D、GPT Image 2 等合作伙伴模型。Comfy Cloud 上的每个模型都已获得商业使用许可。无许可证歧义。通过统一的积分余额使用。'
   },
   'cloud.reason.2.badge.onlyOn': {
     en: 'ONLY ON',
@@ -991,6 +995,10 @@ const translations = {
   'cloud.aiModels.card.wan22TextToVideo': {
     en: 'Wan 2.2',
     'zh-CN': 'Wan 2.2'
+  },
+  'cloud.aiModels.card.gptImage2': {
+    en: 'GPT Image 2',
+    'zh-CN': 'GPT Image 2'
   },
   'cloud.aiModels.ctaDesktop': {
     en: 'EXPLORE WORKFLOWS WITH THE LATEST MODELS',
@@ -2183,6 +2191,7 @@ const translations = {
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
+  'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
   'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
@@ -2196,16 +2205,16 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'New Release: Seedance 2.0',
-    'zh-CN': '全新发布：Seedance 2.0'
+    en: 'NEW: COMFY MCP',
+    'zh-CN': '全新发布：Comfy MCP'
   },
   'nav.featuredProductsAlt': {
-    en: 'Seedance 2.0 release feature image',
-    'zh-CN': 'Seedance 2.0 发布精选图片'
+    en: 'Comfy MCP feature image',
+    'zh-CN': 'Comfy MCP 精选图片'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Try the Seedance 2.0 workflow',
-    'zh-CN': '试用 Seedance 2.0 工作流'
+    en: 'Get started with Comfy MCP',
+    'zh-CN': '开始使用 Comfy MCP'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -3974,12 +3983,12 @@ const translations = {
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'Join the live stream. Get answers in real time.',
-    'zh-CN': '加入直播，实时获得解答。'
+    en: 'Now turn your agent into a creative technologist.',
+    'zh-CN': '现在，让你的智能体成为创意技术专家。'
   },
   'launches.banner.cta': {
-    en: 'Join livestream',
-    'zh-CN': '加入直播'
+    en: 'Start Comfy MCP',
+    'zh-CN': '启动 Comfy MCP'
   },
 
   // Launches page (/launches) — closing CTA
