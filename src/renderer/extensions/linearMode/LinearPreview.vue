@@ -32,8 +32,7 @@ const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
-const { runButtonClick, mobile } = defineProps<{
-  runButtonClick?: (e: Event) => void
+const { mobile } = defineProps<{
   mobile?: boolean
 }>()
 
@@ -65,12 +64,6 @@ async function loadWorkflow(item: AssetItem | undefined) {
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
   await changeTracker.updateState([workflow], changeTracker.undoQueue)
-}
-
-async function rerun(e: Event) {
-  if (!runButtonClick) return
-  await loadWorkflow(selectedItem.value)
-  runButtonClick(e)
 }
 </script>
 <template>
@@ -111,16 +104,6 @@ async function rerun(e: Event) {
         </Button>
       </template>
     </Popover>
-    <Button
-      v-tooltip.top="t('linearMode.rerun')"
-      variant="base"
-      size="icon"
-      :disabled="!selectedItem"
-      :aria-label="t('linearMode.rerun')"
-      @click="rerun"
-    >
-      <i class="icon-[lucide--refresh-cw]" />
-    </Button>
     <Button
       v-tooltip.top="t('linearMode.reuseParameters')"
       variant="base"

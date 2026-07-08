@@ -158,9 +158,7 @@ function dragDrop(e: DragEvent) {
             data-testid="linear-header-progress-bar"
             class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
           />
-          <LinearPreview
-            :run-button-click="linearWorkflowRef?.runButtonClick"
-          />
+          <LinearPreview />
           <div class="absolute top-2 left-2 z-21">
             <AppModeToolbar v-if="!isBuilderMode" />
           </div>

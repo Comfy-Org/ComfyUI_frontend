@@ -67,7 +67,6 @@ const i18n = createI18n({
       g: { download: 'Download', moreOptions: 'More Options' },
       actionbar: { shareTooltip: 'Share workflow' },
       linearMode: {
-        rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
         cancelThisRun: 'Cancel this run',
         deleteAllAssets: 'Delete all',
@@ -162,7 +161,6 @@ describe('LinearPreview', () => {
   it('disables the selection-dependent actions when nothing is selected', () => {
     renderPreview()
 
-    expect(screen.getByRole('button', { name: 'Rerun' })).toBeDisabled()
     expect(
       screen.getByRole('button', { name: 'Reuse Parameters' })
     ).toBeDisabled()
@@ -189,11 +187,8 @@ describe('LinearPreview', () => {
 
     renderPreview({}, selection)
 
-    const rerun = screen.getByRole('button', { name: 'Rerun' })
-    await waitFor(() => expect(rerun).toBeEnabled())
-    expect(
-      screen.getByRole('button', { name: 'Reuse Parameters' })
-    ).toBeEnabled()
+    const reuse = screen.getByRole('button', { name: 'Reuse Parameters' })
+    await waitFor(() => expect(reuse).toBeEnabled())
     expect(screen.getByRole('button', { name: 'More Options' })).toBeEnabled()
     expect(screen.getByTestId('image-preview')).toBeInTheDocument()
   })
