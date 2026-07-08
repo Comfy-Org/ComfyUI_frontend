@@ -60,6 +60,7 @@ const {
   stop,
   entries,
   isStreaming,
+  status,
   notices,
   threadId,
   listThreads,
@@ -245,6 +246,7 @@ async function onFilesPicked(event: Event): Promise<void> {
       :entries
       :user-name="userName"
       :streaming="isStreaming"
+      :submitting="status === 'thinking'"
       :can-attach="true"
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="history.grouped"

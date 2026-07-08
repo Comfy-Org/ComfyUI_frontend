@@ -10,9 +10,9 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="text-agent-fg-muted flex items-center gap-2 py-1 text-sm">
-    <span class="icon-[lucide--loader-circle] size-3.5 animate-spin" />
-    <span>{{ t('agent.thinking') }}</span>
+  <div class="text-agent-fg-muted flex items-center gap-1.5 py-1 text-sm">
+    <span class="icon-[lucide--brain] size-3.5 shrink-0" />
+    <span class="agent-shimmer-text">{{ t('agent.thinking') }}</span>
     <span v-if="tokens > 0" class="text-agent-fg-subtle text-xs">{{
       tokens
     }}</span>
