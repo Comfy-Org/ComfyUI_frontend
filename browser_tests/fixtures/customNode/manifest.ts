@@ -15,7 +15,7 @@ export interface CustomNodeManifestEntry {
   pin: string
   tiers: CustomNodeTier[]
   // Frontend-format workflow (path relative to browser_tests/) loaded and queued
-  // by the run/io tiers; empty or absent file = tier skips. Run the backend with
+  // by the run tier; empty or absent file = tier skips. Run the backend with
   // --cache-none, or repeat runs classify PARTIAL when cached nodes skip executing.
   workflow: string
   // Runtime class_type / object_info keys, NOT Python class names (e.g. rgthree

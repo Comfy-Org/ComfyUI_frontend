@@ -1,4 +1,4 @@
-# Custom-node suite architecture
+# Custom-node regression suite architecture
 
 The design of the custom-node regression suite: what it is made of, how the
 pieces cooperate, the decisions behind them, and the gotchas that shaped
@@ -14,23 +14,21 @@ end (section 14).
 
 **What it proves.** On every PR, for every node that the manifest's
 community packs register on a real backend, the suite proves four concrete
-things: the node mounts completely in both renderers, it survives a
-save/reload round-trip, its slots wire type-correctly through the real
-connection validator, and it executes on a real backend when its inputs
-allow.
+things: the node mounts completely in both renderers (the canvas renderer,
+LiteGraph, and the DOM renderer, Vue Nodes 2.0), it survives save/reload,
+its slots wire type-correctly, and it executes when its inputs allow.
+Section 1 states each proof precisely.
 
 > **Scale snapshot (example, at the time of writing):** 7 packs, 823
 > registered nodes, about 5,000 planned wiring checks, about 440 nodes
 > executing clean per run. These are observations printed by the run, not
 > properties of the design; they move whenever the manifest or a pin moves.
 
-**Three things it does NOT prove.** It does not check whether a node's
-output is semantically correct (that a blur node actually blurs). It does
-not touch frontend-only nodes that never register on the backend. It does
-not run hour-scale soak tests, so a rare intermittent glitch that only
-shows up after long real use will not be caught here. Green means "every
-registered node still mounts, saves, wires, and runs," and nothing wider.
-This is a compatibility and regression gate, not a behavior certifier.
+**What it does NOT prove.** Output semantics, frontend-only nodes, and
+hour-scale soak behavior are out of scope; section 1 states the non-goals
+precisely. Green means "every registered node still mounts, saves, wires,
+and runs," and nothing wider: a compatibility and regression gate, not a
+behavior certifier.
 
 **Why it exists.** Regressions against real community packs used to be
 invisible: the frontend could break widely installed packs and no test
@@ -69,9 +67,7 @@ How to read the diagrams: a rectangle is one step, named by its purpose; a
 diamond is a short question, drawn only where the flow genuinely forks; a
 check that cannot fork is a "Check:" step, not a diamond; a titled group
 is a thing with internal structure; mechanism detail lives in the prose
-under each diagram, not stacked inside boxes. The two oldest views (the
-evidence model and the CI view) predate this convention and pack a little
-more text into their boxes.
+under each diagram, not stacked inside boxes.
 
 The eight views are zoom levels of one mental model, not eight parallel
 pictures. Every arrow below names the element of the parent view that the
@@ -179,15 +175,13 @@ while testing the wrong thing:
 ## 4. Building blocks
 
 What the suite is made of. The main flow is a straight pipeline; the shared
-services that support the tiers are listed in the table below it, because
-"which service feeds which tier" is a matrix, and a matrix reads better as a
-table than as crossing arrows.
+services that support the tiers are listed in the table below it.
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 240}}}%%
 flowchart LR
     MAN["Pack Manifest: source, pin, tiers, known-failure baseline per pack"]
-    ORCH["Test Orchestrator: runs every tier against every pack"]
+    ORCH["Test Orchestrator: runs every row through the tiers, honoring the row's tier gates (section 5)"]
     subgraph TIERS ["Verification tiers (section 5)"]
         TM["Mount Completeness"]
         TP["Persistence"]
@@ -223,14 +217,22 @@ lists all six.
 
 ## 5. The verification tiers
 
-| Tier                 | Verifies                                                                                                                                                                                 | Renderers          | Notes                                                                                   |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------- |
-| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                | both               | missing parts fail; extras are tolerated                                                |
-| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                 | both               | application-added dynamic widgets are legal; see section 8                              |
-| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                           | one, by decision 7 | dropdown slots pair only on identical option sets; see section 10 for exception routing |
-| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                            | one, by decision 7 | the full flow is section 7                                                              |
-| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node) | both (render pass) | plus a forced-error self-check proving the harness detects real failures                |
-| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                               | both               | guards against packs breaking the base app                                              |
+| Tier                 | Verifies                                                                                                                                                                                 | Renderers                                              | Notes                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                | both                                                   | missing parts fail; extras are tolerated                                                |
+| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                 | both                                                   | application-added dynamic widgets are legal; see section 8                              |
+| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                           | breadth sweep: one, by decision 7; curated drags: both | dropdown slots pair only on identical option sets; see section 10 for exception routing |
+| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                            | one, by decision 7                                     | the full flow is section 7                                                              |
+| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node) | both (render pass)                                     | plus a forced-error self-check proving the harness detects real failures                |
+| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                               | both                                                   | guards against packs breaking the base app                                              |
+
+One vocabulary bridge, because the manifest predates these tier names: the
+manifest row's `tiers` field takes `load`, `run`, `connectivity`, and
+`io`. Today `run` gates the curated workflow execution, `connectivity`
+gates the wiring tier, and everything else ignores the field: mount,
+persistence, execution, and the curated render pass run for every row
+unconditionally, and core smoke is pack-independent. `load` and `io` are
+accepted by the schema but currently gate nothing.
 
 ## 6. The node-definition pipeline
 
@@ -370,15 +372,22 @@ semantics live in the ledger table in
 [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md).
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 300}}}%%
 flowchart TD
-    F["a node fails a tier"] --> Q1{"is EXECUTING it unsafe or<br/>environment-dependent?<br/>downloads or installs at runtime,<br/>infinite loops, host-specific results,<br/>mutable-content dropdowns,<br/>unreliable completion signals"}
-    Q1 -- yes --> L1["execution exclusion:<br/>never run; mechanism on record;<br/>every other tier still applies"]
-    Q1 -- no --> Q2{"does it fail deterministically<br/>on synthesized inputs?"}
-    Q2 -- yes --> L2["known-failure baseline:<br/>still runs every time;<br/>reconciled in both directions"]
-    Q2 -- no --> Q3{"does the pack's own script<br/>own the failing surface?<br/>rewritten values, custom widgets,<br/>vetoed wires, console noise"}
-    Q3 -- yes --> L3["scoped exception record<br/>naming the mechanism"]
-    Q3 -- no --> L4["no exception applies:<br/>it is a finding. Fix it or file it"]
+    F["a node fails a tier"] --> Q1{"is EXECUTING it unsafe or environment-dependent?"}
+    Q1 -- yes --> L1["execution exclusion: never run; mechanism on record; every other tier still applies"]
+    Q1 -- no --> Q2{"does it fail deterministically on synthesized inputs?"}
+    Q2 -- yes --> L2["known-failure baseline: still runs every time; reconciled in both directions"]
+    Q2 -- no --> Q3{"does the pack's own script own the failing surface?"}
+    Q3 -- yes --> L3["scoped exception record naming the mechanism"]
+    Q3 -- no --> L4["no exception applies: it is a finding. Fix it or file it"]
 ```
+
+What the first question means in practice: runtime downloads or installs,
+infinite loops, host-specific results, mutable-content dropdowns,
+unreliable completion signals. What a pack script owning the failing
+surface looks like: rewritten values, custom widgets, vetoed wires,
+console noise.
 
 The two-way baseline is what stops the whole evidence model from rotting: a
 failure that is not listed fails the gate, and a listed node that starts
@@ -393,20 +402,20 @@ deliberate extension seam is the curated-workflow fixture: anything the
 manifest cannot derive from the live node corpus (pack-specific semantics,
 multi-node behavior) is expressed there (decisions 6 and 11).
 
-| #   | Decision                                                                                                   | Why                                                                                                                                                   | Trade-off accepted                                                                                                                          |
-| --- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Drive a real browser, not just the backend API                                                             | Pack frontend scripts (widget rebuilds, restyles, submission hooks) are half of what breaks; only a browser running the built frontend exercises them | Browser e2e is the slowest, most race-prone tier; mitigated by the attribution filters (section 9) and the staged settle points (section 8) |
-| 1   | Real environment only: real browser, real backend, pack scripts active, nothing mocked                     | The failures worth catching live in the integration, not in units                                                                                     | Slower than unit tests; needs a backend in CI                                                                                               |
-| 2   | The backend serves the built frontend                                                                      | The dev server never loads pack scripts, so it tests a different product                                                                              | Local iteration needs a build + restart for pack-script changes                                                                             |
-| 3   | One test worker                                                                                            | The execution queue is exclusive; parallel workers corrupt each other's evidence                                                                      | Wall-clock time grows with the manifest                                                                                                     |
-| 4   | Execution caching disabled                                                                                 | The per-node "actually ran" signal only exists for uncached executions                                                                                | Every run pays full execution cost                                                                                                          |
-| 5   | Packs installed at pinned, verified versions                                                               | An upstream push must not change what the gate tests mid-flight                                                                                       | Pins need deliberate bumps; a nightly canary against pack HEADs is the planned complement                                                   |
-| 6   | One manifest row per pack, zero per-pack test code                                                         | Extension cost stays constant as coverage grows                                                                                                       | The generic tiers cannot assert pack-specific semantics; curated workflows exist for that                                                   |
-| 7   | Both renderers only where the renderer can change the outcome (mount, persistence); one renderer elsewhere | Widget values flow through the same store under both renderers (verified by probe), so doubling execution buys no new failure surface                 | If that store unification ever changes, revisit this decision                                                                               |
-| 8   | Every exception carries its mechanism and is stale-guarded                                                 | An unexplained exemption is indistinguishable from a hidden bug                                                                                       | Onboarding a flaky pack takes more effort than a blanket skip                                                                               |
-| 9   | Known-failure baseline reconciled in both directions                                                       | One-way baselines rot into permanent blind spots                                                                                                      | A node that gets fixed upstream turns the gate red until its entry is removed (by design)                                                   |
-| 10  | Small batches with single-node bisection                                                                   | Batching amortizes queue latency; bisection restores per-node attribution on failure                                                                  | A failing batch costs one extra pass over its members                                                                                       |
-| 11  | Scope excludes output semantics and frontend-virtual nodes                                                 | Both need per-node knowledge a manifest cannot derive; curated workflows and future behavior tests are the extension point                            | "Green" is narrower than "the pack fully works," and says so                                                                                |
+| #   | Decision                                                                                                                                                                                                    | Why                                                                                                                                                   | Trade-off accepted                                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Drive a real browser, not just the backend API                                                                                                                                                              | Pack frontend scripts (widget rebuilds, restyles, submission hooks) are half of what breaks; only a browser running the built frontend exercises them | Browser e2e is the slowest, most race-prone tier; mitigated by the attribution filters (section 9) and the staged settle points (section 8) |
+| 1   | Real environment only: real browser, real backend, pack scripts active, nothing mocked                                                                                                                      | The failures worth catching live in the integration, not in units                                                                                     | Slower than unit tests; needs a backend in CI                                                                                               |
+| 2   | The backend serves the built frontend                                                                                                                                                                       | The dev server never loads pack scripts, so it tests a different product                                                                              | Local iteration needs a build + restart for pack-script changes                                                                             |
+| 3   | One test worker                                                                                                                                                                                             | The execution queue is exclusive; parallel workers corrupt each other's evidence                                                                      | Wall-clock time grows with the manifest                                                                                                     |
+| 4   | Execution caching disabled                                                                                                                                                                                  | The per-node "actually ran" signal only exists for uncached executions                                                                                | Every run pays full execution cost                                                                                                          |
+| 5   | Packs installed at pinned, verified versions                                                                                                                                                                | An upstream push must not change what the gate tests mid-flight                                                                                       | Pins need deliberate bumps; a nightly canary against pack HEADs is the planned complement                                                   |
+| 6   | One manifest row per pack, zero per-pack test code                                                                                                                                                          | Extension cost stays constant as coverage grows                                                                                                       | The generic tiers cannot assert pack-specific semantics; curated workflows exist for that                                                   |
+| 7   | Both renderers only where the renderer can change the outcome: mount, persistence, the curated render pass, the curated pointer drags, core smoke; one renderer elsewhere (breadth wiring sweep, execution) | Widget values flow through the same store under both renderers (verified by probe), so doubling execution buys no new failure surface                 | If that store unification ever changes, revisit this decision                                                                               |
+| 8   | Every exception carries its mechanism and is stale-guarded                                                                                                                                                  | An unexplained exemption is indistinguishable from a hidden bug                                                                                       | Onboarding a flaky pack takes more effort than a blanket skip                                                                               |
+| 9   | Known-failure baseline reconciled in both directions                                                                                                                                                        | One-way baselines rot into permanent blind spots                                                                                                      | A node that gets fixed upstream turns the gate red until its entry is removed (by design)                                                   |
+| 10  | Small batches with single-node bisection                                                                                                                                                                    | Batching amortizes queue latency; bisection restores per-node attribution on failure                                                                  | A failing batch costs one extra pass over its members                                                                                       |
+| 11  | Scope excludes output semantics and frontend-virtual nodes                                                                                                                                                  | Both need per-node knowledge a manifest cannot derive; curated workflows and future behavior tests are the extension point                            | "Green" is narrower than "the pack fully works," and says so                                                                                |
 
 ## 12. Gotchas: every incident, its root cause, and the defense
 
@@ -437,7 +446,8 @@ these answer: "green but broken" and "tests can never catch random bugs."
 - **Root cause**: the frontend keeps widget state keyed by node identity,
   and that state survives clearing the graph. A new node that reuses a
   cleared node's identity inherits its same-named widget values. Core
-  frontend bug, reported separately.
+  frontend bug, distinct from this suite; the defense below stands
+  regardless of when it is fixed.
 - **Defense**: the suite never reuses a node identity within a browser
   session: every builder hands out monotonically increasing identities
   across graph clears.
@@ -469,7 +479,8 @@ these answer: "green but broken" and "tests can never catch random bugs."
 - **Defense**: submission runs guarded; a throw records as that node's
   failure, carrying the exception text, so the node names itself instead
   of aborting the tier. The proven case is also excluded with its
-  mechanism as an upstream-report candidate.
+  mechanism in the exclusion ledger, and remains an upstream-report
+  candidate.
 - **Answers**: tests can never catch random bugs (uncaught, one crash masks
   every node queued behind it).
 
@@ -613,15 +624,19 @@ these answer: "green but broken" and "tests can never catch random bugs."
 
 ## 13. The CI deployment view
 
+In today's implementation, the suite is Playwright driving bundled
+Chromium, and the CI platform is GitHub Actions.
+
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 260}}}%%
 flowchart LR
-    CH["change gate:<br/>skip only when nothing<br/>relevant changed, without<br/>wedging the required check"] --> BUILD["build the frontend"]
+    CH["change gate: skip only when nothing relevant changed, without wedging the required check"] --> BUILD["build the frontend"]
     BUILD --> ENV["provision a CPU backend"]
-    ENV --> INST["clone every manifest pack at its<br/>pinned version; install with<br/>dependency constraints so packs<br/>cannot swap the numeric stack"]
+    ENV --> INST["clone every manifest pack at its pinned version; install with dependency constraints so packs cannot swap the numeric stack"]
     INST --> ASSET["stage the curated workflows' media"]
-    ASSET --> RUN["boot the backend serving the built<br/>frontend; run the suite, one worker"]
+    ASSET --> RUN["boot the backend serving the built frontend; run the suite, one worker"]
     RUN --> SKIP{"anything skipped?"}
-    SKIP -- yes --> RED["fail: a pack or a fixture<br/>failed to load"]
+    SKIP -- yes --> RED["fail: a pack or a fixture failed to load"]
     SKIP -- no --> ART["publish the report artifact"]
 ```
 
@@ -629,25 +644,29 @@ Fork PRs skip the job (the install loop is a code-execution surface) and
 keep coverage via the main test shards. Sharding is deliberately deferred:
 every shard would pay the full environment setup, which is a large share of
 the job; the workflow states the threshold at which sharding starts paying.
+Ballpark at the time of writing, moving like the scale snapshot: about
+eight minutes of suite on top of about four and a half minutes of
+environment setup, with sharding starting to pay once the whole job
+passes roughly twelve minutes.
 
 ## 14. Implementation map
 
 The one place where architecture names meet code symbols.
 
-| Building block                        | File                                                                       | Key symbols                                                                                                                                              |
-| ------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pack Manifest                         | `browser_tests/fixtures/data/customNodeManifest.json`                      | one row per pack: `repo`, `pin`, `tiers`, `expectedNodes`, `workflow`, `cannotRunAlone`, `vueIncompatibleNodes`                                          |
-| Manifest loader                       | `browser_tests/fixtures/customNode/manifest.ts`                            | `loadManifest`, `rendererPassesFor`                                                                                                                      |
-| Test Orchestrator                     | each spec file                                                             | the `for (const entry of loadManifest())` loop heading allNodes.spec.ts, connectivity.spec.ts, customNode.regression.spec.ts                             |
-| Evidence Ledgers + Reconciler         | `browser_tests/tests/customNodes/allNodes.spec.ts`, `connectivity.spec.ts` | the `*_ALLOWLIST` maps, `AUTO_RUN_EXCLUDE`, the `cannotRunAlone` two-way reconciliation, stale-entry guards                                              |
-| Definition Normalizer                 | `browser_tests/fixtures/customNode/typePairing.ts`                         | `normalizeNodeDefs`, `packOf`                                                                                                                            |
-| Wiring planner                        | `browser_tests/fixtures/customNode/typePairing.ts`                         | `planPairs`, `isTypeCompatible`, `vocabOf`                                                                                                               |
-| Capability Classifier                 | `browser_tests/fixtures/customNode/autoRun.ts`                             | `classifyAutoRunnable`, `classifyInput`, `planAutoRuns`, `batchAutoRunnable`, `SYNTH_PRODUCERS`                                                          |
-| Execution Harness                     | `browser_tests/fixtures/customNode/ComfyTarget.ts`                         | `LocalDesktopTarget.runWorkflow`: event tap, attempt + graph-membership filters, guarded submission                                                      |
-| Outcome classification                | `browser_tests/fixtures/customNode/runResult.ts`                           | `classifyRun`, `CustomNodeOutcome`                                                                                                                       |
-| Mount / Persistence / Execution tiers | `browser_tests/tests/customNodes/allNodes.spec.ts`                         | `addChunk`, `declaredShape`, the staged rig on `window.__cnRt`, `runBatch`, monotonic identities via `window.__cnIdBase`, five in-spec exception ledgers |
-| Wiring tier                           | `browser_tests/tests/customNodes/connectivity.spec.ts`                     | breadth sweep, executor self-check, curated drags, two allowlists                                                                                        |
-| Curated workflows + self-check        | `browser_tests/tests/customNodes/customNode.regression.spec.ts`            | T0/T1 per pack, forced-error positive control                                                                                                            |
-| Core smoke                            | `browser_tests/tests/customNodes/coreSmoke.spec.ts`                        |                                                                                                                                                          |
-| Parser/classifier fixtures            | `browser_tests/tests/customNodes/*.pure.spec.ts`                           | census-derived cases for both definition dialects                                                                                                        |
-| CI job                                | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e`                                                                                                                          |
+| Building block                        | File                                                                       | Key symbols                                                                                                                                                                                               |
+| ------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pack Manifest                         | `browser_tests/fixtures/data/customNodeManifest.json`                      | one row per pack: `pack`, `repo`, `pin`, `tiers`, `workflow`, `expectedNodes`, `requiresGpu`, `requiresModels`, `timeoutMs`, plus optional `vueNodesCompatible`, `vueIncompatibleNodes`, `cannotRunAlone` |
+| Manifest loader                       | `browser_tests/fixtures/customNode/manifest.ts`                            | `loadManifest`, `rendererPassesFor`                                                                                                                                                                       |
+| Test Orchestrator                     | each spec file                                                             | the `for (const entry of loadManifest())` loop heading allNodes.spec.ts, connectivity.spec.ts, customNode.regression.spec.ts                                                                              |
+| Evidence Ledgers + Reconciler         | `browser_tests/tests/customNodes/allNodes.spec.ts`, `connectivity.spec.ts` | the `*_ALLOWLIST` maps, `AUTO_RUN_EXCLUDE`, the `cannotRunAlone` two-way reconciliation, stale-entry guards                                                                                               |
+| Definition Normalizer                 | `browser_tests/fixtures/customNode/typePairing.ts`                         | `normalizeNodeDefs`, `packOf`                                                                                                                                                                             |
+| Wiring planner                        | `browser_tests/fixtures/customNode/typePairing.ts`                         | `planPairs`, `isTypeCompatible`, `vocabOf`                                                                                                                                                                |
+| Capability Classifier                 | `browser_tests/fixtures/customNode/autoRun.ts`                             | `classifyAutoRunnable`, `classifyInput`, `planAutoRuns`, `batchAutoRunnable`, `SYNTH_PRODUCERS`                                                                                                           |
+| Execution Harness                     | `browser_tests/fixtures/customNode/ComfyTarget.ts`                         | `LocalDesktopTarget.runWorkflow`: event tap, attempt + graph-membership filters, guarded submission                                                                                                       |
+| Outcome classification                | `browser_tests/fixtures/customNode/runResult.ts`                           | `classifyRun`, `CustomNodeOutcome`                                                                                                                                                                        |
+| Mount / Persistence / Execution tiers | `browser_tests/tests/customNodes/allNodes.spec.ts`                         | `addChunk`, `declaredShape`, the staged rig on `window.__cnRt`, `runBatch`, monotonic identities via `window.__cnIdBase`, five in-spec exception ledgers                                                  |
+| Wiring tier                           | `browser_tests/tests/customNodes/connectivity.spec.ts`                     | breadth sweep, executor self-check, curated drags, two allowlists                                                                                                                                         |
+| Curated workflows + self-check        | `browser_tests/tests/customNodes/customNode.regression.spec.ts`            | T0/T1 per pack, forced-error positive control                                                                                                                                                             |
+| Core smoke                            | `browser_tests/tests/customNodes/coreSmoke.spec.ts`                        |                                                                                                                                                                                                           |
+| Parser/classifier fixtures            | `browser_tests/tests/customNodes/*.pure.spec.ts`                           | census-derived cases for both definition dialects                                                                                                                                                         |
+| CI job                                | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e`                                                                                                                                                                           |
