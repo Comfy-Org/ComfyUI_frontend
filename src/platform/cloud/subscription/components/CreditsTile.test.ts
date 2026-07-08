@@ -53,6 +53,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     balance: computed(() => state.balance),
     subscription: computed(() => state.subscription),
+    isPaused: computed(() => false),
     isActiveSubscription: computed(() => state.isActiveSubscription),
     isFreeTier: computed(() => state.isFreeTier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
@@ -294,7 +295,7 @@ describe('CreditsTile', () => {
       "You're now spending additional credits."
     )
     expect(screen.getByText('In use')).toBeTruthy()
-    expect(screen.getByText('Add credits').dataset.variant).toBe('secondary')
+    expect(screen.getByText('Add credits').dataset.variant).toBe('tertiary')
   })
 
   it('emphasizes add-credits when fully out of credits', () => {

@@ -75,6 +75,10 @@ const {
   }
 })
 
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ isPaused: computed(() => false) })
+}))
+
 vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
   useMembersPanel: () => ({
     searchQuery: mockSearchQuery,
@@ -167,7 +171,8 @@ function renderComponent() {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
         DropdownMenu: DropdownMenuStub,
-        UserAvatar: true
+        UserAvatar: true,
+        BillingStatusBanner: true
       },
       directives: { tooltip: () => {} }
     }
