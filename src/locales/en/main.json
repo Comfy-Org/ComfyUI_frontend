@@ -30,6 +30,7 @@
     "content": "content",
     "audioProgress": "Audio progress",
     "viewImageOfTotal": "View image {index} of {total}",
+    "imageIndexOfTotal": "{index} / {total}",
     "viewVideoOfTotal": "View video {index} of {total}",
     "imageLightbox": "Image preview",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
