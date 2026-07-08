@@ -63,3 +63,25 @@ reviews:
           Pass if none of these patterns are found in the diff.
 
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
+
+  path_instructions:
+    - path: '**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed Vitest test file.
+        Review changed tests in the context of production files changed in the same PR; flag missing behavioral coverage for changed behavior, change-detector tests, mock-heavy tests, snapshot abuse, fragile assertions, missing edge cases, unclear setup, shared mutable state, and test isolation problems.
+        Prefer colocated behavioral tests named after the source file, and require tests for production changes to exercise the changed runtime or public entrypoint directly. Helper-only coverage is insufficient when the changed branch is reached through a higher-level runtime path.
+        Build partial mocks with fromPartial<T>() from @total-typescript/shoehorn; flag `as unknown as` double assertions, `as never`, and fromAny().
+        Mock only at seams (Pinia stores, settings, third-party libraries); flag mocked type guards or sibling composables.
+        Use a real createI18n instance rather than vi.mock('vue-i18n').
+        Flag bare expect(fn).not.toThrow() as a sole assertion, assertions that echo stub return values, tautological assertions, and .mock.results assertions.
+        For rejected promises, thrown errors, and failed async calls, require assertions for post-error state cleanup and side-effect rollback, especially auth tokens, API keys, globals, listeners, timers, subscriptions, and caches that production mutates before awaiting.
+        For tests around queuing or request flows that temporarily set `api.authToken` or `api.apiKey`, require rejected-path coverage that makes the awaited request reject and then asserts both credential fields are cleared. Success-path cleanup alone is insufficient.
+        Tests that call setup methods which install document, canvas, window, or prototype listeners must remove those listeners or isolate the EventTarget per test; repeated listener setup followed by later event dispatches is order-dependent.
+        Reuse established shared helpers such as `src/utils/__tests__/litegraphTestUtils.ts` and `src/utils/__tests__/executionErrorTestUtils.ts`; flag hand-rolled litegraph node/canvas/subgraph/workflow builders and inline `required_input_missing` fixtures when a shared helper exists.
+        For store tests that exercise real store behavior, require `createTestingPinia({ stubActions: false })`; flag plain `createPinia()` unless the test explicitly needs a real Pinia plugin path.
+        Use @testing-library/vue for component tests, not @vue/test-utils.
+        For platform-owned types and descriptors such as Response, CustomEvent, DOM events, navigator.clipboard, fetch, URL, console methods, timers, and browser APIs, require real instances or teardown that restores the original value or descriptor. `vi.clearAllMocks()` and `vi.unstubAllGlobals()` alone do not restore mocked implementations or descriptors changed with Object.defineProperty.
+        Async helpers and callbacks must be awaited or asserted with `.resolves` / `.rejects`; flag dropped promises that only pass while the current implementation is synchronous.
+        When a fixture cast hides a too-wide production signature, suggest narrowing the production type instead of casting the fixture.
+        Flag process-level listeners (process.on('unhandledRejection')) in tests; assert the rejected promise directly.
+        Tests should import the module under test from its public entrypoint, not deep internal paths.
