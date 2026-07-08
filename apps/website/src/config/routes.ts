@@ -73,6 +73,9 @@ export const externalLinks = {
   platformUsage: 'https://platform.comfy.org/profile/usage',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
+  wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
+  wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
+  wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
   workflows: 'https://comfy.org/workflows',
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import { externalLinks } from '../config/routes'
 import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
   absoluteUrl,
   buildPageGraph,
   collectGraphIds,
+  comfyUiApplicationNode,
   itemListNode,
   jsonLdId,
   organizationId,
@@ -97,6 +99,36 @@ describe('softwareApplicationNode', () => {
     })
     expect(node.author).toBeUndefined()
     expect(node.publisher).toBeUndefined()
+  })
+})
+
+describe('sameAs encyclopedic references', () => {
+  it('links the organization to its Wikidata entity', () => {
+    const graph = buildPageGraph(
+      { siteUrl, locale: 'en' },
+      { url: `${siteUrl}/`, name: 'Home' }
+    )
+    const org = graph['@graph'].find((node) => node['@type'] === 'Organization')
+    expect(org?.sameAs).toContain(externalLinks.wikidataComfyOrg)
+  })
+
+  it('links the ComfyUI application to its Wikidata and Wikipedia entities', () => {
+    const node = comfyUiApplicationNode(siteUrl)
+    expect(node.sameAs).toEqual([
+      externalLinks.wikidataComfyUi,
+      externalLinks.wikipediaComfyUi
+    ])
+  })
+
+  it('omits sameAs for third-party software', () => {
+    const node = softwareApplicationNode({
+      siteUrl,
+      id: 'https://comfy.org/p/supported-models/foo/#software',
+      name: 'Foo Model',
+      url: 'https://comfy.org/p/supported-models/foo/',
+      applicationCategory: 'MultimediaApplication'
+    })
+    expect(node.sameAs).toBeUndefined()
   })
 })
 

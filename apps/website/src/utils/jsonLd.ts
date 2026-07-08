@@ -31,7 +31,15 @@ const sameAs = [
   externalLinks.discord,
   externalLinks.instagram,
   externalLinks.reddit,
-  externalLinks.linkedin
+  externalLinks.linkedin,
+  // Wikidata entity for the organization, so the Knowledge Graph can resolve it.
+  externalLinks.wikidataComfyOrg
+]
+
+// Authoritative encyclopedic references for the ComfyUI software entity.
+const comfyUiSameAs = [
+  externalLinks.wikidataComfyUi,
+  externalLinks.wikipediaComfyUi
 ]
 
 function siteUrlFrom(site: URL | undefined): string {
@@ -184,6 +192,7 @@ export interface SoftwareAppInput {
   codeRepository?: string
   authorName?: string
   isFree?: boolean
+  sameAs?: string[]
 }
 
 export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
@@ -208,6 +217,7 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     codeRepository: input.codeRepository,
     author,
     publisher: input.firstParty ? orgRef : undefined,
+    sameAs: input.sameAs,
     offers: input.isFree
       ? { '@type': 'Offer', price: 0, priceCurrency: 'USD' }
       : undefined
@@ -246,7 +256,8 @@ export function comfyUiApplicationNode(siteUrl: string): JsonLdNode {
     firstParty: true,
     applicationCategory: 'MultimediaApplication',
     operatingSystem: 'Windows, macOS, Linux',
-    isFree: true
+    isFree: true,
+    sameAs: comfyUiSameAs
   })
 }
 
