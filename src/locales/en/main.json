@@ -4502,7 +4502,7 @@
   "agent": {
     "title": "Comfy Agent",
     "askComfyAgent": "Ask Comfy Agent",
-    "caption": "The agent edits your graph as a draft. Only you can run it.",
+    "caption": "The agent edits your workflow as a draft. Only you can run it.",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
     "alpha": "ALPHA",
