@@ -149,6 +149,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               before_send: createPostHogBeforeSend()
             })
             this.isInitialized = true
+            // Before flushEventQueue so pre-init events also carry the
+            // platform super properties.
+            this.registerPlatformProps()
             this.flushEventQueue()
             this.registerDesktopEntryProps()
 
@@ -289,6 +292,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         return isValid
       })
     )
+  }
+
+  private registerPlatformProps(): void {
+    if (!this.posthog) return
+    try {
+      this.posthog.register({
+        client: window.__comfyDesktop2 ? 'desktop' : 'web',
+        deployment: 'cloud'
+      })
+    } catch (error) {
+      console.error('Failed to register platform props:', error)
+    }
   }
 
   private registerDesktopEntryProps(): void {
